@@ -1,0 +1,13 @@
+# In dev, jobs run inside Puma, so broadcasts happen in the same process the
+# browser is connected to — the async adapter suffices.
+development:
+  adapter: async
+
+test:
+  adapter: test
+
+# Solid Cable: Action Cable over Postgres.
+production:
+  adapter: solid_cable
+  polling_interval: 0.1.seconds
+  message_retention: 1.day

@@ -1,0 +1,50 @@
+# dependencies
+node_modules
+.pnp
+.pnp.*
+
+# build output
+.next
+out
+build
+dist
+
+# env files (provide at runtime, not build time)
+.env
+.env.local
+.env.*.local
+
+# version control
+.git
+.gitignore
+
+# editor / tooling
+.claude
+.conductor
+.ruby-lsp
+.vscode
+.idea
+.DS_Store
+
+# CI / docs / tests (not needed in image)
+.github
+docs
+README.md
+LICENSE
+coverage
+*.tsbuildinfo
+next-env.d.ts
+vitest.config.ts
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# vercel
+.vercel
+
+# docker
+Dockerfile
+.dockerignore

@@ -1,0 +1,169 @@
+name: Storefront CI
+on:
+  push:
+    branches: [main, 6-0-dev]
+  # Every pull request, whatever it targets — a PR stacked on a feature branch
+  # gets the same checks, E2E included, as one opened against main.
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: apps/storefront
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+        with:
+          package_json_file: apps/storefront/package.json
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: apps/storefront/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run check
+
+  typecheck:
+    name: Type Check
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: apps/storefront
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+        with:
+          package_json_file: apps/storefront/package.json
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: apps/storefront/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec tsc --noEmit
+
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: apps/storefront
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+        with:
+          package_json_file: apps/storefront/package.json
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: apps/storefront/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run test
+
+  e2e:
+    name: E2E (Playwright + Spree)
+    # Runs on every trigger. Repository secrets are not exposed to runs from
+    # forks, nor to dependabot[bot] runs (those only get Dependabot secrets),
+    # so those runs bootstrap Spree without a Stripe gateway and the
+    # Stripe-paid checkout specs skip themselves; every other spec runs.
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: apps/storefront
+    timeout-minutes: 25
+    steps:
+      # Same-repo runs always get the secrets, so missing keys there are a
+      # misconfiguration — fail loudly rather than silently losing the
+      # checkout coverage.
+      - name: Check Stripe keys
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_PUBLISHABLE_KEY: ${{ vars.STRIPE_PUBLISHABLE_KEY }}
+          TRUSTED_RUN: ${{ github.actor != 'dependabot[bot]' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+        run: |
+          if [ -n "$STRIPE_SECRET_KEY" ] && [ -n "$STRIPE_PUBLISHABLE_KEY" ]; then
+            exit 0
+          fi
+          if [ "$TRUSTED_RUN" = "true" ]; then
+            echo "::error::STRIPE_SECRET_KEY (repository secret) and STRIPE_PUBLISHABLE_KEY (repository variable) must be set under Settings → Secrets and variables → Actions. Use a sk_test_…/pk_test_… pair from your own Stripe sandbox."
+            exit 1
+          fi
+          echo "::notice::No Stripe keys on this run (fork or Dependabot) — the Stripe checkout specs will be skipped."
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+        with:
+          package_json_file: apps/storefront/package.json
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: apps/storefront/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      # Key the browser cache on the Playwright version, not the whole
+      # lockfile — unrelated dependency bumps shouldn't force a ~150MB
+      # Chromium re-download.
+      - name: Get Playwright version
+        id: playwright-version
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+      - name: Cache Playwright browsers
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
+      - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Install Playwright system deps only
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: pnpm exec playwright install-deps chromium
+      - name: Boot Spree backend (Postgres + Redis + latest Spree)
+        run: docker compose -f e2e-backend/docker-compose.yml up -d --wait
+      - name: Seed Spree and issue API key
+        env:
+          # Test-mode Stripe key pair from one sandbox account, consumed by
+          # bootstrap-spree.sh to configure the Spree Stripe gateway. Scoped
+          # to this step so dependency postinstall scripts and third-party actions
+          # in other steps never see the secret.
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_PUBLISHABLE_KEY: ${{ vars.STRIPE_PUBLISHABLE_KEY }}
+        run: ./scripts/e2e/bootstrap-spree.sh
+      - name: Run Playwright tests
+        run: pnpm run test:e2e
+      - name: Dump Spree logs on failure
+        if: failure()
+        run: docker compose -f e2e-backend/docker-compose.yml logs --no-color web > spree.log || true
+      - name: Upload failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+            spree.log
+          retention-days: 7
+      - name: Tear down
+        if: always()
+        run: docker compose -f e2e-backend/docker-compose.yml down -v

@@ -1,0 +1,11 @@
+packages:
+  - '.'
+# Image rebuilds re-install the committed lockfile verbatim — without this,
+# pnpm 11's supply-chain re-validation (minimumReleaseAge) fails any build
+# whose lockfile references <24h-old packages you intentionally installed.
+# Fresh resolution on your machine still honors the age gate.
+trustLockfile: true
+# Spree's own releases shouldn't wait out the age gate — an upgrade right
+# after a Spree release would otherwise fail for a day.
+minimumReleaseAgeExclude:
+  - '@spree/*'

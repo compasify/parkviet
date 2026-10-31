@@ -1,0 +1,11 @@
+# Build context for server/Dockerfile (repo root): keep it to sources.
+**/node_modules
+**/.git
+.spree
+apps/storefront
+apps/dashboard/dist
+apps/dashboard/.tanstack
+server/log
+server/tmp
+server/storage
+server/.env*

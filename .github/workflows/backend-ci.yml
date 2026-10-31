@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: server
+
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      DATABASE_URL: postgres://postgres@localhost:5432/spree_test
+      RAILS_ENV: test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # libvips, as in the Docker image: uploads and image variants run
+      # through it. libvips-tools pulls in the library under whatever name
+      # the runner's Ubuntu release gives it.
+      - name: Install libvips
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libvips-tools
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          working-directory: server
+          bundler-cache: true
+
+      - name: Prepare database
+        run: bin/rails db:prepare
+
+      - name: Precompile assets
+        run: bin/rake assets:precompile
+
+      - name: Run tests
+        run: bundle exec rspec
+
+      - name: Brakeman security scan
+        run: bundle exec brakeman --no-pager -q
+
+      - name: Bundle audit
+        run: bundle exec bundle-audit check --update

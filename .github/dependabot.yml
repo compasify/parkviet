@@ -1,0 +1,97 @@
+version: 2
+updates:
+  # Root wrapper (@spree/cli, @spree/docs)
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      root-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+      root-version:
+        applies-to: version-updates
+        patterns:
+          - "*"
+
+  # Rails server gems
+  - package-ecosystem: bundler
+    directory: "/server"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      server-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+      server-version:
+        applies-to: version-updates
+        patterns:
+          - "*"
+
+  # CI workflows
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      actions-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+      actions-version:
+        applies-to: version-updates
+        patterns:
+          - "*"
+
+  # Next.js storefront
+  - package-ecosystem: npm
+    directory: "/apps/storefront"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      storefront-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+      storefront-version:
+        applies-to: version-updates
+        patterns:
+          - "*"
+
+  # Admin Dashboard
+  - package-ecosystem: npm
+    directory: "/apps/dashboard"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      dashboard-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+      dashboard-version:
+        applies-to: version-updates
+        patterns:
+          - "*"
+
+  # Seller Panel
+  - package-ecosystem: npm
+    directory: "/apps/seller-dashboard"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      seller-dashboard-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+      seller-dashboard-version:
+        applies-to: version-updates
+        patterns:
+          - "*"

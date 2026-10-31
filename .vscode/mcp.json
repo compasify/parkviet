@@ -1,0 +1,8 @@
+{
+  "servers": {
+    "spree-docs": {
+      "type": "http",
+      "url": "https://spreecommerce.org/docs/mcp"
+    }
+  }
+}

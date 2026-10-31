@@ -1,0 +1,98 @@
+# Render Blueprint — one Docker web service plus Postgres. The web service
+# builds server/Dockerfile with the repo root as context: your server and
+# apps/dashboard ship in one image, with the dashboard served same-origin at
+# /dashboard (the stock dashboard when apps/dashboard is absent). Migrations
+# run from the image entrypoint on boot.
+#
+# Paths are written for a create-spree-app project (this file moves to the
+# project root, next to server/). Deploying this starter repo on its own?
+# Set both dockerfilePath values to ./Dockerfile — the Dockerfile detects the
+# standalone layout itself.
+services:
+  - type: web
+    name: spree
+    runtime: docker
+    plan: free
+    dockerfilePath: ./server/Dockerfile
+    dockerContext: .
+    healthCheckPath: /up
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: spree-db
+          property: connectionString
+      - key: SECRET_KEY_BASE
+        generateValue: true
+      # Active Record encryption keys — generated once; never change them after
+      # data is encrypted (copy them to your secret manager as a backup)
+      - key: ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY
+        generateValue: true
+      - key: ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY
+        generateValue: true
+      - key: ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT
+        generateValue: true
+      - key: RAILS_LOG_LEVEL
+        value: info
+      # /jobs dashboard HTTP Basic auth — password is generated; read it in
+      # the Render dashboard under Environment
+      - key: MISSION_CONTROL_USER
+        value: jobs
+      - key: MISSION_CONTROL_PASSWORD
+        generateValue: true
+      # uncomment on plans with 2+ vCPUs (pro and up) to run one Puma process per vCPU;
+      # a Spree process needs ~1GB RAM, so this doesn't fit free/starter instances
+      # - key: WEB_CONCURRENCY
+      #   value: "2"
+
+  # Scale-out: uncomment to split job processing into a dedicated worker
+  # (same image, no rebuild) — and set SOLID_QUEUE_IN_PUMA=false on the web
+  # service above so it stops running jobs in-process. Requires a paid plan.
+  # - type: worker
+  #   name: spree-worker
+  #   runtime: docker
+  #   plan: standard
+  #   dockerfilePath: ./server/Dockerfile
+  #   dockerContext: .
+  #   dockerCommand: bin/jobs
+  #   envVars:
+  #     - key: DATABASE_URL
+  #       fromDatabase:
+  #         name: spree-db
+  #         property: connectionString
+  #     - key: SECRET_KEY_BASE
+  #       fromService:
+  #         name: spree
+  #         type: web
+  #         envVarKey: SECRET_KEY_BASE
+  #     - key: ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY
+  #       fromService:
+  #         name: spree
+  #         type: web
+  #         envVarKey: ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY
+  #     - key: ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY
+  #       fromService:
+  #         name: spree
+  #         type: web
+  #         envVarKey: ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY
+  #     - key: ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT
+  #       fromService:
+  #         name: spree
+  #         type: web
+  #         envVarKey: ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT
+  #     - key: JOB_THREADS
+  #       value: "5"
+  #     # Image resizing pool (config/queue.yml): one thread per CPU of the
+  #     # worker's plan, and one libvips thread per resize.
+  #     - key: JOB_IMAGE_THREADS
+  #       value: "1"
+  #     - key: VIPS_CONCURRENCY
+  #       value: "1"
+  #     - key: MALLOC_ARENA_MAX
+  #       value: "2"
+
+databases:
+  - name: spree-db
+    plan: free
+    databaseName: spree
+    postgresMajorVersion: "18"
+    ipAllowList: []

@@ -1,0 +1,14 @@
+#!/usr/bin/env sh
+
+# Default to port 3000 if not specified
+export PORT="${PORT:-3000}"
+
+# Let the debug gem allow remote connections,
+# but avoid loading until `debugger` is called
+export RUBY_DEBUG_OPEN="true"
+export RUBY_DEBUG_LAZY="true"
+
+# Single process: jobs run inside Puma (see config/puma.rb), so there is
+# nothing to multiplex. Set SOLID_QUEUE_IN_PUMA=false and run bin/jobs
+# separately to split job processing out.
+exec bin/rails server "$@"

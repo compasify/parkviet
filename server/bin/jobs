@@ -1,0 +1,9 @@
+#!/usr/bin/env ruby
+
+# Dedicated Solid Queue supervisor. By default jobs run inside Puma
+# (config/puma.rb); run this as a separate service with
+# SOLID_QUEUE_IN_PUMA=false on web to split job processing out.
+require_relative "../config/environment"
+require "solid_queue/cli"
+
+SolidQueue::Cli.start(ARGV)

@@ -1,0 +1,24 @@
+{
+  "name": "parkviet",
+  "private": true,
+  "packageManager": "pnpm@10.33.4",
+  "scripts": {
+    "dev": "spree dev",
+    "stop": "spree stop",
+    "down": "docker compose down",
+    "upgrade": "spree upgrade",
+    "eject": "spree eject",
+    "logs": "spree logs",
+    "logs:worker": "spree logs worker",
+    "seed": "spree seed",
+    "load-sample-data": "spree sample-data",
+    "console": "spree console",
+    "api": "spree api",
+    "auth": "spree auth",
+    "api-key": "spree api-key"
+  },
+  "dependencies": {
+    "@spree/cli": "^3.4.0",
+    "@spree/docs": "latest"
+  }
+}

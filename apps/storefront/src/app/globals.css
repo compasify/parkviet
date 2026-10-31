@@ -1,0 +1,268 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist);
+  --animate-slide-in-right: slide-in-right 0.3s ease-out;
+  --animate-slide-in-left: slide-in-left 0.3s ease-out;
+  --animate-hamburger-top-open: hamburger-top-open 0.35s ease-in-out forwards;
+  --animate-hamburger-top-close: hamburger-top-close 0.35s ease-in-out forwards;
+  --animate-hamburger-mid-open: hamburger-mid-open 0.15s ease-in-out forwards;
+  --animate-hamburger-mid-close: hamburger-mid-close 0.15s ease-in-out forwards;
+  --animate-hamburger-bottom-open: hamburger-bottom-open 0.35s ease-in-out forwards;
+  --animate-hamburger-bottom-close: hamburger-bottom-close 0.35s ease-in-out forwards;
+
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-200: #bfdbfe;
+  --color-primary-300: #93c5fd;
+  --color-primary-400: #60a5fa;
+  --color-primary-500: #0077ff;
+  --color-primary-600: #0066dd;
+  --color-primary-700: #0055bb;
+  --color-primary-800: #004499;
+  --color-primary-900: #003377;
+  --color-primary-950: #001d4d;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-in-left {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* Hamburger ↔ X animations */
+@keyframes hamburger-top-open {
+  0% { transform: translateY(0) rotate(0); }
+  50% { transform: translateY(7px) rotate(0); }
+  100% { transform: translateY(7px) rotate(45deg); }
+}
+@keyframes hamburger-top-close {
+  0% { transform: translateY(7px) rotate(45deg); }
+  50% { transform: translateY(7px) rotate(0); }
+  100% { transform: translateY(0) rotate(0); }
+}
+@keyframes hamburger-mid-open {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes hamburger-mid-close {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+@keyframes hamburger-bottom-open {
+  0% { transform: translateY(0) rotate(0); }
+  50% { transform: translateY(-7px) rotate(0); }
+  100% { transform: translateY(-7px) rotate(-45deg); }
+}
+@keyframes hamburger-bottom-close {
+  0% { transform: translateY(-7px) rotate(-45deg); }
+  50% { transform: translateY(-7px) rotate(0); }
+  100% { transform: translateY(0) rotate(0); }
+}
+
+body {
+  font-family: var(--font-geist), system-ui, sans-serif;
+  font-weight: 400;
+}
+
+/* Style native search clear button */
+input[type="search"]::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 14px;
+  width: 14px;
+  padding: 8px;
+  box-sizing: content-box;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round'%3E%3Cline x1='18' y1='6' x2='6' y2='18'/%3E%3Cline x1='6' y1='6' x2='18' y2='18'/%3E%3C/svg%3E") center/14px 14px no-repeat;
+  cursor: pointer;
+}
+
+.product-carousel .swiper-button-next,
+.product-carousel .swiper-button-prev {
+  display: none;
+}
+
+/*
+ * Skip rendering of featured products section on mobile where it's
+ * below the fold (hero min-h-[823px]). Frees main thread for hero LCP.
+ * Disabled on desktop (md+) where products are in viewport.
+ */
+@media (max-width: 767px) {
+  .featured-products {
+    content-visibility: auto;
+    contain-intrinsic-size: 0 500px;
+  }
+}
+
+/*
+ * Pre-hydration layout for Swiper carousel.
+ * Swiper SSR renders slides at 100% width with no spacing before JS initializes.
+ * These rules match the Swiper breakpoints (1/2/3/4 slides) and spaceBetween (24px)
+ * so the layout is stable from first paint, preventing CLS. Once Swiper hydrates
+ * it sets inline widths and margins that override these.
+ */
+.product-carousel .swiper-slide {
+  flex-shrink: 0;
+  width: 100%;
+  margin-right: 24px;
+}
+@media (min-width: 640px) {
+  .product-carousel .swiper-slide {
+    width: calc((100% - 24px) / 2);
+  }
+}
+@media (min-width: 768px) {
+  .product-carousel .swiper-slide {
+    width: calc((100% - 48px) / 3);
+  }
+}
+@media (min-width: 1024px) {
+  .product-carousel .swiper-slide {
+    width: calc((100% - 72px) / 4);
+  }
+}
+
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.58 0.22 27);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.809 0.105 251.813);
+  --chart-2: oklch(0.623 0.214 259.815);
+  --chart-3: oklch(0.546 0.245 262.881);
+  --chart-4: oklch(0.488 0.243 264.376);
+  --chart-5: oklch(0.424 0.199 265.638);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.87 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.371 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.809 0.105 251.813);
+  --chart-2: oklch(0.623 0.214 259.815);
+  --chart-3: oklch(0.546 0.245 262.881);
+  --chart-4: oklch(0.488 0.243 264.376);
+  --chart-5: oklch(0.424 0.199 265.638);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  :focus-visible {
+    outline: 1px solid black;
+    border-radius: 2px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :focus-visible {
+      outline-color: white;
+    }
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}

@@ -1,0 +1,112 @@
+require "active_support/core_ext/integer/time"
+
+Rails.application.configure do
+  # When SMTP_HOST is set deliver via SMTP.
+  # Otherwise use Letter Opener to preview emails in the browser.
+  if ENV["SMTP_HOST"].present?
+    config.action_mailer.delivery_method = :smtp
+    smtp_settings = {
+      address:              ENV["SMTP_HOST"],
+      port:                 ENV.fetch("SMTP_PORT", 1025).to_i,
+      enable_starttls_auto: true
+    }
+    # Only request SMTP-AUTH when credentials are provided. Local mail catchers
+    # (Mailpit, MailHog) accept anonymous delivery; requesting auth with a nil
+    # user raises "SMTP-AUTH requested but missing user name" before connecting.
+    if ENV["SMTP_USERNAME"].present?
+      smtp_settings[:user_name]      = ENV["SMTP_USERNAME"]
+      smtp_settings[:password]       = ENV["SMTP_PASSWORD"]
+      smtp_settings[:authentication] = :plain
+    end
+    config.action_mailer.smtp_settings = smtp_settings
+    config.action_mailer.default_options = { from: ENV["SMTP_FROM_ADDRESS"] } if ENV["SMTP_FROM_ADDRESS"].present?
+    config.action_mailer.raise_delivery_errors = true
+  else
+    config.action_mailer.delivery_method = :logger
+    config.action_mailer.raise_delivery_errors = false
+  end
+  config.action_mailer.perform_deliveries = true
+
+  # Rails' default ".localhost" rule rejects Host headers that carry a port
+  # (foo.localhost:1355), which is how local https proxies (portless, Caddy)
+  # forward requests. Allow any .localhost host, with or without a port.
+  config.hosts << /\A[a-z0-9-]+(\.[a-z0-9-]+)*\.localhost(:\d+)?\z/i
+
+  # Tunnels that expose this dev server to the outside world, so third-party
+  # webhooks (carriers, payment gateways) can reach it. Each tunnel gets a
+  # fresh random hostname, so the whole domain is allowed rather than one name.
+  config.hosts << /\A[a-z0-9-]+\.trycloudflare\.com\z/i
+  config.hosts << /\A[a-z0-9-]+\.ngrok(-free)?\.(app|io|dev)\z/i
+
+  # Settings specified here will take precedence over those in config/application.rb.
+
+  # Make code changes take effect immediately without server restart.
+  config.enable_reloading = true
+
+  # Do not eager load code on boot.
+  config.eager_load = false
+
+  # Show full error reports.
+  config.consider_all_requests_local = true
+
+  # Enable server timing.
+  config.server_timing = true
+
+  # Enable/disable Action Controller caching. By default Action Controller caching is disabled.
+  # Run rails dev:cache to toggle Action Controller caching.
+  if Rails.root.join("tmp/caching-dev.txt").exist?
+    config.action_controller.perform_caching = true
+    config.action_controller.enable_fragment_cache_logging = true
+    config.public_file_server.headers = { "cache-control" => "public, max-age=#{2.days.to_i}" }
+  else
+    config.action_controller.perform_caching = false
+  end
+
+  # Change to :null_store to avoid any caching.
+  config.cache_store = :memory_store
+
+  # Store uploaded files on the local file system (see config/storage.yml for options).
+  config.active_storage.service = :local
+
+  # Make template changes take effect immediately.
+  config.action_mailer.perform_caching = false
+
+  # Canonical public host for all generated URLs — Active Storage attachment
+  # URLs in API payloads, links in emails, and any URL built outside a request
+  # context. Without it those fall back to the store's URL setting, which is
+  # "localhost:3000" on a fresh install, so a dev server on any other host or
+  # port serves payloads whose images 404.
+  #
+  # Host only, optionally with a port ("myapp.localhost", "localhost:4000").
+  # RAILS_PROTOCOL covers a proxy that terminates TLS in front of the dev
+  # server, where the app itself still speaks plain http.
+  public_host = ENV["SPREE_HOST"].presence || ENV["RAILS_HOST"].presence || "localhost:3000"
+  public_protocol = ENV["RAILS_PROTOCOL"].presence || "http"
+
+  routes.default_url_options = { host: public_host, protocol: public_protocol }
+  config.action_mailer.default_url_options = { host: public_host, protocol: public_protocol }
+
+  # Print deprecation notices to the Rails logger.
+  config.active_support.deprecation = :log
+
+  # Raise an error on page load if there are pending migrations.
+  config.active_record.migration_error = :page_load
+
+  # Highlight code that triggered database queries in logs.
+  config.active_record.verbose_query_logs = true
+
+  # Append comments with runtime information tags to SQL queries in logs.
+  config.active_record.query_log_tags_enabled = true
+
+  # Highlight code that enqueued background job in logs.
+  config.active_job.verbose_enqueue_logs = true
+
+  # Highlight code that triggered redirect in logs.
+  config.action_dispatch.verbose_redirect_logs = true
+
+  # Annotate rendered view with file names.
+  config.action_view.annotate_rendered_view_with_filenames = true
+
+  # Raise error when a before_action's only/except options reference missing actions.
+  config.action_controller.raise_on_missing_callback_actions = true
+end

@@ -1,0 +1,62 @@
+# Recurring jobs — see https://github.com/rails/solid_queue#recurring-tasks
+#
+# Add your own like:
+#   nightly_report:
+#     class: MyReportJob
+#     queue: default
+#     schedule: at 5am every day
+production:
+  # Release checkout stock reservations whose hold expired, so inventory
+  # returns to sellable stock promptly.
+  expire_stock_reservations:
+    class: Spree::StockReservations::ExpireJob
+    schedule: every minute
+
+  # Completion recovery: retries finalizing draft orders whose payment
+  # succeeded but whose completion never committed (e.g. a crash after
+  # capture). Only picks up drafts older than 10 minutes; never refunds.
+  finalize_stale_draft_orders:
+    class: Spree::Orders::FinalizeStaleDraftsJob
+    schedule: every 5 minutes
+
+  # Delete abandoned carts past their expiry (SPREE_EMPTY_CART_EXPIRY_HOURS,
+  # SPREE_GUEST_CART_EXPIRY_DAYS, SPREE_CUSTOMER_CART_EXPIRY_DAYS). Carts
+  # with a live payment session or payment are never reaped.
+  reap_expired_carts:
+    class: Spree::Carts::ReapExpiredJob
+    schedule: every hour at minute 7
+
+  # Re-evaluate automatic collections with time-relative rules (e.g.
+  # "available on"), which product-save events alone can't keep fresh.
+  regenerate_time_based_collections:
+    class: Spree::Collections::RegenerateTimeBasedJob
+    schedule: every hour at minute 17
+
+  # Prune EU Omnibus price history past each store's retention period
+  # (the store's price_history_retention_days, default 30) — runs the
+  # spree:price_history:prune task, which prunes per store so one store's
+  # shorter window never deletes another's Omnibus evidence.
+  prune_price_history:
+    command: "require 'rake'; Rails.application.load_tasks unless Rake::Task.task_defined?('spree:price_history:prune'); Rake::Task['spree:price_history:prune'].tap(&:reenable).invoke"
+    schedule: at 4am every day
+
+  # Marketplace payouts. The sweep hands every approved seller to a job of its
+  # own, which decides whether that seller is actually due — a scheduler cannot
+  # express "weekly, but from whenever this seller was last paid". Both are a
+  # cheap no-op on a store with no sellers, so they are safe to leave enabled.
+  sweep_due_seller_payouts:
+    class: Spree::SellerPayouts::SweepDueJob
+    schedule: at 3am every day
+
+  # Retries earnings a payout provider refused — usually a passing failure.
+  execute_pending_seller_transfers:
+    class: Spree::SellerTransfers::ExecutePendingDueJob
+    schedule: every hour at minute 27
+
+  # Solid Queue / Solid Cable housekeeping.
+  clear_solid_queue_finished_jobs:
+    command: "SolidQueue::Job.clear_finished_in_batches(sleep_between_batches: 0.3)"
+    schedule: every hour at minute 12
+  clear_solid_cable_messages:
+    command: "SolidCable::Message.trimmable.in_batches(of: 1000).delete_all"
+    schedule: every hour at minute 42
