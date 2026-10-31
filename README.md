@@ -54,50 +54,64 @@ Ngoài các chức năng trên, Spree 6.0 còn có khả năng hỗ trợ **sả
 
 Tham khảo thêm tại [tài liệu Spree](https://spreecommerce.org/docs), trong đó có hướng dẫn về [sản phẩm](https://spreecommerce.org/docs/developer/core-concepts/products), [tồn kho](https://spreecommerce.org/docs/developer/core-concepts/inventory) và [kênh bán hàng](https://spreecommerce.org/docs/developer/core-concepts/channels).
 
-## Getting Started
+## Bắt đầu
 
-### Prerequisites
+### Yêu cầu
 
-- [Docker](https://docs.docker.com/get-docker/) installed and running
+- [Docker](https://docs.docker.com/get-docker/) đã cài và đang chạy
 
-### Start the Spree API
+### Chạy API Spree
 
 ```bash
 cd parkviet
 pnpm spree dev
 ```
 
-The first run completes setup automatically — it pulls the latest Spree image,
-seeds the database, and configures API keys.
+Lần chạy đầu tiên tự hoàn tất thiết lập — kéo image Spree mới nhất, seed cơ sở dữ liệu và cấu hình khóa API.
 
-Wait for the services to be healthy, then open:
+Đợi các service khỏe mạnh, sau đó mở:
 
-- **Admin Dashboard:** http://localhost:5173 — started automatically by `spree dev`
-  - The first run opens a setup link where you create the admin account
-- **Seller Panel (marketplace):** http://localhost:5174 — run it with `cd apps/seller-dashboard && pnpm run dev`
-- **Store API:** http://localhost:3000/api/v3/store
+- **Bảng quản trị:** http://localhost:5173 — tự động khởi động bởi `spree dev`
+  - Lần chạy đầu tiên mở liên kết thiết lập để tạo tài khoản quản trị
+- **Bảng người bán (sàn):** http://localhost:5174 — chạy bằng `cd apps/seller-dashboard && pnpm run dev`
+- **API cửa hàng:** http://localhost:3000/api/v3/store
 
-### Start the storefront
+### Chạy cửa hàng trực tuyến
 
-Dependencies are already installed during setup — just start it:
+Các phụ thuộc đã được cài trong bước thiết lập — chỉ cần khởi động:
 
 ```bash
 cd apps/storefront
 pnpm run dev
 ```
 
-Open http://localhost:3001
+Mở http://localhost:3001
 
-### Chạy không dùng Docker (local host)
+### Bảng quản trị
 
-Nếu bạn đã có sẵn PostgreSQL và Redis (ví dụ cấu hình trong `server/.env`), có thể chạy trực tiếp trên máy mà không cần Docker:
+`apps/dashboard/` là bảng quản trị của bạn — một ứng dụng React có thể tùy biến (plugin, trang riêng, chỉnh bảng) với tải lại trực tiếp. `spree dev` tự khởi động cùng API; để chạy riêng:
+
+```bash
+cd apps/dashboard
+pnpm run dev
+```
+
+Mở http://localhost:5173 và đăng nhập bằng email và mật khẩu quản trị đã chọn trong lần chạy đầu.
+
+Khi triển khai, image sản xuất sẽ build bảng quản trị và phục vụ tại `/dashboard` trên cùng origin với API (`pnpm spree build --production`).
+
+Để tìm hiểu cách thêm trang, chỉnh bảng hoặc xây plugin, xem [tài liệu bảng quản trị](https://spreecommerce.org/docs/developer/dashboard/overview).
+
+### Chạy không dùng Docker (máy local)
+
+Nếu bạn đã có sẵn PostgreSQL và Redis (ví dụ đã cấu hình trong `server/.env`), có thể chạy trực tiếp mà không cần Docker:
 
 **Yêu cầu:**
 - PostgreSQL và Redis đang chạy
-- Ruby 4.0.9 (rbenv) và Node.js/pnpm
+- Ruby và Node.js/pnpm
 - Đã cấu hình `server/.env` (DATABASE_*, SECRET_KEY_BASE, ...)
 
-**1. Cài gem và migrate DB:**
+**1. Cài gem và migrate cơ sở dữ liệu:**
 ```bash
 cd server
 bundle install
@@ -111,14 +125,14 @@ bundle exec rails server
 ```
 Mở http://localhost:3000
 
-**3. Chạy Admin Dashboard:**
+**3. Chạy bảng quản trị:**
 ```bash
 cd apps/dashboard
 pnpm dev
 ```
 Mở http://localhost:5173
 
-**4. (Tùy chọn) Chạy background jobs (Solid Queue):**
+**4. (Tùy chọn) Chạy tác vụ nền (Solid Queue):**
 ```bash
 cd server
 bundle exec rails solid_queue:start
@@ -126,118 +140,98 @@ bundle exec rails solid_queue:start
 
 > Lưu ý: Solid Queue không chạy trong Puma (để tránh crash fork trên macOS). Đã set `SOLID_QUEUE_IN_PUMA=false` trong `server/.env`.
 
-### The Admin Dashboard
+## Tùy biến API Spree
 
-`apps/dashboard/` is your admin — a customizable React SPA (plugins, your
-own pages, table tweaks) with live reload. `spree dev` starts it
-automatically alongside the API; to run it on its own:
-
-```bash
-cd apps/dashboard
-pnpm run dev
-```
-
-Open http://localhost:5173 and sign in with the admin email and
-password you chose during the first run.
-
-When you deploy, the production image builds your dashboard and serves it at
-`/dashboard` on the same origin as the API (`pnpm spree build --production`).
-
-To learn how to add pages, tweak tables, or build plugins, see the
-[Admin Dashboard docs](https://spreecommerce.org/docs/developer/dashboard/overview).
-
-## Customizing the Spree API
-
-The `server/` directory is the Spree API — a full Rails application serving the Store and Admin APIs (plus background jobs and transactional emails) that your storefront and dashboard talk to. By default, the project runs it from a prebuilt Docker image. To switch to building from your local copy:
+Thư mục `server/` là API Spree — một ứng dụng Rails đầy đủ phục vụ Store và Admin API (cùng tác vụ nền và email giao dịch) mà cửa hàng trực tuyến và bảng quản trị giao tiếp. Mặc định, dự án chạy từ image Docker dựng sẵn. Để chuyển sang build từ bản sao local:
 
 ```bash
 pnpm spree eject
 ```
 
-This rebuilds the Docker image from `server/` and restarts services. You can then:
+Lệnh này rebuild image Docker từ `server/` và khởi động lại service. Sau đó bạn có thể:
 
-- **Customize the API** by editing the files in `server/`
-- **Add extensions** with `spree add <extension>`
-- **Add new resources** with `spree generate model <name> <attributes>`
+- **Tùy biến API** bằng cách sửa các tệp trong `server/`
+- **Thêm extension** với `spree add <extension>`
+- **Thêm tài nguyên mới** với `spree generate model <name> <attributes>`
 
-## Spree CLI
+## Dòng lệnh Spree
 
-This project uses [`@spree/cli`](https://spreecommerce.org/docs/developer/cli/quickstart) to manage the Spree API.
+Dự án này dùng [`@spree/cli`](https://spreecommerce.org/docs/developer/cli/quickstart) để quản lý API Spree.
 
-### Services
+### Service
 
-| Command | Description |
+| Lệnh | Mô tả |
 |---------|-------------|
-| `spree dev` | Run the app in the foreground — streams logs, Ctrl+C stops it. First run completes setup automatically |
-| `spree stop` | Stop the API services |
-| `spree upgrade` | Upgrade Spree — the server, database and `@spree/*` packages |
-| `spree eject` | Switch from prebuilt image to building from `server/` |
-| `spree build --production` | Build the production image — includes `apps/dashboard` when present |
-| `spree logs` | View web server logs |
-| `spree logs worker` | View background jobs logs |
-| `spree console` | Open an interactive backend console |
+| `spree dev` | Chạy ứng dụng ở foreground — truyền log, Ctrl+C dừng. Lần chạy đầu tự hoàn tất thiết lập |
+| `spree stop` | Dừng service API |
+| `spree upgrade` | Nâng cấp Spree — server, cơ sở dữ liệu và các gói `@spree/*` |
+| `spree eject` | Chuyển từ image dựng sẵn sang build từ `server/` |
+| `spree build --production` | Build image sản xuất — bao gồm `apps/dashboard` nếu có |
+| `spree logs` | Xem log web server |
+| `spree logs worker` | Xem log tác vụ nền |
+| `spree console` | Mở console backend tương tác |
 
-### Data
+### Dữ liệu
 
-| Command | Description |
+| Lệnh | Mô tả |
 |---------|-------------|
-| `spree migrate` | Install pending Spree migrations, then run them along with your own |
-| `spree seed` | Seed the database |
-| `spree sample-data` | Load sample products, categories, images |
+| `spree migrate` | Cài migration Spree đang chờ, sau đó chạy cùng migration của bạn |
+| `spree seed` | Seed cơ sở dữ liệu |
+| `spree sample-data` | Tải sản phẩm mẫu, danh mục, hình ảnh |
 
-### Users & API Keys
+### Người dùng & Khóa API
 
-| Command | Description |
+| Lệnh | Mô tả |
 |---------|-------------|
-| `spree user create` | Create an admin user |
-| `spree api-key create` | Create a publishable or secret API key |
-| `spree api-key list` | List all API keys |
-| `spree api-key revoke <id>` | Revoke an API key (ID from `api-key list`) |
+| `spree user create` | Tạo người dùng quản trị |
+| `spree api-key create` | Tạo khóa API publishable hoặc secret |
+| `spree api-key list` | Liệt kê tất cả khóa API |
+| `spree api-key revoke <id>` | Thu hồi khóa API (ID từ `api-key list`) |
 
-### Generators
+### Trình sinh mã
 
-| Command | Description |
+| Lệnh | Mô tả |
 |---------|-------------|
-| `spree generate model Brand name:string slug:string:uniq` | Generate a new database model |
-| `spree generate api_resource Brand name:string slug:string:uniq` | Generate a new Spree API resource |
-| `spree generate subscriber OmsOrderSync order.placed` | Generate a new event subscriber |
-| `spree generate migration AddPositionToSpreeBrands position:integer` | Generate a new database migration |
+| `spree generate model Brand name:string slug:string:uniq` | Sinh model cơ sở dữ liệu mới |
+| `spree generate api_resource Brand name:string slug:string:uniq` | Sinh tài nguyên API Spree mới |
+| `spree generate subscriber OmsOrderSync order.placed` | Sinh subscriber sự kiện mới |
+| `spree generate migration AddPositionToSpreeBrands position:integer` | Sinh migration mới |
 
 ### Admin API
 
-Project setup mints a read-only secret key into `.spree/credentials.json` (gitignored), so the Admin API client works out of the box. If you skipped the setup step, `spree api` mints the key on first use instead:
+Thiết lập dự án tạo khóa secret chỉ đọc vào `.spree/credentials.json` (đã gitignore), nên client Admin API hoạt động ngay. Nếu bỏ qua bước thiết lập, `spree api` sẽ tạo khóa khi dùng lần đầu:
 
 ```bash
 pnpm spree api get products
 pnpm spree api get "orders?q[status_eq]=complete"
-pnpm spree api endpoints          # list endpoints + required scopes
-pnpm spree api status             # show resolved credentials + server reachability
+pnpm spree api endpoints          # liệt kê endpoint + scope yêu cầu
+pnpm spree api status             # hiển thị thông tin xác thực + khả năng kết nối server
 ```
 
-The pre-configured key is read-only. To write, create a scoped secret key and pass it via `SPREE_API_KEY`:
+Khóa mặc định chỉ đọc. Để ghi, tạo khóa secret có scope và truyền qua `SPREE_API_KEY`:
 
 ```bash
 pnpm spree api-key create --scopes write_products
 SPREE_API_KEY=sk_... pnpm spree api post products --data '{"name":"New product","prices":[{"currency":"USD","amount":"29.99"}]}'
 ```
 
-| Command | Description |
+| Lệnh | Mô tả |
 |---------|-------------|
-| `spree api get/post/patch/delete <path>` | Call the Admin API directly |
-| `spree api endpoints` | List Admin API endpoints with required scopes |
-| `spree auth login --profile <name>` | Save named credentials for a remote store |
+| `spree api get/post/patch/delete <path>` | Gọi Admin API trực tiếp |
+| `spree api endpoints` | Liệt kê endpoint Admin API cùng scope yêu cầu |
+| `spree auth login --profile <name>` | Lưu thông tin xác thực có tên cho cửa hàng từ xa |
 
-> **Running `spree` directly.** The commands above use `pnpm` because `@spree/cli` is a local project dependency. You can also run any of the package scripts (e.g. `pnpm run api -- get products`), or install the CLI globally for a bare `spree` command:
+> **Chạy `spree` trực tiếp.** Các lệnh trên dùng `pnpm` vì `@spree/cli` là phụ thuộc local của dự án. Bạn cũng có thể chạy các script package (ví dụ `pnpm run api -- get products`), hoặc cài CLI toàn cục để dùng lệnh `spree` trần:
 >
 > ```bash
 > pnpm add -g @spree/cli
 > spree api get products
 > ```
 
-## Learn More
+## Tìm hiểu thêm
 
-- [Spree Documentation](https://spreecommerce.org/docs)
-- [Spree Discord](https://discord.spreecommerce.org)
+- [Tài liệu Spree](https://spreecommerce.org/docs)
+- [Discord Spree](https://discord.spreecommerce.org)
 - [Store API Reference](https://spreecommerce.org/docs/api-reference/store-api/introduction)
 - [Admin API Reference](https://spreecommerce.org/docs/api-reference/admin-api/introduction)
 - [CLI Reference](https://spreecommerce.org/docs/developer/cli/quickstart)
