@@ -35,7 +35,7 @@ jobs:
       RAILS_ENV: test
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # libvips, as in the Docker image: uploads and image variants run
       # through it. libvips-tools pulls in the library under whatever name
