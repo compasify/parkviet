@@ -6,7 +6,7 @@ ruby file: '.ruby-version'
 # Load .env for SPREE_PATH (dotenv-rails only loads at Rails boot, not during bundle)
 env_file = File.expand_path('.env', __dir__)
 if File.exist?(env_file)
-  File.readlines(env_file).each do |line|
+  File.readlines(env_file, encoding: 'UTF-8').each do |line|
     line = line.strip
     next if line.empty? || line.start_with?('#')
 

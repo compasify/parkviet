@@ -88,6 +88,44 @@ pnpm run dev
 
 Open http://localhost:3001
 
+### Chạy không dùng Docker (local host)
+
+Nếu bạn đã có sẵn PostgreSQL và Redis (ví dụ cấu hình trong `server/.env`), có thể chạy trực tiếp trên máy mà không cần Docker:
+
+**Yêu cầu:**
+- PostgreSQL và Redis đang chạy
+- Ruby 4.0.9 (rbenv) và Node.js/pnpm
+- Đã cấu hình `server/.env` (DATABASE_*, SECRET_KEY_BASE, ...)
+
+**1. Cài gem và migrate DB:**
+```bash
+cd server
+bundle install
+bundle exec rails db:migrate
+```
+
+**2. Chạy API server:**
+```bash
+cd server
+bundle exec rails server
+```
+Mở http://localhost:3000
+
+**3. Chạy Admin Dashboard:**
+```bash
+cd apps/dashboard
+pnpm dev
+```
+Mở http://localhost:5173
+
+**4. (Tùy chọn) Chạy background jobs (Solid Queue):**
+```bash
+cd server
+bundle exec rails solid_queue:start
+```
+
+> Lưu ý: Solid Queue không chạy trong Puma (để tránh crash fork trên macOS). Đã set `SOLID_QUEUE_IN_PUMA=false` trong `server/.env`.
+
 ### The Admin Dashboard
 
 `apps/dashboard/` is your admin — a customizable React SPA (plugins, your
