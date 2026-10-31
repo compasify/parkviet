@@ -11,6 +11,7 @@ development:
   <<: *default
   database: <%= ENV.fetch("DATABASE_NAME") { "spree_development" } %>
   username: <%= ENV.fetch("DATABASE_USERNAME") { 'postgres' } %>
+  password: <%= ENV.fetch("DATABASE_PASSWORD") { '' } %>
   host: <%= ENV.fetch("DATABASE_HOST") { "localhost" } %>
   port: <%= ENV.fetch("DATABASE_PORT") { 5432 }.to_i %>
 
@@ -18,6 +19,7 @@ test:
   <<: *default
   database: <%= ENV.fetch("DATABASE_NAME_TEST") { "spree_test" } %>
   username: <%= ENV.fetch("DATABASE_USERNAME") { 'postgres' } %>
+  password: <%= ENV.fetch("DATABASE_PASSWORD") { '' } %>
   host: <%= ENV.fetch("DATABASE_HOST") { "localhost" } %>
   port: <%= ENV.fetch("DATABASE_PORT") { 5432 }.to_i %>
 
