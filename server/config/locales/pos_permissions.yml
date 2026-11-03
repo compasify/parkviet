@@ -1,0 +1,14 @@
+en:
+  spree:
+    permissions_catalog:
+      resources:
+        pos_orders:
+          label: POS drafts
+          description: Create walk-in POS drafts; does not grant general order access.
+vi:
+  spree:
+    permissions_catalog:
+      resources:
+        pos_orders:
+          label: Đơn nháp POS
+          description: Tạo đơn nháp khách lẻ POS; không cấp quyền quản lý đơn hàng chung.

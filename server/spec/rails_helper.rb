@@ -11,6 +11,22 @@ abort("The Rails environment is running in production mode!") if Rails.env.produ
 # that will avoid rails generators crashing because migrations haven't been run yet
 # return unless Rails.env.test?
 require 'rspec/rails'
+
+# spree_dev_tools 1.0.0 otherwise truncates every table before the suite.
+# Keep its other helpers, but rely on transactional fixtures instead. This
+# must be installed before its spec_helper loads support files.
+require 'database_cleaner/active_record'
+module RefuseDestructiveDatabaseCleaning
+  def clean_with(strategy, *)
+    raise 'Destructive database cleaning is disabled for this project' if %i[truncation deletion].include?(strategy.to_sym)
+
+    super
+  end
+end
+DatabaseCleaner.singleton_class.prepend(RefuseDestructiveDatabaseCleaning)
+cleaner_support = Gem::Specification.find_by_name('spree_dev_tools').full_gem_path + '/lib/spree_dev_tools/rspec/support/database_cleaner.rb'
+abort 'Expected spree_dev_tools database cleaner support file is missing' unless File.file?(cleaner_support)
+$LOADED_FEATURES << cleaner_support unless $LOADED_FEATURES.include?(cleaner_support)
 require 'spree_dev_tools/rspec/spec_helper'
 # Add additional requires below this line. Rails is not loaded until this point!
 
@@ -29,12 +45,10 @@ require 'spree_dev_tools/rspec/spec_helper'
 #
 # Rails.root.glob('spec/support/**/*.rb').sort_by(&:to_s).each { |f| require f }
 
-# Ensures that the test database schema matches the current schema file.
-# If there are pending migrations it will invoke `db:test:prepare` to
-# recreate the test database by loading the schema.
-# If you are not using ActiveRecord, you can remove these lines.
+# Refuse to run with pending migrations rather than changing the database.
 begin
-  ActiveRecord::Migration.maintain_test_schema!
+  # Never let test boot recreate a database or load a schema automatically.
+  ActiveRecord::Migration.check_pending_migrations
 rescue ActiveRecord::PendingMigrationError => e
   abort e.to_s.strip
 end

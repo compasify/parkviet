@@ -28,6 +28,11 @@ end
 # Workflow hooks, e.g.
 # Spree.hooks.register('carts.add_item.validate', 'MyApp::CheckPurchaseLimit')
 
+# This scope authorizes only the dedicated POS draft capability, not core
+# Admin API order writes. No POS endpoint is exposed until its request gate is
+# implemented and tested.
+Spree.permissions.register_scope(:pos_orders, group: :orders, resources: -> { [Pos::WalkInOrder] })
+
 Rails.application.config.after_initialize do
   # Payment methods and shipping calculators
   # Spree.payment_methods << Spree::PaymentMethods::VerySafeAndReliablePaymentMethod

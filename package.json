@@ -18,7 +18,7 @@
     "api-key": "spree api-key"
   },
   "dependencies": {
-    "@spree/cli": "^3.4.0",
+    "@spree/cli": "^3.6.2",
     "@spree/docs": "latest"
   }
 }

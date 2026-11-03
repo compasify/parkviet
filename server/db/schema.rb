@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_29_184031) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_04_000001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -70,6 +70,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_29_184031) do
     t.index ["slug", "sluggable_type", "scope", "locale"], name: "index_friendly_id_slugs_unique", unique: true
     t.index ["sluggable_id"], name: "index_friendly_id_slugs_on_sluggable_id"
     t.index ["sluggable_type"], name: "index_friendly_id_slugs_on_sluggable_type"
+  end
+
+  create_table "pos_walk_in_orders", force: :cascade do |t|
+    t.bigint "order_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["order_id"], name: "index_pos_walk_in_orders_on_order_id", unique: true
   end
 
   create_table "solid_cable_messages", force: :cascade do |t|
@@ -313,6 +320,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_29_184031) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.datetime "deactivated_at"
+    t.datetime "last_active_at"
     t.index ["email"], name: "index_spree_admin_users_on_email", unique: true
   end
 
@@ -2171,7 +2179,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_29_184031) do
     t.string "gateway_customer_profile_id"
     t.index ["customer_id"], name: "index_spree_payment_sources_on_customer_id"
     t.index ["payment_method_id"], name: "index_spree_payment_sources_on_payment_method_id"
-    t.index ["type", "gateway_payment_profile_id"], name: "index_payment_sources_on_type_and_gateway_payment_profile_id", unique: true
+    t.index ["type", "gateway_payment_profile_id", "payment_method_id"], name: "index_payment_sources_on_type_profile_id_and_payment_method", unique: true
     t.index ["type"], name: "index_spree_payment_sources_on_type"
   end
 
@@ -3866,6 +3874,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_29_184031) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "pos_walk_in_orders", "spree_orders", column: "order_id"
   add_foreign_key "solid_queue_batch_executions", "solid_queue_batches", column: "batch_id", on_delete: :cascade
   add_foreign_key "solid_queue_batch_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_blocked_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade

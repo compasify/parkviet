@@ -27,7 +27,9 @@
 
 import { i18n } from '@spree/dashboard'
 import en from './locales/en.json'
+import vi from './locales/vi.json'
 
 // Merges your `admin.*` keys into the dashboard's namespace without dropping
 // its own. Add a bundle per locale you ship.
 i18n.addResourceBundle('en', 'translation', en, true, true)
+i18n.addResourceBundle('vi', 'translation', vi, true, true)
