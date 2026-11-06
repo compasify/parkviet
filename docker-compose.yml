@@ -137,7 +137,11 @@ services:
     # bundle install is needed. We do bypass bin/docker-entrypoint (it runs
     # db:prepare + assets:precompile, which is wrong for dev — first-time
     # setup goes through `spree init`).
-    command: ["bin/rails", "server", "-b", "0.0.0.0", "-p", "3000"]
+    #
+    # tmp/ is the tmp_cache volume, and this process is PID 1. A leftover
+    # server.pid of "1" therefore always looks alive, and the next boot
+    # exits with "A server is already running". Clear it before starting.
+    command: ["sh", "-c", "rm -f tmp/pids/server.pid && exec bin/rails server -b 0.0.0.0 -p 3000"]
     ports:
       - "${SPREE_PORT:-3000}:3000"
 

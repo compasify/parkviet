@@ -1,0 +1,382 @@
+import { Link, Outlet, useLocation, useNavigate } from '@tanstack/react-router';
+import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useSession } from '../hooks/use-session';
+import { session } from '../lib/app-session';
+import { commandQueue } from '../lib/command-queue';
+import {
+  FINANCIAL_RECOVERY_CHANGED,
+  forgetFinancialRecord,
+  hasFinancialRecords,
+  scopedFinancialRecords,
+} from '../lib/financial-recovery';
+import { administrationAccess } from '../lib/pos-administration';
+import { writesLocked } from '../lib/pos-context';
+import { queryClient } from '../lib/query-client';
+import { posFailureKey } from '../lib/request-failure';
+import {
+  forgetIntent,
+  hasPendingIntents,
+  hasUncertainIntents,
+  INTENTS_CHANGED,
+  scopedIntents,
+} from '../lib/uncertain-intents';
+import { ContextSelector } from './context-selector';
+import { ContextSetupDialog } from './context-setup-dialog';
+import { OpenShiftDialog } from './open-shift-dialog';
+import { PosIcon } from './pos-icon';
+import { PosSelectionProvider, usePosSelection } from './pos-selection';
+
+export function PosShell() {
+  return (
+    <PosSelectionProvider>
+      <ShellFrame />
+    </PosSelectionProvider>
+  );
+}
+
+function ShellFrame() {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const snapshot = useSession();
+  const { context, selection, registerMode } = usePosSelection();
+  const pathname = useLocation({ select: (location) => location.pathname.replace(/\/+$/, '') });
+  const pageTitle = pathname.endsWith('/settings')
+    ? t('settings')
+    : pathname.endsWith('/payment-attention')
+      ? t('attentionNav')
+      : pathname.endsWith('/funds')
+        ? t('fundsNav')
+        : t('sellingArea');
+  const isSale = !/\/(settings|funds|payment-attention)\/?$/.test(pathname);
+  const contextPicker = useRef<HTMLDetailsElement>(null);
+  // A header navigation must not leave the picker covering the destination page.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the route change is the dismissal trigger
+  useEffect(() => {
+    if (contextPicker.current) contextPicker.current.open = false;
+  }, [pathname]);
+  useEffect(() => {
+    const dismiss = (event: Event) => {
+      if (event.target instanceof Node && !contextPicker.current?.contains(event.target)) {
+        if (contextPicker.current) contextPicker.current.open = false;
+      }
+    };
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && contextPicker.current?.open) {
+        contextPicker.current.open = false;
+        contextPicker.current.querySelector('summary')?.focus();
+      }
+    };
+    document.addEventListener('pointerdown', dismiss);
+    document.addEventListener('focusin', dismiss);
+    document.addEventListener('keydown', onEscape);
+    return () => {
+      document.removeEventListener('pointerdown', dismiss);
+      document.removeEventListener('focusin', dismiss);
+      document.removeEventListener('keydown', onEscape);
+    };
+  }, []);
+  const [online, setOnline] = useState(() => globalThis.navigator?.onLine !== false);
+  const [busy, setBusy] = useState(false);
+  const [logoutError, setLogoutError] = useState('');
+  const [intentsVersion, setIntentsVersion] = useState(0);
+  const [financialVersion, setFinancialVersion] = useState(0);
+  const [financialUncertain, setFinancialUncertain] = useState(false);
+  const [checkingIntents, setCheckingIntents] = useState(false);
+  const [recoveryCheck, setRecoveryCheck] = useState<{
+    staffId: string;
+    storeId: string;
+    confirmed: number;
+    missing: number;
+    blocked: number;
+    failed: number;
+  } | null>(null);
+
+  useEffect(() => {
+    if (snapshot.status === 'anonymous') void navigate({ to: '/login' });
+  }, [navigate, snapshot.status]);
+
+  useEffect(() => {
+    const onOnline = () => setOnline(true);
+    const onOffline = () => setOnline(false);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void session.resume();
+    };
+    const onLeave = (event: BeforeUnloadEvent) => {
+      if (!commandQueue.hasPending() && !hasPendingIntents() && !hasUncertainIntents()) return;
+      event.preventDefault();
+    };
+    const onIntentsChanged = () => setIntentsVersion((version) => version + 1);
+    const onFinancialChanged = () => setFinancialVersion((version) => version + 1);
+    window.addEventListener('online', onOnline);
+    window.addEventListener('offline', onOffline);
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('beforeunload', onLeave);
+    window.addEventListener(INTENTS_CHANGED, onIntentsChanged);
+    window.addEventListener(FINANCIAL_RECOVERY_CHANGED, onFinancialChanged);
+    return () => {
+      window.removeEventListener('online', onOnline);
+      window.removeEventListener('offline', onOffline);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('beforeunload', onLeave);
+      window.removeEventListener(INTENTS_CHANGED, onIntentsChanged);
+      window.removeEventListener(FINANCIAL_RECOVERY_CHANGED, onFinancialChanged);
+    };
+  }, []);
+
+  useEffect(() => {
+    void financialVersion;
+    let active = true;
+    const staffId = context.data?.staff.id;
+    const storeId = context.data?.store.id;
+    if (!staffId || !storeId) {
+      setFinancialUncertain(false);
+      return;
+    }
+    void hasFinancialRecords(staffId, storeId).then((value) => {
+      if (active) setFinancialUncertain(value);
+    });
+    return () => {
+      active = false;
+    };
+  }, [context.data?.staff.id, context.data?.store.id, financialVersion]);
+
+  async function logout() {
+    if (
+      (commandQueue.hasPending() ||
+        hasPendingIntents() ||
+        hasUncertainIntents() ||
+        financialUncertain) &&
+      !window.confirm(t('unsent'))
+    )
+      return;
+    setBusy(true);
+    setLogoutError('');
+    try {
+      await session.logout();
+    } catch {
+      setLogoutError(t('logoutFailure'));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function checkIntents(staffId: string, storeId: string) {
+    setCheckingIntents(true);
+    setRecoveryCheck(null);
+    const result = { staffId, storeId, confirmed: 0, missing: 0, blocked: 0, failed: 0 };
+    function recordFailure(error: unknown) {
+      const failure = posFailureKey(error);
+      if (failure === 'missing') result.missing++;
+      else if (failure === 'forbidden' || failure === 'unauthorized') result.blocked++;
+      else result.failed++;
+    }
+    try {
+      for (const intent of scopedIntents(staffId, storeId)) {
+        try {
+          await session.request('GET', '/pos/command_receipts', {
+            params: { idempotency_key: intent.key },
+          });
+          forgetIntent(intent.scope);
+          result.confirmed++;
+        } catch (error) {
+          recordFailure(error);
+          // A missing or inaccessible receipt does not prove the command cannot commit.
+        }
+      }
+      for (const record of await scopedFinancialRecords(staffId, storeId)) {
+        try {
+          await session.request('GET', '/pos/command_receipts', {
+            params: { idempotency_key: record.idempotencyKey },
+          });
+          await forgetFinancialRecord(record.scope);
+          result.confirmed++;
+        } catch (error) {
+          recordFailure(error);
+          // Keep financial evidence for manual reconciliation; never mint a new tender.
+        }
+      }
+      await queryClient.invalidateQueries({ queryKey: ['pos', 'workspaces'] });
+      await queryClient.invalidateQueries({ queryKey: ['pos', 'received-funds'] });
+    } catch (error) {
+      recordFailure(error);
+    } finally {
+      setRecoveryCheck(result);
+      setCheckingIntents(false);
+    }
+  }
+
+  const failure = context.error ? posFailureKey(context.error) : null;
+  const store = context.data?.store;
+  void intentsVersion;
+  const uncertain =
+    context.data && hasUncertainIntents(context.data.staff.id, context.data.store.id);
+  const canAccessFunds = Boolean(
+    context.data?.capabilities.includes('pos.payment.resolve') ||
+      context.data?.capabilities.includes('pos.payment.collect'),
+  );
+  const canConfigure = administrationAccess(context.data).read;
+  const offline = !online || failure === 'offline';
+  const connection = offline
+    ? t('connectionOffline')
+    : context.isPending
+      ? t('contextWaiting')
+      : t('connectionOnline');
+  const branch = context.data?.branches.find((item) => item.id === selection.branchId);
+  const register = context.data?.registers.find((item) => item.id === selection.registerId);
+
+  return (
+    <main className={`layout pos-layout${isSale ? ' pos-sale' : ''}`}>
+      <a className="skip-link" href={isSale ? '#pos-product-search' : '#pos-page-title'}>
+        {t(isSale ? 'skipToSale' : 'skipToContent')}
+      </a>
+      <header className="header">
+        {isSale ? (
+          <h1 id="title" className="visually-hidden">
+            {t('sellingArea')}
+          </h1>
+        ) : null}
+        <strong>
+          ParkViet <span>POS</span>
+        </strong>
+        <span className="header-title">{pageTitle}</span>
+        <details className="pos-context-details" ref={contextPicker}>
+          <summary title={t('changeContext')}>
+            <span>
+              <b className="context-label">{t('branch')}:</b> {branch?.name ?? t('chooseBranch')}
+            </span>
+            {registerMode === 'required' || selection.registerId ? (
+              <span>
+                <b className="context-label">{t('register')}:</b>{' '}
+                {register?.name ?? t('chooseRegister')}
+              </span>
+            ) : null}
+            <span className="context-change">
+              <span className="visually-hidden">{t('changeContext')}</span>
+              <PosIcon name="chevron" />
+            </span>
+          </summary>
+          <div className="context-popover">
+            <p className="context-account">{snapshot.name}</p>
+            <ContextSelector
+              onRegisterSelected={() => {
+                if (contextPicker.current) contextPicker.current.open = false;
+              }}
+            />
+            {store ? (
+              <p>
+                {t('storeLine', { name: store.name || store.id, currency: store.currency || '—' })}
+              </p>
+            ) : null}
+            {canConfigure ? (
+              <p>
+                <Link to="/settings">{t('settings')}</Link>
+              </p>
+            ) : null}
+            {canAccessFunds ? (
+              <p>
+                <Link to="/funds">{t('fundsTitle')}</Link> ·{' '}
+                <Link to="/payment-attention">{t('fundsAttentionTitle')}</Link>
+              </p>
+            ) : null}
+            <button type="button" onClick={logout} disabled={busy}>
+              {busy ? t('waiting') : t('logout')}
+            </button>
+            <p className="footnote">{t('security')}</p>
+          </div>
+        </details>
+        <div className="pos-context-status">
+          <span
+            className="connection-status"
+            data-offline={offline}
+            role="status"
+            title={connection}
+          >
+            <span className="connection-dot" />
+            <span className={offline ? '' : 'visually-hidden'}>{connection}</span>
+          </span>
+          {isSale ? (
+            <span>{context.data?.shift ? t('shiftOpenCompact') : t('shiftNotOpen')}</span>
+          ) : null}
+        </div>
+        <span className="header-user" title={snapshot.name ?? ''}>
+          <PosIcon name="user" />
+          <span className="header-user-name">{snapshot.name}</span>
+          {canConfigure ? (
+            <Link
+              className="header-settings"
+              to="/settings"
+              aria-label={t('settings')}
+              title={t('settings')}
+            >
+              <PosIcon name="cog" />
+            </Link>
+          ) : null}
+        </span>
+      </header>
+      <ContextSetupDialog enabled={isSale} />
+      <section className="shell" aria-labelledby={isSale ? 'title' : 'pos-page-title'}>
+        <div className="pos-context-card pos-alerts">
+          {isSale && context.data && writesLocked(context.data, selection) ? (
+            <p className="error" role="status">
+              {t('writesLocked')}
+            </p>
+          ) : null}
+          {uncertain ? (
+            <p className="error" role="status">
+              {t('uncertainWarning')}
+            </p>
+          ) : null}
+          {financialUncertain ? (
+            <p className="error" role="status">
+              {t('financialUncertainWarning')}{' '}
+              <Link to="/payment-attention">{t('fundsAttentionTitle')}</Link>
+            </p>
+          ) : null}
+          {(uncertain || financialUncertain) && context.data ? (
+            <button
+              type="button"
+              disabled={checkingIntents}
+              onClick={() => void checkIntents(context.data.staff.id, context.data.store.id)}
+            >
+              {checkingIntents
+                ? t('waiting')
+                : t(financialUncertain ? 'checkFinancialRecovery' : 'checkUncertain')}
+            </button>
+          ) : null}
+          {recoveryCheck &&
+          recoveryCheck.staffId === context.data?.staff.id &&
+          recoveryCheck?.storeId === context.data?.store.id ? (
+            <div className="recovery-check-result" role="status" aria-live="polite">
+              <p>{t('recoveryChecked', { count: recoveryCheck.confirmed })}</p>
+              {recoveryCheck.missing > 0 ? (
+                <p>{t('recoveryMissing', { count: recoveryCheck.missing })}</p>
+              ) : null}
+              {recoveryCheck.blocked > 0 ? (
+                <p>{t('recoveryBlocked', { count: recoveryCheck.blocked })}</p>
+              ) : null}
+              {recoveryCheck.failed > 0 ? (
+                <p>{t('recoveryFailed', { count: recoveryCheck.failed })}</p>
+              ) : null}
+            </div>
+          ) : null}
+          {logoutError && (
+            <p className="error" role="alert">
+              {logoutError}
+            </p>
+          )}
+          {failure && failure !== 'offline' && (
+            <p className="error" role="alert">
+              {t(failure)}
+            </p>
+          )}
+          {isSale && context.data && context.data.capabilities.length === 0 ? (
+            <p>{t('capabilitiesEmpty')}</p>
+          ) : null}
+          {isSale ? <OpenShiftDialog /> : null}
+        </div>
+        <Outlet />
+      </section>
+    </main>
+  );
+}

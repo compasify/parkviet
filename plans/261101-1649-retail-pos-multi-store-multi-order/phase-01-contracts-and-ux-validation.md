@@ -1,13 +1,27 @@
 ---
 phase: 1
 title: Kiểm chứng hợp đồng và UX
-status: in-progress
+status: completed
 priority: P1
 dependencies: []
 effort: Ước tính 10–16 person-days; ước lượng lại nếu cần đổi schema/integration
 ---
 
 # Phase 1: Kiểm chứng hợp đồng và UX
+
+**Điều chỉnh phạm vi được người dùng duyệt 04/11/2026:** Phase 1 tập trung hợp đồng và kiểm chứng nền tảng cho POS siêu thị cơ bản. Bằng chứng chuyên sâu theo capability chuyển sang phase chịu trách nhiệm dưới đây, không chuyển thành pass và không bỏ gate trước khi bật. Danh sách gốc ở dưới được giữ để truy vết; tiêu chí đóng phase 1 là checklist mới ở mục Success Criteria.
+
+POS cơ bản cần kết nối mạng để bán; recovery khi đứt mạng giữa giao dịch không phải chế độ bắt đầu bán offline. Chỉ bán hàng giao ngay tại quầy; giao sau không thuộc POS cơ bản, đồng bộ giao sau cho ngành ăn uống là nhu cầu tương lai chưa thiết kế.
+
+| Nội dung chưa đạt | Chủ trì tiếp tục | Gate vẫn áp dụng |
+|---|---|---|
+| A01–A03, W08: auth, phân quyền/bypass, responsive | Phase 2–3 và 11 | Kiểm server, isolation, revoke và UX trước capability/release liên quan |
+| W01/W07: đa đơn, giá/giảm giá và recalc | Phase 4–5 | Không bật discount khi chưa chứng minh tính đúng sau recalc, tax và approval |
+| F01–F04/F07/F18/F19/F20: thu tiền, recovery và bảo toàn tiền | Phase 6 | Chưa cho thu tiền thật trước proof, đối soát và phê duyệt |
+| F08–F11: công nợ/thu nợ | Phase 7; returns phase 8 | Không bật credit/refund khi chưa qualify |
+| F12–F14/F21, I01–I07: stock, tracking, trả hàng, precision và serial/lô | Phase 5 và 8 | Ghi nhận tồn một lần, đối soát và proof riêng trước capability liên quan/full release |
+| I08: các gói cùng variant khác giá/lô | [Plan riêng](../261103-pos-goi-hang-truy-xuat/plan.md) | Không giả hỗ trợ trong POS cơ bản |
+| F16: late cash và custody | Phase 6 và 9 | Chống double-count và đối soát ca trước vận hành |
 
 ## Overview
 
@@ -18,6 +32,8 @@ Một phần spike đã chạy; bằng chứng và các gate chưa đạt đư�
 Chuẩn đọc: [kiến trúc](./specs/product-and-architecture.md), [UX](./specs/ux-and-workflows.md), [API/tests](./specs/api-contract-and-test-matrix.md).
 
 ## Requirements
+
+- **Policy đã duyệt 04/11/2026:** bán trực tiếp khi có hàng thực tế tại quầy: thiếu tồn hoặc không đọc được tồn thì cảnh báo, được tiếp tục theo policy sau khi capability đủ điều kiện; không yêu cầu reserve đủ tồn trước thu. Cần mạng để bán, không đọc được tồn không đồng nghĩa cho phép bắt đầu bán offline. Ghi đúng branch, không fallback ngầm; tracking stock xử lý lệch/xung đột online. Xem [quyết định và gate](./reports/pos-contract-decisions.md#tồn-kho-và-pickup--gate-đóng).
 
 - Xác minh source version, image và mount runtime; local Spree 6.0.1 không chứng minh container tương ứng.
 - Nếu chưa mount `./server:/rails`, xin developer duyệt eject và tác động DB trước mọi thử nghiệm backend.
@@ -83,11 +99,22 @@ Quy ước inventory: mọi đường dẫn từ repo root; đều là đề xu�
 
 ## Success Criteria
 
+### Checklist đóng phase 1 sau điều chỉnh phạm vi
+
+- [x] Quyết định scope POS siêu thị cơ bản, online-first, bán giao ngay tại quầy; tiền mặt/chuyển khoản thủ công, QR để sau; chính sách tồn và recovery được ghi nhận trong [hợp đồng](./reports/pos-contract-decisions.md).
+- [x] Ghi nhận evidence runtime, walk-in, permission, discount, stock và payment từng phần cùng giới hạn/risks trong [runtime](./reports/runtime-spike-results.md); không coi characterization là pass gate vận hành.
+- [x] Chỉ định phase chịu trách nhiệm và giữ gate cho các proof chuyên sâu chưa đạt theo bảng ở đầu phase; I08 theo plan riêng.
+- [x] Tổng hợp và đối chiếu contract POS cơ bản, permission/bypass và DTO với evidence thực tế; phân biệt phần đã có, chỉ là dự thảo và chưa chứng minh; ghi rõ gate trước khi bật: [báo cáo rà soát](./reports/phase-01-basic-contract-review.md). Đây không phải security audit hoặc proof toàn bộ DTO.
+- [x] Review wireframe POS cơ bản với người dùng: layout, multi-order, cảnh báo tồn không xác định và recovery. Không suy diễn prototype đã duyệt từ kiểm tra tự động. *Người dùng xác nhận đã duyệt 06/11/2026; trạng thái mạng hiển thị bằng icon trên header (xem [quyết định](./reports/pos-contract-decisions.md#trạng-thái-mạng-trên-header--quyết-định-06112026)). Nút Thẻ/Kết hợp/Ghi nợ trong prototype là scope mở rộng, không phải capability POS cơ bản đã bật.*
+- [x] Tách gate preview khỏi các gate capability/operational, kiểm tra links và các tài liệu downstream không hiểu phase 1 done là đã pass permission/tài chính/tồn. Sau đó mới đổi status. *Links trong phase này đã kiểm 06/11/2026; ghi chú dependency trong [plan](./plan.md#phases) và [roadmap](./specs/release-roadmap.md#gate-sau-phase-1-trước-implementation-phụ-thuộc).*
+
+### Checklist gốc — chuyển trách nhiệm, không phải kết quả đã pass
+
 - [ ] A01–A03: auth/runtime và permission bypass có test evidence trên đúng image/source.
 - [ ] W01, W07, W08: prototype đa đơn/discount/responsive được duyệt; discount survives core recalc.
 - [ ] F01–F04, F07, F18: partial/session/free order và recovery có seam khả thi đã kiểm chứng.
 - [ ] F08–F11: credit/account lock, debt credit note và manual payout evidence có contract rõ.
-- [ ] F12–F14: walk-in pickup, strict location, stock/restock một lần có spike chứng minh.
+- [ ] F12–F14: walk-in pickup, đúng location, cảnh báo thiếu tồn không chặn tại quầy, xung đột online có dấu vết/đối soát, stock/restock một lần có spike chứng minh; policy giao sau kiểm riêng.
 - [ ] I01–I07: base-unit exactness và typed serial/lot/FEFO/provenance/bypass mutators được qualification; ADR duyệt nếu seam không đủ, chưa gọi full khi thiếu.
 - [ ] I08, F21: SaleLine/core mapping lossless và cumulative entitlement 1+1+3 có proof, không chỉ UI tách dòng hoặc cap tổng.
 - [ ] F16, F19, F20: liability payout/reallocation/parent funds và late-cash custody có contract + spike evidence; unknown không giải phóng tiền.
@@ -103,4 +130,15 @@ Quy ước inventory: mọi đường dẫn từ repo root; đều là đề xu�
 
 ## Next Steps
 
-Chỉ sau duyệt evidence chuyển phase 2; phase 5/8 phải có proof base-unit/precision/serial-lot trước code, giữ financial capabilities tắt đến gate tương ứng.
+Tiếp tục preview phase 5 song song theo phạm vi đã cho phép; advanced-goods/financial/inventory capabilities vẫn cần proof và ADR tương ứng trước khi bật. Xem backlog và điều kiện đóng tại [bàn giao phase 1–4](./reports/phase-01-04-handoff.md).
+
+## Checkpoint 04/11/2026
+
+- **In progress, chưa đạt gate đầy đủ.** Runtime Spree/container, auth, walk-in scoped và nhiều characterization đã được kiểm thử; chi tiết và giới hạn trong [runtime](./reports/runtime-spike-results.md).
+- Core đã được quan sát cho phép over-allocation trong fixture staff draft và over-reservation xuyên cart/order ở service spike; `pending` payment có thể đi cùng order được đặt. Không dùng các kết quả đó làm proof an toàn tồn hoặc đã thu tiền.
+- Đã chốt policy thiếu tồn tại quầy; còn thiếu proof đúng branch, cảnh báo, stock effects/recovery và tracking xung đột xuyên writer; financial settlement/recovery/refund, advanced-goods precision/traceability và các acceptance chưa tick. Phân biệt package cùng variant đã chuyển sang plan riêng; không giả định capability đó có sẵn.
+
+## Đóng phase 06/11/2026
+
+- **Completed theo checklist đã điều chỉnh phạm vi.** Người dùng xác nhận đã duyệt wireframe; đang triển khai phase 5–6. Không còn hạng mục implement nào thuộc phase 1.
+- Phase 1 done chỉ có nghĩa là hợp đồng POS cơ bản và wireframe đã chốt. Mục "Checklist gốc" vẫn chưa pass; các proof đó (quyền/bypass, tiền, tồn, hàng cân/serial/lô, trả hàng) tiếp tục là gate tại phase phụ trách trong bảng đầu file. Phase phụ thuộc `1` không được coi các gate đó đã đạt.

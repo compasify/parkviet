@@ -16,6 +16,8 @@ Chuẩn: [kiến trúc §8–9](./specs/product-and-architecture.md), [UX §7](.
 
 ## Requirements
 
+- Policy đã duyệt: hàng thực tế tại quầy được tiếp tục khi thiếu tồn sau cảnh báo; không yêu cầu reserve đủ tồn thông thường trước thu. Tracking stock phải phát hiện/ghi nhận chênh lệch và xung đột online để người có trách nhiệm đối soát, xử lý, lưu kết quả; không tự hủy đơn hoặc giả nhập bù. Đúng location và effects một lần vẫn bắt buộc; giao sau và traceability có policy/gate riêng. Xem [quyết định](./reports/pos-contract-decisions.md#tồn-kho-và-pickup--gate-đóng).
+
 - Chỉ handover paid-or-approved-credit sau gate; no preferred-location fallback hoặc force từ browser.
 - Placement tăng allocation, fulfillment giảm physical stock; retry/collection/reprint không làm stock move thêm.
 - Return bám original fulfillment items/giá/discount/tax và remaining returnable dưới lock.
@@ -43,7 +45,7 @@ Chuẩn: [kiến trúc §8–9](./specs/product-and-architecture.md), [UX §7](.
 - Typed SerialUnit/InventoryLot/TraceAllocation nối variant/location/core line/fulfillment; locks/constraints chống bán serial hai lần và lot over-allocation.
 - Base quantity nguyên + sale-unit snapshot từ phase 5; partial returns giữ original conversion/precision/serial-lot identity, không lấy conversion mới.
 - Stock integrations receipt/import/transfer/count/fulfillment/return phải đồng bộ typed provenance và core counters; POS/web cùng đi guard đã spike.
-- Reserve trước thu tiền dưới stock locks, TTL/release owner-bound không ghim serial/lô bởi parked tabs; FEFO tie-break receipt, expired/quarantine bị chặn.
+- Với capability serial/lô nâng cao: qualification reservation/identity trước thu tiền, TTL/release owner-bound không ghim serial/lô bởi parked tabs; FEFO tie-break receipt, expired/quarantine bị chặn. Không suy rộng yêu cầu reserve này cho số lượng hàng thường đã có thực tế tại quầy.
 - Opening tracked balances reconcile aggregate/core writer trước enable SKU/location; mutator web/admin/import chưa hỗ trợ phải reject rõ, không thay website checkout UI.
 
 ## Related Code Files
@@ -91,7 +93,7 @@ Inventory repo-root; không sửa gem source, names core seams chỉ chốt theo
 
 ## Success Criteria
 
-- [ ] F12, F13: strict branch, one allocation/depletion/restock; collection/reprint không move stock.
+- [ ] F12, F12a, F12b, F13: đúng branch; thiếu tồn tại quầy cảnh báo không chặn, xung đột online có dấu vết/đối soát; one allocation/depletion/restock; collection/reprint không move stock.
 - [ ] F10: cả partial/full credit-sale returns đúng balance sau credit notes, no Refund cho tiền chưa nhận.
 - [ ] F11: refund chỉ sau verified payout, cap gồm reserved/unknown, retry không payout lần hai.
 - [ ] F19, F20: goods refunds và liability payouts chung parent cap, confirmed/reserved/unknown không sống lại sau collection reversal/reallocation; không fake Return/Refund cho unapplied funds.

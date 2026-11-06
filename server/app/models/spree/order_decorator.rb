@@ -3,7 +3,7 @@
 module Spree
   module OrderDecorator
     def self.prepended(base)
-      base.has_one :pos_walk_in_order, class_name: 'Pos::WalkInOrder', foreign_key: :order_id, dependent: :destroy
+      base.has_one :pos_walk_in_order, class_name: '::Pos::WalkInOrder', foreign_key: :order_id, dependent: :destroy
     end
 
     private
@@ -14,7 +14,7 @@ module Spree
     def require_email
       return false unless super
       return super if email.present? || customer_id.present? || new_record? || accept_marketing? || signup_for_an_account?
-      return false if Pos::WalkInOrder.exists?(order_id: id)
+      return false if ::Pos::WalkInOrder.exists?(order_id: id)
 
       super
     end

@@ -165,7 +165,7 @@ Operational states của workspace (`editing/parked/awaiting_payment/partially_r
 
 ## 9. Complete, giao hàng và refund
 
-- Restricted `finalize` gate: confirmed completed receipts + approved credit allocation = amount phải xử lý; no unresolved external attempt; đủ hàng đúng branch location; cash shift hợp lệ.
+- Restricted `finalize` gate: confirmed completed receipts + approved credit allocation = amount phải xử lý; no unresolved external attempt; đúng branch location và policy hàng theo loại đơn; cash shift hợp lệ. Với hàng thực tế đã có tại quầy, thiếu tồn hệ thống chỉ cảnh báo, không chặn vì thiếu tồn; xem [quyết định và các proof còn thiếu](../reports/pos-contract-decisions.md#tồn-kho-và-pickup--gate-đóng). Không suy rộng sang giao sau hay tracked serial/lô.
 - Chỉ gọi `Orders::Complete` sau gate. Trường hợp bán chịu dùng `payment_pending: true` có chủ đích, từ workflow đã duyệt; tuyệt đối không expose boolean này cho cashier client tùy ý.
 - Order paid/partially_paid/none được core derive; receivable snapshot giải thích khoản chưa thu. Pending payment không thay credit approval.
 - Khách lẻ có thể không email/address cá nhân: phase 1 phải chứng minh local pickup + walk-in trong installed workflows. Cấu hình/policy chỉ scoped POS; không tắt validation toàn website, không tạo email giả/địa chỉ nhà giả.

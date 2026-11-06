@@ -1,7 +1,7 @@
 ---
 phase: 3
 title: "Chi nhánh, quầy, quyền và mở ca tối thiểu"
-status: pending
+status: in-progress
 priority: P1
 dependencies: [1, 2]
 effort: "Ước tính 7–10 person-days"
@@ -78,3 +78,9 @@ Inventory từ repo root; tất cả app-specific, không sửa source gem.
 ## Next Steps
 
 Phase 4 dùng typed context và active shift; phase 9 mở rộng close barrier/cashbook, không tạo Shift model khác.
+
+## Checkpoint 04/11/2026
+
+- **In progress.** Đã có topology, membership/capability, ca tối thiểu, audit/approval primitives, selector phân trang và xử lý disable/recovery; có request/workflow tests và browser mock. Approval đã bind subject/action/revision nhưng chưa nối discount phase 5.
+- Cần hoàn tất evidence A02–A06 và F15, đặc biệt kiểm IDOR/bypass đầy đủ, đổi context/revoke đồng thời, race hai connection mở cùng drawer và kiểm keyboard/tablet với API thật. Không coi topology location mapping là proof strict stock.
+- Chi tiết và thứ tự quay lại: [bàn giao phase 1–4](./reports/phase-01-04-handoff.md).

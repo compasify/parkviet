@@ -5,6 +5,18 @@ en:
         pos_orders:
           label: POS drafts
           description: Create walk-in POS drafts; does not grant general order access.
+        pos_topology:
+          label: POS topology
+          description: Configure POS branches, registers and memberships. Does not grant selling or payment.
+        pos_shifts:
+          label: POS shifts
+          description: Open a POS shift. Does not close the drawer or record a payment.
+        pos_workspaces:
+          label: POS workspaces
+          description: Create and park POS drafts. Does not grant core order writes or payment.
+        pos_discounts:
+          label: POS discounts
+          description: Apply server-recalculated POS draft discounts. Does not grant price overrides or payment.
 vi:
   spree:
     permissions_catalog:
@@ -12,3 +24,15 @@ vi:
         pos_orders:
           label: Đơn nháp POS
           description: Tạo đơn nháp khách lẻ POS; không cấp quyền quản lý đơn hàng chung.
+        pos_topology:
+          label: Cấu hình POS
+          description: Cấu hình chi nhánh, quầy và quyền thành viên POS. Không cấp quyền bán hoặc thu tiền.
+        pos_shifts:
+          label: Ca POS
+          description: Mở ca POS. Không đóng sổ và không ghi nhận thanh toán.
+        pos_workspaces:
+          label: Không gian đơn POS
+          description: Tạo và tạm giữ đơn nháp POS. Không cấp quyền sửa đơn chung hoặc thu tiền.
+        pos_discounts:
+          label: Giảm giá POS
+          description: Áp dụng giảm giá đơn nháp POS được server tính lại. Không cấp quyền đổi giá hoặc thu tiền.

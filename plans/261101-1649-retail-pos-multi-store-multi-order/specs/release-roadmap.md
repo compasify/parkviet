@@ -38,8 +38,10 @@ Cash pilot sớm nếu muốn là quyết định triển khai riêng, cần sec
 
 ## Gate sau phase 1, trước implementation phụ thuộc
 
-- [ ] Người dùng duyệt scope/architecture và layout prototype gate.
-- [ ] Runtime source/mount verified; nếu phải eject thì có developer approval riêng.
+Phase 1 completed 06/11/2026 theo phạm vi điều chỉnh: scope và layout prototype đã được người dùng duyệt, runtime/mount đã kiểm qua CLI. Các gate còn lại dưới đây **chưa pass**; trách nhiệm đã chuyển sang phase 5–8/11 hoặc plan tách gói theo [bảng trách nhiệm phase 1](../phase-01-contracts-and-ux-validation.md), vẫn chặn capability liên quan.
+
+- [x] Người dùng duyệt scope/architecture và layout prototype gate.
+- [x] Runtime source/mount verified; nếu phải eject thì có developer approval riêng.
 - [ ] Phase1 ADR chọn được exact unit/price representation, không ép fractional quantity vào integer core.
 - [ ] Trước khi bật tách gói: same-variant SaleLine mapping lossless có proof trong plan riêng; trước khi bật trả/hoàn: cumulative entitlement/residual có proof, không chỉ cap tổng.
 - [ ] Inventory mutator inventory/guard cho tracked SKUs có đường thực hiện không drift/không fork ngầm.

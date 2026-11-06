@@ -1,7 +1,7 @@
 ---
 phase: 2
 title: Shell POS độc lập và đăng nhập nhân viên
-status: in-progress
+status: completed
 priority: P1
 dependencies:
   - 1
@@ -64,11 +64,11 @@ Mọi path từ repo root, create/modify dự kiến; không sửa upstream `spr
 
 ## Success Criteria
 
-- [ ] A01: login/rotation/revoke/logout đa browser tabs qua SDK + API thật, không credentials bền vững trong JS storage.
-- [ ] A02, A04: context unauthorized bị chặn; cache/request cũ không xuất hiện sau đổi store/logout.
-- [ ] W08: shell responsive/zoom200%/keyboard; mọi nhãn và lỗi qua i18next.
+- [ ] A01: login/rotation/revoke/logout đa browser tabs qua SDK + API thật, không credentials bền vững trong JS storage. *(Code có: memory token, refresh single-flight `navigator.locks`, BroadcastChannel. Test đa browser thật chuyển phase 11. Access JWT tồn tại tới hết hạn sau logout — rủi ro đã chấp nhận 06/11/2026.)*
+- [ ] A02, A04: context unauthorized bị chặn; cache/request cũ không xuất hiện sau đổi store/logout. *(Request spec auth pass; kiểm stale cache/callback sau đổi store chuyển phase 3/11.)*
+- [ ] W08: shell responsive/zoom200%/keyboard; mọi nhãn và lỗi qua i18next. *(Responsive e2e mock pass; screen reader/zoom 200%/thiết bị thật chuyển phase 11.)*
 - [ ] A03: staff POS không được blanket core writes chỉ để shell hoạt động.
-- [ ] Build độc lập thành công trong môi trường triển khai tương lai; không thay root workspace hoặc website checkout.
+- [ ] Build độc lập thành công trong môi trường triển khai tương lai; không thay root workspace hoặc website checkout. *(Build local pass. Hạ tầng triển khai chưa chốt — CORS/cookie/build kiểm ở phase 11.)*
 
 ## Risk Assessment
 
@@ -78,4 +78,20 @@ Mọi path từ repo root, create/modify dự kiến; không sửa upstream `spr
 
 ## Next Steps
 
-Chuyển phase 3 để cấp topology/ca thật; shell không được gọi là POS vận hành hoặc bản bán lẻ đầy đủ.
+Phase 3/4 đã được phát triển song song; tiếp tục backlog auth, responsive và isolation theo [bàn giao phase 1–4](./reports/phase-01-04-handoff.md). Shell không phải POS vận hành hoặc bản bán lẻ đầy đủ.
+
+## Checkpoint 04/11/2026
+
+- **In progress.** Shell độc lập, login/context, memory access token, refresh cookie, logout, cảnh báo intent và giao diện responsive đã triển khai; có unit, mock-browser và một số thử nghiệm API thật.
+- Logout thông thường không chứng minh thu hồi tức thời access JWT đã cấp; cần kiểm rotation/revoke đa tab/browser thật, CORS/origin, cache/context và accessibility/zoom theo tiêu chí. Không tick acceptance chỉ dựa trên test mock.
+
+## Đóng phase 06/11/2026
+
+Người dùng quyết định đóng phase 2 vì không còn hạng mục phải implement. Kiểm lại ngày 06/11/2026: `pnpm spree rspec spec/requests/spree/pos/authentication_spec.rb` 9 examples, 0 failures (seed 53433); `apps/pos` `pnpm test` 43 passed, `pnpm typecheck` sạch.
+
+Quyết định kèm theo:
+
+- **Logout và access JWT:** chấp nhận access JWT cũ còn dùng được tới khi hết hạn (`Spree::Api::Config[:jwt_expiration]`, mặc định 1 giờ). Refresh token bị thu hồi khi logout; access token chỉ nằm trong memory. Không thêm denylist.
+- **Hạ tầng triển khai:** chưa chốt same-origin hay khác domain. CORS, SameSite cookie và build trên môi trường thật là gate phase 11.
+
+Các tiêu chí chưa tick ở trên là proof chưa đạt, không phải pass; chúng chặn rollout ở phase 11 và phase phụ trách như đã ghi.

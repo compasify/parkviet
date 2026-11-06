@@ -1,7 +1,7 @@
 ---
 phase: 4
 title: "Nhiều đơn đồng thời và điều phối revision"
-status: pending
+status: in-progress
 priority: P1
 dependencies: [2, 3]
 effort: "Ước tính 8–12 person-days"
@@ -79,3 +79,9 @@ Inventory repo-root; migration timestamps do generator cấp sau approval triể
 ## Next Steps
 
 Phase 5 thêm catalog/customer/discount qua executor; phase 6 dùng lại chính durable receipt và khóa mutation này.
+
+## Checkpoint 04/11/2026
+
+- **In progress.** Workspace/draft, revision, editor lease, idempotency/receipt, park/reopen/cancel và phục hồi một phần layout đã triển khai. Có test API thật lost response/reload, stale editor/takeover và probe hai connection tranh lease.
+- Backend đã kiểm 20 editing + 200 parked qua API/database thật; chưa chứng minh 20 view overflow/reload trong browser hoặc bảo toàn khách/lines/discount chưa được triển khai. Các phần W01/W03 về catalog/scan/payment thuộc phase sau.
+- Cần hoàn tất W05, A02/A04, xử lý reload API thật timeout không ổn định, phục hồi tất cả view/permission bị thu hồi và tổng hợp bằng chứng criteria; xem [bàn giao phase 1–4](./reports/phase-01-04-handoff.md).

@@ -1,10 +1,10 @@
 ---
 phase: 5
 title: "Hàng hóa, khách hàng và giảm giá có kiểm soát"
-status: pending
+status: in-progress
 priority: P1
 dependencies: [1, 3, 4]
-effort: "Ước tính 16–24 person-days; phụ thuộc precision ADR phase 1"
+effort: "Ước tính 16–24 person-days; phụ thuộc precision ADR (chuyển từ phase 1 sang phase 5/8)"
 ---
 
 # Phase 5: Hàng hóa, khách hàng và giảm giá có kiểm soát
@@ -16,6 +16,8 @@ Nối catalog/customer/pricing thật vào nhiều workspace, dùng wrapper scop
 Chuẩn: [UX §5,9](./specs/ux-and-workflows.md), [kiến trúc §8](./specs/product-and-architecture.md), [API/tests](./specs/api-contract-and-test-matrix.md).
 
 ## Requirements
+
+- Đơn bán trực tiếp có hàng thực tế tại quầy: tồn không đủ hoặc không đọc được tồn thì cảnh báo, cho tiếp tục theo policy; snapshot không bảo đảm khả dụng và xung đột online chuyển tracking stock. Tồn không xác định phải hiển thị riêng; không nhầm on-hand với purchasable. Cần mạng để bắt đầu bán; đây là yêu cầu tương lai, không có nghĩa checkout đã được bật; xem [policy](./reports/pos-contract-decisions.md#tồn-kho-và-pickup--gate-đóng).
 
 - Search tên/SKU/barcode, variants/ảnh, tồn tại branch và kết quả phân trang; barcode mơ hồ phải chọn, không đoán.
 - Mandatory: nhập số lượng cân/phân số, đơn vị bán/quy đổi, barcode nhãn cân/giá và chọn serial/IMEI/lô-hạn dùng.
@@ -100,3 +102,21 @@ Inventory từ repo root; paths tạo mới trừ dòng Modify, không sửa `sp
 ## Next Steps
 
 Đánh giá preview 1–5; chỉ chuyển phase 6 khi runtime/permission/discount gates đã pass, chưa nhận tiền thật tại preview.
+
+## Checkpoint triển khai
+
+**Rà soát source sau các checkpoint dưới:** `server/config/routes.rb` hiện có các route item/customer/discount và controller tương ứng; không coi câu lịch sử “chưa mở API” bên dưới là mô tả source hiện tại. Chưa xác minh deployment/runtime, exposure thực tế hay đủ proof an toàn; xem [rà soát contract](./reports/phase-01-basic-contract-review.md). Phải giữ gate discount cho đến khi capability được kiểm chứng; route tồn tại không chứng minh gate đang được cưỡng chế.
+
+- Đã bắt đầu phần độc lập: hàng đợi scanner trong bộ nhớ giữ thứ tự theo workspace, key riêng cho mỗi scan và dừng khi kết quả chưa rõ; chưa nối UI hay API, không bảo đảm khôi phục sau reload hoặc chống replay server. Có kiểm thử 100 intent tổng hợp, retry và loại trừ IME/input; chưa phải kiểm thử scanner vật lý hoặc end-to-end.
+- Các gate phase 4 do agent khác tiếp tục xử lý. Precision/discount và mapping hàng cân vẫn thiếu proof/ADR phase 1; core đã quan sát gộp và ghi đè các gói cùng variant. Không bật mutation hàng hóa, giá hoặc discount dựa trên hàng đợi này. Phase 1 ghi nhận scope tách gói chuyển sang plan riêng; các tiêu chí đầy đủ ở phase này vẫn chưa đạt.
+- Đã thêm assortment tường minh `spree_pos_branch_products` (mặc định rỗng), API topology writer thêm/xóa sản phẩm cùng store và API catalog yêu cầu membership chi nhánh active. Search tên/SKU/barcode, phân trang, báo exact barcode trùng; trả on-hand đúng kho được cấp, không coi là tồn có thể bán. UI tìm kiếm chỉ đọc. Migration đã áp trên test và development qua Spree CLI; request specs và e2e mock có kiểm, chưa có e2e API thật. Chưa có giá/ảnh/variant options hoặc quản lý assortment trên UI.
+- Thêm parser decimal input không dùng float: phân biệt giá decimal, total VND nguyên và phần trăm, không tính toán hoặc tự làm tròn. Chưa nối vào UI/pricing và không thay thế proof precision server.
+- Spike VND trên draft: `1250 × 0.4 = 500` trước thuế/discount và manual line discount sống qua một recalc đơn giản. Nhưng core order discount 10% sau khi xóa một dòng rồi đổi quantity dòng còn lại từ 1→2 giữ discount cũ 10, total 190 thay vì 180; test characterization giữ nguyên hành vi này. Chưa được bật manual discount cho đến khi seam POS tái tính an toàn, stacking/tax/approval và test đầy đủ.
+- Customer mặc định Spree 6.0.2 yêu cầu email cả validation và NOT NULL database. Quick-create không email vẫn chưa có seam scoped được chứng minh; không tạo email giả hoặc bỏ validation chung. Cần thiết kế mapping/permission cho khách POS và kiểm không ảnh hưởng storefront trước khi mở ghi.
+- Người dùng chấp thuận hướng POS discount intent + adjuster: promotion trước/manual sau, fixed VND quá base phải từ chối, không tự clamp. Calculator thuần server tái dùng rounding và largest-remainder Spree, có test phân bổ VND và validation. Adjuster thử nghiệm chưa nối vào endpoint, permission, approval hoặc UI; không bật discount và không coi test calculator là proof thuế/stacking/revision.
+- Cập nhật thử nghiệm: migration intent/allocation đã áp **chỉ database test**; adjuster POS chưa đăng ký trong ứng dụng, chỉ gắn tạm trong spec. Với workspace/intent thật, test recalc 10% từ 90 lên 180 sau tăng quantity và recalc lặp lại pass; test riêng xác nhận core vẫn là snapshot 190. Chưa chứng minh transaction/concurrency, vòng đời xóa dòng, promotion/tax, payment commitment, approval và quyền; chưa áp migration development, chưa mở API/UI discount. Đây chưa phải bản sửa đang hoạt động cho người dùng POS.
+- Checkpoint hiện tại (sau các checkpoint trên; câu cũ về API/UI discount, customer không email và migration development đã lỗi thời): discount intent/allocation + POS adjuster đã nối qua workspace command có capability `pos.discount.apply`, approval action/amount/revision-bound, audit và UI hiển thị totals từ server. % tính lại theo base hiện tại; fixed quá base bị từ chối, không clamp. Khách POS phone-only dùng hồ sơ POS riêng, email khớp tài khoản Spree thì liên kết khách gốc; gắn/xóa qua workspace command. Thêm/sửa/xóa dòng thường theo line ID chỉ cho variant thuộc assortment branch. Ghi chú POS để riêng trên workspace (migration `20261104124000`, đã áp test + development), không ghi `customer_note`/`internal_note` của đơn gốc. Catalog trả thêm `price`/`compare_at_price`/`currency` theo `price_in` của store; UI hiển thị giá và phân biệt tồn chưa rõ. Workspace đang chọn/ghim tải detail từ server sau reload để khách/dòng/discount/totals/ghi chú không trống oan.
+- Cập nhật mới nhất (SaleLine): migration `20261105100000` đã áp test + development. `spree_pos_sale_lines` map 1:1 core line item; `UnitsController` đọc theo `read_pos_orders|read_pos_topology` và PUT cần `write_pos_topology` + capability `pos.topology.manage` (Spree key-gate không trộn hai scope trong một controller, nên `Pos::BaseController` tự chạy gate theo action map `pos_permissions`, mặc định vẫn derived scope như cũ). Hàng đo kg exact thành g (1.25 kg = 1250 g, line price 0.1 VND/g); dòng POS được đánh dấu `price_source = manual` nên core không re-price khi đổi quantity. Spec I08 `spec/requests/spree/pos/sale_lines_spec.rb` pass: hai gói cùng variant khác giá override độc lập, merge chỉ khi `merge: true` + cùng merge key (variant/giá/đơn vị/lô/serial), tracked serial luôn tách riêng, edit/remove/line-discount theo `sale_line_id`; VND là zero-decimal nên discount % làm tròn nguyên VND (10% của 125 = 13). Toàn suite backend POS: **121 examples, 0 failures**.
+- Cập nhật frontend SaleLine: types `PosLineItem`/`PosVariantUnit` mang SaleLine; `OrderLines` sửa theo measured sale quantity hoặc count, hiển thị lô/serial + trạng thái chưa reserve, line-discount/clear và price-override theo `sale_line_id`; `AddItemForm` tra variant unit/traceability, nhập exact decimal cho hàng đo, nhập lô/serial nháp và merge tường minh (mặc định không merge); catalog thêm nhanh dùng `merge: true` cho scan thường. Frontend: **29 unit tests**, lint, build pass.
+- Cập nhật phase 6 ảnh hưởng phase 5: snapshot workspace bị khóa bởi tender prepare/confirmed ở server (`ManageLineItem` guard qua tender attempts), completion chỉ qua completed-receipt guard và handover strict-location. Frontend đã có PaymentPanel/financial summary; phase 5 vì vậy không còn ghi “không mở thu tiền/giao hàng” tuyệt đối, nhưng chỉ ở **sandbox phase 6**: không tiền thật, không tracked SKU, không returns/credit/close.
+- Vẫn chưa đạt trong phase 5: price-label barcode (chỉ ordinary), quản lý assortment trên UI, concurrency hai connection, scanner vật lý/e2e API thật. Phase 5 giữ `in-progress`; không đóng chỉ vì phase 6 sandbox đã nối.

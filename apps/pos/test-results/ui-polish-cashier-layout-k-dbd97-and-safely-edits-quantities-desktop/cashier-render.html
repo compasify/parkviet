@@ -1,0 +1,566 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>POS UI fixture — not a transaction</title><style>/* All POS routes share the register design system below. */
+:root { font-family: system-ui, sans-serif; color: #172d40; background: #edf2f6; font-synthesis: none; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+.layout { min-height: 100vh; }
+.header { min-height: 72px; padding: 20px clamp(20px, 5vw, 72px); display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid #d8e3dc; background: white; }
+.header strong { font-size: 1.2rem; letter-spacing: -.04em; }.header strong span { color: #32836b; }
+.header small, .eyebrow { font-size: .7rem; font-weight: 700; letter-spacing: .12em; color: #56776a; }
+.panel { width: min(100% - 40px, 520px); margin: clamp(32px, 8vh, 90px) auto; padding: clamp(24px, 5vw, 44px); background: white; border: 1px solid #d8e3dc; border-radius: 16px; box-shadow: 0 20px 55px #17372a0c; }
+h1 { font-size: clamp(1.7rem, 5vw, 2.2rem); letter-spacing: -.04em; margin: 12px 0; overflow-wrap: anywhere; }
+p { color: #526b60; line-height: 1.55; }
+form { display: grid; gap: 10px; margin-top: 28px; } label { font-size: .9rem; font-weight: 650; }
+input { width: 100%; min-height: 48px; border: 1px solid #b8cbc0; border-radius: 8px; padding: 10px 12px; font: inherit; margin-bottom: 8px; }
+button { min-height: 48px; border: 0; border-radius: 8px; background: #175c49; color: white; padding: 10px 20px; font: inherit; font-weight: 700; cursor: pointer; }
+button:disabled { opacity: .6; cursor: not-allowed; } :focus-visible { outline: 3px solid #e6a427; outline-offset: 3px; }
+.empty { background: #f4f8f5; border: 1px solid #dce9df; border-radius: 10px; padding: 22px; margin: 24px 0; }.empty p { margin-bottom: 0; }
+.error { color: #8c2b29; background: #fff0ee; padding: 12px; border-radius: 8px; }.footnote { font-size: .8rem; margin-top: 25px; }
+.shell { width: min(100% - 32px, 1100px); margin: 24px auto 48px; display: grid; gap: 16px; }
+.card { background: white; border: 1px solid #d8e3dc; border-radius: 16px; padding: clamp(16px, 3vw, 28px); }
+.workspace { display: grid; gap: 16px; }
+select { width: 100%; min-height: 48px; border: 1px solid #b8cbc0; border-radius: 8px; padding: 10px 12px; font: inherit; background: white; }
+.selector, .dialog, .tabs, form { display: grid; gap: 10px; margin-top: 16px; }
+.row, .tablist { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
+fieldset { border: 1px solid #d8e3dc; border-radius: 8px; display: grid; gap: 8px; }
+.card a { color: #175c49; font-weight: 700; }
+@media (max-width: 767px) { .header { align-items: flex-start; flex-direction: column; }.shell { width: min(100% - 20px,1100px); } }
+.visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+.pos-icon { display: inline-block; flex: 0 0 auto; vertical-align: middle; }
+
+/* Register: preserve the approved blue/white wireframe, with one spacing scale. */
+.pos-layout {
+  --pos-blue: #07569a; --pos-blue-hover: #064a85; --pos-ink: #172d40;
+  --pos-muted: #526b7e; --pos-border: #d5e0e8; --pos-bg: #edf2f6;
+  --pos-surface: #fff; --pos-tint: #f4f8fb; --pos-selected: #e7f2fb;
+  --pos-danger: #a12d20; --pos-success: #26704c; --pos-warning: #835300;
+  --pos-radius: 6px; --pos-s1: 4px; --pos-s2: 8px; --pos-s3: 12px;
+  --pos-s4: 16px; --pos-s5: 20px; --pos-s6: 24px;
+  --pos-small: .75rem; --pos-body: .875rem; --pos-heading: 1rem;
+  --pos-target: 44px; --pos-overlay: 20; --pos-shadow: 0 12px 32px #102c4233;
+  --pos-page-width: 1200px; --pos-auth-width: 440px; --pos-page-title: 1.5rem;
+  color: var(--pos-ink); background: var(--pos-bg); font-size: var(--pos-body); line-height: 1.45;
+}
+.pos-layout :is(button, input, select, textarea) { font: inherit; border: 1px solid var(--pos-border); border-radius: var(--pos-radius); min-height: var(--pos-target); }
+.pos-layout :is(input, select, textarea) { width: 100%; background: var(--pos-surface); color: var(--pos-ink); margin: 0; padding: var(--pos-s2) var(--pos-s3); }
+.pos-layout textarea { resize: vertical; }
+.pos-layout input[type='checkbox'] { width: 20px; height: 20px; min-height: 20px; padding: 0; flex: 0 0 20px; accent-color: var(--pos-blue); }
+.pos-layout label:has(> input[type='checkbox']) { display: flex; align-items: center; gap: var(--pos-s2); min-height: var(--pos-target); }
+.pos-layout button { display: inline-flex; justify-content: center; align-items: center; gap: var(--pos-s2); padding: var(--pos-s2) var(--pos-s3); background: var(--pos-surface); color: var(--pos-ink); font-weight: 600; }
+.pos-layout button:not(:disabled):hover { background: var(--pos-tint); border-color: var(--pos-muted); }
+.pos-layout button:not(:disabled):active { background: var(--pos-selected); }
+.pos-layout button:disabled { opacity: .55; cursor: not-allowed; }
+.pos-layout label { color: var(--pos-ink); font-size: var(--pos-body); font-weight: 600; }
+.pos-layout form { margin-top: var(--pos-s3); gap: var(--pos-s3); }
+.pos-layout label > :is(input, select, textarea) { margin-top: var(--pos-s1); }
+.pos-layout :is(h2,h3) { font-size: var(--pos-heading); margin: 0 0 var(--pos-s3); font-weight: 700; }
+.pos-layout p { color: var(--pos-muted); margin: var(--pos-s2) 0; }
+.pos-layout a { color: var(--pos-blue); }
+.pos-layout .muted, .pos-layout small { color: var(--pos-muted); font-size: var(--pos-small); }
+.pos-layout .error { background: #fff0ee; color: var(--pos-danger); padding: var(--pos-s3); border-radius: var(--pos-radius); overflow-wrap: anywhere; }
+.pos-layout :is(.card, .selling-panel, .checkout-panel) { min-width: 0; background: var(--pos-surface); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); box-shadow: none; }
+.skip-link { position: fixed; top: var(--pos-s2); left: var(--pos-s4); width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); background: var(--pos-surface); z-index: var(--pos-overlay); }
+.skip-link:focus { width: auto; height: auto; clip-path: none; padding: var(--pos-s3); }
+.mobile-checkout-jump { display: none; }
+
+/* Header and anchored register picker. */
+.pos-layout .header { position: relative; min-height: 52px; padding: var(--pos-s1) var(--pos-s4); display: flex; flex-direction: row; justify-content: flex-start; align-items: center; flex-wrap: wrap; gap: var(--pos-s1) var(--pos-s3); color: white; background: var(--pos-blue); border: 0; }
+.pos-layout .header > strong { font-size: var(--pos-heading); letter-spacing: -.02em; white-space: nowrap; }
+.pos-layout .header strong span { color: white; }
+.header-title { font-weight: 600; border-left: 1px solid #73a4cb; padding-left: var(--pos-s4); }
+.header-user { display: flex; align-items: center; gap: var(--pos-s2); margin-left: auto; max-width: 280px; font-size: var(--pos-small); overflow-wrap: anywhere; }
+.header-user-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pos-layout .header-settings { color: white; flex: 0 0 var(--pos-target); min-width: var(--pos-target); min-height: var(--pos-target); display: inline-flex; align-items: center; justify-content: center; border: 1px solid transparent; border-radius: var(--pos-radius); }
+.pos-layout .header-settings:hover { border-color: currentColor; background: var(--pos-blue-hover); }
+.auth-admin-submit { width: 100%; }
+.pos-administration { display: grid; gap: var(--pos-s4); min-width: 0; }
+.admin-overview { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--pos-s3); padding: var(--pos-s5); background: var(--pos-surface); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); }
+.admin-overview h2 { margin: var(--pos-s1) 0; }
+.admin-eyebrow { color: var(--pos-blue); font-size: var(--pos-small); font-weight: 700; letter-spacing: .08em; }
+.admin-tabs { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: var(--pos-s2); }
+.admin-tabs button { justify-content: flex-start; text-align: left; padding: var(--pos-s3); }
+.admin-tabs button b { margin-left: auto; background: var(--pos-tint); padding: var(--pos-s1) var(--pos-s2); border-radius: var(--pos-radius); }
+.pos-layout .admin-tabs button[aria-pressed='true'] { color: var(--pos-blue); background: var(--pos-selected); border-color: var(--pos-blue); }
+.admin-content > .section-heading { align-items: flex-start; }
+.admin-content h2 { margin-bottom: var(--pos-s1); }
+.admin-filters { display: flex; align-items: end; flex-wrap: wrap; gap: var(--pos-s3); margin-block: var(--pos-s4); }
+.admin-filters label { flex: 1 1 160px; min-width: 0; }
+.admin-filters .admin-search { flex: 2 1 240px; }
+.admin-records { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--pos-border); }
+.admin-records > li { display: flex; align-items: flex-start; flex-wrap: wrap; gap: var(--pos-s3); padding: var(--pos-s4) 0; border-bottom: 1px solid var(--pos-border); }
+.admin-record-copy { flex: 1 1 280px; min-width: 0; display: grid; gap: var(--pos-s1); overflow-wrap: anywhere; }
+.admin-record-copy > strong { font-size: var(--pos-body); }
+.admin-record-copy p { margin: 0; }
+.admin-record-actions { display: flex; gap: var(--pos-s2); align-items: center; flex-wrap: wrap; }
+.admin-record-actions small { max-width: 180px; }
+.admin-capability-tags { display: flex; flex-wrap: wrap; gap: var(--pos-s1); margin-top: var(--pos-s2); }
+.admin-capability-tags span { padding: var(--pos-s1) var(--pos-s2); background: var(--pos-tint); color: var(--pos-muted); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); font-size: var(--pos-small); }
+.admin-record-count { font-size: var(--pos-small); text-align: right; }
+.pos-layout .topology-dialog { color: var(--pos-ink); background: var(--pos-surface); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); box-shadow: var(--pos-shadow); padding: var(--pos-s5); width: min(720px,calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow: auto; }
+.topology-dialog::backdrop { background: #102c4277; }
+.topology-dialog-heading { position: sticky; top: calc(-1 * var(--pos-s5)); z-index: 1; margin: calc(-1 * var(--pos-s5)) calc(-1 * var(--pos-s5)) 0; padding: var(--pos-s3) var(--pos-s5); background: var(--pos-surface); border-bottom: 1px solid var(--pos-border); display: flex; align-items: center; justify-content: space-between; gap: var(--pos-s3); }
+.admin-editor-context { font-size: var(--pos-small); overflow-wrap: anywhere; }
+.topology-dialog-heading h2 { font-size: var(--pos-heading); margin: 0; }
+.topology-dialog-heading button { min-width: var(--pos-target); }
+.admin-form-fields { border: 0; padding: 0; margin: 0; display: grid; gap: var(--pos-s4); min-width: 0; }
+.admin-form-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: var(--pos-s3); }
+.admin-form-fields label { min-width: 0; }
+.admin-form-fields label small { display: block; margin-top: var(--pos-s1); }
+.admin-info { background: var(--pos-tint); border-left: 3px solid var(--pos-blue); padding: var(--pos-s3); }
+.admin-permissions { padding: var(--pos-s3); gap: var(--pos-s2); margin: 0; border-color: var(--pos-border); }
+.admin-permissions legend { padding-inline: var(--pos-s2); font-weight: 700; }
+.admin-permissions label { padding: var(--pos-s2); border-radius: var(--pos-radius); }
+.admin-permissions label:hover { background: var(--pos-tint); }
+.admin-permissions label span { display: grid; gap: var(--pos-s1); }
+.admin-permissions label small { font-weight: 400; }
+.admin-sensitive { padding: var(--pos-s3); background: var(--pos-tint); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); }
+.topology-dialog-actions { position: sticky; bottom: calc(-1 * var(--pos-s5)); display: flex; justify-content: flex-end; gap: var(--pos-s2); padding-block: var(--pos-s3); background: var(--pos-surface); border-top: 1px solid var(--pos-border); }
+@media(max-width: 600px) {
+  .admin-content > .section-heading { flex-direction: column; align-items: stretch; }
+  .admin-content > .section-heading > button { width: 100%; }
+  .admin-tabs { grid-template-columns: 1fr; }
+  .admin-record-actions { width: 100%; }
+  .admin-form-grid { grid-template-columns: 1fr; }
+  .pos-layout .topology-dialog { padding: var(--pos-s4); }
+  .topology-dialog-heading { top: calc(-1 * var(--pos-s4)); margin: calc(-1 * var(--pos-s4)) calc(-1 * var(--pos-s4)) 0; padding-inline: var(--pos-s4); }
+}
+.header-user .pos-icon { width: 16px; height: 16px; }
+.pos-context-details { position: relative; min-width: 0; }
+.pos-context-details > summary { display: flex; gap: var(--pos-s3); align-items: center; min-height: var(--pos-target); cursor: pointer; list-style: none; }
+.pos-context-details > summary::-webkit-details-marker { display: none; }
+.context-label { font-weight: 400; color: #d6eaf8; }
+.context-change { display: inline-flex; }
+.context-popover { position: absolute; z-index: var(--pos-overlay); top: calc(100% + var(--pos-s2)); left: 0; width: min(650px, calc(100vw - 40px)); max-height: 75dvh; overflow: auto; padding: var(--pos-s4); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); box-shadow: var(--pos-shadow); background: var(--pos-surface); color: var(--pos-ink); }
+.context-popover .selector { grid-template-columns: repeat(2, minmax(0,1fr)); margin: 0; align-items: end; }
+.selector-group { display: grid; gap: var(--pos-s3); min-width: 0; }
+.context-popover .row { align-items: center; margin-top: var(--pos-s1); }
+.context-popover .footnote { font-size: var(--pos-small); }
+.pos-context-status { display: flex; align-items: center; gap: var(--pos-s2); color: #d6eaf8; font-size: var(--pos-small); }
+.connection-status { display: inline-flex; align-items: center; gap: var(--pos-s2); }
+.connection-dot { width: 8px; height: 8px; background: #a7d6b7; border-radius: 50%; flex: 0 0 auto; }
+.connection-status[data-offline='true'] .connection-dot { background: #ffd49e; }
+.pos-layout .shell { width: 100%; max-width: none; margin: 0; padding: var(--pos-s3); gap: var(--pos-s3); }
+.pos-alerts:empty { display: none; }
+.pos-alerts { display: flex; align-items: center; flex-wrap: wrap; gap: var(--pos-s2); }
+.pos-alerts > p { flex: 1 1 65%; margin: 0; }
+.recovery-check-result { flex-basis: 100%; padding: var(--pos-s2) var(--pos-s3); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); background: var(--pos-surface); }
+.pos-alerts .dialog { display: flex; flex-wrap: wrap; gap: var(--pos-s3); align-items: end; margin: 0; }
+.pos-alerts .dialog label { max-width: 220px; }
+
+/* One compact strip: tabs carry order identity, state and available totals. */
+.draft-workspace { min-width: 0; }
+.draft-toolbar { position: relative; display: flex; align-items: stretch; gap: var(--pos-s1); padding: var(--pos-s1); margin-bottom: var(--pos-s2); background: #e0eaf2; border-radius: var(--pos-radius); }
+.pos-layout .draft-toolbar > button { order: 2; color: var(--pos-blue); white-space: nowrap; }
+.tablist { flex: 1; min-width: 0; gap: var(--pos-s2); flex-wrap: nowrap; overflow: auto; align-items: stretch; }
+.pos-layout .tablist button { flex-direction: row; align-items: center; gap: var(--pos-s1); min-width: 120px; max-width: 200px; padding: var(--pos-s2) var(--pos-s3); white-space: nowrap; border-color: transparent; background: transparent; }
+.pos-layout .tablist button[aria-selected='true'] { border-color: var(--pos-border); border-bottom: 3px solid var(--pos-blue); background: var(--pos-surface); color: var(--pos-blue); }
+.tablist small { font-size: var(--pos-small); font-weight: 400; }
+.draft-filter { order: 3; align-self: center; }
+.draft-filter summary, .order-more > summary { display: flex; align-items: center; justify-content: center; gap: var(--pos-s2); min-width: var(--pos-target); min-height: var(--pos-target); padding: var(--pos-s2); cursor: pointer; list-style: none; }
+.draft-filter > label { position: absolute; z-index: var(--pos-overlay); top: 100%; right: 0; width: min(320px,100%); background: var(--pos-surface); padding: var(--pos-s4); border: 1px solid var(--pos-border); box-shadow: var(--pos-shadow); border-radius: var(--pos-radius); }
+.workspace-hint, .lease-notice { display: flex; align-items: center; flex-wrap: wrap; gap: var(--pos-s2); padding: var(--pos-s3) var(--pos-s4); color: var(--pos-warning); background: #fff4d9; border-radius: var(--pos-radius); margin-bottom: var(--pos-s3); }
+.lease-notice span { flex: 1; }
+.pos-layout .lease-notice { gap: var(--pos-s1) var(--pos-s2); padding: 2px var(--pos-s2); margin-bottom: var(--pos-s2); }
+.pos-layout .lease-notice > span { min-width: 0; }
+.pos-layout .lease-notice > button { flex-shrink: 0; min-height: 32px; padding: 2px var(--pos-s2); }
+.lease-help { flex-shrink: 0; }
+.lease-help > summary { display: flex; align-items: center; justify-content: center; min-height: 32px; padding: 0 var(--pos-s2); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.lease-help[open] { flex-basis: 100%; order: 3; border-top: 1px solid #e9d7ad; }
+.lease-help[open] > summary { justify-content: flex-start; }
+.pos-layout .lease-help p { color: inherit; margin: 0 0 var(--pos-s2); max-width: 85ch; }
+.sale-layout { display: grid; grid-template-columns: minmax(0,1fr) 360px; gap: var(--pos-s3); align-items: start; }
+.selling-panel { overflow: visible; }
+
+/* Search/catalog stay bounded so a cashier always reaches the basket. */
+.selling-search { position: relative; padding: var(--pos-s4); }
+.search-title { display: flex; align-items: center; gap: var(--pos-s2); }
+kbd { padding: var(--pos-s1); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); font: inherit; color: var(--pos-muted); font-size: var(--pos-small); font-weight: 400; }
+.pos-layout .product-search-row { display: flex; gap: var(--pos-s2); margin-top: 0; }
+.search-input-wrap { position: relative; flex: 1; min-width: 0; }
+.search-input-wrap > .pos-icon { position: absolute; top: 50%; transform: translateY(-50%); left: var(--pos-s3); color: var(--pos-muted); pointer-events: none; }
+.pos-layout .search-input-wrap input { min-height: 32px; height: 32px; padding: 2px var(--pos-s3) 2px 40px; }
+.pos-layout .product-search-row > button { min-height: 32px; height: 32px; padding: 2px var(--pos-s3); }
+.catalog-heading { display: flex; align-items: center; justify-content: space-between; gap: var(--pos-s2); margin-top: var(--pos-s2); margin-bottom: var(--pos-s2); }
+.catalog-heading h3 { margin: 0; font-size: var(--pos-body); }
+.catalog-count { margin-left: var(--pos-s1); color: var(--pos-muted); font-size: var(--pos-small); font-weight: 400; }
+.view-toggle { display: flex; gap: var(--pos-s1); }
+.pos-layout :is(.view-toggle, .payment-methods) { border: 0; padding: 0; margin: 0; min-width: 0; }
+.pos-layout .view-toggle button { min-height: 32px; padding: 2px var(--pos-s2); font-size: var(--pos-small); }
+.pos-layout button[aria-pressed='true'] { background: var(--pos-selected); color: var(--pos-blue); border-color: #84b5d7; }
+.catalog-scroll { max-height: clamp(220px, 32dvh, 340px); overflow: auto; overscroll-behavior: contain; padding: var(--pos-s1); margin: 0 calc(-1 * var(--pos-s1)); }
+.catalog-results { display: grid; list-style: none; gap: var(--pos-s2); margin: 0; padding: 0; }
+.catalog-results--cards { grid-template-columns: repeat(auto-fill, minmax(min(100%,240px),1fr)); }
+.catalog-results--list { grid-template-columns: minmax(0,1fr); gap: 2px; }
+.catalog-results > li { position: relative; display: flex; flex-direction: column; min-width: 0; border: 1px solid var(--pos-border); border-radius: var(--pos-radius); background: var(--pos-surface); }
+.catalog-results--list > li { border: 0; background: transparent; }
+.pos-layout .catalog-product { position: relative; flex: 1; display: flex; justify-content: flex-start; align-items: flex-start; gap: var(--pos-s2); border: 0; border-radius: var(--pos-radius); padding: var(--pos-s2); width: 100%; text-align: left; font-weight: 400; }
+.pos-layout .catalog-product:disabled { opacity: 1; color: var(--pos-ink); background: var(--pos-tint); }
+.catalog-image { display: grid; place-items: center; width: 44px; height: 44px; flex: 0 0 44px; border-radius: var(--pos-radius); background: #e8eff4; color: #607d91; }
+.catalog-product-info { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 2px; }
+.catalog-product-info strong { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; font-weight: 600; overflow-wrap: anywhere; padding-right: var(--pos-s4); line-height: 1.35; }
+.catalog-product-info > span, .catalog-meta > span { font-size: var(--pos-small); color: var(--pos-muted); }
+.catalog-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--pos-s1); line-height: 1.35; }
+.catalog-product-info .catalog-price { font-weight: 700; color: var(--pos-blue); font-size: var(--pos-body); font-variant-numeric: tabular-nums; }
+.catalog-price del { color: var(--pos-muted); font-size: var(--pos-small); font-weight: 400; margin-left: var(--pos-s2); }
+.catalog-product-info .stock-low { color: var(--pos-warning); }
+.pos-layout .catalog-results--list .catalog-product { min-height: var(--pos-target); padding: var(--pos-s1) var(--pos-s2); align-items: center; }
+.catalog-results--list .catalog-image { width: 30px; height: 30px; flex: 0 0 30px; }
+.catalog-results--list .catalog-image .pos-icon { width: 16px; height: 16px; }
+.catalog-results--list .catalog-product-info { display: grid; grid-template-columns: minmax(0,2fr) minmax(88px,.7fr) minmax(120px,.9fr) minmax(110px,auto); align-items: center; gap: var(--pos-s1) var(--pos-s3); padding-right: var(--pos-s6); }
+.catalog-results--list .catalog-product-info strong { -webkit-line-clamp: 1; line-clamp: 1; padding-right: 0; }
+.catalog-results--list .catalog-meta { display: contents; }
+.catalog-results--list .catalog-meta-sep { display: none; }
+.catalog-results--list .catalog-sku { grid-column: 2; grid-row: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.catalog-results--list .catalog-meta > span:last-child { grid-column: 3; grid-row: 1; text-align: left; padding-right: 0; white-space: nowrap; }
+.catalog-results--list .catalog-price { grid-column: 4; grid-row: 1; text-align: right; padding-right: var(--pos-s2); white-space: nowrap; }
+.catalog-advanced { padding: 0; font-size: var(--pos-small); }
+.catalog-advanced summary { position: absolute; top: 0; right: 0; width: var(--pos-target); min-height: var(--pos-target); display: flex; align-items: center; justify-content: center; color: var(--pos-muted); cursor: pointer; list-style: none; border-radius: var(--pos-radius); }
+.catalog-advanced summary:hover { background: var(--pos-selected); color: var(--pos-blue); }
+.catalog-advanced[open] { border-top: 1px solid var(--pos-border); padding: var(--pos-s3); }
+.catalog-results > li:has(.catalog-advanced[open]) { grid-column: 1 / -1; }
+.catalog-pagination { justify-content: flex-end; align-items: center; padding-top: var(--pos-s2); font-size: var(--pos-small); }
+.catalog-loading { display: block; color: var(--pos-muted); font-size: var(--pos-small); padding-bottom: var(--pos-s2); }
+.catalog-empty { display: grid; justify-items: center; gap: var(--pos-s2); padding: var(--pos-s6); margin-top: var(--pos-s3); border: 1px dashed var(--pos-border); border-radius: var(--pos-radius); color: var(--pos-muted); text-align: center; }
+.selling-search > .muted { margin-bottom: 0; }
+
+/* Basket: aligned amounts and direct quantity controls, not a wall of forms. */
+.basket-heading { display: flex; justify-content: space-between; align-items: center; padding: var(--pos-s3) var(--pos-s4); background: var(--pos-tint); border-block: 1px solid var(--pos-border); }
+.basket-heading h2 { margin: 0; }
+.basket-heading > span { color: var(--pos-muted); font-size: var(--pos-small); }
+.draft-detail { padding: 0; }
+.draft-detail > p { margin: var(--pos-s2) var(--pos-s4); }
+.basket-lines { margin: 0; padding: 0; list-style: none; }
+.basket-lines > li { padding: var(--pos-s3) 0; border-bottom: 1px solid var(--pos-border); }
+.basket-line-main { display: grid; grid-template-columns: minmax(0,1fr) 132px minmax(125px,auto); gap: var(--pos-s3); align-items: center; }
+.basket-line-name { display: flex; min-width: 0; flex-direction: column; gap: var(--pos-s1); overflow-wrap: anywhere; }
+.basket-line-name > span { font-size: var(--pos-small); color: var(--pos-muted); }
+.quantity-control { display: flex; align-items: center; }
+.pos-layout .quantity-control button { width: var(--pos-target); padding: var(--pos-s2); border-radius: 0; }
+.quantity-control button:first-child { border-radius: var(--pos-radius) 0 0 var(--pos-radius); }
+.quantity-control button:last-child { border-radius: 0 var(--pos-radius) var(--pos-radius) 0; }
+.pos-layout .quantity-control input { width: var(--pos-target); min-width: 0; padding: var(--pos-s1); border-radius: 0; text-align: center; font-weight: 600; appearance: textfield; }
+.quantity-control input::-webkit-inner-spin-button { appearance: none; }
+.basket-line-total { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: var(--pos-s1); font-variant-numeric: tabular-nums; }
+.pos-layout .remove-line { min-width: var(--pos-target); color: var(--pos-muted); border-color: transparent; padding: var(--pos-s2); }
+.pos-layout .remove-line:not(:disabled):hover { color: var(--pos-danger); background: #fff0ee; border-color: transparent; }
+.basket-empty { min-height: 160px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--pos-s2); color: var(--pos-muted); text-align: center; padding: var(--pos-s6); }
+.basket-empty > .pos-icon { width: 32px; height: 32px; }
+.basket-empty span { font-size: var(--pos-small); }
+.selling-panel > .empty { margin: var(--pos-s4); background: var(--pos-tint); border-color: var(--pos-border); text-align: center; }
+.basket-actions { padding-top: var(--pos-s3); align-items: center; }
+.order-more { position: relative; margin-left: auto; }
+.order-more-menu { display: grid; gap: var(--pos-s2); position: absolute; z-index: var(--pos-overlay); right: 0; bottom: 100%; min-width: 220px; padding: var(--pos-s2); background: var(--pos-surface); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); box-shadow: var(--pos-shadow); }
+.line-options summary { min-height: var(--pos-target); padding: var(--pos-s3) 0; color: var(--pos-blue); cursor: pointer; font-size: var(--pos-small); }
+
+/* Checkout: compact customer picker, readable totals, one primary next action. */
+.checkout-panel { position: sticky; top: var(--pos-s3); max-height: calc(100dvh - var(--pos-s6)); overflow-y: auto; }
+.checkout-section { padding: var(--pos-s4); }
+.checkout-panel h3 { margin-bottom: var(--pos-s2); }
+.customer-panel { position: relative; display: grid; gap: var(--pos-s2); }
+.customer-header { display: flex; align-items: center; gap: var(--pos-s2); }
+.customer-header h3 { margin: 0; white-space: nowrap; }
+.pos-layout .customer-search-row { flex: 1; min-width: 0; display: flex; align-items: center; gap: var(--pos-s1); margin: 0; }
+.pos-layout .customer-search-row input { flex: 1; min-width: 0; min-height: 32px; height: 32px; padding: 2px var(--pos-s2); }
+.pos-layout .customer-icon-button { width: 32px; min-width: 32px; height: 32px; min-height: 32px; padding: 4px; flex-shrink: 0; }
+.customer-results-popover { position: absolute; top: calc(100% + var(--pos-s1)); left: 0; right: 0; z-index: var(--pos-overlay); max-height: 240px; overflow-y: auto; padding: var(--pos-s2); background: var(--pos-surface); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); box-shadow: var(--pos-shadow); }
+.customer-results-list { list-style: none; margin: 0; padding: 0; }
+.customer-results-list > li { display: flex; align-items: center; justify-content: space-between; gap: var(--pos-s2); padding: var(--pos-s2) 0; border-bottom: 1px solid var(--pos-border); }
+.customer-results-list > li:first-child { padding-top: 0; }
+.customer-results-list > li:last-child { border-bottom: 0; padding-bottom: 0; }
+.customer-result-info, .customer-selected-info { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 2px; overflow-wrap: anywhere; }
+.pos-layout .customer-results-list button { min-height: 32px; padding: var(--pos-s1) var(--pos-s2); font-size: var(--pos-small); flex-shrink: 0; }
+.customer-selected { display: flex; align-items: center; gap: var(--pos-s2); padding: var(--pos-s2) var(--pos-s3); background: var(--pos-tint); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); }
+.pos-layout .customer-create-form :is(input, button) { min-height: 36px; padding: var(--pos-s1) var(--pos-s3); }
+.customer-create-form .row { align-items: center; }
+.customer-panel p { font-size: var(--pos-small); margin: 0; }
+.checkout-totals { padding-top: var(--pos-s4); margin-top: var(--pos-s4); border-top: 1px solid var(--pos-border); }
+.checkout-totals-header { display: flex; align-items: center; justify-content: space-between; gap: var(--pos-s2); flex-wrap: wrap; margin-bottom: var(--pos-s2); }
+.checkout-totals-header h2 { margin: 0; white-space: nowrap; }
+.checkout-line { display: flex; justify-content: space-between; align-items: baseline; gap: var(--pos-s3); padding: var(--pos-s1) 0; color: var(--pos-muted); font-variant-numeric: tabular-nums; }
+.checkout-line strong { white-space: nowrap; }
+.checkout-total { margin-top: var(--pos-s3); padding-top: var(--pos-s3); border-top: 1px dashed var(--pos-border); color: var(--pos-ink); }
+.checkout-total strong { font-size: 1.5rem; font-weight: 750; color: var(--pos-blue); }
+.checkout-optional { border-top: 1px solid var(--pos-border); margin-top: var(--pos-s3); }
+.checkout-optional > summary { min-height: var(--pos-target); padding: var(--pos-s3) 0; color: var(--pos-blue); font-size: var(--pos-small); cursor: pointer; font-weight: 600; }
+.checkout-tools { display: flex; align-items: center; gap: var(--pos-s1); margin: 0; }
+.checkout-tools > .checkout-optional { margin: 0; border-top: 0; }
+.checkout-tools > .checkout-optional > summary { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-height: 28px; height: 28px; padding: 2px var(--pos-s2); font-size: .75rem; border: 1px solid var(--pos-border); border-radius: var(--pos-radius); background: var(--pos-surface); color: var(--pos-ink); list-style: none; white-space: nowrap; }
+.checkout-tools > .checkout-optional > summary::-webkit-details-marker { display: none; }
+.checkout-tools > .checkout-optional > summary:hover { background: var(--pos-tint); border-color: var(--pos-muted); color: var(--pos-blue); }
+.checkout-tools > .checkout-optional > summary .pos-icon { width: 13px; height: 13px; }
+.pos-layout :is(.discount-form, .note-form) :is(input, select, button) { min-height: 36px; padding: var(--pos-s1) var(--pos-s3); }
+.pos-layout :is(.discount-form, .note-form) .row { align-items: center; }
+.coupon-section { display: grid; gap: var(--pos-s2); padding-bottom: var(--pos-s3); border-bottom: 1px dashed var(--pos-border); }
+.coupon-input-row { display: flex; gap: var(--pos-s2); align-items: center; }
+.coupon-input-row .clearable-input { flex: 1; min-width: 0; }
+.coupon-active-row { display: flex; align-items: center; justify-content: space-between; gap: var(--pos-s2); padding: var(--pos-s2) var(--pos-s3); background: var(--pos-selected); border: 1px solid #84b5d7; border-radius: var(--pos-radius); font-size: var(--pos-small); color: var(--pos-blue); }
+.checkout-note-preview { margin: var(--pos-s2) 0 0; padding: var(--pos-s2) var(--pos-s3); background: var(--pos-tint); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); font-size: var(--pos-small); color: var(--pos-ink); }
+.payment-panel { display: flex; flex-direction: column; gap: var(--pos-s3); padding-top: var(--pos-s4); margin-top: var(--pos-s3); border-top: 1px solid var(--pos-border); }
+.payment-panel > h3 { margin: 0; }
+.payment-methods { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: var(--pos-s2); }
+.pos-layout .payment-methods button { flex-direction: row; gap: var(--pos-s2); min-height: 40px; font-size: var(--pos-small); }
+.payment-methods:has(> button:only-child) { grid-template-columns: minmax(0,1fr); }
+.payment-method-rows { display: grid; gap: var(--pos-s2); }
+.payment-method-row { display: flex; align-items: center; justify-content: space-between; gap: var(--pos-s2); padding: var(--pos-s2) var(--pos-s3); background: var(--pos-tint); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); margin: 0; }
+.pos-layout .payment-method-row .money-input { width: 150px; min-height: 36px; height: 36px; padding: var(--pos-s1) var(--pos-s2); text-align: right; margin: 0; }
+.payment-method-badge { display: inline-flex; align-items: center; gap: var(--pos-s1); color: var(--pos-blue); white-space: nowrap; }
+.payment-method-badge .pos-icon { width: 16px; height: 16px; }
+.payment-panel > form { order: 1; margin: 0; }
+.payment-summary { order: 2; margin: 0; padding-top: var(--pos-s3); border-top: 1px solid var(--pos-border); font-size: var(--pos-small); }
+.payment-summary > div { display: flex; justify-content: space-between; align-items: baseline; gap: var(--pos-s3); padding: var(--pos-s1) 0; }
+.payment-summary dt { color: var(--pos-muted); }
+.payment-summary dd { margin: 0; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.payment-summary .remaining-row { font-size: var(--pos-body); color: var(--pos-ink); }
+.remaining-row dt { color: var(--pos-ink); }
+.payment-history { order: 3; font-size: var(--pos-small); }
+.payment-history > summary { cursor: pointer; min-height: var(--pos-target); display: flex; align-items: center; color: var(--pos-blue); }
+.attempt-list { list-style: none; padding: 0; margin: 0; }
+.attempt-list li { display: flex; justify-content: space-between; gap: var(--pos-s3); padding: var(--pos-s2) 0; border-bottom: 1px solid var(--pos-border); }
+.attempt-list small { display: block; }
+.payment-panel .funds-allocate { order: 4; }
+.pos-layout .checkout-submit { width: 100%; min-height: 48px; padding: var(--pos-s3); background: var(--pos-blue); border-color: var(--pos-blue); color: white; font-weight: 700; }
+.pos-layout .checkout-submit:not(:disabled):hover { background: var(--pos-blue-hover); border-color: var(--pos-blue-hover); }
+.pos-layout .money-input { font-size: 1.2rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.payment-panel .payment-next-hint, .payment-panel .payment-environment { font-size: var(--pos-small); margin: 0; }
+.payment-panel .payment-environment { order: 6; }
+.payment-panel > .error { order: 0; }
+.pos-layout .payment-invoice-popup { width: min(520px, calc(100vw - var(--pos-s6))); }
+.payment-invoice-popup .pos-popup-header h4 { margin: 0; font-size: var(--pos-heading); }
+.invoice-items-scroll { max-height: 200px; overflow-y: auto; border: 1px solid var(--pos-border); border-radius: var(--pos-radius); }
+.invoice-items-table { width: 100%; border-collapse: collapse; font-size: var(--pos-small); font-variant-numeric: tabular-nums; }
+.invoice-items-table th, .invoice-items-table td { padding: var(--pos-s1) var(--pos-s2); border-bottom: 1px solid var(--pos-border); text-align: left; }
+.invoice-items-table thead { background: var(--pos-tint); }
+.invoice-items-table :is(th, td):is(:nth-child(3), :nth-child(4), :nth-child(5)) { text-align: right; white-space: nowrap; }
+.invoice-totals { display: grid; gap: var(--pos-s1); padding: var(--pos-s2) var(--pos-s3); background: var(--pos-tint); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); font-size: var(--pos-small); font-variant-numeric: tabular-nums; }
+.invoice-line { display: flex; justify-content: space-between; align-items: baseline; gap: var(--pos-s2); }
+.invoice-line-highlight { padding-top: var(--pos-s1); border-top: 1px dashed var(--pos-border); font-size: var(--pos-body); color: var(--pos-blue); }
+.payment-qr-box { display: grid; grid-template-columns: 120px minmax(0,1fr); gap: var(--pos-s3); align-items: center; padding: var(--pos-s3); background: var(--pos-tint); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); }
+.payment-qr-svg { width: 120px; height: 120px; display: block; }
+.payment-qr-info { display: grid; gap: var(--pos-s1); font-size: var(--pos-small); }
+.payment-qr-info > strong { font-size: 1.25rem; color: var(--pos-blue); font-variant-numeric: tabular-nums; }
+.payment-bank-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: var(--pos-s2); }
+.payment-popup-actions { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: var(--pos-s2); align-items: center; }
+.pos-layout .payment-popup-actions button { min-height: 44px; padding: var(--pos-s2); }
+.tender-evidence .row { align-items: center; }
+.tender-evidence p { font-size: var(--pos-small); margin: 0; }
+.received-funds-page { display: grid; gap: var(--pos-s3); }
+.received-funds-page ul { display: grid; gap: var(--pos-s2); padding-left: var(--pos-s5); }
+
+@media (min-width: 1024px) { .workspace { grid-template-columns: minmax(0,1.5fr) minmax(240px,.8fr); } }
+@media (max-width: 1100px) { .header-user { max-width: 170px; }.context-label { display: none; }.pos-context-status { margin-left: auto; }.header-title { display: none; } }
+@media (max-width: 900px) { .sale-layout { grid-template-columns: minmax(0,1fr) 320px; }.header-user { max-width: 140px; }.pos-context-details { flex: 1; }.pos-context-status > span:last-child { display: none; }.context-popover { left: 0; }.catalog-results--cards { grid-template-columns: minmax(0,1fr); }.basket-line-main { grid-template-columns: minmax(0,1fr) auto; }.quantity-control { grid-column: 1; grid-row: 2; }.basket-line-total { grid-column: 2; grid-row: 1 / 3; flex-direction: column; align-items: flex-end; } }
+@media (max-width: 700px) {
+  .pos-layout:has(.mobile-checkout-jump) { padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
+  .pos-layout .mobile-checkout-jump { display: flex; justify-content: space-between; align-items: center; gap: var(--pos-s3); position: fixed; bottom: calc(var(--pos-s2) + env(safe-area-inset-bottom)); left: var(--pos-s2); right: var(--pos-s2); min-height: 52px; padding: var(--pos-s3) var(--pos-s4); border-radius: var(--pos-radius); background: var(--pos-blue); color: white; text-decoration: none; z-index: 10; box-shadow: var(--pos-shadow); }
+  .pos-layout .shell { padding: var(--pos-s2); gap: var(--pos-s2); }
+  .pos-layout .header { padding: var(--pos-s1) var(--pos-s3); }
+  .header-user { display: flex; max-width: 150px; }
+  .header-user > .pos-icon { display: none; }
+  .pos-context-status { font-size: var(--pos-small); }
+  .pos-context-details > summary { flex-wrap: wrap; gap: var(--pos-s1) var(--pos-s3); font-size: var(--pos-small); }
+  .context-popover { width: calc(100vw - var(--pos-s6)); }
+  .context-popover .selector { grid-template-columns: minmax(0,1fr); }
+  .sale-layout { grid-template-columns: minmax(0,1fr); }
+  .checkout-panel { position: static; max-height: none; overflow: visible; }
+  .selling-search, .checkout-section { padding: var(--pos-s3); }
+  .draft-toolbar { flex-wrap: wrap; gap: var(--pos-s1); }
+  .tablist { flex-basis: calc(100% - 48px); order: 1; }
+  .draft-filter { order: 2; }
+  .pos-layout .draft-toolbar > button { order: 3; }
+  .catalog-scroll { max-height: 300px; }
+  .catalog-product-info strong { padding-right: var(--pos-s4); }
+  .catalog-results--list .catalog-product-info { grid-template-columns: minmax(0,1fr) auto; }
+  .catalog-results--list .catalog-sku { grid-column: 1; grid-row: 2; }
+  .catalog-results--list .catalog-price { grid-column: 2; grid-row: 1; text-align: right; }
+  .catalog-results--list .catalog-meta > span:last-child { grid-column: 2; grid-row: 2; text-align: right; }
+  .basket-line-main { gap: var(--pos-s2); }
+  .pos-layout .header > strong { font-size: var(--pos-body); }
+}
+/* Selling alone fills the viewport; secondary pages keep normal document flow. */
+.pos-sale { height: 100dvh; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
+.pos-sale > .header { flex: 0 0 auto; }
+.pos-sale > .shell { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: var(--pos-s2); gap: var(--pos-s2); }
+.pos-sale .pos-alerts { flex: 0 0 auto; max-height: 25dvh; overflow-y: auto; }
+.pos-sale .draft-workspace { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.pos-sale .draft-workspace > :not(.sale-layout) { flex-shrink: 0; }
+.pos-sale .draft-workspace > :is(.lease-notice, .workspace-hint, .error) { max-height: 25dvh; overflow-y: auto; }
+.pos-sale .sale-layout { flex: 1; min-height: 0; grid-template-columns: minmax(0,1fr) clamp(300px,28vw,420px); grid-template-rows: minmax(0,.9fr) minmax(0,1.1fr); grid-template-areas: 'catalog checkout' 'basket checkout'; align-items: stretch; gap: var(--pos-s2); }
+.pos-sale .catalog-panel { grid-area: catalog; }
+.pos-sale .basket-panel { grid-area: basket; }
+.pos-sale .checkout-panel { grid-area: checkout; }
+.pos-sale :is(.catalog-panel, .basket-panel, .checkout-panel) { min-width: 0; min-height: 0; max-height: none; position: relative; inset: auto; overflow: auto; overscroll-behavior: contain; }
+.pos-sale .selling-search { padding: var(--pos-s3); }
+.pos-sale .catalog-heading { position: sticky; top: 0; z-index: 2; display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: var(--pos-s3); margin: calc(-1 * var(--pos-s3)) calc(-1 * var(--pos-s3)) var(--pos-s2); padding: var(--pos-s2) var(--pos-s3); border-bottom: 1px solid var(--pos-border); background: var(--pos-surface); }
+.pos-sale .catalog-heading h3 { white-space: nowrap; }
+.pos-sale .catalog-heading .product-search-row { min-width: 0; margin: 0; }
+.pos-sale .catalog-heading .view-toggle { white-space: nowrap; }
+.pos-sale .basket-heading { position: sticky; top: 0; z-index: 2; gap: var(--pos-s2); flex-wrap: wrap; padding: var(--pos-s2) var(--pos-s4); }
+.pos-sale .basket-heading .basket-actions { margin-left: auto; padding: 0; gap: var(--pos-s2); }
+.pos-sale .basket-heading .basket-actions > button, .pos-sale .basket-heading .order-more > summary { min-height: 32px; padding: var(--pos-s1) var(--pos-s2); }
+.pos-sale .basket-heading .order-more-menu { top: 100%; bottom: auto; max-height: 40dvh; overflow-y: auto; }
+.pos-sale .catalog-scroll { max-height: none; overflow: visible; margin: 0; }
+.pos-sale .catalog-results--cards { grid-template-columns: repeat(auto-fill,minmax(min(100%,240px),1fr)); }
+.pos-sale .basket-heading { border-top: 0; }
+.pos-sale .basket-lines { max-height: none; overflow: visible; padding-right: 0; }
+.pos-sale .basket-line-main { grid-template-columns: minmax(0,1fr) 104px; }
+.pos-sale .quantity-control { grid-column: 1; grid-row: 2; width: fit-content; }
+.pos-sale .basket-line-total { grid-column: 2; grid-row: 1 / 3; flex-direction: column; align-items: flex-end; }
+.pos-layout .quantity-control button { width: 28px; min-width: 28px; min-height: 30px; height: 30px; padding: 2px; }
+.pos-layout .quantity-control input { width: 44px; min-height: 30px; height: 30px; padding: 2px; }
+.sale-panel-nav { display: none; }
+.basket-cell-inline { display: flex; align-items: center; justify-content: flex-end; gap: var(--pos-s1); flex-wrap: wrap; }
+.unit-price-stack { display: inline-flex; flex-direction: column; align-items: flex-end; line-height: 1.2; }
+.unit-price-original { color: var(--pos-muted); font-size: var(--pos-small); text-decoration: line-through; }
+.pos-layout .cell-edit-button { display: inline-flex; align-items: center; justify-content: center; width: 28px; min-width: 28px; height: 28px; min-height: 28px; padding: 4px; border: 1px solid transparent; border-radius: var(--pos-radius); color: var(--pos-muted); cursor: pointer; list-style: none; }
+.pos-layout .cell-edit-button::-webkit-details-marker { display: none; }
+.pos-layout .cell-edit-button:hover { color: var(--pos-blue); background: var(--pos-selected); border-color: var(--pos-border); }
+.pos-layout .cell-clear-button:not(:disabled):hover { color: var(--pos-danger); background: #fff0ee; border-color: #f3c6c0; }
+.pos-layout .cell-edit-button .pos-icon { width: 15px; height: 15px; }
+.pos-popup-backdrop { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: var(--pos-s4); background: #172d4066; }
+.pos-layout .pos-popup-card { display: grid; grid-template-columns: minmax(0,1fr); gap: var(--pos-s3); width: min(400px, calc(100vw - var(--pos-s6))); max-height: calc(100dvh - var(--pos-s6)); overflow-y: auto; padding: var(--pos-s4); margin: 0; border: 1px solid var(--pos-border); border-radius: var(--pos-radius); background: var(--pos-surface); color: var(--pos-ink); box-shadow: var(--pos-shadow); text-align: left; }
+.pos-popup-header { display: flex; align-items: center; justify-content: space-between; gap: var(--pos-s2); padding-bottom: var(--pos-s2); border-bottom: 1px solid var(--pos-border); }
+.clearable-field { display: grid; gap: var(--pos-s1); }
+.clearable-input { position: relative; display: flex; align-items: center; }
+.pos-layout .clearable-input input { padding-right: 34px; margin: 0; }
+.pos-layout :is(.line-price-form, .item-discount-editor, .discount-form) .input-clear-button { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: 28px; min-width: 28px; height: 28px; min-height: 28px; padding: 4px; border: 0; border-radius: var(--pos-radius); background: transparent; color: var(--pos-muted); opacity: 0; transition: opacity .15s ease; }
+.clearable-input:is(:hover, :focus-within) .input-clear-button { opacity: 1; }
+.pos-layout .input-clear-button:not(:disabled):hover { color: var(--pos-danger); background: #fff0ee; }
+.pos-layout .input-clear-button .pos-icon { width: 14px; height: 14px; }
+.pos-layout .line-price-form :is(input, button) { min-height: 36px; padding: var(--pos-s1) var(--pos-s3); }
+.line-price-form .row { align-items: center; }
+.basket-table-scroll { max-width: 100%; overflow-x: auto; }
+.basket-table { width: 100%; min-width: 780px; border-collapse: collapse; table-layout: fixed; font-variant-numeric: tabular-nums; }
+.basket-table th, .basket-table td { padding: var(--pos-s2); text-align: left; vertical-align: middle; border-bottom: 1px solid var(--pos-border); overflow-wrap: anywhere; }
+.basket-table thead { background: var(--pos-tint); }
+.basket-table th:nth-child(1) { width: 5%; }
+.basket-table th:nth-child(2) { width: 10%; }
+.basket-table th:nth-child(3) { width: 23%; }
+.basket-table th:nth-child(4) { width: 13%; }
+.basket-table th:nth-child(5) { width: 16%; }
+.basket-table th:nth-child(6) { width: 15%; }
+.basket-table th:nth-child(7) { width: 18%; }
+.basket-table :is(th, td):nth-child(1) { text-align: center; }
+.basket-table td.basket-index { color: var(--pos-muted); }
+.basket-table :is(th, td):is(:nth-child(5), :nth-child(6), :nth-child(7)) { text-align: right; }
+.basket-table .basket-line-total { display: flex; flex-direction: row; align-items: center; justify-content: flex-end; }
+.pos-layout .item-discount-editor { display: grid; grid-template-columns: minmax(0,1fr); gap: var(--pos-s3); margin: 0; min-width: 0; }
+.item-discount-inputs { display: flex; gap: var(--pos-s2); }
+.pos-layout .item-discount-inputs input { min-width: 0; flex: 1; }
+.pos-layout .item-discount-inputs select { width: 64px; padding-inline: var(--pos-s2); }
+.pos-layout .item-discount-editor :is(input, select, button) { min-height: 36px; padding: var(--pos-s1) var(--pos-s3); }
+.item-discount-source { padding: 2px var(--pos-s2); border-radius: var(--pos-radius); background: var(--pos-tint); color: var(--pos-muted); font-size: var(--pos-small); }
+.item-discount-amount { color: var(--pos-blue); font-weight: 600; }
+@media (max-width: 1100px) {
+  .pos-sale .catalog-heading { grid-template-columns: minmax(0,1fr) auto; gap: var(--pos-s2); }
+  .pos-sale .catalog-heading .product-search-row { grid-column: 1 / -1; grid-row: 2; }
+  .pos-sale .catalog-heading .view-toggle { grid-column: 2; grid-row: 1; }
+}
+@media (min-width: 1101px) {
+  .pos-sale .basket-line-main { grid-template-columns: minmax(0,1fr) 100px minmax(104px,auto); }
+  .pos-sale .quantity-control { grid-column: auto; grid-row: auto; }
+  .pos-sale .basket-line-total { grid-column: auto; grid-row: auto; flex-direction: row; align-items: center; }
+}
+@media (max-width: 700px) {
+  .sale-panel-nav { display: flex; gap: var(--pos-s1); padding-bottom: var(--pos-s2); }
+  .sale-panel-nav a { flex: 1; min-width: 0; padding: var(--pos-s2) var(--pos-s1); text-align: center; background: var(--pos-surface); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); text-decoration: none; }
+  .pos-sale .sale-layout { display: grid; grid-template-columns: repeat(3,100%); grid-template-rows: minmax(0,1fr); grid-template-areas: none; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; gap: var(--pos-s2); }
+  .pos-sale .sale-layout > * { grid-area: auto; scroll-snap-align: start; }
+  .pos-sale .catalog-results--cards { grid-template-columns: repeat(auto-fill,minmax(min(100%,230px),1fr)); }
+}
+/* Login uses the same header, fields, spacing, radius and action colors as the register. */
+.pos-auth-layout { display: flex; flex-direction: column; min-height: 100dvh; }
+.auth-main { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: var(--pos-s6) var(--pos-s4); gap: var(--pos-s4); }
+.auth-panel { width: 100%; max-width: var(--pos-auth-width); padding: calc(var(--pos-s4) * 2); background: var(--pos-surface); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); }
+.auth-symbol { display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: var(--pos-radius); color: var(--pos-blue); background: var(--pos-selected); margin-bottom: var(--pos-s5); }
+.auth-symbol .pos-icon { width: 24px; height: 24px; }
+.auth-eyebrow { font-size: var(--pos-small); font-weight: 600; color: var(--pos-muted); }
+.pos-layout .auth-panel h1 { font-size: var(--pos-page-title); letter-spacing: -.02em; margin: var(--pos-s2) 0; line-height: 1.3; }
+.pos-layout .auth-intro { margin: 0 0 var(--pos-s6); }
+.pos-layout .auth-form { margin-top: var(--pos-s6); gap: var(--pos-s4); }
+.auth-field { display: grid; gap: var(--pos-s2); min-width: 0; }
+.pos-layout .auth-field input { min-height: 48px; }
+.password-field { position: relative; }
+.pos-layout .password-field input { padding-right: calc(var(--pos-target) + var(--pos-s2)); }
+.pos-layout .password-toggle { position: absolute; right: 1px; top: 1px; bottom: 1px; width: var(--pos-target); min-height: 0; border: 0; padding: var(--pos-s2); background: transparent; color: var(--pos-muted); }
+.pos-layout .auth-security { display: flex; align-items: flex-start; gap: var(--pos-s2); padding-top: var(--pos-s5); margin: var(--pos-s5) 0 0; border-top: 1px solid var(--pos-border); font-size: var(--pos-small); }
+.auth-security .pos-icon { width: 16px; height: 16px; }
+.pos-layout .auth-help { max-width: var(--pos-auth-width); font-size: var(--pos-small); text-align: center; margin: 0; }
+.context-setup-dialog { width: min(520px, calc(100vw - var(--pos-s6))); max-height: calc(100dvh - var(--pos-s6)); overflow-y: auto; padding: var(--pos-s6); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); background: var(--pos-surface); color: var(--pos-ink); box-shadow: var(--pos-shadow); }
+.context-setup-dialog::backdrop { background: #172d4070; }
+.context-setup-dialog .selector { margin-top: var(--pos-s5); }
+.dialog-actions { display: flex; justify-content: flex-end; padding-top: var(--pos-s5); }
+.context-popover .selector[data-registers='none'] { grid-template-columns: minmax(0,1fr); }
+.pos-layout .context-account { font-weight: 600; margin: 0 0 var(--pos-s3); }
+
+/* Shared secondary-page frame and feedback. */
+.pos-page { width: 100%; max-width: var(--pos-page-width); margin: 0 auto; min-width: 0; padding-bottom: var(--pos-s6); }
+.pos-page-nav { display: flex; flex-wrap: wrap; gap: var(--pos-s1); padding-bottom: var(--pos-s3); border-bottom: 1px solid var(--pos-border); }
+.pos-page-nav a, .pos-layout .button-link { display: inline-flex; align-items: center; justify-content: center; gap: var(--pos-s2); min-height: var(--pos-target); padding: var(--pos-s2) var(--pos-s3); border-radius: var(--pos-radius); font-weight: 600; text-decoration: none; }
+.pos-page-nav a { color: var(--pos-muted); border: 1px solid transparent; }
+.pos-page-nav a:hover { background: var(--pos-surface); color: var(--pos-blue); }
+.pos-page-nav a.is-active { background: var(--pos-surface); color: var(--pos-blue); border-color: var(--pos-border); }
+.page-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--pos-s4); padding: var(--pos-s6) 0; }
+.page-heading > div { min-width: 0; }
+.pos-layout .page-heading h1 { font-size: var(--pos-page-title); letter-spacing: -.02em; margin: 0 0 var(--pos-s2); line-height: 1.3; }
+.pos-layout .page-heading p { max-width: 80ch; margin: 0; }
+.pos-layout .button-link { flex-shrink: 0; border: 1px solid var(--pos-border); background: var(--pos-surface); color: var(--pos-ink); }
+.page-card { min-width: 0; padding: var(--pos-s5); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); background: var(--pos-surface); }
+.page-state { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--pos-s3); min-height: 180px; padding: var(--pos-s6); text-align: center; color: var(--pos-muted); background: var(--pos-tint); border-radius: var(--pos-radius); }
+.page-state strong { color: var(--pos-ink); }
+.pos-layout .page-state p { margin: 0; max-width: 55ch; }
+.page-state-icon { display: flex; color: var(--pos-muted); }
+.page-state--error { background: #fff0ee; }
+.page-state--error .page-state-icon, .page-state--error strong { color: var(--pos-danger); }
+.page-state--success .page-state-icon { color: var(--pos-success); }
+.page-state--loading { border: 1px dashed var(--pos-border); }
+.page-success { padding: var(--pos-s3); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); background: var(--pos-surface); }
+.pos-layout .page-success { color: var(--pos-success); }
+.pos-layout .primary-button { background: var(--pos-blue); color: var(--pos-surface); border-color: var(--pos-blue); }
+.pos-layout .primary-button:not(:disabled):hover { background: var(--pos-blue-hover); color: var(--pos-surface); }
+.settings-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: var(--pos-s4); align-items: start; }
+.settings-memberships { grid-column: 1 / -1; }
+.section-heading { display: flex; align-items: center; justify-content: space-between; gap: var(--pos-s3); }
+.record-list { list-style: none; margin: 0; padding: 0; }
+.record-list > li { display: flex; flex-wrap: wrap; align-items: center; gap: var(--pos-s3); padding: var(--pos-s3) 0; border-bottom: 1px solid var(--pos-border); }
+.record-copy { display: flex; flex: 1; flex-direction: column; align-items: flex-start; gap: var(--pos-s1); min-width: 0; overflow-wrap: anywhere; }
+.record-copy small { font-weight: 400; }
+.status-tag { display: inline-block; width: fit-content; padding: var(--pos-s1) var(--pos-s2); border-radius: var(--pos-radius); color: var(--pos-muted); background: var(--pos-tint); font-size: var(--pos-small); font-weight: 600; }
+.status-tag[data-warning='true'] { background: #fff4d9; color: var(--pos-warning); }
+.page-disclosure { margin-top: var(--pos-s4); border-top: 1px solid var(--pos-border); }
+.page-disclosure > summary { display: flex; align-items: center; gap: var(--pos-s2); min-height: var(--pos-target); padding: var(--pos-s3) 0; cursor: pointer; color: var(--pos-blue); font-weight: 600; list-style: none; }
+.page-disclosure > summary::before { content: '+'; font-size: var(--pos-heading); }
+.page-disclosure[open] > summary::before { content: '−'; }
+.pos-layout .form-fields { display: grid; gap: var(--pos-s4); padding: 0; margin: 0; border: 0; min-width: 0; }
+.form-fields > button { justify-self: start; }
+.pos-layout .capability-options { margin: 0; padding: var(--pos-s3); border-color: var(--pos-border); }
+.capability-options legend { font-weight: 600; }
+.page-toolbar { display: flex; justify-content: space-between; gap: var(--pos-s3); align-items: center; padding-bottom: var(--pos-s4); }
+.page-toolbar > span { overflow-wrap: anywhere; min-width: 0; }
+.funds-layout { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1.1fr); gap: var(--pos-s4); align-items: start; }
+.fund-list { list-style: none; padding: 0; margin: var(--pos-s4) 0 0; display: grid; gap: var(--pos-s2); }
+.pos-layout .fund-row { width: 100%; text-align: left; align-items: flex-start; justify-content: flex-start; gap: var(--pos-s3); padding: var(--pos-s3); }
+.fund-method-icon { display: flex; padding-top: var(--pos-s1); color: var(--pos-muted); }
+.fund-row-money { display: flex; align-items: flex-end; flex-direction: column; gap: var(--pos-s1); font-variant-numeric: tabular-nums; text-align: right; overflow-wrap: anywhere; max-width: 50%; }
+.fund-row-money > small { font-weight: 400; }
+.fund-row-money > span { color: var(--pos-muted); font-size: var(--pos-small); }
+.fund-detail-heading { display: flex; flex-direction: column; align-items: flex-start; gap: var(--pos-s2); padding: var(--pos-s4) 0; overflow-wrap: anywhere; }
+.fund-detail-heading h3 { margin: 0; }
+.fund-detail-heading > strong { color: var(--pos-blue); font-size: var(--pos-page-title); font-variant-numeric: tabular-nums; }
+.fund-breakdown { margin: 0; }
+.fund-breakdown > div { display: flex; justify-content: space-between; gap: var(--pos-s3); padding: var(--pos-s3) 0; border-top: 1px solid var(--pos-border); }
+.fund-breakdown dt { color: var(--pos-muted); }
+.fund-breakdown dd { margin: 0; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; max-width: 65%; }
+.page-pagination { display: flex; align-items: center; justify-content: space-between; gap: var(--pos-s2); margin-top: var(--pos-s4); }
+.pos-layout .page-footnote { font-size: var(--pos-small); margin: var(--pos-s4) 0 0; }
+.liability-payout { margin-top: var(--pos-s4); padding-top: var(--pos-s3); border-top: 1px solid var(--pos-border); }
+@media (max-width: 900px) { .settings-grid, .funds-layout { grid-template-columns: minmax(0,1fr); }.settings-memberships { grid-column: auto; } }
+@media (max-width: 700px) {
+  .pos-layout .auth-panel { padding: var(--pos-s6); }
+  .auth-main { justify-content: flex-start; padding-top: var(--pos-s6); }
+  .page-heading { flex-direction: column; gap: var(--pos-s3); padding: var(--pos-s5) 0; }
+  .page-card { padding: var(--pos-s4); }
+  .pos-page-nav a { flex: 1 1 calc(50% - var(--pos-s1)); justify-content: flex-start; }
+  .record-list > li > button { width: 100%; }
+  .fund-method-icon { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto; animation-duration: .01ms; transition-duration: .01ms; } }
+</style></head><body><main class="layout pos-layout pos-sale"><a class="skip-link" href="#pos-product-search">Đến khu vực tìm hàng</a><header class="header"><h1 id="title" class="visually-hidden">Bán hàng</h1><strong>ParkViet <span>POS</span></strong><span class="header-title">Bán hàng</span><details class="pos-context-details"><summary title="Đổi chi nhánh / quầy"><span><b class="context-label">Chi nhánh:</b> Siêu thị Hiền</span><span><b class="context-label">Quầy:</b> Quầy 01</span><span class="context-change"><span class="visually-hidden">Đổi chi nhánh / quầy</span><svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></span></summary><div class="context-popover"><p class="context-account">Thu ngân</p><div class="selector" data-registers="required"><div class="selector-group"><label>Chi nhánh<select><option value="">Chọn chi nhánh</option><option value="br_1">Siêu thị Hiền · đang dùng</option></select></label></div><div class="selector-group"><label>Quầy<select><option value="">Chọn quầy</option><option value="reg_1">Quầy 01 · đang dùng</option></select></label></div></div><p>Siêu thị · VND</p><p><a href="/pos/funds">Sổ tiền đã nhận / nghĩa vụ</a> · <a href="/pos/payment-attention">Khoản thu cần chú ý</a></p><button type="button">Đăng xuất</button><p class="footnote">Phiên chỉ lưu trong bộ nhớ trình duyệt.</p></div></details><div class="pos-context-status"><span class="connection-status" data-offline="false" role="status" title="Đã kết nối máy chủ."><span class="connection-dot"></span><span class="visually-hidden">Đã kết nối máy chủ.</span></span><span>Ca đang mở</span></div><span class="header-user" title="Thu ngân"><svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21v-2a8 8 0 0 1 16 0v2"></path></svg><span class="header-user-name">Thu ngân</span></span></header><dialog class="context-setup-dialog" aria-labelledby="context-setup-title" aria-describedby="context-setup-hint"><h2 id="context-setup-title">Chọn nơi bán hàng</h2><p id="context-setup-hint">Chọn chi nhánh để bắt đầu. Chỉ cần chọn quầy nếu chi nhánh có nhiều quầy.</p><div class="dialog-actions"><button type="button">Để sau</button></div></dialog><section class="shell" aria-labelledby="title"><div class="pos-context-card pos-alerts"></div><section class="draft-workspace" aria-label="Đơn nháp trên quầy này"><div class="draft-toolbar"><button type="button"><svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14 M5 12h14"></path></svg> Đơn nháp mới</button><details class="draft-filter"><summary title="Tìm trong danh sách đã tải"><svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m16 16 4.5 4.5"></path></svg><span class="visually-hidden">Tìm trong danh sách đã tải</span></summary><label>Tìm trong danh sách đã tải<input value="" style=""></label></details><div class="tablist" role="tablist" aria-label="Đơn nháp trên quầy này"><button type="button" role="tab" aria-label="Hóa đơn 1" data-workspace-id="ws_1" title="Đang bán" aria-selected="true"><strong>Hóa đơn 1</strong></button></div></div><nav class="sale-panel-nav" aria-label="Bán hàng"><a href="#pos-catalog">Danh mục sản phẩm</a><a href="#pos-basket">Hàng trong đơn</a><a href="#pos-checkout">Thông tin thanh toán</a></nav><div class="sale-layout"><section class="selling-panel catalog-panel" id="pos-catalog" aria-label="Danh mục sản phẩm"><div class="selling-search"><div class="catalog-heading"><h3>Danh mục sản phẩm <span class="catalog-count">12</span></h3><form class="product-search-row"><div class="search-input-wrap"><svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m16 16 4.5 4.5"></path></svg><input id="pos-product-search" maxlength="200" aria-label="Tìm hàng hoặc quét mã" aria-keyshortcuts="F2" placeholder="Tìm hàng hoặc quét mã (F2)" type="search" value="" style=""></div><button type="submit" disabled="">Tìm hàng</button></form><fieldset class="view-toggle" aria-label="Kiểu hiển thị danh mục"><button type="button" aria-pressed="true"><svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg> Thẻ</button><button type="button" aria-pressed="false"><svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h2 M9 5h12 M3 12h2 M9 12h12 M3 19h2 M9 19h12"></path></svg> Danh sách</button></fieldset></div><div class="catalog-scroll"><ul class="catalog-results catalog-results--cards" aria-label="Kết quả tìm hàng"><li><button type="button" class="catalog-product" aria-label="Thêm vào đơn" title="Gạo thơm 5kg"><div class="catalog-image" aria-hidden="true"><svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5 9-5Z M3 8v9l9 5 9-5V8 M12 13v9 M7.5 5.5l9 5"></path></svg></div><span class="catalog-product-info"><strong title="Gạo thơm 5kg">Gạo thơm 5kg</strong><span class="catalog-meta"><span class="catalog-sku">HH-1</span><span class="catalog-meta-sep" aria-hidden="true"> · </span><span class="catalog-stock">Tồn kho: 30</span></span><span class="catalog-price">125.000 ₫</span></span></button><details class="catalog-advanced"><summary title="Thêm theo số lượng, lô hoặc đơn vị bán"><span class="visually-hidden">Thêm theo số lượng, lô hoặc đơn vị bán · Gạo thơm 5kg</span><svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></summary></details></li><li><button type="button" class="catalog-product" aria-label="Thêm vào đơn" title="Sữa tươi tiệt trùng nguyên kem không đường nhập khẩu hộp lớn 1L mẫu mới đặc biệt"><div class="catalog-image" aria-hidden="true"><svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5 9-5Z M3 8v9l9 5 9-5V8 M12 13v9 M7.5 5.5l9 5"></path></svg></div><span class="catalog-product-info"><strong title="Sữa tươi tiệt trùng nguyên kem không đường nhập khẩu hộp lớn 1L mẫu mới đặc biệt">Sữa tươi tiệt trùng nguyên kem không đường nhập khẩu hộp lớn 1L mẫu mới đặc biệt</strong><span class="catalog-meta"><span class="catalog-sku">HH-2</span><span class="catalog-meta-sep" aria-hidden="true"> · </span><span class="stock-unknown">Tồn kho: chưa rõ</span></span><span class="catalog-price">35.000 ₫</span></span></button><details class="catalog-advanced"><summary title="Thêm theo số lượng, lô hoặc đơn vị bán"><span class="visually-hidden">Thêm theo số lượng, lô hoặc đơn vị bán · Sữa tươi tiệt trùng nguyên kem không đường nhập khẩu hộp lớn 1L mẫu mới đặc biệt</span><svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></summary></details></li><li><button type="button" class="catalog-product" aria-label="Thêm vào đơn" title="Trứng gà hộp 10 quả"><div class="catalog-image" aria-hidden="true"><svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5 9-5Z M3 8v9l9 5 9-5V8 M12 13v9 M7.5 5.5l9 5"></path></svg></div><span class="catalog-product-info"><strong title="Trứng gà hộp 10 quả">Trứng gà hộp 10 quả</strong><span class="catalog-meta"><span class="catalog-sku">HH-3</span><span class="catalog-meta-sep" aria-hidden="true"> · </span><span class="catalog-stock">Tồn kho: 30</span></span><span class="catalog-price">35.000 ₫</span></span></button><details class="catalog-advanced"><summary title="Thêm theo số lượng, lô hoặc đơn vị bán"><span class="visually-hidden">Thêm theo số lượng, lô hoặc đơn vị bán · Trứng gà hộp 10 quả</span><svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></summary></details></li><li><button type="button" class="catalog-product" aria-label="Thêm vào đơn" title="Mì ăn liền gói"><div class="catalog-image" aria-hidden="true"><svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5 9-5Z M3 8v9l9 5 9-5V8 M12 13v9 M7.5 5.5l9 5"></path></svg></div><span class="catalog-product-info"><strong title="Mì ăn liền gói">Mì ăn liền gói</strong><span class="catalog-meta"><span class="catalog-sku">HH-4</span><span class="catalog-meta-sep" aria-hidden="true"> · </span><span class="catalog-stock">Tồn kho: 30</span></span><span class="catalog-price">35.000 ₫</span></span></button><details class="catalog-advanced"><summary title="Thêm theo số lượng, lô hoặc đơn vị bán"><span class="visually-hidden">Thêm theo số lượng, lô hoặc đơn vị bán · Mì ăn liền gói</span><svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></summary></details></li><li><button type="button" class="catalog-product" aria-label="Thêm vào đơn" title="Dầu ăn 1L"><div class="catalog-image" aria-hidden="true"><svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5 9-5Z M3 8v9l9 5 9-5V8 M12 13v9 M7.5 5.5l9 5"></path></svg></div><span class="catalog-product-info"><strong title="Dầu ăn 1L">Dầu ăn 1L</strong><span class="catalog-meta"><span class="catalog-sku">HH-5</span><span class="catalog-meta-sep" aria-hidden="true"> · </span><span class="catalog-stock">Tồn kho: 30</span></span><span class="catalog-price">35.000 ₫</span></span></button><details class="catalog-advanced"><summary title="Thêm theo số lượng, lô hoặc đơn vị bán"><span class="visually-hidden">Thêm theo số lượng, lô hoặc đơn vị bán · Dầu ăn 1L</span><svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></summary></details></li><li><button type="button" class="catalog-product" aria-label="Thêm vào đơn" title="Nước suối 500ml"><div class="catalog-image" aria-hidden="true"><svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5 9-5Z M3 8v9l9 5 9-5V8 M12 13v9 M7.5 5.5l9 5"></path></svg></div><span class="catalog-product-info"><strong title="Nước suối 500ml">Nước suối 500ml</strong><span class="catalog-meta"><span class="catalog-sku">HH-6</span><span class="catalog-meta-sep" aria-hidden="true"> · </span><span class="catalog-stock">Tồn kho: 30</span></span><span class="catalog-price">35.000 ₫</span></span></button><details class="catalog-advanced"><summary title="Thêm theo số lượng, lô hoặc đơn vị bán"><span class="visually-hidden">Thêm theo số lượng, lô hoặc đơn vị bán · Nước suối 500ml</span><svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></summary></details></li><li><button type="button" class="catalog-product" aria-label="Thêm vào đơn" title="Cà phê hòa tan hộp"><div class="catalog-image" aria-hidden="true"><svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5 9-5Z M3 8v9l9 5 9-5V8 M12 13v9 M7.5 5.5l9 5"></path></svg></div><span class="catalog-product-info"><strong title="Cà phê hòa tan hộp">Cà phê hòa tan hộp</strong><span class="catalog-meta"><span class="catalog-sku">HH-7</span><span class="catalog-meta-sep" aria-hidden="true"> · </span><span class="catalog-stock">Tồn kho: 30</span></span><span class="catalog-price">35.000 ₫</span></span></button><details class="catalog-advanced"><summary title="Thêm theo số lượng, lô hoặc đơn vị bán"><span class="visually-hidden">Thêm theo số lượng, lô hoặc đơn vị bán · Cà phê hòa tan hộp</span><svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></summary></details></li><li><button type="button" class="catalog-product" aria-label="Thêm vào đơn" title="Bánh quy bơ"><div class="catalog-image" aria-hidden="true"><svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5 9-5Z M3 8v9l9 5 9-5V8 M12 13v9 M7.5 5.5l9 5"></path></svg></div><span class="catalog-product-info"><strong title="Bánh quy bơ">Bánh quy bơ</strong><span class="catalog-meta"><span class="catalog-sku">HH-8</span><span class="catalog-meta-sep" aria-hidden="true"> · </span><span class="catalog-stock">Tồn kho: 30</span></span><span class="catalog-price">35.000 ₫</span></span></button><details class="catalog-advanced"><summary title="Thêm theo số lượng, lô hoặc đơn vị bán"><span class="visually-hidden">Thêm theo số lượng, lô hoặc đơn vị bán · Bánh quy bơ</span><svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></summary></details></li><li><button type="button" class="catalog-product" aria-label="Thêm vào đơn" title="Nước mắm 500ml"><div class="catalog-image" aria-hidden="true"><svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5 9-5Z M3 8v9l9 5 9-5V8 M12 13v9 M7.5 5.5l9 5"></path></svg></div><span class="catalog-product-info"><strong title="Nước mắm 500ml">Nước mắm 500ml</strong><span class="catalog-meta"><span class="catalog-sku">HH-9</span><span class="catalog-meta-sep" aria-hidden="true"> · </span><span class="catalog-stock">Tồn kho: 30</span></span><span class="catalog-price">35.000 ₫</span></span></button><details class="catalog-advanced"><summary title="Thêm theo số lượng, lô hoặc đơn vị bán"><span class="visually-hidden">Thêm theo số lượng, lô hoặc đơn vị bán · Nước mắm 500ml</span><svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></summary></details></li><li><button type="button" class="catalog-product" aria-label="Thêm vào đơn" title="Đường trắng 1kg"><div class="catalog-image" aria-hidden="true"><svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5 9-5Z M3 8v9l9 5 9-5V8 M12 13v9 M7.5 5.5l9 5"></path></svg></div><span class="catalog-product-info"><strong title="Đường trắng 1kg">Đường trắng 1kg</strong><span class="catalog-meta"><span class="catalog-sku">HH-10</span><span class="catalog-meta-sep" aria-hidden="true"> · </span><span class="catalog-stock">Tồn kho: 30</span></span><span class="catalog-price">35.000 ₫</span></span></button><details class="catalog-advanced"><summary title="Thêm theo số lượng, lô hoặc đơn vị bán"><span class="visually-hidden">Thêm theo số lượng, lô hoặc đơn vị bán · Đường trắng 1kg</span><svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></summary></details></li><li><button type="button" class="catalog-product" aria-label="Thêm vào đơn" title="Bột giặt 2kg"><div class="catalog-image" aria-hidden="true"><svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5 9-5Z M3 8v9l9 5 9-5V8 M12 13v9 M7.5 5.5l9 5"></path></svg></div><span class="catalog-product-info"><strong title="Bột giặt 2kg">Bột giặt 2kg</strong><span class="catalog-meta"><span class="catalog-sku">HH-11</span><span class="catalog-meta-sep" aria-hidden="true"> · </span><span class="catalog-stock">Tồn kho: 30</span></span><span class="catalog-price">35.000 ₫</span></span></button><details class="catalog-advanced"><summary title="Thêm theo số lượng, lô hoặc đơn vị bán"><span class="visually-hidden">Thêm theo số lượng, lô hoặc đơn vị bán · Bột giặt 2kg</span><svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></summary></details></li><li><button type="button" class="catalog-product" aria-label="Thêm vào đơn" title="Giấy vệ sinh 10 cuộn"><div class="catalog-image" aria-hidden="true"><svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5 9-5Z M3 8v9l9 5 9-5V8 M12 13v9 M7.5 5.5l9 5"></path></svg></div><span class="catalog-product-info"><strong title="Giấy vệ sinh 10 cuộn">Giấy vệ sinh 10 cuộn</strong><span class="catalog-meta"><span class="catalog-sku">HH-12</span><span class="catalog-meta-sep" aria-hidden="true"> · </span><span class="catalog-stock">Tồn kho: 30</span></span><span class="catalog-price">35.000 ₫</span></span></button><details class="catalog-advanced"><summary title="Thêm theo số lượng, lô hoặc đơn vị bán"><span class="visually-hidden">Thêm theo số lượng, lô hoặc đơn vị bán · Giấy vệ sinh 10 cuộn</span><svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></summary></details></li></ul></div></div></section><section class="selling-panel basket-panel" id="pos-basket" aria-label="Hàng trong đơn"><div class="basket-heading"><h2>Hàng trong đơn</h2><span>1 mặt hàng</span><div class="row basket-actions"><button type="button">Tạm giữ</button><details class="order-more"><summary>Thao tác khác <svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></summary><div class="order-more-menu"><button type="button">Hủy nháp</button><button type="button">Đóng tab</button></div></details></div></div><article class="draft-detail"><div class="basket-table-scroll"><table class="basket-table" aria-label="Hàng trong đơn"><thead><tr><th scope="col">STT</th><th scope="col">Mã hàng</th><th scope="col">Tên sản phẩm</th><th scope="col">Số lượng</th><th scope="col">Đơn giá</th><th scope="col">Giảm giá</th><th scope="col">Thành tiền</th></tr></thead><tbody class="basket-lines"><tr><td class="basket-index">1</td><td class="basket-sku">HH-1</td><td><div class="basket-line-name"><strong>Gạo thơm 5kg</strong></div></td><td><div class="quantity-control"><button type="button" aria-label="Giảm số lượng Gạo thơm 5kg"><svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path></svg></button><label class="visually-hidden" for="quantity-line_1">Số lượng Gạo thơm 5kg</label><input id="quantity-line_1" inputmode="numeric" min="1" max="10000" type="number" value="3" style=""><button type="button" aria-label="Tăng số lượng Gạo thơm 5kg"><svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14 M5 12h14"></path></svg></button></div></td><td class="basket-unit-price"><div class="basket-cell-inline"><span class="unit-price-stack"><span>125.000 ₫</span></span><details class="line-price-edit"><summary class="cell-edit-button" aria-label="Sửa giá bán Gạo thơm 5kg" title="Sửa giá bán"><svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z M15 5l4 4"></path></svg></summary><div class="pos-popup-backdrop"><form class="line-price-form pos-popup-card"><div class="pos-popup-header"><strong>Sửa giá bán · Gạo thơm 5kg</strong></div><label>Đơn giá bán<input aria-label="Đơn giá bán Gạo thơm 5kg" inputmode="numeric" maxlength="64" aria-invalid="false" value="125000" style=""></label><div class="clearable-field"><label for="_r_2_">Lý do</label><div class="clearable-input"><input id="_r_2_" maxlength="200" value="Điều chỉnh giá bán" style=""><button type="button" class="input-clear-button" aria-label="Xóa giảm giá"><svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 6 12 12 M18 6 6 18"></path></svg></button></div></div><div class="row"><button type="submit" class="primary-button">Lưu</button><button type="button">Đóng</button></div></form></div></details></div></td><td class="basket-item-discount"><div class="basket-cell-inline"><span title="">0 ₫</span><details class="item-discount-edit"><summary class="cell-edit-button" aria-label="Giảm giá: Gạo thơm 5kg" title="Giảm giá"><svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z M15 5l4 4"></path></svg></summary><div class="pos-popup-backdrop"><form class="item-discount-editor pos-popup-card"><div class="pos-popup-header"><strong>Giảm giá · Gạo thơm 5kg</strong><span class="item-discount-source" title="">Chưa giảm</span></div><div class="item-discount-inputs"><input aria-label="Giảm giá Gạo thơm 5kg" inputmode="decimal" maxlength="64" aria-invalid="false" title="Số tiền giảm cho cả dòng hoặc phần trăm. Thay thế khuyến mại mặt hàng, không cộng trùng. Giảm hóa đơn áp dụng riêng." value="0" style=""><select aria-label="Kiểu giảm giá Gạo thơm 5kg"><option value="flat">₫</option><option value="percent">%</option></select></div><div class="clearable-field"><label for="_r_3_">Lý do</label><div class="clearable-input"><input id="_r_3_" maxlength="200" value="Điều chỉnh giảm giá mặt hàng" style=""><button type="button" class="input-clear-button" aria-label="Xóa giảm giá"><svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 6 12 12 M18 6 6 18"></path></svg></button></div></div><div class="row"><button type="submit" class="primary-button" disabled="">Lưu</button><button type="button">Đóng</button></div></form></div></details></div></td><td><div class="basket-line-total"><strong>375.000 ₫</strong><button class="remove-line" type="button" title="Xóa dòng" aria-label="Xóa dòng Gạo thơm 5kg"><svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18 M9 6V3h6v3 M5 6l1 15h12l1-15 M10 10v7 M14 10v7"></path></svg></button></div></td></tr></tbody></table></div></article></section><aside class="checkout-panel" id="pos-checkout" tabindex="-1" aria-label="Thông tin thanh toán"><div class="checkout-section"><div class="customer-panel"><div class="customer-header"><h3>Khách hàng</h3><form class="customer-search-row"><input aria-label="Tìm theo tên, số điện thoại hoặc email" placeholder="Tìm theo tên, số điện thoại hoặc email" type="search" value="" style=""><button type="submit" class="customer-icon-button" aria-label="Tìm khách" title="Tìm khách" disabled=""><svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m16 16 4.5 4.5"></path></svg></button><button type="button" class="customer-icon-button" aria-label="Tạo khách nhanh" title="Tạo khách nhanh"><svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14 M5 12h14"></path></svg></button></form></div><div class="customer-selected"><svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21v-2a8 8 0 0 1 16 0v2"></path></svg><div class="customer-selected-info"><strong>Khách lẻ</strong></div></div></div><section class="checkout-totals" aria-label="Chi tiết đơn"><div class="checkout-totals-header"><h2>Chi tiết đơn</h2><div class="checkout-tools"><details class="checkout-optional"><summary><svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z M15 5l4 4"></path></svg> Giảm giá toàn đơn</summary><div class="pos-popup-backdrop"><form class="discount-form pos-popup-card"><div class="pos-popup-header"><strong>Giảm giá toàn đơn</strong></div><div class="coupon-section"><div class="clearable-field"><label for="_r_8_">Mã voucher / khuyến mại (Spree)</label><div class="coupon-input-row"><div class="clearable-input"><input id="_r_8_" maxlength="64" placeholder="Nhập mã voucher (VD: VOUCHER10, GIAM20K)" value="" style=""></div><button type="button" class="primary-button" disabled="">Áp dụng mã</button></div></div></div><label>Loại giảm<select><option value="percent">Phần trăm</option><option value="flat">Số tiền VND</option></select></label><label>Giá trị<input inputmode="decimal" required="" value="10" style=""></label><div class="clearable-field"><label for="_r_9_">Lý do</label><div class="clearable-input"><input id="_r_9_" maxlength="200" required="" value="Giảm giá toàn đơn" style=""><button type="button" class="input-clear-button" aria-label="Xóa giảm giá"><svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 6 12 12 M18 6 6 18"></path></svg></button></div></div><div class="row"><button type="submit" class="primary-button">Áp dụng giảm giá</button><button type="button">Đóng</button></div></form></div></details><details class="checkout-optional"><summary><svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z M15 5l4 4"></path></svg> Ghi chú tại quầy</summary><div class="pos-popup-backdrop"><form class="note-form pos-popup-card"><div class="pos-popup-header"><strong>Ghi chú tại quầy</strong><span class="muted">0 / 1000</span></div><label>Ghi chú nội bộ của đơn nháp<textarea maxlength="1000" rows="3" placeholder="Ví dụ: khách hẹn lấy sau, cần gói riêng…" style=""></textarea></label><div class="row"><button type="submit" class="primary-button">Lưu ghi chú</button><button type="button">Đóng</button></div></form></div></details></div></div><div class="checkout-line"><span>Tiền hàng</span><strong>375.000 ₫</strong></div><div class="checkout-line"><span>Giảm giá </span><strong>0 ₫</strong></div><div class="checkout-line checkout-total"><span>Tổng đơn hàng</span><strong>375.000 ₫</strong></div></section><section class="payment-panel" aria-label="Thu tiền"><h3 id="pos-payment-title">Phương thức thanh toán</h3><form><fieldset class="payment-methods" aria-label="Phương thức"><button type="button" aria-pressed="true"><svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"></rect><circle cx="12" cy="12" r="3"></circle><path d="M5 12h1 M18 12h1"></path></svg>Tiền mặt</button></fieldset><div class="payment-method-rows"><label class="payment-method-row" data-method="cash"><span class="payment-method-badge"><svg class="pos-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"></rect><circle cx="12" cy="12" r="3"></circle><path d="M5 12h1 M18 12h1"></path></svg><strong>Tiền mặt</strong></span><input inputmode="numeric" class="money-input" placeholder="375000" required="" value="375000" style=""></label></div><button class="checkout-submit" type="submit">Thanh toán</button></form></section></div></aside></div></section></section></main></body></html>

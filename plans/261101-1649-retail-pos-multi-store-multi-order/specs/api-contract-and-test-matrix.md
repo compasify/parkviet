@@ -2,7 +2,7 @@
 
 ## 1. Contract status
 
-Toàn bộ `/api/v3/admin/pos/*` bên dưới là **NEW đề xuất**, không phải endpoint sẵn có. Phase 1 chốt schema, HTTP semantics, permission subjects và Spree seams bằng integration spikes. Reuse admin authentication nhưng không grant blanket core writes. Server-only wrappers gọi core workflows, không browser tự chain các endpoint tài chính không có saga.
+Các nhóm `/api/v3/admin/pos/*` bên dưới là **contract và phạm vi đề xuất**, không đảm bảo đã tồn tại hoặc được qualify. Một số route đã có trong source, gồm context/workspace/catalog và các route item/customer/discount; xem [rà soát source](../reports/phase-01-basic-contract-review.md) và `server/config/routes.rb`. Route có trong source không chứng minh runtime, quyền hoặc readiness. Reuse admin authentication nhưng không grant blanket core writes; server-only wrappers gọi core workflows, không browser tự chain các endpoint tài chính không có saga.
 
 ## 2. Nhóm API và quyền
 
@@ -76,6 +76,8 @@ Action-style path names ở bảng chỉ diễn tả capability. Khi implement d
 
 ## 6. Financial/stock blocking cases
 
+**Quyết định 04/11/2026:** Tiền mặt và chuyển khoản cá nhân xác nhận thủ công; QR để sau. Browser recovery là bản lưu hỗ trợ, không phải sổ tiền/server receipt. Phải test offline/reload/replay, server commit mất response, key hết retention, khác actor/store, permission bị thu hồi, storage lỗi/mất và manual reconciliation trước mở capability. Chi tiết [hợp đồng](../reports/pos-contract-decisions.md#tiền--gate-đóng).
+
 | ID | Scenario | Gate |
 |---|---|---|
 | F01 | Sale250k/card100k/cash handed200k/change50k, confirm kép | Cash applied150k; one receipt150k; drawer delta150k |
@@ -89,8 +91,10 @@ Action-style path names ở bảng chỉ diễn tả capability. Khi implement d
 | F09 | Credit sale1m collect300k rồi200k, collection allocate nhiều orders | Debt500k; không thêm sales/stock; sum allocations <= receipt |
 | F10 | Sale1m paid300k debt700k, return400k hoặc toàn bộ | Return400k -> debt300k no refund; full -> debt0 refund entitlement300k |
 | F11 | Cash/bank/card manual refunds, payout unknown, concurrent/storecredit refunds | Refund only after verified payout; cap incl reserved amounts, retry no second refund |
-| F12 | Last unit POS/POS/web race; branch preferred fallback | Không bán từ chi nhánh khác; stock/backorder policy enforced |
+| F12 | Last unit tại quầy/POS/online race; branch preferred fallback | Đơn có hàng thực tế tại quầy: thiếu tồn cảnh báo nhưng không từ chối vì thiếu tồn; không fallback kho ngầm; lưu dấu/đối soát xung đột online. Đơn giao sau và serial/lô theo policy riêng chưa qualify; không giả proof không oversell. |
 | F13 | Complete retry, handover kép, collection, reprint, return receive retry | Một allocation và một physical depletion; collection/reprint không move stock; restock once |
+| F12a | Tồn bằng 0/không đủ, request tồn lỗi hoặc số tồn thay đổi sau cảnh báo | Hàng thực tế tại quầy: cảnh báo và cho tiếp tục theo policy khi thiếu tồn hoặc không đọc được tồn; không hiển thị không xác định là đủ. POS cần mạng để bắt đầu bán; khi không lưu được dấu vết phải có recovery/đối soát được chứng minh trước mở bán thật. |
+| F12b | Online đã reserve/allocate đơn vị cuối; hàng thực đã bán tại quầy; retry, đối soát và nhập bù có chứng từ | Ghi đúng kho, mỗi hiệu ứng tồn tối đa một lần, có dấu vết cả hai đơn và trạng thái cần xử lý; không giả nhập bù, không tự hủy online, không khẳng định khách online chắc chắn nhận được hàng. |
 | F14 | Return hư hỏng/cross-branch/partial exchange có chênh lệch | Only resellable received units restock receiving location; two linked financial legs |
 | F15 | Close shift đua cash collection hoặc payout | Serialized cutoff, exact drawer, late entry không rewrite closed ca |
 | F16 | Next-day cash collection/refund thực phát sinh; late bank; cash nhận ở S1 nhưng attest sau đóng ca, S2 opening đã gồm tiền hoặc tiền ở safe | Fresh cash effect vào paying/receiving shift; late attest reconcile S1 counted variance/custody không rewrite snapshot hoặc auto cộng S2; S1 overage100k/S2 opening100k vẫn expected100k; overnight dates riêng |

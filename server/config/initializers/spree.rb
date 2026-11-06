@@ -28,10 +28,16 @@ end
 # Workflow hooks, e.g.
 # Spree.hooks.register('carts.add_item.validate', 'MyApp::CheckPurchaseLimit')
 
-# This scope authorizes only the dedicated POS draft capability, not core
-# Admin API order writes. No POS endpoint is exposed until its request gate is
-# implemented and tested.
+# POS scopes stay narrower than core order, payment and refund writes.
+# write_pos_orders still does not imply write_orders.
 Spree.permissions.register_scope(:pos_orders, group: :orders, resources: -> { [Pos::WalkInOrder] })
+Spree.permissions.register_scope(:pos_topology, group: :orders, resources: -> {
+  [Spree::Pos::Branch, Spree::Pos::Register, Spree::Pos::StaffMembership, Spree::Pos::Approval]
+})
+Spree.permissions.register_scope(:pos_shifts, group: :orders, resources: -> { [Spree::Pos::Shift] })
+Spree.permissions.register_scope(:pos_workspaces, group: :orders, resources: -> {
+  [Spree::Pos::Workspace, Spree::Pos::CommandReceipt]
+})
 
 Rails.application.config.after_initialize do
   # Payment methods and shipping calculators
@@ -41,7 +47,10 @@ Rails.application.config.after_initialize do
 
   # Stock splitters and adjusters
   # Spree.stock_splitters << Spree::Stock::Splitters::SecretLogicSplitter
-  # Spree.adjusters << Spree::Adjustable::Adjuster::TaxTheRich
+  if ActiveRecord::Base.connection.table_exists?(:spree_pos_discount_intents)
+    Spree.adjusters = Spree.adjusters.map { |adjuster| adjuster == Spree::Adjusters::Promotion ? Spree::Pos::Adjusters::Promotion : adjuster }
+    Spree.adjusters << Spree::Pos::Adjusters::ManualDiscount unless Spree.adjusters.include?(Spree::Pos::Adjusters::ManualDiscount)
+  end
 
   # Custom promotions
   # Spree.calculators.promotion_actions_create_adjustments << Spree::Calculators::PromotionActions::CreateAdjustments::AddDiscountForFriends

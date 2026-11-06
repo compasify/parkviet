@@ -1,0 +1,4 @@
+# Rails binstubs run inside Linux containers. CRLF turns the shebang into `ruby\r`.
+server/bin/** text eol=lf
+*.sh text eol=lf
+Dockerfile text eol=lf

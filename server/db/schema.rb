@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_04_000001) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_06_100000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -2260,6 +2260,500 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_000001) do
     t.index ["spree_policy_id"], name: "index_spree_policy_translations_on_spree_policy_id"
   end
 
+  create_table "spree_pos_approvals", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "branch_id", null: false
+    t.bigint "approver_id", null: false
+    t.bigint "requester_id", null: false
+    t.string "action", null: false
+    t.decimal "amount", precision: 19, scale: 4
+    t.string "currency"
+    t.string "revision", null: false
+    t.string "subject_type"
+    t.bigint "subject_id"
+    t.datetime "expires_at", null: false
+    t.datetime "revoked_at"
+    t.datetime "consumed_at"
+    t.string "status", default: "active", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["branch_id"], name: "index_spree_pos_approvals_on_branch_id"
+    t.index ["store_id", "action"], name: "index_spree_pos_approvals_on_store_id_and_action"
+    t.index ["store_id"], name: "index_spree_pos_approvals_on_store_id"
+    t.check_constraint "status::text = ANY (ARRAY['active'::character varying::text, 'revoked'::character varying::text, 'consumed'::character varying::text])", name: "chk_spree_pos_approvals_status"
+  end
+
+  create_table "spree_pos_audit_entries", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "actor_id", null: false
+    t.string "action", null: false
+    t.string "subject_type", null: false
+    t.bigint "subject_id", null: false
+    t.jsonb "metadata", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["store_id"], name: "index_spree_pos_audit_entries_on_store_id"
+    t.index ["subject_type", "subject_id"], name: "index_spree_pos_audit_entries_on_subject_type_and_subject_id"
+  end
+
+  create_table "spree_pos_branch_products", force: :cascade do |t|
+    t.bigint "branch_id", null: false
+    t.bigint "product_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["branch_id", "product_id"], name: "idx_pos_branch_product_unique", unique: true
+    t.index ["branch_id"], name: "index_spree_pos_branch_products_on_branch_id"
+    t.index ["product_id"], name: "index_spree_pos_branch_products_on_product_id"
+  end
+
+  create_table "spree_pos_branches", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "stock_location_id", null: false
+    t.bigint "receiving_stock_location_id"
+    t.string "name", null: false
+    t.string "code", null: false
+    t.string "timezone", null: false
+    t.jsonb "receiving_config", default: {}, null: false
+    t.string "status", default: "active", null: false
+    t.datetime "disabled_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["stock_location_id"], name: "index_spree_pos_branches_on_stock_location_id"
+    t.index ["store_id", "code"], name: "index_spree_pos_branches_on_store_id_and_code", unique: true
+    t.index ["store_id"], name: "index_spree_pos_branches_on_store_id"
+    t.check_constraint "status::text = ANY (ARRAY['active'::character varying::text, 'disabled'::character varying::text])", name: "chk_spree_pos_branches_status"
+  end
+
+  create_table "spree_pos_cash_movements", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "branch_id", null: false
+    t.bigint "register_id", null: false
+    t.bigint "shift_id", null: false
+    t.bigint "received_funds_id"
+    t.bigint "liability_payout_id"
+    t.bigint "actor_id", null: false
+    t.string "kind", limit: 32, null: false
+    t.decimal "amount", precision: 19, scale: 4, null: false
+    t.string "currency", limit: 16, null: false
+    t.string "source_type", limit: 64, null: false
+    t.bigint "source_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["actor_id"], name: "index_spree_pos_cash_movements_on_actor_id"
+    t.index ["branch_id"], name: "index_spree_pos_cash_movements_on_branch_id"
+    t.index ["liability_payout_id"], name: "index_spree_pos_cash_movements_on_liability_payout_id"
+    t.index ["received_funds_id"], name: "index_spree_pos_cash_movements_on_received_funds_id"
+    t.index ["register_id"], name: "index_spree_pos_cash_movements_on_register_id"
+    t.index ["shift_id", "kind"], name: "idx_pos_cash_movements_shift"
+    t.index ["shift_id"], name: "index_spree_pos_cash_movements_on_shift_id"
+    t.index ["source_type", "source_id", "kind"], name: "idx_pos_cash_movements_source", unique: true
+    t.index ["store_id"], name: "index_spree_pos_cash_movements_on_store_id"
+    t.check_constraint "kind::text = ANY (ARRAY['receipt'::character varying::text, 'payout'::character varying::text])", name: "chk_pos_cash_movements_kind"
+  end
+
+  create_table "spree_pos_command_receipts", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "workspace_id"
+    t.bigint "actor_id", null: false
+    t.string "idempotency_key", null: false
+    t.string "digest", null: false
+    t.jsonb "result", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["store_id", "actor_id", "idempotency_key"], name: "idx_spree_pos_command_receipts_actor_key", unique: true
+    t.index ["store_id"], name: "index_spree_pos_command_receipts_on_store_id"
+    t.index ["workspace_id"], name: "index_spree_pos_command_receipts_on_workspace_id"
+  end
+
+  create_table "spree_pos_customers", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "customer_id"
+    t.bigint "created_by_id", null: false
+    t.string "name", limit: 120, null: false
+    t.string "phone", limit: 32
+    t.string "normalized_phone", limit: 32
+    t.string "email", limit: 254
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["customer_id"], name: "index_spree_pos_customers_on_customer_id"
+    t.index ["store_id", "email"], name: "idx_pos_customers_store_email"
+    t.index ["store_id", "normalized_phone"], name: "idx_pos_customers_store_phone"
+    t.index ["store_id"], name: "index_spree_pos_customers_on_store_id"
+  end
+
+  create_table "spree_pos_discount_allocations", force: :cascade do |t|
+    t.bigint "discount_intent_id"
+    t.bigint "discount_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "line_discount_intent_id"
+    t.index ["discount_id"], name: "index_spree_pos_discount_allocations_on_discount_id", unique: true
+    t.index ["discount_intent_id"], name: "index_spree_pos_discount_allocations_on_discount_intent_id"
+    t.index ["line_discount_intent_id"], name: "idx_on_line_discount_intent_id_ec9cbc9e83"
+  end
+
+  create_table "spree_pos_discount_intents", force: :cascade do |t|
+    t.bigint "workspace_id", null: false
+    t.bigint "actor_id", null: false
+    t.string "value_type", null: false
+    t.string "value", limit: 64, null: false
+    t.string "reason", limit: 200, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["workspace_id"], name: "index_spree_pos_discount_intents_on_workspace_id", unique: true
+    t.check_constraint "value_type::text = ANY (ARRAY['flat'::character varying::text, 'percent'::character varying::text])", name: "chk_pos_discount_intent_type"
+  end
+
+  create_table "spree_pos_funds_allocations", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "received_funds_id", null: false
+    t.bigint "workspace_id", null: false
+    t.bigint "order_id", null: false
+    t.bigint "payment_id"
+    t.string "status", default: "active", null: false
+    t.decimal "amount", precision: 19, scale: 4, null: false
+    t.string "currency", limit: 16, null: false
+    t.datetime "reversed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["payment_id"], name: "idx_pos_funds_allocations_payment", unique: true, where: "(payment_id IS NOT NULL)"
+    t.index ["received_funds_id", "status"], name: "idx_pos_funds_allocations_funds"
+    t.index ["received_funds_id"], name: "index_spree_pos_funds_allocations_on_received_funds_id"
+    t.index ["store_id"], name: "index_spree_pos_funds_allocations_on_store_id"
+    t.index ["workspace_id", "status"], name: "idx_pos_funds_allocations_workspace"
+    t.index ["workspace_id"], name: "index_spree_pos_funds_allocations_on_workspace_id"
+    t.check_constraint "amount > 0::numeric", name: "chk_pos_funds_allocations_amount"
+    t.check_constraint "status::text = ANY (ARRAY['active'::character varying::text, 'reversed'::character varying::text])", name: "chk_pos_funds_allocations_status"
+  end
+
+  create_table "spree_pos_liability_payouts", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "received_funds_id", null: false
+    t.bigint "branch_id", null: false
+    t.bigint "requester_id", null: false
+    t.string "status", default: "requested", null: false
+    t.decimal "amount", precision: 19, scale: 4, null: false
+    t.string "currency", limit: 16, null: false
+    t.string "beneficiary_name", limit: 120, null: false
+    t.string "beneficiary_reference", limit: 120
+    t.string "reason", limit: 200, null: false
+    t.datetime "confirmed_at"
+    t.datetime "resolved_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["branch_id"], name: "index_spree_pos_liability_payouts_on_branch_id"
+    t.index ["received_funds_id", "status"], name: "idx_pos_liability_payouts_funds"
+    t.index ["received_funds_id"], name: "index_spree_pos_liability_payouts_on_received_funds_id"
+    t.index ["requester_id"], name: "index_spree_pos_liability_payouts_on_requester_id"
+    t.index ["store_id"], name: "index_spree_pos_liability_payouts_on_store_id"
+    t.check_constraint "amount > 0::numeric", name: "chk_pos_liability_payouts_amount"
+    t.check_constraint "status::text = ANY (ARRAY['requested'::character varying::text, 'reserved'::character varying::text, 'unknown'::character varying::text, 'confirmed'::character varying::text, 'failed'::character varying::text, 'canceled'::character varying::text])", name: "chk_pos_liability_payouts_status"
+  end
+
+  create_table "spree_pos_line_discount_intents", force: :cascade do |t|
+    t.bigint "workspace_id", null: false
+    t.bigint "sale_line_id", null: false
+    t.bigint "actor_id", null: false
+    t.string "value_type", null: false
+    t.string "value", limit: 64, null: false
+    t.string "reason", limit: 200, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["sale_line_id"], name: "index_spree_pos_line_discount_intents_on_sale_line_id", unique: true
+    t.index ["workspace_id"], name: "index_spree_pos_line_discount_intents_on_workspace_id"
+    t.check_constraint "value_type::text = ANY (ARRAY['flat'::character varying, 'percent'::character varying, 'unit_price'::character varying, 'item_flat'::character varying, 'item_percent'::character varying]::text[])", name: "chk_pos_line_discount_type"
+  end
+
+  create_table "spree_pos_outbox_entries", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.string "event_type", limit: 64, null: false
+    t.string "aggregate_type", limit: 64, null: false
+    t.bigint "aggregate_id", null: false
+    t.jsonb "payload", default: {}, null: false
+    t.string "status", default: "pending", null: false
+    t.integer "attempts", default: 0, null: false
+    t.datetime "available_at", null: false
+    t.datetime "processed_at"
+    t.text "last_error"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["status", "available_at"], name: "idx_pos_outbox_dispatch"
+    t.index ["store_id"], name: "index_spree_pos_outbox_entries_on_store_id"
+    t.check_constraint "status::text = ANY (ARRAY['pending'::character varying::text, 'processing'::character varying::text, 'processed'::character varying::text, 'failed'::character varying::text])", name: "chk_pos_outbox_status"
+  end
+
+  create_table "spree_pos_payment_methods", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.string "code", limit: 32, null: false
+    t.string "name", limit: 120, null: false
+    t.string "kind", limit: 32, null: false
+    t.string "payment_method_type", limit: 120
+    t.bigint "payment_method_id"
+    t.string "status", default: "active", null: false
+    t.integer "position", default: 0, null: false
+    t.jsonb "metadata", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["store_id", "code"], name: "idx_pos_payment_methods_store_code", unique: true
+    t.index ["store_id", "status", "position"], name: "idx_pos_payment_methods_active"
+    t.index ["store_id"], name: "index_spree_pos_payment_methods_on_store_id"
+    t.check_constraint "kind::text = ANY (ARRAY['cash'::character varying::text, 'bank_manual'::character varying::text])", name: "chk_pos_payment_methods_kind"
+    t.check_constraint "status::text = ANY (ARRAY['active'::character varying::text, 'disabled'::character varying::text])", name: "chk_pos_payment_methods_status"
+  end
+
+  create_table "spree_pos_payout_evidences", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "liability_payout_id", null: false
+    t.bigint "actor_id", null: false
+    t.string "kind", limit: 32, null: false
+    t.string "reference", limit: 120
+    t.datetime "attested_at", null: false
+    t.jsonb "metadata", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["actor_id"], name: "index_spree_pos_payout_evidences_on_actor_id"
+    t.index ["liability_payout_id", "created_at"], name: "idx_pos_payout_evidences_payout"
+    t.index ["liability_payout_id"], name: "index_spree_pos_payout_evidences_on_liability_payout_id"
+    t.index ["store_id"], name: "index_spree_pos_payout_evidences_on_store_id"
+    t.check_constraint "kind::text = ANY (ARRAY['cash_count'::character varying::text, 'bank_manual'::character varying::text, 'failed_no_effect'::character varying::text])", name: "chk_pos_payout_evidences_kind"
+  end
+
+  create_table "spree_pos_receipt_evidences", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "tender_attempt_id", null: false
+    t.bigint "actor_id", null: false
+    t.string "kind", limit: 32, null: false
+    t.string "reference", limit: 120
+    t.string "receiving_account", limit: 120
+    t.string "terminal_ref", limit: 120
+    t.datetime "attested_at", null: false
+    t.jsonb "metadata", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["actor_id"], name: "index_spree_pos_receipt_evidences_on_actor_id"
+    t.index ["store_id"], name: "index_spree_pos_receipt_evidences_on_store_id"
+    t.index ["tender_attempt_id", "created_at"], name: "idx_pos_receipt_evidences_attempt"
+    t.index ["tender_attempt_id"], name: "index_spree_pos_receipt_evidences_on_tender_attempt_id"
+    t.check_constraint "kind::text = ANY (ARRAY['cash_count'::character varying::text, 'bank_manual'::character varying::text, 'external_card'::character varying::text])", name: "chk_pos_receipt_evidences_kind"
+  end
+
+  create_table "spree_pos_received_funds", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "workspace_id"
+    t.bigint "branch_id", null: false
+    t.bigint "register_id", null: false
+    t.bigint "shift_id", null: false
+    t.bigint "tender_attempt_id"
+    t.bigint "actor_id", null: false
+    t.string "kind", limit: 32, null: false
+    t.string "status", default: "received", null: false
+    t.decimal "handed_amount", precision: 19, scale: 4, null: false
+    t.decimal "applied_amount", precision: 19, scale: 4, null: false
+    t.decimal "change_amount", precision: 19, scale: 4, default: "0.0", null: false
+    t.decimal "received_net", precision: 19, scale: 4, null: false
+    t.string "currency", limit: 16, null: false
+    t.string "reference", limit: 120
+    t.datetime "received_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["actor_id"], name: "index_spree_pos_received_funds_on_actor_id"
+    t.index ["branch_id"], name: "index_spree_pos_received_funds_on_branch_id"
+    t.index ["register_id"], name: "index_spree_pos_received_funds_on_register_id"
+    t.index ["shift_id", "status"], name: "idx_pos_received_funds_shift"
+    t.index ["shift_id"], name: "index_spree_pos_received_funds_on_shift_id"
+    t.index ["store_id"], name: "index_spree_pos_received_funds_on_store_id"
+    t.index ["tender_attempt_id"], name: "idx_pos_received_funds_attempt", unique: true, where: "(tender_attempt_id IS NOT NULL)"
+    t.index ["tender_attempt_id"], name: "index_spree_pos_received_funds_on_tender_attempt_id"
+    t.index ["workspace_id", "status"], name: "idx_pos_received_funds_workspace"
+    t.index ["workspace_id"], name: "index_spree_pos_received_funds_on_workspace_id"
+    t.check_constraint "handed_amount >= 0::numeric AND applied_amount >= 0::numeric AND change_amount >= 0::numeric AND received_net >= 0::numeric", name: "chk_pos_received_funds_amounts"
+    t.check_constraint "kind::text = ANY (ARRAY['cash'::character varying::text, 'bank_manual'::character varying::text])", name: "chk_pos_received_funds_kind"
+    t.check_constraint "status::text = ANY (ARRAY['received'::character varying::text, 'attention'::character varying::text])", name: "chk_pos_received_funds_status"
+  end
+
+  create_table "spree_pos_registers", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "branch_id", null: false
+    t.string "name", null: false
+    t.string "code", null: false
+    t.string "status", default: "active", null: false
+    t.datetime "disabled_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["branch_id"], name: "index_spree_pos_registers_on_branch_id"
+    t.index ["store_id", "code"], name: "index_spree_pos_registers_on_store_id_and_code", unique: true
+    t.index ["store_id"], name: "index_spree_pos_registers_on_store_id"
+    t.check_constraint "status::text = ANY (ARRAY['active'::character varying::text, 'disabled'::character varying::text])", name: "chk_spree_pos_registers_status"
+  end
+
+  create_table "spree_pos_sale_lines", force: :cascade do |t|
+    t.bigint "workspace_id", null: false
+    t.bigint "order_id", null: false
+    t.bigint "line_item_id", null: false
+    t.bigint "variant_id", null: false
+    t.string "kind", default: "ordinary", null: false
+    t.string "merge_key", limit: 200, null: false
+    t.decimal "sale_quantity", precision: 19, scale: 4, null: false
+    t.integer "base_quantity", null: false
+    t.string "sale_unit_code", limit: 16, default: "item", null: false
+    t.string "base_unit_code", limit: 16, default: "item", null: false
+    t.integer "ratio_numerator", default: 1, null: false
+    t.integer "ratio_denominator", default: 1, null: false
+    t.integer "conversion_version"
+    t.decimal "unit_price", precision: 19, scale: 4, null: false
+    t.decimal "line_price", precision: 19, scale: 4, null: false
+    t.string "lot_code", limit: 100
+    t.date "expiry_on"
+    t.jsonb "serial_codes", default: [], null: false
+    t.string "tracked_mode", default: "none", null: false
+    t.uuid "measurement_event_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["line_item_id"], name: "index_spree_pos_sale_lines_on_line_item_id", unique: true
+    t.index ["order_id"], name: "index_spree_pos_sale_lines_on_order_id"
+    t.index ["variant_id"], name: "index_spree_pos_sale_lines_on_variant_id"
+    t.index ["workspace_id", "measurement_event_id"], name: "idx_pos_sale_lines_event", unique: true, where: "(measurement_event_id IS NOT NULL)"
+    t.index ["workspace_id", "merge_key"], name: "idx_pos_sale_lines_merge"
+    t.index ["workspace_id"], name: "index_spree_pos_sale_lines_on_workspace_id"
+    t.check_constraint "base_quantity > 0 AND sale_quantity > 0::numeric", name: "chk_pos_sale_lines_qty"
+    t.check_constraint "kind::text = ANY (ARRAY['ordinary'::character varying::text, 'measured'::character varying::text, 'tracked'::character varying::text])", name: "chk_pos_sale_lines_kind"
+    t.check_constraint "tracked_mode::text = ANY (ARRAY['none'::character varying::text, 'serial'::character varying::text, 'lot'::character varying::text, 'serial_lot'::character varying::text])", name: "chk_pos_sale_lines_tracked"
+  end
+
+  create_table "spree_pos_shifts", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "branch_id", null: false
+    t.bigint "register_id"
+    t.bigint "owner_id", null: false
+    t.decimal "opening_float", precision: 19, scale: 4, null: false
+    t.string "currency", null: false
+    t.string "status", default: "open", null: false
+    t.datetime "opened_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["branch_id"], name: "index_spree_pos_shifts_on_branch_id"
+    t.index ["owner_id"], name: "index_spree_pos_shifts_on_owner_id"
+    t.index ["register_id"], name: "idx_spree_pos_shifts_one_open_register", unique: true, where: "((status)::text = 'open'::text)"
+    t.index ["register_id"], name: "index_spree_pos_shifts_on_register_id"
+    t.index ["store_id", "branch_id", "owner_id"], name: "idx_spree_pos_shifts_one_open_branch_owner", unique: true, where: "(((status)::text = 'open'::text) AND (register_id IS NULL))"
+    t.index ["store_id"], name: "index_spree_pos_shifts_on_store_id"
+    t.check_constraint "opening_float >= 0::numeric", name: "chk_spree_pos_shifts_opening_float_nonnegative"
+    t.check_constraint "status::text = ANY (ARRAY['open'::character varying::text, 'closed'::character varying::text])", name: "chk_spree_pos_shifts_status"
+  end
+
+  create_table "spree_pos_staff_memberships", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "branch_id", null: false
+    t.bigint "staff_id", null: false
+    t.jsonb "capabilities", default: [], null: false
+    t.string "status", default: "active", null: false
+    t.datetime "disabled_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["branch_id"], name: "index_spree_pos_staff_memberships_on_branch_id"
+    t.index ["staff_id"], name: "index_spree_pos_staff_memberships_on_staff_id"
+    t.index ["store_id", "branch_id", "staff_id"], name: "idx_spree_pos_memberships_staff_branch", unique: true
+    t.index ["store_id"], name: "index_spree_pos_staff_memberships_on_store_id"
+    t.check_constraint "status::text = ANY (ARRAY['active'::character varying::text, 'disabled'::character varying::text])", name: "chk_spree_pos_memberships_status"
+  end
+
+  create_table "spree_pos_tender_attempts", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "workspace_id", null: false
+    t.bigint "branch_id", null: false
+    t.bigint "register_id", null: false
+    t.bigint "shift_id", null: false
+    t.bigint "pos_payment_method_id", null: false
+    t.bigint "actor_id", null: false
+    t.string "status", default: "prepared", null: false
+    t.decimal "amount", precision: 19, scale: 4, null: false
+    t.decimal "order_total_snapshot", precision: 19, scale: 4, null: false
+    t.string "currency", limit: 16, null: false
+    t.integer "workspace_revision", null: false
+    t.jsonb "snapshot", default: {}, null: false
+    t.datetime "confirmed_at"
+    t.datetime "canceled_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["actor_id"], name: "index_spree_pos_tender_attempts_on_actor_id"
+    t.index ["branch_id"], name: "index_spree_pos_tender_attempts_on_branch_id"
+    t.index ["pos_payment_method_id"], name: "index_spree_pos_tender_attempts_on_pos_payment_method_id"
+    t.index ["register_id"], name: "index_spree_pos_tender_attempts_on_register_id"
+    t.index ["shift_id"], name: "index_spree_pos_tender_attempts_on_shift_id"
+    t.index ["store_id"], name: "index_spree_pos_tender_attempts_on_store_id"
+    t.index ["workspace_id", "status"], name: "idx_pos_tender_attempts_workspace_status"
+    t.index ["workspace_id"], name: "index_spree_pos_tender_attempts_on_workspace_id"
+    t.check_constraint "amount > 0::numeric AND order_total_snapshot >= 0::numeric", name: "chk_pos_tender_attempts_amount"
+    t.check_constraint "status::text = ANY (ARRAY['prepared'::character varying::text, 'confirmed'::character varying::text, 'canceled'::character varying::text, 'unknown'::character varying::text, 'failed'::character varying::text])", name: "chk_pos_tender_attempts_status"
+  end
+
+  create_table "spree_pos_units", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.string "code", limit: 16, null: false
+    t.string "name", limit: 64, null: false
+    t.string "dimension", limit: 16, null: false
+    t.string "base_code", limit: 16, null: false
+    t.integer "factor_to_base", null: false
+    t.integer "sale_precision", default: 0, null: false
+    t.integer "version", default: 1, null: false
+    t.string "status", default: "active", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["store_id", "code"], name: "idx_pos_units_store_code", unique: true
+    t.index ["store_id"], name: "index_spree_pos_units_on_store_id"
+    t.check_constraint "dimension::text = ANY (ARRAY['mass'::character varying::text, 'volume'::character varying::text, 'count'::character varying::text])", name: "chk_pos_units_dimension"
+    t.check_constraint "factor_to_base > 0 AND sale_precision >= 0 AND sale_precision <= 3", name: "chk_pos_units_factor"
+  end
+
+  create_table "spree_pos_variant_units", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "variant_id", null: false
+    t.bigint "sale_unit_id", null: false
+    t.bigint "base_unit_id", null: false
+    t.bigint "price_unit_id", null: false
+    t.integer "ratio_numerator", null: false
+    t.integer "ratio_denominator", default: 1, null: false
+    t.string "tracked_mode", default: "none", null: false
+    t.integer "version", default: 1, null: false
+    t.string "status", default: "active", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["base_unit_id"], name: "index_spree_pos_variant_units_on_base_unit_id"
+    t.index ["price_unit_id"], name: "index_spree_pos_variant_units_on_price_unit_id"
+    t.index ["sale_unit_id"], name: "index_spree_pos_variant_units_on_sale_unit_id"
+    t.index ["store_id"], name: "index_spree_pos_variant_units_on_store_id"
+    t.index ["variant_id"], name: "index_spree_pos_variant_units_on_variant_id", unique: true
+    t.check_constraint "ratio_numerator > 0 AND ratio_denominator > 0", name: "chk_pos_variant_units_ratio"
+    t.check_constraint "tracked_mode::text = ANY (ARRAY['none'::character varying::text, 'serial'::character varying::text, 'lot'::character varying::text, 'serial_lot'::character varying::text])", name: "chk_pos_variant_units_tracked"
+  end
+
+  create_table "spree_pos_workspaces", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "branch_id", null: false
+    t.bigint "register_id"
+    t.bigint "shift_id", null: false
+    t.bigint "order_id", null: false
+    t.integer "revision", default: 0, null: false
+    t.integer "lease_generation", default: 0, null: false
+    t.bigint "lease_holder_id"
+    t.datetime "lease_expires_at"
+    t.string "operational_status", default: "editing", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "lease_editor_digest"
+    t.bigint "pos_customer_id"
+    t.text "note"
+    t.index ["branch_id"], name: "index_spree_pos_workspaces_on_branch_id"
+    t.index ["lease_holder_id"], name: "index_spree_pos_workspaces_on_lease_holder_id"
+    t.index ["order_id"], name: "index_spree_pos_workspaces_on_order_id", unique: true
+    t.index ["pos_customer_id"], name: "index_spree_pos_workspaces_on_pos_customer_id"
+    t.index ["register_id"], name: "index_spree_pos_workspaces_on_register_id"
+    t.index ["shift_id"], name: "index_spree_pos_workspaces_on_shift_id"
+    t.index ["store_id"], name: "index_spree_pos_workspaces_on_store_id"
+    t.check_constraint "note IS NULL OR char_length(note) <= 1000", name: "chk_pos_workspace_note_length"
+    t.check_constraint "operational_status::text = ANY (ARRAY['editing'::character varying::text, 'parked'::character varying::text, 'canceled'::character varying::text, 'completed'::character varying::text])", name: "chk_spree_pos_workspaces_status"
+  end
+
   create_table "spree_price_adjustment_tiers", force: :cascade do |t|
     t.bigint "price_list_id", null: false
     t.integer "min_quantity", default: 1, null: false
@@ -3887,6 +4381,95 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_000001) do
   add_foreign_key "spree_option_type_translations", "spree_option_types"
   add_foreign_key "spree_option_value_translations", "spree_option_values"
   add_foreign_key "spree_payment_sources", "spree_payment_methods", column: "payment_method_id"
+  add_foreign_key "spree_pos_approvals", "spree_admin_users", column: "approver_id"
+  add_foreign_key "spree_pos_approvals", "spree_admin_users", column: "requester_id"
+  add_foreign_key "spree_pos_approvals", "spree_pos_branches", column: "branch_id"
+  add_foreign_key "spree_pos_approvals", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_audit_entries", "spree_admin_users", column: "actor_id"
+  add_foreign_key "spree_pos_audit_entries", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_branch_products", "spree_pos_branches", column: "branch_id"
+  add_foreign_key "spree_pos_branch_products", "spree_products", column: "product_id"
+  add_foreign_key "spree_pos_branches", "spree_stock_locations", column: "receiving_stock_location_id"
+  add_foreign_key "spree_pos_branches", "spree_stock_locations", column: "stock_location_id"
+  add_foreign_key "spree_pos_branches", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_cash_movements", "spree_admin_users", column: "actor_id"
+  add_foreign_key "spree_pos_cash_movements", "spree_pos_branches", column: "branch_id"
+  add_foreign_key "spree_pos_cash_movements", "spree_pos_liability_payouts", column: "liability_payout_id"
+  add_foreign_key "spree_pos_cash_movements", "spree_pos_received_funds", column: "received_funds_id"
+  add_foreign_key "spree_pos_cash_movements", "spree_pos_registers", column: "register_id"
+  add_foreign_key "spree_pos_cash_movements", "spree_pos_shifts", column: "shift_id"
+  add_foreign_key "spree_pos_cash_movements", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_command_receipts", "spree_admin_users", column: "actor_id"
+  add_foreign_key "spree_pos_command_receipts", "spree_pos_workspaces", column: "workspace_id"
+  add_foreign_key "spree_pos_command_receipts", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_customers", "spree_admin_users", column: "created_by_id"
+  add_foreign_key "spree_pos_customers", "spree_customers", column: "customer_id"
+  add_foreign_key "spree_pos_customers", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_discount_allocations", "spree_discounts", column: "discount_id", on_delete: :cascade
+  add_foreign_key "spree_pos_discount_allocations", "spree_pos_discount_intents", column: "discount_intent_id"
+  add_foreign_key "spree_pos_discount_allocations", "spree_pos_line_discount_intents", column: "line_discount_intent_id", on_delete: :cascade
+  add_foreign_key "spree_pos_discount_intents", "spree_admin_users", column: "actor_id"
+  add_foreign_key "spree_pos_discount_intents", "spree_pos_workspaces", column: "workspace_id"
+  add_foreign_key "spree_pos_funds_allocations", "spree_orders", column: "order_id"
+  add_foreign_key "spree_pos_funds_allocations", "spree_payments", column: "payment_id"
+  add_foreign_key "spree_pos_funds_allocations", "spree_pos_received_funds", column: "received_funds_id"
+  add_foreign_key "spree_pos_funds_allocations", "spree_pos_workspaces", column: "workspace_id"
+  add_foreign_key "spree_pos_funds_allocations", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_liability_payouts", "spree_admin_users", column: "requester_id"
+  add_foreign_key "spree_pos_liability_payouts", "spree_pos_branches", column: "branch_id"
+  add_foreign_key "spree_pos_liability_payouts", "spree_pos_received_funds", column: "received_funds_id"
+  add_foreign_key "spree_pos_liability_payouts", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_line_discount_intents", "spree_admin_users", column: "actor_id"
+  add_foreign_key "spree_pos_line_discount_intents", "spree_pos_sale_lines", column: "sale_line_id", on_delete: :cascade
+  add_foreign_key "spree_pos_line_discount_intents", "spree_pos_workspaces", column: "workspace_id"
+  add_foreign_key "spree_pos_outbox_entries", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_payment_methods", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_payout_evidences", "spree_admin_users", column: "actor_id"
+  add_foreign_key "spree_pos_payout_evidences", "spree_pos_liability_payouts", column: "liability_payout_id"
+  add_foreign_key "spree_pos_payout_evidences", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_receipt_evidences", "spree_admin_users", column: "actor_id"
+  add_foreign_key "spree_pos_receipt_evidences", "spree_pos_tender_attempts", column: "tender_attempt_id"
+  add_foreign_key "spree_pos_receipt_evidences", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_received_funds", "spree_admin_users", column: "actor_id"
+  add_foreign_key "spree_pos_received_funds", "spree_pos_branches", column: "branch_id"
+  add_foreign_key "spree_pos_received_funds", "spree_pos_registers", column: "register_id"
+  add_foreign_key "spree_pos_received_funds", "spree_pos_shifts", column: "shift_id"
+  add_foreign_key "spree_pos_received_funds", "spree_pos_tender_attempts", column: "tender_attempt_id"
+  add_foreign_key "spree_pos_received_funds", "spree_pos_workspaces", column: "workspace_id"
+  add_foreign_key "spree_pos_received_funds", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_registers", "spree_pos_branches", column: "branch_id"
+  add_foreign_key "spree_pos_registers", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_sale_lines", "spree_line_items", column: "line_item_id", on_delete: :cascade
+  add_foreign_key "spree_pos_sale_lines", "spree_orders", column: "order_id"
+  add_foreign_key "spree_pos_sale_lines", "spree_pos_workspaces", column: "workspace_id"
+  add_foreign_key "spree_pos_sale_lines", "spree_variants", column: "variant_id"
+  add_foreign_key "spree_pos_shifts", "spree_admin_users", column: "owner_id"
+  add_foreign_key "spree_pos_shifts", "spree_pos_branches", column: "branch_id"
+  add_foreign_key "spree_pos_shifts", "spree_pos_registers", column: "register_id"
+  add_foreign_key "spree_pos_shifts", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_staff_memberships", "spree_admin_users", column: "staff_id"
+  add_foreign_key "spree_pos_staff_memberships", "spree_pos_branches", column: "branch_id"
+  add_foreign_key "spree_pos_staff_memberships", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_tender_attempts", "spree_admin_users", column: "actor_id"
+  add_foreign_key "spree_pos_tender_attempts", "spree_pos_branches", column: "branch_id"
+  add_foreign_key "spree_pos_tender_attempts", "spree_pos_payment_methods", column: "pos_payment_method_id"
+  add_foreign_key "spree_pos_tender_attempts", "spree_pos_registers", column: "register_id"
+  add_foreign_key "spree_pos_tender_attempts", "spree_pos_shifts", column: "shift_id"
+  add_foreign_key "spree_pos_tender_attempts", "spree_pos_workspaces", column: "workspace_id"
+  add_foreign_key "spree_pos_tender_attempts", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_units", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_variant_units", "spree_pos_units", column: "base_unit_id"
+  add_foreign_key "spree_pos_variant_units", "spree_pos_units", column: "price_unit_id"
+  add_foreign_key "spree_pos_variant_units", "spree_pos_units", column: "sale_unit_id"
+  add_foreign_key "spree_pos_variant_units", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_variant_units", "spree_variants", column: "variant_id"
+  add_foreign_key "spree_pos_workspaces", "spree_admin_users", column: "lease_holder_id"
+  add_foreign_key "spree_pos_workspaces", "spree_orders", column: "order_id"
+  add_foreign_key "spree_pos_workspaces", "spree_pos_branches", column: "branch_id"
+  add_foreign_key "spree_pos_workspaces", "spree_pos_customers", column: "pos_customer_id"
+  add_foreign_key "spree_pos_workspaces", "spree_pos_registers", column: "register_id"
+  add_foreign_key "spree_pos_workspaces", "spree_pos_shifts", column: "shift_id"
+  add_foreign_key "spree_pos_workspaces", "spree_stores", column: "store_id"
   add_foreign_key "spree_product_translations", "spree_products"
   add_foreign_key "spree_store_translations", "spree_stores"
   add_foreign_key "spree_taxonomy_translations", "spree_taxonomies"
