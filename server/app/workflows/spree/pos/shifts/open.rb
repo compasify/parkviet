@@ -27,6 +27,7 @@ module Spree
             # Re-read staff and membership: either may have been revoked while waiting for the lock.
             policy = AccessPolicy.new(store: store, staff: staff)
             raise CanCan::AccessDenied unless authorized?(policy)
+
             scope = Shift.for_store(store).open_now.where(register_id: register&.id)
             scope = scope.where(branch_id: branch.id, owner_id: policy.staff.id) unless register
             raise Conflict, 'An open shift already exists for this selection.' if scope.exists?

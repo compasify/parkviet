@@ -91,8 +91,8 @@ RSpec.describe 'POS topology access', type: :request do
                                           params: { branch_id: foreign_branch.prefixed_id, name: 'X', code: 'x1' }, as: :json
       expect(response).to have_http_status(:not_found)
 
-      post '/api/v3/admin/pos/memberships', headers: headers,
-                                            params: { branch_id: branch.prefixed_id, staff_id: foreign_staff.prefixed_id, capabilities: [] }, as: :json
+      membership_params = { branch_id: branch.prefixed_id, staff_id: foreign_staff.prefixed_id, capabilities: [] }
+      post '/api/v3/admin/pos/memberships', headers: headers, params: membership_params, as: :json
       expect(response).to have_http_status(:not_found)
       expect(Spree::Pos::StaffMembership.where(staff: foreign_staff, store: store)).not_to exist
 
@@ -101,8 +101,8 @@ RSpec.describe 'POS topology access', type: :request do
       expect(response).to have_http_status(:not_found)
 
       other_branch = branch_for(store, 'side')
-      post '/api/v3/admin/pos/shifts', headers: headers_for(cashier),
-                                       params: { branch_id: other_branch.prefixed_id, register_id: register.prefixed_id, opening_float: '0' }, as: :json
+      mismatched = { branch_id: other_branch.prefixed_id, register_id: register.prefixed_id, opening_float: '0' }
+      post '/api/v3/admin/pos/shifts', headers: headers_for(cashier), params: mismatched, as: :json
       expect(response).to have_http_status(:forbidden)
 
       post '/api/v3/admin/pos/shifts', headers: headers_for(cashier),
@@ -284,8 +284,8 @@ RSpec.describe 'POS topology access', type: :request do
       post "/api/v3/admin/pos/approvals/#{revoked.prefixed_id}/revoke", headers: headers, as: :json
       expect(response).to have_http_status(:ok)
       expect { consume(revoked) }.to raise_error(Spree::Pos::Conflict)
-      expect(Spree::Pos::AuditEntry.where(subject_type: revoked.class.name, subject_id: revoked.id).pluck(:action))
-        .to eq(%w[approval.grant approval.revoke])
+      actions = Spree::Pos::AuditEntry.where(subject_type: revoked.class.name, subject_id: revoked.id).pluck(:action)
+      expect(actions).to eq(%w[approval.grant approval.revoke])
 
       grant(headers)
       used = Spree::Pos::Approval.find_by_prefix_id!(response.parsed_body.dig('data', 'id'))
