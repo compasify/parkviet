@@ -30,6 +30,10 @@ export type FinancialCommand = {
   action: string;
   path: string;
   body: Record<string, unknown>;
+  // Names the money intent when the body may legitimately change between
+  // retries (for example a corrected handed amount): one key per intent, so an
+  // edited retry can never become a second receipt.
+  intent?: string;
 };
 
 // Fields that change on every reload or write. The money intent stays the same
@@ -37,6 +41,15 @@ export type FinancialCommand = {
 const VOLATILE_FIELDS = new Set(['editor_id', 'expected_revision', 'lease_generation']);
 
 export function financialIntentScope(command: FinancialCommand): string {
+  if (command.intent !== undefined) {
+    return financialScope(
+      command.staffId,
+      command.storeId,
+      command.scopeId,
+      command.action,
+      commandDigest({ path: command.path, intent: command.intent }),
+    );
+  }
   const intent = Object.fromEntries(
     Object.entries(command.body).filter(
       ([field, value]) => !VOLATILE_FIELDS.has(field) && value !== undefined,

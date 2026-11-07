@@ -8,7 +8,9 @@ import {
 } from '../hooks/use-tenders';
 import { formatMoney, parseVndAmount, parseVndInput } from '../lib/money';
 import type { PosPaymentMethod, PosWorkspace } from '../lib/pos-context';
-import { describeFailure, posFailureKey } from '../lib/request-failure';
+import { creditConflictKey } from '../lib/receivables';
+import { conflictReason, describeFailure, posFailureKey } from '../lib/request-failure';
+import { CreditApprovalDialog } from './credit-approval-dialog';
 import { PosIcon } from './pos-icon';
 import { TenderEvidenceDialog, type TenderEvidenceItemInput } from './tender-evidence-dialog';
 
@@ -49,6 +51,7 @@ export function PaymentPanel({
   storeId,
   canCollect,
   canResolve,
+  canSellCredit = false,
   disabled,
   command,
 }: {
@@ -57,6 +60,7 @@ export function PaymentPanel({
   storeId: string | null;
   canCollect: boolean;
   canResolve: boolean;
+  canSellCredit?: boolean;
   disabled: boolean;
   // Runs through the workspace's serializer and hands over its newest revision.
   command: WorkspaceCommand;
@@ -80,8 +84,10 @@ export function PaymentPanel({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [evidenceOpen, setEvidenceOpen] = useState(false);
+  const [creditOpen, setCreditOpen] = useState(false);
   const [handedOver, setHandedOver] = useState(false);
   const financial = workspace.financial;
+  const credit = financial?.credit ?? null;
   const methods = methodsQuery.data ?? [];
   const activeMethods = methods.filter((method) => activeKinds.includes(method.kind));
   const effectiveMethods = activeMethods.length > 0 ? activeMethods : methods.slice(0, 1);
@@ -93,6 +99,10 @@ export function PaymentPanel({
   const totalIsZero = parseVndAmount(workspace.totals?.total ?? '') === '0';
   const currency = workspace.totals?.currency ?? 'VND';
   const hasItems = (workspace.line_items?.length ?? 0) > 0;
+  // Money may be moving on these, so the remainder is not final yet.
+  const unresolvedAttempts = (financial?.attempts ?? []).filter(
+    (attempt) => attempt.status === 'prepared' || attempt.status === 'unknown',
+  );
   const nonCanceledAttempts = (financial?.attempts ?? []).filter(
     (attempt) => attempt.status !== 'canceled',
   );
@@ -102,7 +112,8 @@ export function PaymentPanel({
         Number(financial.received) > 0 ||
         Number(financial.allocated) > 0 ||
         Number(financial.unapplied) > 0 ||
-        Number(financial.change_due) > 0),
+        Number(financial.change_due) > 0 ||
+        Boolean(credit?.approved || credit?.debt)),
   );
   const defaultAmount =
     parseVndAmount(
@@ -168,7 +179,8 @@ export function PaymentPanel({
   const parsedAllocate = parseVndInput(allocateAmount);
 
   function explain(failure: unknown, fallbackKey?: string) {
-    return describeFailure(failure, t, fallbackKey);
+    const key = creditConflictKey(conflictReason(failure));
+    return key ? t(key) : describeFailure(failure, t, fallbackKey);
   }
 
   async function run(
@@ -268,10 +280,29 @@ export function PaymentPanel({
               <dd>{formatMoney(financial.unapplied, currency)}</dd>
             </div>
           ) : null}
-          <div className="remaining-row">
-            <dt>{t('paymentRemaining')}</dt>
-            <dd>{formatMoney(financial.remaining, currency)}</dd>
-          </div>
+          {credit?.approved && !completed ? (
+            <div>
+              <dt>{t('paymentCreditApproved')}</dt>
+              <dd>{formatMoney(credit.approved, currency)}</dd>
+            </div>
+          ) : null}
+          {credit?.debt ? (
+            <>
+              <div>
+                <dt>{t('paymentDebt')}</dt>
+                <dd>{formatMoney(credit.debt, currency)}</dd>
+              </div>
+              <div className="remaining-row">
+                <dt>{t('paymentDebtBalance')}</dt>
+                <dd>{formatMoney(credit.balance, currency)}</dd>
+              </div>
+            </>
+          ) : (
+            <div className="remaining-row">
+              <dt>{t('paymentRemaining')}</dt>
+              <dd>{formatMoney(financial.remaining, currency)}</dd>
+            </div>
+          )}
           {Number(financial.change_due) > 0 ? (
             <div>
               <dt>{t('paymentChange')}</dt>
@@ -416,6 +447,46 @@ export function PaymentPanel({
           </button>
         </form>
       ) : null}
+      {canCollect && canSellCredit && !completed && financial && !remainingIsZero && hasItems ? (
+        <>
+          <button
+            type="button"
+            className="credit-action"
+            disabled={locked || unresolvedAttempts.length > 0}
+            aria-describedby={unresolvedAttempts.length > 0 ? 'pos-credit-blocked' : undefined}
+            title={workspace.customer ? undefined : t('creditCustomerRequired')}
+            onClick={() => {
+              setError('');
+              setCreditOpen(true);
+            }}
+          >
+            <PosIcon name="user" />
+            {t('creditAction')}
+          </button>
+          {unresolvedAttempts.length > 0 ? (
+            <small className="muted" id="pos-credit-blocked">
+              {t('creditBlockedByTender')}
+            </small>
+          ) : null}
+        </>
+      ) : null}
+      {creditOpen && !completed ? (
+        <CreditApprovalDialog
+          workspace={workspace}
+          busy={busy || disabled}
+          error={error}
+          onClose={() => {
+            setCreditOpen(false);
+            setError('');
+          }}
+          onComplete={(approvalId) =>
+            run(() => command((current) => tenders.complete(current, approvalId))).then((done) => {
+              if (done) setCreditOpen(false);
+              return done;
+            })
+          }
+        />
+      ) : null}
       {canCollect && !completed && financial && remainingIsZero && hasItems ? (
         <button
           type="button"
@@ -521,7 +592,7 @@ export function PaymentPanel({
           ))}
         </details>
       ) : null}
-      {error && !(preparedAttempts.length > 0 && evidenceOpen) ? (
+      {error && !(preparedAttempts.length > 0 && evidenceOpen) && !creditOpen ? (
         <p className="error" role="alert">
           {error}
         </p>

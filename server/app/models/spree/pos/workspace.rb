@@ -135,7 +135,9 @@ module Spree
 
         funds = Spree::Pos::ReceivedFunds.where(workspace_id: id).to_a
         attempts = Spree::Pos::TenderAttempt.where(workspace_id: id).order(:id).to_a
-        allocations = Spree::Pos::FundsAllocation.where(workspace_id: id, status: 'active')
+        # Debt collections settle the order later from a receipt that may also
+        # pay other orders; they are the receivable's business, not this sale's.
+        allocations = Spree::Pos::FundsAllocation.where(workspace_id: id, status: 'active', collection_id: nil)
         allocated = allocations.sum(:amount)
         allocated_funds = Spree::Pos::ReceivedFunds.where(id: allocations.select(:received_funds_id)).to_a
         received_funds = (funds + allocated_funds).uniq(&:id)
@@ -144,7 +146,20 @@ module Spree
           received: money(received), allocated: money(allocated),
           unapplied: money(received_funds.sum { |row| Spree::Pos::FundsBalance.new(row).available }),
           remaining: money([order.total - allocated, 0].max), change_due: money(funds.sum(&:change_amount)),
-          attempts: attempts.map(&:to_pos)
+          attempts: attempts.map(&:to_pos), credit: credit_pos
+        }
+      end
+
+      # Approved-but-uncommitted credit for the current snapshot, and after a
+      # credit sale the receivable from the ledger (never core amount_due).
+      def credit_pos
+        reservation = Spree::Pos::CreditReservation.holding.find_by(workspace_id: id)
+        entries = Spree::Pos::ReceivableEntry.where(order_id: order_id)
+        debit = entries.find_by(kind: 'debit')
+        {
+          approved: reservation && money(reservation.amount), approval_id: reservation&.approval&.prefixed_id,
+          debt: debit && money(debit.amount), due_on: debit&.due_on&.iso8601,
+          balance: debit && money(Spree::Pos::ReceivableEntry.balance_sum(entries))
         }
       end
 

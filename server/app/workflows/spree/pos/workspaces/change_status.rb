@@ -24,6 +24,8 @@ module Spree
               raise Conflict.new('A draft with recorded payments cannot be canceled.', revision: workspace.revision, reason: 'payments_recorded')
             end
 
+            # Parking or canceling ends the snapshot an approved credit was bound to.
+            Credit::Release.call(workspace: workspace, actor: staff, reason: "workspace_#{status}") if %w[parked canceled].include?(status)
             workspace.update!(operational_status: status, revision: workspace.revision + 1)
             AuditEntry.record!(store: workspace.store, actor: staff, action: "workspace.#{status}", subject: workspace)
             workspace.to_pos

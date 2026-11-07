@@ -18,6 +18,7 @@ module Spree
       has_many :allocations, class_name: 'Spree::Pos::FundsAllocation', foreign_key: :received_funds_id, dependent: :restrict_with_error
       has_many :liability_payouts, class_name: 'Spree::Pos::LiabilityPayout', foreign_key: :received_funds_id, dependent: :restrict_with_error
       has_many :cash_movements, class_name: 'Spree::Pos::CashMovement', foreign_key: :received_funds_id, dependent: :restrict_with_error
+      has_one :collection, class_name: 'Spree::Pos::Collection', foreign_key: :received_funds_id, dependent: :restrict_with_error
 
       validates :kind, inclusion: { in: %w[cash bank_manual] }
       validates :status, inclusion: { in: %w[received attention] }

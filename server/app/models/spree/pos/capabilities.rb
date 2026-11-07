@@ -15,7 +15,12 @@ module Spree
       RECOVER = 'pos.topology.recover'
       APPROVE = 'pos.approval.grant'
       TAKEOVER = 'pos.workspace.takeover'
-      ASSIGNABLE = [MANAGE, OPEN_SHIFT, DISCOUNT, PRICE_OVERRIDE, CUSTOMER, PAYMENT, RESOLVE, RECOVER, APPROVE, TAKEOVER].freeze
+      # Credit stays off until a manager configures an account; configuring
+      # accounts and selling on credit are separate grants.
+      CREDIT_MANAGE = 'pos.credit.manage'
+      CREDIT_SELL = 'pos.credit.sell'
+      ASSIGNABLE = [MANAGE, OPEN_SHIFT, DISCOUNT, PRICE_OVERRIDE, CUSTOMER, PAYMENT, RESOLVE, RECOVER, APPROVE, TAKEOVER,
+                    CREDIT_MANAGE, CREDIT_SELL].freeze
 
       def self.sanitize(values)
         Array(values).map(&:to_s).uniq

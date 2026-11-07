@@ -38,6 +38,20 @@ export function leaseConflict(
   return { reason: details.reason, seconds };
 }
 
+// The machine-readable reason of a 409 conflict, when the server gave one.
+export function conflictReason(error: unknown): string | null {
+  if (
+    statusOf(error) !== 409 ||
+    typeof error !== 'object' ||
+    error === null ||
+    !('details' in error)
+  )
+    return null;
+  const details = error.details;
+  if (typeof details !== 'object' || details === null || !('reason' in details)) return null;
+  return typeof details.reason === 'string' ? details.reason : null;
+}
+
 // The browser could not persist a financial intent before sending it.
 export const FINANCIAL_STORAGE_UNAVAILABLE = 'financial-storage-unavailable';
 

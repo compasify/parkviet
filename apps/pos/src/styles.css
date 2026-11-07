@@ -583,4 +583,16 @@ kbd { padding: var(--pos-s1); border: 1px solid var(--pos-border); border-radius
   .record-list > li > button { width: 100%; }
   .fund-method-icon { display: none; }
 }
+/* Credit sales and receivables */
+.credit-action { order: 3; display: inline-flex; align-items: center; justify-content: center; gap: var(--pos-s2); width: 100%; }
+.pos-layout .pos-popup-card.collection-dialog { width: min(560px, calc(100vw - var(--pos-s6))); }
+.credit-terms { order: 0; }
+.collection-allocations { display: grid; gap: var(--pos-s2); margin: 0; padding: var(--pos-s3); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); min-width: 0; overflow-x: auto; }
+.collection-allocations .money-input { width: 100%; min-width: 7rem; }
+.receivable-list > li { align-items: flex-start; }
+.receivable-row[data-overdue='true'] { border-left: 3px solid var(--pos-warning); padding-left: var(--pos-s3); }
+.receivable-breakdown, .receivable-aging { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: var(--pos-s2) var(--pos-s4); margin: 0; flex: 1 1 100%; }
+.receivable-breakdown dt, .receivable-aging dt { color: var(--pos-muted); font-size: var(--pos-small); }
+.receivable-breakdown dd, .receivable-aging dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+.receivable-aging { padding: var(--pos-s3) 0; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto; animation-duration: .01ms; transition-duration: .01ms; } }

@@ -34,6 +34,9 @@ module Spree
           raise Conflict, 'Idempotency key was reused with a different payload.' if existing
 
           result = stringify(yield)
+          # Credit approvals are bound to one workspace snapshot; close the ones
+          # this command made unusable in the same transaction.
+          Credit::Release.sweep!(workspace: workspace, actor: actor) if workspace
           receipt = CommandReceipt.create!(
             store: store,
             workspace: workspace,

@@ -7,7 +7,10 @@ import {
 } from '@tanstack/react-router';
 import { PosShell } from './components/pos-shell';
 import { session } from './lib/app-session';
+import { CreditAccountsPage } from './pages/credit-accounts';
+import { CreditApprovalsPage } from './pages/credit-approvals';
 import { LoginPage } from './pages/login';
+import { ReceivablesPage } from './pages/receivables';
 import { PaymentAttentionPage, ReceivedFundsPage } from './pages/received-funds';
 import { SalePage } from './pages/sale';
 import { BranchProductsPage } from './pages/settings/branch-products';
@@ -67,6 +70,24 @@ const fundsRoute = createRoute({
   component: ReceivedFundsPage,
 });
 
+const receivablesRoute = createRoute({
+  getParentRoute: () => authedRoute,
+  path: '/receivables',
+  component: ReceivablesPage,
+});
+
+const creditAccountsRoute = createRoute({
+  getParentRoute: () => authedRoute,
+  path: '/credit-accounts',
+  component: CreditAccountsPage,
+});
+
+const creditApprovalsRoute = createRoute({
+  getParentRoute: () => authedRoute,
+  path: '/credit-approvals',
+  component: CreditApprovalsPage,
+});
+
 const attentionRoute = createRoute({
   getParentRoute: () => authedRoute,
   path: '/payment-attention',
@@ -82,6 +103,9 @@ export const router = createRouter({
       branchProductsRoute,
       labelFormatsRoute,
       fundsRoute,
+      receivablesRoute,
+      creditAccountsRoute,
+      creditApprovalsRoute,
       attentionRoute,
     ]),
   ]),

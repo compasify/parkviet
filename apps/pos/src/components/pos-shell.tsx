@@ -14,6 +14,7 @@ import {
 import { administrationAccess } from '../lib/pos-administration';
 import { writesLocked } from '../lib/pos-context';
 import { queryClient } from '../lib/query-client';
+import { canReadReceivables } from '../lib/receivables';
 import { failureStatus, posFailureKey } from '../lib/request-failure';
 import {
   forgetIntent,
@@ -48,8 +49,17 @@ function ShellFrame() {
       ? t('attentionNav')
       : pathname.endsWith('/funds')
         ? t('fundsNav')
-        : t('sellingArea');
-  const isSale = !/\/(settings|funds|payment-attention)(\/|$)/.test(pathname);
+        : pathname.endsWith('/receivables')
+          ? t('receivablesNav')
+          : pathname.endsWith('/credit-accounts')
+            ? t('creditAccountsNav')
+            : pathname.endsWith('/credit-approvals')
+              ? t('creditApprovalsNav')
+              : t('sellingArea');
+  const isSale =
+    !/\/(settings|funds|receivables|credit-accounts|credit-approvals|payment-attention)(\/|$)/.test(
+      pathname,
+    );
   const contextPicker = useRef<HTMLDetailsElement>(null);
   // A header navigation must not leave the picker covering the destination page.
   // biome-ignore lint/correctness/useExhaustiveDependencies: the route change is the dismissal trigger
@@ -298,6 +308,24 @@ function ShellFrame() {
               <p>
                 <Link to="/funds">{t('fundsTitle')}</Link> ·{' '}
                 <Link to="/payment-attention">{t('fundsAttentionTitle')}</Link>
+              </p>
+            ) : null}
+            {canReadReceivables(context.data?.capabilities) ? (
+              <p>
+                <Link to="/receivables">{t('receivablesTitle')}</Link>
+                {context.data?.capabilities.includes('pos.credit.manage') ? (
+                  <>
+                    {' · '}
+                    <Link to="/credit-accounts">{t('creditAccountsNav')}</Link>
+                  </>
+                ) : null}
+                {context.data?.capabilities.includes('pos.credit.manage') &&
+                context.data.capabilities.includes('pos.approval.grant') ? (
+                  <>
+                    {' · '}
+                    <Link to="/credit-approvals">{t('creditApprovalsNav')}</Link>
+                  </>
+                ) : null}
               </p>
             ) : null}
             <button type="button" onClick={logout} disabled={busy}>

@@ -35,6 +35,11 @@ module Spree
               raise CanCan::AccessDenied unless [subject.shift.owner_id, subject.lease_holder_id].include?(requester.id)
               raise CanCan::AccessDenied unless Spree::Pos::AccessPolicy.new(store: current_store, staff: requester).allows?(branch, Spree::Pos::Capabilities::OPEN_SHIFT)
               raise Spree::Pos::Conflict.new('Revision is stale.', revision: subject.revision) unless params[:revision].to_s == subject.revision.to_s
+              # Credit approvals reserve exposure, so they only come from the credit approval endpoint.
+              if params[:action_name].to_s == Spree::Pos::Credit::ACTION
+                raise Spree::Pos::Conflict, 'Credit approvals are granted per workspace credit.'
+              end
+
               amount = money_or_nil
               approval = Spree::Pos::Approval.create!(
                 store: current_store,
@@ -58,8 +63,7 @@ module Spree
               approval = approval!(params[:id])
               raise CanCan::AccessDenied unless policy.allows?(approval.branch, Spree::Pos::Capabilities::APPROVE)
 
-              approval.revoke!
-              audit!('approval.revoke', approval)
+              Spree::Pos::Approvals::Revoke.call(approval: approval, staff: current_user)
               render json: { data: approval.to_pos }
             end
 

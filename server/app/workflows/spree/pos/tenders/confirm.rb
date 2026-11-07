@@ -11,7 +11,7 @@ module Spree
       class Confirm
         def self.call(workspace:, staff:, revision:, lease_generation:, editor_id:, key:, attempt_id:,
                       handed_amount: nil, received_amount: nil, evidence_kind: nil, reference: nil,
-                      receiving_account: nil, terminal_ref: nil)
+                      receiving_account: nil, terminal_ref: nil, confirm_duplicate: nil)
           handed = Record.money(handed_amount.to_s) if handed_amount.present?
           received = Record.money(received_amount.to_s) if received_amount.present?
           payload = {
@@ -20,7 +20,7 @@ module Spree
             'handed_amount' => handed&.to_s('F'), 'received_amount' => received&.to_s('F'), 'evidence_kind' => evidence_kind.to_s.presence,
             'reference' => reference.to_s.presence, 'receiving_account' => receiving_account.to_s.presence,
             'terminal_ref' => terminal_ref.to_s.presence
-          }
+          }.merge(ReceiptReferenceGuard.payload_flag(confirm_duplicate))
           authorize = lambda do
             Guard.authorize_editor!(workspace, staff)
             Guard.authorize_collect!(workspace, staff)
@@ -44,6 +44,8 @@ module Spree
             raise Conflict, 'Amounts must be whole amounts in the order currency.' unless countable?(money, order.currency)
 
             evidence = evidence_for(kind, evidence_kind, reference, receiving_account, terminal_ref)
+            duplicate_ids = bank_duplicates!(kind, workspace, staff, reference: reference, receiving_account: receiving_account,
+                                                                     confirm_duplicate: confirm_duplicate)
 
             attempt.lock!
             raise Conflict, 'Tender attempt is not prepared.' unless attempt.status == 'prepared'
@@ -82,6 +84,7 @@ module Spree
                 )
               end
             end
+            ReceiptReferenceGuard.audit!(store: workspace.store, staff: staff, funds: funds, duplicate_ids: duplicate_ids)
             attempt.update!(status: 'confirmed', confirmed_at: Time.current)
             workspace.update!(revision: workspace.revision + 1)
             AuditEntry.record!(store: workspace.store, actor: staff, action: 'tender.confirm', subject: workspace,
@@ -93,6 +96,13 @@ module Spree
                                 payload: { 'funds_id' => funds.prefixed_id, 'workspace_id' => workspace.prefixed_id })
             workspace.to_pos
           end
+        end
+
+        def self.bank_duplicates!(kind, workspace, staff, reference:, receiving_account:, confirm_duplicate:)
+          return [] unless kind == 'bank_manual'
+
+          ReceiptReferenceGuard.check!(store: workspace.store, staff: staff, branch: workspace.branch, reference: reference,
+                                       receiving_account: receiving_account, confirm_duplicate: confirm_duplicate)
         end
 
         def self.countable?(money, currency)

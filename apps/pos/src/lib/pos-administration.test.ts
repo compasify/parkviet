@@ -23,14 +23,25 @@ describe('POS administration authorization', () => {
       } as unknown as PosContext),
     ).toEqual({ read: true, write: true });
   });
-  it('offers all ten branch capabilities without hiding discount, price or customer permissions', () => {
+  it('offers all twelve branch capabilities without hiding discount, price, customer or credit permissions', () => {
     const keys = posCapabilities.map(([key]) => key);
-    expect(new Set(keys).size).toBe(10);
+    expect(new Set(keys).size).toBe(12);
     expect(keys).toEqual(
-      expect.arrayContaining(['pos.discount.apply', 'pos.price.override', 'pos.customer.write']),
+      expect.arrayContaining([
+        'pos.discount.apply',
+        'pos.price.override',
+        'pos.customer.write',
+        'pos.credit.sell',
+        'pos.credit.manage',
+      ]),
     );
     expect(sensitiveCapabilities).toEqual(
-      expect.arrayContaining(['pos.discount.apply', 'pos.price.override', 'pos.topology.recover']),
+      expect.arrayContaining([
+        'pos.discount.apply',
+        'pos.price.override',
+        'pos.topology.recover',
+        'pos.credit.manage',
+      ]),
     );
   });
 });

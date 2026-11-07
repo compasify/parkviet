@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { administrationAccess } from '../lib/pos-administration';
+import { canReadReceivables } from '../lib/receivables';
 import { PosIcon } from './pos-icon';
 import { usePosSelection } from './pos-selection';
 
@@ -35,6 +36,31 @@ export function PosPage({
           <Link to="/funds" activeProps={{ className: 'is-active', 'aria-current': 'page' }}>
             <PosIcon name="cash" />
             {t('fundsNav')}
+          </Link>
+        ) : null}
+        {canReadReceivables(capabilities) ? (
+          <Link to="/receivables" activeProps={{ className: 'is-active', 'aria-current': 'page' }}>
+            <PosIcon name="list" />
+            {t('receivablesNav')}
+          </Link>
+        ) : null}
+        {capabilities.includes('pos.credit.manage') ? (
+          <Link
+            to="/credit-accounts"
+            activeProps={{ className: 'is-active', 'aria-current': 'page' }}
+          >
+            <PosIcon name="user" />
+            {t('creditAccountsNav')}
+          </Link>
+        ) : null}
+        {capabilities.includes('pos.credit.manage') &&
+        capabilities.includes('pos.approval.grant') ? (
+          <Link
+            to="/credit-approvals"
+            activeProps={{ className: 'is-active', 'aria-current': 'page' }}
+          >
+            <PosIcon name="check" />
+            {t('creditApprovalsNav')}
           </Link>
         ) : null}
         {capabilities.includes('pos.payment.resolve') ? (

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_07_110000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_07_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -2351,6 +2351,22 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_110000) do
     t.check_constraint "kind::text = ANY (ARRAY['receipt'::character varying::text, 'payout'::character varying::text])", name: "chk_pos_cash_movements_kind"
   end
 
+  create_table "spree_pos_collections", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "credit_account_id", null: false
+    t.bigint "received_funds_id", null: false
+    t.bigint "branch_id", null: false
+    t.bigint "actor_id", null: false
+    t.string "note", limit: 200
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["actor_id"], name: "index_spree_pos_collections_on_actor_id"
+    t.index ["branch_id"], name: "index_spree_pos_collections_on_branch_id"
+    t.index ["credit_account_id"], name: "index_spree_pos_collections_on_credit_account_id"
+    t.index ["received_funds_id"], name: "index_spree_pos_collections_on_received_funds_id", unique: true
+    t.index ["store_id"], name: "index_spree_pos_collections_on_store_id"
+  end
+
   create_table "spree_pos_command_receipts", force: :cascade do |t|
     t.bigint "store_id", null: false
     t.bigint "workspace_id"
@@ -2363,6 +2379,81 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_110000) do
     t.index ["store_id", "actor_id", "idempotency_key"], name: "idx_spree_pos_command_receipts_actor_key", unique: true
     t.index ["store_id"], name: "index_spree_pos_command_receipts_on_store_id"
     t.index ["workspace_id"], name: "index_spree_pos_command_receipts_on_workspace_id"
+  end
+
+  create_table "spree_pos_credit_accounts", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "customer_profile_id", null: false
+    t.bigint "branch_id", null: false
+    t.decimal "credit_limit", precision: 19, scale: 4, null: false
+    t.integer "due_days", null: false
+    t.string "status", limit: 16, default: "active", null: false
+    t.string "currency", limit: 16, null: false
+    t.bigint "updated_by_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["branch_id"], name: "index_spree_pos_credit_accounts_on_branch_id"
+    t.index ["customer_profile_id"], name: "index_spree_pos_credit_accounts_on_customer_profile_id"
+    t.index ["store_id", "customer_profile_id", "currency"], name: "idx_pos_credit_accounts_customer", unique: true
+    t.index ["store_id"], name: "index_spree_pos_credit_accounts_on_store_id"
+    t.index ["updated_by_id"], name: "index_spree_pos_credit_accounts_on_updated_by_id"
+    t.check_constraint "credit_limit >= 0::numeric AND due_days >= 0", name: "chk_pos_credit_accounts_terms"
+    t.check_constraint "status::text = ANY (ARRAY['active'::character varying, 'suspended'::character varying]::text[])", name: "chk_pos_credit_accounts_status"
+  end
+
+  create_table "spree_pos_credit_requests", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "branch_id", null: false
+    t.bigint "workspace_id", null: false
+    t.bigint "customer_profile_id", null: false
+    t.bigint "requester_id", null: false
+    t.bigint "decided_by_id"
+    t.bigint "credit_reservation_id"
+    t.decimal "amount", precision: 19, scale: 4, null: false
+    t.string "currency", limit: 16, null: false
+    t.integer "workspace_revision", null: false
+    t.string "status", limit: 16, default: "pending", null: false
+    t.string "reason", limit: 200
+    t.datetime "decided_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["branch_id", "status"], name: "idx_pos_credit_requests_branch"
+    t.index ["branch_id"], name: "index_spree_pos_credit_requests_on_branch_id"
+    t.index ["credit_reservation_id"], name: "index_spree_pos_credit_requests_on_credit_reservation_id"
+    t.index ["customer_profile_id"], name: "index_spree_pos_credit_requests_on_customer_profile_id"
+    t.index ["decided_by_id"], name: "index_spree_pos_credit_requests_on_decided_by_id"
+    t.index ["requester_id"], name: "index_spree_pos_credit_requests_on_requester_id"
+    t.index ["store_id"], name: "index_spree_pos_credit_requests_on_store_id"
+    t.index ["workspace_id", "workspace_revision"], name: "idx_pos_credit_requests_revision", unique: true
+    t.index ["workspace_id"], name: "index_spree_pos_credit_requests_on_workspace_id"
+    t.check_constraint "amount > 0::numeric", name: "chk_pos_credit_requests_amount"
+    t.check_constraint "status::text = ANY (ARRAY['pending'::character varying, 'approved'::character varying, 'rejected'::character varying, 'stale'::character varying]::text[])", name: "chk_pos_credit_requests_status"
+  end
+
+  create_table "spree_pos_credit_reservations", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "credit_account_id", null: false
+    t.bigint "workspace_id", null: false
+    t.bigint "approval_id", null: false
+    t.bigint "customer_profile_id", null: false
+    t.decimal "amount", precision: 19, scale: 4, null: false
+    t.string "currency", limit: 16, null: false
+    t.integer "workspace_revision", null: false
+    t.string "status", limit: 16, default: "active", null: false
+    t.string "released_reason", limit: 64
+    t.datetime "committed_at"
+    t.datetime "released_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["approval_id"], name: "index_spree_pos_credit_reservations_on_approval_id", unique: true
+    t.index ["credit_account_id", "status"], name: "idx_pos_credit_reservations_account"
+    t.index ["credit_account_id"], name: "index_spree_pos_credit_reservations_on_credit_account_id"
+    t.index ["customer_profile_id"], name: "index_spree_pos_credit_reservations_on_customer_profile_id"
+    t.index ["store_id"], name: "index_spree_pos_credit_reservations_on_store_id"
+    t.index ["workspace_id"], name: "idx_pos_credit_reservations_one_active", unique: true, where: "((status)::text = 'active'::text)"
+    t.index ["workspace_id"], name: "index_spree_pos_credit_reservations_on_workspace_id"
+    t.check_constraint "amount > 0::numeric", name: "chk_pos_credit_reservations_amount"
+    t.check_constraint "status::text = ANY (ARRAY['active'::character varying, 'committed'::character varying, 'released'::character varying]::text[])", name: "chk_pos_credit_reservations_status"
   end
 
   create_table "spree_pos_customers", force: :cascade do |t|
@@ -2416,6 +2507,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_110000) do
     t.datetime "reversed_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "collection_id"
+    t.index ["collection_id"], name: "index_spree_pos_funds_allocations_on_collection_id"
     t.index ["payment_id"], name: "idx_pos_funds_allocations_payment", unique: true, where: "(payment_id IS NOT NULL)"
     t.index ["received_funds_id", "status"], name: "idx_pos_funds_allocations_funds"
     t.index ["received_funds_id"], name: "index_spree_pos_funds_allocations_on_received_funds_id"
@@ -2558,6 +2651,41 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_110000) do
     t.index ["tender_attempt_id", "created_at"], name: "idx_pos_receipt_evidences_attempt"
     t.index ["tender_attempt_id"], name: "index_spree_pos_receipt_evidences_on_tender_attempt_id"
     t.check_constraint "kind::text = ANY (ARRAY['cash_count'::character varying::text, 'bank_manual'::character varying::text, 'external_card'::character varying::text])", name: "chk_pos_receipt_evidences_kind"
+  end
+
+  create_table "spree_pos_receivable_entries", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "credit_account_id", null: false
+    t.bigint "branch_id", null: false
+    t.bigint "order_id", null: false
+    t.bigint "workspace_id", null: false
+    t.bigint "credit_reservation_id"
+    t.bigint "funds_allocation_id"
+    t.bigint "actor_id", null: false
+    t.string "kind", limit: 32, null: false
+    t.decimal "amount", precision: 19, scale: 4, null: false
+    t.string "currency", limit: 16, null: false
+    t.date "due_on"
+    t.string "source_type", limit: 64
+    t.bigint "source_id"
+    t.jsonb "metadata", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.index ["actor_id"], name: "index_spree_pos_receivable_entries_on_actor_id"
+    t.index ["branch_id"], name: "index_spree_pos_receivable_entries_on_branch_id"
+    t.index ["credit_account_id", "order_id"], name: "idx_pos_receivable_entries_account_order"
+    t.index ["credit_account_id"], name: "index_spree_pos_receivable_entries_on_credit_account_id"
+    t.index ["credit_reservation_id"], name: "index_spree_pos_receivable_entries_on_credit_reservation_id"
+    t.index ["funds_allocation_id", "kind"], name: "idx_pos_receivable_entries_allocation", unique: true, where: "(funds_allocation_id IS NOT NULL)"
+    t.index ["funds_allocation_id"], name: "index_spree_pos_receivable_entries_on_funds_allocation_id"
+    t.index ["order_id"], name: "idx_pos_receivable_entries_one_debit", unique: true, where: "((kind)::text = 'debit'::text)"
+    t.index ["source_type", "source_id"], name: "idx_pos_receivable_entries_credit_note_source", unique: true, where: "((kind)::text = 'credit_note'::text)"
+    t.index ["store_id"], name: "index_spree_pos_receivable_entries_on_store_id"
+    t.index ["workspace_id"], name: "index_spree_pos_receivable_entries_on_workspace_id"
+    t.check_constraint "(kind::text = 'debit'::text) = (due_on IS NOT NULL AND credit_reservation_id IS NOT NULL)", name: "chk_pos_receivable_entries_debit"
+    t.check_constraint "(kind::text = ANY (ARRAY['collection'::character varying, 'collection_reversal'::character varying]::text[])) = (funds_allocation_id IS NOT NULL)", name: "chk_pos_receivable_entries_allocation"
+    t.check_constraint "amount > 0::numeric", name: "chk_pos_receivable_entries_amount"
+    t.check_constraint "kind::text <> 'credit_note'::text OR source_type IS NOT NULL AND source_id IS NOT NULL", name: "chk_pos_receivable_entries_credit_note"
+    t.check_constraint "kind::text = ANY (ARRAY['debit'::character varying, 'credit_note'::character varying, 'collection'::character varying, 'collection_reversal'::character varying]::text[])", name: "chk_pos_receivable_entries_kind"
   end
 
   create_table "spree_pos_received_funds", force: :cascade do |t|
@@ -4431,9 +4559,30 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_110000) do
   add_foreign_key "spree_pos_cash_movements", "spree_pos_registers", column: "register_id"
   add_foreign_key "spree_pos_cash_movements", "spree_pos_shifts", column: "shift_id"
   add_foreign_key "spree_pos_cash_movements", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_collections", "spree_admin_users", column: "actor_id"
+  add_foreign_key "spree_pos_collections", "spree_pos_branches", column: "branch_id"
+  add_foreign_key "spree_pos_collections", "spree_pos_credit_accounts", column: "credit_account_id"
+  add_foreign_key "spree_pos_collections", "spree_pos_received_funds", column: "received_funds_id"
+  add_foreign_key "spree_pos_collections", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_command_receipts", "spree_admin_users", column: "actor_id"
   add_foreign_key "spree_pos_command_receipts", "spree_pos_workspaces", column: "workspace_id"
   add_foreign_key "spree_pos_command_receipts", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_credit_accounts", "spree_admin_users", column: "updated_by_id"
+  add_foreign_key "spree_pos_credit_accounts", "spree_pos_branches", column: "branch_id"
+  add_foreign_key "spree_pos_credit_accounts", "spree_pos_customers", column: "customer_profile_id"
+  add_foreign_key "spree_pos_credit_accounts", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_credit_requests", "spree_admin_users", column: "decided_by_id"
+  add_foreign_key "spree_pos_credit_requests", "spree_admin_users", column: "requester_id"
+  add_foreign_key "spree_pos_credit_requests", "spree_pos_branches", column: "branch_id"
+  add_foreign_key "spree_pos_credit_requests", "spree_pos_credit_reservations", column: "credit_reservation_id"
+  add_foreign_key "spree_pos_credit_requests", "spree_pos_customers", column: "customer_profile_id"
+  add_foreign_key "spree_pos_credit_requests", "spree_pos_workspaces", column: "workspace_id"
+  add_foreign_key "spree_pos_credit_requests", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_credit_reservations", "spree_pos_approvals", column: "approval_id"
+  add_foreign_key "spree_pos_credit_reservations", "spree_pos_credit_accounts", column: "credit_account_id"
+  add_foreign_key "spree_pos_credit_reservations", "spree_pos_customers", column: "customer_profile_id"
+  add_foreign_key "spree_pos_credit_reservations", "spree_pos_workspaces", column: "workspace_id"
+  add_foreign_key "spree_pos_credit_reservations", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_customers", "spree_admin_users", column: "created_by_id"
   add_foreign_key "spree_pos_customers", "spree_customers", column: "customer_id"
   add_foreign_key "spree_pos_customers", "spree_stores", column: "store_id"
@@ -4444,6 +4593,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_110000) do
   add_foreign_key "spree_pos_discount_intents", "spree_pos_workspaces", column: "workspace_id"
   add_foreign_key "spree_pos_funds_allocations", "spree_orders", column: "order_id"
   add_foreign_key "spree_pos_funds_allocations", "spree_payments", column: "payment_id"
+  add_foreign_key "spree_pos_funds_allocations", "spree_pos_collections", column: "collection_id"
   add_foreign_key "spree_pos_funds_allocations", "spree_pos_received_funds", column: "received_funds_id"
   add_foreign_key "spree_pos_funds_allocations", "spree_pos_workspaces", column: "workspace_id"
   add_foreign_key "spree_pos_funds_allocations", "spree_stores", column: "store_id"
@@ -4462,6 +4612,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_110000) do
   add_foreign_key "spree_pos_receipt_evidences", "spree_admin_users", column: "actor_id"
   add_foreign_key "spree_pos_receipt_evidences", "spree_pos_tender_attempts", column: "tender_attempt_id"
   add_foreign_key "spree_pos_receipt_evidences", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_receivable_entries", "spree_admin_users", column: "actor_id"
+  add_foreign_key "spree_pos_receivable_entries", "spree_orders", column: "order_id"
+  add_foreign_key "spree_pos_receivable_entries", "spree_pos_branches", column: "branch_id"
+  add_foreign_key "spree_pos_receivable_entries", "spree_pos_credit_accounts", column: "credit_account_id"
+  add_foreign_key "spree_pos_receivable_entries", "spree_pos_credit_reservations", column: "credit_reservation_id"
+  add_foreign_key "spree_pos_receivable_entries", "spree_pos_funds_allocations", column: "funds_allocation_id"
+  add_foreign_key "spree_pos_receivable_entries", "spree_pos_workspaces", column: "workspace_id"
+  add_foreign_key "spree_pos_receivable_entries", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_received_funds", "spree_admin_users", column: "actor_id"
   add_foreign_key "spree_pos_received_funds", "spree_pos_branches", column: "branch_id"
   add_foreign_key "spree_pos_received_funds", "spree_pos_registers", column: "register_id"

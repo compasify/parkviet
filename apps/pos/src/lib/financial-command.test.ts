@@ -68,6 +68,45 @@ afterEach(() => {
   setFinancialStore(null);
 });
 
+describe('a named intent keeps one key when the body is corrected', () => {
+  const collection = (handed: string): FinancialCommand => ({
+    staffId: 'stf_1',
+    storeId: 'store_1',
+    scopeId: 'poscredit_1',
+    action: 'collection.receive',
+    path: '/pos/collections',
+    intent: 'receipt',
+    body: { amount: '700000', handed_amount: handed },
+  });
+
+  it('reuses the unknown receipt key after the handed amount is edited', async () => {
+    const first = fakeServer([fail(new TypeError('Failed to fetch'))]);
+    await expect(
+      runFinancialCommand(first.request, collection('1000000'), newKey),
+    ).rejects.toThrow();
+
+    const retry = fakeServer([fail({ status: 404 }), ok({ id: 'poscollect_1' })]);
+    await runFinancialCommand(retry.request, collection('800000'), newKey);
+    expect(retry.calls.map((call) => [call.method, call.key])).toEqual([
+      ['GET', 'key-1'],
+      ['POST', 'key-1'],
+    ]);
+    expect(retry.calls[1].body).toMatchObject({ handed_amount: '800000' });
+  });
+
+  it('returns the committed receipt instead of sending the edited body', async () => {
+    const first = fakeServer([fail(new TypeError('Failed to fetch'))]);
+    await expect(
+      runFinancialCommand(first.request, collection('1000000'), newKey),
+    ).rejects.toThrow();
+
+    const retry = fakeServer([ok({ id: 'poscollect_1' })]);
+    const result = await runFinancialCommand(retry.request, collection('800000'), newKey);
+    expect(result).toEqual({ data: { id: 'poscollect_1' }, recovered: true });
+    expect(retry.calls.map((call) => call.method)).toEqual(['GET']);
+  });
+});
+
 describe('financial command recovery', () => {
   it('drops the local record when the server definitively rejects the command', async () => {
     const conflict = { status: 409, message: 'Handed cash is less than the tender amount.' };

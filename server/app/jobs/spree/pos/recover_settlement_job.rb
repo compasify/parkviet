@@ -24,6 +24,19 @@ module Spree
         LiabilityPayout.where(status: %w[requested reserved unknown]).where(updated_at: ...cutoff).find_each do |payout|
           raise_once(payout.store_id, 'liability_payout.attention', payout, 'payout_id' => payout.prefixed_id)
         end
+        release_unusable_credit
+      end
+
+      # Expired or otherwise unusable credit reservations stop counting at once
+      # (they are excluded from exposure in SQL); this sweep records their
+      # release for workspaces nobody touched since. The approver is the actor
+      # of record because the job acts on their lapsed approval.
+      def release_unusable_credit
+        stale = CreditReservation.active_now.where.not(id: CreditReservation.holding.select(:id)).includes(:workspace, :approval)
+        stale.find_each do |reservation|
+          Credit::Release.stale!(workspace: reservation.workspace, actor: reservation.approval.approver,
+                                 reason: 'expired_or_unusable')
+        end
       end
 
       private

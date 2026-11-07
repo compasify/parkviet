@@ -9,6 +9,8 @@ export const posCapabilities = [
   ['pos.workspace.takeover', 'capabilityTakeover'],
   ['pos.topology.manage', 'capabilityManage'],
   ['pos.topology.recover', 'capabilityRecover'],
+  ['pos.credit.sell', 'capabilityCreditSell'],
+  ['pos.credit.manage', 'capabilityCreditManage'],
 ] as const;
 
 export const sensitiveCapabilities = [
@@ -19,4 +21,6 @@ export const sensitiveCapabilities = [
   'pos.workspace.takeover',
   'pos.topology.manage',
   'pos.topology.recover',
+  'pos.credit.sell',
+  'pos.credit.manage',
 ];

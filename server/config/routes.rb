@@ -24,6 +24,23 @@ Rails.application.routes.draw do
                 post 'payouts/:payout_id/resolve', to: 'received_funds#resolve_payout'
               end
             end
+            resources :credit_accounts, only: [:index, :create, :update]
+            resources :credit_requests, only: [:index] do
+              member do
+                post :approve
+                post :reject
+                post :revoke
+              end
+            end
+            get 'receivables', to: 'receivables#index'
+            get 'receivables/customers', to: 'receivables#customers'
+            resources :collections, only: [:show, :create] do
+              resources :allocations, only: [:create], controller: 'collections/allocations' do
+                member do
+                  post :reverse
+                end
+              end
+            end
             resources :branches, only: [] do
               resources :branch_products, only: [:index, :create, :destroy], path: 'products'
               resources :label_formats, only: [:index, :create, :update] do
@@ -83,6 +100,9 @@ Rails.application.routes.draw do
               post 'funds/allocate', to: 'workspaces/funds#allocate'
               post 'funds/reverse', to: 'workspaces/funds#reverse'
               post 'complete', to: 'workspaces/completions#create'
+              get 'credit', to: 'workspaces/credit_approvals#index'
+              post 'credit_approvals', to: 'workspaces/credit_approvals#create'
+              post 'credit_requests', to: 'workspaces/credit_approvals#request_approval'
               member do
                 post 'discount/clear', to: 'workspaces/discounts#clear'
                 post :park

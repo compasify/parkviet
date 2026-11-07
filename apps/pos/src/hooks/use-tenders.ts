@@ -28,13 +28,13 @@ export type TenderCommandInput = {
 
 type Page<T> = { data: T[]; meta: { page: number; pages: number; count: number } };
 
-const financialRequest: FinancialRequest = <T>(
+export const financialRequest: FinancialRequest = <T>(
   method: 'GET' | 'POST',
   path: string,
   options?: Parameters<FinancialRequest>[2],
 ) => session.request<T>(method, path, options);
 
-function abandonIfNeeded(error: unknown) {
+export function abandonIfNeeded(error: unknown) {
   if (!(error instanceof SessionSuperseded) && posFailureKey(error) === 'unauthorized') {
     session.abandon();
   }
@@ -213,12 +213,15 @@ export function useTenders(staffId: string | null, storeId: string | null) {
         workspaceBody(workspace, input),
       );
     },
-    complete(workspace: PosWorkspace) {
+    // With an approval id the unpaid remainder is sold on that approved credit.
+    complete(workspace: PosWorkspace, creditApprovalId?: string) {
       return runFinancial(
         workspace,
-        'workspace.complete',
+        creditApprovalId ? 'workspace.complete_on_credit' : 'workspace.complete',
         `/pos/workspaces/${workspace.id}/complete`,
-        workspaceBody(workspace, {}),
+        creditApprovalId
+          ? { ...workspaceBody(workspace, {}), credit_approval_id: creditApprovalId }
+          : workspaceBody(workspace, {}),
       );
     },
     handover(workspace: PosWorkspace) {

@@ -840,6 +840,7 @@ export function WorkspaceTabs() {
                 storeId={storeId}
                 canCollect={Boolean(data?.capabilities.includes('pos.payment.collect'))}
                 canResolve={Boolean(data?.capabilities.includes('pos.payment.resolve'))}
+                canSellCredit={Boolean(data?.capabilities.includes('pos.credit.sell'))}
                 disabled={
                   locked ||
                   busy ||

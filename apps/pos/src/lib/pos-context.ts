@@ -168,6 +168,124 @@ export type PosFinancial = {
   remaining: string;
   change_due: string;
   attempts: PosFinancialAttempt[];
+  // Approved credit for the current snapshot; after a credit sale, the debt
+  // and its balance from the receivable ledger.
+  credit?: {
+    approved: string | null;
+    approval_id: string | null;
+    debt: string | null;
+    due_on: string | null;
+    balance: string | null;
+  } | null;
+};
+
+export type PosCreditRequest = {
+  id: string;
+  branch_id: string;
+  workspace_id: string;
+  order_number: string;
+  customer: { id: string; name: string };
+  requester: { id: string; name: string };
+  amount: string;
+  currency: string;
+  workspace_revision: number;
+  status: 'pending' | 'approved' | 'rejected' | 'stale';
+  reason: string | null;
+  created_at: string | null;
+  decided_at: string | null;
+  approval_id: string | null;
+  approval_active: boolean;
+};
+
+export type PosCreditAccount = {
+  id: string;
+  customer_id: string;
+  customer_name: string;
+  customer_phone?: string | null;
+  branch_id?: string;
+  status: 'active' | 'suspended';
+  currency: string;
+  credit_limit: string;
+  due_days: number;
+  open_debt: string;
+  reserved: string;
+  available: string;
+  due_on?: string;
+};
+
+export type PosCreditReservation = {
+  id: string;
+  credit_account_id: string;
+  workspace_id: string;
+  approval_id: string;
+  customer_id: string;
+  amount: string;
+  currency: string;
+  workspace_revision: number;
+  status: 'active' | 'committed' | 'released';
+  usable: boolean;
+  approver: { id: string; name: string };
+  expires_at: string;
+};
+
+export type PosWorkspaceCredit = {
+  workspace_id: string;
+  revision: number;
+  customer: { id: string; name: string } | null;
+  can_sell: boolean;
+  account: PosCreditAccount | null;
+  reservation: PosCreditReservation | null;
+  request?: PosCreditRequest | null;
+};
+
+export type PosReceivableCustomer = { id: string; name: string; phone: string | null };
+
+export type PosReceivable = {
+  order_id: string;
+  order_number: string;
+  workspace_id: string;
+  credit_account_id: string;
+  customer: PosReceivableCustomer;
+  currency: string;
+  original_total: string;
+  paid_at_sale: string;
+  debt: string;
+  credit_notes: string;
+  collected: string;
+  refunds: string;
+  balance: string;
+  due_on: string | null;
+  overdue: boolean;
+  days_overdue: number;
+  aging: 'current' | 'days_1_30' | 'days_31_60' | 'days_61_90' | 'days_over_90';
+  placed_at: string | null;
+};
+
+export type PosReceivableAccount = {
+  credit_account_id: string;
+  currency: string;
+  customer: PosReceivableCustomer;
+  orders: number;
+  credit_limit: string;
+  account_status: string;
+  balance: string;
+  overdue: string;
+  current: string;
+  days_1_30: string;
+  days_31_60: string;
+  days_61_90: string;
+  days_over_90: string;
+};
+
+export type PosCollection = {
+  id: string;
+  credit_account_id: string;
+  branch_id: string;
+  customer_id: string;
+  note: string | null;
+  funds: PosReceivedFunds;
+  allocations: PosFundsAllocation[];
+  created_at: string | null;
 };
 
 export type PosPaymentMethod = {
@@ -207,7 +325,10 @@ export type PosFundsAllocation = {
   received_funds_id: string;
   workspace_id: string;
   order_id: string;
+  order_number?: string;
   payment_id: string | null;
+  collection_id?: string | null;
+  consumed?: string;
   status: 'active' | 'reversed';
   amount: string;
   currency: string;

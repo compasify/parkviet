@@ -4,14 +4,21 @@ module Spree
   module Pos
     # Disjoint buckets over one parent ReceivedFunds:
     #   received_net = available + allocated_unconsumed + payout_reserved + paid_out
+    # `paid_out` holds confirmed liability payouts and every Refund taken from
+    # an allocation child's Payment, whether that child is still active or was
+    # reversed afterwards, so the refunded part of a child is never counted as
+    # allocated or available again.
     # Callers must lock the parent row before relying on these numbers.
     class FundsBalance
       def initialize(funds)
         @funds = funds
       end
 
+      # Face amount of active children minus what their Payments already
+      # refunded.
       def allocated
-        funds.allocations.where(status: 'active').sum(:amount)
+        active = funds.allocations.where(status: 'active')
+        active.sum(:amount) - refunded(active)
       end
 
       def payout_reserved
@@ -19,7 +26,7 @@ module Spree
       end
 
       def paid_out
-        funds.liability_payouts.where(status: 'confirmed').sum(:amount)
+        funds.liability_payouts.where(status: 'confirmed').sum(:amount) + refunded(funds.allocations)
       end
 
       def available
@@ -34,6 +41,10 @@ module Spree
       private
 
       attr_reader :funds
+
+      def refunded(allocations)
+        Spree::Refund.where(payment_id: allocations.where.not(payment_id: nil).select(:payment_id)).sum(:amount)
+      end
     end
   end
 end

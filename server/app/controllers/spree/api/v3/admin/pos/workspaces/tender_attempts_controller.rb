@@ -45,7 +45,7 @@ module Spree
                   handed_amount: params[:handed_amount], received_amount: params[:received_amount],
                   evidence_kind: params[:evidence_kind],
                   reference: params[:reference], receiving_account: params[:receiving_account],
-                  terminal_ref: params[:terminal_ref]
+                  terminal_ref: params[:terminal_ref], confirm_duplicate: params[:confirm_duplicate]
                 )
                 render json: { data: result }
               end

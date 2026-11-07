@@ -49,7 +49,8 @@ module Spree
                 store: workspace.store, received_funds: funds, workspace: workspace, order: order,
                 payment: payment, status: 'active', amount: parsed, currency: order.currency
               )
-              funds.update!(workspace: workspace) if funds.workspace_id.nil?
+              # A collection receipt belongs to its customer, not to one order.
+              funds.update!(workspace: workspace) if funds.workspace_id.nil? && funds.collection.nil?
             end
             workspace.update!(revision: workspace.revision + 1)
             AuditEntry.record!(store: workspace.store, actor: staff, action: 'funds.allocate', subject: workspace,

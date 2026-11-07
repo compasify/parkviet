@@ -19,6 +19,8 @@ module Spree
           CommandExecutor.call(store: workspace.store, actor: staff, key: key, payload: payload, workspace: workspace, authorize: authorize) do
             validate!(workspace, staff, revision, lease_generation, editor_id)
             profile = profile_id.present? ? profile!(workspace, profile_id) : nil
+            # Credit is approved for one customer; a different (or no) customer voids it.
+            Credit::Release.call(workspace: workspace, actor: staff, reason: 'customer_changed') if profile&.id != workspace.pos_customer_id
             workspace.order.update!(customer: profile&.customer, email: profile&.email)
             workspace.update!(pos_customer: profile, revision: workspace.revision + 1)
             AuditEntry.record!(
