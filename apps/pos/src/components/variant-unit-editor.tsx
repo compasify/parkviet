@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { type FormEvent, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type BranchProduct, useUnitDefinitions } from '../hooks/use-branch-catalog';
+import { useBranchFeatures } from '../hooks/use-branch-features';
 import { fetchCatalogPage } from '../hooks/use-catalog';
 import { useSession } from '../hooks/use-session';
 import { saveVariantUnit, useVariantUnit } from '../hooks/use-variant-unit';
@@ -84,6 +85,16 @@ export function VariantUnitEditor({
       setDirty(false);
     }
   }, [loaded]);
+
+  // The server refuses a switch to serial or lot tracking while the store has
+  // traceability off (keeping the current mode or going back to none stays
+  // open). Unknown or unreadable switches leave the decision to the server.
+  const switches = useBranchFeatures(branchId, canWrite);
+  const trackingOff = Boolean(
+    switches.data?.reported && switches.data.store_defaults.traceability !== true,
+  );
+  const trackedLocked = (mode: string) =>
+    trackingOff && mode !== 'none' && mode !== loaded?.tracked_mode;
 
   const definitions = units.data?.data ?? [];
   const saleUnit = definitions.find((item) => item.code === draft?.sale_unit);
@@ -247,14 +258,18 @@ export function VariantUnitEditor({
                       aria-label={t('variantUnitTracked')}
                       value={draft.tracked_mode}
                       disabled={!canWrite}
+                      aria-describedby={trackingOff ? 'variant-unit-tracking-off' : undefined}
                       onChange={(event) => set('tracked_mode', event.target.value)}
                     >
                       {TRACKED_MODES.map((mode) => (
-                        <option key={mode} value={mode}>
+                        <option key={mode} value={mode} disabled={trackedLocked(mode)}>
                           {t(`variantUnitTracked_${mode}`)}
                         </option>
                       ))}
                     </select>
+                    {trackingOff ? (
+                      <small id="variant-unit-tracking-off">{t('variantUnitTrackingOff')}</small>
+                    ) : null}
                   </label>
                   <label>
                     {t('variantUnitRatioNumerator')}

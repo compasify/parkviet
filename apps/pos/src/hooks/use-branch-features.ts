@@ -59,6 +59,7 @@ function toBranchFeatures(branchId: string, response: FeaturesResponse): BranchF
   if (switches)
     return {
       branch_id: id,
+      reported: true,
       features: pick((feature) => switches[feature]?.effective === true),
       store_defaults: pick((feature) => switches[feature]?.store === true),
       branch_off: pick((feature) => switches[feature]?.branch_override === false),
@@ -66,6 +67,7 @@ function toBranchFeatures(branchId: string, response: FeaturesResponse): BranchF
     };
   return {
     branch_id: id,
+    reported: normalizeFeatures(response.data.store_defaults) !== null,
     features: normalizeFeatures(response.data.features) ?? {},
     store_defaults: normalizeFeatures(response.data.store_defaults) ?? {},
     branch_off: pick((feature) =>

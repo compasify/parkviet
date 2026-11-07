@@ -113,6 +113,12 @@ async function install(page: Page, access = { read: true, write: true }) {
       units[id] = { ...body, version: 1, status: 'active' };
       return route.fulfill({ json: { data: units[id] } });
     }
+    // The store keeps serial and lot tracking off.
+    if (path === '/pos/feature_flags' && method === 'GET')
+      return route.fulfill({ json: { data: {
+        branch_id: branch.id, features: { traceability: false },
+        switches: { traceability: { store: false, branch_override: null, effective: false } }, settings: [],
+      } } });
     return route.fulfill({ json: { data: [], meta: { page: 1, pages: 1, count: 0, next: null } } });
   });
   return { state, products, formats, units };
@@ -238,6 +244,12 @@ test('a SKU label code is saved from the assortment row for the chosen variant',
   await variant.selectOption('variant_rice_bulk');
   await expect(dialog.getByLabel('Đơn vị bán')).toHaveValue('kg');
   await expect(dialog.getByLabel('Đơn vị gốc')).toHaveValue('g');
+  // Serial or lot tracking cannot be chosen while the store keeps it off.
+  const tracking = dialog.getByLabel('Theo dõi hàng');
+  await expect(tracking).toHaveAccessibleDescription(/Cửa hàng chưa bật theo dõi lô và serial/);
+  await expect(tracking.locator('option[value="lot"]')).toHaveJSProperty('disabled', true);
+  await expect(tracking.locator('option[value="serial"]')).toHaveJSProperty('disabled', true);
+  await expect(tracking.locator('option[value="none"]')).toHaveJSProperty('disabled', false);
 
   const code = dialog.getByLabel('Mã hàng trên tem cân');
   await code.fill('12a');

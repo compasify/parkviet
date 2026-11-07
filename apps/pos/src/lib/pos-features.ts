@@ -59,6 +59,8 @@ export type FeatureSetting = {
 
 export type BranchFeatures = {
   branch_id: string;
+  // The answer carried the store defaults (switches or the older shape).
+  reported: boolean;
   // Effective flags of the branch: store default on and not switched off here.
   features: PosFeatureFlags;
   store_defaults: PosFeatureFlags;

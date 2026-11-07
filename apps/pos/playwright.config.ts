@@ -1,10 +1,15 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const port = process.env.POS_TEST_PORT || '5174';
+// Real-API runs reload pages, which restores the session through the refresh
+// cookie. The API refuses refresh from an origin that is not allowed (the
+// development store allows `http://localhost`), so those runs open the POS
+// under that origin; the mocked suite keeps the IPv4 loopback.
+const host = process.env.POS_LIVE_REVIEW === '1' ? 'localhost' : '127.0.0.1';
 
 export default defineConfig({
   testDir: './e2e',
-  use: { baseURL: `http://127.0.0.1:${port}` },
+  use: { baseURL: `http://${host}:${port}` },
   webServer: {
     command: `node node_modules/vite/bin/vite.js --host 127.0.0.1 --port ${port} --strictPort`,
     url: `http://127.0.0.1:${port}/pos/login`,

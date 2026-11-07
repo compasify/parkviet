@@ -613,6 +613,7 @@
   "variantUnitTracked_none": "Không theo dõi",
   "variantUnitTracked_lot": "Theo lô",
   "variantUnitTracked_serial": "Theo số serial",
+  "variantUnitTrackingOff": "Cửa hàng chưa bật theo dõi lô và serial: chỉ giữ kiểu theo dõi hiện tại hoặc chuyển về không theo dõi.",
   "variantUnitRatioNumerator": "Tỷ lệ quy đổi (tử số)",
   "variantUnitRatioDenominator": "Tỷ lệ quy đổi (mẫu số)",
   "variantUnitRatioInvalid": "Tỷ lệ quy đổi phải là số nguyên từ 1 đến 1.000.000.",

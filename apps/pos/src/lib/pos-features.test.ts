@@ -56,6 +56,7 @@ describe('branch feature flags', () => {
 describe('why a feature is off at a branch', () => {
   const flags = {
     branch_id: 'br_1',
+    reported: true,
     features: { credit: false, returns: false, refunds: false, exports: true },
     store_defaults: { credit: false, returns: true, refunds: false, exports: true },
     branch_off: { returns: true, refunds: true },

@@ -613,6 +613,7 @@
   "variantUnitTracked_none": "Not tracked",
   "variantUnitTracked_lot": "By lot",
   "variantUnitTracked_serial": "By serial number",
+  "variantUnitTrackingOff": "Lot and serial tracking is not turned on for the store: keep the current tracking or switch it off.",
   "variantUnitRatioNumerator": "Conversion ratio (numerator)",
   "variantUnitRatioDenominator": "Conversion ratio (denominator)",
   "variantUnitRatioInvalid": "Conversion ratios must be whole numbers from 1 to 1,000,000.",

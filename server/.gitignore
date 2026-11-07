@@ -45,3 +45,6 @@
 !/app/assets/builds/.keep
 
 coverage/*
+
+# Credentials of synthetic POS live-test staff (development only).
+/pos-live-review-credentials.json

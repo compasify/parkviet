@@ -133,8 +133,19 @@ type CreditRequestRow = {
 async function mockPos(
   page: Page,
   workspace: Pick<MockWorkspace, 'id' | 'order_id' | 'total' | 'customer'>,
-  options: { capabilities?: string[]; abortFirstCollection?: boolean } = {},
+  options: { capabilities?: string[]; abortFirstCollection?: boolean; creditOff?: boolean } = {},
 ) {
+  // Effective branch switches, as the server sends them in the context.
+  const features = {
+    credit: !options.creditOff,
+    returns: true,
+    refunds: true,
+    exchanges: true,
+    traceability: true,
+    customer_display: true,
+    cash_moves: true,
+    exports: true,
+  };
   const ws: MockWorkspace = {
     ...workspace,
     revision: 1,
@@ -183,6 +194,20 @@ async function mockPos(
     const method = request.method();
     const conflict = (message: string) =>
       route.fulfill({ status: 409, json: { error: { code: 'conflict', message } } });
+    // Like the server: with credit off, new credit requests, approvals and
+    // credit completions are refused; rejecting, revoking and collecting
+    // existing debt stay open.
+    const creditRefused = () =>
+      route.fulfill({
+        status: 409,
+        json: {
+          error: {
+            code: 'conflict',
+            message: 'Credit is turned off.',
+            details: { reason: 'feature_disabled', feature: 'credit' },
+          },
+        },
+      });
     if (path.endsWith('/auth/login') || path.endsWith('/auth/refresh'))
       return route.fulfill({ json: { token: 'test-token' } });
     if (path.endsWith('/me'))
@@ -210,6 +235,7 @@ async function mockPos(
           registers: branch ? [{ id: 'reg_1', branch_id: 'br_1', name: 'Register', status: 'active' }] : [],
           shift: register ? { id: 'sh_1', branch_id: 'br_1', owner_id: 'stf_1', opening_float: '0', currency: 'VND' } : null,
           selection: { branch_id: branch, register_id: register },
+          features,
         },
       });
     }
@@ -291,6 +317,7 @@ async function mockPos(
       const body = request.postDataJSON() as Record<string, unknown>;
       decisions.push({ id: decision[1], decision: decision[2], body });
       if (!row) return route.fulfill({ status: 404, json: { error: { code: 'missing' } } });
+      if (decision[2] === 'approve' && !features.credit) return creditRefused();
       if (decision[2] === 'approve') Object.assign(row, { status: 'approved', approval_active: true });
       if (decision[2] === 'reject') Object.assign(row, { status: 'rejected', reason: String(body.reason) });
       if (decision[2] === 'revoke') row.approval_active = false;
@@ -374,6 +401,7 @@ async function mockPos(
     if (rest === '' && method === 'GET') return reply();
     if (rest === '/lease') return reply();
     if (rest === '/credit_requests' && method === 'POST') {
+      if (!features.credit) return creditRefused();
       creditRequests.push(request.postDataJSON() as Record<string, unknown>);
       return route.fulfill({ status: 201, json: { data: { id: 'poscreditreq_ws', status: 'pending' } } });
     }
@@ -487,6 +515,7 @@ async function mockPos(
     if (rest === '/complete' && method === 'POST') {
       const body = request.postDataJSON() as Record<string, unknown>;
       completions.push(body);
+      if (body.credit_approval_id && !features.credit) return creditRefused();
       const remaining = ws.total - ws.allocated;
       if (remaining > 0 && body.credit_approval_id !== 'posapproval_1')
         return conflict('Received funds do not cover the order total.');
@@ -744,4 +773,35 @@ test('an approver approves, declines with a reason and revokes credit requests',
     ['poscreditreq_3', 'revoke'],
   ]);
   expect(api.decisions[1].body).toMatchObject({ reason: 'Khách đang nợ quá hạn' });
+});
+
+test('with credit switched off an approver cannot approve, but still declines and revokes', async ({ page }) => {
+  const api = await mockPos(
+    page,
+    { id: 'ws_1', order_id: 'R500', total: 500000, customer: null },
+    { capabilities: ['pos.shift.open', 'pos.approval.grant', 'pos.credit.manage'], creditOff: true },
+  );
+  await login(page);
+  await page.locator('.pos-context-details summary').click();
+  await page.getByRole('link', { name: 'Duyệt', exact: true }).click();
+  const list = page.getByRole('list', { name: 'Duyệt ghi nợ' });
+  await expect(list.getByRole('listitem')).toHaveCount(3);
+
+  const first = list.getByRole('listitem').filter({ hasText: 'R700' });
+  const approve = first.getByRole('button', { name: 'Duyệt ghi nợ' });
+  await expect(approve).toBeDisabled();
+  await expect(approve).toHaveAccessibleDescription(/Bán ghi nợ chưa được bật cho chi nhánh này/);
+
+  const second = list.getByRole('listitem').filter({ hasText: 'R800' });
+  await second.getByRole('button', { name: 'Từ chối' }).click();
+  await second.getByLabel('Lý do từ chối').fill('Tạm dừng bán ghi nợ');
+  await second.getByRole('button', { name: 'Từ chối' }).click();
+  await expect(page.getByText('Đã từ chối ghi nợ cho đơn R800.')).toBeVisible();
+  await list.getByRole('listitem').filter({ hasText: 'R900' }).getByRole('button', { name: 'Thu hồi duyệt' }).click();
+  await expect(page.getByText('Đã thu hồi duyệt cho đơn R900.')).toBeVisible();
+
+  expect(api.decisions.map(({ id, decision }) => [id, decision])).toEqual([
+    ['poscreditreq_2', 'reject'],
+    ['poscreditreq_3', 'revoke'],
+  ]);
 });

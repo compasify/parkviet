@@ -58,9 +58,26 @@ function orderRow() {
   };
 }
 
-async function mockPos(page: Page, options: { capabilities: string[]; staffId?: string } = { capabilities: [] }) {
+// Effective branch switches as the server sends them in the context: all on
+// unless a test switches one off.
+const FEATURES_ON: Record<string, boolean> = {
+  credit: true,
+  returns: true,
+  refunds: true,
+  exchanges: true,
+  traceability: true,
+  customer_display: true,
+  cash_moves: true,
+  exports: true,
+};
+
+async function mockPos(
+  page: Page,
+  options: { capabilities: string[]; staffId?: string; features?: Record<string, boolean> } = { capabilities: [] },
+) {
   const capabilities = options.capabilities;
   const staffId = options.staffId ?? 'stf_1';
+  const features = { ...FEATURES_ON, ...options.features };
   const state: ReturnState = {
     status: 'ready',
     entitlement_status: 'pending',
@@ -214,8 +231,19 @@ async function mockPos(page: Page, options: { capabilities: string[]; staffId?: 
     const path = url.pathname.replace(/^.*\/api\/v3\/admin/, '');
     const method = request.method();
     const body = () => (request.postDataJSON() ?? {}) as Record<string, unknown>;
-    const conflict = (message: string, reason?: string) =>
-      route.fulfill({ status: 409, json: { error: { code: 'conflict', message, details: reason ? { reason } : {} } } });
+    const conflict = (message: string, reason?: string, extra: Record<string, unknown> = {}) =>
+      route.fulfill({
+        status: 409,
+        json: { error: { code: 'conflict', message, details: reason ? { reason, ...extra } : extra } },
+      });
+    // Like the server: a switched-off feature refuses only NEW commands; a
+    // replay of a command it already recorded answers with the stored result.
+    const refuseNew = (feature: string) => {
+      const key = request.headers()['idempotency-key'];
+      if (features[feature] === true) return null;
+      if (key && committed.has(key)) return route.fulfill({ json: { data: committed.get(key) } });
+      return conflict(`${feature} is turned off.`, 'feature_disabled', { feature });
+    };
     if (path === '/auth/login' || path === '/auth/refresh') return route.fulfill({ json: { token: 'test-token' } });
     if (path === '/me') return route.fulfill({ json: { user: { email: 'staff@example.test', full_name: 'Lan' } } });
     if (path === '/pos/context/branches')
@@ -236,6 +264,7 @@ async function mockPos(page: Page, options: { capabilities: string[]; staffId?: 
           registers: branch ? [{ id: 'reg_1', branch_id: 'br_1', name: 'Quầy 1', status: 'active' }] : [],
           shift: register ? { id: 'sh_1', branch_id: 'br_1', owner_id: staffId, opening_float: '0', currency: 'VND' } : null,
           selection: { branch_id: branch, register_id: register },
+          features,
         },
       });
     }
@@ -306,6 +335,8 @@ async function mockPos(page: Page, options: { capabilities: string[]; staffId?: 
     if (path === '/pos/returns' && method === 'POST') {
       const input = body();
       prepares.push(input);
+      const off = refuseNew('returns');
+      if (off) return off;
       const [line] = input.lines as Array<{ quantity: number; condition: string }>;
       if (line.quantity > 3) return conflict('Too many', 'exceeds_returnable');
       state.quantity = line.quantity;
@@ -337,6 +368,8 @@ async function mockPos(page: Page, options: { capabilities: string[]; staffId?: 
     if (path === '/pos/refund_requests' && method === 'POST') {
       const input = body();
       refundRequests.push({ key: request.headers()['idempotency-key'] ?? null, body: input });
+      const off = refuseNew('refunds');
+      if (off) return off;
       const refund = {
         id: 'posrefund_1',
         return_id: 'posreturn_1',
@@ -400,6 +433,8 @@ async function mockPos(page: Page, options: { capabilities: string[]; staffId?: 
     });
     if (path === '/pos/exchanges' && method === 'POST') {
       exchanges.push(body());
+      const off = refuseNew('exchanges');
+      if (off) return off;
       state.exchanged = true;
       return answer('exchange', keyOf(), exchange(), 201);
     }

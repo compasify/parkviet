@@ -2,18 +2,32 @@
 
 # Synthetic fixture for the POS live e2e runs, development only.
 #
+# Run through the Spree CLI from the project root, e.g.
+# `pnpm spree exec bin/rails runner log/pos-live-fixture.rb cleanup`.
+#
 #   bin/rails runner log/pos-live-fixture.rb            create a new fixture
 #   bin/rails runner log/pos-live-fixture.rb cleanup    retire every fixture
 #   bin/rails runner log/pos-live-fixture.rb cleanup store-flags-off=returns,refunds
 #
 # Create makes new records tagged `POS Live <tag>` (never touches others) and
-# writes the credentials to log/pos-live-fixture.json; move that file out of
-# the repo at once. Cleanup works only on staff `pos-live-*@example.test`:
-# cancels their unpaid drafts, completes drafts already paid in full, cancels
-# prepared tenders, counts each open shift at its expected cash and closes it,
-# then deactivates the staff. It prints what it did and anything it left.
-# Nothing is deleted. `store-flags-off=` switches those store defaults off
-# again (audited, by one of the fixture managers, before deactivation).
+# writes the credentials, readable by the owner only, to
+# log/pos-live/fixture-<tag>.json (server/log is gitignored); delete it after
+# the run. The staff get only what the live journeys use: the cashier sells,
+# returns and closes a shift; the manager approves, configures goods and
+# flips the store feature switches the journeys need.
+#
+# Cleanup works only on staff `pos-live-*@example.test`:
+# - store feature defaults still switched on by a fixture account (a run
+#   that stopped before restoring them) go back off, as do those named in
+#   `store-flags-off=`; both are audited, by a fixture manager;
+# - unpaid drafts are canceled, drafts paid in full completed, prepared
+#   tenders canceled, and each open shift counted at its expected cash and
+#   closed;
+# - the staff lose their POS memberships, admin roles and password, and are
+#   deactivated where the user model supports it.
+# It prints what it did and anything it left. No record is deleted except the
+# role grants of the fixture accounts.
+require 'fileutils'
 require 'json'
 require 'securerandom'
 
@@ -33,10 +47,21 @@ def key = SecureRandom.uuid
 def cleanup(store, flags_off)
   staff = Spree.admin_user_class.where('email LIKE ?', EMAIL_PATTERN).to_a
   report = Hash.new { |hash, name| hash[name] = [] }
-  if flags_off.any?
-    actor = staff.find { |user| user.email.start_with?('pos-live-manager-') }
-    abort 'No fixture manager left to switch store defaults off' unless actor
-    flags_off.each do |feature|
+  # The live runs only switch a store default on when it was off, so one a
+  # fixture account left on is a leftover of an interrupted run.
+  left_on = Spree::Pos::FeatureFlag.for_store(store).where(branch_id: nil, enabled: true, changed_by_id: staff.map(&:id))
+                                   .pluck(:feature)
+  # Only defaults still on need a change (an absent row already means off).
+  restore = ((left_on + flags_off).uniq & Spree::Pos::FeatureFlag::FEATURES)
+            .select { |feature| Spree::Pos::FeaturePolicy.store_enabled?(store, feature) }
+  report[:unknown_flags_ignored] = flags_off - Spree::Pos::FeatureFlag::FEATURES
+  if restore.any?
+    actor = staff.find do |user|
+      user.email.start_with?('pos-live-manager-') &&
+        Spree::Pos::FeaturePolicy.store_manager?(Spree::Pos::AccessPolicy.new(store: store, staff: user))
+    end
+    abort 'No fixture manager with store rights left to switch store defaults off' unless actor
+    restore.each do |feature|
       Spree::Pos::FeaturePolicy.set!(store: store, actor: actor, feature: feature, enabled: false,
                                      reason: 'Khôi phục sau kiểm thử e2e thật')
       report[:store_flags_off] << feature
@@ -74,11 +99,21 @@ def cleanup(store, flags_off)
         report[:shifts_left] << "#{shift.prefixed_id}: #{e.class}: #{e.message}"
       end
     end
+    # Retire the account even where something above was left: it can no
+    # longer sign in nor act at any branch.
+    memberships = Spree::Pos::StaffMembership.for_store(store).where(staff_id: user.id, status: 'active')
+    report[:memberships_disabled] << user.email if memberships.update_all(status: 'disabled', updated_at: Time.current).positive?
+    grants = Spree::RoleUser.where(user: user)
+    report[:roles_removed] << user.email if grants.any? && grants.destroy_all
+    password = SecureRandom.base58(32)
+    user.update!(password: password, password_confirmation: password)
+    report[:passwords_scrambled] << user.email
     if user.respond_to?(:deactivate!) && !(user.respond_to?(:deactivated?) && user.deactivated?)
       user.deactivate!
       report[:staff_deactivated] << user.email
     end
   end
+  report.delete(:unknown_flags_ignored) if report[:unknown_flags_ignored].empty?
   puts JSON.pretty_generate(report)
 end
 
@@ -92,11 +127,12 @@ tag = SecureRandom.hex(5)
 # The cashier only sells: order and shift permissions, no topology writes.
 cashier_permissions = %w[read_pos_orders write_pos_orders write_pos_workspaces read_pos_shifts write_pos_shifts]
 manager_permissions = cashier_permissions + %w[read_pos_topology write_pos_topology]
-cashier_caps = [caps::OPEN_SHIFT, caps::PAYMENT, caps::RESOLVE, caps::CUSTOMER, caps::CREDIT_SELL, caps::RETURN,
-                caps::CASH_MOVE, caps::REPORT_READ, caps::TAKEOVER, caps::INVENTORY_TRACE]
-manager_caps = [caps::OPEN_SHIFT, caps::PAYMENT, caps::RESOLVE, caps::APPROVE, caps::CREDIT_MANAGE, caps::RETURN,
-                caps::CASH_MOVE, caps::RECOVER, caps::MANAGE, caps::TAKEOVER, caps::INVENTORY_MANAGE, caps::INVENTORY_TRACE,
-                caps::REPORT_READ, caps::REPORT_EXPORT]
+# Sell (including serials and lots, which need the trace reader), recover a
+# lost answer on its own draft, return and pay a cash refund, close the shift.
+cashier_caps = [caps::OPEN_SHIFT, caps::PAYMENT, caps::RETURN, caps::REPORT_READ, caps::TAKEOVER, caps::INVENTORY_TRACE]
+# Approve a refund, set units and label codes, open tracked stock. The store
+# feature switches come from the role's `write_pos_topology`, not from here.
+manager_caps = [caps::APPROVE, caps::MANAGE, caps::INVENTORY_MANAGE]
 
 result = ActiveRecord::Base.transaction do
   location = Spree::StockLocation.create!(
@@ -149,5 +185,10 @@ result = ActiveRecord::Base.transaction do
   }
 end
 
-File.write(Rails.root.join('log/pos-live-fixture.json'), JSON.pretty_generate(result))
-puts "POS live fixture #{result[:tag]}: branch #{result[:branch_id]}, register #{result[:register_id]}"
+# log/ is bind-mounted from server/log (gitignored); the container's tmp/ is not.
+directory = Rails.root.join('log/pos-live')
+FileUtils.mkdir_p(directory)
+path = directory.join("fixture-#{result[:tag]}.json")
+File.open(path, File::WRONLY | File::CREAT | File::TRUNC, 0o600) { |file| file.write(JSON.pretty_generate(result)) }
+puts "POS live fixture #{result[:tag]}: branch #{result[:branch_id]}, register #{result[:register_id]}, " \
+     "credentials in server/log/pos-live/#{path.basename}"

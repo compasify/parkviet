@@ -5,7 +5,8 @@ import { type APIRequestContext, expect, type Page, test } from '@playwright/tes
 // Opt-in runs against the real development API. They need POS_LIVE_REVIEW=1
 // and POS_LIVE_FIXTURE pointing at the JSON written by the synthetic fixture
 // script (apps/pos/e2e/support/pos-live-fixture.rb, see README). Each run
-// creates its own drafts and orders on that fixture and deletes nothing.
+// creates its own drafts and orders on that fixture and deletes nothing; the
+// script's `cleanup` closes what is left open and retires the fixture staff.
 
 export type LiveProduct = { product_id: string; variant_id: string; barcode: string; name: string; price: number };
 export type LiveFixture = {
