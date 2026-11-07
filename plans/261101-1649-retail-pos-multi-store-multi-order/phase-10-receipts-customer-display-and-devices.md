@@ -1,7 +1,7 @@
 ---
 phase: 10
 title: "Biên nhận, màn hình khách và thiết bị tại quầy"
-status: pending
+status: completed
 priority: P1
 dependencies: [5, 6, 8, 9]
 effort: "Ước tính 8–12 person-days"
@@ -66,13 +66,13 @@ Inventory từ repo root; source đề xuất app-specific, không fork dashboar
 
 ## Success Criteria
 
-- [ ] F13: reprint không payment/stock effects, snapshot giữ original sale/traceability sau cấu hình đổi.
-- [ ] W01, W08: display pin A không đổi theo cashier tabs, keyboard/tablet/zoom và in tiếng Việt đúng.
-- [ ] A01–A03: display token không admin authority/PII/debt, expiry/revoke/generation được server enforce.
-- [ ] W09, F05: disconnect-before-clear/cancel/settlement/rebind/sleep tests ẩn QR stale trong bounded TTL; cashier thấy freshness và không show khách mới thiếu current-generation ACK; delay/cache không kéo dài deadline.
-- [ ] F05: late QR receipt vào đúng original context/exception, không gán khách/đơn kế tiếp.
-- [ ] W03, W06: scanner/measurement barcode đúng workspace, IME/focus và retry không duplicate intent.
-- [ ] Device UAT ghi model/thông số/kết quả thật; optional VietQR adapter chưa chọn không chặn release manual-bank.
+- [x] F13: reprint không payment/stock effects, snapshot giữ original sale/traceability sau cấu hình đổi. *(`receipts_displays_spec.rb`: in/in lại chỉ tạo ReceiptPrint + audit, không Payment/kho/đơn; snapshot giữ nguyên sau đổi giá/cấu hình; có serial/lô/hạn dùng từ TraceAllocation đã bán.)*
+- [x] W01, W08: display pin A không đổi theo cashier tabs, keyboard/tablet/zoom và in tiếng Việt đúng. *(E2E 3 viewport: ghim đơn A rồi bán B không đổi màn hình khách; in 80mm/A4 tiếng Việt, ngày dd/MM/yyyy, số thập phân dấu phẩy.)*
+- [x] A01–A03: display token không admin authority/PII/debt, expiry/revoke/generation được server enforce. *(Token màn hình ngẫu nhiên 256 bit, lưu digest, chỉ qua header `Authorization: Display`, không dùng được cho Admin API và ngược lại; không PII/nợ/nhân viên; hết hạn, thu hồi, xoay khi gắn lại; ghép bằng mã 8 ký tự dùng một lần 10 phút.)*
+- [x] W09, F05: disconnect-before-clear/cancel/settlement/rebind/sleep tests ẩn QR stale trong bounded TTL; cashier thấy freshness và không show khách mới thiếu current-generation ACK; delay/cache không kéo dài deadline. *(Hạn tươi theo `performance.now()`, phản hồi cũ/lệch thứ tự/trước khi ẩn không gia hạn; offline/ẩn tab/ngủ dậy ẩn ngay; ghim/xóa có compare-and-set generation; thu ngân không ghim khách kế khi chưa có ACK của generation hiện tại.)*
+- [x] F05: late QR receipt vào đúng original context/exception, không gán khách/đơn kế tiếp. *(Xóa màn hình cảnh báo QR/tài khoản đã chụp vẫn chuyển được; tiền trễ đi luồng tiền ngoài luồng gắn đơn gốc, không gán đơn kế tiếp.)*
+- [x] W03, W06: scanner/measurement barcode đúng workspace, IME/focus và retry không duplicate intent. *(Hiệu chỉnh máy quét theo quầy (Enter/Tab, khoảng cách phím), bỏ qua IME và ô nhập, chỉ vào đơn đang mở, intent ổn định khi thử lại; tem cân vẫn do server đọc.)*
+- [ ] Device UAT ghi model/thông số/kết quả thật; optional VietQR adapter chưa chọn không chặn release manual-bank. *(Chưa đạt: mẫu UAT ở [device-uat.md](./reports/device-uat.md) chờ cửa hàng chọn máy và chạy thật; chuyển phase 11. Hạn tươi 15 giây cần đo trên thiết bị trước khi bật màn hình khách.)*
 
 ## Risk Assessment
 
@@ -83,3 +83,20 @@ Inventory từ repo root; source đề xuất app-specific, không fork dashboar
 ## Next Steps
 
 Phase 11 gom evidence thiết bị và kiểm E2E full retail, gồm mandatory weighted/unit/serial/lot traceability.
+
+## Review 07/11/2026
+
+Hai review độc lập; lỗi tìm thấy đã sửa và có test:
+
+- Backend: thu ngân đọc/in được phiếu đóng ca, phiếu trả, phiếu hoàn của người khác; lệnh ghim bị trễ có thể hiện đơn khách trước cho khách sau; lỗi dựng biên nhận làm hỏng cả giao dịch bán/trả/hoàn/đóng ca. Nay phân quyền theo loại phiếu, ghim/xóa so generation, biên nhận phát hành trong savepoint và phát hành muộn nếu lỗi; phiếu trả có phiếu bổ sung khi giảm nợ/hoàn được ghi sau.
+- Frontend: bản in gốc đầu tiên ra trang trắng mà vẫn tính là đã in; CSS in biên nhận làm trắng mọi bản in khác; Chromium bỏ khổ 80mm. Nay chỉ in khi bản in đã có trong DOM, CSS chỉ áp khi đang in biên nhận, khổ `80mm 297mm`. Sửa thêm: request màn hình treo làm dừng poll, gắn lại không chuyển token sang cửa sổ đang mở, chỉ báo "đã xác nhận" từ dữ liệu cũ, ghép thiết bị phải gõ token dài, máy quét Tab không dùng được ở ô tìm kiếm.
+
+## Đóng phase 07/11/2026
+
+**Kết quả:** backend POS 396 examples, 0 failures (suite chạy riêng hai lần liên tiếp, số dòng bảng không đổi) (gồm `receipts_displays_spec.rb` 19 examples). `apps/pos`: lint, typecheck sạch, 157 unit; Playwright 264 passed / 6 skipped (live API opt-in). Chi tiết: [báo cáo triển khai](./reports/phase-10-implementation.md).
+
+**Migration:** `20261107170000`, `20261107170001` chỉ áp database test. Development vẫn chờ sao lưu.
+
+**Ghi chú:** chỉ in qua trình duyệt, chưa có driver máy in/ngăn kéo tiền. Bản gốc mất khi in lỗi/hủy là chấp nhận; lần in sau là "BẢN SAO". Màn hình khách chỉ hiện mô tả tài khoản nhận của phương thức chuyển khoản, chưa có QR/VietQR (adapter tương lai). ACK màn hình đặt ở controller công khai vì màn hình không có phiên nhân viên.
+
+**Chuyển phase sau:** UAT thiết bị thật (máy in, máy quét, màn hình khách, đo thời gian ẩn), kiểm trên API thật (phase 11). Vẫn sandbox-only.
