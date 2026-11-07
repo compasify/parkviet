@@ -1,7 +1,7 @@
 ---
 phase: 11
 title: "Kiểm định tổng thể, bảo mật và rollout có kiểm soát"
-status: pending
+status: in-progress
 priority: P1
 dependencies: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 effort: "Ước tính 12–18 person-days"
@@ -70,13 +70,13 @@ Inventory repo-root; code dự kiến create/modify chỉ app, không upstream c
 
 ## Success Criteria
 
-- [ ] A01–A06: least privilege/auth/context/approval/core bypass security review không còn blocker.
-- [ ] W01–W09: concurrency/reload/100 scans/responsive/focus, display freshness/ACK và error recovery đúng với API thật.
-- [ ] F01–F21: money/debt/stock/refund/close/free-order/liability/parent-conservation/cumulative-residual matrix pass, late-cash custody và source reconciliation có evidence.
-- [ ] I01–I08: mandatory weighted/unit/serial/lot/expiry/provenance và distinct same-variant lines có exactness/race/return/bypass/opening/recall/mapping evidence và SKU qualification.
-- [ ] Benchmark/UAT có kết quả thực, phần chưa đạt được xử lý hoặc phê duyệt phạm vi minh bạch, không bỏ mandatory goods.
-- [ ] Full retail chỉ 1–11; flags/recovery/runbook/sign-offs đủ, không phụ thuộc provider VietQR chưa chọn.
-- [ ] Không real-money pilot chỉ nhờ phase 6 xong; deployment approval riêng, applicable gates và support owner có evidence trước enable.
+- [x] A01–A06: least privilege/auth/context/approval/core bypass security review không còn blocker. *(Đã review, các lỗi tìm thấy đã sửa có test: kill switch ưu tiên đúng, làm mới/đăng xuất phiên từ origin lạ bị chặn, khóa HMAC log. Xem [security-review.md](./reports/security-review.md).)*
+- [ ] W01–W09: concurrency/reload/100 scans/responsive/focus, display freshness/ACK và error recovery đúng với API thật. *(Một phần: 3 hành trình E2E trên API thật đã qua; còn sửa FE sau review và chạy lại.)*
+- [ ] F01–F21: money/debt/stock/refund/close/free-order/liability/parent-conservation/cumulative-residual matrix pass, late-cash custody và source reconciliation có evidence. *(Spec tích hợp bán lẻ đầy đủ và lỗi đồng thời đã có; chờ đối soát trên dữ liệu UAT.)*
+- [ ] I01–I08: mandatory weighted/unit/serial/lot/expiry/provenance và distinct same-variant lines có exactness/race/return/bypass/opening/recall/mapping evidence và SKU qualification. *(Spec truy xuất đã có; UAT theo [traceability-uat.md](./reports/traceability-uat.md) chưa chạy.)*
+- [ ] Benchmark/UAT có kết quả thực, phần chưa đạt được xử lý hoặc phê duyệt phạm vi minh bạch, không bỏ mandatory goods. *(Chưa có: chỉ có kịch bản trong [capacity-baseline.md](./reports/capacity-baseline.md).)*
+- [ ] Full retail chỉ 1–11; flags/recovery/runbook/sign-offs đủ, không phụ thuộc provider VietQR chưa chọn. *(Cờ tính năng và [runbook](./reports/operations-runbook.md) đã có; thiếu sign-off.)*
+- [ ] Không real-money pilot chỉ nhờ phase 6 xong; deployment approval riêng, applicable gates và support owner có evidence trước enable. *([release-checklist.md](./reports/release-checklist.md): NO-GO cho tiền thật.)*
 
 ## Risk Assessment
 
@@ -87,3 +87,11 @@ Inventory repo-root; code dự kiến create/modify chỉ app, không upstream c
 ## Next Steps
 
 Trình release readiness/evidence cho chủ dự án; chỉ triển khai/rollout sau authorization mới, không tự coi plan approval là deployment approval.
+
+## Tiến độ 07/11/2026
+
+**Đã xong (sandbox):** cờ tính năng theo cửa hàng và chi nhánh (chi nhánh chỉ được thu hẹp), tắt tính năng không chặn khôi phục lệnh đang dở; chỉ số vận hành, log lệnh JSON; chặn làm mới phiên từ origin lạ; sửa quy đổi đơn vị dùng số hữu tỉ. Trang cài đặt tính năng chi nhánh, E2E bán lẻ đầy đủ, đồng thời, hàng nâng cao, cờ tính năng, trợ năng; kịch bản hiệu năng. Backend POS 430 examples, 0 failures; `apps/pos` lint, typecheck sạch, 166 unit. Chi tiết: [backend](./reports/phase-11-backend-implementation.md), [frontend](./reports/phase-11-frontend-implementation.md).
+
+**Migration:** `20261107180000`, `20261107180001` đã áp test và development.
+
+**Còn lại:** sửa FE theo review (gợi ý mở ca thay vì khóa nút, server giả E2E khớp server thật, chặn duyệt nợ theo cờ, spec khôi phục khi tắt cờ, quyền tối thiểu và dọn dữ liệu của fixture chạy API thật); UAT thật, đo hiệu năng, sign-off. Chưa bán tiền thật.

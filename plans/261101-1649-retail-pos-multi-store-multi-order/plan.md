@@ -68,7 +68,7 @@ Theo yêu cầu tiếp tục phát triển phase tiếp theo, các vấn đề c
 | 8 | [Inventory handover returns and exchanges](./phase-08-inventory-handover-returns-and-exchanges.md) | Completed |
 | 9 | [Shifts cashbook and reporting](./phase-09-shifts-cashbook-and-reporting.md) | Completed |
 | 10 | [Receipts customer display and devices](./phase-10-receipts-customer-display-and-devices.md) | Completed |
-| 11 | [Quality security and rollout](./phase-11-quality-security-and-rollout.md) | Pending |
+| 11 | [Quality security and rollout](./phase-11-quality-security-and-rollout.md) | In progress |
 
 Phase 1 completed 06/11/2026: hợp đồng POS cơ bản và wireframe đã chốt. Dependency `1` của các phase sau chỉ thỏa phần hợp đồng; proof quyền, tiền, tồn và hàng cân/serial/lô vẫn là gate tại phase phụ trách theo [bảng trách nhiệm](./phase-01-contracts-and-ux-validation.md).
 
@@ -89,6 +89,8 @@ Phase 8 completed 07/11/2026 (sandbox-only): lịch sử đơn, trả hàng theo
 Phase 9 completed 07/11/2026 (sandbox-only): đóng ca có barrier chung cho mọi đường ghi tiền mặt, đếm mù, duyệt chênh lệch, đối soát tiền trễ/tiền giữ ngoài két không đếm kép, rút/nộp két hai người, báo cáo và export CSV an toàn. xem [mục đóng phase](./phase-09-shifts-cashbook-and-reporting.md#đóng-phase-07112026).
 
 Phase 10 completed 07/11/2026 (sandbox-only): biên nhận bất biến 80mm/A4 có bản sao, serial/lô; màn hình khách token chỉ đọc, ghép mã ngắn, ẩn QR khi không chứng minh được độ tươi, ACK generation trước khách kế; hiệu chỉnh máy quét. UAT thiết bị thật chưa có, chuyển phase 11; xem [mục đóng phase](./phase-10-receipts-customer-display-and-devices.md#đóng-phase-07112026).
+
+Phase 11 đang làm (07/11/2026): cờ tính năng, bảo mật phiên, chỉ số vận hành, bộ kiểm thử phát hành đã có trên sandbox; còn sửa FE theo review, UAT thật và sign-off. NO-GO cho tiền thật; xem [tiến độ](./phase-11-quality-security-and-rollout.md#tiến-độ-07112026).
 
 ## Dependencies
 
