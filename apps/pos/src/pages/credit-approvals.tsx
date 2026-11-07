@@ -1,13 +1,23 @@
+import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PageState, PosPage } from '../components/pos-page';
 import { usePosSelection } from '../components/pos-selection';
+import { RefundActions } from '../components/refund-actions';
 import { useCreditRequests, useDecideCredit } from '../hooks/use-receivables';
+import {
+  useBranchReturns,
+  usePendingReturnCommands,
+  useRefundCommands,
+  useRefundRequests,
+  useReturnCommands,
+} from '../hooks/use-returns';
 import { formatMoney } from '../lib/money';
 import type { PosCreditRequest } from '../lib/pos-context';
 import { writesLocked } from '../lib/pos-context';
 import { describeCreditFailure, formatInstant } from '../lib/receivables';
-import { posFailureKey } from '../lib/request-failure';
+import { definitiveRejection, posFailureKey } from '../lib/request-failure';
+import { canApprove, describeReturnFailure } from '../lib/returns';
 
 function RequestRow({
   request,
@@ -89,8 +99,9 @@ function RequestRow({
   );
 }
 
-// The approver's own session: credit requests waiting for a decision and
-// approvals that still hold exposure, which can be revoked.
+// The approver's own session: returns and refund payouts waiting for approval,
+// and (for credit managers) credit requests and approvals that still hold
+// exposure, which can be revoked.
 export function CreditApprovalsPage() {
   const { context, selection } = usePosSelection();
   const scope = `${context.data?.staff.id}:${context.data?.store.id}:${selection.branchId}`;
@@ -102,22 +113,23 @@ function CreditApprovals() {
   const { context, selection } = usePosSelection();
   const data = context.data;
   const branchId = selection.branchId;
-  const allowed = Boolean(
-    data?.capabilities.includes('pos.approval.grant') &&
-      data.capabilities.includes('pos.credit.manage'),
-  );
+  const approver = canApprove(data?.capabilities);
+  const creditApprover = Boolean(approver && data?.capabilities.includes('pos.credit.manage'));
   const locked = !data || writesLocked(data, selection);
 
   return (
-    <PosPage title={t('creditApprovalsTitle')} description={t('creditApprovalsHint')}>
+    <PosPage title={t('approvalsTitle')} description={t('approvalsHint')}>
       {context.isPending ? (
         <PageState kind="loading" title={t('contextWaiting')} />
       ) : !branchId ? (
         <PageState title={t('chooseBranch')} description={t('pageChooseBranchHint')} />
-      ) : !allowed ? (
+      ) : !approver ? (
         <PageState title={t('forbidden')} />
       ) : (
-        <CreditRequests branchId={branchId} locked={locked} />
+        <>
+          <ReturnApprovals branchId={branchId} locked={locked} />
+          {creditApprover ? <CreditRequests branchId={branchId} locked={locked} /> : null}
+        </>
       )}
     </PosPage>
   );
@@ -130,7 +142,8 @@ function CreditRequests({ branchId, locked }: { branchId: string; locked: boolea
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   return (
-    <section className="page-card" aria-label={t('creditApprovalsTitle')}>
+    <section className="page-card" aria-label={t('creditApprovalsCredit')}>
+      <h2>{t('creditApprovalsCredit')}</h2>
       {notice ? (
         <p className="muted" role="status">
           {notice}
@@ -148,7 +161,7 @@ function CreditRequests({ branchId, locked }: { branchId: string; locked: boolea
       {requests.isSuccess && requests.data.data.length === 0 ? (
         <PageState kind="empty" title={t('creditApprovalsEmpty')} />
       ) : null}
-      <ul className="record-list" aria-label={t('creditApprovalsTitle')}>
+      <ul className="record-list" aria-label={t('creditApprovalsCredit')}>
         {(requests.data?.data ?? []).map((request) => (
           <RequestRow
             key={request.id}
@@ -166,6 +179,216 @@ function CreditRequests({ branchId, locked }: { branchId: string; locked: boolea
                 },
               );
             }}
+          />
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+// Returns waiting for an approver (cross-branch, outside the window, damaged
+// goods) and refund payouts waiting for one. Approving binds the approval to
+// the requester, the record, its revision and amount; nobody approves their
+// own. Each row opens its return, where the payout is confirmed with
+// evidence. Unknown payouts stay listed until resolved with evidence.
+function ReturnApprovals({ branchId, locked }: { branchId: string; locked: boolean }) {
+  const { t } = useTranslation();
+  const { context } = usePosSelection();
+  const staffId = context.data?.staff.id ?? null;
+  const storeId = context.data?.store.id ?? null;
+  const capabilities = context.data?.capabilities ?? [];
+  const returns = useBranchReturns(branchId, true);
+  const refunds = useRefundRequests(branchId, true);
+  const { approve, cancel } = useReturnCommands(staffId, storeId);
+  const refundCommands = useRefundCommands(staffId, storeId);
+  const pending = usePendingReturnCommands(staffId, storeId);
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+  const [rejecting, setRejecting] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
+  const busy =
+    approve.isPending ||
+    cancel.isPending ||
+    refundCommands.approve.isPending ||
+    refundCommands.resolve.isPending;
+  const fail = (failure: unknown) =>
+    setError(
+      definitiveRejection(failure) ? describeReturnFailure(failure, t) : t('pendingCheckingLost'),
+    );
+  const pendingReturns = (returns.data?.data ?? []).filter(
+    (row) => row.approval?.status !== 'active',
+  );
+  const waitingRefunds = refunds.data?.data ?? [];
+
+  return (
+    <section className="page-card" aria-label={t('approvalsReturns')}>
+      <h2>{t('approvalsReturns')}</h2>
+      {notice ? (
+        <p className="muted" role="status">
+          {notice}
+        </p>
+      ) : null}
+      {error ? (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      ) : null}
+      {returns.isError || refunds.isError ? (
+        <PageState kind="error" title={t(posFailureKey(returns.error ?? refunds.error))} />
+      ) : null}
+      {returns.isSuccess &&
+      refunds.isSuccess &&
+      pendingReturns.length === 0 &&
+      waitingRefunds.length === 0 ? (
+        <PageState kind="empty" title={t('approvalsReturnsEmpty')} />
+      ) : null}
+      <ul className="record-list" aria-label={t('approvalsReturnList')}>
+        {pendingReturns.map((row) => (
+          <li key={row.id} className="credit-request-row">
+            <div className="record-copy">
+              <Link to="/returns" search={{ returnId: row.id }}>
+                <strong>
+                  {row.return_number} · {row.order_number}
+                </strong>
+              </Link>
+              <small>
+                {[
+                  row.cross_branch ? t('returnWhyCrossBranch') : null,
+                  row.out_of_window ? t('returnWhyWindow') : null,
+                  row.damaged ? t('returnWhyDamaged') : null,
+                ]
+                  .filter(Boolean)
+                  .join(', ')}{' '}
+                · {row.reason}
+              </small>
+            </div>
+            <strong>{formatMoney(row.entitlement_total, row.currency)}</strong>
+            {rejecting === row.id ? (
+              <form
+                className="row"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  const reason = rejectReason.trim();
+                  if (!reason) return;
+                  setError('');
+                  cancel.mutate(
+                    { returnId: row.id, reason },
+                    {
+                      onSuccess: () => {
+                        setRejecting(null);
+                        setNotice(t('approvalsReturnRejected', { number: row.return_number }));
+                      },
+                      onError: fail,
+                    },
+                  );
+                }}
+              >
+                <label>
+                  {t('creditRejectReason')}
+                  <input
+                    value={rejectReason}
+                    maxLength={200}
+                    required
+                    disabled={locked || busy}
+                    onChange={(event) => setRejectReason(event.target.value)}
+                  />
+                </label>
+                <button
+                  type="submit"
+                  className="danger-button"
+                  disabled={locked || busy || !rejectReason.trim()}
+                >
+                  {t('approvalsReject')}
+                </button>
+                <button type="button" disabled={busy} onClick={() => setRejecting(null)}>
+                  {t('paymentCancelNo')}
+                </button>
+              </form>
+            ) : (
+              <div className="row">
+                <button
+                  type="button"
+                  className="checkout-submit"
+                  disabled={locked || busy || row.requester_id === staffId}
+                  title={row.requester_id === staffId ? t('returnReason_self_approval') : undefined}
+                  onClick={() => {
+                    setError('');
+                    approve.mutate(row.id, {
+                      onSuccess: () =>
+                        setNotice(t('approvalsReturnApproved', { number: row.return_number })),
+                      onError: fail,
+                    });
+                  }}
+                >
+                  {t('approvalsApprove')}
+                </button>
+                <button
+                  type="button"
+                  disabled={locked || busy}
+                  onClick={() => {
+                    setRejectReason('');
+                    setRejecting(row.id);
+                  }}
+                >
+                  {t('approvalsReject')}
+                </button>
+              </div>
+            )}
+          </li>
+        ))}
+      </ul>
+      <ul className="record-list" aria-label={t('approvalsRefundList')}>
+        {waitingRefunds.map((refund) => (
+          <RefundActions
+            key={refund.id}
+            refund={refund}
+            staffId={staffId}
+            capabilities={capabilities}
+            disabled={locked || busy}
+            checking={pending.pendingFor(refund.id).length > 0}
+            onRecheck={() => {
+              for (const record of pending.pendingFor(refund.id)) {
+                void pending
+                  .recheck(record)
+                  .then((result) => result.committed && setNotice(t('pendingRecovered')), fail);
+              }
+            }}
+            onCancel={(reason) =>
+              refundCommands.resolve.mutate(
+                { refund, outcome: 'cancel', reason },
+                { onError: fail },
+              )
+            }
+            onFail={(reference) =>
+              refundCommands.resolve.mutate(
+                { refund, outcome: 'failed_no_effect', reference },
+                { onError: fail },
+              )
+            }
+            extra={
+              <span className="row">
+                <Link to="/returns" search={{ returnId: refund.return_id }}>
+                  {t('approvalsOpenReturn')}
+                </Link>
+                {refund.status === 'reserved' && refund.approval?.status !== 'active' ? (
+                  <button
+                    type="button"
+                    className="checkout-submit"
+                    disabled={locked || busy || refund.requester_id === staffId}
+                    onClick={() => {
+                      setError('');
+                      refundCommands.approve.mutate(refund.id, {
+                        onSuccess: () =>
+                          setNotice(t('approvalsRefundApproved', { order: refund.order_number })),
+                        onError: fail,
+                      });
+                    }}
+                  >
+                    {t('approvalsApprove')}
+                  </button>
+                ) : null}
+              </span>
+            }
           />
         ))}
       </ul>

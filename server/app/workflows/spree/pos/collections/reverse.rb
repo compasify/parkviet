@@ -32,6 +32,15 @@ module Spree
               raise Conflict.new('Part of this allocation was already refunded; it cannot be reversed.', reason: 'allocation_consumed')
             end
 
+            # Posted returns granted refund entitlement against money this
+            # child brought in. Return posting takes the same account lock, so
+            # the figures cannot move under this check.
+            granted = ReturnOperation.where(order_id: allocation.order_id, entitlement_status: 'posted').sum(:refund_entitlement)
+            if granted > Returns::Guard.paid(allocation.order) - allocation.amount
+              raise Conflict.new('Refund entitlement of a return depends on this collection; it cannot be reversed.',
+                                 reason: 'return_entitlement_depends_on_collection')
+            end
+
             allocation.payment&.void!
             allocation.update!(status: 'reversed', reversed_at: Time.current)
             entry = ReceivableEntry.create!(

@@ -32,6 +32,28 @@ Rails.application.routes.draw do
                 post :revoke
               end
             end
+            get 'orders/lookup', to: 'orders#lookup'
+            resources :orders, only: [:index, :show] do
+              member do
+                post :reconcile_handover
+              end
+            end
+            post 'returns/preview', to: 'returns#preview'
+            resources :returns, only: [:index, :show, :create] do
+              member do
+                post :approve
+                post :receive
+                post :cancel
+              end
+            end
+            resources :refund_requests, only: [:index, :show, :create] do
+              member do
+                post :approve
+              end
+              resource :confirmation, only: [:create], controller: 'refund_requests/confirmations'
+              resource :resolution, only: [:create], controller: 'refund_requests/resolutions'
+            end
+            resources :exchanges, only: [:show, :create]
             get 'receivables', to: 'receivables#index'
             get 'receivables/customers', to: 'receivables#customers'
             resources :collections, only: [:show, :create] do

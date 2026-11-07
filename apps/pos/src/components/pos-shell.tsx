@@ -16,6 +16,7 @@ import { writesLocked } from '../lib/pos-context';
 import { queryClient } from '../lib/query-client';
 import { canReadReceivables } from '../lib/receivables';
 import { failureStatus, posFailureKey } from '../lib/request-failure';
+import { canProcessReturns } from '../lib/returns';
 import {
   forgetIntent,
   hasPendingIntents,
@@ -55,9 +56,13 @@ function ShellFrame() {
             ? t('creditAccountsNav')
             : pathname.endsWith('/credit-approvals')
               ? t('creditApprovalsNav')
-              : t('sellingArea');
+              : pathname.endsWith('/orders')
+                ? t('ordersNav')
+                : pathname.endsWith('/returns')
+                  ? t('returnsNav')
+                  : t('sellingArea');
   const isSale =
-    !/\/(settings|funds|receivables|credit-accounts|credit-approvals|payment-attention)(\/|$)/.test(
+    !/\/(settings|funds|receivables|credit-accounts|credit-approvals|payment-attention|orders|returns)(\/|$)/.test(
       pathname,
     );
   const contextPicker = useRef<HTMLDetailsElement>(null);
@@ -324,6 +329,24 @@ function ShellFrame() {
                   <>
                     {' · '}
                     <Link to="/credit-approvals">{t('creditApprovalsNav')}</Link>
+                  </>
+                ) : null}
+              </p>
+            ) : null}
+            {context.data ? (
+              <p>
+                <Link to="/orders">{t('ordersNav')}</Link>
+                {context.data.capabilities.includes('pos.approval.grant') &&
+                !context.data.capabilities.includes('pos.credit.manage') ? (
+                  <>
+                    {' · '}
+                    <Link to="/credit-approvals">{t('creditApprovalsNav')}</Link>
+                  </>
+                ) : null}
+                {canProcessReturns(context.data.capabilities) ? (
+                  <>
+                    {' · '}
+                    <Link to="/returns">{t('returnsNav')}</Link>
                   </>
                 ) : null}
               </p>

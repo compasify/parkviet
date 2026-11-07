@@ -67,6 +67,8 @@ module Spree
                 attrs[:receiving_stock_location] = prefixed.present? ? location!(prefixed) : nil
               end
               attrs[:receiving_config] = { 'note' => params[:receiving_note] } if params.key?(:receiving_note) || record.nil?
+              # Blank turns returns off at the branch; a number of days turns them on.
+              attrs[:return_window_days] = params[:return_window_days].presence if params.key?(:return_window_days)
               attrs
             end
           end

@@ -16,8 +16,6 @@ module Spree
           line_intents = Spree::Pos::LineDiscountIntent.where(workspace_id: workspace.id).to_a
           return if order_intent.nil? && line_intents.empty?
 
-          raise Spree::Pos::Conflict, 'Discount cannot be recalculated after a payment exists.' if order.payments.exists?
-
           lines = order.line_items.to_a.sort_by(&:id)
           sale_lines = Spree::Pos::SaleLine.where(workspace_id: workspace.id).index_by(&:line_item_id)
           line_intent_by_sale = line_intents.index_by(&:sale_line_id)
@@ -44,28 +42,44 @@ module Spree
                            lines.map { BigDecimal('0') }
                          end
 
+          planned = []
+          lines.each_with_index do |line, index|
+            order_share = order_shares[index]
+            if order_intent && !order_share.zero?
+              planned << { line: line, intent: order_intent, amount: order_share, label: order_intent.reason, value_type: order_intent.value_type }
+            end
+            sale_line = sale_lines[line.id]
+            line_intent = sale_line && line_intent_by_sale[sale_line.id]
+            next unless line_intent
+
+            line_base = line.amount + (other_discounts[line.id] || 0) - order_share
+            line_share = if line_intent.value_type == 'unit_price' || line_intent.value_type.start_with?('item_')
+                           target_shares[index]
+                         else
+                           Spree::Pos::DiscountCalculator.call(bases: [line_base], value: line_intent.value, value_type: line_intent.value_type, currency: order.currency).first
+                         end
+            next if line_share.zero?
+
+            planned << { line: line, intent: line_intent, amount: line_share, label: line_intent.reason,
+                         value_type: line_intent.value_type == 'unit_price' ? 'flat' : line_intent.value_type.delete_prefix('item_') }
+          end
+
+          # Once money was taken the discount is part of the quoted snapshot:
+          # a recalculation (completion builds the pickup fulfillment, which
+          # re-sums the order) may only find the same rows, never change them.
+          if order.payments.exists?
+            current = order.discounts.where(id: owned_ids).map { |row| [row.line_item_id, row.amount] }.sort
+            return if current == planned.map { |row| [row[:line].id, -row[:amount]] }.sort
+
+            raise Spree::Pos::Conflict, 'Discount cannot be recalculated after a payment exists.'
+          end
+
           Spree::Pos::DiscountIntent.transaction do
             order.discounts.where(id: owned_ids).destroy_all
-            lines.each_with_index do |line, index|
-              order_share = order_shares[index]
-              if order_intent && !order_share.zero?
-                discount = order.discounts.create!(line_item: line, kind: 'manual', label: order_intent.reason, amount: -order_share, value_type: order_intent.value_type)
-                order_intent.allocations.create!(discount: discount)
-              end
-              sale_line = sale_lines[line.id]
-              line_intent = sale_line && line_intent_by_sale[sale_line.id]
-              next unless line_intent
-
-              line_base = line.amount + (other_discounts[line.id] || 0) - order_share
-              line_share = if line_intent.value_type == 'unit_price' || line_intent.value_type.start_with?('item_')
-                             target_shares[index]
-                           else
-                             Spree::Pos::DiscountCalculator.call(bases: [line_base], value: line_intent.value, value_type: line_intent.value_type, currency: order.currency).first
-                           end
-              next if line_share.zero?
-
-              discount = order.discounts.create!(line_item: line, kind: 'manual', label: line_intent.reason, amount: -line_share, value_type: line_intent.value_type == 'unit_price' ? 'flat' : line_intent.value_type.delete_prefix('item_'))
-              line_intent.allocations.create!(discount: discount)
+            planned.each do |row|
+              discount = order.discounts.create!(line_item: row[:line], kind: 'manual', label: row[:label],
+                                                 amount: -row[:amount], value_type: row[:value_type])
+              row[:intent].allocations.create!(discount: discount)
             end
           end
         rescue Spree::Pos::DiscountCalculator::InvalidDiscount

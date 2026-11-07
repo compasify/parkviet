@@ -44,7 +44,9 @@ module Spree
               ensure_unsold_serials!(workspace, serial_codes)
 
               mergeable = merge == true && !measured_unit?(variant_unit, sale_quantity) && Array(serial_codes).empty? && measurement_event_id.blank?
-              existing = mergeable ? SaleLine.find_by(workspace: workspace, merge_key: merge_key) : nil
+              # Several packages may share a key (added without merge); an explicit
+              # merge always goes into the oldest one.
+              existing = mergeable ? SaleLine.where(workspace: workspace, merge_key: merge_key).order(:id).first : nil
               line = nil
               sale_line = nil
               if existing

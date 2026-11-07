@@ -20,12 +20,20 @@ module Spree
       scope :active_now, -> { where(status: 'active') }
 
       # Money of this child that already left through its core Payment (a
-      # Refund). It stays consumed on the parent even if the child is later
+      # Refund), or that a refund request holds while its payout is pending or
+      # unknown. It stays consumed on the parent even if the child is later
       # reversed, so a reversal can never bring it back to available.
       def consumed
         return BigDecimal('0') if payment_id.nil?
 
-        Spree::Refund.where(payment_id: payment_id).sum(:amount)
+        Spree::Refund.where(payment_id: payment_id).sum(:amount) + RefundRequest.reserving.where(funds_allocation_id: id).sum(:amount)
+      end
+
+      # What a new refund request may still take from this child.
+      def refundable
+        return BigDecimal('0') if payment_id.nil? || status != 'active'
+
+        amount - consumed
       end
 
       def to_pos

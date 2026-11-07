@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { administrationAccess } from '../lib/pos-administration';
 import { canReadReceivables } from '../lib/receivables';
+import { canApprove, canProcessReturns } from '../lib/returns';
 import { PosIcon } from './pos-icon';
 import { usePosSelection } from './pos-selection';
 
@@ -31,6 +32,18 @@ export function PosPage({
             {t('settingsNav')}
           </Link>
         ) : null}
+        {context.data ? (
+          <Link to="/orders" activeProps={{ className: 'is-active', 'aria-current': 'page' }}>
+            <PosIcon name="list" />
+            {t('ordersNav')}
+          </Link>
+        ) : null}
+        {canProcessReturns(capabilities) ? (
+          <Link to="/returns" activeProps={{ className: 'is-active', 'aria-current': 'page' }}>
+            <PosIcon name="back" />
+            {t('returnsNav')}
+          </Link>
+        ) : null}
         {capabilities.includes('pos.payment.collect') ||
         capabilities.includes('pos.payment.resolve') ? (
           <Link to="/funds" activeProps={{ className: 'is-active', 'aria-current': 'page' }}>
@@ -53,8 +66,7 @@ export function PosPage({
             {t('creditAccountsNav')}
           </Link>
         ) : null}
-        {capabilities.includes('pos.credit.manage') &&
-        capabilities.includes('pos.approval.grant') ? (
+        {canApprove(capabilities) ? (
           <Link
             to="/credit-approvals"
             activeProps={{ className: 'is-active', 'aria-current': 'page' }}

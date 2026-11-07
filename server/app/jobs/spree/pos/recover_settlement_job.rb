@@ -51,10 +51,7 @@ module Spree
       end
 
       def raise_once(store_id, event_type, aggregate, payload)
-        return if OutboxEntry.exists?(event_type: event_type, aggregate_type: aggregate.class.name, aggregate_id: aggregate.id)
-
-        OutboxEntry.create!(store_id: store_id, event_type: event_type, aggregate_type: aggregate.class.name,
-                            aggregate_id: aggregate.id, payload: payload, status: 'pending', available_at: Time.current)
+        OutboxEntry.record_once!(store_id: store_id, event_type: event_type, aggregate: aggregate, payload: payload)
       end
     end
   end

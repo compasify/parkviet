@@ -7,7 +7,10 @@ module Spree
     # `paid_out` holds confirmed liability payouts and every Refund taken from
     # an allocation child's Payment, whether that child is still active or was
     # reversed afterwards, so the refunded part of a child is never counted as
-    # allocated or available again.
+    # allocated or available again. `payout_reserved` holds liability payouts
+    # and goods refund requests that are reserved or unknown: a refund request
+    # moves part of its child out of allocated until the payout is confirmed
+    # (then it is a Refund, paid out) or proven to have had no effect.
     # Callers must lock the parent row before relying on these numbers.
     class FundsBalance
       def initialize(funds)
@@ -15,14 +18,14 @@ module Spree
       end
 
       # Face amount of active children minus what their Payments already
-      # refunded.
+      # refunded and what refund requests hold on them.
       def allocated
         active = funds.allocations.where(status: 'active')
-        active.sum(:amount) - refunded(active)
+        active.sum(:amount) - refunded(active) - refund_reserved(active)
       end
 
       def payout_reserved
-        funds.liability_payouts.where(status: %w[requested reserved unknown]).sum(:amount)
+        funds.liability_payouts.where(status: %w[requested reserved unknown]).sum(:amount) + refund_reserved(funds.allocations)
       end
 
       def paid_out
@@ -44,6 +47,10 @@ module Spree
 
       def refunded(allocations)
         Spree::Refund.where(payment_id: allocations.where.not(payment_id: nil).select(:payment_id)).sum(:amount)
+      end
+
+      def refund_reserved(allocations)
+        RefundRequest.reserving.where(funds_allocation_id: allocations.select(:id)).sum(:amount)
       end
     end
   end

@@ -46,7 +46,11 @@ module Spree
       # question for actual money received, never a negative receivable.
       # Callers own the source record (for example a return authorization),
       # which makes the note unique per source and safe to retry.
-      def self.post_credit_note!(order:, amount:, source:, actor:, metadata: {})
+      #
+      # With `up_to_balance: true` the note is the smaller of `amount` and the
+      # open balance read under the account lock (a return gives value back up
+      # to the debt); nil when nothing is owed.
+      def self.post_credit_note!(order:, amount:, source:, actor:, metadata: {}, up_to_balance: false)
         debit = find_by(order_id: order.id, kind: 'debit')
         raise Conflict, 'Order has no receivable.' if debit.nil?
 
@@ -59,6 +63,10 @@ module Spree
           next existing if existing
 
           balance = balance_sum(where(order_id: order.id))
+          if up_to_balance
+            parsed = [parsed, balance].min
+            next nil unless parsed.positive?
+          end
           raise Conflict, 'Credit note exceeds the open receivable balance.' if parsed > balance
 
           entry = create!(

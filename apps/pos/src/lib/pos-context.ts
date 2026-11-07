@@ -7,6 +7,7 @@ export type PosBranch = {
   stock_location_id: string;
   receiving_stock_location_id: string | null;
   receiving_note: string | null;
+  return_window_days?: number | null;
 };
 
 export type PosRegister = {

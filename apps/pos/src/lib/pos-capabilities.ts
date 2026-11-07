@@ -11,6 +11,7 @@ export const posCapabilities = [
   ['pos.topology.recover', 'capabilityRecover'],
   ['pos.credit.sell', 'capabilityCreditSell'],
   ['pos.credit.manage', 'capabilityCreditManage'],
+  ['pos.return.process', 'capabilityReturn'],
 ] as const;
 
 export const sensitiveCapabilities = [
@@ -23,4 +24,5 @@ export const sensitiveCapabilities = [
   'pos.topology.recover',
   'pos.credit.sell',
   'pos.credit.manage',
+  'pos.return.process',
 ];

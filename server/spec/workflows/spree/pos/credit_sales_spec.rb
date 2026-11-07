@@ -180,15 +180,14 @@ RSpec.describe 'POS credit sales', type: :request do
     expect { approve_credit(sale, approver, 100_000) }.to raise_error(CanCan::AccessDenied)
   end
 
-  it 'never forces a credit handover past a short shelf' do
+  it 'never forces a credit handover past a short shelf: the shortfall is recorded instead' do
     configure_credit(store, manager, branch, profile, limit: 500_000)
     sale = credit_order(store, branch, manager, profile, price: 100_000)
     level = branch.stock_location.stock_level(sale.product.default_variant)
     level.update_columns(count_on_hand: 0)
 
-    expect do
-      Spree::Pos::Orders::Handover.call(workspace: sale.workspace.reload, staff: sale.cashier, key: SecureRandom.uuid)
-    end.to raise_error(Spree::Pos::Conflict, /shelf/)
+    result = Spree::Pos::Orders::Handover.call(workspace: sale.workspace.reload, staff: sale.cashier, key: SecureRandom.uuid)
+    expect(result['stock_discrepancies'].first).to include('needed' => 1, 'on_hand' => 0)
     expect(level.reload.count_on_hand).to eq(0)
     expect(sale.workspace.order.fulfillments.first).not_to be_fulfilled
   end

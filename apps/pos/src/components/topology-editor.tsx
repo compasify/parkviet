@@ -15,6 +15,8 @@ export type TopologyDraft = {
   stock_location_id?: string;
   receiving_stock_location_id?: string | null;
   receiving_note?: string | null;
+  // Days a sale stays returnable at the branch; blank keeps returns off.
+  return_window_days?: string | number | null;
   branch_id?: string;
   staff_id?: string;
   capabilities?: string[];
@@ -87,6 +89,16 @@ export function TopologyEditor({
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (busy || (sensitive && !confirmed)) return;
+    // Blank turns returns off; anything else must be a whole number of days.
+    const windowText = String(draft.return_window_days ?? '').trim();
+    if (
+      kind === 'branches' &&
+      windowText !== '' &&
+      (!/^\d{1,4}$/.test(windowText) || Number(windowText) > 3650)
+    ) {
+      setError(t('adminReturnWindowInvalid'));
+      return;
+    }
     const body =
       kind === 'memberships'
         ? record.id
@@ -105,6 +117,10 @@ export function TopologyEditor({
               stock_location_id: draft.stock_location_id,
               receiving_stock_location_id: draft.receiving_stock_location_id || null,
               receiving_note: draft.receiving_note?.trim() || null,
+              return_window_days:
+                String(draft.return_window_days ?? '').trim() === ''
+                  ? null
+                  : Number(String(draft.return_window_days).trim()),
             };
     setBusy(true);
     setError('');
@@ -252,6 +268,20 @@ export function TopologyEditor({
                   </datalist>
                 </label>
               </div>
+              <label>
+                {t('adminReturnWindow')}
+                <input
+                  // Text, not number: a number input reports invalid typing as
+                  // empty, which would silently turn returns off.
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={4}
+                  value={String(draft.return_window_days ?? '')}
+                  aria-describedby="return-window-hint"
+                  onChange={(event) => set('return_window_days', event.target.value)}
+                />
+                <small id="return-window-hint">{t('adminReturnWindowHint')}</small>
+              </label>
               <label>
                 {t('adminReceivingNote')}
                 <textarea

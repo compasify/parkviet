@@ -26,8 +26,18 @@ module Spree
         status == 'active' && revoked_at.nil? && consumed_at.nil? && expires_at > Workspace.database_now
       end
 
+      # Records an approval may be bound to. Each carries its own revision, so
+      # a changed subject invalidates the approval.
+      SUBJECTS = %w[Spree::Pos::Workspace Spree::Pos::ReturnOperation Spree::Pos::RefundRequest].freeze
+      # Who may ask for an approval at the branch: sellers, and return staff
+      # for returns and refunds.
+      REQUESTER_CAPABILITIES = {
+        'Spree::Pos::ReturnOperation' => [Capabilities::RETURN],
+        'Spree::Pos::RefundRequest' => [Capabilities::RETURN]
+      }.freeze
+
       def consume!(action:, amount:, currency:, revision:, subject:, requester:)
-        raise Conflict, 'Approval subject is required.' unless subject.is_a?(Spree::Pos::Workspace)
+        raise Conflict, 'Approval subject is required.' unless SUBJECTS.include?(subject.class.name) && subject.persisted?
 
         subject.with_lock do
           with_lock do
@@ -55,8 +65,19 @@ module Spree
         subject_matches = subject_type.present? && subject_type == subject&.class&.name && subject_id == subject&.id
         current_revision = subject.respond_to?(:revision) && subject.reload.revision.to_s == revision.to_s
         approver_allowed = AccessPolicy.new(store: store, staff: approver).allows?(branch, Capabilities::APPROVE)
-        requester_allowed = requester_id == requester&.id && AccessPolicy.new(store: store, staff: requester).allows?(branch, Capabilities::OPEN_SHIFT)
+        requester_capabilities = REQUESTER_CAPABILITIES.fetch(subject_type, [Capabilities::OPEN_SHIFT])
+        requester_policy = AccessPolicy.new(store: store, staff: requester)
+        requester_capable = requester_capabilities.any? { |capability| requester_policy.allows?(branch, capability) }
+        requester_allowed = requester_id == requester&.id && requester_capable
         self.action == action && self.revision.to_s == revision.to_s && amount_matches && subject_matches && current_revision && approver_allowed && requester_allowed && !branch.reload.disabled?
+      end
+
+      # Compact reference for return and refund read models. Uses the app
+      # clock: it is a display hint, consuming re-checks against the database.
+      def to_ref
+        shown = status
+        shown = expires_at > Time.current && revoked_at.nil? && consumed_at.nil? ? 'active' : 'expired' if status == 'active'
+        { id: prefixed_id, status: shown, expires_at: expires_at.iso8601 }
       end
 
       def to_pos

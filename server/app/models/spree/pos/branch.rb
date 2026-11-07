@@ -17,6 +17,8 @@ module Spree
       validates :name, :code, :timezone, :status, presence: true
       validates :code, uniqueness: { scope: :store_id }, format: { with: /\A[a-z0-9][a-z0-9_-]{0,31}\z/ }
       validates :status, inclusion: { in: %w[active disabled] }
+      validates :return_window_days, numericality: { only_integer: true, greater_than_or_equal_to: 0, less_than_or_equal_to: 3650 },
+                                     allow_nil: true
       validates :timezone, format: { with: /\A[A-Za-z0-9_+\-\/]{1,64}\z/ }
       validate :locations_belong_to_store
       validate :stock_location_fixed_for_open_drafts, on: :update
@@ -25,6 +27,11 @@ module Spree
 
       def disabled?
         status == 'disabled'
+      end
+
+      # Returns stay off at a branch until a manager sets a window.
+      def returns_enabled?
+        !return_window_days.nil?
       end
 
       def to_pos
@@ -36,7 +43,8 @@ module Spree
           status: status,
           stock_location_id: stock_location.prefixed_id,
           receiving_stock_location_id: receiving_stock_location&.prefixed_id,
-          receiving_note: receiving_config['note']
+          receiving_note: receiving_config['note'],
+          return_window_days: return_window_days
         }
       end
 

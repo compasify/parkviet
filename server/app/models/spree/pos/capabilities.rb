@@ -19,8 +19,11 @@ module Spree
       # accounts and selling on credit are separate grants.
       CREDIT_MANAGE = 'pos.credit.manage'
       CREDIT_SELL = 'pos.credit.sell'
+      # Preparing and receiving returns and requesting refunds. Paying a refund
+      # out still needs an approval from someone else.
+      RETURN = 'pos.return.process'
       ASSIGNABLE = [MANAGE, OPEN_SHIFT, DISCOUNT, PRICE_OVERRIDE, CUSTOMER, PAYMENT, RESOLVE, RECOVER, APPROVE, TAKEOVER,
-                    CREDIT_MANAGE, CREDIT_SELL].freeze
+                    CREDIT_MANAGE, CREDIT_SELL, RETURN].freeze
 
       def self.sanitize(values)
         Array(values).map(&:to_s).uniq

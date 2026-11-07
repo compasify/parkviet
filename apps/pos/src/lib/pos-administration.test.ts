@@ -23,9 +23,9 @@ describe('POS administration authorization', () => {
       } as unknown as PosContext),
     ).toEqual({ read: true, write: true });
   });
-  it('offers all twelve branch capabilities without hiding discount, price, customer or credit permissions', () => {
+  it('offers all thirteen branch capabilities without hiding discount, price, customer, credit or return permissions', () => {
     const keys = posCapabilities.map(([key]) => key);
-    expect(new Set(keys).size).toBe(12);
+    expect(new Set(keys).size).toBe(13);
     expect(keys).toEqual(
       expect.arrayContaining([
         'pos.discount.apply',
@@ -33,6 +33,7 @@ describe('POS administration authorization', () => {
         'pos.customer.write',
         'pos.credit.sell',
         'pos.credit.manage',
+        'pos.return.process',
       ]),
     );
     expect(sensitiveCapabilities).toEqual(

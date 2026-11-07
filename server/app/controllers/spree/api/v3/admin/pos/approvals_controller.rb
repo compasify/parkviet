@@ -39,6 +39,10 @@ module Spree
               if params[:action_name].to_s == Spree::Pos::Credit::ACTION
                 raise Spree::Pos::Conflict, 'Credit approvals are granted per workspace credit.'
               end
+              # Returns and refund payouts are approved on their own record.
+              if [Spree::Pos::ReturnOperation::ACTION, Spree::Pos::RefundRequest::ACTION].include?(params[:action_name].to_s)
+                raise Spree::Pos::Conflict, 'Return and refund approvals are granted on the return or refund.'
+              end
 
               amount = money_or_nil
               approval = Spree::Pos::Approval.create!(

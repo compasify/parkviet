@@ -59,6 +59,11 @@ production:
   pos_recover_settlement:
     class: Spree::Pos::RecoverSettlementJob
     schedule: every 5 minutes
+  # POS returns: post received returns whose predecessors resolved; raise
+  # pending/unknown refunds and open stock shortfalls (never pays or cancels).
+  pos_recover_return_operations:
+    class: Spree::Pos::RecoverReturnOperationJob
+    schedule: every 5 minutes
   pos_dispatch_outbox:
     class: Spree::Pos::DispatchOutboxJob
     schedule: every minute

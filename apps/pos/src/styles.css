@@ -595,4 +595,24 @@ kbd { padding: var(--pos-s1); border: 1px solid var(--pos-border); border-radius
 .receivable-breakdown dt, .receivable-aging dt { color: var(--pos-muted); font-size: var(--pos-small); }
 .receivable-breakdown dd, .receivable-aging dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
 .receivable-aging { padding: var(--pos-s3) 0; }
+/* Orders, returns, refunds and exchanges */
+.orders-layout, .return-layout { display: grid; gap: var(--pos-s4); align-items: start; }
+@media (min-width: 1100px) { .orders-layout:has(#order-detail) { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); } }
+.orders-filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--pos-s3); margin-bottom: var(--pos-s4); }
+.orders-filters label { display: grid; gap: var(--pos-s1); min-width: 9rem; }
+.order-row-button { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--pos-s3); width: 100%; text-align: left; }
+.order-row-button[aria-expanded='true'] { border-color: var(--pos-accent, currentColor); }
+.order-row-tags { display: flex; flex-wrap: wrap; gap: var(--pos-s1); }
+.order-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: var(--pos-s2) var(--pos-s4); margin: var(--pos-s3) 0; }
+.order-summary dt { color: var(--pos-muted); font-size: var(--pos-small); }
+.order-summary dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+.order-lines-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; display: block; overflow-x: auto; }
+.order-lines-table th, .order-lines-table td { padding: var(--pos-s2); border-bottom: 1px solid var(--pos-border); text-align: left; vertical-align: top; }
+.order-lines-table td input { width: 5rem; }
+.order-timeline { margin: 0; padding-left: var(--pos-s5); display: grid; gap: var(--pos-s1); }
+.attention-box { padding: var(--pos-s3); border: 1px solid var(--pos-warning); border-radius: var(--pos-radius); background: #fff4d9; }
+.return-form, .refund-form, .refund-section { display: grid; gap: var(--pos-s3); margin-top: var(--pos-s4); }
+.refund-form fieldset { border: 0; padding: 0; margin: 0; gap: var(--pos-s3); }
+.pos-layout .pos-popup-card.refund-evidence, .pos-popup-card.refund-evidence { width: min(480px, calc(100vw - var(--pos-s6))); display: grid; gap: var(--pos-s3); }
+.checkbox-row { display: flex; align-items: flex-start; gap: var(--pos-s2); }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto; animation-duration: .01ms; transition-duration: .01ms; } }

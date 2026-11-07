@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_07_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_07_135000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -2318,9 +2318,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_120000) do
     t.datetime "disabled_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "return_window_days"
     t.index ["stock_location_id"], name: "index_spree_pos_branches_on_stock_location_id"
     t.index ["store_id", "code"], name: "index_spree_pos_branches_on_store_id_and_code", unique: true
     t.index ["store_id"], name: "index_spree_pos_branches_on_store_id"
+    t.check_constraint "return_window_days IS NULL OR return_window_days >= 0 AND return_window_days <= 3650", name: "chk_pos_branches_return_window"
     t.check_constraint "status::text = ANY (ARRAY['active'::character varying::text, 'disabled'::character varying::text])", name: "chk_spree_pos_branches_status"
   end
 
@@ -2339,10 +2341,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_120000) do
     t.bigint "source_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "refund_request_id"
     t.index ["actor_id"], name: "index_spree_pos_cash_movements_on_actor_id"
     t.index ["branch_id"], name: "index_spree_pos_cash_movements_on_branch_id"
     t.index ["liability_payout_id"], name: "index_spree_pos_cash_movements_on_liability_payout_id"
     t.index ["received_funds_id"], name: "index_spree_pos_cash_movements_on_received_funds_id"
+    t.index ["refund_request_id"], name: "index_spree_pos_cash_movements_on_refund_request_id"
     t.index ["register_id"], name: "index_spree_pos_cash_movements_on_register_id"
     t.index ["shift_id", "kind"], name: "idx_pos_cash_movements_shift"
     t.index ["shift_id"], name: "index_spree_pos_cash_movements_on_shift_id"
@@ -2495,6 +2499,21 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_120000) do
     t.check_constraint "value_type::text = ANY (ARRAY['flat'::character varying::text, 'percent'::character varying::text])", name: "chk_pos_discount_intent_type"
   end
 
+  create_table "spree_pos_exchange_operations", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "branch_id", null: false
+    t.bigint "return_operation_id", null: false
+    t.bigint "replacement_workspace_id", null: false
+    t.bigint "actor_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["actor_id"], name: "index_spree_pos_exchange_operations_on_actor_id"
+    t.index ["branch_id"], name: "index_spree_pos_exchange_operations_on_branch_id"
+    t.index ["replacement_workspace_id"], name: "idx_on_replacement_workspace_id_5bdb19a854", unique: true
+    t.index ["return_operation_id"], name: "index_spree_pos_exchange_operations_on_return_operation_id", unique: true
+    t.index ["store_id"], name: "index_spree_pos_exchange_operations_on_store_id"
+  end
+
   create_table "spree_pos_funds_allocations", force: :cascade do |t|
     t.bigint "store_id", null: false
     t.bigint "received_funds_id", null: false
@@ -2619,7 +2638,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_120000) do
 
   create_table "spree_pos_payout_evidences", force: :cascade do |t|
     t.bigint "store_id", null: false
-    t.bigint "liability_payout_id", null: false
+    t.bigint "liability_payout_id"
     t.bigint "actor_id", null: false
     t.string "kind", limit: 32, null: false
     t.string "reference", limit: 120
@@ -2627,10 +2646,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_120000) do
     t.jsonb "metadata", default: {}, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "refund_request_id"
     t.index ["actor_id"], name: "index_spree_pos_payout_evidences_on_actor_id"
     t.index ["liability_payout_id", "created_at"], name: "idx_pos_payout_evidences_payout"
     t.index ["liability_payout_id"], name: "index_spree_pos_payout_evidences_on_liability_payout_id"
+    t.index ["refund_request_id"], name: "index_spree_pos_payout_evidences_on_refund_request_id"
     t.index ["store_id"], name: "index_spree_pos_payout_evidences_on_store_id"
+    t.check_constraint "(liability_payout_id IS NULL) <> (refund_request_id IS NULL)", name: "chk_pos_payout_evidences_subject"
     t.check_constraint "kind::text = ANY (ARRAY['cash_count'::character varying::text, 'bank_manual'::character varying::text, 'failed_no_effect'::character varying::text])", name: "chk_pos_payout_evidences_kind"
   end
 
@@ -2726,6 +2748,49 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_120000) do
     t.check_constraint "status::text = ANY (ARRAY['received'::character varying::text, 'attention'::character varying::text])", name: "chk_pos_received_funds_status"
   end
 
+  create_table "spree_pos_refund_requests", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "branch_id", null: false
+    t.bigint "return_operation_id", null: false
+    t.bigint "funds_allocation_id", null: false
+    t.bigint "received_funds_id", null: false
+    t.bigint "payment_id", null: false
+    t.bigint "order_id", null: false
+    t.bigint "requester_id", null: false
+    t.bigint "confirmer_id"
+    t.bigint "approval_id"
+    t.bigint "shift_id"
+    t.bigint "refund_id"
+    t.string "method", limit: 16, null: false
+    t.string "status", limit: 16, default: "reserved", null: false
+    t.decimal "amount", precision: 19, scale: 4, null: false
+    t.string "currency", limit: 16, null: false
+    t.integer "revision", default: 1, null: false
+    t.string "beneficiary_reference", limit: 120
+    t.datetime "confirmed_at"
+    t.datetime "resolved_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["approval_id"], name: "index_spree_pos_refund_requests_on_approval_id"
+    t.index ["branch_id"], name: "index_spree_pos_refund_requests_on_branch_id"
+    t.index ["confirmer_id"], name: "index_spree_pos_refund_requests_on_confirmer_id"
+    t.index ["funds_allocation_id", "status"], name: "idx_pos_refund_requests_allocation"
+    t.index ["funds_allocation_id"], name: "index_spree_pos_refund_requests_on_funds_allocation_id"
+    t.index ["order_id"], name: "index_spree_pos_refund_requests_on_order_id"
+    t.index ["payment_id"], name: "index_spree_pos_refund_requests_on_payment_id"
+    t.index ["received_funds_id"], name: "index_spree_pos_refund_requests_on_received_funds_id"
+    t.index ["refund_id"], name: "index_spree_pos_refund_requests_on_refund_id", unique: true
+    t.index ["requester_id"], name: "index_spree_pos_refund_requests_on_requester_id"
+    t.index ["return_operation_id"], name: "index_spree_pos_refund_requests_on_return_operation_id"
+    t.index ["shift_id"], name: "index_spree_pos_refund_requests_on_shift_id"
+    t.index ["store_id", "branch_id", "status"], name: "idx_pos_refund_requests_branch"
+    t.index ["store_id"], name: "index_spree_pos_refund_requests_on_store_id"
+    t.check_constraint "(status::text = 'confirmed'::text) = (refund_id IS NOT NULL)", name: "chk_pos_refund_requests_refund"
+    t.check_constraint "amount > 0::numeric", name: "chk_pos_refund_requests_amount"
+    t.check_constraint "method::text = ANY (ARRAY['cash'::character varying, 'bank_manual'::character varying]::text[])", name: "chk_pos_refund_requests_method"
+    t.check_constraint "status::text = ANY (ARRAY['reserved'::character varying, 'unknown'::character varying, 'confirmed'::character varying, 'failed'::character varying, 'canceled'::character varying]::text[])", name: "chk_pos_refund_requests_status"
+  end
+
   create_table "spree_pos_registers", force: :cascade do |t|
     t.bigint "store_id", null: false
     t.bigint "branch_id", null: false
@@ -2739,6 +2804,86 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_120000) do
     t.index ["store_id", "code"], name: "index_spree_pos_registers_on_store_id_and_code", unique: true
     t.index ["store_id"], name: "index_spree_pos_registers_on_store_id"
     t.check_constraint "status::text = ANY (ARRAY['active'::character varying::text, 'disabled'::character varying::text])", name: "chk_spree_pos_registers_status"
+  end
+
+  create_table "spree_pos_return_operations", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "branch_id", null: false
+    t.bigint "sale_branch_id", null: false
+    t.bigint "workspace_id", null: false
+    t.bigint "order_id", null: false
+    t.bigint "core_return_id", null: false
+    t.bigint "requester_id", null: false
+    t.bigint "receiver_id"
+    t.bigint "approval_id"
+    t.string "status", limit: 32, default: "ready", null: false
+    t.string "entitlement_status", limit: 32, default: "pending", null: false
+    t.string "reason", limit: 200, null: false
+    t.boolean "cross_branch", default: false, null: false
+    t.boolean "out_of_window", default: false, null: false
+    t.boolean "damaged", default: false, null: false
+    t.boolean "requires_approval", default: false, null: false
+    t.integer "revision", default: 1, null: false
+    t.decimal "entitlement_total", precision: 19, scale: 4, default: "0.0", null: false
+    t.decimal "credit_note_amount", precision: 19, scale: 4, default: "0.0", null: false
+    t.decimal "refund_entitlement", precision: 19, scale: 4, default: "0.0", null: false
+    t.string "currency", limit: 16, null: false
+    t.datetime "received_at"
+    t.datetime "posted_at"
+    t.datetime "canceled_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["approval_id"], name: "index_spree_pos_return_operations_on_approval_id"
+    t.index ["branch_id"], name: "index_spree_pos_return_operations_on_branch_id"
+    t.index ["core_return_id"], name: "index_spree_pos_return_operations_on_core_return_id", unique: true
+    t.index ["order_id", "status"], name: "idx_pos_return_operations_order"
+    t.index ["order_id"], name: "index_spree_pos_return_operations_on_order_id"
+    t.index ["receiver_id"], name: "index_spree_pos_return_operations_on_receiver_id"
+    t.index ["requester_id"], name: "index_spree_pos_return_operations_on_requester_id"
+    t.index ["sale_branch_id"], name: "index_spree_pos_return_operations_on_sale_branch_id"
+    t.index ["store_id", "status"], name: "idx_pos_return_operations_status"
+    t.index ["store_id"], name: "index_spree_pos_return_operations_on_store_id"
+    t.index ["workspace_id"], name: "index_spree_pos_return_operations_on_workspace_id"
+    t.check_constraint "entitlement_status::text = ANY (ARRAY['pending'::character varying, 'awaiting_predecessor'::character varying, 'posted'::character varying, 'canceled'::character varying]::text[])", name: "chk_pos_return_operations_entitlement"
+    t.check_constraint "entitlement_total >= 0::numeric AND credit_note_amount >= 0::numeric AND refund_entitlement >= 0::numeric AND (credit_note_amount + refund_entitlement) <= entitlement_total", name: "chk_pos_return_operations_amounts"
+    t.check_constraint "status::text = ANY (ARRAY['pending_approval'::character varying, 'ready'::character varying, 'received'::character varying, 'canceled'::character varying]::text[])", name: "chk_pos_return_operations_status"
+  end
+
+  create_table "spree_pos_return_reservations", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "return_operation_id", null: false
+    t.bigint "sale_line_id", null: false
+    t.bigint "line_item_id", null: false
+    t.bigint "fulfillment_item_id", null: false
+    t.bigint "return_line_item_id", null: false
+    t.integer "quantity", null: false
+    t.integer "sequence", null: false
+    t.integer "cumulative_before", null: false
+    t.integer "cumulative_after", null: false
+    t.string "condition", limit: 16, null: false
+    t.string "status", limit: 16, default: "reserved", null: false
+    t.decimal "total", precision: 19, scale: 4, null: false
+    t.decimal "net", precision: 19, scale: 4, null: false
+    t.decimal "tax", precision: 19, scale: 4, null: false
+    t.decimal "discount", precision: 19, scale: 4, null: false
+    t.decimal "gross", precision: 19, scale: 4, null: false
+    t.integer "received_quantity", default: 0, null: false
+    t.integer "restocked_quantity", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["fulfillment_item_id"], name: "index_spree_pos_return_reservations_on_fulfillment_item_id"
+    t.index ["line_item_id"], name: "index_spree_pos_return_reservations_on_line_item_id"
+    t.index ["return_line_item_id"], name: "index_spree_pos_return_reservations_on_return_line_item_id", unique: true
+    t.index ["return_operation_id", "sale_line_id"], name: "idx_pos_return_reservations_line"
+    t.index ["return_operation_id"], name: "index_spree_pos_return_reservations_on_return_operation_id"
+    t.index ["sale_line_id", "sequence"], name: "idx_pos_return_reservations_sequence", unique: true
+    t.index ["sale_line_id"], name: "index_spree_pos_return_reservations_on_sale_line_id"
+    t.index ["store_id"], name: "index_spree_pos_return_reservations_on_store_id"
+    t.check_constraint "condition::text = ANY (ARRAY['resellable'::character varying, 'damaged'::character varying]::text[])", name: "chk_pos_return_reservations_condition"
+    t.check_constraint "quantity > 0 AND cumulative_before >= 0 AND cumulative_after = (cumulative_before + quantity)", name: "chk_pos_return_reservations_quantity"
+    t.check_constraint "received_quantity >= 0 AND received_quantity <= quantity AND restocked_quantity >= 0 AND restocked_quantity <= received_quantity", name: "chk_pos_return_reservations_receipt"
+    t.check_constraint "status::text = ANY (ARRAY['reserved'::character varying, 'posted'::character varying, 'canceled'::character varying]::text[])", name: "chk_pos_return_reservations_status"
+    t.check_constraint "total >= 0::numeric AND net >= 0::numeric AND tax >= 0::numeric AND discount >= 0::numeric AND gross >= 0::numeric AND total = (net + tax) AND (gross - discount) = net", name: "chk_pos_return_reservations_components"
   end
 
   create_table "spree_pos_sale_lines", force: :cascade do |t|
@@ -2813,6 +2958,35 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_120000) do
     t.index ["store_id", "branch_id", "staff_id"], name: "idx_spree_pos_memberships_staff_branch", unique: true
     t.index ["store_id"], name: "index_spree_pos_staff_memberships_on_store_id"
     t.check_constraint "status::text = ANY (ARRAY['active'::character varying::text, 'disabled'::character varying::text])", name: "chk_spree_pos_memberships_status"
+  end
+
+  create_table "spree_pos_stock_discrepancies", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "branch_id", null: false
+    t.bigint "workspace_id", null: false
+    t.bigint "order_id", null: false
+    t.bigint "fulfillment_id", null: false
+    t.bigint "variant_id", null: false
+    t.bigint "stock_location_id", null: false
+    t.bigint "actor_id", null: false
+    t.integer "needed", null: false
+    t.integer "on_hand", null: false
+    t.string "status", limit: 16, default: "open", null: false
+    t.datetime "checked_at", null: false
+    t.datetime "resolved_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["actor_id"], name: "index_spree_pos_stock_discrepancies_on_actor_id"
+    t.index ["branch_id"], name: "index_spree_pos_stock_discrepancies_on_branch_id"
+    t.index ["fulfillment_id", "variant_id"], name: "idx_pos_stock_discrepancies_open", unique: true, where: "((status)::text = 'open'::text)"
+    t.index ["fulfillment_id"], name: "index_spree_pos_stock_discrepancies_on_fulfillment_id"
+    t.index ["order_id"], name: "index_spree_pos_stock_discrepancies_on_order_id"
+    t.index ["stock_location_id"], name: "index_spree_pos_stock_discrepancies_on_stock_location_id"
+    t.index ["store_id"], name: "index_spree_pos_stock_discrepancies_on_store_id"
+    t.index ["variant_id"], name: "index_spree_pos_stock_discrepancies_on_variant_id"
+    t.index ["workspace_id"], name: "index_spree_pos_stock_discrepancies_on_workspace_id"
+    t.check_constraint "needed > 0", name: "chk_pos_stock_discrepancies_needed"
+    t.check_constraint "status::text = ANY (ARRAY['open'::character varying, 'resolved'::character varying]::text[])", name: "chk_pos_stock_discrepancies_status"
   end
 
   create_table "spree_pos_tender_attempts", force: :cascade do |t|
@@ -4556,6 +4730,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_120000) do
   add_foreign_key "spree_pos_cash_movements", "spree_pos_branches", column: "branch_id"
   add_foreign_key "spree_pos_cash_movements", "spree_pos_liability_payouts", column: "liability_payout_id"
   add_foreign_key "spree_pos_cash_movements", "spree_pos_received_funds", column: "received_funds_id"
+  add_foreign_key "spree_pos_cash_movements", "spree_pos_refund_requests", column: "refund_request_id"
   add_foreign_key "spree_pos_cash_movements", "spree_pos_registers", column: "register_id"
   add_foreign_key "spree_pos_cash_movements", "spree_pos_shifts", column: "shift_id"
   add_foreign_key "spree_pos_cash_movements", "spree_stores", column: "store_id"
@@ -4591,6 +4766,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_120000) do
   add_foreign_key "spree_pos_discount_allocations", "spree_pos_line_discount_intents", column: "line_discount_intent_id", on_delete: :cascade
   add_foreign_key "spree_pos_discount_intents", "spree_admin_users", column: "actor_id"
   add_foreign_key "spree_pos_discount_intents", "spree_pos_workspaces", column: "workspace_id"
+  add_foreign_key "spree_pos_exchange_operations", "spree_admin_users", column: "actor_id"
+  add_foreign_key "spree_pos_exchange_operations", "spree_pos_branches", column: "branch_id"
+  add_foreign_key "spree_pos_exchange_operations", "spree_pos_return_operations", column: "return_operation_id"
+  add_foreign_key "spree_pos_exchange_operations", "spree_pos_workspaces", column: "replacement_workspace_id"
+  add_foreign_key "spree_pos_exchange_operations", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_funds_allocations", "spree_orders", column: "order_id"
   add_foreign_key "spree_pos_funds_allocations", "spree_payments", column: "payment_id"
   add_foreign_key "spree_pos_funds_allocations", "spree_pos_collections", column: "collection_id"
@@ -4608,6 +4788,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_120000) do
   add_foreign_key "spree_pos_payment_methods", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_payout_evidences", "spree_admin_users", column: "actor_id"
   add_foreign_key "spree_pos_payout_evidences", "spree_pos_liability_payouts", column: "liability_payout_id"
+  add_foreign_key "spree_pos_payout_evidences", "spree_pos_refund_requests", column: "refund_request_id"
   add_foreign_key "spree_pos_payout_evidences", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_receipt_evidences", "spree_admin_users", column: "actor_id"
   add_foreign_key "spree_pos_receipt_evidences", "spree_pos_tender_attempts", column: "tender_attempt_id"
@@ -4627,8 +4808,35 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_120000) do
   add_foreign_key "spree_pos_received_funds", "spree_pos_tender_attempts", column: "tender_attempt_id"
   add_foreign_key "spree_pos_received_funds", "spree_pos_workspaces", column: "workspace_id"
   add_foreign_key "spree_pos_received_funds", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_refund_requests", "spree_admin_users", column: "confirmer_id"
+  add_foreign_key "spree_pos_refund_requests", "spree_admin_users", column: "requester_id"
+  add_foreign_key "spree_pos_refund_requests", "spree_orders", column: "order_id"
+  add_foreign_key "spree_pos_refund_requests", "spree_payments", column: "payment_id"
+  add_foreign_key "spree_pos_refund_requests", "spree_pos_approvals", column: "approval_id"
+  add_foreign_key "spree_pos_refund_requests", "spree_pos_branches", column: "branch_id"
+  add_foreign_key "spree_pos_refund_requests", "spree_pos_funds_allocations", column: "funds_allocation_id"
+  add_foreign_key "spree_pos_refund_requests", "spree_pos_received_funds", column: "received_funds_id"
+  add_foreign_key "spree_pos_refund_requests", "spree_pos_return_operations", column: "return_operation_id"
+  add_foreign_key "spree_pos_refund_requests", "spree_pos_shifts", column: "shift_id"
+  add_foreign_key "spree_pos_refund_requests", "spree_refunds", column: "refund_id"
+  add_foreign_key "spree_pos_refund_requests", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_registers", "spree_pos_branches", column: "branch_id"
   add_foreign_key "spree_pos_registers", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_return_operations", "spree_admin_users", column: "receiver_id"
+  add_foreign_key "spree_pos_return_operations", "spree_admin_users", column: "requester_id"
+  add_foreign_key "spree_pos_return_operations", "spree_orders", column: "order_id"
+  add_foreign_key "spree_pos_return_operations", "spree_pos_approvals", column: "approval_id"
+  add_foreign_key "spree_pos_return_operations", "spree_pos_branches", column: "branch_id"
+  add_foreign_key "spree_pos_return_operations", "spree_pos_branches", column: "sale_branch_id"
+  add_foreign_key "spree_pos_return_operations", "spree_pos_workspaces", column: "workspace_id"
+  add_foreign_key "spree_pos_return_operations", "spree_returns", column: "core_return_id"
+  add_foreign_key "spree_pos_return_operations", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_return_reservations", "spree_fulfillment_items", column: "fulfillment_item_id"
+  add_foreign_key "spree_pos_return_reservations", "spree_line_items", column: "line_item_id"
+  add_foreign_key "spree_pos_return_reservations", "spree_pos_return_operations", column: "return_operation_id"
+  add_foreign_key "spree_pos_return_reservations", "spree_pos_sale_lines", column: "sale_line_id"
+  add_foreign_key "spree_pos_return_reservations", "spree_return_line_items", column: "return_line_item_id"
+  add_foreign_key "spree_pos_return_reservations", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_sale_lines", "spree_line_items", column: "line_item_id", on_delete: :cascade
   add_foreign_key "spree_pos_sale_lines", "spree_orders", column: "order_id"
   add_foreign_key "spree_pos_sale_lines", "spree_pos_workspaces", column: "workspace_id"
@@ -4640,6 +4848,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_120000) do
   add_foreign_key "spree_pos_staff_memberships", "spree_admin_users", column: "staff_id"
   add_foreign_key "spree_pos_staff_memberships", "spree_pos_branches", column: "branch_id"
   add_foreign_key "spree_pos_staff_memberships", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_stock_discrepancies", "spree_admin_users", column: "actor_id"
+  add_foreign_key "spree_pos_stock_discrepancies", "spree_fulfillments", column: "fulfillment_id"
+  add_foreign_key "spree_pos_stock_discrepancies", "spree_orders", column: "order_id"
+  add_foreign_key "spree_pos_stock_discrepancies", "spree_pos_branches", column: "branch_id"
+  add_foreign_key "spree_pos_stock_discrepancies", "spree_pos_workspaces", column: "workspace_id"
+  add_foreign_key "spree_pos_stock_discrepancies", "spree_stock_locations", column: "stock_location_id"
+  add_foreign_key "spree_pos_stock_discrepancies", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_stock_discrepancies", "spree_variants", column: "variant_id"
   add_foreign_key "spree_pos_tender_attempts", "spree_admin_users", column: "actor_id"
   add_foreign_key "spree_pos_tender_attempts", "spree_pos_branches", column: "branch_id"
   add_foreign_key "spree_pos_tender_attempts", "spree_pos_payment_methods", column: "pos_payment_method_id"

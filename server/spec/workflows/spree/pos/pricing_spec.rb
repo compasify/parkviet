@@ -90,6 +90,12 @@ RSpec.describe 'POS draft pricing qualification' do
       Spree.order_recalculate_totals_workflow.call(order: order)
       method = create(:check_payment_method, store: store)
       create(:payment, order: order, payment_method: method, amount: 1, status: 'pending')
+      # After a payment the discount is part of the quoted snapshot: re-summing
+      # the order (as completion does) keeps it, changing it is refused.
+      before = order.discounts.where(kind: 'manual').pluck(:line_item_id, :amount)
+      expect { Spree.order_recalculate_totals_workflow.call(order: order) }.not_to raise_error
+      expect(order.reload.discounts.where(kind: 'manual').pluck(:line_item_id, :amount)).to eq(before)
+      intent.update!(value: '20')
       expect { Spree.order_recalculate_totals_workflow.call(order: order) }.to raise_error(Spree::Pos::Conflict)
     ensure
       Spree.adjusters.delete(Spree::Pos::Adjusters::ManualDiscount) if added_adjuster

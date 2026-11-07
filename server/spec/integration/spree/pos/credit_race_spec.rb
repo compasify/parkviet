@@ -106,6 +106,9 @@ RSpec.describe 'POS credit races', type: :integration do
     expect(Spree::Pos::CreditReservation.where(credit_account: account).count).to eq(1)
   end
 
+  # The counter is not blocked: the second handover records the shortfall for
+  # reconciliation and leaves its fulfillment allocated instead of forcing the
+  # shelf below zero.
   it 'never lets two forced credit handovers take the last unit off the shelf' do
     configure_credit(store, @manager, @branch, @profile, limit: 1_000)
     first = credit_order(store, @branch, @manager, @profile, price: 100)
@@ -119,9 +122,12 @@ RSpec.describe 'POS credit races', type: :integration do
                                         staff: sales[index].cashier, key: SecureRandom.uuid)
     end
 
-    expect(results.map(&:first)).to contain_exactly(:success, :conflict)
-    expect(results.find { |(kind, _)| kind == :conflict }.last).to include('shelf')
+    expect(results.map(&:first)).to eq(%i[success success])
     expect(level.reload.count_on_hand).to eq(0)
+    gaps = Spree::Pos::StockDiscrepancy.where(order_id: sales.map { |sale| sale.workspace.order_id })
+    expect(gaps.count).to eq(1)
+    expect(gaps.first).to have_attributes(needed: 1, on_hand: 0, status: 'open')
+    expect(Spree::Fulfillment.where(id: gaps.first.fulfillment_id, status: 'fulfilled')).to be_empty
   end
 
   it 'settles a revoke racing a credit completion one way or the other, never both' do
