@@ -1,7 +1,7 @@
 ---
 phase: 5
 title: "Hàng hóa, khách hàng và giảm giá có kiểm soát"
-status: in-progress
+status: completed
 priority: P1
 dependencies: [1, 3, 4]
 effort: "Ước tính 16–24 person-days; phụ thuộc precision ADR (chuyển từ phase 1 sang phase 5/8)"
@@ -83,14 +83,14 @@ Inventory từ repo root; paths tạo mới trừ dòng Modify, không sửa `sp
 
 ## Success Criteria
 
-- [ ] W03, W06: đủ 100 physical scan intents, network replay không tăng kép; create customer đúng tab không fake email.
-- [ ] W07, F18: %/VND/price override/recalc/zero-total đúng server rounding và quyền; reject fractional receipt/total không reject exact fractional base-unit price đã qualify.
-- [ ] I01, I02, I07: weighted/unit/price-label DTO + input có API thật, exact base-unit proof và conversion version guard.
-- [ ] I03–I05: serial-lot selector xử lý capability unavailable rõ; stock reservation/reader lifecycle hoàn thiện phase 8 trước thu tiền tracked SKU.
-- [ ] I08: immutable SaleLine IDs và merge rules giữ độc lập hai gói cùng SKU; core quantity/value/discount/tax và return mapping lossless sau reload/edit/remove.
-- [ ] A02, A03, A05: scoped DTO, core bypass bị từ chối, approval cũ không dùng lại sau đổi snapshot.
-- [ ] W02, W08: totals/khách/discount giữ sau reload và truy cập được desktop/tablet/keyboard.
-- [ ] Preview chỉ draft/catalog/customer/discount; chưa bill finalized, thu tiền hoặc giao hàng.
+- [x] W03, W06: đủ 100 physical scan intents, network replay không tăng kép; create customer đúng tab không fake email. *(Scanner đã nối vào tab đang sửa: unit 100 intent (`scanner-queue.test.ts`), e2e `catalog-scan.spec.ts` 20 lần quét liên tiếp đúng thứ tự/revision, mất response rồi thử lại cùng key không tăng kép, barcode mơ hồ không tự thêm, tạo khách sau mất response giữ key và gắn đúng tab, không gửi email trống. Máy quét vật lý thật chuyển phase 10/11.)*
+- [x] W07, F18: %/VND/price override/recalc/zero-total đúng server rounding và quyền; reject fractional receipt/total không reject exact fractional base-unit price đã qualify. *(`sale_lines_spec.rb`, `workspace_discounts_spec.rb`, `pricing_spec.rb`, `sale_guards_spec.rb`: giảm về 0, override VND lẻ bị từ chối cả lúc thêm dòng, override cần đúng quyền riêng.)*
+- [x] I01, I02, I07: weighted/unit/price-label DTO + input có API thật, exact base-unit proof và conversion version guard. *(`scale_labels_spec.rb`: tem cân và tem giá EAN-13 theo mẫu của chi nhánh, checksum, quy đổi gram chính xác, tem giá chỉ nhận khi giá server tái tạo được; `unit_normalization_spec.rb`, `sale_lines_spec.rb`; sửa số lượng bị chặn khi phiên bản quy đổi khác dòng. Máy cân/in tem thật chuyển phase 10.)*
+- [x] I03–I05: serial-lot selector xử lý capability unavailable rõ; stock reservation/reader lifecycle hoàn thiện phase 8 trước thu tiền tracked SKU. *(Nhập lô/serial nháp hiện "chưa giữ hàng"; server bắt đủ serial và không trùng. Reservation thuộc phase 8.)*
+- [x] I08: immutable SaleLine IDs và merge rules giữ độc lập hai gói cùng SKU; core quantity/value/discount/tax và return mapping lossless sau reload/edit/remove. *(`sale_lines_spec.rb` + `sale_guards_spec.rb`: gói cân và serial không bao giờ gộp, cùng lô khác hạn tách dòng, measurement event không thêm hai lần, serial không bán hai lần. Return mapping thuộc phase 8.)*
+- [x] A02, A03, A05: scoped DTO, core bypass bị từ chối, approval cũ không dùng lại sau đổi snapshot. *(`sale_guards_spec.rb`: approval chỉ dùng một lần, đúng action/draft, bị thu hồi thì từ chối, bị ràng buộc đúng số tiền thực áp; sửa snapshot khi tender đang giữ bị từ chối `snapshot_locked`; variant ngoài assortment/ngoài thời gian bán trả 404.)*
+- [ ] W02, W08: totals/khách/discount giữ sau reload và truy cập được desktop/tablet/keyboard. *(Detail workspace tải lại từ server sau reload; e2e mock chạy 3 viewport desktop/tablet/mobile, có luồng phím Enter/quét. Kiểm trên API thật và bàn phím đầy đủ chuyển phase 11.)*
+- [x] Preview chỉ draft/catalog/customer/discount; chưa bill finalized, thu tiền hoặc giao hàng. *(Thu tiền chỉ ở sandbox phase 6, xem checkpoint.)*
 
 ## Risk Assessment
 
@@ -120,3 +120,58 @@ Inventory từ repo root; paths tạo mới trừ dòng Modify, không sửa `sp
 - Cập nhật frontend SaleLine: types `PosLineItem`/`PosVariantUnit` mang SaleLine; `OrderLines` sửa theo measured sale quantity hoặc count, hiển thị lô/serial + trạng thái chưa reserve, line-discount/clear và price-override theo `sale_line_id`; `AddItemForm` tra variant unit/traceability, nhập exact decimal cho hàng đo, nhập lô/serial nháp và merge tường minh (mặc định không merge); catalog thêm nhanh dùng `merge: true` cho scan thường. Frontend: **29 unit tests**, lint, build pass.
 - Cập nhật phase 6 ảnh hưởng phase 5: snapshot workspace bị khóa bởi tender prepare/confirmed ở server (`ManageLineItem` guard qua tender attempts), completion chỉ qua completed-receipt guard và handover strict-location. Frontend đã có PaymentPanel/financial summary; phase 5 vì vậy không còn ghi “không mở thu tiền/giao hàng” tuyệt đối, nhưng chỉ ở **sandbox phase 6**: không tiền thật, không tracked SKU, không returns/credit/close.
 - Vẫn chưa đạt trong phase 5: price-label barcode (chỉ ordinary), quản lý assortment trên UI, concurrency hai connection, scanner vật lý/e2e API thật. Phase 5 giữ `in-progress`; không đóng chỉ vì phase 6 sandbox đã nối.
+
+## Review 07/11/2026
+
+Người dùng yêu cầu làm phase 5 như phase 3/4: review code, sửa lỗi, bổ sung test rồi đóng.
+
+**Lỗi backend đã sửa:**
+
+- Tender đã `prepared`/`unknown`/`confirmed` vẫn cho đổi discount, coupon, giảm dòng, đổi giá, khách hàng và ghi chú; khách có thể đã trả tiền theo tổng cũ. Nay mọi lệnh sửa snapshot dùng chung `Workspace#ensure_snapshot_editable!`, trả 409 `snapshot_locked`. Cờ `payments` của workspace không còn tính tender `failed`.
+- Số lượng hàng đếm dạng JSON `1.9` bị cắt thành 1, `"010"` bị đọc hệ bát phân. Nay chỉ nhận số nguyên 1–10000, không làm tròn ngầm.
+- `merge: true` gộp cả gói cân và hàng serial; cùng lô khác hạn dùng gộp làm mất hạn dùng; cùng measurement event gửi lại gây lỗi 500. Nay gói cân và serial luôn tách dòng, hạn dùng nằm trong merge key (key cũ không đổi khi không có hạn dùng), event trùng trả 409, hạn dùng sai định dạng trả 409.
+- Serial không kiểm số lượng: `quantity: 3` với một serial vẫn nhận; serial đã có trên đơn vẫn bán lần nữa; SKU cấu hình serial thì thêm được mà không có serial. Nay bắt buộc đúng một serial khác nhau cho mỗi đơn vị và không trùng trên đơn.
+- Cấu hình đơn vị nhận base `kg` (hệ số so với `g`), làm số lượng lệch 1000 lần; quản lý chi nhánh A sửa được đơn vị của SKU chỉ bán ở chi nhánh B; kiểm "đã có dòng bán" không khóa. Nay base phải là đơn vị chuẩn, SKU phải thuộc assortment của chi nhánh, và cấu hình được khóa theo variant cùng với lần bán đầu tiên.
+- Thêm dòng bằng variant ID bỏ qua `available_on`/`discontinue_on` của sản phẩm mà catalog vẫn lọc; master cũ cạnh option variants bán được. Nay cùng điều kiện với catalog. Catalog preload giá (bỏ N+1).
+- Số tiền approval giảm hóa đơn tính trên base đã trừ giảm dòng, trong khi adjuster tính trước giảm dòng: quản lý duyệt 9 nhưng server áp 10. Nay approval được đối chiếu với số tiền adjuster thực áp sau khi tính lại, lệch thì rollback; xóa giảm giá được duyệt theo số tiền của chính giảm giá đó thay vì tổng mọi giảm thủ công.
+- Đổi giá chấp nhận quyền giảm giá thay cho quyền đổi giá riêng; đổi giá lúc thêm dòng nhận VND lẻ và không ghi audit trước/sau; idempotency key của đổi giá bỏ qua lý do. Đã sửa cả ba.
+- Audit giảm giá/đổi giá thiếu approver và giá trị trước; dùng approval không có audit. Nay ghi `approval_id`, `approver_id`, `before`, số tiền và có audit `approval.consume`.
+- Hạn approval so theo giờ app server; nay theo giờ database.
+- `customer/clear` kèm `profile_id` lại gắn khách đó; audit tạo khách lưu số điện thoại thô; tra/tạo khách vẫn chạy trên chi nhánh đã tắt. Đã sửa cả ba.
+
+**Lỗi frontend đã sửa:**
+
+- Hàng đợi scanner chưa được nối: quét chỉ chạy tìm kiếm. Nay quét khi không đứng trong ô nhập (loại IME/phím tắt), tra đúng barcode rồi đúng SKU, chỉ thêm khi có đúng một variant có giá; mơ hồ hoặc không thấy thì đưa mã vào ô tìm và báo, không đoán. Kết quả chưa rõ (mạng/5xx) chặn hàng đợi và có nút "Thử lại quét" gửi lại cùng nội dung, cùng key.
+- Tạo khách nhanh sinh key mới mỗi lần bấm, mất response thì tạo trùng; tạo được nhưng gắn lỗi thì bấm lại tạo thêm. Nay giữ key theo nội dung form đến khi thành công và gắn lại hồ sơ đã tạo.
+- Các form con tự giữ `busy`, hai lệnh cùng revision chạy song song và lệnh sau bị 409. Nay mọi lệnh của một workspace đi qua một hàng tuần tự, mỗi lệnh dùng workspace mới nhất server trả về và khóa control khi đang chạy.
+- `clearLineDiscount` đi vòng qua command queue và không xử lý `lease_stale`; nay dùng chung `sendIntent`.
+- Sau khi có thanh toán, các control sửa vẫn bật; nay khóa và giải thích lý do. Thông báo lỗi nay hiện message server cho 409/422 thay vì một câu chung.
+- Form giảm giá không kiểm giá trị và giữ "10" khi đổi % sang VND; form thêm hàng nhận số lẻ cho hàng đếm; mọi thẻ sản phẩm có cùng tên trợ năng "Thêm hàng". Đã sửa; xóa component chết `line-discount-form.tsx`.
+
+**Test mới:**
+
+- `server/spec/requests/spree/pos/sale_guards_spec.rb` (12 examples): số lượng nguyên, gói cân/measurement event, serial, lô và hạn dùng, cấu hình đơn vị, master và thời gian bán, khóa snapshot theo từng trạng thái tender cho 8 lệnh, quyền đổi giá và VND nguyên, approval theo số tiền thực áp và audit, approval dùng một lần/đúng action/đúng draft/bị thu hồi, clear khách, khách hàng trên chi nhánh tắt và audit không chứa số điện thoại.
+- `topology_access_spec.rb`: test hạn approval chuyển sang dời hạn theo giờ database.
+- Frontend unit: `workspace-serializer`, `scan-lookup`, `submission-key`, `quantity`, scanner burst, `request-failure`; e2e `apps/pos/e2e/catalog-scan.spec.ts` (5 test × 3 viewport).
+
+**Kết quả 07/11/2026:** `pnpm spree rspec spec/requests/spree/pos spec/workflows/spree/pos spec/integration/spree/pos`: 182 examples, 0 failures. `apps/pos`: lint, typecheck sạch, 62 unit pass; Playwright 117 passed / 6 skipped (live API opt-in).
+
+Người dùng chọn làm nốt tem cân/giá và giao diện assortment trước khi đóng; xem mục dưới.
+
+## Đóng phase 07/11/2026
+
+**Tem cân/giá (EAN-13 in tại cửa hàng):**
+
+- Migration `20261107100000_create_spree_pos_label_formats`: bảng mẫu tem theo chi nhánh (prefix, độ dài mã hàng, độ dài giá trị, số lẻ, đơn vị, dung sai giá, version, active/disabled; một prefix active mỗi chi nhánh, tổng độ dài phải là 12), `label_code` duy nhất theo store trên cấu hình đơn vị SKU, và `label_barcode`/`label_format_id`/`label_format_version` trên SaleLine.
+- `MeasurementBarcodeParser`: mẫu active khớp prefix dài nhất mới nhận barcode; sai check digit, giá trị 0, mã hàng chưa cấu hình, đơn vị không khớp hoặc không quy đổi chính xác đều trả 409; tem giá chỉ suy ra khối lượng từ giá server và từ chối khi chênh vượt dung sai. Barcode không thuộc mẫu nào vẫn là barcode thường.
+- Thêm dòng bằng `label_barcode`: server tự đọc lại tem, bỏ qua số lượng client gửi, từ chối variant khác hoặc đổi giá, không gộp gói, ghi tem và version vào SaleLine và audit; không sửa số lượng dòng tem (chỉ xóa).
+- API quản trị: `branches/:id/label_formats` (list/create/update tăng version/disable), `label_code` qua `PUT units/variant` (đổi riêng mã tem được phép sau khi đã bán, không đổi version), `GET branches/:id/products` liệt kê hàng của store kèm trạng thái gán.
+- UI: quét gọi parse trước, tem hợp lệ thêm bằng `label_barcode` và một `measurement_event_id` cố định cho mỗi lần quét (thử lại gửi y hệt); trang Cài đặt có "Hàng bán tại chi nhánh", "Mẫu tem cân" và hộp "Đơn vị và mã tem" cho SKU.
+
+**Test thêm:** `server/spec/requests/spree/pos/scale_labels_spec.rb` (7 examples); unit `measured-label`, `label-format`; e2e `scale-labels.spec.ts`, `branch-assortment.spec.ts`.
+
+**Kết quả 07/11/2026:** backend POS 189 examples, 0 failures; rubocop sạch trên file mới. `apps/pos`: lint, typecheck sạch, 73 unit pass; Playwright 141 passed / 6 skipped (live API opt-in).
+
+**Migration:** đã áp **chỉ database test**. Chưa áp development vì không sao lưu được: `pg_dump` trong container là bản 17, PostgreSQL server là 18. Cần sao lưu bằng công cụ bản 18 rồi chạy `pnpm spree migrate`.
+
+**Chuyển phase sau:** máy cân/in tem và máy quét thật (phase 10); W02/W08 trên API thật, race hai connection cho thêm dòng và cấu hình đơn vị (phase 11). Spree 6 đã deprecate `available_on`/`discontinue_on` của product (chuyển sang ProductPublication); catalog và lệnh thêm dòng vẫn dùng hai cột này, cần chuyển khi nâng Spree.

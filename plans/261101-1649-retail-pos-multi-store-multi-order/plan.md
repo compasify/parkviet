@@ -62,7 +62,7 @@ Theo yêu cầu tiếp tục phát triển phase tiếp theo, các vấn đề c
 | 2 | [App shell and staff authentication](./phase-02-app-shell-and-staff-authentication.md) | Completed |
 | 3 | [Branches registers and access control](./phase-03-branches-registers-and-access-control.md) | Completed |
 | 4 | [Concurrent order workspace](./phase-04-concurrent-order-workspace.md) | Completed |
-| 5 | [Catalog customers and discounts](./phase-05-catalog-customers-and-discounts.md) | In Progress |
+| 5 | [Catalog customers and discounts](./phase-05-catalog-customers-and-discounts.md) | Completed |
 | 6 | [Split tender and settlement](./phase-06-split-tender-and-settlement.md) | In Progress |
 | 7 | [Credit sales and receivables](./phase-07-credit-sales-and-receivables.md) | Pending |
 | 8 | [Inventory handover returns and exchanges](./phase-08-inventory-handover-returns-and-exchanges.md) | Pending |
@@ -77,6 +77,8 @@ Phase 2 completed 06/11/2026: shell, auth và context đã implement. Proof đa 
 Phase 3 completed 06/11/2026: đã review và sửa 6 lỗi, có test race hai connection cho mở ca (F15). W08 trên API thật chuyển phase 11; xem [mục đóng phase](./phase-03-branches-registers-and-access-control.md#đóng-phase-06112026).
 
 Phase 4 completed 06/11/2026: đã review và sửa 6 lỗi (lease sau takeover, hủy draft còn tiền, ẩn draft khi bị gỡ quyền...), có test race hai connection cho lease và tạo draft. Mở 20 view trên trình duyệt với API thật chuyển phase 11; xem [mục đóng phase](./phase-04-concurrent-order-workspace.md#đóng-phase-06112026).
+
+Phase 5 completed 07/11/2026: review sửa lỗi backend/frontend (khóa snapshot khi có tender, số lượng nguyên, gộp gói, approval theo số tiền thực áp, scanner, tạo khách trùng...), thêm tem cân/giá EAN-13 và UI quản lý hàng chi nhánh. Migration mẫu tem mới áp database test; máy cân/quét thật chuyển phase 10, kiểm API thật chuyển phase 11; xem [mục đóng phase](./phase-05-catalog-customers-and-discounts.md#đóng-phase-07112026).
 
 ## Dependencies
 
