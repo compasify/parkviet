@@ -19,7 +19,7 @@ module Spree
                 scope = scope.where(branch_id: branch.id)
               end
               scope = scope.where(register_id: register!(params[:register_id]).id) if params[:register_id].present?
-              records, meta = page_scope(scope.order(id: :desc))
+              records, meta = page_scope(scope.includes(:branch, :register, :shift, :order).order(id: :desc))
               render json: { data: Spree::Pos::WorkspaceSummary.list(records), meta: meta }
             end
 

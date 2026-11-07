@@ -147,6 +147,7 @@
   "lineOptions": "Line discount / price override",
   "orderMore": "More actions",
   "cancelDraftConfirm": "Cancel draft {{order}}? Check its items and received funds before continuing.",
+  "cancelDraftPayments": "This draft has recorded payments. Resolve or reverse them before canceling.",
   "orderStatus_editing": "In progress",
   "orderStatus_parked": "On hold",
   "orderStatus_canceled": "Canceled",

@@ -119,7 +119,7 @@ RSpec.describe 'POS workspaces', type: :request do
     expect(response).to have_http_status(:created)
     Spree::Pos::StaffMembership.find_by!(staff: user, branch: register.branch).update!(status: 'disabled')
     get '/api/v3/admin/pos/command_receipts', headers: headers.dup, params: { idempotency_key: 'revoke-create' }, as: :json
-    expect(response).to have_http_status(:forbidden)
+    expect(response).to have_http_status(:not_found)
     post '/api/v3/admin/pos/workspaces', headers: headers, params: draft_params, as: :json
     expect(response).to have_http_status(:forbidden)
   end

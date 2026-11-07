@@ -4,7 +4,7 @@ import { session } from '../lib/app-session';
 import { commandDigest, commandQueue } from '../lib/command-queue';
 import type { PosWorkspace } from '../lib/pos-context';
 import { posWorkspacesKey } from '../lib/query-keys';
-import { posFailureKey } from '../lib/request-failure';
+import { leaseConflict, posFailureKey } from '../lib/request-failure';
 import { SessionSuperseded } from '../lib/session-coordinator';
 import { beginIntent, finishIntent, forgetIntent, hasIntent } from '../lib/uncertain-intents';
 import { browserWorkspaceChannel, workspaceHint } from '../lib/workspace-channel';
@@ -146,6 +146,16 @@ export function useWorkspaces(
     if (!query.data?.data.some((row) => row.id === workspace.id)) void refresh();
   }
 
+  function release(workspaceId: string, generation?: number) {
+    setOwned((current) => {
+      if (!(workspaceId in current)) return current;
+      if (generation !== undefined && current[workspaceId] !== generation) return current;
+      const next = { ...current };
+      delete next[workspaceId];
+      return next;
+    });
+  }
+
   async function sendIntent(workspaceId: string, body: Record<string, unknown>, path: string) {
     const { editor_id: _editor, ...stableBody } = body;
     const intent = JSON.stringify([staffId, storeId, workspaceId, path, commandDigest(stableBody)]);
@@ -175,6 +185,11 @@ export function useWorkspaces(
       // A fresh request rejected by the server is not a lost response. Existing
       // uncertain attempts stay until a receipt or an exact retry resolves them.
       if (!wasUncertain && posFailureKey(error) !== 'offline') forgetIntent(intent);
+      // Another editor holds the lease now: this page is read-only until it claims again.
+      if (leaseConflict(error)?.reason === 'lease_stale') {
+        release(workspaceId);
+        void refresh();
+      }
       throw error;
     } finally {
       finishIntent(intent);
@@ -218,11 +233,7 @@ export function useWorkspaces(
           .workspace;
       } catch (error) {
         if (posFailureKey(error) === 'conflict' || posFailureKey(error) === 'forbidden') {
-          setOwned((current) => {
-            const next = { ...current };
-            delete next[workspace.id];
-            return next;
-          });
+          release(workspace.id);
           void refresh();
         }
         abandonIfNeeded(error);
@@ -500,12 +511,7 @@ export function useWorkspaces(
         );
         if (result?.data) await acceptWorkspace(result.data);
       } catch (error) {
-        setOwned((current) => {
-          if (current[workspace.id] !== workspace.lease_generation) return current;
-          const next = { ...current };
-          delete next[workspace.id];
-          return next;
-        });
+        release(workspace.id, workspace.lease_generation);
         abandonIfNeeded(error);
         throw error;
       }

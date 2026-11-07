@@ -46,9 +46,13 @@ module Spree
           result
         end
       rescue ActiveRecord::RecordNotUnique
-        @authorize.call
         raced = find_receipt
-        return raced.result if raced&.digest == digest
+        # Only a concurrent receipt for this key is a replay; any other unique
+        # violation belongs to the command itself.
+        raise if raced.nil?
+
+        @authorize.call
+        return raced.result if raced.digest == digest
 
         raise Conflict, 'Idempotency key was reused with a different payload.'
       end

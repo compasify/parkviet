@@ -33,4 +33,13 @@ RSpec.describe Spree::Pos::CommandExecutor do
     expect(false_digest).to eq(symbol_digest)
     expect(false_digest).not_to eq(true_digest)
   end
+
+  it 'lets a unique violation raised by the command itself propagate' do
+    expect {
+      described_class.call(store: store, actor: staff, key: 'unique', payload: {}, authorize: authorize) do
+        raise ActiveRecord::RecordNotUnique, 'duplicate order mapping'
+      end
+    }.to raise_error(ActiveRecord::RecordNotUnique, /duplicate order mapping/)
+    expect(Spree::Pos::CommandReceipt.where(actor: staff, idempotency_key: 'unique')).not_to exist
+  end
 end

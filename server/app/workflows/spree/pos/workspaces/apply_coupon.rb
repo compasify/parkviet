@@ -14,7 +14,7 @@ module Spree
           authorize = lambda do
             policy = AccessPolicy.new(store: workspace.store, staff: staff)
             raise CanCan::AccessDenied if workspace.branch.disabled? || workspace.register&.disabled? ||
-              workspace.shift.owner_id != staff.id || workspace.lease_holder_id != staff.id ||
+              workspace.shift.owner_id != staff.id ||
               !policy.allows?(workspace.branch, Capabilities::OPEN_SHIFT)
           end
           CommandExecutor.call(store: workspace.store, actor: staff, key: key, payload: payload, workspace: workspace, authorize: authorize) do
@@ -66,7 +66,7 @@ module Spree
           authorize = lambda do
             policy = AccessPolicy.new(store: workspace.store, staff: staff)
             raise CanCan::AccessDenied if workspace.branch.disabled? || workspace.register&.disabled? ||
-              workspace.shift.owner_id != staff.id || workspace.lease_holder_id != staff.id ||
+              workspace.shift.owner_id != staff.id ||
               !policy.allows?(workspace.branch, Capabilities::OPEN_SHIFT)
           end
           CommandExecutor.call(store: workspace.store, actor: staff, key: key, payload: payload, workspace: workspace, authorize: authorize) do

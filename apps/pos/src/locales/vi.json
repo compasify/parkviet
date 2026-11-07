@@ -147,6 +147,7 @@
   "lineOptions": "Giảm giá / đổi giá dòng",
   "orderMore": "Thao tác khác",
   "cancelDraftConfirm": "Hủy đơn nháp {{order}}? Hãy kiểm tra hàng và các khoản thu trước khi tiếp tục.",
+  "cancelDraftPayments": "Đơn đã ghi nhận thanh toán. Hãy xử lý hoặc hoàn các khoản đó trước khi hủy.",
   "orderStatus_editing": "Đang bán",
   "orderStatus_parked": "Tạm giữ",
   "orderStatus_canceled": "Đã hủy",

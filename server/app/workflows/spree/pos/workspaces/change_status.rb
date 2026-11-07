@@ -12,15 +12,17 @@ module Spree
             if workspace.branch.disabled? || workspace.register&.disabled? || !policy.allows?(workspace.branch, Capabilities::OPEN_SHIFT)
               raise CanCan::AccessDenied
             end
-            raise CanCan::AccessDenied unless workspace.lease_holder_id == staff.id
           end
           CommandExecutor.call(store: workspace.store, actor: staff, key:, payload:, workspace:, authorize:) do
             unless workspace.lease_current?(staff, editor_id) && workspace.lease_generation == lease_generation
-              raise Conflict.new('Lease is stale.', revision: workspace.revision)
+              raise Conflict.new('Lease is stale.', revision: workspace.revision, reason: 'lease_stale')
             end
             raise Conflict.new('Revision is stale.', revision: workspace.revision) if workspace.revision != revision
             allowed = { 'editing' => %w[parked canceled], 'parked' => %w[editing canceled], 'canceled' => [] }
             raise Conflict.new('Invalid workspace status transition.', revision: workspace.revision) unless allowed.fetch(workspace.operational_status, []).include?(status)
+            if status == 'canceled' && money_recorded?(workspace)
+              raise Conflict.new('A draft with recorded payments cannot be canceled.', revision: workspace.revision, reason: 'payments_recorded')
+            end
 
             workspace.update!(operational_status: status, revision: workspace.revision + 1)
             AuditEntry.record!(store: workspace.store, actor: staff, action: "workspace.#{status}", subject: workspace)
@@ -28,6 +30,14 @@ module Spree
           end
         end
 
+        # Canceling would strand money that a tender or received-funds record still
+        # accounts for; those must be resolved or reversed first.
+        def self.money_recorded?(workspace)
+          workspace.order.payments.exists? ||
+            TenderAttempt.where(workspace_id: workspace.id).where.not(status: %w[canceled failed]).exists? ||
+            ReceivedFunds.where(workspace_id: workspace.id).exists? ||
+            FundsAllocation.where(workspace_id: workspace.id, status: 'active').exists?
+        end
       end
     end
   end

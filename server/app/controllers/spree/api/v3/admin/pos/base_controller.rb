@@ -187,14 +187,24 @@ module Spree
               register
             end
 
+            # Drafts carry customer and basket data, so they stay readable only while
+            # the staff member still works at that branch: their own shift or lease
+            # needs an active selling membership, other drafts need takeover.
             def visible_workspaces
-              takeover_ids = policy.memberships.select { |membership|
+              memberships = policy.memberships.to_a
+              takeover_ids = memberships.select { |membership|
                 membership.allows?(Spree::Pos::Capabilities::TAKEOVER)
               }.map(&:branch_id)
+              working_ids = memberships.select { |membership|
+                membership.allows?(Spree::Pos::Capabilities::OPEN_SHIFT) ||
+                  membership.allows?(Spree::Pos::Capabilities::TAKEOVER)
+              }.map(&:branch_id)
               Spree::Pos::Workspace.for_store(current_store).left_joins(:shift).where(
-                'spree_pos_shifts.owner_id = :id OR spree_pos_workspaces.lease_holder_id = :id OR spree_pos_workspaces.branch_id IN (:branches)',
+                '((spree_pos_shifts.owner_id = :id OR spree_pos_workspaces.lease_holder_id = :id) AND ' \
+                'spree_pos_workspaces.branch_id IN (:working)) OR spree_pos_workspaces.branch_id IN (:takeover)',
                 id: current_user.id,
-                branches: takeover_ids.presence || [0]
+                working: working_ids.presence || [0],
+                takeover: takeover_ids.presence || [0]
               )
             end
 

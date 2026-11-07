@@ -117,6 +117,8 @@ export function WorkspaceTabs() {
   }, [activeTabId]);
   const heartbeat = useRef(workspaces.heartbeat);
   heartbeat.current = workspaces.heartbeat;
+  const claim = useRef(workspaces.claim);
+  claim.current = workspaces.claim;
   const heartbeatWorkspace = useRef(active);
   heartbeatWorkspace.current = active;
   const leaseWorkspaceId = active?.id;
@@ -129,12 +131,23 @@ export function WorkspaceTabs() {
       const workspace = heartbeatWorkspace.current;
       if (workspace?.id !== leaseWorkspaceId || workspace.lease_generation !== leaseGeneration)
         return;
-      void heartbeat.current(workspace).catch(() => {
+      void heartbeat.current(workspace).catch(async (error: unknown) => {
         if (
-          heartbeatWorkspace.current?.id === leaseWorkspaceId &&
-          heartbeatWorkspace.current.lease_generation === leaseGeneration
+          heartbeatWorkspace.current?.id !== leaseWorkspaceId ||
+          heartbeatWorkspace.current.lease_generation !== leaseGeneration
         )
-          setMessage(t('leaseLost'));
+          return;
+        // A background tab lets its lease lapse. When nobody else claimed it in the
+        // meantime, take it back instead of dropping the cashier to read-only.
+        if (leaseConflict(error)?.reason === 'lease_stale') {
+          try {
+            await claim.current(workspace);
+            return;
+          } catch {
+            // Someone else holds the lease now; show the read-only notice below.
+          }
+        }
+        if (heartbeatWorkspace.current?.id === leaseWorkspaceId) setMessage(t('leaseLost'));
       });
     };
     renew();
@@ -447,8 +460,13 @@ export function WorkspaceTabs() {
                     <button
                       type="button"
                       disabled={
-                        busy || locked || !isEditor || active.operational_status === 'canceled'
+                        busy ||
+                        locked ||
+                        !isEditor ||
+                        active.operational_status === 'canceled' ||
+                        active.payments
                       }
+                      title={active.payments ? t('cancelDraftPayments') : undefined}
                       onClick={() => {
                         if (window.confirm(t('cancelDraftConfirm', { order: active.order_id })))
                           void run(() => workspaces.change(active, 'cancel'));

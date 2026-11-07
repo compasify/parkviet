@@ -11,7 +11,7 @@ module Spree
           payload = { 'command' => 'override_price', 'revision' => revision, 'lease_generation' => lease_generation, 'editor_digest' => Workspace.editor_digest(editor_id), 'sale_line_id' => sale_line_id.to_s, 'price' => price.to_s, 'approval_id' => approval_id.to_s.presence }
           authorize = lambda do
             policy = AccessPolicy.new(store: workspace.store, staff: staff)
-            raise CanCan::AccessDenied if workspace.branch.disabled? || workspace.register&.disabled? || workspace.shift.owner_id != staff.id || workspace.lease_holder_id != staff.id || !policy.allows?(workspace.branch, Capabilities::OPEN_SHIFT)
+            raise CanCan::AccessDenied if workspace.branch.disabled? || workspace.register&.disabled? || workspace.shift.owner_id != staff.id || !policy.allows?(workspace.branch, Capabilities::OPEN_SHIFT)
           end
           CommandExecutor.call(store: workspace.store, actor: staff, key: key, payload: payload, workspace: workspace, authorize: authorize) do
             ApplyDiscount.validate_command!(workspace, staff, revision, lease_generation, editor_id)

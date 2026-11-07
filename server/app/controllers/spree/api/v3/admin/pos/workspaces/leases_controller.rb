@@ -38,7 +38,7 @@ module Spree
                 authorize = lambda do
                   allowed = policy.allows?(workspace.branch, Spree::Pos::Capabilities::OPEN_SHIFT) ||
                             policy.allows?(workspace.branch, Spree::Pos::Capabilities::TAKEOVER)
-                  raise CanCan::AccessDenied if !allowed || workspace.branch.disabled? || workspace.register&.disabled? || workspace.lease_holder_id != current_user.id
+                  raise CanCan::AccessDenied if !allowed || workspace.branch.disabled? || workspace.register&.disabled?
                 end
                 result = Spree::Pos::CommandExecutor.call(
                   store: current_store,
@@ -48,7 +48,6 @@ module Spree
                   workspace: workspace,
                   authorize: authorize
                 ) do
-                  raise CanCan::AccessDenied unless workspace.lease_holder_id == current_user.id
                   unless workspace.lease_current?(current_user, editor_id) && workspace.lease_generation == generation
                     raise Spree::Pos::Conflict.new('Lease is stale.', revision: workspace.revision, reason: 'lease_stale')
                   end

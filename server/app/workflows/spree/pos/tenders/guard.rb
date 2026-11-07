@@ -12,7 +12,7 @@ module Spree
         def authorize_editor!(workspace, staff)
           policy = AccessPolicy.new(store: workspace.store, staff: staff)
           raise CanCan::AccessDenied if workspace.branch.disabled? || workspace.register&.disabled? ||
-            workspace.shift.owner_id != staff.id || workspace.lease_holder_id != staff.id ||
+            workspace.shift.owner_id != staff.id ||
             !policy.permission?('write_pos_orders') || !policy.allows?(workspace.branch, Capabilities::OPEN_SHIFT)
         end
 
@@ -23,7 +23,7 @@ module Spree
 
         def validate_editor!(workspace, staff, revision, lease_generation, editor_id)
           raise Conflict.new('Workspace is not editing.', revision: workspace.revision) unless workspace.operational_status == 'editing'
-          raise Conflict.new('Lease is stale.', revision: workspace.revision) unless workspace.lease_current?(staff, editor_id) && workspace.lease_generation == lease_generation
+          raise Conflict.new('Lease is stale.', revision: workspace.revision, reason: 'lease_stale') unless workspace.lease_current?(staff, editor_id) && workspace.lease_generation == lease_generation
           raise Conflict.new('Revision is stale.', revision: workspace.revision) if workspace.revision != revision
           raise Conflict, 'Order is already placed.' if workspace.order.completed? || workspace.order.placed?
         end
