@@ -1,7 +1,7 @@
 ---
 phase: 4
 title: "Nhiều đơn đồng thời và điều phối revision"
-status: in-progress
+status: completed
 priority: P1
 dependencies: [2, 3]
 effort: "Ước tính 8–12 person-days"
@@ -64,11 +64,11 @@ Inventory repo-root; migration timestamps do generator cấp sau approval triể
 
 ## Success Criteria
 
-- [ ] W01, W02: nhiều tab/overflow/reload giữ source context, không chuyển focus; payment end-to-end hoàn thiện phase 6.
-- [ ] W03, W04: queue/replay không mất intent, một lease generation, stale writes bị từ chối.
-- [ ] W05: close/park/cancel/logout khác nhau, unsaved cảnh báo, server draft không bị xóa ngoài ý muốn.
-- [ ] A02, A04: context/cache/callback không vượt store/branch; direct IDs vẫn authorize.
-- [ ] F04 nền tảng: replay sau commit trả cùng result trước revision conflict; financial test hoàn thiện phase 6.
+- [ ] W01, W02: nhiều tab/overflow/reload giữ source context, không chuyển focus; payment end-to-end hoàn thiện phase 6. *(Backend đã phân trang 20 editing + 200 parked trên DB thật (`workspaces_spec.rb`); reload/overflow/lease mới chạy với API mock (`layout-recovery`, `context-defaults`, `lease*.spec.ts`). Mở 20 view trên trình duyệt với persistence thật chuyển phase 11; payment end-to-end thuộc phase 6.)*
+- [x] W03, W04: queue/replay không mất intent, một lease generation, stale writes bị từ chối. *(`workspace_race_spec.rb`: hai connection PostgreSQL tranh lease chỉ một thắng, generation tăng đúng 1; cùng key tạo draft đồng thời chỉ ra một draft/receipt. `workspace_access_spec.rb`: sau takeover, ghi cũ trả 409 `lease_stale`. Scan/catalog end-to-end thuộc phase 5/6.)*
+- [x] W05: close/park/cancel/logout khác nhau, unsaved cảnh báo, server draft không bị xóa ngoài ý muốn. *(`workspace_access_spec.rb`: park/reopen/cancel giữ order và audit, logout không xóa draft, cancel bị chặn khi còn tiền; e2e `context-defaults.spec.ts` giữ cảnh báo intent chưa rõ qua reload.)*
+- [x] A02, A04: context/cache/callback không vượt store/branch; direct IDs vẫn authorize. *(`workspace_access_spec.rb`: membership bị gỡ thì list/detail/lease đều ẩn, receipt lookup 404 (`workspaces_spec.rb`); takeover chỉ thấy draft ở chi nhánh được cấp.)*
+- [x] F04 nền tảng: replay sau commit trả cùng result trước revision conflict; financial test hoàn thiện phase 6. *(`workspace_access_spec.rb`: retry cùng key sau takeover vẫn trả kết quả đã commit; `workspace_commands_spec.rb`.)*
 
 ## Risk Assessment
 
@@ -85,3 +85,27 @@ Phase 5 thêm catalog/customer/discount qua executor; phase 6 dùng lại chính
 - **In progress.** Workspace/draft, revision, editor lease, idempotency/receipt, park/reopen/cancel và phục hồi một phần layout đã triển khai. Có test API thật lost response/reload, stale editor/takeover và probe hai connection tranh lease.
 - Backend đã kiểm 20 editing + 200 parked qua API/database thật; chưa chứng minh 20 view overflow/reload trong browser hoặc bảo toàn khách/lines/discount chưa được triển khai. Các phần W01/W03 về catalog/scan/payment thuộc phase sau.
 - Cần hoàn tất W05, A02/A04, xử lý reload API thật timeout không ổn định, phục hồi tất cả view/permission bị thu hồi và tổng hợp bằng chứng criteria; xem [bàn giao phase 1–4](./reports/phase-01-04-handoff.md).
+
+## Đóng phase 06/11/2026
+
+Người dùng yêu cầu chuyển sang phase 4 theo cách đã làm ở phase 3: review code, sửa lỗi, bổ sung test rồi đóng.
+
+**Lỗi đã sửa:**
+
+- Sau khi bị takeover, mọi mutation của editor cũ trả 403 thay vì 409, vì `lease_holder_id` được kiểm ở bước authorize. Hệ quả: retry cùng key của lệnh đã commit (mất response) cũng bị 403, không lấy lại được kết quả. Nay lease chỉ được kiểm trong khóa mutation và trả 409 `lease_stale`; replay lệnh đã commit vẫn trả kết quả cũ. Áp cho mọi workflow workspace, tender, funds và heartbeat lease.
+- Hủy draft không kiểm tiền: draft có tender `prepared`/`confirmed`/`unknown`, received funds hoặc allocation vẫn hủy được, làm tiền mất chỗ đối soát. Nay trả 409 `payments_recorded`; UI khóa nút hủy và giải thích lý do.
+- Nhân viên bị gỡ hoặc vô hiệu membership vẫn xem được danh sách và chi tiết draft cũ (khách hàng, giỏ hàng) qua shift/lease của mình. Nay chỉ xem được khi còn membership bán hàng hoặc takeover tại chi nhánh đó.
+- `CommandExecutor` coi mọi `RecordNotUnique` là trùng idempotency key, che lỗi thật của lệnh bằng thông báo sai. Nay chỉ xử lý như replay khi tìm thấy receipt cùng key, còn lại raise lỗi gốc.
+- UI: 409 `lease_stale` từ mutation không chuyển trang sang chỉ xem, nên người dùng bấm tiếp vẫn bị từ chối. Nay trang bỏ quyền sửa và tải lại. Tab nền để lease hết hạn, khi quay lại bị báo mất quyền dù không ai nhận; nay heartbeat gặp `lease_stale` thì tự claim lại một lần và chỉ báo chỉ xem khi người khác đang giữ.
+- Danh sách workspace tải branch/register/shift/order từng dòng (N+1); nay preload.
+
+**Test mới:**
+
+- `server/spec/requests/spree/pos/workspace_access_spec.rb` (5 examples): takeover → 409 `lease_stale` cho note/heartbeat/park, retry cùng key trả kết quả đã commit, quản lý park được và audit đúng actor; membership bị gỡ thì list/detail/lease đều ẩn; takeover chỉ thấy draft ở chi nhánh được cấp; hủy bị chặn khi tender còn tiền, được phép khi tender failed; park/reopen/cancel/logout giữ order.
+- `server/spec/integration/spree/pos/workspace_race_spec.rb` (2 examples): hai connection PostgreSQL cùng claim một lease đã hết hạn thì chỉ một thắng, generation tăng đúng 1, một audit; cùng key tạo draft đồng thời chỉ ra một workspace, một receipt, một walk-in order. Chạy ngoài transaction và tự xóa dữ liệu; đã kiểm test DB về lại chỉ còn store mặc định.
+- `workspace_commands_spec.rb`: unique violation của chính lệnh không bị đổi thành conflict idempotency.
+- `apps/pos/e2e/lease-recovery.spec.ts` (3 test × 3 viewport): lease hết hạn mà không ai nhận thì tự claim lại; lease do người khác giữ thì sau lần ghi bị từ chối trang chuyển sang chỉ xem; draft có thanh toán thì nút hủy bị khóa.
+
+**Kết quả 06/11/2026:** `pnpm spree rspec spec/requests/spree/pos spec/workflows/spree/pos spec/integration/spree/pos` 170 examples, 0 failures; sau khi chỉnh rubocop, chạy lại các spec mới: 11 examples, 0 failures. Rubocop sạch trên spec mới; offense còn lại trong các file app đã sửa là có từ trước. `apps/pos`: lint, typecheck, 43 unit pass; Playwright 102 passed / 6 skipped (live API opt-in).
+
+**Còn lại (phase 11):** mở 20 view/overflow/reload trong trình duyệt trên API và persistence thật; điều tra timeout không ổn định khi reload/phục hồi phiên trên API thật (chưa tái hiện trong phiên này). Handover vẫn khóa theo gate phase 6/8.

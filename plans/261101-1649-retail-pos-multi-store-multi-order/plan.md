@@ -60,8 +60,8 @@ Theo yêu cầu tiếp tục phát triển phase tiếp theo, các vấn đề c
 |-------|------|--------|
 | 1 | [Contracts and UX validation](./phase-01-contracts-and-ux-validation.md) | Completed |
 | 2 | [App shell and staff authentication](./phase-02-app-shell-and-staff-authentication.md) | Completed |
-| 3 | [Branches registers and access control](./phase-03-branches-registers-and-access-control.md) | In Progress |
-| 4 | [Concurrent order workspace](./phase-04-concurrent-order-workspace.md) | In Progress |
+| 3 | [Branches registers and access control](./phase-03-branches-registers-and-access-control.md) | Completed |
+| 4 | [Concurrent order workspace](./phase-04-concurrent-order-workspace.md) | Completed |
 | 5 | [Catalog customers and discounts](./phase-05-catalog-customers-and-discounts.md) | In Progress |
 | 6 | [Split tender and settlement](./phase-06-split-tender-and-settlement.md) | In Progress |
 | 7 | [Credit sales and receivables](./phase-07-credit-sales-and-receivables.md) | Pending |
@@ -73,6 +73,10 @@ Theo yêu cầu tiếp tục phát triển phase tiếp theo, các vấn đề c
 Phase 1 completed 06/11/2026: hợp đồng POS cơ bản và wireframe đã chốt. Dependency `1` của các phase sau chỉ thỏa phần hợp đồng; proof quyền, tiền, tồn và hàng cân/serial/lô vẫn là gate tại phase phụ trách theo [bảng trách nhiệm](./phase-01-contracts-and-ux-validation.md).
 
 Phase 2 completed 06/11/2026: shell, auth và context đã implement. Proof đa browser, accessibility và triển khai chuyển phase 11; xem [mục đóng phase](./phase-02-app-shell-and-staff-authentication.md#đóng-phase-06112026).
+
+Phase 3 completed 06/11/2026: đã review và sửa 6 lỗi, có test race hai connection cho mở ca (F15). W08 trên API thật chuyển phase 11; xem [mục đóng phase](./phase-03-branches-registers-and-access-control.md#đóng-phase-06112026).
+
+Phase 4 completed 06/11/2026: đã review và sửa 6 lỗi (lease sau takeover, hủy draft còn tiền, ẩn draft khi bị gỡ quyền...), có test race hai connection cho lease và tạo draft. Mở 20 view trên trình duyệt với API thật chuyển phase 11; xem [mục đóng phase](./phase-04-concurrent-order-workspace.md#đóng-phase-06112026).
 
 ## Dependencies
 
