@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -9,7 +10,8 @@ import {
 import { formatMoney, parseVndAmount, parseVndInput } from '../lib/money';
 import type { PosPaymentMethod, PosWorkspace } from '../lib/pos-context';
 import { creditConflictKey } from '../lib/receivables';
-import { conflictReason, describeFailure, posFailureKey } from '../lib/request-failure';
+import { conflictReason, posFailureKey } from '../lib/request-failure';
+import { describeTraceFailure, paymentBlock, traceReasonKey } from '../lib/traceability';
 import { CreditApprovalDialog } from './credit-approval-dialog';
 import { PosIcon } from './pos-icon';
 import { TenderEvidenceDialog, type TenderEvidenceItemInput } from './tender-evidence-dialog';
@@ -54,6 +56,7 @@ export function PaymentPanel({
   canSellCredit = false,
   disabled,
   command,
+  reserveTrace,
 }: {
   workspace: PosWorkspace;
   staffId: string | null;
@@ -64,6 +67,8 @@ export function PaymentPanel({
   disabled: boolean;
   // Runs through the workspace's serializer and hands over its newest revision.
   command: WorkspaceCommand;
+  // Reserves traced stock (serials, FEFO lots) for the newest revision.
+  reserveTrace?: (current: PosWorkspace) => Promise<PosWorkspace>;
 }) {
   const { t } = useTranslation();
   const tenders = useTenders(staffId, storeId);
@@ -122,6 +127,9 @@ export function PaymentPanel({
         : (workspace.totals?.total ?? financial?.remaining ?? ''),
     ) ?? '';
   const locked = disabled || busy;
+  const trace = paymentBlock(workspace);
+  // Payment cannot start while the server says traced stock is not ready.
+  const traceBlocked = !trace.ready && !completed;
 
   function methodLabel(method: { kind: string; name?: string }) {
     return method.kind === 'cash'
@@ -180,7 +188,7 @@ export function PaymentPanel({
 
   function explain(failure: unknown, fallbackKey?: string) {
     const key = creditConflictKey(conflictReason(failure));
-    return key ? t(key) : describeFailure(failure, t, fallbackKey);
+    return key ? t(key) : describeTraceFailure(failure, t, fallbackKey);
   }
 
   async function run(
@@ -262,6 +270,29 @@ export function PaymentPanel({
   return (
     <section className="payment-panel" aria-label={t('paymentTitle')}>
       <h3 id="pos-payment-title">{t('paymentMethods')}</h3>
+      {traceBlocked ? (
+        <div className="attention-box" role="alert" id="pos-trace-blocked">
+          <p>{t('paymentTraceBlocked')}</p>
+          {trace.issues.length ? (
+            <ul>
+              {trace.issues.map((issue) => (
+                <li key={`${issue.saleLineId}:${issue.reason}`}>
+                  {issue.name}: {t(traceReasonKey(issue.reason) ?? 'paymentTraceIssueUnknown')}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          {reserveTrace && trace.fixable ? (
+            <button
+              type="button"
+              disabled={locked}
+              onClick={() => void run(() => command((current) => reserveTrace(current)))}
+            >
+              {busy ? t('waiting') : t('paymentTraceReserve')}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
       {financial && hasPaymentActivity ? (
         <dl className="payment-summary">
           <div>
@@ -435,8 +466,10 @@ export function PaymentPanel({
           <button
             className="checkout-submit"
             type="submit"
+            aria-describedby={traceBlocked ? 'pos-trace-blocked' : undefined}
             disabled={
               locked ||
+              traceBlocked ||
               preparedAttempts.length > 0 ||
               !hasItems ||
               invalidRows.length > 0 ||
@@ -452,8 +485,14 @@ export function PaymentPanel({
           <button
             type="button"
             className="credit-action"
-            disabled={locked || unresolvedAttempts.length > 0}
-            aria-describedby={unresolvedAttempts.length > 0 ? 'pos-credit-blocked' : undefined}
+            disabled={locked || traceBlocked || unresolvedAttempts.length > 0}
+            aria-describedby={
+              traceBlocked
+                ? 'pos-trace-blocked'
+                : unresolvedAttempts.length > 0
+                  ? 'pos-credit-blocked'
+                  : undefined
+            }
             title={workspace.customer ? undefined : t('creditCustomerRequired')}
             onClick={() => {
               setError('');
@@ -491,7 +530,8 @@ export function PaymentPanel({
         <button
           type="button"
           className="checkout-submit"
-          disabled={locked || preparedAttempts.length > 0}
+          disabled={locked || traceBlocked || preparedAttempts.length > 0}
+          aria-describedby={traceBlocked ? 'pos-trace-blocked' : undefined}
           onClick={() =>
             void run(
               () => command((current) => tenders.complete(current)),
@@ -504,6 +544,11 @@ export function PaymentPanel({
         >
           {t('paymentComplete')}
         </button>
+      ) : null}
+      {completed ? (
+        <Link className="button-link" to="/receipts" search={{ source: workspace.id }}>
+          {t('receiptPrint')}
+        </Link>
       ) : null}
       {completed && !handedOver ? (
         <button

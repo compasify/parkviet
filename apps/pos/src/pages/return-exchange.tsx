@@ -1,10 +1,11 @@
-import { useNavigate, useSearch } from '@tanstack/react-router';
+import { Link, useNavigate, useSearch } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PageState, PosPage } from '../components/pos-page';
 import { usePosSelection } from '../components/pos-selection';
 import { RefundActions } from '../components/refund-actions';
 import { RefundEvidenceDialog } from '../components/refund-evidence-dialog';
+import { lotLabel, SoldTrace } from '../components/sold-trace';
 import {
   type ReturnLineInput,
   useExchange,
@@ -37,6 +38,16 @@ import {
   selectionError,
   selectionLines,
 } from '../lib/returns';
+import { todayIn } from '../lib/shifts';
+import {
+  expiryState,
+  formatExpiry,
+  lotChoiceRequired,
+  type ReturnLineTraceRow,
+  type ReturnPreviewTrace,
+  returnableLots,
+  returnableSerials,
+} from '../lib/traceability';
 import { readLayout, writeLayout } from '../lib/workspace-storage';
 
 type Search = { orderId?: string; returnId?: string };
@@ -156,15 +167,63 @@ function ReturnForm({
   const problem = invalidQuantity ? 'returnQuantityInvalid' : selectionError(order.lines, selected);
   const lines: ReturnLineInput[] = selectionLines(order.lines, selected);
   const busy = previewer.isPending || prepare.isPending;
+  // Expiry badges use the date at the branch taking the goods back.
+  const branchZone =
+    context.data?.branches.find((row) => row.id === branchId)?.timezone ??
+    context.data?.store.timezone ??
+    'Asia/Ho_Chi_Minh';
+  const today = todayIn(branchZone);
 
-  function change(saleLineId: string, quantityText: string, condition?: ReturnCondition) {
+  // Traced goods get no default condition: the cashier has to look and choose.
+  function defaultCondition(saleLineId: string): ReturnCondition | null {
+    return order.lines.find((line) => line.sale_line_id === saleLineId)?.trace
+      ? null
+      : 'resellable';
+  }
+
+  function change(saleLineId: string, quantityText: string, condition?: ReturnCondition | null) {
     setPreview(null);
     setRaw({ ...raw, [saleLineId]: quantityText });
     const quantity = parseQuantityInput(quantityText) ?? -1;
     const current = selected[saleLineId];
     setSelected({
       ...selected,
-      [saleLineId]: { quantity, condition: condition ?? current?.condition ?? 'resellable' },
+      [saleLineId]: {
+        ...current,
+        quantity,
+        condition:
+          condition !== undefined
+            ? condition
+            : (current?.condition ?? defaultCondition(saleLineId)),
+      },
+    });
+  }
+
+  // The serials ticked are the units coming back; their count is the quantity.
+  function pickSerials(saleLineId: string, serials: string[]) {
+    setPreview(null);
+    setRaw({ ...raw, [saleLineId]: String(serials.length) });
+    const current = selected[saleLineId];
+    setSelected({
+      ...selected,
+      [saleLineId]: {
+        quantity: serials.length,
+        condition: current?.condition ?? defaultCondition(saleLineId),
+        serial_codes: serials,
+      },
+    });
+  }
+
+  function pickLot(saleLineId: string, lotCode: string) {
+    setPreview(null);
+    const current = selected[saleLineId];
+    setSelected({
+      ...selected,
+      [saleLineId]: {
+        quantity: current?.quantity ?? 0,
+        condition: current?.condition ?? defaultCondition(saleLineId),
+        lot_code: lotCode || undefined,
+      },
     });
   }
 
@@ -217,10 +276,15 @@ function ReturnForm({
           {order.lines.map((line) => {
             const picked = selected[line.sale_line_id];
             const inputId = `return-qty-${line.sale_line_id}`;
+            const serialLine = line.trace?.mode === 'serial';
+            const serials = returnableSerials(line.trace);
+            const lots = returnableLots(line.trace);
+            const blocked = busy || locked || line.returnable_quantity === 0;
             return (
               <tr key={line.sale_line_id}>
                 <th scope="row">
-                  <label htmlFor={inputId}>{line.name}</label>
+                  {serialLine ? line.name : <label htmlFor={inputId}>{line.name}</label>}
+                  <SoldTrace trace={line.trace} today={today} />
                 </th>
                 <td>{saleQuantityLabel(line)}</td>
                 <td>
@@ -229,34 +293,100 @@ function ReturnForm({
                     : t('orderNotHandedOver')}
                 </td>
                 <td>
-                  <input
-                    id={inputId}
-                    inputMode="numeric"
-                    value={raw[line.sale_line_id] ?? ''}
-                    aria-describedby={`${inputId}-unit`}
-                    disabled={busy || locked || line.returnable_quantity === 0}
-                    aria-invalid={
-                      picked
-                        ? picked.quantity < 0 || picked.quantity > line.returnable_quantity
-                        : undefined
-                    }
-                    onChange={(event) => change(line.sale_line_id, event.target.value)}
-                  />{' '}
-                  <small id={`${inputId}-unit`}>{line.base_unit}</small>
+                  {serialLine ? (
+                    <fieldset
+                      className="return-serials"
+                      aria-label={t('returnSerialsFor', { name: line.name })}
+                      disabled={blocked}
+                    >
+                      {serials.length === 0 ? (
+                        <small className="muted">{t('returnNoSerialsLeft')}</small>
+                      ) : null}
+                      {serials.map((serial) => {
+                        const chosen = picked?.serial_codes ?? [];
+                        return (
+                          <label key={serial} className="checkbox-row">
+                            <input
+                              type="checkbox"
+                              checked={chosen.includes(serial)}
+                              onChange={(event) =>
+                                pickSerials(
+                                  line.sale_line_id,
+                                  event.target.checked
+                                    ? [...chosen, serial]
+                                    : chosen.filter((code) => code !== serial),
+                                )
+                              }
+                            />
+                            {serial}
+                          </label>
+                        );
+                      })}
+                    </fieldset>
+                  ) : (
+                    <>
+                      <input
+                        id={inputId}
+                        inputMode="numeric"
+                        value={raw[line.sale_line_id] ?? ''}
+                        aria-describedby={`${inputId}-unit`}
+                        disabled={busy || locked || line.returnable_quantity === 0}
+                        aria-invalid={
+                          picked
+                            ? picked.quantity < 0 || picked.quantity > line.returnable_quantity
+                            : undefined
+                        }
+                        onChange={(event) => change(line.sale_line_id, event.target.value)}
+                      />{' '}
+                      <small id={`${inputId}-unit`}>{line.base_unit}</small>
+                      {lotChoiceRequired(line.trace) ? (
+                        <label>
+                          {t('returnLot')}
+                          <select
+                            aria-label={t('returnLotFor', { name: line.name })}
+                            value={picked?.lot_code ?? ''}
+                            disabled={blocked}
+                            aria-invalid={Boolean(picked?.quantity && !picked.lot_code)}
+                            onChange={(event) => pickLot(line.sale_line_id, event.target.value)}
+                          >
+                            <option value="">—</option>
+                            {lots.map((lot) => (
+                              <option key={lot.lot_code} value={lot.lot_code}>
+                                {t('returnLotOption', {
+                                  code: lot.lot_code,
+                                  expiry: formatExpiry(lot.expiry_on),
+                                  remaining: `${lot.remaining} ${line.base_unit}`,
+                                })}
+                                {expiryState(lot.expiry_on, today) === 'expired'
+                                  ? ` · ${t('inventoryExpired')}`
+                                  : expiryState(lot.expiry_on, today) === 'near'
+                                    ? ` · ${t('inventoryNearExpiry')}`
+                                    : ''}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      ) : null}
+                    </>
+                  )}
                 </td>
                 <td>
                   <select
                     aria-label={t('returnConditionFor', { name: line.name })}
-                    value={picked?.condition ?? 'resellable'}
+                    value={picked ? (picked.condition ?? '') : line.trace ? '' : 'resellable'}
                     disabled={busy || locked || line.returnable_quantity === 0}
+                    aria-invalid={Boolean(picked && picked.quantity > 0 && !picked.condition)}
                     onChange={(event) =>
                       change(
                         line.sale_line_id,
                         raw[line.sale_line_id] ?? '',
-                        event.target.value as ReturnCondition,
+                        event.target.value === 'damaged' || event.target.value === 'resellable'
+                          ? event.target.value
+                          : null,
                       )
                     }
                   >
+                    {line.trace ? <option value="">{t('returnConditionChoose')}</option> : null}
                     <option value="resellable">{t('returnResellable')}</option>
                     <option value="damaged">{t('returnDamaged')}</option>
                   </select>
@@ -312,6 +442,7 @@ function PreviewTable({ preview, order }: { preview: ReturnPreview; order: PosOr
   const { t } = useTranslation();
   const money = (value: string) => formatMoney(value, preview.currency);
   const names = Object.fromEntries(order.lines.map((line) => [line.sale_line_id, line.name]));
+  const units = Object.fromEntries(order.lines.map((line) => [line.sale_line_id, line.base_unit]));
   return (
     <section className="return-preview" aria-label={t('returnPreviewTitle')} aria-live="polite">
       <h3>{t('returnPreviewTitle')}</h3>
@@ -329,7 +460,10 @@ function PreviewTable({ preview, order }: { preview: ReturnPreview; order: PosOr
         <tbody>
           {preview.lines.map((line) => (
             <tr key={line.sale_line_id}>
-              <th scope="row">{names[line.sale_line_id]}</th>
+              <th scope="row">
+                {names[line.sale_line_id]}
+                <PreviewTrace trace={line.trace} unit={units[line.sale_line_id] ?? ''} />
+              </th>
               <td>
                 {t('returnCumulativeValue', {
                   before: line.cumulative_before,
@@ -530,6 +664,11 @@ function ReturnProgress({
           ? ` · ${t(`entitlementStatus_${operation.entitlement_status}`)}`
           : ''}
       </p>
+      {operation.status === 'received' ? (
+        <Link to="/receipts" search={{ source: operation.id }}>
+          {t('receiptOpenReturn')}
+        </Link>
+      ) : null}
       {operation.status === 'pending_approval' && !approvalActive ? (
         <p className="attention-box" role="note">
           {t('returnWaitApproval')}
@@ -577,6 +716,7 @@ function ReturnProgress({
             {operation.status === 'received' ? (
               <small>{t('returnRestocked', { count: line.restocked_quantity })}</small>
             ) : null}
+            <ReturnTrace rows={line.trace} />
           </li>
         ))}
       </ul>
@@ -916,5 +1056,51 @@ function ExchangeSummary({
         {t('exchangeOpenSale')}
       </button>
     </div>
+  );
+}
+
+function PreviewTrace({
+  trace,
+  unit,
+}: {
+  trace: ReturnPreviewTrace | null | undefined;
+  unit: string;
+}) {
+  const { t } = useTranslation();
+  if (!trace) return null;
+  const parts =
+    trace.mode === 'serial'
+      ? trace.serials
+      : trace.lots.map(
+          (lot) => `${lotLabel(t, lot.lot_code, lot.expiry_on)} × ${lot.quantity} ${unit}`,
+        );
+  const forced = trace.mode === 'lot' ? trace.lots.filter((lot) => lot.forced_quarantine) : [];
+  return parts.length ? (
+    <>
+      <small className="return-trace">
+        {t('returnTraceBack')}: {parts.join(' · ')}
+      </small>
+      {forced.map((lot) => (
+        <small key={lot.lot_code} className="return-trace" data-warning="true" role="status">
+          {t('returnForcedQuarantine', { code: lot.lot_code, expiry: formatExpiry(lot.expiry_on) })}
+        </small>
+      ))}
+    </>
+  ) : null;
+}
+
+function ReturnTrace({ rows }: { rows: ReturnLineTraceRow[] | undefined }) {
+  const { t } = useTranslation();
+  if (!rows?.length) return null;
+  return (
+    <small className="return-trace">
+      {rows
+        .map((row) => {
+          const label =
+            row.serial ?? `${lotLabel(t, row.lot_code, row.expiry_on)} × ${row.quantity}`;
+          return `${label} · ${t(row.condition === 'damaged' ? 'returnDamaged' : 'returnResellable')}`;
+        })
+        .join('; ')}
+    </small>
   );
 }

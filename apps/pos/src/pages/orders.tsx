@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PageState, PosPage } from '../components/pos-page';
 import { usePosSelection } from '../components/pos-selection';
+import { SoldTrace } from '../components/sold-trace';
 import { type OrderFilters, useOrder, useOrders, useReconcileHandover } from '../hooks/use-returns';
 import { formatMoney } from '../lib/money';
 import { formatInstant } from '../lib/receivables';
@@ -258,6 +259,9 @@ export function OrderDetail({ order, canReturn }: { order: PosOrderDetail; canRe
     <div className="order-detail">
       <div className="pos-popup-header">
         <h2>{t('orderDetailTitle', { number: order.number })}</h2>
+        <Link className="button-link" to="/receipts" search={{ source: order.workspace_id }}>
+          {t('receiptOpen')}
+        </Link>
         {canReturn && returnable ? (
           <Link className="button-link" to="/returns" search={{ orderId: order.id }}>
             {t('ordersStartReturn')}
@@ -312,7 +316,11 @@ export function OrderDetail({ order, canReturn }: { order: PosOrderDetail; canRe
             <tr key={line.sale_line_id}>
               <th scope="row">
                 {line.name}
-                {line.lot_code ? <small> · {line.lot_code}</small> : null}
+                {line.trace ? (
+                  <SoldTrace trace={line.trace} />
+                ) : line.lot_code ? (
+                  <small> · {line.lot_code}</small>
+                ) : null}
               </th>
               <td>{saleQuantityLabel(line)}</td>
               <td>

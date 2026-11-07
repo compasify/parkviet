@@ -68,6 +68,7 @@ module Spree
           raise Conflict, Guard.core_error(result, 'Core return could not be canceled.') unless result.success?
 
           rows.each { |row| row.update!(status: 'canceled') }
+          Inventory::ReturnTraceability.cancel!(operation)
           operation.update!(status: 'canceled', entitlement_status: 'canceled', canceled_at: Time.current)
           reprice_dependents!(operation, rows, staff)
           AuditEntry.record!(store: operation.store, actor: staff, action: action, subject: operation, metadata: { reason: reason })

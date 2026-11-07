@@ -1,12 +1,13 @@
 # frozen_string_literal: true
 
 require 'timeout'
+require_relative '../../../support/pos_race_helpers'
 
 # Two database connections race on one workspace. Rows must be committed for the
 # second connection to see them, so this group runs outside the transactional
 # fixture and deletes exactly the records it created.
 RSpec.describe 'POS workspace races', type: :integration do
-  self.use_transactional_tests = false
+  include_context 'with committed POS rows'
 
   let(:store) { Spree::Store.default }
 
@@ -32,25 +33,6 @@ RSpec.describe 'POS workspace races', type: :integration do
       capabilities: [Spree::Pos::Capabilities::OPEN_SHIFT], status: 'active'
     )
     @shift = Spree::Pos::Shifts::Open.call(store: store, staff: @staff, register: @register, opening_float: '0')
-  end
-
-  after do
-    workspaces = Spree::Pos::Workspace.where(branch_id: @branch&.id)
-    order_ids = workspaces.pluck(:order_id) + Spree::Order.where(created_by_id: @staff&.id).pluck(:id)
-    shifts = Spree::Pos::Shift.where(branch_id: @branch&.id)
-    Spree::Pos::CommandReceipt.where(actor_id: @staff&.id).delete_all
-    Spree::Pos::AuditEntry.where(actor_id: @staff&.id).delete_all
-    workspaces.delete_all
-    Pos::WalkInOrder.where(order_id: order_ids).delete_all
-    Spree::Order.where(id: order_ids).find_each(&:destroy!)
-    shifts.delete_all
-    Spree::Pos::StaffMembership.where(branch_id: @branch&.id).delete_all
-    Spree::Pos::Register.where(id: @register&.id).delete_all
-    Spree::Pos::Branch.where(id: @branch&.id).delete_all
-    Spree::StockLocation.where(id: @location&.id).delete_all
-    Spree::RoleUser.where(id: @role_user&.id).delete_all
-    Spree::Role.where(id: @role&.id).delete_all
-    Spree.admin_user_class.where(id: @staff&.id).delete_all
   end
 
   # Holds `row` locked until both contenders are provably waiting on the database,

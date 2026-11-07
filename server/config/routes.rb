@@ -16,6 +16,30 @@ Rails.application.routes.draw do
             put 'units/variant', to: 'units#update_variant_unit'
             post 'measurement_barcodes/parse', to: 'measurement_barcodes#parse'
             get 'traceability', to: 'traceability#show'
+            namespace :inventory do
+              get 'variants', to: 'traceability#variants'
+              post 'opening_balances', to: 'traceability#opening_balance'
+              post 'receipts', to: 'traceability#receipt'
+              post 'transfers', to: 'traceability#transfer'
+              get 'adjustments', to: 'traceability#adjustments'
+              post 'adjustments', to: 'traceability#create_adjustment'
+              post 'adjustments/:id/approve', to: 'traceability#approve_adjustment'
+              post 'adjustments/:id/apply', to: 'traceability#apply_adjustment'
+              post 'adjustments/:id/cancel', to: 'traceability#cancel_adjustment'
+              get 'recall', to: 'traceability#recall'
+            end
+            resources :lots, only: [:index] do
+              member do
+                post :quarantine
+                post :release
+              end
+            end
+            resources :serial_units, only: [:index] do
+              member do
+                post :quarantine
+                post :release
+              end
+            end
             resources :customers, only: [:index, :create]
             resources :received_funds, only: [:index, :show, :create] do
               member do
@@ -122,6 +146,22 @@ Rails.application.routes.draw do
                 post :cancel
               end
             end
+            # Receipts and the customer display (cashier side).
+            get 'receipts/lookup', to: 'receipts#lookup'
+            resources :receipts, only: [:index, :show] do
+              member do
+                post :prints
+              end
+            end
+            get 'display_sessions/current', to: 'display_sessions#current'
+            resources :display_sessions, only: [:show, :create] do
+              member do
+                post :pin
+                post :clear
+                post :revoke
+                post :pairing_code
+              end
+            end
             resources :approvals, only: [:index, :show, :create] do
               member do
                 post :revoke
@@ -150,6 +190,7 @@ Rails.application.routes.draw do
               post 'funds/allocate', to: 'workspaces/funds#allocate'
               post 'funds/reverse', to: 'workspaces/funds#reverse'
               post 'complete', to: 'workspaces/completions#create'
+              post 'trace_allocations', to: 'workspaces/trace_allocations#create'
               get 'credit', to: 'workspaces/credit_approvals#index'
               post 'credit_approvals', to: 'workspaces/credit_approvals#create'
               post 'credit_requests', to: 'workspaces/credit_approvals#request_approval'
@@ -173,6 +214,11 @@ Rails.application.routes.draw do
   # SPREE_DASHBOARD_URL when set, else the /dashboard this app serves, else
   # the Vite dev server in development. 302, not 301, so browsers don't cache
   # it past a change of SPREE_DASHBOARD_URL.
+  # Customer display: read-only, display-token channel outside the Admin API.
+  get 'api/v3/pos_display/state', to: 'spree/pos/display_views#show', defaults: { format: 'json' }
+  post 'api/v3/pos_display/ack', to: 'spree/pos/display_views#ack', defaults: { format: 'json' }
+  post 'api/v3/pos_display/pair', to: 'spree/pos/display_views#pair', defaults: { format: 'json' }
+
   root to: redirect(status: 302) { Spree::Stores::DashboardUrl.call.presence || '/dashboard' }
 
   # This line mounts Spree's routes at the root of your application.

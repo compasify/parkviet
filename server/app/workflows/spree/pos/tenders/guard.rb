@@ -35,10 +35,11 @@ module Spree
           ShiftBarrier.hold!(workspace.shift)
         end
 
+        # Payment is only taken while every serial/lot line holds its units:
+        # lots are reserved FEFO here and every reservation is held until the
+        # draft completes, parks or cancels.
         def tracked_guard!(workspace)
-          return unless SaleLine.where(workspace: workspace).any? { |line| line.tracked_mode != 'none' }
-
-          raise Conflict, 'Tracked goods cannot be tendered until serial/lot reservation is available (phase 8).'
+          Inventory::AllocateTraceability.ensure!(workspace, hold: true)
         end
       end
     end

@@ -54,6 +54,13 @@ module Spree
 
             private
 
+            # Blank means the default customer display freshness window.
+            def display_attributes
+              return {} unless params.key?(:display_freshness_ttl_seconds)
+
+              { display_freshness_ttl_seconds: params[:display_freshness_ttl_seconds].presence }
+            end
+
             def branch_attributes(record = nil)
               attrs = {}
               attrs[:name] = params[:name] if params.key?(:name) || record.nil?
@@ -71,6 +78,20 @@ module Spree
               attrs[:return_window_days] = params[:return_window_days].presence if params.key?(:return_window_days)
               # Blank means every non-zero closing variance needs an approval.
               attrs[:variance_threshold] = params[:variance_threshold].presence if params.key?(:variance_threshold)
+              attrs.merge!(display_attributes)
+              # FEFO only, or cashiers may name a valid lot at the counter.
+              if params.key?(:lot_selection)
+                raise Spree::Pos::Conflict, 'Lot selection is invalid.' unless %w[fefo cashier_pick].include?(params[:lot_selection].to_s)
+
+                attrs[:lot_selection] = params[:lot_selection].to_s
+              end
+              # Blank means every positive stock count change needs an approval.
+              if params.key?(:adjustment_approval_threshold)
+                value = params[:adjustment_approval_threshold].to_s.strip
+                raise Spree::Pos::Conflict, 'Adjustment threshold is invalid.' unless value.empty? || value.match?(/\A\d{1,10}\z/)
+
+                attrs[:adjustment_approval_threshold] = value.empty? ? nil : Integer(value, 10)
+              end
               attrs
             end
           end

@@ -1,0 +1,158 @@
+/* Printable POS documents: 80mm thermal roll or A4 sheet. Vietnamese-capable
+   font stack and tabular figures so amounts line up. */
+.receipt-sheet {
+  font-family: "Segoe UI", Roboto, "Noto Sans", "Helvetica Neue", Arial, sans-serif;
+  font-variant-numeric: tabular-nums;
+  color: #000;
+  background: #fff;
+  line-height: 1.35;
+  margin: 0 auto;
+  padding: 8px;
+  box-sizing: border-box;
+}
+
+.receipt-80mm {
+  width: 72mm;
+  font-size: 12px;
+}
+
+.receipt-a4 {
+  width: 100%;
+  max-width: 186mm;
+  font-size: 14px;
+}
+
+.receipt-sheet p,
+.receipt-sheet h2,
+.receipt-sheet dl,
+.receipt-sheet ol {
+  margin: 0;
+}
+
+.receipt-banner {
+  border: 2px solid #000;
+  font-weight: 700;
+  text-align: center;
+  padding: 2px 4px;
+  margin-bottom: 6px !important;
+  letter-spacing: 0.04em;
+}
+
+.receipt-header {
+  text-align: center;
+  margin-bottom: 6px;
+}
+
+.receipt-header h2 {
+  font-size: 1.15em;
+  margin-top: 4px;
+}
+
+.receipt-number {
+  font-weight: 600;
+}
+
+.receipt-meta,
+.receipt-totals,
+.receipt-payments {
+  border-top: 1px dashed #000;
+  padding-top: 4px;
+  margin-top: 4px;
+}
+
+.receipt-meta div,
+.receipt-totals div,
+.receipt-payments div,
+.receipt-line-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.receipt-sheet dd,
+.receipt-money {
+  margin: 0;
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.receipt-strong {
+  font-weight: 700;
+}
+
+.receipt-lines {
+  list-style: none;
+  padding: 4px 0 0;
+  border-top: 1px dashed #000;
+  margin-top: 4px;
+}
+
+.receipt-lines li + li {
+  margin-top: 4px;
+}
+
+.receipt-line-detail {
+  font-size: 0.9em;
+  padding-left: 8px;
+}
+
+.receipt-note {
+  margin-top: 4px;
+  font-style: italic;
+}
+
+.receipt-disclaimer {
+  border-top: 1px dashed #000;
+  margin-top: 6px !important;
+  padding-top: 4px;
+  font-size: 0.85em;
+  text-align: center;
+}
+
+.receipt-preview {
+  background: #f2f2f2;
+  padding: 12px;
+  overflow: auto;
+}
+
+/* A print-only copy of a sheet, rendered at the end of <body> so a modal's
+   fixed positioning never clips it. */
+.receipt-print-portal {
+  display: none;
+}
+
+/* Only while a receipt prints (html[data-receipt-printing], set by the print
+   adapter): every other print of the app keeps its own content. */
+@media print {
+  html[data-receipt-printing] body * {
+    visibility: hidden;
+  }
+
+  html[data-receipt-printing] .receipt-print-portal {
+    display: block;
+  }
+
+  html[data-receipt-printing] .receipt-print-root,
+  html[data-receipt-printing] .receipt-print-root * {
+    visibility: visible;
+  }
+
+  html[data-receipt-printing] .receipt-print-root {
+    position: absolute;
+    inset: 0 auto auto 0;
+    background: #fff;
+    padding: 0;
+  }
+
+  html[data-receipt-printing="80mm"] .receipt-sheet {
+    width: 72mm;
+    padding: 0;
+  }
+
+  html[data-receipt-printing="a4"] .receipt-sheet {
+    width: 186mm;
+    max-width: none;
+    padding: 0;
+  }
+}

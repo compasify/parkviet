@@ -1,12 +1,13 @@
 # frozen_string_literal: true
 
 require 'timeout'
+require_relative '../../../support/pos_race_helpers'
 
 # Two database connections race to open a shift on the same drawer. Rows must be
 # committed for the second connection to see them, so this group runs outside the
 # transactional fixture and deletes exactly the records it created.
 RSpec.describe 'POS open shift race', type: :integration do
-  self.use_transactional_tests = false
+  include_context 'with committed POS rows'
 
   let(:store) { Spree::Store.default }
 
@@ -32,17 +33,6 @@ RSpec.describe 'POS open shift race', type: :integration do
         capabilities: [Spree::Pos::Capabilities::OPEN_SHIFT], status: 'active'
       )
     end
-  end
-
-  after do
-    shifts = Spree::Pos::Shift.where(branch_id: @branch&.id)
-    Spree::Pos::AuditEntry.where(subject_type: Spree::Pos::Shift.name, subject_id: shifts.select(:id)).delete_all
-    shifts.delete_all
-    Spree::Pos::StaffMembership.where(branch_id: @branch&.id).delete_all
-    Spree::Pos::Register.where(id: @register&.id).delete_all
-    Spree::Pos::Branch.where(id: @branch&.id).delete_all
-    Spree.admin_user_class.where(id: Array(@staff).map(&:id)).delete_all
-    Spree::StockLocation.where(id: @location&.id).delete_all
   end
 
   def race(&block)

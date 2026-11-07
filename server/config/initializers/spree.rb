@@ -66,6 +66,13 @@ Rails.application.config.after_initialize do
 
   # Event subscribers (generate with `bin/rails g spree:subscriber`)
   # Spree.subscribers << OrderPlacedSubscriber
+  # Drift detection for serial/lot-tracked stock (the guard itself is transactional).
+  Spree.subscribers << Spree::Pos::StockTraceabilitySubscriber unless Spree.subscribers.include?(Spree::Pos::StockTraceabilitySubscriber)
+  # Website/dashboard carts and orders refuse serial/lot-tracked items before payment.
+  %w[carts.add_item.validate carts.upsert_items.validate carts.merge.validate carts.complete.validate
+     orders.add_item.validate orders.upsert_items.validate].each do |key|
+    Spree.hooks.register(key, 'Spree::Pos::TraceCheckoutGuard')
+  end
 end
 
 Spree.customer_class = 'Spree::Customer'

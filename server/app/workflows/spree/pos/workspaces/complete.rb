@@ -57,9 +57,15 @@ module Spree
             entry = Credit::Commit.call(workspace: workspace, staff: staff, approval_id: credit, amount: debt) if credit
             # Core settles payments itself unless told they are pending; the
             # approved debt is the only reason this order may place short.
-            result = Spree.order_complete_workflow.call(order: order.reload, notify_customer: false, payment_pending: debt.positive?)
+            # Placement allocates tracked stock too; the reservations become the
+            # sale's committed allocations in the same transaction.
+            result = StockIntegration.writing do
+              Spree.order_complete_workflow.call(order: order.reload, notify_customer: false, payment_pending: debt.positive?)
+            end
             raise Conflict, 'Order could not be placed.' unless result.success?
             raise Conflict, 'Order was not placed.' unless order.reload.placed?
+
+            Inventory::AllocateTraceability.commit!(workspace)
 
             workspace.update!(revision: workspace.revision + 1, operational_status: 'completed')
             AuditEntry.record!(store: workspace.store, actor: staff, subject: workspace, action: audit_action(entry, zero_total),
@@ -67,6 +73,7 @@ module Spree
                                            receivable_id: entry&.prefixed_id, debt: debt.to_s('F') })
             OutboxEntry.record!(store: workspace.store, event_type: 'workspace.completed', aggregate: workspace,
                                 payload: { 'workspace_id' => workspace.prefixed_id, 'order_id' => order.prefixed_id })
+            ReceiptBuilder.issue_safely!(workspace, actor: staff) # receipt from the facts above; never blocks the sale
             workspace.to_pos
           end
         rescue Conflict => e

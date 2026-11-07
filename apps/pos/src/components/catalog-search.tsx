@@ -24,6 +24,7 @@ export function CatalogSearch({
   onAdd,
   onAddForm,
   onScan,
+  scanTerminator = 'Enter',
   scanNotice,
   addDisabled,
   addDisabledReason,
@@ -38,6 +39,9 @@ export function CatalogSearch({
     extra: import('./add-item-form').SaleLineAddExtra,
   ) => Promise<PosWorkspace>;
   onScan?: (code: string) => void;
+  // The register's calibrated scanner terminator; Tab only ends a scan when
+  // the field holds a code, so keyboard navigation keeps working.
+  scanTerminator?: 'Enter' | 'Tab';
   scanNotice?: ScanNotice | null;
   addDisabled?: boolean;
   addDisabledReason?: string;
@@ -117,7 +121,12 @@ export function CatalogSearch({
               value={input}
               onChange={(event) => setInput(event.target.value)}
               onKeyDown={(event) => {
-                if (event.key !== 'Enter' || event.nativeEvent.isComposing) return;
+                if (event.nativeEvent.isComposing) return;
+                const scannerTab =
+                  scanTerminator === 'Tab' &&
+                  event.key === 'Tab' &&
+                  Boolean(onScan && input.trim());
+                if (event.key !== 'Enter' && !scannerTab) return;
                 event.preventDefault();
                 search();
                 // Enter in the search box is how a scanner focused here finishes a code.
@@ -210,7 +219,8 @@ export function CatalogSearch({
                       </span>
                     </span>
                   </button>
-                  {onAddForm && !addDisabled ? (
+                  {/* Stays mounted while a command runs, so a refusal stays readable. */}
+                  {onAddForm ? (
                     <details
                       className="catalog-advanced"
                       onToggle={(event) => {

@@ -53,6 +53,8 @@ module Spree
           AuditEntry.record!(store: operation.store, actor: actor, action: 'return.entitlement_posted', subject: operation,
                              metadata: { entitlement: value.to_s('F'), credit_note: split[:credit_note].to_s('F'),
                                          refund_entitlement: split[:refund].to_s('F'), receivable_entry_id: entry&.prefixed_id })
+          # Posted after its slip was issued as pending: a supplementary slip.
+          ReceiptBuilder.issue_supplement_safely!(operation, actor: actor)
         end
 
         # Received returns of the same lines that were waiting for this one.

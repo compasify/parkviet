@@ -39,11 +39,18 @@ module Spree
             approved = Spree::Returns::Approve.call(return_record: core, approver: approval&.approver || staff)
             raise Conflict, Guard.core_error(approved, 'Core return could not be approved.') unless approved.success?
 
-            received = Spree::Returns::Receive.call(
-              return_record: core.reload, received_by: staff,
-              items: rows.map { |row| { return_line_item: row.return_line_item, quantity: row.quantity, resellable: row.condition == 'resellable' } }
-            )
+            received = StockIntegration.writing do
+              Spree::Returns::Receive.call(
+                return_record: core.reload, received_by: staff,
+                items: rows.map do |row|
+                  { return_line_item: row.return_line_item, quantity: row.quantity, resellable: row.condition == 'resellable' }
+                end
+              )
+            end
             raise Conflict, Guard.core_error(received, 'Core return could not be received.') unless received.success?
+
+            # Returned serials/lot units take their place at the receiving location.
+            Inventory::ReturnTraceability.receive!(operation)
 
             rows.each do |row|
               row.update!(received_quantity: row.quantity, restocked_quantity: row.condition == 'resellable' ? row.quantity : 0)
@@ -56,6 +63,7 @@ module Spree
                                            location_id: operation.branch.stock_location.prefixed_id, approval_id: approval&.prefixed_id })
             OutboxEntry.record!(store: store, event_type: 'return.received', aggregate: operation,
                                 payload: { 'return_id' => operation.prefixed_id })
+            ReceiptBuilder.issue_safely!(operation.reload, actor: staff) # return slip; never blocks the return
             operation.reload.to_pos
           end
         end

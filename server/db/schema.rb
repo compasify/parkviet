@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_07_150000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_07_170001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -2320,9 +2320,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_150000) do
     t.datetime "updated_at", null: false
     t.integer "return_window_days"
     t.decimal "variance_threshold", precision: 19, scale: 4
+    t.string "lot_selection", limit: 16, default: "fefo", null: false
+    t.bigint "adjustment_approval_threshold"
+    t.integer "display_freshness_ttl_seconds"
     t.index ["stock_location_id"], name: "index_spree_pos_branches_on_stock_location_id"
     t.index ["store_id", "code"], name: "index_spree_pos_branches_on_store_id_and_code", unique: true
     t.index ["store_id"], name: "index_spree_pos_branches_on_store_id"
+    t.check_constraint "adjustment_approval_threshold IS NULL OR adjustment_approval_threshold >= 0", name: "chk_pos_branches_adjustment_threshold"
+    t.check_constraint "display_freshness_ttl_seconds IS NULL OR display_freshness_ttl_seconds >= 5 AND display_freshness_ttl_seconds <= 120", name: "chk_pos_branches_display_freshness"
+    t.check_constraint "lot_selection::text = ANY (ARRAY['fefo'::character varying, 'cashier_pick'::character varying]::text[])", name: "chk_pos_branches_lot_selection"
     t.check_constraint "return_window_days IS NULL OR return_window_days >= 0 AND return_window_days <= 3650", name: "chk_pos_branches_return_window"
     t.check_constraint "status::text = ANY (ARRAY['active'::character varying::text, 'disabled'::character varying::text])", name: "chk_spree_pos_branches_status"
     t.check_constraint "variance_threshold IS NULL OR variance_threshold >= 0::numeric", name: "chk_pos_branches_variance_threshold"
@@ -2561,6 +2567,45 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_150000) do
     t.check_constraint "value_type::text = ANY (ARRAY['flat'::character varying::text, 'percent'::character varying::text])", name: "chk_pos_discount_intent_type"
   end
 
+  create_table "spree_pos_display_pairings", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "display_session_id", null: false
+    t.bigint "created_by_id", null: false
+    t.string "code_digest", limit: 64, null: false
+    t.datetime "expires_at", null: false
+    t.datetime "used_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["code_digest"], name: "idx_pos_display_pairings_code", unique: true
+    t.index ["display_session_id"], name: "index_spree_pos_display_pairings_on_display_session_id"
+  end
+
+  create_table "spree_pos_display_sessions", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "branch_id", null: false
+    t.bigint "register_id"
+    t.bigint "shift_id", null: false
+    t.bigint "staff_id", null: false
+    t.string "token_digest", limit: 64, null: false
+    t.datetime "token_expires_at", null: false
+    t.integer "generation", default: 1, null: false
+    t.bigint "pinned_workspace_id"
+    t.bigint "pinned_tender_attempt_id"
+    t.datetime "pinned_at"
+    t.bigint "state_sequence", default: 0, null: false
+    t.datetime "last_seen_at"
+    t.integer "acked_generation"
+    t.datetime "acked_at"
+    t.datetime "revoked_at"
+    t.string "revoke_reason", limit: 32
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["shift_id"], name: "idx_pos_display_sessions_live_shift", unique: true, where: "(revoked_at IS NULL)"
+    t.index ["token_digest"], name: "idx_pos_display_sessions_token", unique: true
+    t.check_constraint "generation >= 1", name: "chk_pos_display_sessions_generation"
+    t.check_constraint "pinned_tender_attempt_id IS NULL OR pinned_workspace_id IS NOT NULL", name: "chk_pos_display_sessions_attempt_pin"
+  end
+
   create_table "spree_pos_exchange_operations", force: :cascade do |t|
     t.bigint "store_id", null: false
     t.bigint "branch_id", null: false
@@ -2620,6 +2665,60 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_150000) do
     t.index ["workspace_id"], name: "index_spree_pos_funds_allocations_on_workspace_id"
     t.check_constraint "amount > 0::numeric", name: "chk_pos_funds_allocations_amount"
     t.check_constraint "status::text = ANY (ARRAY['active'::character varying::text, 'reversed'::character varying::text])", name: "chk_pos_funds_allocations_status"
+  end
+
+  create_table "spree_pos_inventory_adjustments", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "branch_id", null: false
+    t.bigint "variant_id", null: false
+    t.bigint "stock_location_id", null: false
+    t.bigint "requester_id", null: false
+    t.bigint "applier_id"
+    t.bigint "approval_id"
+    t.string "status", limit: 32, default: "pending_approval", null: false
+    t.string "reason", limit: 200, null: false
+    t.jsonb "lines", default: [], null: false
+    t.bigint "delta", default: 0, null: false
+    t.boolean "requires_approval", default: false, null: false
+    t.integer "revision", default: 1, null: false
+    t.datetime "applied_at"
+    t.datetime "canceled_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["applier_id"], name: "index_spree_pos_inventory_adjustments_on_applier_id"
+    t.index ["approval_id"], name: "index_spree_pos_inventory_adjustments_on_approval_id"
+    t.index ["branch_id", "status"], name: "idx_pos_inventory_adjustments_branch"
+    t.index ["branch_id"], name: "index_spree_pos_inventory_adjustments_on_branch_id"
+    t.index ["requester_id"], name: "index_spree_pos_inventory_adjustments_on_requester_id"
+    t.index ["store_id"], name: "index_spree_pos_inventory_adjustments_on_store_id"
+    t.index ["variant_id"], name: "index_spree_pos_inventory_adjustments_on_variant_id"
+    t.check_constraint "status::text = ANY (ARRAY['pending_approval'::character varying, 'applied'::character varying, 'canceled'::character varying]::text[])", name: "chk_pos_inventory_adjustments_status"
+  end
+
+  create_table "spree_pos_inventory_lots", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "variant_id", null: false
+    t.bigint "stock_location_id", null: false
+    t.bigint "source_lot_id"
+    t.bigint "quarantined_by_id"
+    t.string "lot_code", limit: 64, null: false
+    t.date "expiry_on"
+    t.string "status", limit: 16, default: "active", null: false
+    t.bigint "received_quantity", default: 0, null: false
+    t.bigint "on_hand", default: 0, null: false
+    t.bigint "quarantined_quantity", default: 0, null: false
+    t.string "quarantine_reason", limit: 200
+    t.datetime "quarantined_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["quarantined_by_id"], name: "index_spree_pos_inventory_lots_on_quarantined_by_id"
+    t.index ["source_lot_id"], name: "index_spree_pos_inventory_lots_on_source_lot_id"
+    t.index ["stock_location_id", "variant_id", "lot_code"], name: "idx_pos_inventory_lots_code", unique: true
+    t.index ["store_id", "lot_code"], name: "idx_pos_inventory_lots_recall"
+    t.index ["store_id"], name: "index_spree_pos_inventory_lots_on_store_id"
+    t.index ["variant_id", "stock_location_id", "status", "expiry_on"], name: "idx_pos_inventory_lots_fefo"
+    t.check_constraint "on_hand >= 0 AND quarantined_quantity >= 0 AND received_quantity >= 0", name: "chk_pos_inventory_lots_quantities"
+    t.check_constraint "status::text = ANY (ARRAY['active'::character varying, 'quarantined'::character varying, 'expired'::character varying]::text[])", name: "chk_pos_inventory_lots_status"
   end
 
   create_table "spree_pos_label_formats", force: :cascade do |t|
@@ -2757,6 +2856,35 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_150000) do
     t.index ["tender_attempt_id", "created_at"], name: "idx_pos_receipt_evidences_attempt"
     t.index ["tender_attempt_id"], name: "index_spree_pos_receipt_evidences_on_tender_attempt_id"
     t.check_constraint "kind::text = ANY (ARRAY['cash_count'::character varying::text, 'bank_manual'::character varying::text, 'external_card'::character varying::text])", name: "chk_pos_receipt_evidences_kind"
+  end
+
+  create_table "spree_pos_receipt_prints", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "receipt_snapshot_id", null: false
+    t.bigint "actor_id", null: false
+    t.integer "copy_number", null: false
+    t.datetime "created_at", null: false
+    t.index ["receipt_snapshot_id", "copy_number"], name: "idx_pos_receipt_prints_copy", unique: true
+    t.check_constraint "copy_number >= 0", name: "chk_pos_receipt_prints_copy_number"
+  end
+
+  create_table "spree_pos_receipt_snapshots", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "branch_id", null: false
+    t.bigint "register_id"
+    t.bigint "issued_by_id"
+    t.string "source_type", limit: 32, null: false
+    t.bigint "source_id", null: false
+    t.string "number", limit: 64, null: false
+    t.jsonb "payload", default: {}, null: false
+    t.boolean "issued_late", default: false, null: false
+    t.datetime "issued_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["branch_id", "number"], name: "idx_pos_receipt_snapshots_branch_number"
+    t.index ["source_type", "source_id"], name: "idx_pos_receipt_snapshots_source", unique: true
+    t.index ["store_id", "source_type", "number"], name: "idx_pos_receipt_snapshots_number", unique: true
+    t.check_constraint "source_type::text = ANY (ARRAY['sale'::character varying, 'return'::character varying, 'return_supplement'::character varying, 'refund'::character varying, 'shift_closure'::character varying]::text[])", name: "chk_pos_receipt_snapshots_source_type"
   end
 
   create_table "spree_pos_receivable_entries", force: :cascade do |t|
@@ -3005,7 +3133,24 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_150000) do
     t.index ["workspace_id"], name: "index_spree_pos_sale_lines_on_workspace_id"
     t.check_constraint "base_quantity > 0 AND sale_quantity > 0::numeric", name: "chk_pos_sale_lines_qty"
     t.check_constraint "kind::text = ANY (ARRAY['ordinary'::character varying::text, 'measured'::character varying::text, 'tracked'::character varying::text])", name: "chk_pos_sale_lines_kind"
-    t.check_constraint "tracked_mode::text = ANY (ARRAY['none'::character varying::text, 'serial'::character varying::text, 'lot'::character varying::text, 'serial_lot'::character varying::text])", name: "chk_pos_sale_lines_tracked"
+    t.check_constraint "tracked_mode::text = ANY (ARRAY['none'::character varying, 'serial'::character varying, 'lot'::character varying]::text[])", name: "chk_pos_sale_lines_tracked"
+  end
+
+  create_table "spree_pos_serial_units", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "variant_id", null: false
+    t.bigint "stock_location_id", null: false
+    t.string "serial", limit: 100, null: false
+    t.string "status", limit: 16, default: "in_stock", null: false
+    t.string "quarantine_reason", limit: 200
+    t.datetime "returned_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["stock_location_id"], name: "index_spree_pos_serial_units_on_stock_location_id"
+    t.index ["store_id", "serial"], name: "idx_pos_serial_units_recall"
+    t.index ["store_id", "variant_id", "serial"], name: "idx_pos_serial_units_identity", unique: true
+    t.index ["variant_id"], name: "index_spree_pos_serial_units_on_variant_id"
+    t.check_constraint "status::text = ANY (ARRAY['in_stock'::character varying, 'reserved'::character varying, 'sold'::character varying, 'returned'::character varying, 'quarantined'::character varying, 'removed'::character varying]::text[])", name: "chk_pos_serial_units_status"
   end
 
   create_table "spree_pos_shift_closures", force: :cascade do |t|
@@ -3146,6 +3291,81 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_150000) do
     t.check_constraint "status::text = ANY (ARRAY['prepared'::character varying::text, 'confirmed'::character varying::text, 'canceled'::character varying::text, 'unknown'::character varying::text, 'failed'::character varying::text])", name: "chk_pos_tender_attempts_status"
   end
 
+  create_table "spree_pos_trace_allocations", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "workspace_id", null: false
+    t.bigint "sale_line_id", null: false
+    t.bigint "order_id", null: false
+    t.bigint "variant_id", null: false
+    t.bigint "stock_location_id", null: false
+    t.bigint "inventory_lot_id"
+    t.bigint "serial_unit_id"
+    t.bigint "fulfillment_item_id"
+    t.string "status", limit: 16, default: "reserved", null: false
+    t.bigint "quantity", null: false
+    t.bigint "returned_quantity", default: 0, null: false
+    t.integer "lease_generation", null: false
+    t.boolean "picked", default: false, null: false
+    t.datetime "expires_at"
+    t.datetime "committed_at"
+    t.datetime "consumed_at"
+    t.datetime "released_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["fulfillment_item_id"], name: "index_spree_pos_trace_allocations_on_fulfillment_item_id"
+    t.index ["inventory_lot_id", "status"], name: "idx_pos_trace_allocations_lot_status"
+    t.index ["inventory_lot_id"], name: "index_spree_pos_trace_allocations_on_inventory_lot_id"
+    t.index ["order_id"], name: "index_spree_pos_trace_allocations_on_order_id"
+    t.index ["sale_line_id"], name: "index_spree_pos_trace_allocations_on_sale_line_id"
+    t.index ["serial_unit_id"], name: "idx_pos_trace_allocations_live_serial", unique: true, where: "((status)::text = ANY ((ARRAY['reserved'::character varying, 'committed'::character varying])::text[]))"
+    t.index ["serial_unit_id"], name: "idx_pos_trace_allocations_serial"
+    t.index ["status", "expires_at"], name: "idx_pos_trace_allocations_expiry"
+    t.index ["workspace_id"], name: "index_spree_pos_trace_allocations_on_workspace_id"
+    t.check_constraint "(inventory_lot_id IS NULL) <> (serial_unit_id IS NULL)", name: "chk_pos_trace_allocations_subject"
+    t.check_constraint "quantity > 0 AND returned_quantity >= 0 AND returned_quantity <= quantity AND (serial_unit_id IS NULL OR quantity = 1)", name: "chk_pos_trace_allocations_quantity"
+    t.check_constraint "status::text = ANY (ARRAY['reserved'::character varying, 'committed'::character varying, 'consumed'::character varying, 'released'::character varying]::text[])", name: "chk_pos_trace_allocations_status"
+  end
+
+  create_table "spree_pos_trace_enrollments", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "variant_id", null: false
+    t.bigint "stock_location_id", null: false
+    t.bigint "branch_id", null: false
+    t.bigint "opened_by_id", null: false
+    t.string "tracked_mode", limit: 16, null: false
+    t.bigint "opening_quantity", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "drift_signature", limit: 64
+    t.datetime "drift_checked_at"
+    t.index ["branch_id"], name: "index_spree_pos_trace_enrollments_on_branch_id"
+    t.index ["opened_by_id"], name: "index_spree_pos_trace_enrollments_on_opened_by_id"
+    t.index ["stock_location_id"], name: "index_spree_pos_trace_enrollments_on_stock_location_id"
+    t.index ["store_id"], name: "index_spree_pos_trace_enrollments_on_store_id"
+    t.index ["variant_id", "stock_location_id"], name: "idx_pos_trace_enrollments_pair", unique: true
+    t.check_constraint "opening_quantity >= 0", name: "chk_pos_trace_enrollments_opening"
+    t.check_constraint "tracked_mode::text = ANY (ARRAY['serial'::character varying, 'lot'::character varying]::text[])", name: "chk_pos_trace_enrollments_mode"
+  end
+
+  create_table "spree_pos_trace_returns", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "return_operation_id", null: false
+    t.bigint "trace_allocation_id", null: false
+    t.bigint "return_lot_id"
+    t.bigint "quantity", null: false
+    t.string "condition", limit: 16, null: false
+    t.string "status", limit: 16, default: "reserved", null: false
+    t.datetime "received_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["return_lot_id"], name: "index_spree_pos_trace_returns_on_return_lot_id"
+    t.index ["return_operation_id"], name: "index_spree_pos_trace_returns_on_return_operation_id"
+    t.index ["trace_allocation_id"], name: "index_spree_pos_trace_returns_on_trace_allocation_id"
+    t.check_constraint "condition::text = ANY (ARRAY['resellable'::character varying, 'damaged'::character varying]::text[])", name: "chk_pos_trace_returns_condition"
+    t.check_constraint "quantity > 0", name: "chk_pos_trace_returns_quantity"
+    t.check_constraint "status::text = ANY (ARRAY['reserved'::character varying, 'received'::character varying, 'canceled'::character varying]::text[])", name: "chk_pos_trace_returns_status"
+  end
+
   create_table "spree_pos_units", force: :cascade do |t|
     t.bigint "store_id", null: false
     t.string "code", limit: 16, null: false
@@ -3185,7 +3405,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_150000) do
     t.index ["store_id"], name: "index_spree_pos_variant_units_on_store_id"
     t.index ["variant_id"], name: "index_spree_pos_variant_units_on_variant_id", unique: true
     t.check_constraint "ratio_numerator > 0 AND ratio_denominator > 0", name: "chk_pos_variant_units_ratio"
-    t.check_constraint "tracked_mode::text = ANY (ARRAY['none'::character varying::text, 'serial'::character varying::text, 'lot'::character varying::text, 'serial_lot'::character varying::text])", name: "chk_pos_variant_units_tracked"
+    t.check_constraint "tracked_mode::text = ANY (ARRAY['none'::character varying, 'serial'::character varying, 'lot'::character varying]::text[])", name: "chk_pos_variant_units_tracked"
   end
 
   create_table "spree_pos_workspaces", force: :cascade do |t|
@@ -4904,6 +5124,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_150000) do
   add_foreign_key "spree_pos_funds_allocations", "spree_pos_received_funds", column: "received_funds_id"
   add_foreign_key "spree_pos_funds_allocations", "spree_pos_workspaces", column: "workspace_id"
   add_foreign_key "spree_pos_funds_allocations", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_inventory_adjustments", "spree_admin_users", column: "applier_id"
+  add_foreign_key "spree_pos_inventory_adjustments", "spree_admin_users", column: "requester_id"
+  add_foreign_key "spree_pos_inventory_adjustments", "spree_pos_approvals", column: "approval_id"
+  add_foreign_key "spree_pos_inventory_adjustments", "spree_pos_branches", column: "branch_id"
+  add_foreign_key "spree_pos_inventory_adjustments", "spree_stock_locations", column: "stock_location_id"
+  add_foreign_key "spree_pos_inventory_adjustments", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_inventory_adjustments", "spree_variants", column: "variant_id"
+  add_foreign_key "spree_pos_inventory_lots", "spree_pos_inventory_lots", column: "source_lot_id"
+  add_foreign_key "spree_pos_inventory_lots", "spree_stock_locations", column: "stock_location_id"
+  add_foreign_key "spree_pos_inventory_lots", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_inventory_lots", "spree_variants", column: "variant_id"
   add_foreign_key "spree_pos_liability_payouts", "spree_admin_users", column: "requester_id"
   add_foreign_key "spree_pos_liability_payouts", "spree_pos_branches", column: "branch_id"
   add_foreign_key "spree_pos_liability_payouts", "spree_pos_received_funds", column: "received_funds_id"
@@ -4968,6 +5199,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_150000) do
   add_foreign_key "spree_pos_sale_lines", "spree_orders", column: "order_id"
   add_foreign_key "spree_pos_sale_lines", "spree_pos_workspaces", column: "workspace_id"
   add_foreign_key "spree_pos_sale_lines", "spree_variants", column: "variant_id"
+  add_foreign_key "spree_pos_serial_units", "spree_stock_locations", column: "stock_location_id"
+  add_foreign_key "spree_pos_serial_units", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_serial_units", "spree_variants", column: "variant_id"
   add_foreign_key "spree_pos_shifts", "spree_admin_users", column: "owner_id"
   add_foreign_key "spree_pos_shifts", "spree_pos_branches", column: "branch_id"
   add_foreign_key "spree_pos_shifts", "spree_pos_registers", column: "register_id"
@@ -4990,6 +5224,24 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_150000) do
   add_foreign_key "spree_pos_tender_attempts", "spree_pos_shifts", column: "shift_id"
   add_foreign_key "spree_pos_tender_attempts", "spree_pos_workspaces", column: "workspace_id"
   add_foreign_key "spree_pos_tender_attempts", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_trace_allocations", "spree_fulfillment_items", column: "fulfillment_item_id"
+  add_foreign_key "spree_pos_trace_allocations", "spree_orders", column: "order_id"
+  add_foreign_key "spree_pos_trace_allocations", "spree_pos_inventory_lots", column: "inventory_lot_id"
+  add_foreign_key "spree_pos_trace_allocations", "spree_pos_sale_lines", column: "sale_line_id", on_delete: :cascade
+  add_foreign_key "spree_pos_trace_allocations", "spree_pos_serial_units", column: "serial_unit_id"
+  add_foreign_key "spree_pos_trace_allocations", "spree_pos_workspaces", column: "workspace_id"
+  add_foreign_key "spree_pos_trace_allocations", "spree_stock_locations", column: "stock_location_id"
+  add_foreign_key "spree_pos_trace_allocations", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_trace_allocations", "spree_variants", column: "variant_id"
+  add_foreign_key "spree_pos_trace_enrollments", "spree_admin_users", column: "opened_by_id"
+  add_foreign_key "spree_pos_trace_enrollments", "spree_pos_branches", column: "branch_id"
+  add_foreign_key "spree_pos_trace_enrollments", "spree_stock_locations", column: "stock_location_id"
+  add_foreign_key "spree_pos_trace_enrollments", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_trace_enrollments", "spree_variants", column: "variant_id"
+  add_foreign_key "spree_pos_trace_returns", "spree_pos_inventory_lots", column: "return_lot_id"
+  add_foreign_key "spree_pos_trace_returns", "spree_pos_return_operations", column: "return_operation_id"
+  add_foreign_key "spree_pos_trace_returns", "spree_pos_trace_allocations", column: "trace_allocation_id"
+  add_foreign_key "spree_pos_trace_returns", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_units", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_variant_units", "spree_pos_units", column: "base_unit_id"
   add_foreign_key "spree_pos_variant_units", "spree_pos_units", column: "price_unit_id"

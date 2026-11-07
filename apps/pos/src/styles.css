@@ -546,6 +546,16 @@ kbd { padding: var(--pos-s1); border: 1px solid var(--pos-border); border-radius
 .record-copy small { font-weight: 400; }
 .status-tag { display: inline-block; width: fit-content; padding: var(--pos-s1) var(--pos-s2); border-radius: var(--pos-radius); color: var(--pos-muted); background: var(--pos-tint); font-size: var(--pos-small); font-weight: 600; }
 .status-tag[data-warning='true'] { background: #fff4d9; color: var(--pos-warning); }
+.status-tag[data-danger='true'] { background: #fde8e8; color: #9f1d1d; }
+.inventory-form { display: grid; gap: var(--pos-s3); max-width: 720px; }
+.inventory-form textarea, .inventory-dialog textarea { width: 100%; font: inherit; }
+.inventory-lot-rows { display: grid; gap: var(--pos-s2); }
+.basket-line-trace { display: flex; flex-direction: column; gap: 2px; }
+.basket-line-trace [data-warning='true'] { color: var(--pos-warning); }
+.return-trace { display: block; color: var(--pos-muted); font-weight: 400; }
+.return-trace[data-warning='true'] { color: var(--pos-warning); font-weight: 600; }
+.return-serials { display: grid; gap: var(--pos-s1); border: 0; padding: 0; margin: 0; }
+.pos-layout .pos-popup-card.inventory-dialog { width: min(560px, calc(100vw - var(--pos-s6))); }
 .page-disclosure { margin-top: var(--pos-s4); border-top: 1px solid var(--pos-border); }
 .page-disclosure > summary { display: flex; align-items: center; gap: var(--pos-s2); min-height: var(--pos-target); padding: var(--pos-s3) 0; cursor: pointer; color: var(--pos-blue); font-weight: 600; list-style: none; }
 .page-disclosure > summary::before { content: '+'; font-size: var(--pos-heading); }
@@ -643,3 +653,25 @@ kbd { padding: var(--pos-s1); border: 1px solid var(--pos-border); border-radius
 .shift-checklist li, .late-cash .record-list li { display: flex; flex-wrap: wrap; gap: var(--pos-s2); justify-content: space-between; align-items: center; }
 .late-cash-form fieldset { padding: var(--pos-s3); }
 .segmented { display: flex; flex-wrap: wrap; gap: var(--pos-s3); }
+
+/* Receipts, customer display and counter devices */
+.link-button { background: none; border: 0; padding: 0; color: inherit; text-decoration: underline; cursor: pointer; font: inherit; }
+.display-control { display: grid; gap: var(--pos-s2); padding-top: var(--pos-s3); border-top: 1px solid #d8e3dc; }
+.display-control h3 { margin: 0; font-size: 1rem; }
+.display-control .danger { color: var(--pos-danger); border-color: var(--pos-danger); }
+.display-status[data-freshness="unconfirmed"] { color: var(--pos-danger); }
+.display-warning { font-size: 0.9em; }
+.receipt-workspace { display: grid; gap: var(--pos-s3); }
+.receipt-workspace fieldset { display: flex; flex-wrap: wrap; gap: var(--pos-s3); }
+.customer-display { min-height: 100vh; box-sizing: border-box; padding: 4vh 5vw; font-size: clamp(18px, 2.4vw, 32px); font-variant-numeric: tabular-nums; display: grid; align-content: start; gap: 2vh; }
+.customer-display h1 { font-size: 1.6em; margin: 0; }
+.customer-display .money { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.customer-display-lines { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.4em; }
+.customer-display-lines li, .customer-display-totals div { display: flex; justify-content: space-between; gap: 1em; }
+.customer-display-totals { margin: 0; border-top: 2px solid currentColor; padding-top: 0.5em; }
+.customer-display-totals dd { margin: 0; font-weight: 700; }
+.customer-display-payment { border: 3px solid currentColor; border-radius: 12px; padding: 1em; display: grid; gap: 0.4em; }
+.customer-display-amount { font-size: 1.6em; font-weight: 700; margin: 0; }
+.customer-display-stale, .customer-display-welcome, .customer-display-thanks { text-align: center; margin-top: 30vh; }
+.customer-display-pairing form { display: grid; gap: var(--pos-s3); max-width: 40ch; }
+@media (prefers-reduced-motion: reduce) { .customer-display * { transition: none !important; animation: none !important; } }

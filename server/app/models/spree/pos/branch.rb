@@ -22,6 +22,9 @@ module Spree
       # Shift close: a count whose variance exceeds this needs a reason and an
       # approval. Nil means every non-zero variance needs one.
       validates :variance_threshold, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
+      # Customer display freshness window in seconds; nil uses the default.
+      # Must be accepted in device UAT before a branch relies on the display.
+      validates :display_freshness_ttl_seconds, numericality: { only_integer: true, in: 5..120 }, allow_nil: true
       validates :timezone, format: { with: /\A[A-Za-z0-9_+\-\/]{1,64}\z/ }
       validate :locations_belong_to_store
       validate :stock_location_fixed_for_open_drafts, on: :update
@@ -48,7 +51,9 @@ module Spree
           receiving_stock_location_id: receiving_stock_location&.prefixed_id,
           receiving_note: receiving_config['note'],
           return_window_days: return_window_days,
-          variance_threshold: variance_threshold&.to_s('F')
+          variance_threshold: variance_threshold&.to_s('F'),
+          display_freshness_ttl_seconds: display_freshness_ttl_seconds,
+          lot_selection: lot_selection, adjustment_approval_threshold: adjustment_approval_threshold
         }
       end
 

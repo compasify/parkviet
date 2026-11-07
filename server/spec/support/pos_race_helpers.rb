@@ -1,12 +1,92 @@
 # frozen_string_literal: true
 
+require 'json'
 require 'timeout'
 
-# Committed-row races over two real database connections. Groups that include
-# this context run outside the transactional fixture and afterwards delete
-# exactly the rows created during the example.
-RSpec.shared_context 'with committed POS race rows' do
+# Rows committed outside the transactional fixture are visible to every process
+# that shares the test database, and nothing rolls them back. Every example
+# that commits holds one cross-process advisory lock from setup to cleanup, so
+# two such examples never overlap and "every id above the marks taken at setup"
+# is exactly this example's rows. The marks are also written to disk until the
+# cleanup succeeds, so the next example removes what a killed run or a failed
+# cleanup left behind.
+module PosCommittedRows
+  LOCK_KEY = 7_340_045_101 # arbitrary, shared by every committed-row example
+  MARKS_PATH = Rails.root.join('tmp/pos_committed_rows_marks.json')
+  # Another process's open transaction can hold a lock on a committed row (or
+  # deadlock with the cleanup); wait for it and try again rather than leaving
+  # the rows behind.
+  RETRYABLE = [ActiveRecord::Deadlocked, ActiveRecord::LockWaitTimeout].freeze
+  ATTEMPTS = 5
+
+  module_function
+
+  def acquire(connection)
+    raise 'Committed setup needs the test database' unless Rails.env.test?
+
+    connection.execute("SELECT pg_advisory_lock(#{LOCK_KEY})")
+    purge(connection, JSON.parse(MARKS_PATH.read)) if MARKS_PATH.exist?
+    marks = id_tables(connection).to_h do |table|
+      [table, connection.select_value("SELECT COALESCE(MAX(id), 0) FROM #{connection.quote_table_name(table)}").to_i]
+    end
+    MARKS_PATH.write(JSON.generate(marks))
+    marks
+  end
+
+  def release(connection, marks)
+    if marks
+      purge(connection, marks)
+      MARKS_PATH.delete
+    end
+  ensure
+    connection.execute("SELECT pg_advisory_unlock(#{LOCK_KEY})")
+  end
+
+  def id_tables(connection)
+    connection.tables.select { |table| connection.columns(table).any? { |column| column.name == 'id' && column.type == :integer } }
+  end
+
+  # One transaction, so foreign keys never see half the rows gone; retried
+  # whole when another process's lock aborts it.
+  def purge(connection, marks)
+    attempt = 0
+    begin
+      attempt += 1
+      connection.transaction do
+        connection.execute('SET LOCAL session_replication_role = replica')
+        connection.execute("SET LOCAL lock_timeout = '10s'")
+        marks.each do |table, max_id|
+          next unless connection.table_exists?(table)
+
+          connection.execute("DELETE FROM #{connection.quote_table_name(table)} WHERE id > #{Integer(max_id)}")
+        end
+      end
+    rescue *RETRYABLE
+      raise if attempt >= ATTEMPTS
+
+      sleep(0.5 * attempt)
+      retry
+    end
+  end
+end
+
+# Committed rows for one example, removed afterwards even when the example or
+# its setup fails.
+RSpec.shared_context 'with committed POS rows' do
   self.use_transactional_tests = false
+
+  before do
+    @committed_marks = PosCommittedRows.acquire(ActiveRecord::Base.connection)
+  end
+
+  after do
+    PosCommittedRows.release(ActiveRecord::Base.connection, @committed_marks)
+  end
+end
+
+# Committed-row races over two real database connections.
+RSpec.shared_context 'with committed POS race rows' do
+  include_context 'with committed POS rows'
 
   let(:store) { Spree::Store.default }
 
@@ -14,26 +94,8 @@ RSpec.shared_context 'with committed POS race rows' do
     ActiveRecord::Base.connection
   end
 
-  def id_tables
-    connection.tables.select { |table| connection.columns(table).any? { |column| column.name == 'id' && column.type == :integer } }
-  end
-
   before do
-    raise 'Committed setup needs the test database' unless Rails.env.test?
     raise 'Expected a persisted default store' unless store.persisted?
-
-    @high_water = id_tables.to_h do |table|
-      [table, connection.select_value("SELECT COALESCE(MAX(id), 0) FROM #{connection.quote_table_name(table)}").to_i]
-    end
-  end
-
-  after do
-    connection.transaction do
-      connection.execute('SET LOCAL session_replication_role = replica')
-      @high_water&.each do |table, max_id|
-        connection.execute("DELETE FROM #{connection.quote_table_name(table)} WHERE id > #{max_id}")
-      end
-    end
   end
 
   # Holds `row` locked until both contenders are provably waiting on the

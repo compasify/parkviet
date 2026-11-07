@@ -429,3 +429,19 @@ test('closing the evidence dialog never cancels; cancel needs confirmation', asy
   await expect(dialog).toHaveCount(0);
   expect(api.state.get('ws_1')?.attempts.map((attempt) => attempt.status)).toEqual(['canceled']);
 });
+
+test('the tender evidence print keeps its own content when receipt print styles are loaded', async ({
+  page,
+}) => {
+  await mockPos(page, [{ id: 'ws_1', order_id: 'R250', total: 250000 }]);
+  await login(page);
+  await openTab(page, 'ws_1');
+  await page.locator('.payment-panel').getByRole('button', { name: 'Thanh toán', exact: true }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.getByLabel('Khách đưa')).toBeVisible();
+  // Receipt print rules apply only while a receipt prints, never to this print.
+  await page.emulateMedia({ media: 'print' });
+  await expect(dialog.getByLabel('Khách đưa')).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Kết thúc', exact: true })).toBeVisible();
+  await page.emulateMedia({ media: 'screen' });
+});

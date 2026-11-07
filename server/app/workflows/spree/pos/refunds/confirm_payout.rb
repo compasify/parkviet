@@ -62,6 +62,7 @@ module Spree
                                            shift_id: drawer&.prefixed_id, core_refund_id: request.refund.prefixed_id })
             OutboxEntry.record!(store: store, event_type: 'refund.confirmed', aggregate: request,
                                 payload: { 'refund_id' => request.prefixed_id })
+            ReceiptBuilder.issue_safely!(request, actor: staff) # refund slip; never blocks the payout
             request.to_pos
           end
         end

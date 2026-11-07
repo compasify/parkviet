@@ -86,6 +86,7 @@ module Spree
                                          approval_id: approval&.prefixed_id })
           OutboxEntry.record!(store: store, event_type: 'shift.closed', aggregate: closure,
                               payload: { 'shift_id' => shift.prefixed_id, 'closure_id' => closure.prefixed_id })
+          ReceiptBuilder.issue_safely!(closure, actor: staff) # closing slip; never blocks the close
           closure.to_pos
         end
 

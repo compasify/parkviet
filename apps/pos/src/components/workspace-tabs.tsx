@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { fetchCatalogPage, parseMeasurementBarcode } from '../hooks/use-catalog';
 import { useInvoiceNumbers } from '../hooks/use-invoice-numbers';
@@ -21,16 +21,20 @@ import {
   type ScanResult,
   shouldCaptureScannerKey,
 } from '../lib/scanner-queue';
+import { describeTraceFailure } from '../lib/traceability';
 import { createWorkspaceSerializer } from '../lib/workspace-serializer';
 import { readLayout } from '../lib/workspace-storage';
 import { CatalogSearch, type ScanNotice } from './catalog-search';
 import { CustomerPanel } from './customer-panel';
 import { DiscountForm } from './discount-form';
+import { DisplayPinControl } from './display-pin-control';
 import { NoteForm } from './note-form';
 import { OrderLines } from './order-lines';
 import { PaymentPanel } from './payment-panel';
 import { PosIcon } from './pos-icon';
 import { usePosSelection } from './pos-selection';
+import { PrebillDialog } from './prebill-dialog';
+import { useScannerCalibration } from './scanner-calibration';
 
 type ScanPlan = { workspace?: PosWorkspace } & (
   | { kind: 'variant'; variantId: string }
@@ -230,7 +234,7 @@ export function WorkspaceTabs() {
     } catch (error) {
       if (started === scopeRef.current) {
         const conflict = leaseConflict(error);
-        setMessage(describeFailure(error, t));
+        setMessage(describeTraceFailure(error, t));
         if (conflict?.reason === 'lease_busy' && active)
           setLeaseWait({ workspaceId: active.id, until: Date.now() + conflict.seconds * 1000 });
       }
@@ -306,7 +310,7 @@ export function WorkspaceTabs() {
         return 'unknown';
       }
       scanPlans.current.delete(planKey);
-      notify(t('scanRejected', { code, reason: describeFailure(error, t) }));
+      notify(t('scanRejected', { code, reason: describeTraceFailure(error, t) }));
       return 'rejected';
     }
     scanPlans.current.delete(planKey);
@@ -314,7 +318,17 @@ export function WorkspaceTabs() {
     return 'applied';
   };
   const [scanner] = useState(() => createScannerQueue((intent) => sendScan.current(intent)));
-  const [keyBuffer] = useState(() => createScannerKeyBuffer());
+  // The register's calibrated terminator and timing (device setting).
+  const calibration = useScannerCalibration(selection.registerId);
+  const keyBuffer = useMemo(
+    () =>
+      createScannerKeyBuffer({
+        terminator: calibration.terminator,
+        maxGapMs: calibration.maxGapMs,
+      }),
+    [calibration.terminator, calibration.maxGapMs],
+  );
+  const [prebillOpen, setPrebillOpen] = useState(false);
   const enqueueScan = useRef<(code: string) => void>(() => undefined);
   enqueueScan.current = (code) => {
     if (!active || !editable) return;
@@ -588,6 +602,7 @@ export function WorkspaceTabs() {
             addDisabledReason={lockReason}
             scanNotice={scanNotice}
             onScan={editable ? (code) => enqueueScan.current(code) : undefined}
+            scanTerminator={calibration.terminator}
             onAdd={
               active
                 ? (variantId) =>
@@ -678,8 +693,32 @@ export function WorkspaceTabs() {
                     >
                       {t('closeView')}
                     </button>
+                    <button
+                      type="button"
+                      disabled={active.operational_status !== 'editing'}
+                      onClick={() => setPrebillOpen(true)}
+                    >
+                      {t('receiptPrebillOpen')}
+                    </button>
                   </div>
                 </details>
+                {prebillOpen && active.operational_status === 'editing' ? (
+                  <PrebillDialog
+                    workspace={active}
+                    names={{
+                      storeName: data?.store.name,
+                      branchName: data?.branches.find((row) => row.id === active.branch_id)?.name,
+                      registerName: data?.registers.find((row) => row.id === active.register_id)
+                        ?.name,
+                    }}
+                    timeZone={
+                      data?.branches.find((row) => row.id === active.branch_id)?.timezone ??
+                      data?.store.timezone ??
+                      'Asia/Ho_Chi_Minh'
+                    }
+                    onClose={() => setPrebillOpen(false)}
+                  />
+                ) : null}
               </div>
             ) : null}
           </div>
@@ -849,6 +888,12 @@ export function WorkspaceTabs() {
                     active.operational_status !== 'completed')
                 }
                 command={(action) => command(active, action)}
+                reserveTrace={(current) => workspaces.reserveTrace(current)}
+              />
+              <DisplayPinControl
+                shiftId={data?.shift?.id ?? null}
+                ownsShift={Boolean(data?.shift && data.shift.owner_id === data.staff.id)}
+                workspace={active}
               />
             </div>
           ) : (

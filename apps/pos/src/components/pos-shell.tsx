@@ -17,6 +17,7 @@ import { queryClient } from '../lib/query-client';
 import { canReadReceivables } from '../lib/receivables';
 import { failureStatus, posFailureKey } from '../lib/request-failure';
 import { canProcessReturns } from '../lib/returns';
+import { canOpenInventory } from '../lib/traceability';
 import {
   forgetIntent,
   hasPendingIntents,
@@ -29,6 +30,7 @@ import { ContextSetupDialog } from './context-setup-dialog';
 import { OpenShiftDialog } from './open-shift-dialog';
 import { PosIcon } from './pos-icon';
 import { PosSelectionProvider, usePosSelection } from './pos-selection';
+import { ScannerCalibrationDialog } from './scanner-calibration';
 
 export function PosShell() {
   return (
@@ -64,9 +66,13 @@ function ShellFrame() {
                     ? t('shiftsNav')
                     : pathname.endsWith('/reports')
                       ? t('reportsNav')
-                      : t('sellingArea');
+                      : pathname.endsWith('/inventory')
+                        ? t('inventoryNav')
+                        : pathname.endsWith('/receipts')
+                          ? t('receiptsTitle')
+                          : t('sellingArea');
   const isSale =
-    !/\/(settings|funds|receivables|credit-accounts|credit-approvals|payment-attention|orders|returns|shifts|reports)(\/|$)/.test(
+    !/\/(settings|funds|receivables|credit-accounts|credit-approvals|payment-attention|orders|returns|shifts|reports|inventory|receipts)(\/|$)/.test(
       pathname,
     );
   const contextPicker = useRef<HTMLDetailsElement>(null);
@@ -98,6 +104,7 @@ function ShellFrame() {
   }, []);
   const [online, setOnline] = useState(() => globalThis.navigator?.onLine !== false);
   const [busy, setBusy] = useState(false);
+  const [calibrating, setCalibrating] = useState(false);
   const [logoutError, setLogoutError] = useState('');
   const [intentsVersion, setIntentsVersion] = useState(0);
   const [financialVersion, setFinancialVersion] = useState(0);
@@ -359,6 +366,35 @@ function ShellFrame() {
               <p>
                 <Link to="/shifts">{t('shiftsNav')}</Link> ·{' '}
                 <Link to="/reports">{t('reportsNav')}</Link>
+              </p>
+            ) : null}
+            {/* Receipts and counter devices */}
+            {context.data && context.data.capabilities.length > 0 ? (
+              <p>
+                <Link to="/receipts">{t('receiptsTitle')}</Link>
+                {selection.registerId ? (
+                  <>
+                    {' · '}
+                    <button
+                      type="button"
+                      className="link-button"
+                      onClick={() => setCalibrating(true)}
+                    >
+                      {t('scannerCalibrationOpen')}
+                    </button>
+                  </>
+                ) : null}
+              </p>
+            ) : null}
+            {calibrating && selection.registerId ? (
+              <ScannerCalibrationDialog
+                registerId={selection.registerId}
+                onClose={() => setCalibrating(false)}
+              />
+            ) : null}
+            {canOpenInventory(context.data?.capabilities) ? (
+              <p>
+                <Link to="/inventory">{t('inventoryNav')}</Link>
               </p>
             ) : null}
             <button type="button" onClick={logout} disabled={busy}>

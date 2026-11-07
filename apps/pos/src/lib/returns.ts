@@ -1,4 +1,12 @@
-import { conflictReason, describeFailure } from './request-failure';
+import { conflictReason } from './request-failure';
+import {
+  describeTraceFailure,
+  lotChoiceRequired,
+  type OrderLineTrace,
+  type ReturnLineTraceRow,
+  type ReturnPreviewTrace,
+  returnableLots,
+} from './traceability';
 
 // Domain refusals the server names; each has its own Vietnamese sentence.
 const RETURN_REASONS = new Set([
@@ -32,7 +40,7 @@ export function describeReturnFailure(error: unknown, translate: (key: string) =
   const reason = conflictReason(error);
   return reason && RETURN_REASONS.has(reason)
     ? translate(`returnReason_${reason}`)
-    : describeFailure(error, translate);
+    : describeTraceFailure(error, translate);
 }
 
 // Order history, returns, refunds and exchanges. Amounts are canonical decimal
@@ -83,6 +91,8 @@ export type PosOrderLine = {
   handed_over: boolean;
   entitlement_used: string;
   entitlement_reserved: string;
+  // Serials or lots the line sold, with what already came back.
+  trace?: OrderLineTrace | null;
 };
 
 export type PosOrderReceipt = {
@@ -145,6 +155,7 @@ export type PosReturnLine = EntitlementComponents & {
   status: 'reserved' | 'posted' | 'canceled';
   received_quantity: number;
   restocked_quantity: number;
+  trace?: ReturnLineTraceRow[];
 };
 
 // List row of a return (approvals, order detail); the full return adds lines,
@@ -268,6 +279,8 @@ export type ReturnPreviewLine = {
   used: string;
   reserved: string;
   this_time: EntitlementComponents;
+  // The serials or lot quantities this return takes back.
+  trace?: ReturnPreviewTrace | null;
 };
 
 export type ReturnPreview = {
@@ -286,7 +299,26 @@ export type ReturnPreview = {
   lines: ReturnPreviewLine[];
 };
 
-export type ReturnSelection = Record<string, { quantity: number; condition: ReturnCondition }>;
+// Serial lines name the serials coming back (their count is the quantity);
+// lot lines name the lot when more than one can still be returned.
+// Traced lines (serials, lots) start without a condition: the cashier must
+// look at the goods and choose; other lines default to resellable.
+export type ReturnPick = {
+  quantity: number;
+  condition: ReturnCondition | null;
+  serial_codes?: string[];
+  lot_code?: string;
+};
+
+export type ReturnSelection = Record<string, ReturnPick>;
+
+export type ReturnSelectionLine = {
+  sale_line_id: string;
+  quantity: number;
+  condition: ReturnCondition;
+  serial_codes?: string[];
+  lot_code?: string;
+};
 
 const SCALE = 4;
 const FACTOR = 10n ** BigInt(SCALE);
@@ -346,16 +378,34 @@ export function defaultRefundAmount(
 
 // Lines of a selection that can be sent: positive whole quantities within the
 // remaining returnable units of handed-over lines.
+// Units of one lot the line can still take back.
+function lotRemaining(line: PosOrderLine, lotCode: string): number {
+  return returnableLots(line.trace).find((lot) => lot.lot_code === lotCode)?.remaining ?? 0;
+}
+
 export function selectionLines(
   lines: PosOrderLine[],
   selection: ReturnSelection,
-): { sale_line_id: string; quantity: number; condition: ReturnCondition }[] {
+): ReturnSelectionLine[] {
   return lines.flatMap((line) => {
     const picked = selection[line.sale_line_id];
     if (!picked || !Number.isInteger(picked.quantity) || picked.quantity <= 0) return [];
     if (picked.quantity > line.returnable_quantity) return [];
+    const serials = line.trace?.mode === 'serial' ? (picked.serial_codes ?? []) : [];
+    if (line.trace?.mode === 'serial' && serials.length !== picked.quantity) return [];
+    const lot = line.trace?.mode === 'lot' ? picked.lot_code : undefined;
+    if (lotChoiceRequired(line.trace) && !lot) return [];
+    if (lot && picked.quantity > lotRemaining(line, lot)) return [];
+    const condition = picked.condition;
+    if (!condition) return [];
     return [
-      { sale_line_id: line.sale_line_id, quantity: picked.quantity, condition: picked.condition },
+      {
+        sale_line_id: line.sale_line_id,
+        quantity: picked.quantity,
+        condition,
+        ...(serials.length ? { serial_codes: serials } : {}),
+        ...(lot ? { lot_code: lot } : {}),
+      },
     ];
   });
 }
@@ -366,6 +416,10 @@ export function selectionError(lines: PosOrderLine[], selection: ReturnSelection
     if (!picked || picked.quantity === 0) continue;
     if (!Number.isInteger(picked.quantity) || picked.quantity < 0) return 'returnQuantityInvalid';
     if (picked.quantity > line.returnable_quantity) return 'returnQuantityTooMany';
+    if (lotChoiceRequired(line.trace) && !picked.lot_code) return 'returnLotRequired';
+    if (picked.lot_code && picked.quantity > lotRemaining(line, picked.lot_code))
+      return 'returnLotTooMany';
+    if (!picked.condition) return 'returnConditionRequired';
   }
   return selectionLines(lines, selection).length === 0 ? 'returnNothingSelected' : null;
 }
@@ -446,11 +500,23 @@ export function canCancelReturn(
 // the same intent, so a retry after a lost response reuses its key.
 export function prepareIntent(
   orderId: string,
-  lines: { sale_line_id: string; quantity: number; condition: string }[],
+  lines: {
+    sale_line_id: string;
+    quantity: number;
+    condition: string;
+    serial_codes?: string[];
+    lot_code?: string;
+  }[],
 ): string {
   const parts = [...lines]
     .sort((left, right) => left.sale_line_id.localeCompare(right.sale_line_id))
-    .map((line) => `${line.sale_line_id}:${line.quantity}:${line.condition}`);
+    .map((line) => {
+      const serials = line.serial_codes?.length
+        ? `:${[...line.serial_codes].sort().join('|')}`
+        : '';
+      const lot = line.lot_code ? `:lot=${line.lot_code}` : '';
+      return `${line.sale_line_id}:${line.quantity}:${line.condition}${serials}${lot}`;
+    });
   return `prepare:${orderId}:${parts.join(',')}`;
 }
 

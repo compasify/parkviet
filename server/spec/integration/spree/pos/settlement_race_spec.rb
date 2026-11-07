@@ -1,12 +1,13 @@
 # frozen_string_literal: true
 
 require 'timeout'
+require_relative '../../../support/pos_race_helpers'
 
 # Money commands racing over two database connections. Rows must be committed for
 # the second connection to see them, so this group runs outside the transactional
 # fixture and afterwards deletes exactly the rows created during the example.
 RSpec.describe 'POS settlement races', type: :integration do
-  self.use_transactional_tests = false
+  include_context 'with committed POS rows'
 
   let(:store) { Spree::Store.default }
   let(:caps) do
@@ -18,17 +19,9 @@ RSpec.describe 'POS settlement races', type: :integration do
     ActiveRecord::Base.connection
   end
 
-  def id_tables
-    connection.tables.select { |table| connection.columns(table).any? { |column| column.name == 'id' && column.type == :integer } }
-  end
-
   before do
-    raise 'Committed setup needs the test database' unless Rails.env.test?
     raise 'Expected a persisted default store' unless store.persisted?
 
-    @high_water = id_tables.to_h do |table|
-      [table, connection.select_value("SELECT COALESCE(MAX(id), 0) FROM #{connection.quote_table_name(table)}").to_i]
-    end
     @editor_id = SecureRandom.uuid
     @location = Spree::StockLocation.create!(
       store: store, name: "Race #{SecureRandom.hex(4)}", address1: '1 Race St', city: 'HCM',
@@ -52,15 +45,6 @@ RSpec.describe 'POS settlement races', type: :integration do
                                                lease_generation: @workspace.lease_generation, editor_id: @editor_id,
                                                variant_id: product.default_variant.prefixed_id, quantity: 1)
     @workspace.reload
-  end
-
-  after do
-    connection.transaction do
-      connection.execute('SET LOCAL session_replication_role = replica')
-      @high_water&.each do |table, max_id|
-        connection.execute("DELETE FROM #{connection.quote_table_name(table)} WHERE id > #{max_id}")
-      end
-    end
   end
 
   def staff

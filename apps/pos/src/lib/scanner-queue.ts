@@ -117,7 +117,13 @@ export type ScannerKeyEvent = Pick<KeyboardEvent, 'key' | 'timeStamp'>;
 // A barcode scanner types a burst of characters followed by Enter. Characters
 // arriving slower than a person can type reset the burst, so ordinary keyboard
 // use outside text fields never becomes a scan.
-export function createScannerKeyBuffer({ maxGapMs = 100, minLength = 3, maxLength = 200 } = {}) {
+// The terminator and the gap come from the register's device calibration.
+export function createScannerKeyBuffer({
+  maxGapMs = 100,
+  minLength = 3,
+  maxLength = 200,
+  terminator = 'Enter' as 'Enter' | 'Tab',
+} = {}) {
   let buffer = '';
   let last = Number.NEGATIVE_INFINITY;
 
@@ -135,7 +141,7 @@ export function createScannerKeyBuffer({ maxGapMs = 100, minLength = 3, maxLengt
         return null;
       }
       const gap = event.timeStamp - last;
-      if (event.key === 'Enter') {
+      if (event.key === terminator) {
         const code = buffer;
         const fresh = gap <= maxGapMs;
         reset();

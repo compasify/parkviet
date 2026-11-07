@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CashMovementDialog } from '../components/cash-movement-dialog';
@@ -201,6 +202,13 @@ function Shifts() {
                   />
                 </dd>
               </dl>
+              <Link
+                className="button-link"
+                to="/receipts"
+                search={{ source: closed.data.closure.id }}
+              >
+                {t('receiptOpenClosure')}
+              </Link>
             </section>
           ) : null}
           {canReconcileCash(capabilities) && selection.branchId ? (

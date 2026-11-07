@@ -9,8 +9,11 @@ import { PosShell } from './components/pos-shell';
 import { session } from './lib/app-session';
 import { CreditAccountsPage } from './pages/credit-accounts';
 import { CreditApprovalsPage } from './pages/credit-approvals';
+import { CustomerDisplayPage } from './pages/customer-display';
+import { InventoryTraceabilityPage } from './pages/inventory-traceability';
 import { LoginPage } from './pages/login';
 import { OrdersPage } from './pages/orders';
+import { ReceiptPage } from './pages/receipt';
 import { ReceivablesPage } from './pages/receivables';
 import { PaymentAttentionPage, ReceivedFundsPage } from './pages/received-funds';
 import { ReportsPage } from './pages/reports';
@@ -137,9 +140,38 @@ const reportsRoute = createRoute({
   component: ReportsPage,
 });
 
+// Serial and lot stock: receipts, transfers, counts, quarantine and recall.
+const inventoryRoute = createRoute({
+  getParentRoute: () => authedRoute,
+  path: '/inventory',
+  component: InventoryTraceabilityPage,
+});
+
+// Receipts (authed) and the customer display, which has no staff session:
+// it reads only with its own display token.
+const receiptsRoute = createRoute({
+  getParentRoute: () => authedRoute,
+  path: '/receipts',
+  validateSearch: (search: Record<string, unknown>): { source?: string; receiptId?: string } => {
+    const id = (value: unknown) =>
+      typeof value === 'string' && /^[\w-]{1,64}$/.test(value) ? value : undefined;
+    const source = id(search.source);
+    const receiptId = id(search.receiptId);
+    return { ...(source ? { source } : {}), ...(receiptId ? { receiptId } : {}) };
+  },
+  component: ReceiptPage,
+});
+
+const customerDisplayRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/display',
+  component: CustomerDisplayPage,
+});
+
 export const router = createRouter({
   routeTree: rootRoute.addChildren([
     loginRoute,
+    customerDisplayRoute,
     authedRoute.addChildren([
       saleRoute,
       settingsRoute,
@@ -154,6 +186,8 @@ export const router = createRouter({
       returnsRoute,
       shiftsRoute,
       reportsRoute,
+      receiptsRoute,
+      inventoryRoute,
     ]),
   ]),
   basepath: '/pos',

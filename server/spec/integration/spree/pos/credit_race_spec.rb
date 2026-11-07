@@ -2,6 +2,7 @@
 
 require 'timeout'
 require_relative '../../../support/pos_credit_helpers'
+require_relative '../../../support/pos_race_helpers'
 
 # Credit approvals and debt collections racing over two database connections.
 # Rows must be committed for the second connection to see them, so this group
@@ -10,7 +11,7 @@ require_relative '../../../support/pos_credit_helpers'
 RSpec.describe 'POS credit races', type: :integration do
   include PosCreditHelpers
 
-  self.use_transactional_tests = false
+  include_context 'with committed POS rows'
 
   let(:store) { Spree::Store.default }
 
@@ -18,29 +19,12 @@ RSpec.describe 'POS credit races', type: :integration do
     ActiveRecord::Base.connection
   end
 
-  def id_tables
-    connection.tables.select { |table| connection.columns(table).any? { |column| column.name == 'id' && column.type == :integer } }
-  end
-
   before do
-    raise 'Committed setup needs the test database' unless Rails.env.test?
     raise 'Expected a persisted default store' unless store.persisted?
 
-    @high_water = id_tables.to_h do |table|
-      [table, connection.select_value("SELECT COALESCE(MAX(id), 0) FROM #{connection.quote_table_name(table)}").to_i]
-    end
     @branch = credit_branch(store)
     @manager = credit_staff(store, @branch, PosCreditHelpers::MANAGER)
     @profile = credit_customer(store, @manager)
-  end
-
-  after do
-    connection.transaction do
-      connection.execute('SET LOCAL session_replication_role = replica')
-      @high_water&.each do |table, max_id|
-        connection.execute("DELETE FROM #{connection.quote_table_name(table)} WHERE id > #{max_id}")
-      end
-    end
   end
 
   # Holds `row` locked until both contenders are provably waiting on the

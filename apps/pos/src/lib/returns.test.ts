@@ -87,6 +87,63 @@ describe('return selection', () => {
     expect(selectionError(lines, { a: { quantity: 1, condition: 'resellable' } })).toBeNull();
   });
 
+  it('sends the ticked serials of a serial line and the chosen lot of a multi-lot line', () => {
+    const serialLine: PosOrderLine = {
+      ...line('s', 2),
+      trace: {
+        mode: 'serial',
+        allocations: [
+          { serial: 'SN-1', lot_code: null, expiry_on: null, quantity: 1, returned_quantity: 0 },
+          { serial: 'SN-2', lot_code: null, expiry_on: null, quantity: 1, returned_quantity: 0 },
+        ],
+      },
+    };
+    const lotLine: PosOrderLine = {
+      ...line('l', 5),
+      trace: {
+        mode: 'lot',
+        allocations: [
+          { serial: null, lot_code: 'L1', expiry_on: null, quantity: 2, returned_quantity: 0 },
+          { serial: null, lot_code: 'L2', expiry_on: null, quantity: 3, returned_quantity: 0 },
+        ],
+      },
+    };
+    const traced = [serialLine, lotLine];
+    expect(
+      selectionLines(traced, {
+        s: { quantity: 1, condition: 'resellable', serial_codes: ['SN-2'] },
+        l: { quantity: 2, condition: 'damaged', lot_code: 'L2' },
+      }),
+    ).toEqual([
+      { sale_line_id: 's', quantity: 1, condition: 'resellable', serial_codes: ['SN-2'] },
+      { sale_line_id: 'l', quantity: 2, condition: 'damaged', lot_code: 'L2' },
+    ]);
+    // A serial line whose ticked serials do not match the quantity is not sent.
+    expect(selectionLines(traced, { s: { quantity: 2, condition: 'resellable' } })).toEqual([]);
+    expect(selectionError(traced, { l: { quantity: 1, condition: 'resellable' } })).toBe(
+      'returnLotRequired',
+    );
+    // Traced goods need an explicit condition, and a lot gives back no more than it sold.
+    expect(
+      selectionError(traced, { s: { quantity: 1, condition: null, serial_codes: ['SN-1'] } }),
+    ).toBe('returnConditionRequired');
+    expect(
+      selectionLines(traced, { s: { quantity: 1, condition: null, serial_codes: ['SN-1'] } }),
+    ).toEqual([]);
+    expect(
+      selectionError(traced, { l: { quantity: 3, condition: 'damaged', lot_code: 'L1' } }),
+    ).toBe('returnLotTooMany');
+    expect(
+      prepareIntent('or_1', [
+        { sale_line_id: 's', quantity: 1, condition: 'resellable', serial_codes: ['SN-1'] },
+      ]),
+    ).not.toBe(
+      prepareIntent('or_1', [
+        { sale_line_id: 's', quantity: 1, condition: 'resellable', serial_codes: ['SN-2'] },
+      ]),
+    );
+  });
+
   it('parses typed quantities as whole base units only', () => {
     expect(parseQuantityInput('3')).toBe(3);
     expect(parseQuantityInput('')).toBe(0);

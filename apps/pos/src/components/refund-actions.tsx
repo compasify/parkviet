@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router';
 import { type ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatMoney } from '../lib/money';
@@ -64,6 +65,11 @@ export function RefundActions({
         {t(`refundStatus_${refund.status}`)}
         {waiting ? ` · ${t('refundWaitApproval')}` : ''}
       </span>
+      {refund.status === 'confirmed' ? (
+        <Link to="/receipts" search={{ source: refund.id }}>
+          {t('receiptOpenRefund')}
+        </Link>
+      ) : null}
       {extra}
       {checking ? (
         <span className="row" role="status">

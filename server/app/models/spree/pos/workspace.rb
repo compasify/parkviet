@@ -85,7 +85,14 @@ module Spree
         coupon_promo = order.promotions.detect { |promo| promo.coupon_code? || promo.code.present? }
         coupon_code = order.coupon_code.presence || coupon_promo&.code
         coupon_amount = discounts.select { |row| row.kind == 'promotion' && (coupon_promo.nil? || row.promotion_id == coupon_promo.id) }.sum(&:amount)
+        now = self.class.database_now
+        memo = {}
+        traces = sale_lines.values.to_h do |sale|
+          [sale.prefixed_id, Spree::Pos::Inventory::AllocateTraceability.line_trace(sale, branch, now: now, memo: memo,
+                                                                                                 completed: operational_status == 'completed')]
+        end
         summary.merge(
+          trace: Spree::Pos::Inventory::AllocateTraceability.workspace_trace(self, traces),
           customer: customer_pos,
           line_items: order.line_items.to_a.sort_by(&:id).map do |line|
             core = {
@@ -111,7 +118,7 @@ module Spree
               value: explicit_item ? line_intent.value : (single_percent ? money(item_promotions.first.value) : money(item_amount.abs)),
               labels: item_promotions.map(&:label)
             }
-            sale ? core.merge(sale.to_pos(line)) : core.merge(sale_line_id: nil)
+            sale ? core.merge(sale.to_pos(line)).merge(trace: traces[sale.prefixed_id]) : core.merge(sale_line_id: nil, trace: nil)
           end,
           discount: intent && {
             id: intent.prefixed_id, value_type: intent.value_type, value: intent.value,
