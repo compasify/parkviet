@@ -64,7 +64,7 @@ Theo yêu cầu tiếp tục phát triển phase tiếp theo, các vấn đề c
 | 4 | [Concurrent order workspace](./phase-04-concurrent-order-workspace.md) | Completed |
 | 5 | [Catalog customers and discounts](./phase-05-catalog-customers-and-discounts.md) | Completed |
 | 6 | [Split tender and settlement](./phase-06-split-tender-and-settlement.md) | Completed |
-| 7 | [Credit sales and receivables](./phase-07-credit-sales-and-receivables.md) | Pending |
+| 7 | [Credit sales and receivables](./phase-07-credit-sales-and-receivables.md) | Completed |
 | 8 | [Inventory handover returns and exchanges](./phase-08-inventory-handover-returns-and-exchanges.md) | Pending |
 | 9 | [Shifts cashbook and reporting](./phase-09-shifts-cashbook-and-reporting.md) | Pending |
 | 10 | [Receipts customer display and devices](./phase-10-receipts-customer-display-and-devices.md) | Pending |
@@ -81,6 +81,8 @@ Phase 4 completed 06/11/2026: đã review và sửa 6 lỗi (lease sau takeover,
 Phase 5 completed 07/11/2026: review sửa lỗi backend/frontend (khóa snapshot khi có tender, số lượng nguyên, gộp gói, approval theo số tiền thực áp, scanner, tạo khách trùng...), thêm tem cân/giá EAN-13 và UI quản lý hàng chi nhánh. Migration mẫu tem mới áp database test; máy cân/quét thật chuyển phase 10, kiểm API thật chuyển phase 11; xem [mục đóng phase](./phase-05-catalog-customers-and-discounts.md#đóng-phase-07112026).
 
 Phase 6 completed 07/11/2026 (sandbox-only): review sửa lỗi payout giải phóng tiền đã chi, tiền mặt vào ca sai, tiền lẻ VND, nhập "100.000" bị đọc thành 100 đ, record khôi phục không xóa được; thêm race hai connection và fault injection. Migration mới áp database test; kiểm API thật chuyển phase 11, đối soát tiền `held` chuyển phase 9; xem [mục đóng phase](./phase-06-split-tender-and-settlement.md#đóng-phase-07112026).
+
+Phase 7 completed 07/11/2026 (sandbox-only): bán chịu có duyệt theo yêu cầu, exposure khóa theo tài khoản, sổ công nợ bất biến, thu nợ một phiếu nhiều đơn; review sửa race giao hàng bán chịu, phạm vi đọc công nợ, ghi trùng phiếu thu khi thử lại; thêm trang cấu hình công nợ và trang duyệt. Đảo một phần khoản thu đã hoàn tiền chuyển phase 8; xem [mục đóng phase](./phase-07-credit-sales-and-receivables.md#đóng-phase-07112026).
 
 ## Dependencies
 

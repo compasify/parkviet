@@ -1,7 +1,7 @@
 ---
 phase: 7
 title: "Bán chịu, công nợ và thu nợ nhiều lần"
-status: pending
+status: completed
 priority: P1
 dependencies: [3, 5, 6]
 effort: "Ước tính 10–15 person-days"
@@ -68,13 +68,13 @@ Inventory từ repo root; app-specific paths dự kiến, không upstream modifi
 
 ## Success Criteria
 
-- [ ] F02: sale500k/cash200k/bank200k/debt100k → actual payments400k, nợ100k, core không paid.
-- [ ] F08, A05: concurrent approvals không vượt exposure; stale/revoked approval bị chặn và audit.
-- [ ] F09: sale1m collect300k rồi200k → nợ500k, no new sales/stock; nhiều allocations không vượt parent receipt.
-- [ ] F19, F20: unapplied collection có resolution; refunded/reserved/unknown parent funds không dùng lại qua reverse/reallocate, integration child refunds là prerequisite trước enable phase 8.
-- [ ] F06, F16: concurrent collections/cash next-day gắn current shift, excess thật không mất.
-- [ ] F10: projection sau credit notes đúng ledger, không fake Refund/sửa lịch sử giá/payment_status; full return gate phase 8.
-- [ ] A02, A03: cashier không đọc nợ hoặc ghi credit ngoài scope; direct core bypass bị chặn.
+- [x] F02: sale500k/cash200k/bank200k/debt100k → actual payments400k, nợ100k, core không paid. *(`credit_sales_spec.rb`: 2 Payment completed 400k, nợ 100k, order `partially_paid`; không có Payment "nợ" giả; `payment_pending` chỉ do server đặt khi có duyệt nợ khớp đúng phần còn lại.)*
+- [x] F08, A05: concurrent approvals không vượt exposure; stale/revoked approval bị chặn và audit. *(`credit_race_spec.rb` hai connection: hai duyệt cùng hạn mức chỉ một thành công; duyệt hết hạn/thu hồi/đổi revision bị từ chối khi hoàn tất, nhả exposure có audit; revoke đua completion chỉ một kết quả.)*
+- [x] F09: sale1m collect300k rồi200k → nợ500k, no new sales/stock; nhiều allocations không vượt parent receipt. *(`collections_spec.rb`: thu 300k rồi 200k còn nợ 500k, không đổi doanh số/tồn; một phiếu thu nhiều đơn không vượt phiếu và từng khoản nợ; race hai quầy thu cùng khoản nợ không thu vượt.)*
+- [x] F19, F20: unapplied collection có resolution; refunded/reserved/unknown parent funds không dùng lại qua reverse/reallocate, integration child refunds là prerequisite trước enable phase 8. *(Phần chưa phân bổ nằm ở available của phiếu thu cho liability payout/phân bổ có quyền RESOLVE; đảo phân bổ đã hoàn tiền một phần bị từ chối toàn bộ, 60k còn lại không chuyển sang đơn khác vì core không giảm được Payment completed — đảo một phần chuyển phase 8 cùng seam refund.)*
+- [x] F06, F16: concurrent collections/cash next-day gắn current shift, excess thật không mất. *(Tiền mặt thu nợ ghi vào ca mở của chính người thu, thu được ở mọi chi nhánh; phần thừa giữ trên phiếu thu, không mất. Đối soát qua đêm/đóng ca ở phase 9.)*
+- [x] F10: projection sau credit notes đúng ledger, không fake Refund/sửa lịch sử giá/payment_status; full return gate phase 8. *(`ReceivableProjection` tách tổng gốc/credit note/thu/hoàn/dư nợ từ ledger, không dùng `amount_due`; `post_credit_note!` là seam cho trả hàng phase 8.)*
+- [x] A02, A03: cashier không đọc nợ hoặc ghi credit ngoài scope; direct core bypass bị chặn. *(Tài khoản công nợ có chi nhánh chủ quản; thu ngân chỉ tra một khách theo `customer_id`; tìm kiếm khi bị che chỉ theo tên hoặc số điện thoại đầy đủ; core payment/complete trực tiếp bị chặn — `credit_receivables_spec.rb`.)*
 
 ## Risk Assessment
 
@@ -85,3 +85,25 @@ Inventory từ repo root; app-specific paths dự kiến, không upstream modifi
 ## Next Steps
 
 Phase 8 nối return credit notes và actual refund evidence; chưa gọi tính năng credit-return hoàn chỉnh trước F10/F11 pass.
+
+## Review 07/11/2026
+
+Hai review độc lập (backend, frontend) không thấy lỗi nghiêm trọng ở lõi exposure/ghi nợ/thu nợ; các lỗi tìm thấy đã sửa và có test:
+
+- Giao hàng bán chịu dùng `force` của core nên bỏ qua kiểm tồn; hai lần giao đồng thời có thể làm tồn âm. Nay khóa StockLevel theo thứ tự id trước khi kiểm kệ; race hai connection một thành công một 409.
+- Thu ngân đọc được toàn bộ tài khoản công nợ của store; quản lý một chi nhánh sửa được tài khoản mọi nơi; tìm theo một phần số điện thoại làm lộ số khi bị che. Nay tài khoản có chi nhánh chủ quản, thu ngân chỉ tra từng khách, tìm khi bị che chỉ theo tên hoặc số đầy đủ.
+- Một phiếu thu nợ chia nhiều đơn làm mỗi đơn báo đã nhận toàn bộ phiếu; phân bổ phần thừa của phiếu thu chỉ cần quyền thu ngân. Nay tách khỏi tóm tắt đơn và cần RESOLVE (người thu trong ca mở của mình vẫn được).
+- Duyệt nợ chỉ cần quyền duyệt chung. Nay cần thêm `pos.credit.manage`. Reservation không còn dùng được được nhả và audit sau mỗi lệnh workspace và bởi recovery job.
+- Chuyển khoản trùng số tham chiếu + tài khoản nhận (thu nợ và xác nhận tender) bị chặn `duplicate_reference`; chỉ người có RESOLVE xác nhận ghi tiếp, có audit.
+- Frontend: thử lại sau mất phản hồi với nội dung đã sửa tạo key mới và ghi hai phiếu thu. Nay key theo tài khoản công nợ, tra receipt trước khi gửi lại, chặn thu mới khi kết quả chưa rõ. Sửa thêm: duyệt hết hạn vẫn hiện dùng được, trang không về 1 khi đổi khách, lỗi mất khi đóng dialog, nút ghi nợ bỏ qua attempt `unknown`, focus/inert của dialog, ngày giờ theo Asia/Ho_Chi_Minh, thông báo lỗi tiếng Việt.
+- Quản lý chưa có cách thao tác ngoài API. Nay có trang "Công nợ khách hàng" (cấu hình hạn mức/hạn trả/tạm khóa) và trang "Duyệt" (yêu cầu ghi nợ do thu ngân gửi; duyệt/từ chối/thu hồi trên phiên của quản lý).
+
+## Đóng phase 07/11/2026
+
+**Kết quả:** backend POS 237 examples, 0 failures (thêm `credit_sales_spec.rb`, `collections_spec.rb`, `credit_receivables_spec.rb`, `spec/integration/spree/pos/credit_race_spec.rb`). `apps/pos`: lint, typecheck sạch, 95 unit; Playwright 177 passed / 6 skipped (live API opt-in). Chi tiết: [báo cáo triển khai](./reports/phase-07-implementation.md).
+
+**Migration:** `20261107120000_create_spree_pos_receivables` chỉ áp database test. Development vẫn chờ sao lưu (cùng hai migration trước).
+
+**Ghi chú thiết kế:** không có bảng `CollectionAllocation` riêng; `FundsAllocation.collection_id` và `ReceivableEntry.funds_allocation_id` nối phiếu thu, đơn và bút toán. Race spec nằm ở `spec/integration/spree/pos/credit_race_spec.rb` thay cho `credit_concurrency_spec.rb`. Duyệt cấp trước khi hạ hạn mức vẫn được ghi nợ.
+
+**Chuyển phase sau:** đảo một phần phân bổ thu nợ đã hoàn tiền, và hoàn tiền trên khoản thu nợ cập nhật dư nợ (phase 8, cùng seam refund/credit note); khóa ca khi đóng ca với tiền thu nợ đang ghi (phase 9). `sale_lines_spec.rb:233` thỉnh thoảng flaky do `find_by(merge_key:)` không có thứ tự (có từ trước). Vẫn sandbox-only.
