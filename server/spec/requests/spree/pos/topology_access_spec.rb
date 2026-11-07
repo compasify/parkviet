@@ -271,9 +271,9 @@ RSpec.describe 'POS topology access', type: :request do
       grant(headers_for(approver), expires_at: 2.minutes.from_now)
       approval = Spree::Pos::Approval.find_by_prefix_id!(response.parsed_body.dig('data', 'id'))
 
-      travel 3.minutes do
-        expect { consume(approval) }.to raise_error(Spree::Pos::Conflict)
-      end
+      # Expiry is judged on database time, so move the deadline rather than the app clock.
+      approval.update_columns(expires_at: Spree::Pos::Workspace.database_now - 1.second)
+      expect { consume(approval) }.to raise_error(Spree::Pos::Conflict)
       expect(approval.reload.status).to eq('active')
     end
 

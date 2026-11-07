@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTraceability, useVariantUnit } from '../hooks/use-variant-unit';
 import type { PosWorkspace } from '../lib/pos-context';
+import { parseCountQuantity, parseMeasuredQuantity } from '../lib/quantity';
+import { describeFailure } from '../lib/request-failure';
 
 export type SaleLineAddExtra = Partial<{
   sale_quantity: string;
@@ -13,8 +15,6 @@ export type SaleLineAddExtra = Partial<{
   merge: boolean;
 }>;
 
-const DECIMAL = /^\d+(?:\.\d+)?$/;
-
 // Add row for one catalog variant. Measured variants take an exact decimal
 // sale quantity; tracked variants take draft lot/serial text only — selection
 // never claims stock is reserved (reservation stays unavailable_phase_8).
@@ -23,12 +23,14 @@ export function AddItemForm({
   branchId,
   variantId,
   disabled,
+  disabledReason,
   onAdd,
 }: {
   storeId: string | null;
   branchId: string | null;
   variantId: string;
   disabled: boolean;
+  disabledReason?: string;
   onAdd: (variantId: string, quantity: number, extra: SaleLineAddExtra) => Promise<PosWorkspace>;
 }) {
   const { t } = useTranslation();
@@ -39,13 +41,15 @@ export function AddItemForm({
   const [lotCode, setLotCode] = useState('');
   const [serials, setSerials] = useState('');
   const [merge, setMerge] = useState(false);
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
   const configured = unit.data?.data;
   const measured = configured ? configured.sale_unit !== configured.base_unit : false;
   const trackedMode = configured?.tracked_mode ?? 'none';
-  const quantityValid = DECIMAL.test((measured ? saleQuantity : quantity).trim());
+  const count = parseCountQuantity(quantity);
+  const measuredQuantity = parseMeasuredQuantity(saleQuantity);
+  const quantityValid = measured ? measuredQuantity !== null : count !== null;
+  const locked = disabled;
   const serialList = serials
     .split(/[\s,]+/)
     .map((code) => code.trim())
@@ -53,15 +57,15 @@ export function AddItemForm({
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
+    if (locked) return;
     if (!quantityValid) {
-      setError(t('saleLineInvalidQuantity'));
+      setError(t(measured ? 'saleLineInvalidQuantity' : 'saleLineInvalidCount'));
       return;
     }
-    setBusy(true);
     setError('');
     try {
-      await onAdd(variantId, measured ? 1 : Number(quantity.trim()), {
-        sale_quantity: measured ? saleQuantity.trim() : undefined,
+      await onAdd(variantId, measured ? 1 : (count ?? 1), {
+        sale_quantity: measured ? (measuredQuantity ?? undefined) : undefined,
         sale_unit_code: measured ? configured?.sale_unit : undefined,
         lot_code: lotCode.trim() || undefined,
         serial_codes: serialList.length ? serialList : undefined,
@@ -70,10 +74,8 @@ export function AddItemForm({
       setSaleQuantity('');
       setLotCode('');
       setSerials('');
-    } catch {
-      setError(t('saleLineAddFailed'));
-    } finally {
-      setBusy(false);
+    } catch (failure) {
+      setError(describeFailure(failure, t, 'saleLineAddFailed'));
     }
   }
 
@@ -91,7 +93,8 @@ export function AddItemForm({
             inputMode="decimal"
             value={saleQuantity}
             onChange={(event) => setSaleQuantity(event.target.value)}
-            disabled={disabled || busy}
+            disabled={locked}
+            title={disabledReason}
           />
         </label>
       ) : (
@@ -99,9 +102,11 @@ export function AddItemForm({
           {t('quantity')}
           <input
             inputMode="numeric"
+            aria-invalid={!measured && count === null}
             value={quantity}
             onChange={(event) => setQuantity(event.target.value)}
-            disabled={disabled || busy}
+            disabled={locked}
+            title={disabledReason}
           />
         </label>
       )}
@@ -113,7 +118,8 @@ export function AddItemForm({
             <input
               value={lotCode}
               onChange={(event) => setLotCode(event.target.value)}
-              disabled={disabled || busy}
+              disabled={locked}
+              title={disabledReason}
             />
           </label>
           <label>
@@ -121,7 +127,8 @@ export function AddItemForm({
             <input
               value={serials}
               onChange={(event) => setSerials(event.target.value)}
-              disabled={disabled || busy}
+              disabled={locked}
+              title={disabledReason}
               placeholder="SN-1, SN-2"
             />
           </label>
@@ -134,11 +141,13 @@ export function AddItemForm({
         <input
           type="checkbox"
           checked={merge}
+          disabled={locked}
+          title={disabledReason}
           onChange={(event) => setMerge(event.target.checked)}
         />
         {t('saleLineMerge')}
       </label>
-      <button type="submit" disabled={disabled || busy || unit.isLoading}>
+      <button type="submit" disabled={locked || unit.isLoading} title={disabledReason}>
         {t('addItem')}
       </button>
       {error ? (

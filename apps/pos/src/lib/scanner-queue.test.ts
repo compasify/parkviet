@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createScannerQueue, type ScanIntent, shouldCaptureScannerKey } from './scanner-queue';
+import {
+  createScannerKeyBuffer,
+  createScannerQueue,
+  type ScanIntent,
+  shouldCaptureScannerKey,
+} from './scanner-queue';
 
 async function flush() {
   await new Promise((resolve) => setTimeout(resolve, 0));
@@ -95,5 +100,38 @@ describe('scanner keyboard exclusions', () => {
     } finally {
       vi.unstubAllGlobals();
     }
+  });
+});
+
+describe('scanner keystroke bursts', () => {
+  const key = (k: string, timeStamp: number) => ({ key: k, timeStamp });
+
+  it('turns a fast burst ending in Enter into one code', () => {
+    const buffer = createScannerKeyBuffer({ maxGapMs: 50, minLength: 3 });
+    expect(['8', '9', '3', '4'].map((k, i) => buffer.push(key(k, i * 10), true))).toEqual([
+      null,
+      null,
+      null,
+      null,
+    ]);
+    expect(buffer.push(key('Enter', 45), true)).toBe('8934');
+    expect(buffer.push(key('Enter', 50), true)).toBeNull();
+  });
+
+  it('ignores slow typing, short codes, modifier keys and excluded targets', () => {
+    const buffer = createScannerKeyBuffer({ maxGapMs: 50, minLength: 3 });
+    buffer.push(key('a', 0), true);
+    buffer.push(key('b', 200), true);
+    buffer.push(key('Shift', 205), true);
+    buffer.push(key('C', 210), true);
+    expect(buffer.push(key('Enter', 220), true)).toBeNull();
+    buffer.push(key('1', 300), true);
+    buffer.push(key('2', 305), true);
+    buffer.push(key('3', 310), true);
+    expect(buffer.push(key('Enter', 400), true)).toBeNull();
+    buffer.push(key('1', 500), true);
+    buffer.push(key('2', 505), false);
+    buffer.push(key('3', 510), true);
+    expect(buffer.push(key('Enter', 515), true)).toBeNull();
   });
 });

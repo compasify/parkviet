@@ -25,7 +25,12 @@ Rails.application.routes.draw do
               end
             end
             resources :branches, only: [] do
-              resources :branch_products, only: [:create, :destroy], path: 'products'
+              resources :branch_products, only: [:index, :create, :destroy], path: 'products'
+              resources :label_formats, only: [:index, :create, :update] do
+                member do
+                  post :disable
+                end
+              end
             end
             resource :context, only: [:show], controller: 'context'
             get 'context/branches', to: 'context_branches#index'

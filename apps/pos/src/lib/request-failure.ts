@@ -52,3 +52,67 @@ function statusOf(error: unknown): number | undefined {
   }
   return undefined;
 }
+
+// The SDK substitutes this text when the response body carried no error object.
+const GENERIC_SDK_MESSAGE = /^Request failed with status \d+$/;
+const MAX_DETAIL_LENGTH = 500;
+
+function detailMessages(details: unknown): string[] {
+  if (typeof details !== 'object' || details === null) return [];
+  return Object.entries(details).flatMap(([field, entries]) => {
+    if (!Array.isArray(entries)) return [];
+    return entries.flatMap((entry: unknown) => {
+      const text =
+        typeof entry === 'string'
+          ? entry
+          : typeof entry === 'object' &&
+              entry !== null &&
+              'message' in entry &&
+              typeof entry.message === 'string'
+            ? entry.message
+            : '';
+      if (!text.trim()) return [];
+      return [field === 'base' ? text.trim() : `${field}: ${text.trim()}`];
+    });
+  });
+}
+
+// For conflicts and validation failures the server explains what went wrong;
+// show that text instead of a fixed bucket. Other statuses stay generic.
+export function serverFailureDetail(error: unknown): string | null {
+  const status = statusOf(error);
+  if ((status !== 409 && status !== 422) || typeof error !== 'object' || error === null)
+    return null;
+  const raw = 'message' in error && typeof error.message === 'string' ? error.message.trim() : '';
+  const message = GENERIC_SDK_MESSAGE.test(raw) ? '' : raw;
+  const details = 'details' in error ? detailMessages(error.details) : [];
+  const parts = [...new Set([message, ...details].filter(Boolean))];
+  if (!parts.length) return null;
+  const text = parts.join(' ');
+  return text.length > MAX_DETAIL_LENGTH ? `${text.slice(0, MAX_DETAIL_LENGTH - 1)}…` : text;
+}
+
+// One wording for every workspace command: lease problems use the lease
+// guidance, otherwise the server's own explanation, otherwise a local message.
+export function describeFailure(
+  error: unknown,
+  translate: (key: string) => string,
+  fallbackKey?: string,
+): string {
+  const lease = leaseConflict(error);
+  if (lease) return translate(lease.reason === 'lease_busy' ? 'leaseBusy' : 'leaseStale');
+  if (snapshotLocked(error)) return translate('editLockedPayments');
+  return serverFailureDetail(error) ?? translate(fallbackKey ?? posFailureKey(error));
+}
+
+// The server froze the basket because a tender is prepared or a payment exists.
+export function snapshotLocked(error: unknown): boolean {
+  if (statusOf(error) !== 409 || typeof error !== 'object' || error === null) return false;
+  const details = 'details' in error ? error.details : undefined;
+  return (
+    typeof details === 'object' &&
+    details !== null &&
+    'reason' in details &&
+    details.reason === 'snapshot_locked'
+  );
+}

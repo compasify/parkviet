@@ -38,6 +38,21 @@ module Spree
           lease_expires_at.present? && lease_expires_at > self.class.database_now
       end
 
+      # Tender statuses that commit the order snapshot: money may have moved or be
+      # moving, so items, prices, discounts and the customer must stay as quoted.
+      SNAPSHOT_LOCKING_TENDERS = %w[prepared confirmed unknown].freeze
+
+      def snapshot_locked?
+        order.completed? || order.payments.exists? ||
+          TenderAttempt.where(workspace_id: id, status: SNAPSHOT_LOCKING_TENDERS).exists?
+      end
+
+      def ensure_snapshot_editable!
+        return unless snapshot_locked?
+
+        raise Conflict.new('Order snapshot is locked by a payment or tender.', revision: revision, reason: 'snapshot_locked')
+      end
+
       def summary(total = true)
         {
           id: prefixed_id,
@@ -48,7 +63,7 @@ module Spree
           revision: revision,
           lease_generation: lease_generation,
           operational_status: operational_status,
-          payments: operational_status == 'completed' || TenderAttempt.where(workspace_id: id).where.not(status: 'canceled').exists?,
+          payments: operational_status == 'completed' || TenderAttempt.where(workspace_id: id).where.not(status: %w[canceled failed]).exists?,
           note: note
         }
       end

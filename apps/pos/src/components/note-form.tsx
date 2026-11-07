@@ -1,35 +1,35 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { PosWorkspace } from '../lib/pos-context';
+import { describeFailure } from '../lib/request-failure';
 
 export function NoteForm({
   workspace,
   disabled,
+  disabledReason,
   onSave,
   onClose,
 }: {
   workspace: PosWorkspace;
   disabled: boolean;
+  disabledReason?: string;
   onSave: (note: string) => Promise<PosWorkspace>;
   onClose?: () => void;
 }) {
   const { t } = useTranslation();
   const [note, setNote] = useState(workspace.note ?? '');
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
-    setBusy(true);
+    if (disabled) return;
     setError('');
     try {
       const saved = await onSave(note.trim());
       setNote(saved.note ?? '');
       onClose?.();
-    } catch {
-      setError(t('noteFailed'));
-    } finally {
-      setBusy(false);
+    } catch (failure) {
+      setError(describeFailure(failure, t, 'noteFailed'));
     }
   }
 
@@ -46,12 +46,13 @@ export function NoteForm({
           rows={3}
           value={note}
           onChange={(event) => setNote(event.target.value)}
-          disabled={disabled || busy}
+          disabled={disabled}
+          title={disabledReason}
           placeholder={t('notePlaceholder')}
         />
       </label>
       <div className="row">
-        <button type="submit" className="primary-button" disabled={disabled || busy}>
+        <button type="submit" className="primary-button" disabled={disabled} title={disabledReason}>
           {t('noteSave')}
         </button>
         {onClose ? (

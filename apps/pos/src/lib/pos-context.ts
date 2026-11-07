@@ -102,6 +102,8 @@ export type PosLineItem = {
   expiry_on?: string | null;
   serial_codes?: string[];
   tracked_mode?: string;
+  label_barcode?: string | null;
+  label_format_version?: number | null;
   line_discount?: PosLineDiscount | null;
   item_discount?: {
     amount: string;
@@ -122,6 +124,7 @@ export type PosVariantUnit = {
   tracked_mode: string;
   version: number;
   status: string;
+  label_code?: string | null;
 };
 
 export type PosCustomer = {

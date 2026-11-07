@@ -19,12 +19,16 @@ module Spree
               intent.assign_attributes(workspace: workspace, actor: staff, value_type: value_type.to_s, value: value.to_s, reason: reason.to_s)
               raise Conflict, 'Line discount is invalid.' unless intent.valid?
 
-              amount = preview_amount(workspace, sale_line, value_type, value)
-              ApplyDiscount.approve!(workspace, staff, revision, approval_id, amount: amount, action: ACTION)
+              before = intent.persisted? ? { value_type: intent.value_type_was, value: intent.value_was, amount: ApplyDiscount.applied_amount(intent).to_s('F') } : nil
+              # Rejects an amount above the line before anything is written.
+              preview_amount(workspace, sale_line, value_type, value)
               intent.save!
               ApplyDiscount.recalculate!(workspace)
+              amount = ApplyDiscount.applied_amount(intent)
+              approval = ApplyDiscount.approve!(workspace, staff, revision, approval_id, amount: amount, action: ACTION)
               workspace.update!(revision: workspace.revision + 1)
-              AuditEntry.record!(store: workspace.store, actor: staff, action: 'workspace.line_discount.apply', subject: workspace, metadata: { sale_line_id: sale_line.prefixed_id, value_type: intent.value_type, value: intent.value, reason: intent.reason })
+              AuditEntry.record!(store: workspace.store, actor: staff, action: 'workspace.line_discount.apply', subject: workspace,
+                                 metadata: { sale_line_id: sale_line.prefixed_id, value_type: intent.value_type, value: intent.value, reason: intent.reason, amount: amount.to_s('F'), before: before }.merge(ApplyDiscount.approval_metadata(approval)))
               workspace.to_pos
             end
           end
@@ -37,8 +41,9 @@ module Spree
               raise ActiveRecord::RecordNotFound if sale_line.nil?
 
               intent = LineDiscountIntent.find_by(sale_line: sale_line)
-              amount = intent ? ApplyDiscount.manual_total(workspace) : nil
-              ApplyDiscount.approve!(workspace, staff, revision, approval_id, amount: amount, action: CLEAR_ACTION)
+              amount = intent && ApplyDiscount.applied_amount(intent)
+              approval = ApplyDiscount.approve!(workspace, staff, revision, approval_id, amount: amount, action: CLEAR_ACTION)
+              before = intent && { value_type: intent.value_type, value: intent.value, amount: amount.to_s('F') }
               if intent
                 discount_ids = intent.allocations.pluck(:discount_id)
                 Spree::Pos::DiscountAllocation.where(line_discount_intent_id: intent.id).delete_all
@@ -47,7 +52,7 @@ module Spree
               end
               ApplyDiscount.recalculate!(workspace)
               workspace.update!(revision: workspace.revision + 1)
-              AuditEntry.record!(store: workspace.store, actor: staff, action: 'workspace.line_discount.clear', subject: workspace, metadata: { sale_line_id: sale_line.prefixed_id })
+              AuditEntry.record!(store: workspace.store, actor: staff, action: 'workspace.line_discount.clear', subject: workspace, metadata: { sale_line_id: sale_line.prefixed_id, before: before }.merge(ApplyDiscount.approval_metadata(approval)))
               workspace.to_pos
             end
           end

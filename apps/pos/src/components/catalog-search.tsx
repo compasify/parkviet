@@ -7,6 +7,16 @@ import { posFailureKey } from '../lib/request-failure';
 import { AddItemForm } from './add-item-form';
 import { PosIcon } from './pos-icon';
 
+// Outcome of a scan reported back to the search box. `seq` changes for every
+// outcome so the same code scanned twice is reported twice.
+export type ScanNotice = {
+  seq: number;
+  code: string;
+  message: string;
+  // Added successfully: clear the box if it still holds the scanned code.
+  added: boolean;
+};
+
 export function CatalogSearch({
   storeId,
   branchId,
@@ -14,7 +24,9 @@ export function CatalogSearch({
   onAdd,
   onAddForm,
   onScan,
+  scanNotice,
   addDisabled,
+  addDisabledReason,
 }: {
   storeId: string | null;
   branchId: string | null;
@@ -26,7 +38,9 @@ export function CatalogSearch({
     extra: import('./add-item-form').SaleLineAddExtra,
   ) => Promise<PosWorkspace>;
   onScan?: (code: string) => void;
+  scanNotice?: ScanNotice | null;
   addDisabled?: boolean;
+  addDisabledReason?: string;
 }) {
   const { t } = useTranslation();
   const [input, setInput] = useState('');
@@ -54,6 +68,27 @@ export function CatalogSearch({
     return () => window.removeEventListener('keydown', focusSearch);
   }, []);
   void workspaceId;
+  const inputRef = useRef(input);
+  inputRef.current = input;
+  const [notice, setNotice] = useState('');
+  useEffect(() => {
+    if (!scanNotice) return;
+    setNotice(scanNotice.message);
+    if (scanNotice.added) {
+      if (inputRef.current.trim() === scanNotice.code) setInput('');
+      return;
+    }
+    // Leave the code in the box with its search results so the cashier chooses.
+    setInput(scanNotice.code);
+    setQuery(scanNotice.code);
+    setPage(1);
+  }, [scanNotice]);
+
+  function search() {
+    setPage(1);
+    setQuery(input.trim());
+    setNotice('');
+  }
 
   return (
     <div className="selling-search">
@@ -68,9 +103,7 @@ export function CatalogSearch({
           className="product-search-row"
           onSubmit={(event) => {
             event.preventDefault();
-            setPage(1);
-            setQuery(input.trim());
-            onScan?.(input.trim());
+            search();
           }}
         >
           <div className="search-input-wrap">
@@ -83,6 +116,13 @@ export function CatalogSearch({
               disabled={!branchId}
               value={input}
               onChange={(event) => setInput(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key !== 'Enter' || event.nativeEvent.isComposing) return;
+                event.preventDefault();
+                search();
+                // Enter in the search box is how a scanner focused here finishes a code.
+                if (onScan && input.trim()) onScan(input.trim());
+              }}
               aria-label={t('searchProducts')}
               aria-keyshortcuts="F2"
               placeholder={t('searchProductsPlaceholder')}
@@ -107,6 +147,11 @@ export function CatalogSearch({
           {t('waiting')}
         </span>
       ) : null}
+      {notice ? (
+        <p className="workspace-hint" role="status">
+          {notice}
+        </p>
+      ) : null}
       {result.isError ? <p role="alert">{t(posFailureKey(result.error))}</p> : null}
       {result.isSuccess && result.data.data.length === 0 ? (
         <div className="catalog-empty">
@@ -126,8 +171,8 @@ export function CatalogSearch({
                   <button
                     type="button"
                     className="catalog-product"
-                    aria-label={t('addItem')}
-                    title={item.name}
+                    aria-label={t('addItemNamed', { name: item.name })}
+                    title={addDisabled && addDisabledReason ? addDisabledReason : item.name}
                     disabled={!onAdd || addDisabled || item.price === null}
                     onClick={() => onAdd?.(item.id)}
                   >
@@ -185,6 +230,7 @@ export function CatalogSearch({
                           branchId={branchId}
                           variantId={item.id}
                           disabled={Boolean(addDisabled)}
+                          disabledReason={addDisabledReason}
                           onAdd={onAddForm}
                         />
                       ) : null}

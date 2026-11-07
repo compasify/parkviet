@@ -14,9 +14,13 @@ module Spree
 
       validates :merge_key, presence: true
 
-      def self.build_merge_key(variant_id:, kind:, unit_price:, sale_unit_code:, lot_code: nil, serial_codes: [], tracked_mode: 'none')
+      def self.build_merge_key(variant_id:, kind:, unit_price:, sale_unit_code:, lot_code: nil, serial_codes: [],
+                               tracked_mode: 'none', expiry_on: nil)
         serials = Array(serial_codes).map(&:to_s).sort
-        Digest::SHA256.hexdigest([variant_id, kind, unit_price.to_s, sale_unit_code, lot_code.to_s, serials.join(','), tracked_mode].join('|'))
+        parts = [variant_id, kind, unit_price.to_s, sale_unit_code, lot_code.to_s, serials.join(','), tracked_mode]
+        # Appended only when present so keys of lines without an expiry stay stable.
+        parts << expiry_on.to_s if expiry_on.present?
+        Digest::SHA256.hexdigest(parts.join('|'))
       end
 
       def tracked?
@@ -29,7 +33,7 @@ module Spree
           base_quantity: base_quantity, sale_unit: sale_unit_code, base_unit: base_unit_code,
           conversion_version: conversion_version, unit_price: unit_price.to_s('F'),
           lot_code: lot_code, expiry_on: expiry_on&.iso8601, serial_codes: Array(serial_codes),
-          tracked_mode: tracked_mode,
+          tracked_mode: tracked_mode, label_barcode: label_barcode, label_format_version: label_format_version,
           line_discount: line_discount_intent && {
             id: line_discount_intent.prefixed_id, value_type: line_discount_intent.value_type,
             value: line_discount_intent.value, reason: line_discount_intent.reason,

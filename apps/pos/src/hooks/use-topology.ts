@@ -6,7 +6,7 @@ import { useSession } from './use-session';
 export type StaffOption = { id: string; email: string; full_name: string | null };
 export type LocationOption = { id: string; name: string; active: boolean };
 
-async function allPages<T>(path: string) {
+export async function allPages<T>(path: string) {
   const data: T[] = [];
   let page: number | null = 1;
   while (page !== null) {

@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PosIcon } from '../../components/pos-icon';
@@ -322,6 +323,26 @@ export function TopologyPage() {
                         {t(branch.status === 'disabled' ? 'statusDisabled' : 'statusActive')}
                       </span>
                       {actions(branch, branch.name, branch.id)}
+                      <div className="admin-record-actions admin-branch-links">
+                        <Link
+                          className="button-link"
+                          to="/settings/branches/$branchId/products"
+                          params={{ branchId: branch.id }}
+                          aria-label={t('branchProductsFor', { name: branch.name })}
+                        >
+                          <PosIcon name="box" />
+                          {t('branchProductsTitle')}
+                        </Link>
+                        <Link
+                          className="button-link"
+                          to="/settings/branches/$branchId/label-formats"
+                          params={{ branchId: branch.id }}
+                          aria-label={t('labelFormatsFor', { name: branch.name })}
+                        >
+                          <PosIcon name="list" />
+                          {t('labelFormatsTitle')}
+                        </Link>
+                      </div>
                     </li>
                   ))
                 : null}

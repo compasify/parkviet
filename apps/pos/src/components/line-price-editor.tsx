@@ -2,19 +2,21 @@ import { useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { parseVndAmount } from '../lib/money';
 import type { PosLineItem, PosWorkspace } from '../lib/pos-context';
-import { posFailureKey } from '../lib/request-failure';
+import { describeFailure } from '../lib/request-failure';
 import { PosIcon } from './pos-icon';
 
 export function LinePriceEditor({
   line,
   currency,
   disabled,
+  disabledReason,
   canApplyDiscount,
   onApply,
 }: {
   line: PosLineItem;
   currency: string;
   disabled: boolean;
+  disabledReason?: string;
   canApplyDiscount: boolean;
   onApply: (input: { value: string; reason: string; approvalId?: string }) => Promise<PosWorkspace>;
 }) {
@@ -31,7 +33,6 @@ export function LinePriceEditor({
   const [price, setPrice] = useState(currentVnd ?? currentPrice);
   const [reason, setReason] = useState(t('linePriceDefaultReason'));
   const [approvalId, setApprovalId] = useState('');
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const reasonId = useId();
   const reasonRef = useRef<HTMLInputElement>(null);
@@ -40,15 +41,12 @@ export function LinePriceEditor({
   const valid = currency === 'VND' && value !== null && BigInt(value) >= 0n;
 
   async function run(action: () => Promise<PosWorkspace>) {
-    setBusy(true);
     setError('');
     try {
       await action();
       if (details.current) details.current.open = false;
     } catch (failure) {
-      setError(t(posFailureKey(failure)));
-    } finally {
-      setBusy(false);
+      setError(describeFailure(failure, t));
     }
   }
 
@@ -57,7 +55,7 @@ export function LinePriceEditor({
       <summary
         className="cell-edit-button"
         aria-label={t('linePriceEditName', { name: line.name })}
-        title={t('linePriceEdit')}
+        title={disabledReason ?? t('linePriceEdit')}
       >
         <PosIcon name="edit" />
       </summary>
@@ -66,7 +64,7 @@ export function LinePriceEditor({
           className="line-price-form pos-popup-card"
           onSubmit={(event) => {
             event.preventDefault();
-            if (!valid || disabled || busy || !reason.trim()) return;
+            if (!valid || disabled || !reason.trim()) return;
             void run(() =>
               onApply({
                 value,
@@ -88,7 +86,7 @@ export function LinePriceEditor({
               inputMode="numeric"
               value={price}
               maxLength={64}
-              disabled={disabled || busy}
+              disabled={disabled}
               aria-invalid={!valid}
               onChange={(event) => setPrice(event.target.value)}
             />
@@ -101,10 +99,10 @@ export function LinePriceEditor({
                 ref={reasonRef}
                 value={reason}
                 maxLength={200}
-                disabled={disabled || busy}
+                disabled={disabled}
                 onChange={(event) => setReason(event.target.value)}
               />
-              {reason && !disabled && !busy ? (
+              {reason && !disabled ? (
                 <button
                   type="button"
                   className="input-clear-button"
@@ -124,7 +122,7 @@ export function LinePriceEditor({
               {t('discountApproval')}
               <input
                 value={approvalId}
-                disabled={disabled || busy}
+                disabled={disabled}
                 onChange={(event) => setApprovalId(event.target.value)}
               />
             </label>
@@ -133,14 +131,14 @@ export function LinePriceEditor({
             <button
               type="submit"
               className="primary-button"
-              disabled={disabled || busy || !valid || !reason.trim()}
+              disabled={disabled || !valid || !reason.trim()}
             >
               {t('save')}
             </button>
             {isOverridden && listPrice !== null ? (
               <button
                 type="button"
-                disabled={disabled || busy}
+                disabled={disabled}
                 onClick={() =>
                   void run(() =>
                     onApply({

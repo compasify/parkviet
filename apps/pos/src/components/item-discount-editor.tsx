@@ -2,13 +2,14 @@ import { useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatMoney, parsePercentageInput, parseVndAmount } from '../lib/money';
 import type { PosLineItem, PosWorkspace } from '../lib/pos-context';
-import { posFailureKey } from '../lib/request-failure';
+import { describeFailure } from '../lib/request-failure';
 import { PosIcon } from './pos-icon';
 
 export function ItemDiscountEditor({
   line,
   currency,
   disabled,
+  disabledReason,
   canApplyDiscount,
   onApply,
   onClear,
@@ -16,6 +17,7 @@ export function ItemDiscountEditor({
   line: PosLineItem;
   currency: string;
   disabled: boolean;
+  disabledReason?: string;
   canApplyDiscount: boolean;
   onApply: (input: {
     valueType: 'item_flat' | 'item_percent';
@@ -33,7 +35,6 @@ export function ItemDiscountEditor({
   const [value, setValue] = useState(initialValue);
   const [reason, setReason] = useState(t('itemDiscountReason'));
   const [approvalId, setApprovalId] = useState('');
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const reasonId = useId();
   const reasonRef = useRef<HTMLInputElement>(null);
@@ -43,21 +44,18 @@ export function ItemDiscountEditor({
     type !== initialType ||
     parsed !==
       (type === 'percent' ? parsePercentageInput(initialValue) : parseVndAmount(initialValue));
-  const locked = disabled || busy || !line.sale_line_id;
+  const locked = disabled || !line.sale_line_id;
   const hasDiscount = Boolean(
     current?.amount && current.amount !== '0.0' && current.amount !== '0',
   );
 
   async function run(action: () => Promise<PosWorkspace>) {
-    setBusy(true);
     setError('');
     try {
       await action();
       if (details.current) details.current.open = false;
     } catch (failure) {
-      setError(t(posFailureKey(failure)));
-    } finally {
-      setBusy(false);
+      setError(describeFailure(failure, t));
     }
   }
 
@@ -73,7 +71,7 @@ export function ItemDiscountEditor({
         <summary
           className="cell-edit-button"
           aria-label={`${t('itemDiscountColumn')}: ${line.name}`}
-          title={t('itemDiscountColumn')}
+          title={disabledReason ?? t('itemDiscountColumn')}
         >
           <PosIcon name="edit" />
         </summary>
@@ -216,7 +214,7 @@ export function ItemDiscountEditor({
         <button
           type="button"
           className="cell-edit-button cell-clear-button"
-          title={t('discountClear')}
+          title={disabledReason ?? t('discountClear')}
           aria-label={`${t('discountClear')} ${line.name}`}
           disabled={locked || (!canApplyDiscount && !approvalId.trim())}
           onClick={() =>

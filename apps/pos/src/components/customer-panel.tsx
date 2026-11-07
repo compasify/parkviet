@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCreateCustomer, useCustomerSearch } from '../hooks/use-pos-customers';
 import type { PosWorkspace } from '../lib/pos-context';
-import { posFailureKey } from '../lib/request-failure';
+import { describeFailure, posFailureKey } from '../lib/request-failure';
+import { customerSubmissionContent } from '../lib/submission-key';
 import { PosIcon } from './pos-icon';
 
 export function CustomerPanel({
@@ -11,6 +12,7 @@ export function CustomerPanel({
   storeId,
   canCreate,
   disabled,
+  disabledReason,
   onAssign,
   onClear,
 }: {
@@ -19,6 +21,7 @@ export function CustomerPanel({
   storeId: string | null;
   canCreate: boolean;
   disabled: boolean;
+  disabledReason?: string;
   onAssign: (profileId: string) => Promise<PosWorkspace>;
   onClear: () => Promise<PosWorkspace>;
 }) {
@@ -30,9 +33,12 @@ export function CustomerPanel({
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
-  const [message, setMessage] = useState('');
-  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [warning, setWarning] = useState('');
   const panelRef = useRef<HTMLDivElement>(null);
+  // A profile created by a submission whose assignment then failed. Resubmitting
+  // the same form assigns this profile instead of creating another one.
+  const created = useRef<{ content: string; profileId: string } | null>(null);
   const search = useCustomerSearch(storeId, branchId, query);
   const create = useCreateCustomer(storeId);
   const customer = workspace.customer;
@@ -72,36 +78,39 @@ export function CustomerPanel({
   }, []);
 
   async function assign(action: () => Promise<PosWorkspace>) {
-    setBusy(true);
-    setMessage('');
+    if (disabled) return;
+    setError('');
+    setWarning('');
     try {
       await action();
-    } catch (error) {
-      setMessage(t(posFailureKey(error)));
-    } finally {
-      setBusy(false);
+    } catch (failure) {
+      setError(describeFailure(failure, t));
     }
   }
 
   async function createCustomer(event: React.FormEvent) {
     event.preventDefault();
-    if (!branchId) return;
-    setMessage('');
+    if (!branchId || disabled || create.isPending) return;
+    const input = { branchId, name: name.trim(), phone: phone.trim(), email: email.trim() };
+    const content = customerSubmissionContent(input);
+    setError('');
+    setWarning('');
     try {
-      const profile = await create.mutateAsync({
-        branchId,
-        name: name.trim(),
-        phone: phone.trim(),
-        email: email.trim(),
-      });
-      if ((profile.duplicates?.length ?? 0) > 1) setMessage(t('customerDuplicateWarning'));
-      await onAssign(profile.id);
+      let profileId = created.current?.content === content ? created.current.profileId : null;
+      if (!profileId) {
+        const profile = await create.mutateAsync(input);
+        profileId = profile.id;
+        created.current = { content, profileId };
+        if ((profile.duplicates?.length ?? 0) > 1) setWarning(t('customerDuplicateWarning'));
+      }
+      await onAssign(profileId);
+      created.current = null;
       setName('');
       setPhone('');
       setEmail('');
       setCreateOpen(false);
-    } catch (error) {
-      setMessage(t(posFailureKey(error)));
+    } catch (failure) {
+      setError(describeFailure(failure, t));
     }
   }
 
@@ -144,9 +153,12 @@ export function CustomerPanel({
               type="button"
               className="customer-icon-button"
               aria-label={t('customerCreate')}
-              title={t('customerCreate')}
+              title={disabledReason ?? t('customerCreate')}
               disabled={disabled || !branchId}
-              onClick={() => setCreateOpen(true)}
+              onClick={() => {
+                setError('');
+                setCreateOpen(true);
+              }}
             >
               <PosIcon name="plus" />
             </button>
@@ -165,7 +177,9 @@ export function CustomerPanel({
             </p>
           ) : null}
           {search.data && search.data.meta.duplicate_candidates > 1 ? (
-            <p role="status">{t('customerDuplicateWarning')}</p>
+            <p className="warning" role="status">
+              {t('customerDuplicateWarning')}
+            </p>
           ) : null}
           {search.data?.data.length ? (
             <ul className="customer-results-list" aria-label={t('customerResults')}>
@@ -176,7 +190,8 @@ export function CustomerPanel({
                   </div>
                   <button
                     type="button"
-                    disabled={disabled || busy}
+                    disabled={disabled}
+                    title={disabledReason}
                     onClick={() =>
                       void assign(async () => {
                         const updated = await onClear();
@@ -201,7 +216,8 @@ export function CustomerPanel({
                   </div>
                   <button
                     type="button"
-                    disabled={disabled || busy}
+                    disabled={disabled}
+                    title={disabledReason}
                     onClick={() =>
                       void assign(async () => {
                         const updated = await onAssign(profile.id);
@@ -233,8 +249,8 @@ export function CustomerPanel({
             type="button"
             className="cell-edit-button cell-clear-button"
             aria-label={t('customerClear')}
-            title={t('customerClear')}
-            disabled={disabled || busy}
+            title={disabledReason ?? t('customerClear')}
+            disabled={disabled}
             onClick={() => void assign(onClear)}
           >
             <PosIcon name="close" />
@@ -280,6 +296,7 @@ export function CustomerPanel({
                 disabled={
                   disabled || create.isPending || !name.trim() || (!phone.trim() && !email.trim())
                 }
+                title={disabledReason}
               >
                 {t('customerCreateAndAssign')}
               </button>
@@ -287,17 +304,22 @@ export function CustomerPanel({
                 {t('adminClose')}
               </button>
             </div>
-            {create.isError ? (
+            {error ? (
               <p className="error" role="alert">
-                {t(posFailureKey(create.error))}
+                {error}
               </p>
             ) : null}
           </form>
         </div>
       ) : null}
-      {message ? (
+      {warning ? (
+        <p className="warning" role="status">
+          {warning}
+        </p>
+      ) : null}
+      {error && !createOpen ? (
         <p className="error" role="alert">
-          {message}
+          {error}
         </p>
       ) : null}
     </div>

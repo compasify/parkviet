@@ -18,11 +18,12 @@ module Spree
                 result = Spree::Pos::Workspaces::AssignCustomer.call(
                   workspace: workspace!(params[:workspace_id]), staff: current_user,
                   revision: params[:expected_revision].to_i, lease_generation: params[:lease_generation].to_i,
-                  editor_id: params[:editor_id], key: key, profile_id: params[:profile_id]
+                  editor_id: params[:editor_id], key: key, profile_id: action_name == 'destroy' ? nil : params[:profile_id]
                 )
                 render json: { data: result }
               end
 
+              # Clearing ignores any profile_id in the body.
               def destroy
                 update
               end

@@ -1,13 +1,29 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { fetchCatalogPage, parseMeasurementBarcode } from '../hooks/use-catalog';
 import { useInvoiceNumbers } from '../hooks/use-invoice-numbers';
 import { useWorkspaces } from '../hooks/use-workspaces';
 import { commandQueue } from '../lib/command-queue';
+import { resolveScan, type ScanOutcome } from '../lib/measured-label';
 import { formatMoney } from '../lib/money';
 import { type PosWorkspace, writesLocked } from '../lib/pos-context';
-import { leaseConflict, posFailureKey } from '../lib/request-failure';
+import {
+  describeFailure,
+  leaseConflict,
+  posFailureKey,
+  snapshotLocked,
+} from '../lib/request-failure';
+import { SCAN_LOOKUP_LIMIT } from '../lib/scan-lookup';
+import {
+  createScannerKeyBuffer,
+  createScannerQueue,
+  type ScanIntent,
+  type ScanResult,
+  shouldCaptureScannerKey,
+} from '../lib/scanner-queue';
+import { createWorkspaceSerializer } from '../lib/workspace-serializer';
 import { readLayout } from '../lib/workspace-storage';
-import { CatalogSearch } from './catalog-search';
+import { CatalogSearch, type ScanNotice } from './catalog-search';
 import { CustomerPanel } from './customer-panel';
 import { DiscountForm } from './discount-form';
 import { NoteForm } from './note-form';
@@ -15,6 +31,11 @@ import { OrderLines } from './order-lines';
 import { PaymentPanel } from './payment-panel';
 import { PosIcon } from './pos-icon';
 import { usePosSelection } from './pos-selection';
+
+type ScanPlan = { workspace?: PosWorkspace } & (
+  | { kind: 'variant'; variantId: string }
+  | { kind: 'label'; barcode: string; eventId: string }
+);
 
 export function WorkspaceTabs() {
   const { t } = useTranslation();
@@ -36,7 +57,28 @@ export function WorkspaceTabs() {
   const locked = writesLocked(data, selection);
   const [query, setQuery] = useState('');
   const [message, setMessage] = useState('');
-  const [busy, setBusy] = useState(false);
+  const [creating, setCreating] = useState(false);
+  // Commands still running per workspace; every control of that workspace waits.
+  const [pendingCounts, setPendingCounts] = useState<Record<string, number>>({});
+  const [serializer] = useState(() =>
+    createWorkspaceSerializer<PosWorkspace>((workspaceId, pending) =>
+      setPendingCounts((current) => {
+        if ((current[workspaceId] ?? 0) === pending) return current;
+        const next = { ...current };
+        if (pending > 0) next[workspaceId] = pending;
+        else delete next[workspaceId];
+        return next;
+      }),
+    ),
+  );
+  const [scanNotice, setScanNotice] = useState<ScanNotice | null>(null);
+  const noticeSeq = useRef(0);
+  // Workspaces whose head scan has an unknown outcome, with the scanned code.
+  const [blockedScans, setBlockedScans] = useState<Record<string, string>>({});
+  // Resolved target and the exact workspace snapshot of each scan's first
+  // attempt, so a retry resends an identical command under the same key. A
+  // scale label keeps the measurement id it was given on the first attempt.
+  const scanPlans = useRef(new Map<string, ScanPlan>());
   const [leaseWait, setLeaseWait] = useState<{ workspaceId: string; until: number } | null>(null);
   const [leaseSeconds, setLeaseSeconds] = useState(0);
   const [hidden, setHidden] = useState<string[]>([]);
@@ -47,6 +89,7 @@ export function WorkspaceTabs() {
     setActiveId(null);
     setHidden([]);
     setQuery('');
+    setScanNotice(null);
     if (!staffId || !storeId || !selection.branchId) return;
     const saved = readLayout(staffId, storeId);
     if (saved?.branchId === selection.branchId && saved.registerId === selection.registerId) {
@@ -89,6 +132,14 @@ export function WorkspaceTabs() {
   const activeSummary = rows.find((workspace) => workspace.id === activeId) ?? visible[0] ?? null;
   const active = pinned && activeSummary && pinned.id === activeSummary.id ? pinned : activeSummary;
   const isEditor = active ? workspaces.owns(active) : false;
+  const busy =
+    creating || (active ? Boolean(pendingCounts[active.id]) || active.id in blockedScans : false);
+  // Recorded payments freeze the basket: the tender was prepared for these lines.
+  const editable = Boolean(
+    active && isEditor && !locked && active.operational_status === 'editing' && !active.payments,
+  );
+  const editDisabled = !editable || busy;
+  const lockReason = active?.payments ? t('editLockedPayments') : undefined;
   const tablist = useRef<HTMLDivElement>(null);
   const discountDetailsRef = useRef<HTMLDetailsElement>(null);
   const noteDetailsRef = useRef<HTMLDetailsElement>(null);
@@ -155,8 +206,18 @@ export function WorkspaceTabs() {
     return () => window.clearInterval(timer);
   }, [leaseWorkspaceId, leaseGeneration, leaseStatus, isEditor, locked, t]);
 
+  function command(
+    workspace: PosWorkspace,
+    action: (current: PosWorkspace) => Promise<PosWorkspace>,
+  ): Promise<PosWorkspace> {
+    return serializer.run(workspace, action).catch((error: unknown) => {
+      // A tender was prepared meanwhile: reload so the basket shows as locked.
+      if (snapshotLocked(error)) void workspaces.refresh();
+      throw error;
+    });
+  }
+
   async function run(action: () => Promise<PosWorkspace | undefined>) {
-    setBusy(true);
     setMessage('');
     const started = scopeRef.current;
     const hadActiveWorkspace = Boolean(active);
@@ -169,22 +230,111 @@ export function WorkspaceTabs() {
     } catch (error) {
       if (started === scopeRef.current) {
         const conflict = leaseConflict(error);
-        setMessage(
-          t(
-            conflict?.reason === 'lease_busy'
-              ? 'leaseBusy'
-              : conflict?.reason === 'lease_stale'
-                ? 'leaseStale'
-                : posFailureKey(error),
-          ),
-        );
+        setMessage(describeFailure(error, t));
         if (conflict?.reason === 'lease_busy' && active)
           setLeaseWait({ workspaceId: active.id, until: Date.now() + conflict.seconds * 1000 });
       }
-    } finally {
-      setBusy(false);
     }
   }
+
+  const sendScan = useRef<(intent: ScanIntent) => Promise<ScanResult>>(async () => 'rejected');
+  sendScan.current = async ({ workspaceId, barcode: code, sequence }) => {
+    const notify = (text: string, added = false) => {
+      noticeSeq.current += 1;
+      setScanNotice({ seq: noticeSeq.current, code, message: text, added });
+    };
+    const block = () => setBlockedScans((current) => ({ ...current, [workspaceId]: code }));
+    const base = serializer.latest(workspaceId);
+    if (!base) {
+      notify(t('scanRejected', { code, reason: t('missing') }));
+      return 'rejected';
+    }
+    const planKey = `${workspaceId}:${sequence}`;
+    let plan = scanPlans.current.get(planKey);
+    if (!plan) {
+      let found: ScanOutcome;
+      try {
+        found = await resolveScan(
+          code,
+          (barcode) => parseMeasurementBarcode(base.branch_id, barcode),
+          ({ q, barcode }) =>
+            fetchCatalogPage(base.branch_id, { q, barcode, limit: SCAN_LOOKUP_LIMIT }),
+        );
+      } catch (error) {
+        if (posFailureKey(error) === 'offline') {
+          block();
+          return 'unknown';
+        }
+        notify(t('scanRejected', { code, reason: describeFailure(error, t) }));
+        return 'rejected';
+      }
+      if (found.kind === 'label_invalid') {
+        notify(t('scanLabelRejected', { code, reason: found.message ?? t('scanLabelUnreadable') }));
+        return 'rejected';
+      }
+      if (found.kind !== 'match' && found.kind !== 'label') {
+        notify(
+          t(
+            found.kind === 'ambiguous'
+              ? 'scanAmbiguous'
+              : found.kind === 'no_price'
+                ? 'scanNoPrice'
+                : 'scanNotFound',
+            { code },
+          ),
+        );
+        return 'rejected';
+      }
+      plan =
+        found.kind === 'label'
+          ? { kind: 'label', barcode: found.label.barcode, eventId: crypto.randomUUID() }
+          : { kind: 'variant', variantId: found.item.id };
+      scanPlans.current.set(planKey, plan);
+    }
+    const attempt = plan;
+    try {
+      await command(base, (latest) => {
+        // Bind the first attempt to the newest workspace; a retry reuses it.
+        attempt.workspace ??= latest;
+        return attempt.kind === 'label'
+          ? workspaces.addLabelItem(attempt.workspace, attempt.barcode, attempt.eventId)
+          : workspaces.addItem(attempt.workspace, attempt.variantId, 1, { merge: true });
+      });
+    } catch (error) {
+      if (posFailureKey(error) === 'offline') {
+        block();
+        return 'unknown';
+      }
+      scanPlans.current.delete(planKey);
+      notify(t('scanRejected', { code, reason: describeFailure(error, t) }));
+      return 'rejected';
+    }
+    scanPlans.current.delete(planKey);
+    notify('', true);
+    return 'applied';
+  };
+  const [scanner] = useState(() => createScannerQueue((intent) => sendScan.current(intent)));
+  const [keyBuffer] = useState(() => createScannerKeyBuffer());
+  const enqueueScan = useRef<(code: string) => void>(() => undefined);
+  enqueueScan.current = (code) => {
+    if (!active || !editable) return;
+    serializer.observe(active);
+    scanner.enqueue(active.id, code);
+  };
+  const scanTarget = editable ? (active?.id ?? null) : null;
+  useEffect(() => {
+    keyBuffer.reset();
+    if (!scanTarget) return;
+    const capture = (event: KeyboardEvent) => {
+      const code = keyBuffer.push(event, shouldCaptureScannerKey(event));
+      if (code === null) return;
+      // The scanner's Enter must not also activate whatever button has focus.
+      event.preventDefault();
+      enqueueScan.current(code);
+    };
+    window.addEventListener('keydown', capture);
+    return () => window.removeEventListener('keydown', capture);
+  }, [scanTarget, keyBuffer]);
 
   return (
     <section className="draft-workspace" aria-label={t('draftList')}>
@@ -202,7 +352,9 @@ export function WorkspaceTabs() {
             if (!selectionComplete) return;
             const started = scopeRef.current;
             const selectedAtStart = activeIdRef.current;
+            setCreating(true);
             void run(() => workspaces.create(selection.registerId)).then((created) => {
+              setCreating(false);
               if (
                 created &&
                 started === scopeRef.current &&
@@ -363,7 +515,7 @@ export function WorkspaceTabs() {
           <button
             type="button"
             disabled={locked || busy || (leaseWait?.workspaceId === active.id && leaseSeconds > 0)}
-            onClick={() => void run(() => workspaces.claim(active))}
+            onClick={() => void run(() => command(active, (current) => workspaces.claim(current)))}
           >
             {t('claimLease')}
           </button>
@@ -371,7 +523,9 @@ export function WorkspaceTabs() {
             <button
               type="button"
               disabled={locked || busy}
-              onClick={() => void run(() => workspaces.claim(active, true))}
+              onClick={() =>
+                void run(() => command(active, (current) => workspaces.claim(current, true)))
+              }
             >
               {t('takeoverLease')}
             </button>
@@ -402,24 +556,54 @@ export function WorkspaceTabs() {
           id="pos-catalog"
           aria-label={t('catalogTitle')}
         >
+          {active && blockedScans[active.id] ? (
+            <div className="workspace-hint" role="alert">
+              <span>
+                {t('scanUnknown', {
+                  code: blockedScans[active.id],
+                  count: scanner.snapshot(active.id).pending.length,
+                })}
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setBlockedScans((current) => {
+                    const next = { ...current };
+                    delete next[active.id];
+                    return next;
+                  });
+                  scanner.retry(active.id);
+                }}
+              >
+                {t('scanRetry')}
+              </button>
+            </div>
+          ) : null}
           <CatalogSearch
             key={`${storeId}:${selection.branchId}`}
             storeId={storeId}
             branchId={selection.branchId}
             workspaceId={active?.id ?? null}
-            addDisabled={
-              busy || locked || !active || !isEditor || active.operational_status !== 'editing'
-            }
+            addDisabled={editDisabled}
+            addDisabledReason={lockReason}
+            scanNotice={scanNotice}
+            onScan={editable ? (code) => enqueueScan.current(code) : undefined}
             onAdd={
               active
                 ? (variantId) =>
-                    void run(() => workspaces.addItem(active, variantId, 1, { merge: true }))
+                    void run(() =>
+                      command(active, (current) =>
+                        workspaces.addItem(current, variantId, 1, { merge: true }),
+                      ),
+                    )
                 : undefined
             }
             onAddForm={
               active
                 ? (variantId, quantity, extra) =>
-                    workspaces.addItem(active, variantId, quantity, extra)
+                    command(active, (current) =>
+                      workspaces.addItem(current, variantId, quantity, extra),
+                    )
                 : undefined
             }
           />
@@ -443,9 +627,11 @@ export function WorkspaceTabs() {
                   disabled={busy || locked || !isEditor || active.operational_status === 'canceled'}
                   onClick={() =>
                     void run(() =>
-                      workspaces.change(
-                        active,
-                        active.operational_status === 'parked' ? 'reopen' : 'park',
+                      command(active, (current) =>
+                        workspaces.change(
+                          current,
+                          current.operational_status === 'parked' ? 'reopen' : 'park',
+                        ),
                       ),
                     )
                   }
@@ -469,7 +655,9 @@ export function WorkspaceTabs() {
                       title={active.payments ? t('cancelDraftPayments') : undefined}
                       onClick={() => {
                         if (window.confirm(t('cancelDraftConfirm', { order: active.order_id })))
-                          void run(() => workspaces.change(active, 'cancel'));
+                          void run(() =>
+                            command(active, (current) => workspaces.change(current, 'cancel')),
+                          );
                       }}
                     >
                       {t('cancelDraft')}
@@ -500,21 +688,33 @@ export function WorkspaceTabs() {
               <OrderLines
                 key={active.id}
                 workspace={active}
-                disabled={busy || locked || !isEditor || active.operational_status !== 'editing'}
+                disabled={editDisabled}
+                disabledReason={lockReason}
                 canApplyDiscount={Boolean(data?.capabilities.includes('pos.discount.apply'))}
                 canOverridePrice={Boolean(data?.capabilities.includes('pos.price.override'))}
-                onUpdate={(lineId, input) => workspaces.updateItem(active, lineId, input)}
-                onRemove={(lineId) => workspaces.removeItem(active, lineId)}
+                onUpdate={(lineId, input) =>
+                  command(active, (current) => workspaces.updateItem(current, lineId, input))
+                }
+                onRemove={(lineId) =>
+                  command(active, (current) => workspaces.removeItem(current, lineId))
+                }
                 onLineDiscount={(saleLineId, input) =>
-                  workspaces.lineDiscount(active, saleLineId, input)
+                  command(active, (current) => workspaces.lineDiscount(current, saleLineId, input))
                 }
                 onClearLineDiscount={(saleLineId, approvalId) =>
-                  workspaces.clearLineDiscount(active, saleLineId, approvalId)
+                  command(active, (current) =>
+                    workspaces.clearLineDiscount(current, saleLineId, approvalId),
+                  )
                 }
                 onPriceOverride={(saleLineId, input) =>
-                  workspaces.priceOverride(active, saleLineId, input)
+                  command(active, (current) => workspaces.priceOverride(current, saleLineId, input))
                 }
               />
+              {lockReason && isEditor ? (
+                <p className="workspace-hint" role="status">
+                  {lockReason}
+                </p>
+              ) : null}
               {busy || commandQueue.hasPending(active.id) ? (
                 <p className="muted" role="status">
                   {t('waiting')}
@@ -537,21 +737,24 @@ export function WorkspaceTabs() {
           {active ? (
             <div className="checkout-section" key={active.id}>
               <CustomerPanel
-                key={`${active.id}:${active.customer?.id ?? active.customer?.customer_id ?? 'walk-in'}`}
+                key={active.id}
                 workspace={active}
                 branchId={selection.branchId}
                 storeId={storeId}
                 canCreate={Boolean(data?.capabilities.includes('pos.customer.write'))}
-                disabled={locked || !isEditor || active.operational_status !== 'editing'}
-                onAssign={(profileId) => workspaces.assignCustomer(active, profileId)}
-                onClear={() => workspaces.clearCustomer(active)}
+                disabled={editDisabled}
+                disabledReason={lockReason}
+                onAssign={(profileId) =>
+                  command(active, (current) => workspaces.assignCustomer(current, profileId))
+                }
+                onClear={() => command(active, (current) => workspaces.clearCustomer(current))}
               />
               <section className="checkout-totals" aria-label={t('orderDetails')}>
                 <div className="checkout-totals-header">
                   <h2>{t('orderDetails')}</h2>
                   <div className="checkout-tools">
                     <details className="checkout-optional" ref={discountDetailsRef}>
-                      <summary>
+                      <summary title={lockReason}>
                         <PosIcon name="edit" /> {t('discountTitle')}
                       </summary>
                       <div className="pos-popup-backdrop">
@@ -559,11 +762,22 @@ export function WorkspaceTabs() {
                           key={`${active.id}:${active.revision}:${active.discount?.id ?? 'new'}:${active.coupon?.code ?? 'no-coupon'}`}
                           workspace={active}
                           canApply={Boolean(data?.capabilities.includes('pos.discount.apply'))}
-                          disabled={locked || !isEditor || active.operational_status !== 'editing'}
-                          onApply={(input) => workspaces.discount(active, input)}
-                          onClear={(approvalId) => workspaces.clearDiscount(active, approvalId)}
-                          onApplyCoupon={(code) => workspaces.applyCoupon(active, code)}
-                          onClearCoupon={() => workspaces.clearCoupon(active)}
+                          disabled={editDisabled}
+                          disabledReason={lockReason}
+                          onApply={(input) =>
+                            command(active, (current) => workspaces.discount(current, input))
+                          }
+                          onClear={(approvalId) =>
+                            command(active, (current) =>
+                              workspaces.clearDiscount(current, approvalId),
+                            )
+                          }
+                          onApplyCoupon={(code) =>
+                            command(active, (current) => workspaces.applyCoupon(current, code))
+                          }
+                          onClearCoupon={() =>
+                            command(active, (current) => workspaces.clearCoupon(current))
+                          }
                           onClose={() => {
                             if (discountDetailsRef.current) discountDetailsRef.current.open = false;
                           }}
@@ -571,15 +785,18 @@ export function WorkspaceTabs() {
                       </div>
                     </details>
                     <details className="checkout-optional" ref={noteDetailsRef}>
-                      <summary>
+                      <summary title={lockReason}>
                         <PosIcon name="edit" /> {t('noteTitle')}
                       </summary>
                       <div className="pos-popup-backdrop">
                         <NoteForm
                           key={`${active.id}:note:${active.note ?? ''}`}
                           workspace={active}
-                          disabled={locked || !isEditor || active.operational_status !== 'editing'}
-                          onSave={(note) => workspaces.updateNote(active, note)}
+                          disabled={editDisabled}
+                          disabledReason={lockReason}
+                          onSave={(note) =>
+                            command(active, (current) => workspaces.updateNote(current, note))
+                          }
                           onClose={() => {
                             if (noteDetailsRef.current) noteDetailsRef.current.open = false;
                           }}

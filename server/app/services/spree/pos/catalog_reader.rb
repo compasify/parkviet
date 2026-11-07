@@ -31,6 +31,13 @@ module Spree
         limit = [limit, MAX_LIMIT].min
         scope = Spree::Variant.joins(:product).where(product_id: @products.select(:id))
         scope = scope.where('spree_variants.discontinue_on IS NULL OR spree_variants.discontinue_on > ?', Time.current)
+        # A product with option variants is sold through them, never through its master.
+        scope = scope.where(<<~SQL.squish)
+          spree_variants.is_master = FALSE OR NOT EXISTS (
+            SELECT 1 FROM spree_variants options
+            WHERE options.product_id = spree_variants.product_id AND options.is_master = FALSE AND options.deleted_at IS NULL
+          )
+        SQL
         scope = if exact_barcode
                   scope.where(barcode: query)
                 elsif query.empty?
@@ -41,7 +48,7 @@ module Spree
                 end
         scope = scope.order('spree_variants.id ASC')
         count = scope.count
-        variants = scope.includes(:product).offset((page - 1) * limit).limit(limit).to_a
+        variants = scope.includes(:product, :prices).offset((page - 1) * limit).limit(limit).to_a
         levels = if @stock_location
                    Spree::StockLevel.where(stock_location_id: @stock_location.id, variant_id: variants.map(&:id)).index_by(&:variant_id)
                  else

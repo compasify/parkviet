@@ -41,14 +41,14 @@ function ShellFrame() {
   const snapshot = useSession();
   const { context, selection, registerMode } = usePosSelection();
   const pathname = useLocation({ select: (location) => location.pathname.replace(/\/+$/, '') });
-  const pageTitle = pathname.endsWith('/settings')
+  const pageTitle = /\/settings(\/|$)/.test(pathname)
     ? t('settings')
     : pathname.endsWith('/payment-attention')
       ? t('attentionNav')
       : pathname.endsWith('/funds')
         ? t('fundsNav')
         : t('sellingArea');
-  const isSale = !/\/(settings|funds|payment-attention)\/?$/.test(pathname);
+  const isSale = !/\/(settings|funds|payment-attention)(\/|$)/.test(pathname);
   const contextPicker = useRef<HTMLDetailsElement>(null);
   // A header navigation must not leave the picker covering the destination page.
   // biome-ignore lint/correctness/useExhaustiveDependencies: the route change is the dismissal trigger

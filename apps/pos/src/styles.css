@@ -15,6 +15,7 @@ button { min-height: 48px; border: 0; border-radius: 8px; background: #175c49; c
 button:disabled { opacity: .6; cursor: not-allowed; } :focus-visible { outline: 3px solid #e6a427; outline-offset: 3px; }
 .empty { background: #f4f8f5; border: 1px solid #dce9df; border-radius: 10px; padding: 22px; margin: 24px 0; }.empty p { margin-bottom: 0; }
 .error { color: #8c2b29; background: #fff0ee; padding: 12px; border-radius: 8px; }.footnote { font-size: .8rem; margin-top: 25px; }
+.warning { color: #835300; background: #fff4d9; padding: 12px; border-radius: 8px; }
 .shell { width: min(100% - 32px, 1100px); margin: 24px auto 48px; display: grid; gap: 16px; }
 .card { background: white; border: 1px solid #d8e3dc; border-radius: 16px; padding: clamp(16px, 3vw, 28px); }
 .workspace { display: grid; gap: 16px; }
@@ -114,7 +115,22 @@ fieldset { border: 1px solid #d8e3dc; border-radius: 8px; display: grid; gap: 8p
 .admin-permissions label small { font-weight: 400; }
 .admin-sensitive { padding: var(--pos-s3); background: var(--pos-tint); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); }
 .topology-dialog-actions { position: sticky; bottom: calc(-1 * var(--pos-s5)); display: flex; justify-content: flex-end; gap: var(--pos-s2); padding-block: var(--pos-s3); background: var(--pos-surface); border-top: 1px solid var(--pos-border); }
+.admin-branch-nav { display: flex; flex-wrap: wrap; gap: var(--pos-s2); }
+.pos-layout .admin-branch-nav .is-active { color: var(--pos-blue); background: var(--pos-selected); border-color: var(--pos-blue); }
+.admin-branch-links { flex-basis: 100%; justify-content: flex-end; }
+.admin-pagination { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: var(--pos-s3); margin-top: var(--pos-s4); font-size: var(--pos-small); }
+.label-layout-fields { margin: 0; padding: var(--pos-s3); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); display: grid; gap: var(--pos-s3); min-width: 0; }
+.label-layout-fields legend { padding-inline: var(--pos-s2); font-weight: 700; }
+.label-layout-fields p { margin: 0; }
+.label-layout-grid { grid-template-columns: repeat(4,minmax(0,1fr)); }
+.label-format-problems { margin: var(--pos-s3) 0 0; padding-left: var(--pos-s5); }
+.basket-line-name > .basket-line-label { font-variant-numeric: tabular-nums; }
+@media(max-width: 900px) { .label-layout-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
 @media(max-width: 600px) {
+  .admin-branch-nav > a { flex: 1 1 100%; }
+  .admin-branch-links { justify-content: stretch; }
+  .admin-branch-links > a { flex: 1 1 100%; }
+  .admin-pagination { justify-content: space-between; }
   .admin-content > .section-heading { flex-direction: column; align-items: stretch; }
   .admin-content > .section-heading > button { width: 100%; }
   .admin-tabs { grid-template-columns: 1fr; }

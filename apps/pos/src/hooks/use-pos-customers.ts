@@ -1,8 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useRef } from 'react';
 import { session } from '../lib/app-session';
 import type { PosCustomerProfile } from '../lib/pos-context';
 import { posFailureKey } from '../lib/request-failure';
 import { SessionSuperseded } from '../lib/session-coordinator';
+import { createSubmissionKey, customerSubmissionContent } from '../lib/submission-key';
 import { useSession } from './use-session';
 
 type CustomerPage = {
@@ -36,6 +38,7 @@ export function useCustomerSearch(storeId: string | null, branchId: string | nul
 export function useCreateCustomer(storeId: string | null) {
   const snapshot = useSession();
   const queryClient = useQueryClient();
+  const keys = useRef(createSubmissionKey());
   return useMutation({
     mutationFn: async (input: {
       branchId: string;
@@ -43,7 +46,10 @@ export function useCreateCustomer(storeId: string | null) {
       phone?: string;
       email?: string;
     }): Promise<PosCustomerProfile> => {
-      const key = crypto.randomUUID();
+      const content = customerSubmissionContent(input);
+      // A retry of the same form content after a lost response must replay the
+      // first creation, not create a second profile.
+      const key = keys.current.keyFor(content);
       try {
         const result = await session.request<{ data: PosCustomerProfile }>(
           'POST',
@@ -59,6 +65,7 @@ export function useCreateCustomer(storeId: string | null) {
             idempotencyKey: key,
           },
         );
+        keys.current.settle(content);
         return result.data;
       } catch (error) {
         abandonIfNeeded(error);

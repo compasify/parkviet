@@ -103,9 +103,10 @@ export function useWorkspaces(
     key: string,
     body: Record<string, unknown>,
     path: string,
+    method: 'POST' | 'DELETE' = 'POST',
   ) {
     const result = await commandQueue.enqueue(workspaceId, key, commandDigest(body), () =>
-      session.request<{ data: PosWorkspace }>('POST', path, {
+      session.request<{ data: PosWorkspace }>(method, path, {
         body: { ...body, idempotency_key: key },
         idempotencyKey: key,
       }),
@@ -156,13 +157,25 @@ export function useWorkspaces(
     });
   }
 
-  async function sendIntent(workspaceId: string, body: Record<string, unknown>, path: string) {
+  async function sendIntent(
+    workspaceId: string,
+    body: Record<string, unknown>,
+    path: string,
+    method: 'POST' | 'DELETE' = 'POST',
+  ) {
     const { editor_id: _editor, ...stableBody } = body;
-    const intent = JSON.stringify([staffId, storeId, workspaceId, path, commandDigest(stableBody)]);
+    const target = method === 'POST' ? path : `${path}:${method.toLowerCase()}`;
+    const intent = JSON.stringify([
+      staffId,
+      storeId,
+      workspaceId,
+      target,
+      commandDigest(stableBody),
+    ]);
     const wasUncertain = hasIntent(intent);
     const key = beginIntent(intent);
     try {
-      const result = await send(workspaceId, key, body, path);
+      const result = await send(workspaceId, key, body, path, method);
       forgetIntent(intent);
       return { workspace: result, recovered: false };
     } catch (error) {
@@ -201,6 +214,7 @@ export function useWorkspaces(
     selectedQuery,
     page,
     setPage,
+    refresh,
     owns(workspace: PosWorkspace) {
       return owned[workspace.id] === workspace.lease_generation;
     },
@@ -261,6 +275,20 @@ export function useWorkspaces(
         variant_id: variantId,
         quantity,
         ...extra,
+      };
+      return (await sendIntent(workspace.id, body, `/pos/workspaces/${workspace.id}/items`))
+        .workspace;
+    },
+    // The server reads the scale label itself; quantity, price and variant come
+    // from the label, never from this client. One measurement id per scan makes
+    // a retry an exact replay and a second scan of the same label a new line.
+    async addLabelItem(workspace: PosWorkspace, labelBarcode: string, measurementEventId: string) {
+      const body = {
+        expected_revision: workspace.revision,
+        lease_generation: workspace.lease_generation,
+        editor_id: editorId,
+        label_barcode: labelBarcode,
+        measurement_event_id: measurementEventId,
       };
       return (await sendIntent(workspace.id, body, `/pos/workspaces/${workspace.id}/items`))
         .workspace;
@@ -431,31 +459,14 @@ export function useWorkspaces(
         sale_line_id: saleLineId,
         approval_id: approvalId || undefined,
       };
-      const scope = JSON.stringify([
-        staffId,
-        storeId,
-        workspace.id,
-        `/pos/workspaces/${workspace.id}/items/${saleLineId}/line_discount:delete`,
-        commandDigest(body),
-      ]);
-      const wasUncertain = hasIntent(scope);
-      const key = beginIntent(scope);
-      try {
-        const result = await session.request<{ data: PosWorkspace }>(
-          'DELETE',
+      return (
+        await sendIntent(
+          workspace.id,
+          body,
           `/pos/workspaces/${workspace.id}/items/${saleLineId}/line_discount`,
-          { body: { ...body, idempotency_key: key }, idempotencyKey: key },
-        );
-        forgetIntent(scope);
-        await acceptWorkspace(result.data);
-        return result.data;
-      } catch (error) {
-        if (!wasUncertain && posFailureKey(error) !== 'offline') forgetIntent(scope);
-        abandonIfNeeded(error);
-        throw error;
-      } finally {
-        finishIntent(scope);
-      }
+          'DELETE',
+        )
+      ).workspace;
     },
     async priceOverride(
       workspace: PosWorkspace,

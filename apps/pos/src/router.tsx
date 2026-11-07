@@ -10,6 +10,8 @@ import { session } from './lib/app-session';
 import { LoginPage } from './pages/login';
 import { PaymentAttentionPage, ReceivedFundsPage } from './pages/received-funds';
 import { SalePage } from './pages/sale';
+import { BranchProductsPage } from './pages/settings/branch-products';
+import { LabelFormatsPage } from './pages/settings/label-formats';
 import { TopologyPage } from './pages/settings/topology';
 
 const rootRoute = createRootRoute({
@@ -47,6 +49,18 @@ const settingsRoute = createRoute({
   component: TopologyPage,
 });
 
+const branchProductsRoute = createRoute({
+  getParentRoute: () => authedRoute,
+  path: '/settings/branches/$branchId/products',
+  component: BranchProductsPage,
+});
+
+const labelFormatsRoute = createRoute({
+  getParentRoute: () => authedRoute,
+  path: '/settings/branches/$branchId/label-formats',
+  component: LabelFormatsPage,
+});
+
 const fundsRoute = createRoute({
   getParentRoute: () => authedRoute,
   path: '/funds',
@@ -62,7 +76,14 @@ const attentionRoute = createRoute({
 export const router = createRouter({
   routeTree: rootRoute.addChildren([
     loginRoute,
-    authedRoute.addChildren([saleRoute, settingsRoute, fundsRoute, attentionRoute]),
+    authedRoute.addChildren([
+      saleRoute,
+      settingsRoute,
+      branchProductsRoute,
+      labelFormatsRoute,
+      fundsRoute,
+      attentionRoute,
+    ]),
   ]),
   basepath: '/pos',
 });

@@ -8,8 +8,10 @@ module Spree
           class MeasurementBarcodesController < BaseController
             scoped_resource :pos_orders
 
-            # Ordinary barcodes only. Embedded weight/price label parsing is not
-            # enabled without a branch profile, checksum and device UAT.
+            # Previews a scanned code. A code claimed by one of the branch's label
+            # formats is read into an exact measured quantity; anything else is an
+            # ordinary barcode for the catalog lookup. Adding the line re-reads the
+            # label on the server, so this preview is never trusted as input.
             def parse
               return if channel_rejected?
 
@@ -17,7 +19,9 @@ module Spree
               membership = policy.membership_for(branch)
               raise ActiveRecord::RecordNotFound unless membership && !membership.disabled?
 
-              render json: { data: { kind: 'ordinary', barcode: params[:barcode].to_s, measurement: nil, capability: 'ordinary_only' } }
+              label = Spree::Pos::MeasurementBarcodeParser.call(branch: branch, barcode: params[:barcode])
+              data = label ? label.to_pos(current_store.default_currency) : { kind: 'ordinary', barcode: params[:barcode].to_s, measurement: nil, capability: 'measured_labels' }
+              render json: { data: data }
             end
           end
         end

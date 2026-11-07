@@ -1,13 +1,15 @@
 import { useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { formatMoney } from '../lib/money';
+import { formatMoney, parsePercentageInput, parseVndAmount } from '../lib/money';
 import type { PosWorkspace } from '../lib/pos-context';
+import { describeFailure } from '../lib/request-failure';
 import { PosIcon } from './pos-icon';
 
 export function DiscountForm({
   workspace,
   canApply,
   disabled,
+  disabledReason,
   onApply,
   onClear,
   onApplyCoupon,
@@ -17,6 +19,7 @@ export function DiscountForm({
   workspace: PosWorkspace;
   canApply: boolean;
   disabled: boolean;
+  disabledReason?: string;
   onApply: (input: {
     valueType: 'flat' | 'percent';
     value: string;
@@ -37,72 +40,63 @@ export function DiscountForm({
   const [value, setValue] = useState(workspace.discount?.value ?? '10');
   const [reason, setReason] = useState(workspace.discount?.reason || t('discountTitle'));
   const [approvalId, setApprovalId] = useState('');
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const couponId = useId();
   const couponRef = useRef<HTMLInputElement>(null);
   const reasonId = useId();
   const reasonRef = useRef<HTMLInputElement>(null);
+  const parsed = valueType === 'percent' ? parsePercentageInput(value) : parseVndAmount(value);
+  const invalid = value.trim() !== '' && parsed === null;
 
   async function submitCoupon() {
-    if (!onApplyCoupon || !couponCode.trim()) return;
-    setBusy(true);
+    if (disabled || !onApplyCoupon || !couponCode.trim()) return;
     setError('');
     try {
       await onApplyCoupon(couponCode.trim());
       onClose?.();
-    } catch {
-      setError(t('couponFailed'));
-    } finally {
-      setBusy(false);
+    } catch (failure) {
+      setError(describeFailure(failure, t, 'couponFailed'));
     }
   }
 
   async function removeCoupon() {
-    if (!onClearCoupon) return;
-    setBusy(true);
+    if (disabled || !onClearCoupon) return;
     setError('');
     try {
       await onClearCoupon();
       setCouponCode('');
       onClose?.();
-    } catch {
-      setError(t('couponFailed'));
-    } finally {
-      setBusy(false);
+    } catch (failure) {
+      setError(describeFailure(failure, t, 'couponFailed'));
     }
   }
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
-    setBusy(true);
+    if (disabled || parsed === null || !reason.trim()) return;
     setError('');
     try {
       await onApply({
         valueType,
-        value: value.trim(),
+        value: parsed,
         reason: reason.trim(),
         approvalId: approvalId.trim() || undefined,
       });
       onClose?.();
-    } catch {
-      setError(t('discountFailed'));
-    } finally {
-      setBusy(false);
+    } catch (failure) {
+      setError(describeFailure(failure, t, 'discountFailed'));
     }
   }
 
   async function clear() {
-    setBusy(true);
+    if (disabled) return;
     setError('');
     try {
       await onClear(approvalId.trim() || undefined);
       setReason(t('discountTitle'));
       onClose?.();
-    } catch {
-      setError(t('discountFailed'));
-    } finally {
-      setBusy(false);
+    } catch (failure) {
+      setError(describeFailure(failure, t, 'discountFailed'));
     }
   }
 
@@ -138,9 +132,10 @@ export function DiscountForm({
                       void submitCoupon();
                     }
                   }}
-                  disabled={disabled || busy}
+                  disabled={disabled}
+                  title={disabledReason}
                 />
-                {couponCode && !disabled && !busy ? (
+                {couponCode && !disabled ? (
                   <button
                     type="button"
                     className="input-clear-button"
@@ -157,7 +152,7 @@ export function DiscountForm({
               <button
                 type="button"
                 className="primary-button"
-                disabled={disabled || busy || !couponCode.trim()}
+                disabled={disabled || !couponCode.trim()}
                 onClick={() => void submitCoupon()}
               >
                 {t('couponApply')}
@@ -174,7 +169,8 @@ export function DiscountForm({
               {onClearCoupon ? (
                 <button
                   type="button"
-                  disabled={disabled || busy}
+                  disabled={disabled}
+                  title={disabledReason}
                   onClick={() => void removeCoupon()}
                 >
                   {t('couponRemove')}
@@ -188,8 +184,15 @@ export function DiscountForm({
         {t('discountType')}
         <select
           value={valueType}
-          onChange={(event) => setValueType(event.target.value as 'flat' | 'percent')}
-          disabled={disabled || busy}
+          onChange={(event) => {
+            const next = event.target.value as 'flat' | 'percent';
+            if (next === valueType) return;
+            // A percentage is meaningless as an amount and vice versa.
+            setValueType(next);
+            setValue(workspace.discount?.value_type === next ? workspace.discount.value : '');
+          }}
+          disabled={disabled}
+          title={disabledReason}
         >
           <option value="percent">{t('discountPercent')}</option>
           <option value="flat">{t('discountFlat')}</option>
@@ -200,11 +203,19 @@ export function DiscountForm({
         <input
           inputMode="decimal"
           value={value}
+          maxLength={64}
+          aria-invalid={invalid}
           onChange={(event) => setValue(event.target.value)}
-          disabled={disabled || busy}
+          disabled={disabled}
+          title={disabledReason}
           required
         />
       </label>
+      {invalid ? (
+        <p className="error" role="alert">
+          {t(valueType === 'percent' ? 'discountInvalidPercent' : 'discountInvalidFlat')}
+        </p>
+      ) : null}
       <div className="clearable-field">
         <label htmlFor={reasonId}>{t('discountReason')}</label>
         <div className="clearable-input">
@@ -214,10 +225,11 @@ export function DiscountForm({
             maxLength={200}
             value={reason}
             onChange={(event) => setReason(event.target.value)}
-            disabled={disabled || busy}
+            disabled={disabled}
+            title={disabledReason}
             required
           />
-          {reason && !disabled && !busy ? (
+          {reason && !disabled ? (
             <button
               type="button"
               className="input-clear-button"
@@ -238,7 +250,8 @@ export function DiscountForm({
           <input
             value={approvalId}
             onChange={(event) => setApprovalId(event.target.value)}
-            disabled={disabled || busy}
+            disabled={disabled}
+            title={disabledReason}
             required={!workspace.discount}
           />
         </label>
@@ -247,12 +260,18 @@ export function DiscountForm({
         <button
           type="submit"
           className="primary-button"
-          disabled={disabled || busy || !value.trim() || !reason.trim()}
+          disabled={disabled || parsed === null || !reason.trim()}
+          title={disabledReason}
         >
           {workspace.discount ? t('discountUpdate') : t('discountApply')}
         </button>
         {workspace.discount ? (
-          <button type="button" disabled={disabled || busy} onClick={() => void clear()}>
+          <button
+            type="button"
+            disabled={disabled}
+            title={disabledReason}
+            onClick={() => void clear()}
+          >
             {t('discountClear')}
           </button>
         ) : null}

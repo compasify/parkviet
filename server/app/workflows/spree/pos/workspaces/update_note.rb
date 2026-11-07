@@ -24,7 +24,7 @@ module Spree
             raise Conflict.new('Workspace is not editing.', revision: workspace.revision) unless workspace.operational_status == 'editing'
             raise Conflict.new('Lease is stale.', revision: workspace.revision, reason: 'lease_stale') unless workspace.lease_current?(staff, editor_id) && workspace.lease_generation == lease_generation
             raise Conflict.new('Revision is stale.', revision: workspace.revision) if workspace.revision != revision
-            raise Conflict, 'Order is completed or has a payment.' if workspace.order.completed? || workspace.order.payments.exists?
+            workspace.ensure_snapshot_editable!
 
             normalized = note.to_s.strip.presence
             raise Conflict, 'Note is too long.' if normalized && normalized.length > MAX_LENGTH

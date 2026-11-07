@@ -59,3 +59,28 @@ export function useTraceability(
     },
   });
 }
+
+export type VariantUnitInput = {
+  branch_id: string;
+  variant_id: string;
+  sale_unit: string;
+  base_unit: string;
+  price_unit: string;
+  ratio_numerator: number;
+  ratio_denominator: number;
+  tracked_mode: string;
+  // Blank clears the code; the server owns uniqueness across SKUs.
+  label_code: string;
+};
+
+export async function saveVariantUnit(input: VariantUnitInput) {
+  try {
+    return await session.request<{ data: PosVariantUnit }>('PUT', '/pos/units/variant', {
+      body: input,
+    });
+  } catch (error) {
+    if (!(error instanceof SessionSuperseded) && posFailureKey(error) === 'unauthorized')
+      session.abandon();
+    throw error;
+  }
+}

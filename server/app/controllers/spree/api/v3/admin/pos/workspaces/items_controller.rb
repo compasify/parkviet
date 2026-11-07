@@ -22,7 +22,7 @@ module Spree
                   sale_quantity: params[:sale_quantity], sale_unit_code: params[:sale_unit_code] || params[:sale_unit],
                   lot_code: params[:lot_code], expiry_on: params[:expiry_on], serial_codes: params[:serial_codes],
                   price_override: params[:price_override], merge: ActiveModel::Type::Boolean.new.cast(params[:merge]),
-                  measurement_event_id: params[:measurement_event_id]
+                  measurement_event_id: params[:measurement_event_id], label_barcode: params[:label_barcode]
                 )
                 render json: { data: result }
               end

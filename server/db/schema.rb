@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_06_100000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_07_100000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -2426,6 +2426,29 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_100000) do
     t.check_constraint "status::text = ANY (ARRAY['active'::character varying::text, 'reversed'::character varying::text])", name: "chk_pos_funds_allocations_status"
   end
 
+  create_table "spree_pos_label_formats", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "branch_id", null: false
+    t.string "name", null: false
+    t.string "prefix", null: false
+    t.string "kind", null: false
+    t.integer "item_code_length", null: false
+    t.integer "value_length", null: false
+    t.integer "value_decimals", default: 0, null: false
+    t.string "value_unit_code"
+    t.decimal "price_tolerance", precision: 19, scale: 4, default: "0.0", null: false
+    t.integer "version", default: 1, null: false
+    t.string "status", default: "active", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["branch_id", "prefix"], name: "idx_pos_label_formats_active_prefix", unique: true, where: "((status)::text = 'active'::text)"
+    t.index ["branch_id"], name: "index_spree_pos_label_formats_on_branch_id"
+    t.index ["store_id"], name: "index_spree_pos_label_formats_on_store_id"
+    t.check_constraint "(char_length(prefix::text) + item_code_length + value_length) = 12 AND item_code_length > 0 AND value_length > 0", name: "chk_pos_label_formats_layout"
+    t.check_constraint "kind::text = ANY (ARRAY['weight'::character varying, 'price'::character varying]::text[])", name: "chk_pos_label_formats_kind"
+    t.check_constraint "status::text = ANY (ARRAY['active'::character varying, 'disabled'::character varying]::text[])", name: "chk_pos_label_formats_status"
+  end
+
   create_table "spree_pos_liability_payouts", force: :cascade do |t|
     t.bigint "store_id", null: false
     t.bigint "received_funds_id", null: false
@@ -2609,6 +2632,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_100000) do
     t.uuid "measurement_event_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "label_barcode"
+    t.bigint "label_format_id"
+    t.integer "label_format_version"
     t.index ["line_item_id"], name: "index_spree_pos_sale_lines_on_line_item_id", unique: true
     t.index ["order_id"], name: "index_spree_pos_sale_lines_on_order_id"
     t.index ["variant_id"], name: "index_spree_pos_sale_lines_on_variant_id"
@@ -2718,9 +2744,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_100000) do
     t.string "status", default: "active", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "label_code"
     t.index ["base_unit_id"], name: "index_spree_pos_variant_units_on_base_unit_id"
     t.index ["price_unit_id"], name: "index_spree_pos_variant_units_on_price_unit_id"
     t.index ["sale_unit_id"], name: "index_spree_pos_variant_units_on_sale_unit_id"
+    t.index ["store_id", "label_code"], name: "idx_pos_variant_units_label_code", unique: true, where: "(label_code IS NOT NULL)"
     t.index ["store_id"], name: "index_spree_pos_variant_units_on_store_id"
     t.index ["variant_id"], name: "index_spree_pos_variant_units_on_variant_id", unique: true
     t.check_constraint "ratio_numerator > 0 AND ratio_denominator > 0", name: "chk_pos_variant_units_ratio"

@@ -23,7 +23,7 @@ module Spree
       scope :for_store, ->(store) { where(store_id: store.id) }
 
       def usable?
-        status == 'active' && revoked_at.nil? && consumed_at.nil? && expires_at.future?
+        status == 'active' && revoked_at.nil? && consumed_at.nil? && expires_at > Workspace.database_now
       end
 
       def consume!(action:, amount:, currency:, revision:, subject:, requester:)

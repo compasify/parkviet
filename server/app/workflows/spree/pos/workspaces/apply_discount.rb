@@ -23,21 +23,27 @@ module Spree
           CommandExecutor.call(store: workspace.store, actor: staff, key: key, payload: payload, workspace: workspace, authorize: authorize) do
             validate_command!(workspace, staff, revision, lease_generation, editor_id)
             validate_discount!(workspace, value_type, value, reason)
-            amount = preview_amount(workspace, value_type, value)
-            approve!(workspace, staff, revision, approval_id, amount: amount)
+            previous = DiscountIntent.find_by(workspace: workspace)
+            before = previous && { value_type: previous.value_type, value: previous.value, amount: applied_amount(previous).to_s('F') }
+            total_before = workspace.order.total
 
-            intent = DiscountIntent.find_or_initialize_by(workspace: workspace)
+            intent = previous || DiscountIntent.new(workspace: workspace)
             intent.assign_attributes(actor: staff, value_type: value_type.to_s, value: value.to_s, reason: reason.to_s)
             intent.save!
             recalculate!(workspace)
+            # The approval is checked against the amount the adjuster actually
+            # applied; a mismatch raises and rolls the whole command back.
+            amount = applied_amount(intent)
+            approval = approve!(workspace, staff, revision, approval_id, amount: amount)
             workspace.update!(revision: workspace.revision + 1)
             AuditEntry.record!(
               store: workspace.store, actor: staff, action: 'workspace.discount.apply', subject: workspace,
               metadata: {
-                value_type: intent.value_type, value: intent.value, reason: intent.reason,
+                value_type: intent.value_type, value: intent.value, reason: intent.reason, amount: amount.to_s('F'),
+                before: before, total_before: total_before.to_s('F'),
                 manual_discount: workspace.order.discounts.where(kind: 'manual').sum(:amount).to_s('F'),
                 total: workspace.order.total.to_s('F'), currency: workspace.order.currency
-              }
+              }.merge(approval_metadata(approval))
             )
             response(workspace)
           end
@@ -57,9 +63,10 @@ module Spree
           end
           CommandExecutor.call(store: workspace.store, actor: staff, key: key, payload: payload, workspace: workspace, authorize: authorize) do
             validate_command!(workspace, staff, revision, lease_generation, editor_id)
-            amount = DiscountIntent.find_by(workspace: workspace) ? manual_total(workspace) : nil
-            approve!(workspace, staff, revision, approval_id, amount: amount, action: CLEAR_ACTION)
             intent = DiscountIntent.find_by(workspace: workspace)
+            amount = intent && applied_amount(intent)
+            approval = approve!(workspace, staff, revision, approval_id, amount: amount, action: CLEAR_ACTION)
+            before = intent && { value_type: intent.value_type, value: intent.value, amount: amount.to_s('F') }
             if intent
               discount_ids = intent.allocations.pluck(:discount_id)
               Spree::Pos::DiscountAllocation.where(discount_intent_id: intent.id).delete_all
@@ -68,7 +75,8 @@ module Spree
             end
             recalculate!(workspace)
             workspace.update!(revision: workspace.revision + 1)
-            AuditEntry.record!(store: workspace.store, actor: staff, action: 'workspace.discount.clear', subject: workspace)
+            AuditEntry.record!(store: workspace.store, actor: staff, action: 'workspace.discount.clear', subject: workspace,
+                               metadata: { before: before, total: workspace.order.total.to_s('F') }.merge(approval_metadata(approval)))
             response(workspace)
           end
         end
@@ -81,7 +89,7 @@ module Spree
           raise Conflict.new('Workspace is not editing.', revision: workspace.revision) unless workspace.operational_status == 'editing'
           raise Conflict.new('Lease is stale.', revision: workspace.revision, reason: 'lease_stale') unless workspace.lease_current?(staff, editor_id) && workspace.lease_generation == lease_generation
           raise Conflict.new('Revision is stale.', revision: workspace.revision) if workspace.revision != revision
-          raise Conflict, 'Order is completed or has a payment.' if workspace.order.completed? || workspace.order.payments.exists?
+          workspace.ensure_snapshot_editable!
         end
 
         def self.validate_discount!(workspace, value_type, value, reason)
@@ -90,30 +98,31 @@ module Spree
           raise Conflict, 'Discount is invalid.' unless valid
         end
 
-        def self.approve!(workspace, staff, revision, approval_id, amount:, action: ACTION)
+        # Returns the consumed approval, or nil when the actor holds the capability.
+        def self.approve!(workspace, staff, revision, approval_id, amount:, action: ACTION, capability: Capabilities::DISCOUNT, message: 'Discount approval is required.')
           policy = AccessPolicy.new(store: workspace.store, staff: staff)
-          return if policy.allows?(workspace.branch, Capabilities::DISCOUNT)
+          return nil if policy.allows?(workspace.branch, capability)
 
-          raise Conflict, 'Discount approval is required.' if approval_id.blank?
+          raise Conflict, message if approval_id.blank?
 
           approval = Approval.locate(Approval.for_store(workspace.store).where(branch_id: workspace.branch_id), approval_id)
-          raise Conflict, 'Discount approval is required.' if approval.nil?
+          raise Conflict, message if approval.nil?
 
           approval.consume!(action: action, amount: amount, currency: workspace.order.currency, revision: revision, subject: workspace, requester: staff)
+          AuditEntry.record!(store: workspace.store, actor: staff, action: 'approval.consume', subject: approval,
+                             metadata: { approval_action: action, approver_id: approval.approver.prefixed_id, amount: amount&.to_s('F') })
+          approval
         end
 
-        def self.manual_total(workspace)
-          workspace.order.discounts.where(kind: 'manual').sum(:amount).abs
+        def self.approval_metadata(approval)
+          return {} if approval.nil?
+
+          { approval_id: approval.prefixed_id, approver_id: approval.approver.prefixed_id }
         end
 
-        def self.preview_amount(workspace, value_type, value)
-          order = workspace.order
-          owned_ids = DiscountIntent.find_by(workspace: workspace)&.allocations&.select(:discount_id) || []
-          other_discounts = order.discounts.where.not(id: owned_ids).group(:line_item_id).sum(:amount)
-          bases = order.line_items.to_a.sort_by(&:id).map { |line| line.amount + (other_discounts[line.id] || 0) }
-          DiscountCalculator.call(bases: bases, value: value.to_s, value_type: value_type.to_s, currency: order.currency).sum
-        rescue DiscountCalculator::InvalidDiscount
-          raise Conflict, 'Discount exceeds the current eligible amount or cannot be represented.'
+        # Amount currently applied through one intent's allocation rows.
+        def self.applied_amount(intent)
+          intent.allocations.joins(:discount).sum('spree_discounts.amount').abs
         end
 
         def self.recalculate!(workspace)
