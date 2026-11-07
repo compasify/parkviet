@@ -23,9 +23,10 @@ describe('POS administration authorization', () => {
       } as unknown as PosContext),
     ).toEqual({ read: true, write: true });
   });
-  it('offers all sixteen branch capabilities without hiding discount, price, customer, credit, return, cash or report permissions', () => {
+  it('offers all eighteen branch capabilities without hiding discount, price, customer, credit, return, cash or report permissions', () => {
     const keys = posCapabilities.map(([key]) => key);
-    expect(new Set(keys).size).toBe(16);
+    expect(new Set(keys).size).toBe(18);
+    expect(keys.slice(-2)).toEqual(['pos.inventory.manage', 'pos.inventory.trace']);
     expect(keys).toEqual(
       expect.arrayContaining(['pos.cash.move', 'pos.report.read', 'pos.report.export']),
     );

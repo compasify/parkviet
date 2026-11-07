@@ -53,7 +53,10 @@ module Spree
             row = (row.respond_to?(:to_unsafe_h) ? row.to_unsafe_h : row.to_h).with_indifferent_access
             quantity = row[:quantity]
             quantity = Integer(quantity.to_s, 10) if quantity.to_s.match?(/\A\d{1,9}\z/)
-            { 'sale_line_id' => row[:sale_line_id].to_s, 'quantity' => quantity, 'condition' => row[:condition].to_s.presence || 'resellable' }
+            serials = row[:serial_codes].respond_to?(:map) ? row[:serial_codes].map(&:to_s) : []
+            # No default here: tracked goods need an explicit condition (see build).
+            { 'sale_line_id' => row[:sale_line_id].to_s, 'quantity' => quantity, 'condition' => row[:condition].to_s.presence,
+              'serial_codes' => serials, 'lot_code' => row[:lot_code].to_s.strip.presence }
           end
           raise Conflict, 'At least one line is required.' if rows.empty?
           raise Conflict, 'Too many lines in one return.' if rows.length > MAX_LINES
@@ -64,7 +67,7 @@ module Spree
               raise Conflict,
                     'Return quantity must be a positive whole number of base units.'
             end
-            raise Conflict, 'Condition is invalid.' unless CONDITIONS.include?(row['condition'])
+            raise Conflict, 'Condition is invalid.' unless row['condition'].nil? || CONDITIONS.include?(row['condition'])
           end
           rows
         end
@@ -81,7 +84,7 @@ module Spree
         # `cumulative_before..cumulative_after`.
         PlanLine = Struct.new(:sale_line, :line_item, :quantity, :condition, :chunks,
                               :cumulative_before, :cumulative_after, :delta, :original, :used, :reserved, :remaining,
-                              keyword_init: true)
+                              :trace_picks, keyword_init: true)
         Chunk = Struct.new(:fulfillment_item, :quantity, :sequence, :before, :after, :delta, keyword_init: true)
 
         def self.build(workspace:, branch:, rows:, lock:)
@@ -97,7 +100,22 @@ module Spree
           sale_lines = (lock ? Guard.lock_sale_lines!(ids) : SaleLine.where(id: ids).to_a).index_by(&:id)
           entitlement = ReturnEntitlement.new(order)
           lines = rows.each_with_index.map do |row, index|
-            plan_line(sale_lines.fetch(ids[index]), row, entitlement)
+            sale_line = sale_lines.fetch(ids[index])
+            Inventory::ReturnTraceability.ensure_receivable!(branch, sale_line)
+            if row['condition'].nil?
+              # Tracked units go back to stock or quarantine on the cashier's
+              # explicit word; the preview may still show a resellable estimate.
+              if lock && Inventory::ReturnTraceability.tracked?(sale_line)
+                raise Conflict.new('Choose the condition of the returned tracked units.', reason: 'trace_condition_required')
+              end
+
+              row = row.merge('condition' => 'resellable')
+            end
+            line = plan_line(sale_line, row, entitlement)
+            # Serial/lot identity of the returned units, from the original allocations.
+            line.trace_picks = Inventory::ReturnTraceability.plan(sale_line, line.quantity, serial_codes: row['serial_codes'],
+                                                                                            lot_code: row['lot_code'], lock: lock)
+            line
           end
           total = lines.sum(BigDecimal('0')) { |line| line.delta.total }
           Plan.new(workspace: workspace, branch: branch, order: order, lines: lines,
@@ -186,6 +204,7 @@ module Spree
                 cumulative_after: chunk.after, condition: line.condition, status: 'reserved', **chunk.delta.to_h
               )
             end
+            Inventory::ReturnTraceability.reserve!(operation, line.trace_picks, line.condition)
           end
           operation
         end
@@ -207,7 +226,8 @@ module Spree
                 sold_quantity: line.sale_line.base_quantity, cumulative_before: line.cumulative_before,
                 cumulative_after: line.cumulative_after, remaining_before: line.remaining,
                 original: line.original.to_pos, used: line.used.to_s('F'), reserved: line.reserved.to_s('F'),
-                this_time: line.delta.to_pos
+                this_time: line.delta.to_pos,
+                trace: Inventory::ReturnTraceability.preview_pos(line.sale_line, line.trace_picks, plan.branch)
               }
             end
           }

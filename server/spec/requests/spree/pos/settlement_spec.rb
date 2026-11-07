@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'spree/api/testing_support/v3/base'
+require_relative '../../../support/pos_trace_helpers'
 
 module PosSettlementSpec
   CAPS = [Spree::Pos::Capabilities::OPEN_SHIFT, Spree::Pos::Capabilities::PAYMENT,
@@ -14,6 +15,7 @@ end
 # drawer custody, tracked-SKU guard and guarded completion.
 RSpec.describe 'POS split tender and settlement', type: :request do
   include ActiveSupport::Testing::TimeHelpers
+  include PosTraceHelpers
 
   let(:store) { create(:store, default_currency: 'VND', supported_currencies: 'VND') }
   let(:password) { 'secret123' }
@@ -367,19 +369,29 @@ RSpec.describe 'POS split tender and settlement', type: :request do
                                         action: 'workspace.complete_zero_total').count).to eq(1)
   end
 
-  it 'refuses tender for tracked (serial) goods before any money is taken' do
+  it 'refuses tender for lot-tracked goods without sellable lots before any money is taken' do
     ctx = setup_workspace(price: 100)
+    variant = ctx.product.default_variant
     put '/api/v3/admin/pos/units/variant', headers: { 'Authorization' => "Bearer #{ctx.token}" },
-                                           params: { branch_id: ctx.branch.prefixed_id, variant_id: ctx.product.default_variant.prefixed_id,
+                                           params: { branch_id: ctx.branch.prefixed_id, variant_id: variant.prefixed_id,
                                                      sale_unit: 'item', base_unit: 'item', price_unit: 'item', tracked_mode: 'lot' }, as: :json
     expect(response).to have_http_status(:ok)
     key = SecureRandom.uuid
-    body = editing(ctx.workspace, 0, key).merge(variant_id: ctx.product.default_variant.prefixed_id, quantity: 1, serial_codes: ['SN-1'])
+    body = editing(ctx.workspace, 0, key).merge(variant_id: variant.prefixed_id, quantity: 1)
     post "/api/v3/admin/pos/workspaces/#{ctx.workspace.prefixed_id}/items", headers: headers(ctx.token, key), params: body, as: :json
+    expect(response).to have_http_status(:conflict)
+    expect(response.parsed_body.dig('error', 'details', 'reason')).to eq('trace_not_enrolled')
+
+    lot = enroll_lots!(ctx.branch, variant, [['L1', Date.current + 30, 1]], opened_by: ctx.user).first
+    key = SecureRandom.uuid
+    post "/api/v3/admin/pos/workspaces/#{ctx.workspace.prefixed_id}/items", headers: headers(ctx.token, key),
+                                                                             params: editing(ctx.workspace, 0, key).merge(variant_id: variant.prefixed_id, quantity: 1), as: :json
     expect(response).to have_http_status(:ok)
+    lot.update!(status: 'quarantined')
 
     prepare(ctx, 1, 'cash', 100)
     expect(response).to have_http_status(:conflict)
+    expect(response.parsed_body.dig('error', 'details', 'reason')).to eq('trace_insufficient')
     expect(Spree::Pos::ReceivedFunds.where(workspace: ctx.workspace)).to be_empty
   end
 

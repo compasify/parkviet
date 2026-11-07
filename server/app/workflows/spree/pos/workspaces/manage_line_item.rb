@@ -36,6 +36,8 @@ module Spree
               # first sale and a reconfiguration cannot interleave.
               Spree::Variant.where(id: variant.id).lock('FOR SHARE').load
               variant_unit = variant_unit_for(workspace, variant, sale_unit_code)
+              serial_codes = trace_inputs!(workspace, variant, variant_unit, serial_codes)
+              lot_code, expiry_on = traced_lot!(workspace, variant, lot_code) if variant_unit.tracked_mode == 'lot'
               sale_qty, base_quantity, kind = resolve_quantities(variant_unit, quantity, sale_quantity, lot_code, serial_codes)
               unit_price = resolve_price!(workspace, staff, variant, variant_unit, price_override)
               line_price = UnitNormalizer.unit_price_per_base(price: unit_price, variant_unit: variant_unit)
@@ -56,6 +58,8 @@ module Spree
 
                 line.update!(quantity: new_base, price: line_price)
                 existing.update!(base_quantity: new_base, sale_quantity: existing.sale_quantity + sale_qty)
+                # Lots are chosen again for the new quantity when payment is prepared.
+                Inventory::AllocateTraceability.release_line!(existing)
                 sale_line = existing
               else
                 line = workspace.order.line_items.build(variant: variant, quantity: base_quantity, price: line_price, currency: workspace.order.currency)
@@ -73,6 +77,9 @@ module Spree
                   tracked_mode: variant_unit.tracked_mode, measurement_event_id: measurement_event_id.presence,
                   label_barcode: label&.barcode, label_format_id: label&.format&.id, label_format_version: label&.format&.version
                 )
+                if variant_unit.tracked_mode == 'serial'
+                  Inventory::AllocateTraceability.reserve_serials!(workspace: workspace, sale_line: sale_line, serials: sale_line.serial_codes)
+                end
               end
               recalculate!(workspace)
               audit = { variant_id: variant.prefixed_id, sale_line_id: sale_line.prefixed_id, line_item_id: line.prefixed_id, quantity: base_quantity }
@@ -100,7 +107,10 @@ module Spree
               end
               sale_qty, base_quantity, _kind = resolve_quantities(variant_unit, quantity, sale_quantity, sale_line.lot_code, sale_line.serial_codes)
               sale_line.line_item.update!(quantity: base_quantity)
+              changed = sale_line.base_quantity != base_quantity
               sale_line.update!(sale_quantity: sale_qty, base_quantity: base_quantity)
+              # Reservations only follow a real quantity change.
+              Inventory::AllocateTraceability.release_line!(sale_line) if changed
               recalculate!(workspace)
               finish!(workspace, staff, 'workspace.item.update', sale_line_id: sale_line.prefixed_id, quantity: base_quantity)
             end
@@ -112,6 +122,7 @@ module Spree
               validate_command!(workspace, staff, revision, lease_generation, editor_id)
               sale_line = sale_line!(workspace, sale_line_id)
               sale_id = sale_line.prefixed_id
+              Inventory::AllocateTraceability.release_line!(sale_line)
               sale_line.line_item.destroy!
               recalculate!(workspace)
               finish!(workspace, staff, 'workspace.item.remove', sale_line_id: sale_id)
@@ -155,10 +166,47 @@ module Spree
 
           # Serial-tracked goods carry exactly one distinct serial per unit sold.
           def validate_serials!(variant_unit, serials, count)
-            serial_mode = %w[serial serial_lot].include?(variant_unit.tracked_mode)
+            serial_mode = variant_unit.tracked_mode == 'serial'
             return if serials.empty? && !serial_mode
 
-            raise Conflict, 'Serial numbers must match the quantity.' unless serials.size == count && serials.uniq.size == serials.size
+            raise Conflict.new('Serial numbers must match the quantity.', reason: 'trace_serial_required') unless serials.size == count
+            raise Conflict.new('Each serial number can be scanned once.', reason: 'trace_serial_duplicate') unless serials.uniq.size == serials.size
+          end
+
+          # Tracked goods are sold only where their typed stock is reconciled;
+          # serial numbers belong to serial-tracked goods only.
+          def trace_inputs!(workspace, variant, variant_unit, serial_codes)
+            mode = variant_unit.tracked_mode
+            serials = Array(serial_codes).map { |code| mode == 'serial' ? SerialUnit.normalize(code) : code.to_s }
+            StockIntegration.ensure_sellable!(workspace.branch, variant, mode) if %w[serial lot].include?(mode)
+            # One serial is one base unit; a pack or measured sale unit would
+            # sell several units under one serial.
+            if mode == 'serial' && (variant_unit.sale_unit.code != variant_unit.base_unit.code ||
+                                    variant_unit.ratio_numerator != variant_unit.ratio_denominator || variant_unit.sale_unit.factor_to_base != 1)
+              raise Conflict.new('Serial-tracked items are sold one unit per serial.', reason: 'trace_serial_unit_mismatch')
+            end
+            if serials.any? && mode != 'serial'
+              raise Conflict.new('Serial numbers apply only to serial-tracked items.', reason: 'trace_serial_invalid')
+            end
+
+            serials
+          end
+
+          # Lot-tracked goods take lots FEFO on the server; a cashier may name a
+          # lot only where the branch allows picking, and only a sellable one.
+          def traced_lot!(workspace, variant, lot_code)
+            return [nil, nil] if lot_code.blank?
+
+            branch = workspace.branch
+            unless branch.lot_selection == 'cashier_pick'
+              raise Conflict.new('Lots are chosen by expiry (FEFO) at this branch.', reason: 'trace_lot_pick_forbidden')
+            end
+
+            today = StockIntegration.today(branch)
+            lot = FefoAllocator.candidates(variant, branch.stock_location, today).find { |row| row.lot_code == lot_code.to_s }
+            raise Conflict.new('The chosen lot cannot be sold (expired, quarantined or not at this branch).', reason: 'trace_lot_invalid') if lot.nil?
+
+            [lot.lot_code, lot.expiry_on&.iso8601]
           end
 
           def parse_expiry!(value)
@@ -174,7 +222,7 @@ module Spree
             return if codes.empty?
             return unless SaleLine.where(workspace: workspace).where('serial_codes ?| array[:codes]', codes: codes).exists?
 
-            raise Conflict, 'A serial number is already on this order.'
+            raise Conflict.new('A serial number is already on this order.', reason: 'trace_serial_duplicate')
           end
 
           def ensure_new_measurement!(workspace, measurement_event_id)

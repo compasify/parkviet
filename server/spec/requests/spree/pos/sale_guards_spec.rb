@@ -1,10 +1,13 @@
 # frozen_string_literal: true
 
 require 'spree/api/testing_support/v3/base'
+require_relative '../../../support/pos_trace_helpers'
 
 # Server-side guards around what a cashier can put on a draft: counts, packages,
 # serials, unit configuration, sellable variants and the frozen tender snapshot.
 RSpec.describe 'POS sale guards', type: :request do
+  include PosTraceHelpers
+
   let(:store) { create(:store, default_currency: 'VND', supported_currencies: 'VND') }
   let(:password) { 'secret123' }
   let(:editor_id) { SecureRandom.uuid }
@@ -113,6 +116,7 @@ RSpec.describe 'POS sale guards', type: :request do
     sale = open_sale
     configure_unit(sale, sale_unit: 'item', base_unit: 'item', price_unit: 'item', tracked_mode: 'serial')
     expect(response).to have_http_status(:ok)
+    enroll_serials!(sale[:branch], sale[:product].default_variant, %w[SN-1 SN-2], opened_by: sale[:user])
 
     add(sale, revision: 0, quantity: 1)
     expect(response).to have_http_status(:conflict)

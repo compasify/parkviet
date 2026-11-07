@@ -28,8 +28,14 @@ module Spree
       # shifts only), and exporting reports.
       REPORT_READ = 'pos.report.read'
       REPORT_EXPORT = 'pos.report.export'
+      # Typed stock at a branch: opening balances, receipts, transfers,
+      # counts and quarantine of serial/lot-tracked goods.
+      INVENTORY_MANAGE = 'pos.inventory.manage'
+      # Recall search: which sales, orders and customers got a lot or serial.
+      INVENTORY_TRACE = 'pos.inventory.trace'
       ASSIGNABLE = [MANAGE, OPEN_SHIFT, DISCOUNT, PRICE_OVERRIDE, CUSTOMER, PAYMENT, RESOLVE, RECOVER, APPROVE, TAKEOVER,
-                    CREDIT_MANAGE, CREDIT_SELL, RETURN, CASH_MOVE, REPORT_READ, REPORT_EXPORT].freeze
+                    CREDIT_MANAGE, CREDIT_SELL, RETURN, CASH_MOVE, REPORT_READ, REPORT_EXPORT,
+                    INVENTORY_MANAGE, INVENTORY_TRACE].freeze
 
       def self.sanitize(values)
         Array(values).map(&:to_s).uniq

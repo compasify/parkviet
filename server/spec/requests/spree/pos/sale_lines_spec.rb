@@ -1,10 +1,13 @@
 # frozen_string_literal: true
 
 require 'spree/api/testing_support/v3/base'
+require_relative '../../../support/pos_trace_helpers'
 
 # I08: packages of the same variant stay independent by SaleLine, while an
 # explicit `merge: true` with an identical merge key still merges.
 RSpec.describe 'POS SaleLine identity (I08)', type: :request do
+  include PosTraceHelpers
+
   let(:store) { create(:store, default_currency: 'VND', supported_currencies: 'VND') }
   let(:password) { 'secret123' }
   let(:editor_id) { SecureRandom.uuid }
@@ -314,8 +317,9 @@ RSpec.describe 'POS SaleLine identity (I08)', type: :request do
   end
 
   it 'keeps tracked packages distinct even when the same package is scanned twice' do
-    _user, branch, workspace, product, token = setup_workspace
+    user, branch, workspace, product, token = setup_workspace
     configure_variant_unit(branch, product, token, sale_unit: 'item', base_unit: 'item', price_unit: 'item', tracked_mode: 'serial')
+    enroll_serials!(branch, product.default_variant, %w[SN-1 SN-2], opened_by: user)
     variant_id = product.default_variant.prefixed_id
 
     post_item(workspace, token, expected_revision: 0, variant_id: variant_id, quantity: 1, serial_codes: ['SN-1'], merge: true)

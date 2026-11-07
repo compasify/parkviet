@@ -71,6 +71,11 @@ production:
   pos_dispatch_outbox:
     class: Spree::Pos::DispatchOutboxJob
     schedule: every minute
+  # POS serial/lot stock: release expired draft reservations and raise
+  # attention for tracked stock that no longer matches the shelf.
+  pos_release_trace_reservations:
+    class: Spree::Pos::ReleaseTraceReservationsJob
+    schedule: every minute
 
   # Solid Queue / Solid Cable housekeeping.
   clear_solid_queue_finished_jobs:

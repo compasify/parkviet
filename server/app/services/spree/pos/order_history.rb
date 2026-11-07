@@ -137,6 +137,7 @@ module Spree
           sale_quantity: sale_line.sale_quantity.to_s('F'), sale_unit: sale_line.sale_unit_code,
           base_quantity: sale_line.base_quantity, base_unit: sale_line.base_unit_code, unit_price: sale_line.unit_price.to_s('F'),
           lot_code: sale_line.lot_code, serial_codes: Array(sale_line.serial_codes),
+          trace: Inventory::ReturnTraceability.sold_pos(sale_line),
           original: entitlement.original(line_item).to_pos,
           returned_quantity: held, posted_quantity: posted.sum(&:quantity),
           returnable_quantity: shipped.include?(line_item.id) ? sale_line.base_quantity - held : 0,

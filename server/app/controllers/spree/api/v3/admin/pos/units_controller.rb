@@ -83,6 +83,13 @@ module Spree
               record.label_code = params[:label_code].to_s.strip.presence if params.key?(:label_code)
               if conversion_changed
                 raise Spree::Pos::Conflict, 'Unit configuration is locked after sale lines exist.' if Spree::Pos::SaleLine.where(variant_id: variant.id).exists?
+                # Stock counted in the old base unit or tracked by serial/lot
+                # would be read wrongly under a new conversion or mode.
+                conversion_fields = record.changed & %w[sale_unit_id base_unit_id price_unit_id ratio_numerator ratio_denominator]
+                if typed_stock?(variant) || (record.persisted? && conversion_fields.any? && converted_stock?(record, variant))
+                  raise Spree::Pos::Conflict.new('Unit configuration is locked while tracked or converted stock exists.',
+                                                 reason: 'trace_stock_exists')
+                end
 
                 record.version = record.persisted? ? record.version + 1 : 1
               end
@@ -90,6 +97,17 @@ module Spree
                 raise Spree::Pos::Conflict, 'Label code is already used by another SKU.'
               end
               record.save!
+            end
+
+            def typed_stock?(variant)
+              Spree::Pos::TraceEnrollment.exists?(variant_id: variant.id) || Spree::Pos::InventoryLot.exists?(variant_id: variant.id) ||
+                Spree::Pos::SerialUnit.exists?(variant_id: variant.id)
+            end
+
+            # A shelf counted in a base unit other than the item itself.
+            def converted_stock?(record, variant)
+              was_converted = record.base_unit_id_was != record.sale_unit_id_was || record.ratio_numerator_was != record.ratio_denominator_was
+              was_converted && Spree::StockLevel.where(variant_id: variant.id).where.not(count_on_hand: 0).exists?
             end
 
             def unit!(code)
@@ -110,7 +128,7 @@ module Spree
 
             def tracked_mode(value)
               mode = value.to_s.presence || 'none'
-              raise Spree::Pos::Conflict, 'Tracked mode is invalid.' unless %w[none serial lot serial_lot].include?(mode)
+              raise Spree::Pos::Conflict, 'Tracked mode is invalid.' unless %w[none serial lot].include?(mode)
 
               mode
             end

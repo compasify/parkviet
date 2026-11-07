@@ -125,7 +125,7 @@ test('staff permissions expose all capabilities and require confirmation for sen
   await page.getByRole('button', { name: 'Nhân viên & quyền', exact: false }).click();
   await page.getByRole('button', { name: 'Chỉnh sửa Nguyễn Thị Lan · lan@example.test', exact: true }).click();
   const dialog = page.getByRole('dialog');
-  await expect(dialog.locator('.admin-permissions input[type=checkbox]')).toHaveCount(16);
+  await expect(dialog.locator('.admin-permissions input[type=checkbox]')).toHaveCount(18);
   await dialog.getByRole('checkbox', { name: 'Áp dụng giảm giá', exact: false }).check();
   await dialog.getByRole('checkbox', { name: 'Đổi giá bán', exact: false }).check();
   await expect(dialog.getByRole('button', { name: 'Lưu', exact: true })).toBeDisabled();

@@ -1,3 +1,5 @@
+import type { LotSelection, SaleLineTrace, WorkspaceTrace } from './traceability';
+
 export type PosBranch = {
   id: string;
   name: string;
@@ -8,6 +10,11 @@ export type PosBranch = {
   receiving_stock_location_id: string | null;
   receiving_note: string | null;
   return_window_days?: number | null;
+  // How lot-tracked lines pick their lot; FEFO unless the cashier may choose.
+  lot_selection?: LotSelection;
+  // Base units a positive count adjustment may add without approval; null
+  // means every positive adjustment needs one.
+  adjustment_approval_threshold?: number | null;
 };
 
 export type PosRegister = {
@@ -103,6 +110,8 @@ export type PosLineItem = {
   expiry_on?: string | null;
   serial_codes?: string[];
   tracked_mode?: string;
+  // Reserved serials/lots of a traced line, or the FEFO plan before reserving.
+  trace?: SaleLineTrace | null;
   label_barcode?: string | null;
   label_format_version?: number | null;
   line_discount?: PosLineDiscount | null;
@@ -373,6 +382,8 @@ export type PosWorkspace = {
   } | null;
   totals?: PosTotals;
   financial?: PosFinancial | null;
+  // Missing on payloads from servers without stock traceability.
+  trace?: WorkspaceTrace | null;
 };
 
 export type PosMembership = {

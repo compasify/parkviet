@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { administrationAccess } from '../lib/pos-administration';
 import { canReadReceivables } from '../lib/receivables';
 import { canApprove, canProcessReturns } from '../lib/returns';
+import { canOpenInventory } from '../lib/traceability';
 import { PosIcon } from './pos-icon';
 import { usePosSelection } from './pos-selection';
 
@@ -86,6 +87,12 @@ export function PosPage({
               {t('reportsNav')}
             </Link>
           </>
+        ) : null}
+        {canOpenInventory(capabilities) ? (
+          <Link to="/inventory" activeProps={{ className: 'is-active', 'aria-current': 'page' }}>
+            <PosIcon name="box" />
+            {t('inventoryNav')}
+          </Link>
         ) : null}
         {capabilities.includes('pos.payment.resolve') ? (
           <Link

@@ -41,6 +41,8 @@ export type ReturnLineInput = {
   sale_line_id: string;
   quantity: number;
   condition: ReturnCondition;
+  serial_codes?: string[];
+  lot_code?: string;
 };
 
 // Paths of commands sent through runFinancialCommand from this module; their

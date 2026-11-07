@@ -5,8 +5,10 @@ module Spree
     module V3
       module Admin
         module Pos
-          # Draft traceability choices. Full reservation/sold lifecycle is phase 8;
-          # this reader never claims stock is reserved by selecting a draft value.
+          # Traceability state of one variant at a branch for the sale screen:
+          # tracked mode, whether it is sellable there (opening balance done and
+          # typed stock matching the shelf), sellable lots in FEFO order and
+          # the number of free serial units. Reading it reserves nothing.
           class TraceabilityController < BaseController
             scoped_resource :pos_orders
 
@@ -21,9 +23,7 @@ module Spree
               raise ActiveRecord::RecordNotFound if variant.nil? || variant.product.store_id != current_store.id
               raise ActiveRecord::RecordNotFound unless Spree::Pos::BranchProduct.exists?(branch: branch, product: variant.product)
 
-              configured = Spree::Pos::VariantUnit.find_by(store: current_store, variant: variant, status: 'active')
-              mode = configured&.tracked_mode || 'none'
-              render json: { data: { variant_id: variant.prefixed_id, tracked_mode: mode, draft_selection: mode != 'none', reservation: 'unavailable_phase_8', serial_units: [], lots: [] } }
+              render json: { data: Spree::Pos::StockIntegration.status(branch, variant) }
             end
           end
         end

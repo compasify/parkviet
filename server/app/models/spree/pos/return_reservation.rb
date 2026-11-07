@@ -33,7 +33,9 @@ module Spree
           name: line_item.variant.product.name, sku: line_item.variant.sku,
           quantity: quantity, sequence: sequence, cumulative_before: cumulative_before, cumulative_after: cumulative_after,
           condition: condition, status: status, received_quantity: received_quantity, restocked_quantity: restocked_quantity,
-          total: total.to_s('F'), net: net.to_s('F'), tax: tax.to_s('F'), discount: discount.to_s('F'), gross: gross.to_s('F')
+          total: total.to_s('F'), net: net.to_s('F'), tax: tax.to_s('F'), discount: discount.to_s('F'), gross: gross.to_s('F'),
+          trace: TraceReturn.joins(:trace_allocation).where(return_operation_id: return_operation_id).
+                 where(spree_pos_trace_allocations: { sale_line_id: sale_line_id }).order(:id).map(&:to_pos)
         }
       end
     end

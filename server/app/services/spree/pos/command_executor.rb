@@ -37,6 +37,8 @@ module Spree
           # Credit approvals are bound to one workspace snapshot; close the ones
           # this command made unusable in the same transaction.
           Credit::Release.sweep!(workspace: workspace, actor: actor) if workspace
+          # Working on a draft keeps its serial/lot reservations alive.
+          Inventory::AllocateTraceability.refresh!(workspace) if workspace
           receipt = CommandReceipt.create!(
             store: store,
             workspace: workspace,

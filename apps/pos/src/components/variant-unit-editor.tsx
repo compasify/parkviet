@@ -8,9 +8,10 @@ import { saveVariantUnit, useVariantUnit } from '../hooks/use-variant-unit';
 import type { PosVariantUnit } from '../lib/pos-context';
 import { queryClient } from '../lib/query-client';
 import { describeFailure, posFailureKey } from '../lib/request-failure';
+import { describeTraceFailure } from '../lib/traceability';
 import { AdminDialog } from './admin-dialog';
 
-const TRACKED_MODES = ['none', 'lot', 'serial', 'serial_lot'] as const;
+const TRACKED_MODES = ['none', 'lot', 'serial'] as const;
 const MAX_RATIO = 1_000_000;
 
 type UnitDraft = {
@@ -135,7 +136,7 @@ export function VariantUnitEditor({
       setSaved(t('variantUnitSaved'));
       await queryClient.invalidateQueries({ queryKey: ['pos', 'variant-unit'] });
     } catch (failure) {
-      setError(describeFailure(failure, t));
+      setError(describeTraceFailure(failure, t));
     } finally {
       setBusy(false);
     }

@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatMoney, parseVndAmount } from '../lib/money';
-import type { PosWorkspace } from '../lib/pos-context';
+import type { PosLineItem, PosWorkspace } from '../lib/pos-context';
 import { MAX_COUNT_QUANTITY, parseCountQuantity, parseMeasuredQuantity } from '../lib/quantity';
-import { describeFailure } from '../lib/request-failure';
+import { describeTraceFailure, formatExpiry, traceReasonKey } from '../lib/traceability';
 import { ItemDiscountEditor } from './item-discount-editor';
 import { LinePriceEditor } from './line-price-editor';
 import { PosIcon } from './pos-icon';
+import { lotLabel } from './sold-trace';
 
 export function OrderLines({
   workspace,
@@ -62,7 +63,7 @@ export function OrderLines({
         return next;
       });
     } catch (failure) {
-      setError(describeFailure(failure, t));
+      setError(describeTraceFailure(failure, t));
     }
   }
 
@@ -103,8 +104,14 @@ export function OrderLines({
               const measured = line.kind === 'measured';
               // A scale label fixes the package's quantity; the server refuses edits.
               const labelled = Boolean(line.label_barcode);
-              const quantityLocked = disabled || labelled;
-              const quantityTitle = labelled ? t('saleLineLabelLocked') : disabledReason;
+              // Each unit of a serial line is one scanned serial: re-add to change it.
+              const serialLine = line.trace?.mode === 'serial';
+              const quantityLocked = disabled || labelled || serialLine;
+              const quantityTitle = labelled
+                ? t('saleLineLabelLocked')
+                : serialLine
+                  ? t('saleLineSerialLocked')
+                  : disabledReason;
               const targetId = line.sale_line_id ?? line.id;
               const inputValue =
                 quantities[line.id] ??
@@ -141,15 +148,7 @@ export function OrderLines({
                             : ''}
                         </span>
                       ) : null}
-                      {line.lot_code ? (
-                        <span>{` · ${t('saleLineLot')}: ${line.lot_code}`}</span>
-                      ) : null}
-                      {line.serial_codes?.length ? (
-                        <span>{` · ${t('saleLineSerials')}: ${line.serial_codes.join(', ')}`}</span>
-                      ) : null}
-                      {line.tracked_mode && line.tracked_mode !== 'none' ? (
-                        <span>{` · ${t('saleLineReservationUnavailable')}`}</span>
-                      ) : null}
+                      <LineTrace line={line} />
                     </div>
                   </td>
                   <td>
@@ -158,8 +157,8 @@ export function OrderLines({
                         <button
                           type="button"
                           aria-label={t('decreaseQuantity', { name: line.name })}
-                          disabled={disabled || line.quantity <= 1}
-                          title={disabledReason}
+                          disabled={quantityLocked || line.quantity <= 1}
+                          title={quantityTitle}
                           onClick={() =>
                             void run(line.id, () =>
                               onUpdate(targetId, { quantity: line.quantity - 1 }),
@@ -199,8 +198,8 @@ export function OrderLines({
                         <button
                           type="button"
                           aria-label={t('increaseQuantity', { name: line.name })}
-                          disabled={disabled || line.quantity >= MAX_COUNT_QUANTITY}
-                          title={disabledReason}
+                          disabled={quantityLocked || line.quantity >= MAX_COUNT_QUANTITY}
+                          title={quantityTitle}
                           onClick={() =>
                             void run(line.id, () =>
                               onUpdate(targetId, { quantity: line.quantity + 1 }),
@@ -310,5 +309,53 @@ export function OrderLines({
         </p>
       ) : null}
     </>
+  );
+}
+
+// Serials and lots held for a traced line, or the FEFO plan the server will
+// reserve at payment. Payloads without trace show the recorded lot/serials.
+function LineTrace({ line }: { line: PosLineItem }) {
+  const { t } = useTranslation();
+  const trace = line.trace;
+  if (!trace)
+    return line.lot_code || line.serial_codes?.length ? (
+      <span className="basket-line-label">
+        {line.lot_code ? `${t('saleLineLot')}: ${line.lot_code}` : ''}
+        {line.lot_code && line.serial_codes?.length ? ' · ' : ''}
+        {line.serial_codes?.length
+          ? `${t('saleLineSerials')}: ${line.serial_codes.join(', ')}`
+          : ''}
+      </span>
+    ) : null;
+  const lotText = (code: string | null, expiry: string | null) => lotLabel(t, code, expiry);
+  // Allocations count base units.
+  const unit = line.base_unit ? ` ${line.base_unit}` : '';
+  return (
+    <span className="basket-line-trace">
+      {trace.allocations.map((allocation) => (
+        <span key={allocation.id} className="basket-line-label">
+          {allocation.kind === 'serial'
+            ? `${t('saleLineSerials')}: ${allocation.serial ?? ''}`
+            : `${lotText(allocation.lot_code, allocation.expiry_on)} × ${allocation.quantity}${unit}`}
+          {` · ${t(`saleLineTraceStatus_${allocation.status}`)}`}
+        </span>
+      ))}
+      {trace.allocations.length === 0
+        ? trace.preview.map((plan) => (
+            <span key={plan.lot_code} className="basket-line-label">
+              {t('saleLineLotPreview', {
+                code: plan.lot_code,
+                expiry: formatExpiry(plan.expiry_on),
+                quantity: `${plan.quantity}${unit}`,
+              })}
+            </span>
+          ))
+        : null}
+      {trace.issue ? (
+        <span className="basket-line-label" role="status" data-warning="true">
+          {t(traceReasonKey(trace.issue) ?? 'paymentTraceIssueUnknown')}
+        </span>
+      ) : null}
+    </span>
   );
 }

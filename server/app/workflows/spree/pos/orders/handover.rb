@@ -60,8 +60,13 @@ module Spree
             # Core refuses an unpaid dispatch unless forced. Only an approved
             # credit debit that covers the unpaid part may force it; the shelf
             # was checked above under the stock-row locks.
-            result = Spree.fulfillment_fulfill_workflow.call(fulfillment: fulfillment, notify_customer: false, force: on_credit)
+            # Tracked units leave their lots in the same transaction as the core shelf.
+            result = StockIntegration.writing do
+              Spree.fulfillment_fulfill_workflow.call(fulfillment: fulfillment, notify_customer: false, force: on_credit)
+            end
             raise Conflict, 'Fulfillment could not be handed over.' unless result.success?
+
+            Inventory::AllocateTraceability.consume!(fulfillment)
 
             shipped << fulfillment
             StockDiscrepancy.open_now.where(fulfillment_id: fulfillment.id).find_each do |gap|

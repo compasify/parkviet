@@ -78,6 +78,7 @@ module Spree
               details = error.revision.nil? ? {} : { current_revision: error.revision }
               details[:reason] = error.reason if error.reason
               details[:retry_after_seconds] = error.retry_after_seconds if error.retry_after_seconds
+              details = error.details.merge(details) if error.details.is_a?(Hash)
               render_error(code: 'conflict', message: error.message, status: :conflict, details: details)
             end
 

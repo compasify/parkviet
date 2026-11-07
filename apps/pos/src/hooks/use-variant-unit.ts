@@ -3,6 +3,7 @@ import { session } from '../lib/app-session';
 import type { PosVariantUnit } from '../lib/pos-context';
 import { posFailureKey } from '../lib/request-failure';
 import { SessionSuperseded } from '../lib/session-coordinator';
+import type { PosTraceStatus } from '../lib/traceability';
 import { useSession } from './use-session';
 
 export function useVariantUnit(
@@ -28,15 +29,6 @@ export function useVariantUnit(
   });
 }
 
-export type PosTraceability = {
-  variant_id: string;
-  tracked_mode: string;
-  draft_selection: boolean;
-  reservation: string;
-  serial_units: unknown[];
-  lots: unknown[];
-};
-
 export function useTraceability(
   storeId: string | null,
   branchId: string | null,
@@ -48,7 +40,7 @@ export function useTraceability(
     enabled: snapshot.status === 'authenticated' && Boolean(storeId && branchId && variantId),
     queryFn: async () => {
       try {
-        return await session.request<{ data: PosTraceability }>('GET', '/pos/traceability', {
+        return await session.request<{ data: PosTraceStatus }>('GET', '/pos/traceability', {
           params: { branch_id: branchId ?? undefined, variant_id: variantId ?? undefined },
         });
       } catch (error) {

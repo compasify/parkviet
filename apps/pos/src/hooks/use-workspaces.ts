@@ -326,6 +326,18 @@ export function useWorkspaces(
         )
       ).workspace;
     },
+    // Reserves the FEFO lots and re-reserves the serials of traced lines now,
+    // so payment can start; refused with the same trace reasons as payment.
+    async reserveTrace(workspace: PosWorkspace) {
+      const body = {
+        expected_revision: workspace.revision,
+        lease_generation: workspace.lease_generation,
+        editor_id: editorId,
+      };
+      return (
+        await sendIntent(workspace.id, body, `/pos/workspaces/${workspace.id}/trace_allocations`)
+      ).workspace;
+    },
     async assignCustomer(workspace: PosWorkspace, profileId: string) {
       const body = {
         expected_revision: workspace.revision,

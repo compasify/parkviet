@@ -20,6 +20,11 @@ export type TopologyDraft = {
   return_window_days?: string | number | null;
   // Closing variance above this needs an approval; blank means any variance does.
   variance_threshold?: string | null;
+  // FEFO picks lots for the cashier unless the branch lets them choose.
+  lot_selection?: string;
+  // Base units a positive stock count may add without approval; blank means
+  // every positive count needs one.
+  adjustment_approval_threshold?: string | number | null;
   branch_id?: string;
   staff_id?: string;
   capabilities?: string[];
@@ -110,6 +115,11 @@ export function TopologyEditor({
       setError(t('adminVarianceThresholdInvalid'));
       return;
     }
+    const adjustmentText = String(draft.adjustment_approval_threshold ?? '').trim();
+    if (kind === 'branches' && adjustmentText !== '' && !/^\d{1,9}$/.test(adjustmentText)) {
+      setError(t('adminAdjustmentThresholdInvalid'));
+      return;
+    }
     const body =
       kind === 'memberships'
         ? record.id
@@ -133,6 +143,8 @@ export function TopologyEditor({
                   ? null
                   : Number(String(draft.return_window_days).trim()),
               variance_threshold: threshold,
+              lot_selection: draft.lot_selection === 'cashier_pick' ? 'cashier_pick' : 'fefo',
+              adjustment_approval_threshold: adjustmentText === '' ? null : Number(adjustmentText),
             };
     setBusy(true);
     setError('');
@@ -293,6 +305,30 @@ export function TopologyEditor({
                   onChange={(event) => set('return_window_days', event.target.value)}
                 />
                 <small id="return-window-hint">{t('adminReturnWindowHint')}</small>
+              </label>
+              <label>
+                {t('adminLotSelection')}
+                <select
+                  value={draft.lot_selection === 'cashier_pick' ? 'cashier_pick' : 'fefo'}
+                  aria-describedby="lot-selection-hint"
+                  onChange={(event) => set('lot_selection', event.target.value)}
+                >
+                  <option value="fefo">{t('adminLotSelection_fefo')}</option>
+                  <option value="cashier_pick">{t('adminLotSelection_cashier_pick')}</option>
+                </select>
+                <small id="lot-selection-hint">{t('adminLotSelectionHint')}</small>
+              </label>
+              <label>
+                {t('adminAdjustmentThreshold')}
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={9}
+                  value={String(draft.adjustment_approval_threshold ?? '')}
+                  aria-describedby="adjustment-threshold-hint"
+                  onChange={(event) => set('adjustment_approval_threshold', event.target.value)}
+                />
+                <small id="adjustment-threshold-hint">{t('adminAdjustmentThresholdHint')}</small>
               </label>
               <label>
                 {t('adminVarianceThreshold')}

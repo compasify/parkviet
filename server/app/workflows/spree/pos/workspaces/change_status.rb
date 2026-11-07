@@ -26,6 +26,9 @@ module Spree
 
             # Parking or canceling ends the snapshot an approved credit was bound to.
             Credit::Release.call(workspace: workspace, actor: staff, reason: "workspace_#{status}") if %w[parked canceled].include?(status)
+            # Parked and canceled tabs never pin serials or lots; a payment in
+            # progress keeps holding them until it is resolved.
+            Inventory::AllocateTraceability.release!(workspace) if status == 'canceled' || (status == 'parked' && !workspace.snapshot_locked?)
             workspace.update!(operational_status: status, revision: workspace.revision + 1)
             AuditEntry.record!(store: workspace.store, actor: staff, action: "workspace.#{status}", subject: workspace)
             workspace.to_pos
