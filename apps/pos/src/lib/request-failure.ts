@@ -38,6 +38,24 @@ export function leaseConflict(
   return { reason: details.reason, seconds };
 }
 
+// The browser could not persist a financial intent before sending it.
+export const FINANCIAL_STORAGE_UNAVAILABLE = 'financial-storage-unavailable';
+
+export function financialStorageFailure(error: unknown): boolean {
+  return error instanceof Error && error.message === FINANCIAL_STORAGE_UNAVAILABLE;
+}
+
+// The server answered the command itself with a client error, so its
+// transaction rolled back. Transport failures, timeouts and 5xx stay unknown.
+export function definitiveRejection(error: unknown): boolean {
+  const status = statusOf(error);
+  return status !== undefined && status >= 400 && status < 500 && status !== 408;
+}
+
+export function failureStatus(error: unknown): number | undefined {
+  return statusOf(error);
+}
+
 function statusOf(error: unknown): number | undefined {
   if (typeof error !== 'object' || error === null) return undefined;
   if ('status' in error && typeof error.status === 'number') return error.status;
@@ -99,6 +117,7 @@ export function describeFailure(
   translate: (key: string) => string,
   fallbackKey?: string,
 ): string {
+  if (financialStorageFailure(error)) return translate('financialStorageUnavailable');
   const lease = leaseConflict(error);
   if (lease) return translate(lease.reason === 'lease_busy' ? 'leaseBusy' : 'leaseStale');
   if (snapshotLocked(error)) return translate('editLockedPayments');

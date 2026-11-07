@@ -1,6 +1,6 @@
 import { useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { parseVndAmount } from '../lib/money';
+import { parseVndAmount, parseVndInput } from '../lib/money';
 import type { PosLineItem, PosWorkspace } from '../lib/pos-context';
 import { describeFailure } from '../lib/request-failure';
 import { PosIcon } from './pos-icon';
@@ -37,7 +37,7 @@ export function LinePriceEditor({
   const reasonId = useId();
   const reasonRef = useRef<HTMLInputElement>(null);
   const details = useRef<HTMLDetailsElement>(null);
-  const value = parseVndAmount(price);
+  const value = parseVndInput(price);
   const valid = currency === 'VND' && value !== null && BigInt(value) >= 0n;
 
   async function run(action: () => Promise<PosWorkspace>) {

@@ -29,6 +29,8 @@ module Spree
             # `received` = tender-confirmed; `attention` = unsolicited fact that
             # a resolver may now allocate. Both are real money on the parent.
             raise Conflict, 'Funds are not in a received state.' unless %w[received attention].include?(funds.status)
+            raise Conflict, 'Funds currency does not match the order.' if funds.currency != workspace.order.currency
+            raise Conflict, 'Amount must be a whole amount in the order currency.' unless Record.countable_money?(parsed, funds.currency)
 
             allocation = nil
             funds.with_lock do

@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { formatMoney, parseVndAmount } from '../lib/money';
+import { formatMoney, parseVndInput } from '../lib/money';
 import type { PosLiabilityPayout, PosReceivedFunds } from '../lib/pos-context';
-import { posFailureKey } from '../lib/request-failure';
+import { describeFailure } from '../lib/request-failure';
 
 export function LiabilityPayoutDialog({
   funds,
@@ -35,12 +35,14 @@ export function LiabilityPayoutDialog({
   const [error, setError] = useState('');
   const payouts = funds.payouts ?? [];
 
-  async function run(action: () => Promise<unknown>) {
+  async function run(action: () => Promise<unknown>): Promise<boolean> {
     setError('');
     try {
       await action();
+      return true;
     } catch (failure) {
-      setError(t(posFailureKey(failure)));
+      setError(describeFailure(failure, t));
+      return false;
     }
   }
 
@@ -50,9 +52,10 @@ export function LiabilityPayoutDialog({
       <form
         onSubmit={(event) => {
           event.preventDefault();
-          const form = new FormData(event.currentTarget);
-          const amount = parseVndAmount(String(form.get('amount') ?? ''));
-          if (!amount) {
+          const element = event.currentTarget;
+          const form = new FormData(element);
+          const amount = parseVndInput(String(form.get('amount') ?? ''));
+          if (!amount || amount === '0') {
             setError(t('invalid'));
             return;
           }
@@ -64,7 +67,9 @@ export function LiabilityPayoutDialog({
               reason: String(form.get('reason') ?? ''),
               approvalId: String(form.get('approval_id') ?? '') || undefined,
             }),
-          );
+          ).then((done) => {
+            if (done) element.reset();
+          });
         }}
       >
         <label>
@@ -99,19 +104,43 @@ export function LiabilityPayoutDialog({
           </p>
           {['requested', 'reserved', 'unknown'].includes(payout.status) ? (
             <div className="row">
-              <button
-                type="button"
-                disabled={disabled || busy}
-                onClick={() =>
-                  void run(() =>
-                    onConfirm(payout, {
-                      evidenceKind: funds.kind === 'cash' ? 'cash_count' : 'bank_manual',
-                    }),
-                  )
-                }
-              >
-                {t('fundsPayoutConfirm')}
-              </button>
+              {funds.kind === 'cash' ? (
+                <button
+                  type="button"
+                  disabled={disabled || busy}
+                  onClick={() => void run(() => onConfirm(payout, { evidenceKind: 'cash_count' }))}
+                >
+                  {t('fundsPayoutConfirm')}
+                </button>
+              ) : (
+                <form
+                  className="row"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    const element = event.currentTarget;
+                    const reference = String(new FormData(element).get('reference') ?? '').trim();
+                    if (!reference) return;
+                    void run(() =>
+                      onConfirm(payout, { evidenceKind: 'bank_manual', reference }),
+                    ).then((done) => {
+                      if (done) element.reset();
+                    });
+                  }}
+                >
+                  <label>
+                    {t('fundsPayoutReference')}
+                    <input
+                      name="reference"
+                      required
+                      autoComplete="off"
+                      disabled={disabled || busy}
+                    />
+                  </label>
+                  <button type="submit" disabled={disabled || busy}>
+                    {t('fundsPayoutConfirm')}
+                  </button>
+                </form>
+              )}
               <button
                 type="button"
                 disabled={disabled || busy}

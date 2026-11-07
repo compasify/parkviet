@@ -1,6 +1,6 @@
 import { useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { formatMoney, parsePercentageInput, parseVndAmount } from '../lib/money';
+import { formatMoney, parsePercentageInput, parseVndAmount, parseVndInput } from '../lib/money';
 import type { PosLineItem, PosWorkspace } from '../lib/pos-context';
 import { describeFailure } from '../lib/request-failure';
 import { PosIcon } from './pos-icon';
@@ -30,7 +30,11 @@ export function ItemDiscountEditor({
   const { t } = useTranslation();
   const current = line.item_discount;
   const initialType = current?.value_type ?? 'flat';
-  const initialValue = current?.value ?? '0';
+  // Server values are canonical ("20000.0"); show them as plain whole VND.
+  const initialValue =
+    (initialType === 'flat' ? parseVndAmount(current?.value ?? '0') : current?.value) ??
+    current?.value ??
+    '0';
   const [type, setType] = useState<'flat' | 'percent'>(initialType);
   const [value, setValue] = useState(initialValue);
   const [reason, setReason] = useState(t('itemDiscountReason'));
@@ -39,7 +43,7 @@ export function ItemDiscountEditor({
   const reasonId = useId();
   const reasonRef = useRef<HTMLInputElement>(null);
   const details = useRef<HTMLDetailsElement>(null);
-  const parsed = type === 'percent' ? parsePercentageInput(value) : parseVndAmount(value);
+  const parsed = type === 'percent' ? parsePercentageInput(value) : parseVndInput(value);
   const dirty =
     type !== initialType ||
     parsed !==

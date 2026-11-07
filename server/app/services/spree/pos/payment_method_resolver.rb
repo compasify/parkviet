@@ -50,25 +50,34 @@ module Spree
         raise ActiveRecord::RecordNotFound
       end
 
+      # POS money is attested by staff, so the core Payment must sit on a manual
+      # method of this store: one that needs no card/gateway source. A gateway
+      # method would make the completed Payment look like a captured charge.
       def core_for(row)
-        return Spree::PaymentMethod.find_by(id: row.payment_method_id) if row.payment_method_id
+        return manual_methods.find_by(id: row.payment_method_id) if row.payment_method_id
 
         case row.kind
         when 'cash'
-          Spree::PaymentMethod.where(store_id: store.id, active: true, deleted_at: nil)
-                              .where('type ILIKE ?', '%Check%').order(:position, :id).first ||
-            Spree::PaymentMethod.where(store_id: store.id, active: true, deleted_at: nil).order(:position, :id).first
+          manual_methods.where('type ILIKE ?', '%Check%').first
         when 'bank_manual'
-          core_bank_method ||
-            Spree::PaymentMethod.where(store_id: store.id, active: true, deleted_at: nil)
-                                .where('type ILIKE ?', '%Check%').order(:position, :id).first ||
-            Spree::PaymentMethod.where(store_id: store.id, active: true, deleted_at: nil).order(:position, :id).first
+          core_bank_method || manual_methods.where('type ILIKE ?', '%Check%').first
         end
       end
 
       private
 
       attr_reader :store
+
+      def manual_methods
+        ids = Spree::PaymentMethod.where(store_id: store.id, active: true, deleted_at: nil).select { |method| manual?(method) }.map(&:id)
+        Spree::PaymentMethod.where(id: ids).order(:position, :id)
+      end
+
+      def manual?(method)
+        !method.source_required?
+      rescue NotImplementedError
+        false
+      end
 
       def default_cash
         PosPaymentMethod.new(store: store, code: CASH_CODE, name: 'Cash', kind: 'cash', status: 'active', position: 0)
@@ -85,10 +94,10 @@ module Spree
       end
 
       def core_bank_method
-        scope = Spree::PaymentMethod.where(store_id: store.id, active: true, deleted_at: nil)
-        scope.where('name ILIKE ? OR type ILIKE ?', '%bank%', '%bank%')
-             .or(scope.where('name ILIKE ? OR type ILIKE ?', '%transfer%', '%transfer%'))
-             .order(:position, :id).first
+        scope = manual_methods
+        scope.where('name ILIKE ? OR type ILIKE ?', '%bank%', '%bank%').
+          or(scope.where('name ILIKE ? OR type ILIKE ?', '%transfer%', '%transfer%')).
+          order(:position, :id).first
       end
     end
   end

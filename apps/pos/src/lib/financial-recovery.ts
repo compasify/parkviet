@@ -12,6 +12,8 @@ export type FinancialRecoveryDb = {
   getAll(): Promise<FinancialRecoveryRecord[]>;
   delete(scope: string): Promise<void>;
   clear(): Promise<void>;
+  // Records vanish with the page: the browser offered no durable storage.
+  volatile?: boolean;
 };
 
 export const FINANCIAL_RECOVERY_CHANGED = 'pos:financial-recovery-changed';
@@ -75,6 +77,8 @@ async function withStore<T>(
       const finish = () => resolve(result);
       transaction.oncomplete = finish;
       transaction.onerror = () => reject(transaction.error ?? new Error('indexeddb-transaction'));
+      // Quota exhaustion and similar failures abort without an error event.
+      transaction.onabort = () => reject(transaction.error ?? new Error('indexeddb-aborted'));
       const request = run(store);
       if (request instanceof Promise) {
         void request.then((value) => {
@@ -117,7 +121,7 @@ export function defaultFinancialStore(): FinancialRecoveryDb {
   } catch {
     // Fall through to memory; callers must surface attention, not claim sync.
   }
-  return createMemoryFinancialStore();
+  return { ...createMemoryFinancialStore(), volatile: true };
 }
 
 let activeStore: FinancialRecoveryDb | null = null;
@@ -140,12 +144,9 @@ export async function saveFinancialRecord(record: FinancialRecoveryRecord): Prom
   emitChanged();
 }
 
+// Storage errors propagate: an unreadable store is not an empty one.
 export async function listFinancialRecords(): Promise<FinancialRecoveryRecord[]> {
-  try {
-    return await financialStore().getAll();
-  } catch {
-    return [];
-  }
+  return financialStore().getAll();
 }
 
 export async function scopedFinancialRecords(
@@ -173,10 +174,18 @@ export async function clearFinancialRecords(): Promise<void> {
   emitChanged();
 }
 
-export async function hasFinancialRecords(staffId?: string, storeId?: string): Promise<boolean> {
-  const records =
-    staffId && storeId
-      ? await scopedFinancialRecords(staffId, storeId)
-      : await listFinancialRecords();
-  return records.length > 0;
+export type FinancialRecoveryState = { pending: number; storageUnavailable: boolean };
+
+// What the shell must tell the cashier: unresolved records, or that this
+// browser cannot keep them so every payment needs manual reconciliation.
+export async function financialRecoveryState(
+  staffId: string,
+  storeId: string,
+): Promise<FinancialRecoveryState> {
+  try {
+    const records = await scopedFinancialRecords(staffId, storeId);
+    return { pending: records.length, storageUnavailable: Boolean(financialStore().volatile) };
+  } catch {
+    return { pending: 0, storageUnavailable: true };
+  }
 }

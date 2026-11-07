@@ -43,7 +43,7 @@ module Spree
       SNAPSHOT_LOCKING_TENDERS = %w[prepared confirmed unknown].freeze
 
       def snapshot_locked?
-        order.completed? || order.payments.exists? ||
+        order.completed? || order.payments.where.not(status: %w[void invalid failed]).exists? ||
           TenderAttempt.where(workspace_id: id, status: SNAPSHOT_LOCKING_TENDERS).exists?
       end
 

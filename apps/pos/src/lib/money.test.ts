@@ -1,5 +1,38 @@
 import { describe, expect, it } from 'vitest';
-import { formatMoney, parseMoneyInput, parsePercentageInput, parseVndAmount } from './money';
+import {
+  formatMoney,
+  parseMoneyInput,
+  parsePercentageInput,
+  parseVndAmount,
+  parseVndInput,
+} from './money';
+
+describe('cashier VND input', () => {
+  it('reads dot or space grouped thousands as whole VND', () => {
+    expect(parseVndInput('100.000')).toBe('100000');
+    expect(parseVndInput('1.500.000')).toBe('1500000');
+    expect(parseVndInput('1 500 000')).toBe('1500000');
+    expect(parseVndInput(' 150000 ')).toBe('150000');
+    expect(parseVndInput('0')).toBe('0');
+  });
+
+  it('rejects commas, fractions, signs and malformed groups', () => {
+    for (const input of [
+      '200,000',
+      '100.5',
+      '100.00',
+      '1.5000',
+      '-100',
+      '+100',
+      '',
+      '1..000',
+      '1.000 000',
+      '150000.0',
+    ]) {
+      expect(parseVndInput(input)).toBeNull();
+    }
+  });
+});
 
 describe('decimal input', () => {
   it('formats server amounts for Vietnamese readers without losing precision', () => {

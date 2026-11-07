@@ -42,7 +42,8 @@ module Spree
                   workspace: workspace!(params[:workspace_id]), staff: current_user,
                   revision: params[:expected_revision].to_i, lease_generation: params[:lease_generation].to_i,
                   editor_id: params[:editor_id], key: key, attempt_id: params[:id],
-                  handed_amount: params[:handed_amount], evidence_kind: params[:evidence_kind],
+                  handed_amount: params[:handed_amount], received_amount: params[:received_amount],
+                  evidence_kind: params[:evidence_kind],
                   reference: params[:reference], receiving_account: params[:receiving_account],
                   terminal_ref: params[:terminal_ref]
                 )

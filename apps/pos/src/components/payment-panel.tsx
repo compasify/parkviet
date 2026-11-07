@@ -6,14 +6,42 @@ import {
   useReceivedFunds,
   useTenders,
 } from '../hooks/use-tenders';
-import { workspaceEditorId } from '../hooks/use-workspaces';
-import { formatMoney, parseVndAmount } from '../lib/money';
+import { formatMoney, parseVndAmount, parseVndInput } from '../lib/money';
 import type { PosPaymentMethod, PosWorkspace } from '../lib/pos-context';
-import { posFailureKey } from '../lib/request-failure';
+import { describeFailure, posFailureKey } from '../lib/request-failure';
 import { PosIcon } from './pos-icon';
-import { TenderEvidenceDialog } from './tender-evidence-dialog';
+import { TenderEvidenceDialog, type TenderEvidenceItemInput } from './tender-evidence-dialog';
 
 type MethodKind = 'cash' | 'bank_manual';
+type WorkspaceCommand = (
+  action: (current: PosWorkspace) => Promise<PosWorkspace>,
+) => Promise<PosWorkspace>;
+
+// One row of a split payment failed; earlier rows already reached the server.
+class RowFailure extends Error {
+  constructor(
+    readonly row: string,
+    readonly done: number,
+    readonly total: number,
+    readonly failure: unknown,
+  ) {
+    super('payment-row-failed');
+  }
+}
+
+async function eachRow<T>(
+  rows: T[],
+  label: (row: T) => string,
+  step: (row: T) => Promise<unknown>,
+) {
+  for (const [index, row] of rows.entries()) {
+    try {
+      await step(row);
+    } catch (failure) {
+      throw new RowFailure(label(row), index, rows.length, failure);
+    }
+  }
+}
 
 export function PaymentPanel({
   workspace,
@@ -22,6 +50,7 @@ export function PaymentPanel({
   canCollect,
   canResolve,
   disabled,
+  command,
 }: {
   workspace: PosWorkspace;
   staffId: string | null;
@@ -29,9 +58,11 @@ export function PaymentPanel({
   canCollect: boolean;
   canResolve: boolean;
   disabled: boolean;
+  // Runs through the workspace's serializer and hands over its newest revision.
+  command: WorkspaceCommand;
 }) {
   const { t } = useTranslation();
-  const tenders = useTenders(staffId, storeId, workspace);
+  const tenders = useTenders(staffId, storeId);
   const methodsQuery = usePaymentMethods(workspace, canCollect && !disabled);
   const fundsQuery = useReceivedFunds(storeId, workspace.branch_id, null, canResolve);
   const [allocateFundsId, setAllocateFundsId] = useState('');
@@ -48,6 +79,8 @@ export function PaymentPanel({
   } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [evidenceOpen, setEvidenceOpen] = useState(false);
+  const [handedOver, setHandedOver] = useState(false);
   const financial = workspace.financial;
   const methods = methodsQuery.data ?? [];
   const activeMethods = methods.filter((method) => activeKinds.includes(method.kind));
@@ -56,7 +89,8 @@ export function PaymentPanel({
     (attempt) => attempt.status === 'prepared',
   );
   const completed = workspace.operational_status === 'completed';
-  const remainingIsZero = financial ? Number(financial.remaining) === 0 : false;
+  const remainingIsZero = financial ? parseVndAmount(financial.remaining) === '0' : false;
+  const totalIsZero = parseVndAmount(workspace.totals?.total ?? '') === '0';
   const currency = workspace.totals?.currency ?? 'VND';
   const hasItems = (workspace.line_items?.length ?? 0) > 0;
   const nonCanceledAttempts = (financial?.attempts ?? []).filter(
@@ -76,6 +110,15 @@ export function PaymentPanel({
         ? (financial?.remaining ?? workspace.totals?.total ?? '')
         : (workspace.totals?.total ?? financial?.remaining ?? ''),
     ) ?? '';
+  const locked = disabled || busy;
+
+  function methodLabel(method: { kind: string; name?: string }) {
+    return method.kind === 'cash'
+      ? t('cash')
+      : method.kind === 'bank_manual'
+        ? t('bankTransfer')
+        : (method.name ?? method.kind);
+  }
 
   function getRowValue(kind: MethodKind): string {
     const current = customAmounts?.base === defaultAmount ? customAmounts : null;
@@ -85,15 +128,15 @@ export function PaymentPanel({
     if (kind === 'cash') {
       return current?.cash ?? defaultAmount;
     }
-    const cashVal = Number(parseVndAmount(current?.cash ?? defaultAmount) ?? 0);
-    const autoRemainder = String(Math.max(Number(defaultAmount || 0) - cashVal, 0));
-    return current?.bank_manual ?? autoRemainder;
+    const cashVal = BigInt(parseVndInput(current?.cash ?? defaultAmount) ?? 0);
+    const target = BigInt(defaultAmount || 0);
+    return current?.bank_manual ?? String(target > cashVal ? target - cashVal : 0n);
   }
 
   function updateRowValue(kind: MethodKind, rawValue: string) {
-    const target = Number(defaultAmount || 0);
-    const parsed = Number(parseVndAmount(rawValue) ?? 0);
-    const remainder = String(Math.max(target - parsed, 0));
+    const target = BigInt(defaultAmount || 0);
+    const parsed = BigInt(parseVndInput(rawValue) ?? 0);
+    const remainder = String(target > parsed ? target - parsed : 0n);
     setCustomAmounts((prev) => {
       const current = prev?.base === defaultAmount ? prev : { base: defaultAmount };
       if (effectiveMethods.length > 1) {
@@ -117,33 +160,90 @@ export function PaymentPanel({
   }
 
   const availableFunds = (fundsQuery.data?.data ?? []).filter(
-    (funds) => funds.available !== '0.0' && funds.available !== '0',
+    (funds) => parseVndAmount(funds.available) !== '0',
   );
   const activeAllocations = (allocateDetailQuery.data?.allocations ?? []).filter(
     (allocation) => allocation.workspace_id === workspace.id && allocation.status === 'active',
   );
+  const parsedAllocate = parseVndInput(allocateAmount);
 
-  async function run(action: () => Promise<unknown>) {
+  function explain(failure: unknown, fallbackKey?: string) {
+    return describeFailure(failure, t, fallbackKey);
+  }
+
+  async function run(
+    action: () => Promise<unknown>,
+    fallbackKey?: (failure: unknown) => string | undefined,
+  ): Promise<boolean> {
     setBusy(true);
     setError('');
     try {
       await action();
       setCustomAmounts(null);
+      return true;
     } catch (failure) {
-      setError(t(posFailureKey(failure)));
+      if (failure instanceof RowFailure) {
+        setError(
+          t('paymentRowFailed', {
+            row: failure.row,
+            done: failure.done,
+            total: failure.total,
+            reason: explain(failure.failure, fallbackKey?.(failure.failure)),
+          }),
+        );
+      } else {
+        setError(explain(failure, fallbackKey?.(failure)));
+      }
+      // Whatever part went through is on the server now: show it.
+      void tenders.refresh();
+      return false;
     } finally {
       setBusy(false);
     }
   }
 
-  const entriesToPrepare = effectiveMethods
-    .map((method) => ({
-      method,
-      amount: parseVndAmount(getRowValue(method.kind)),
-    }))
-    .filter((entry): entry is { method: PosPaymentMethod; amount: string } =>
-      Boolean(entry.amount && Number(entry.amount) > 0),
+  const rows = effectiveMethods.map((method) => {
+    const raw = getRowValue(method.kind);
+    return { method, raw, amount: parseVndInput(raw) };
+  });
+  const invalidRows = rows.filter((row) => row.raw.trim() !== '' && row.amount === null);
+  const entriesToPrepare = rows.filter(
+    (row): row is { method: PosPaymentMethod; raw: string; amount: string } =>
+      row.amount !== null && BigInt(row.amount) > 0n,
+  );
+
+  function confirmEvidence(inputs: TenderEvidenceItemInput[]) {
+    const kindOf = (attemptId: string) =>
+      preparedAttempts.find((attempt) => attempt.id === attemptId)?.kind ?? 'cash';
+    return run(() =>
+      eachRow(
+        inputs,
+        (input) => methodLabel({ kind: kindOf(input.attemptId) }),
+        (input) =>
+          command((current) =>
+            tenders.confirm(current, {
+              attemptId: input.attemptId,
+              handedAmount: input.handedAmount,
+              receivedAmount: input.receivedAmount,
+              evidenceKind: input.evidenceKind,
+              reference: input.reference,
+              receivingAccount: input.receivingAccount,
+              terminalRef: input.terminalRef,
+            }),
+          ),
+      ),
     );
+  }
+
+  function cancelPrepared() {
+    return run(() =>
+      eachRow(
+        preparedAttempts,
+        (attempt) => methodLabel(attempt),
+        (attempt) => command((current) => tenders.cancel(current, { attemptId: attempt.id })),
+      ),
+    );
+  }
 
   if (!canCollect && !financial) return null;
 
@@ -200,67 +300,56 @@ export function PaymentPanel({
           </ul>
         </details>
       ) : null}
-      {preparedAttempts.length > 0 ? (
+      {preparedAttempts.length > 0 && !evidenceOpen ? (
+        <div className="payment-held" role="status">
+          <p>{t('paymentHeldHint')}</p>
+          <button
+            type="button"
+            className="checkout-submit"
+            disabled={busy}
+            onClick={() => setEvidenceOpen(true)}
+          >
+            {t('paymentResume')}
+          </button>
+        </div>
+      ) : null}
+      {preparedAttempts.length > 0 && evidenceOpen ? (
         <TenderEvidenceDialog
           workspace={workspace}
           attempts={preparedAttempts}
           disabled={disabled}
           busy={busy}
-          labels={{
-            cancel: t('paymentCancel'),
-            handed: t('paymentHanded'),
-            reference: t('paymentReference'),
-            account: t('paymentAccount'),
+          error={error}
+          onConfirm={confirmEvidence}
+          onCancel={cancelPrepared}
+          onHold={() => {
+            setEvidenceOpen(false);
+            setError('');
           }}
-          onConfirm={(inputs) =>
-            run(async () => {
-              let currentRevision = workspace.revision;
-              for (const input of inputs) {
-                const updated = await tenders.confirm(workspaceEditorId, {
-                  expectedRevision: currentRevision,
-                  attemptId: input.attemptId,
-                  handedAmount: input.handedAmount,
-                  evidenceKind: input.evidenceKind,
-                  reference: input.reference,
-                  receivingAccount: input.receivingAccount,
-                  terminalRef: input.terminalRef,
-                });
-                currentRevision = updated.revision;
-              }
-            })
-          }
-          onCancel={() =>
-            run(async () => {
-              let currentRevision = workspace.revision;
-              for (const attempt of preparedAttempts) {
-                const updated = await tenders.cancel(workspaceEditorId, {
-                  expectedRevision: currentRevision,
-                  attemptId: attempt.id,
-                });
-                currentRevision = updated.revision;
-              }
-            })
-          }
         />
       ) : null}
       {canCollect && !completed && (!remainingIsZero || !hasItems) ? (
         <form
           onSubmit={(event) => {
             event.preventDefault();
-            if (entriesToPrepare.length === 0) {
-              setError(t('invalid'));
+            if (invalidRows.length > 0 || entriesToPrepare.length === 0) {
+              setError(t('paymentAmountInvalid'));
               return;
             }
-            void run(async () => {
-              let currentRevision = workspace.revision;
-              for (const entry of entriesToPrepare) {
-                const updated = await tenders.prepare(workspaceEditorId, {
-                  expectedRevision: currentRevision,
-                  paymentMethodId: entry.method.id,
-                  amount: entry.amount,
-                });
-                currentRevision = updated.revision;
-              }
+            void run(() =>
+              eachRow(
+                entriesToPrepare,
+                (entry) => methodLabel(entry.method),
+                (entry) =>
+                  command((current) =>
+                    tenders.prepare(current, {
+                      paymentMethodId: entry.method.id,
+                      amount: entry.amount,
+                    }),
+                  ),
+              ),
+            ).then((prepared) => {
+              if (prepared) setEvidenceOpen(true);
             });
           }}
         >
@@ -270,46 +359,39 @@ export function PaymentPanel({
                 type="button"
                 key={method.id}
                 aria-pressed={effectiveMethods.some((item) => item.id === method.id)}
-                disabled={disabled || busy || preparedAttempts.length > 0}
+                disabled={locked || preparedAttempts.length > 0}
                 onClick={() => toggleMethod(method.kind)}
               >
                 <PosIcon name={method.kind === 'cash' ? 'cash' : 'bank'} />
-                {method.kind === 'cash'
-                  ? t('cash')
-                  : method.kind === 'bank_manual'
-                    ? t('bankTransfer')
-                    : method.name}
+                {methodLabel(method)}
               </button>
             ))}
           </fieldset>
           <div className="payment-method-rows">
-            {effectiveMethods.map((method) => {
-              const methodLabel =
-                method.kind === 'cash'
-                  ? t('cash')
-                  : method.kind === 'bank_manual'
-                    ? t('bankTransfer')
-                    : method.name;
-              const rowValue = getRowValue(method.kind);
-              return (
-                <label className="payment-method-row" key={method.id} data-method={method.kind}>
-                  <span className="payment-method-badge">
-                    <PosIcon name={method.kind === 'cash' ? 'cash' : 'bank'} />
-                    <strong>{methodLabel}</strong>
-                  </span>
-                  <input
-                    inputMode="numeric"
-                    className="money-input"
-                    value={rowValue}
-                    placeholder={defaultAmount}
-                    onChange={(event) => updateRowValue(method.kind, event.target.value)}
-                    disabled={disabled || busy || preparedAttempts.length > 0}
-                    required={effectiveMethods.length === 1}
-                  />
-                </label>
-              );
-            })}
+            {rows.map(({ method, raw, amount }) => (
+              <label className="payment-method-row" key={method.id} data-method={method.kind}>
+                <span className="payment-method-badge">
+                  <PosIcon name={method.kind === 'cash' ? 'cash' : 'bank'} />
+                  <strong>{methodLabel(method)}</strong>
+                </span>
+                <input
+                  inputMode="numeric"
+                  className="money-input"
+                  value={raw}
+                  placeholder={defaultAmount}
+                  aria-invalid={raw.trim() !== '' && amount === null}
+                  onChange={(event) => updateRowValue(method.kind, event.target.value)}
+                  disabled={locked || preparedAttempts.length > 0}
+                  required={effectiveMethods.length === 1}
+                />
+              </label>
+            ))}
           </div>
+          {invalidRows.length > 0 ? (
+            <p className="error" role="alert">
+              {t('paymentAmountInvalid')}
+            </p>
+          ) : null}
           {methodsQuery.isLoading ? <p role="status">{t('waiting')}</p> : null}
           {methodsQuery.isError ? (
             <p className="error" role="alert">
@@ -323,10 +405,10 @@ export function PaymentPanel({
             className="checkout-submit"
             type="submit"
             disabled={
-              disabled ||
-              busy ||
+              locked ||
               preparedAttempts.length > 0 ||
               !hasItems ||
+              invalidRows.length > 0 ||
               entriesToPrepare.length === 0
             }
           >
@@ -338,21 +420,38 @@ export function PaymentPanel({
         <button
           type="button"
           className="checkout-submit"
-          disabled={disabled || busy || !hasItems}
-          onClick={() => void run(() => tenders.complete(workspaceEditorId))}
+          disabled={locked || preparedAttempts.length > 0}
+          onClick={() =>
+            void run(
+              () => command((current) => tenders.complete(current)),
+              (failure) =>
+                totalIsZero && posFailureKey(failure) === 'forbidden'
+                  ? 'paymentZeroTotalApproval'
+                  : undefined,
+            )
+          }
         >
           {t('paymentComplete')}
         </button>
       ) : null}
-      {completed ? (
+      {completed && !handedOver ? (
         <button
           className="checkout-submit"
           type="button"
-          disabled={busy}
-          onClick={() => void run(() => tenders.handover())}
+          disabled={locked}
+          onClick={() =>
+            void run(() => command((current) => tenders.handover(current))).then((done) => {
+              if (done) setHandedOver(true);
+            })
+          }
         >
           {t('paymentHandover')}
         </button>
+      ) : null}
+      {completed && handedOver ? (
+        <p className="muted" role="status">
+          {t('paymentHandedOver')}
+        </p>
       ) : null}
       {canResolve && (availableFunds.length > 0 || activeAllocations.length > 0) ? (
         <details className="funds-allocate checkout-optional">
@@ -362,7 +461,7 @@ export function PaymentPanel({
             <select
               value={allocateFundsId}
               onChange={(event) => setAllocateFundsId(event.target.value)}
-              disabled={disabled || busy}
+              disabled={locked}
             >
               <option value="">—</option>
               {availableFunds.map((funds) => (
@@ -378,22 +477,25 @@ export function PaymentPanel({
             <input
               inputMode="numeric"
               aria-label={t('fundsAllocateAmount')}
+              aria-invalid={allocateAmount.trim() !== '' && parsedAllocate === null}
               value={allocateAmount}
               onChange={(event) => setAllocateAmount(event.target.value)}
-              disabled={disabled || busy}
+              disabled={locked}
             />
           </label>
           <button
             type="button"
-            disabled={disabled || busy || !allocateFundsId || !parseVndAmount(allocateAmount)}
-            onClick={() =>
+            disabled={locked || !allocateFundsId || !parsedAllocate || parsedAllocate === '0'}
+            onClick={() => {
+              if (!parsedAllocate) return;
               void run(() =>
-                tenders.allocate(workspaceEditorId, {
-                  fundsId: allocateFundsId,
-                  amount: parseVndAmount(allocateAmount) ?? undefined,
-                }),
-              )
-            }
+                command((current) =>
+                  tenders.allocate(current, { fundsId: allocateFundsId, amount: parsedAllocate }),
+                ),
+              ).then((done) => {
+                if (done) setAllocateAmount('');
+              });
+            }}
           >
             {t('paymentAllocate')}
           </button>
@@ -403,10 +505,12 @@ export function PaymentPanel({
               {!completed ? (
                 <button
                   type="button"
-                  disabled={disabled || busy}
+                  disabled={locked}
                   onClick={() =>
                     void run(() =>
-                      tenders.reverse(workspaceEditorId, { allocationId: allocation.id }),
+                      command((current) =>
+                        tenders.reverse(current, { allocationId: allocation.id }),
+                      ),
                     )
                   }
                 >
@@ -417,7 +521,7 @@ export function PaymentPanel({
           ))}
         </details>
       ) : null}
-      {error ? (
+      {error && !(preparedAttempts.length > 0 && evidenceOpen) ? (
         <p className="error" role="alert">
           {error}
         </p>

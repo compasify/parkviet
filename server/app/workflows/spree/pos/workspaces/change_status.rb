@@ -30,12 +30,13 @@ module Spree
           end
         end
 
-        # Canceling would strand money that a tender or received-funds record still
-        # accounts for; those must be resolved or reversed first.
+        # Canceling would strand money that a tender or allocation still accounts
+        # for; those must be resolved or reversed first. Funds that were only
+        # linked to this order and are not allocated stay in the branch's
+        # unapplied inbox, so they do not block the cancel.
         def self.money_recorded?(workspace)
-          workspace.order.payments.exists? ||
+          workspace.order.payments.where.not(status: %w[void invalid failed]).exists? ||
             TenderAttempt.where(workspace_id: workspace.id).where.not(status: %w[canceled failed]).exists? ||
-            ReceivedFunds.where(workspace_id: workspace.id).exists? ||
             FundsAllocation.where(workspace_id: workspace.id, status: 'active').exists?
         end
       end

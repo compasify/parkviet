@@ -8,7 +8,7 @@ module Spree
 
       belongs_to :store, class_name: 'Spree::Store'
       belongs_to :branch, class_name: 'Spree::Pos::Branch'
-      belongs_to :register, class_name: 'Spree::Pos::Register'
+      belongs_to :register, class_name: 'Spree::Pos::Register', optional: true
       belongs_to :shift, class_name: 'Spree::Pos::Shift'
       belongs_to :received_funds, class_name: 'Spree::Pos::ReceivedFunds', optional: true
       belongs_to :liability_payout, class_name: 'Spree::Pos::LiabilityPayout', optional: true

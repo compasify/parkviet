@@ -349,13 +349,18 @@ kbd { padding: var(--pos-s1); border: 1px solid var(--pos-border); border-radius
 .invoice-totals { display: grid; gap: var(--pos-s1); padding: var(--pos-s2) var(--pos-s3); background: var(--pos-tint); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); font-size: var(--pos-small); font-variant-numeric: tabular-nums; }
 .invoice-line { display: flex; justify-content: space-between; align-items: baseline; gap: var(--pos-s2); }
 .invoice-line-highlight { padding-top: var(--pos-s1); border-top: 1px dashed var(--pos-border); font-size: var(--pos-body); color: var(--pos-blue); }
-.payment-qr-box { display: grid; grid-template-columns: 120px minmax(0,1fr); gap: var(--pos-s3); align-items: center; padding: var(--pos-s3); background: var(--pos-tint); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); }
-.payment-qr-svg { width: 120px; height: 120px; display: block; }
+.payment-qr-box { display: grid; gap: var(--pos-s3); align-items: center; padding: var(--pos-s3); background: var(--pos-tint); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); }
 .payment-qr-info { display: grid; gap: var(--pos-s1); font-size: var(--pos-small); }
 .payment-qr-info > strong { font-size: 1.25rem; color: var(--pos-blue); font-variant-numeric: tabular-nums; }
 .payment-bank-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: var(--pos-s2); }
 .payment-popup-actions { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: var(--pos-s2); align-items: center; }
 .pos-layout .payment-popup-actions button { min-height: 44px; padding: var(--pos-s2); }
+.payment-popup-secondary { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--pos-s2); }
+.payment-cancel-confirm { display: flex; flex-wrap: wrap; align-items: center; gap: var(--pos-s2); width: 100%; padding: var(--pos-s2); border: 1px solid var(--pos-danger); border-radius: var(--pos-radius); }
+.payment-cancel-confirm legend { float: left; width: 100%; padding: 0; margin-bottom: var(--pos-s1); }
+.payment-cancel-confirm .danger-button { color: var(--pos-danger); border-color: var(--pos-danger); }
+.payment-held { display: grid; gap: var(--pos-s2); }
+.payment-held p { margin: 0; font-size: var(--pos-small); }
 .tender-evidence .row { align-items: center; }
 .tender-evidence p { font-size: var(--pos-small); margin: 0; }
 .received-funds-page { display: grid; gap: var(--pos-s3); }

@@ -42,13 +42,16 @@ module Spree
           CommandExecutor.call(store: store, actor: staff, key: key, payload: payload, authorize: authorize) do
             funds = Guard.funds!(store, funds_id)
             raise Conflict, 'Amount is invalid.' if parsed.nil? || parsed <= 0
+            raise Conflict, 'Amount must be a whole amount in the currency.' unless Record.countable_money?(parsed, funds.currency)
             raise Conflict, 'Beneficiary and reason are required.' if beneficiary_name.blank? || reason.blank?
 
+            # Consuming an approval locks its workspace; take that lock before the
+            # funds lock, the same order allocations use, so the two cannot deadlock.
+            approve!(store, staff, funds, parsed, approval_id)
             payout = nil
             funds.with_lock do
               raise Conflict, 'Amount exceeds available unapplied funds.' if FundsBalance.new(funds).available < parsed
 
-              approve!(store, staff, funds, parsed, approval_id)
               payout = LiabilityPayout.create!(
                 store: store, received_funds: funds, branch: funds.branch, requester: staff, status: 'reserved',
                 amount: parsed, currency: funds.currency, beneficiary_name: beneficiary_name.to_s,

@@ -1,12 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { session } from '../lib/app-session';
-import { commandDigest } from '../lib/command-queue';
-import {
-  financialScope,
-  forgetFinancialRecord,
-  saveFinancialRecord,
-  scopedFinancialRecords,
-} from '../lib/financial-recovery';
+import { type FinancialRequest, runFinancialCommand } from '../lib/financial-command';
 import type {
   PosLiabilityPayout,
   PosPaymentMethod,
@@ -16,13 +10,14 @@ import type {
 import { posFailureKey } from '../lib/request-failure';
 import { SessionSuperseded } from '../lib/session-coordinator';
 import { useSession } from './use-session';
+import { workspaceEditorId } from './use-workspaces';
 
 export type TenderCommandInput = {
-  expectedRevision?: number;
   paymentMethodId?: string;
   amount?: string;
   attemptId?: string;
   handedAmount?: string;
+  receivedAmount?: string;
   evidenceKind?: 'cash_count' | 'bank_manual';
   reference?: string;
   receivingAccount?: string;
@@ -33,6 +28,12 @@ export type TenderCommandInput = {
 
 type Page<T> = { data: T[]; meta: { page: number; pages: number; count: number } };
 
+const financialRequest: FinancialRequest = <T>(
+  method: 'GET' | 'POST',
+  path: string,
+  options?: Parameters<FinancialRequest>[2],
+) => session.request<T>(method, path, options);
+
 function abandonIfNeeded(error: unknown) {
   if (!(error instanceof SessionSuperseded) && posFailureKey(error) === 'unauthorized') {
     session.abandon();
@@ -42,13 +43,8 @@ function abandonIfNeeded(error: unknown) {
 export function usePaymentMethods(workspace: PosWorkspace | null, enabled: boolean) {
   const snapshot = useSession();
   return useQuery({
-    queryKey: [
-      'pos',
-      'payment-methods',
-      snapshot.generation,
-      workspace?.id ?? null,
-      workspace?.revision ?? null,
-    ],
+    // Methods do not change with the basket revision; keying on it made the list flicker.
+    queryKey: ['pos', 'payment-methods', snapshot.generation, workspace?.id ?? null],
     enabled: enabled && snapshot.status === 'authenticated' && Boolean(workspace),
     queryFn: async (): Promise<PosPaymentMethod[]> => {
       try {
@@ -114,11 +110,9 @@ export function useReceivedFundDetail(fundsId: string | null, enabled: boolean) 
   });
 }
 
-export function useTenders(
-  staffId: string | null,
-  storeId: string | null,
-  workspace: PosWorkspace | null,
-) {
+// Every command takes the workspace the caller's serializer handed it, so the
+// expected revision is always the newest one the server returned.
+export function useTenders(staffId: string | null, storeId: string | null) {
   const snapshot = useSession();
   const queryClient = useQueryClient();
 
@@ -128,75 +122,41 @@ export function useTenders(
         queryKey: ['pos', 'workspaces', snapshot.generation, storeId],
       }),
       queryClient.invalidateQueries({ queryKey: ['pos', 'received-funds', snapshot.generation] }),
-      queryClient.invalidateQueries({ queryKey: ['pos', 'payment-methods', snapshot.generation] }),
     ]);
   }
 
   async function runFinancial(
+    workspace: PosWorkspace,
     action: string,
     path: string,
     body: Record<string, unknown>,
   ): Promise<PosWorkspace> {
-    if (!workspace) throw new Error('workspace-required');
-    const digest = commandDigest(body);
-    const scope = financialScope(staffId, storeId, workspace.id, action, digest);
-    const existing =
-      staffId && storeId
-        ? (await scopedFinancialRecords(staffId, storeId)).find((record) => record.scope === scope)
-        : undefined;
-    const key = existing?.idempotencyKey ?? crypto.randomUUID();
     try {
-      await saveFinancialRecord({
-        scope,
-        idempotencyKey: key,
-        workspaceId: workspace.id,
+      const result = await runFinancialCommand<PosWorkspace>(financialRequest, {
+        staffId,
+        storeId,
+        scopeId: workspace.id,
+        action,
         path,
         body,
-        savedAt: Date.now(),
       });
-    } catch {
-      throw new Error('financial-storage-unavailable');
-    }
-    try {
-      const result = await session.request<{ data: PosWorkspace }>('POST', path, {
-        body: { ...body, idempotency_key: key },
-        idempotencyKey: key,
-      });
-      await forgetFinancialRecord(scope).catch(() => undefined);
       await refresh();
       return result.data;
     } catch (error) {
-      if (posFailureKey(error) === 'conflict') {
-        try {
-          const receipt = await session.request<{ data: PosWorkspace }>(
-            'GET',
-            '/pos/command_receipts',
-            { params: { idempotency_key: key } },
-          );
-          await forgetFinancialRecord(scope).catch(() => undefined);
-          await refresh();
-          return receipt.data;
-        } catch {
-          // Keep the record: server state is still unknown, do not mint a new key.
-        }
-      }
-      if (posFailureKey(error) !== 'offline' && posFailureKey(error) !== 'conflict') {
-        await forgetFinancialRecord(scope).catch(() => undefined);
-      }
       abandonIfNeeded(error);
       throw error;
     }
   }
 
-  function workspaceBody(input: TenderCommandInput) {
-    if (!workspace) throw new Error('workspace-required');
+  function workspaceBody(workspace: PosWorkspace, input: TenderCommandInput) {
     return {
-      expected_revision: input.expectedRevision ?? workspace.revision,
+      expected_revision: workspace.revision,
       lease_generation: workspace.lease_generation,
-      editor_id: undefined,
+      editor_id: workspaceEditorId,
       payment_method_id: input.paymentMethodId,
       amount: input.amount,
       handed_amount: input.handedAmount,
+      received_amount: input.receivedAmount,
       evidence_kind: input.evidenceKind,
       reference: input.reference,
       receiving_account: input.receivingAccount,
@@ -206,111 +166,68 @@ export function useTenders(
     };
   }
 
+  function attemptPath(workspace: PosWorkspace, input: TenderCommandInput, verb: string) {
+    if (!input.attemptId) throw new Error('attempt-required');
+    return `/pos/workspaces/${workspace.id}/tender_attempts/${input.attemptId}/${verb}`;
+  }
+
   return {
     refresh,
-    async prepare(editorId: string, input: TenderCommandInput) {
-      if (!workspace) throw new Error('workspace-required');
-      return runFinancial('tender.prepare', `/pos/workspaces/${workspace.id}/tender_attempts`, {
-        ...workspaceBody(input),
-        editor_id: editorId,
-      });
-    },
-    async confirm(editorId: string, input: TenderCommandInput) {
-      if (!workspace || !input.attemptId) throw new Error('attempt-required');
+    prepare(workspace: PosWorkspace, input: TenderCommandInput) {
       return runFinancial(
+        workspace,
+        'tender.prepare',
+        `/pos/workspaces/${workspace.id}/tender_attempts`,
+        workspaceBody(workspace, input),
+      );
+    },
+    confirm(workspace: PosWorkspace, input: TenderCommandInput) {
+      return runFinancial(
+        workspace,
         'tender.confirm',
-        `/pos/workspaces/${workspace.id}/tender_attempts/${input.attemptId}/confirm`,
-        { ...workspaceBody(input), editor_id: editorId },
+        attemptPath(workspace, input, 'confirm'),
+        workspaceBody(workspace, input),
       );
     },
-    async cancel(editorId: string, input: TenderCommandInput) {
-      if (!workspace || !input.attemptId) throw new Error('attempt-required');
+    cancel(workspace: PosWorkspace, input: TenderCommandInput) {
       return runFinancial(
+        workspace,
         'tender.cancel',
-        `/pos/workspaces/${workspace.id}/tender_attempts/${input.attemptId}/cancel`,
-        { ...workspaceBody(input), editor_id: editorId },
+        attemptPath(workspace, input, 'cancel'),
+        workspaceBody(workspace, input),
       );
     },
-    async allocate(editorId: string, input: TenderCommandInput) {
-      if (!workspace) throw new Error('workspace-required');
-      return runFinancial('funds.allocate', `/pos/workspaces/${workspace.id}/funds/allocate`, {
-        ...workspaceBody(input),
-        editor_id: editorId,
-      });
+    allocate(workspace: PosWorkspace, input: TenderCommandInput) {
+      return runFinancial(
+        workspace,
+        'funds.allocate',
+        `/pos/workspaces/${workspace.id}/funds/allocate`,
+        workspaceBody(workspace, input),
+      );
     },
-    async reverse(editorId: string, input: TenderCommandInput) {
-      if (!workspace) throw new Error('workspace-required');
-      return runFinancial('funds.reverse', `/pos/workspaces/${workspace.id}/funds/reverse`, {
-        ...workspaceBody(input),
-        editor_id: editorId,
-      });
+    reverse(workspace: PosWorkspace, input: TenderCommandInput) {
+      return runFinancial(
+        workspace,
+        'funds.reverse',
+        `/pos/workspaces/${workspace.id}/funds/reverse`,
+        workspaceBody(workspace, input),
+      );
     },
-    async complete(editorId: string) {
-      if (!workspace) throw new Error('workspace-required');
-      return runFinancial('workspace.complete', `/pos/workspaces/${workspace.id}/complete`, {
-        ...workspaceBody({}),
-        editor_id: editorId,
-      });
+    complete(workspace: PosWorkspace) {
+      return runFinancial(
+        workspace,
+        'workspace.complete',
+        `/pos/workspaces/${workspace.id}/complete`,
+        workspaceBody(workspace, {}),
+      );
     },
-    async handover() {
-      if (!workspace) throw new Error('workspace-required');
-      return runFinancial('order.handover', `/pos/workspaces/${workspace.id}/handover`, {});
-    },
-    async recordUnsolicited(input: {
-      branchId: string;
-      shiftId: string;
-      kind: 'cash' | 'bank_manual';
-      handedAmount: string;
-      reference?: string;
-      workspaceId?: string;
-    }) {
-      const action = 'funds.record_unsolicited';
-      const body = {
-        branch_id: input.branchId,
-        shift_id: input.shiftId,
-        kind: input.kind,
-        handed_amount: input.handedAmount,
-        reference: input.reference || undefined,
-        workspace_id: input.workspaceId || undefined,
-      };
-      const digest = commandDigest(body);
-      const workspaceScope = input.workspaceId ?? `branch:${input.branchId}`;
-      const scope = financialScope(staffId, storeId, workspaceScope, action, digest);
-      const existing =
-        staffId && storeId
-          ? (await scopedFinancialRecords(staffId, storeId)).find(
-              (record) => record.scope === scope,
-            )
-          : undefined;
-      const key = existing?.idempotencyKey ?? crypto.randomUUID();
-      try {
-        await saveFinancialRecord({
-          scope,
-          idempotencyKey: key,
-          workspaceId: workspaceScope,
-          path: '/pos/received_funds',
-          body,
-          savedAt: Date.now(),
-        });
-      } catch {
-        throw new Error('financial-storage-unavailable');
-      }
-      try {
-        const result = await session.request<{ data: PosReceivedFunds }>(
-          'POST',
-          '/pos/received_funds',
-          { body: { ...body, idempotency_key: key }, idempotencyKey: key },
-        );
-        await forgetFinancialRecord(scope).catch(() => undefined);
-        await refresh();
-        return result.data;
-      } catch (error) {
-        if (posFailureKey(error) !== 'offline' && posFailureKey(error) !== 'conflict') {
-          await forgetFinancialRecord(scope).catch(() => undefined);
-        }
-        abandonIfNeeded(error);
-        throw error;
-      }
+    handover(workspace: PosWorkspace) {
+      return runFinancial(
+        workspace,
+        'order.handover',
+        `/pos/workspaces/${workspace.id}/handover`,
+        {},
+      );
     },
   };
 }
@@ -325,39 +242,20 @@ export function useLiabilityPayouts(staffId: string | null, storeId: string | nu
     path: string,
     body: Record<string, unknown>,
   ): Promise<PosLiabilityPayout> {
-    const digest = commandDigest(body);
-    const scope = financialScope(staffId, storeId, funds.id, action, digest);
-    const existing =
-      staffId && storeId
-        ? (await scopedFinancialRecords(staffId, storeId)).find((record) => record.scope === scope)
-        : undefined;
-    const key = existing?.idempotencyKey ?? crypto.randomUUID();
     try {
-      await saveFinancialRecord({
-        scope,
-        idempotencyKey: key,
-        workspaceId: funds.workspace_id ?? funds.id,
+      const result = await runFinancialCommand<PosLiabilityPayout>(financialRequest, {
+        staffId,
+        storeId,
+        scopeId: funds.id,
+        action,
         path,
         body,
-        savedAt: Date.now(),
       });
-    } catch {
-      throw new Error('financial-storage-unavailable');
-    }
-    try {
-      const result = await session.request<{ data: PosLiabilityPayout }>('POST', path, {
-        body: { ...body, idempotency_key: key },
-        idempotencyKey: key,
-      });
-      await forgetFinancialRecord(scope).catch(() => undefined);
       await queryClient.invalidateQueries({
         queryKey: ['pos', 'received-funds', snapshot.generation],
       });
       return result.data;
     } catch (error) {
-      if (posFailureKey(error) !== 'offline' && posFailureKey(error) !== 'conflict') {
-        await forgetFinancialRecord(scope).catch(() => undefined);
-      }
       abandonIfNeeded(error);
       throw error;
     }

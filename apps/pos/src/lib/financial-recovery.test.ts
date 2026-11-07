@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   clearFinancialRecords,
+  createIndexedDbFinancialStore,
   createMemoryFinancialStore,
+  financialRecoveryState,
   financialScope,
   forgetFinancialRecord,
   saveFinancialRecord,
@@ -46,7 +48,7 @@ describe('financial recovery store', () => {
     expect(await scopedFinancialRecords('stf_1', 'store_1')).toHaveLength(0);
   });
 
-  it('returns an empty attention list when storage is unavailable instead of inventing a receipt', async () => {
+  it('reports unreadable storage instead of claiming nothing is pending', async () => {
     setFinancialStore({
       async put() {
         throw new Error('blocked');
@@ -67,6 +69,69 @@ describe('financial recovery store', () => {
         savedAt: 3,
       }),
     ).rejects.toThrow('blocked');
-    expect(await scopedFinancialRecords('stf_1', 'store_1')).toEqual([]);
+    await expect(scopedFinancialRecords('stf_1', 'store_1')).rejects.toThrow('blocked');
+    expect(await financialRecoveryState('stf_1', 'store_1')).toEqual({
+      pending: 0,
+      storageUnavailable: true,
+    });
+  });
+
+  it('reports the in-memory fallback as unavailable storage', async () => {
+    vi.stubGlobal('indexedDB', undefined);
+    setFinancialStore(null);
+    expect(await financialRecoveryState('stf_1', 'store_1')).toEqual({
+      pending: 0,
+      storageUnavailable: true,
+    });
+  });
+
+  it('rejects a write whose IndexedDB transaction aborts instead of hanging', async () => {
+    vi.stubGlobal('indexedDB', abortingIndexedDb());
+    setFinancialStore(createIndexedDbFinancialStore());
+    await expect(
+      saveFinancialRecord({
+        scope: financialScope('stf_1', 'store_1', 'ws_1', 'complete', 'digest'),
+        idempotencyKey: 'key-d',
+        workspaceId: 'ws_1',
+        path: '/pos/workspaces/ws_1/complete',
+        body: {},
+        savedAt: 4,
+      }),
+    ).rejects.toThrow('QuotaExceededError');
   });
 });
+
+// Opens fine, then aborts every transaction the way a full disk does.
+function abortingIndexedDb() {
+  const database = {
+    objectStoreNames: { contains: () => true },
+    close() {},
+    transaction() {
+      const transaction: {
+        error: Error;
+        onabort: (() => void) | null;
+        oncomplete: (() => void) | null;
+        onerror: (() => void) | null;
+        objectStore: () => unknown;
+      } = {
+        error: new Error('QuotaExceededError'),
+        onabort: null,
+        oncomplete: null,
+        onerror: null,
+        objectStore: () => ({ put: () => ({ onsuccess: null }) }),
+      };
+      setTimeout(() => transaction.onabort?.(), 0);
+      return transaction;
+    },
+  };
+  return {
+    open() {
+      const request: { result: unknown; onsuccess: (() => void) | null } = {
+        result: database,
+        onsuccess: null,
+      };
+      setTimeout(() => request.onsuccess?.(), 0);
+      return request;
+    },
+  };
+}

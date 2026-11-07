@@ -1,9 +1,17 @@
 import { useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { formatMoney, parsePercentageInput, parseVndAmount } from '../lib/money';
+import { formatMoney, parsePercentageInput, parseVndAmount, parseVndInput } from '../lib/money';
 import type { PosWorkspace } from '../lib/pos-context';
 import { describeFailure } from '../lib/request-failure';
 import { PosIcon } from './pos-icon';
+
+// A flat discount arrives canonical ("20000.0"); the cashier edits whole VND.
+function serverValue(discount: PosWorkspace['discount']): string | undefined {
+  if (!discount) return undefined;
+  return discount.value_type === 'flat'
+    ? (parseVndAmount(discount.value) ?? discount.value)
+    : discount.value;
+}
 
 export function DiscountForm({
   workspace,
@@ -37,7 +45,7 @@ export function DiscountForm({
   const [valueType, setValueType] = useState<'flat' | 'percent'>(
     workspace.discount?.value_type ?? 'percent',
   );
-  const [value, setValue] = useState(workspace.discount?.value ?? '10');
+  const [value, setValue] = useState(() => serverValue(workspace.discount) ?? '10');
   const [reason, setReason] = useState(workspace.discount?.reason || t('discountTitle'));
   const [approvalId, setApprovalId] = useState('');
   const [error, setError] = useState('');
@@ -45,7 +53,7 @@ export function DiscountForm({
   const couponRef = useRef<HTMLInputElement>(null);
   const reasonId = useId();
   const reasonRef = useRef<HTMLInputElement>(null);
-  const parsed = valueType === 'percent' ? parsePercentageInput(value) : parseVndAmount(value);
+  const parsed = valueType === 'percent' ? parsePercentageInput(value) : parseVndInput(value);
   const invalid = value.trim() !== '' && parsed === null;
 
   async function submitCoupon() {
@@ -189,7 +197,11 @@ export function DiscountForm({
             if (next === valueType) return;
             // A percentage is meaningless as an amount and vice versa.
             setValueType(next);
-            setValue(workspace.discount?.value_type === next ? workspace.discount.value : '');
+            setValue(
+              workspace.discount?.value_type === next
+                ? (serverValue(workspace.discount) ?? '')
+                : '',
+            );
           }}
           disabled={disabled}
           title={disabledReason}

@@ -25,6 +25,13 @@ module Spree
 
         BigDecimal(string)
       end
+
+      # Actual money (tenders, receipts, payouts) must be countable in the
+      # currency's smallest unit; VND has no fractional unit.
+      def self.countable_money?(amount, currency)
+        exponent = ::Money::Currency.find(currency.to_s)&.exponent || 2
+        amount == amount.round(exponent)
+      end
     end
   end
 end

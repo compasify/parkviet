@@ -7,11 +7,12 @@ module Spree
       has_prefix_id :postender
 
       STATUSES = %w[prepared confirmed canceled unknown failed].freeze
+      UNRESOLVED = %w[prepared unknown].freeze
 
       belongs_to :store, class_name: 'Spree::Store'
       belongs_to :workspace, class_name: 'Spree::Pos::Workspace'
       belongs_to :branch, class_name: 'Spree::Pos::Branch'
-      belongs_to :register, class_name: 'Spree::Pos::Register'
+      belongs_to :register, class_name: 'Spree::Pos::Register', optional: true
       belongs_to :shift, class_name: 'Spree::Pos::Shift'
       belongs_to :pos_payment_method, class_name: 'Spree::Pos::PosPaymentMethod'
       belongs_to :actor, class_name: staff_class_name
@@ -22,7 +23,7 @@ module Spree
       validates :currency, presence: true
 
       scope :for_store, ->(store) { where(store_id: store.id) }
-      scope :unresolved, -> { where(status: %w[prepared unknown]) }
+      scope :unresolved, -> { where(status: UNRESOLVED) }
 
       def to_pos
         {

@@ -22,8 +22,15 @@ module Spree
             Tenders::Guard.tracked_guard!(workspace)
             order = workspace.order
             raise Conflict, 'Order has no items.' if order.line_items.empty?
-            if TenderAttempt.where(workspace: workspace, status: %w[prepared unknown failed]).exists?
+            if TenderAttempt.where(workspace: workspace, status: TenderAttempt::UNRESOLVED).exists?
               raise Conflict, 'Unresolved tender attempts block completion.'
+            end
+
+            # A free order takes no receipt at all; giving goods away needs approval
+            # authority and is audited separately rather than faking a zero Payment.
+            zero_total = order.total.zero?
+            if zero_total && !AccessPolicy.new(store: workspace.store, staff: staff).allows?(workspace.branch, Capabilities::APPROVE)
+              raise CanCan::AccessDenied
             end
 
             allocated = FundsAllocation.where(workspace: workspace, status: 'active').sum(:amount)
@@ -44,7 +51,8 @@ module Spree
             raise Conflict, 'Order was not placed.' unless order.reload.placed?
 
             workspace.update!(revision: workspace.revision + 1, operational_status: 'completed')
-            AuditEntry.record!(store: workspace.store, actor: staff, action: 'workspace.complete', subject: workspace,
+            AuditEntry.record!(store: workspace.store, actor: staff, subject: workspace,
+                               action: zero_total ? 'workspace.complete_zero_total' : 'workspace.complete',
                                metadata: { order_id: order.prefixed_id, total: order.total.to_s('F') })
             OutboxEntry.record!(store: workspace.store, event_type: 'workspace.completed', aggregate: workspace,
                                 payload: { 'workspace_id' => workspace.prefixed_id, 'order_id' => order.prefixed_id })
@@ -70,8 +78,8 @@ module Spree
         end
 
         def self.pickup_method!(store)
-          method = Spree::DeliveryMethod.where(store_id: store.id, deleted_at: nil)
-                                        .where('fulfillment_provider ILIKE ?', '%pickup%').order(:id).first
+          method = Spree::DeliveryMethod.where(store_id: store.id, deleted_at: nil).
+                   where('fulfillment_provider ILIKE ?', '%pickup%').order(:id).first
           return method if method
 
           Spree::DeliveryMethod.create!(store: store, name: 'POS pickup', fulfillment_provider: 'Spree::FulfillmentProvider::Pickup',

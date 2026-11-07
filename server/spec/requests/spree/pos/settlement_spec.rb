@@ -2,256 +2,509 @@
 
 require 'spree/api/testing_support/v3/base'
 
-# Phase 6 sandbox gates: F01 split tender/cash change, allocation conservation,
-# liability payout reservation, tracked-SKU tender guard, guarded completion.
-RSpec.describe 'POS split tender and settlement (phase 6 sandbox)', type: :request do
+module PosSettlementSpec
+  CAPS = [Spree::Pos::Capabilities::OPEN_SHIFT, Spree::Pos::Capabilities::PAYMENT,
+          Spree::Pos::Capabilities::RESOLVE, Spree::Pos::Capabilities::APPROVE, Spree::Pos::Capabilities::MANAGE].freeze
+
+  Setup = Struct.new(:user, :branch, :workspace, :product, :token, keyword_init: true)
+end
+
+# Sandbox settlement gates: split tender with cash change, receipts that never
+# double, conservation of received funds across allocation and payouts,
+# drawer custody, tracked-SKU guard and guarded completion.
+RSpec.describe 'POS split tender and settlement', type: :request do
+  include ActiveSupport::Testing::TimeHelpers
+
   let(:store) { create(:store, default_currency: 'VND', supported_currencies: 'VND') }
   let(:password) { 'secret123' }
   let(:editor_id) { SecureRandom.uuid }
 
   before { allow(Spree::Store).to receive(:default).and_return(store) }
 
-  CAPS = [Spree::Pos::Capabilities::OPEN_SHIFT, Spree::Pos::Capabilities::PAYMENT,
-          Spree::Pos::Capabilities::RESOLVE, Spree::Pos::Capabilities::APPROVE, Spree::Pos::Capabilities::MANAGE].freeze
+  def workspace_command(ctx, path, revision, **attrs)
+    key = SecureRandom.uuid
+    post "/api/v3/admin/pos/workspaces/#{ctx.workspace.prefixed_id}/#{path}", headers: headers(ctx.token, key),
+                                                                              params: editing(ctx.workspace, revision, key).merge(attrs), as: :json
+  end
 
-  def setup_workspace(price: 250, capabilities: CAPS)
+  def login(user)
+    post '/api/v3/admin/auth/login', params: { email: user.email, password: password }, as: :json
+    response.parsed_body.fetch('token')
+  end
+
+  def staff_user(branch, capabilities)
     user = create(:admin_user, :without_admin_role, password: password)
     role = create(:role, resource: store, permissions: %w[write_pos_orders write_pos_workspaces write_pos_shifts write_pos_topology])
     create(:role_user, user: user, role: role)
+    Spree::Pos::StaffMembership.create!(store: store, branch: branch, staff: user, capabilities: capabilities, status: 'active')
+    user
+  end
+
+  def open_shift(token, branch)
+    register = Spree::Pos::Register.create!(store: store, branch: branch, name: 'R', code: "r#{SecureRandom.hex(4)}", status: 'active')
+    post '/api/v3/admin/pos/shifts', headers: { 'Authorization' => "Bearer #{token}" },
+                                     params: { register_id: register.prefixed_id, opening_float: '0' }, as: :json
+    expect(response).to have_http_status(:created)
+    register
+  end
+
+  def setup_workspace(price: 250, capabilities: PosSettlementSpec::CAPS, register: true, manual_method: true)
     location = create(:stock_location, store: store, backorderable_default: false)
     suffix = SecureRandom.hex(4)
-    branch = Spree::Pos::Branch.create!(store: store, stock_location: location, name: "B#{suffix}", code: "b#{suffix}", timezone: 'Asia/Ho_Chi_Minh', status: 'active')
-    register = Spree::Pos::Register.create!(store: store, branch: branch, name: 'R', code: "r#{suffix}", status: 'active')
-    Spree::Pos::StaffMembership.create!(store: store, branch: branch, staff: user, capabilities: capabilities, status: 'active')
-    create(:check_payment_method, store: store, name: "Bank transfer #{suffix}", active: true)
-    location.restock(create(:product, store: store).default_variant, 0) rescue nil
-    post '/api/v3/admin/auth/login', params: { email: user.email, password: password }, as: :json
-    token = response.parsed_body.fetch('token')
-    post '/api/v3/admin/pos/shifts', headers: { 'Authorization' => "Bearer #{token}" }, params: { register_id: register.prefixed_id, opening_float: '0' }, as: :json
-    created = Spree::Pos::Workspaces::Create.call(store: store, staff: user, register_id: register.prefixed_id, key: SecureRandom.uuid, editor_id: editor_id)
+    branch = Spree::Pos::Branch.create!(store: store, stock_location: location, name: "B#{suffix}", code: "b#{suffix}",
+                                        timezone: 'Asia/Ho_Chi_Minh', status: 'active')
+    user = staff_user(branch, capabilities)
+    if manual_method
+      create(:check_payment_method, store: store, name: "Bank transfer #{suffix}", active: true)
+    else
+      create(:credit_card_payment_method, store: store, active: true)
+    end
+    token = login(user)
+    if register
+      register_row = open_shift(token, branch)
+      created = Spree::Pos::Workspaces::Create.call(store: store, staff: user, register_id: register_row.prefixed_id,
+                                                    key: SecureRandom.uuid, editor_id: editor_id)
+    else
+      post '/api/v3/admin/pos/shifts', headers: { 'Authorization' => "Bearer #{token}" },
+                                       params: { branch_id: branch.prefixed_id, opening_float: '0' }, as: :json
+      expect(response).to have_http_status(:created)
+      created = Spree::Pos::Workspaces::Create.call(store: store, staff: user, branch_id: branch.prefixed_id,
+                                                    key: SecureRandom.uuid, editor_id: editor_id)
+    end
     workspace = Spree::Pos::Workspace.find_by_prefix_id!(created['id'])
     product = create(:product, store: store, status: 'active', name: 'Ao')
     product.default_variant.set_price('VND', price)
     Spree::Pos::BranchProduct.create!(branch: branch, product: product)
-    branch.stock_location.restock(product.default_variant, 10)
-    [user, branch, workspace, product, token]
+    location.restock(product.default_variant, 10)
+    PosSettlementSpec::Setup.new(user: user, branch: branch, workspace: workspace, product: product, token: token)
   end
 
   def headers(token, key = SecureRandom.uuid)
     { 'Authorization' => "Bearer #{token}", 'Idempotency-Key' => key }
   end
 
-  def add_item(workspace, token, revision, variant_id, quantity = 1)
+  def editing(workspace, revision, key)
+    { expected_revision: revision, lease_generation: workspace.lease_generation, editor_id: editor_id, idempotency_key: key }
+  end
+
+  def add_item(ctx, revision)
     key = SecureRandom.uuid
-    post "/api/v3/admin/pos/workspaces/#{workspace.prefixed_id}/items", headers: headers(token, key),
-      params: { expected_revision: revision, lease_generation: workspace.lease_generation, editor_id: editor_id,
-                variant_id: variant_id, quantity: quantity, merge: true, idempotency_key: key }, as: :json
-    expect(response).to have_http_status(:ok)
-    response.parsed_body.fetch('data')
+    body = editing(ctx.workspace, revision, key).merge(variant_id: ctx.product.default_variant.prefixed_id, quantity: 1, merge: true)
+    post "/api/v3/admin/pos/workspaces/#{ctx.workspace.prefixed_id}/items", headers: headers(ctx.token, key), params: body, as: :json
+    response.parsed_body['data']
   end
 
-  def methods(workspace, token)
-    get "/api/v3/admin/pos/workspaces/#{workspace.prefixed_id}/payment_methods", headers: headers(token), as: :json
+  def method_id(ctx, kind)
+    get "/api/v3/admin/pos/workspaces/#{ctx.workspace.prefixed_id}/payment_methods", headers: headers(ctx.token), as: :json
     expect(response).to have_http_status(:ok)
-    response.parsed_body.fetch('data')
+    response.parsed_body.fetch('data').find { |row| row['kind'] == kind }&.fetch('id')
   end
 
-  def prepare(workspace, token, revision, method_id, amount, key: SecureRandom.uuid)
-    post "/api/v3/admin/pos/workspaces/#{workspace.prefixed_id}/tender_attempts", headers: headers(token, key),
-      params: { expected_revision: revision, lease_generation: workspace.lease_generation, editor_id: editor_id,
-                payment_method_id: method_id, amount: amount.to_s, idempotency_key: key }, as: :json
-    response.parsed_body.fetch('data')
+  def prepare(ctx, revision, kind, amount)
+    key = SecureRandom.uuid
+    body = editing(ctx.workspace, revision, key).merge(payment_method_id: method_id(ctx, kind), amount: amount.to_s)
+    post "/api/v3/admin/pos/workspaces/#{ctx.workspace.prefixed_id}/tender_attempts", headers: headers(ctx.token, key), params: body, as: :json
+    response.parsed_body['data']
   end
 
-  def attempt_at(workspace, token, index = -1)
-    get "/api/v3/admin/pos/workspaces/#{workspace.prefixed_id}", headers: headers(token), as: :json
-    response.parsed_body.dig('data', 'financial', 'attempts')[index]
+  def last_attempt(ctx)
+    get "/api/v3/admin/pos/workspaces/#{ctx.workspace.prefixed_id}", headers: headers(ctx.token), as: :json
+    response.parsed_body.dig('data', 'financial', 'attempts').last
   end
 
-  def confirm(workspace, token, revision, attempt_id, key: SecureRandom.uuid, **attrs)
-    post "/api/v3/admin/pos/workspaces/#{workspace.prefixed_id}/tender_attempts/#{attempt_id}/confirm",
-      headers: headers(token, key),
-      params: { expected_revision: revision, lease_generation: workspace.lease_generation, editor_id: editor_id,
-                idempotency_key: key }.merge(attrs), as: :json
-    response.parsed_body.fetch('data')
+  def confirm(ctx, revision, attempt_id, key: SecureRandom.uuid, **attrs)
+    body = editing(ctx.workspace, revision, key).merge(attrs)
+    post "/api/v3/admin/pos/workspaces/#{ctx.workspace.prefixed_id}/tender_attempts/#{attempt_id}/confirm",
+         headers: headers(ctx.token, key), params: body, as: :json
+    response.parsed_body['data']
   end
 
-  it 'F01: cash handed 200 change 50 on a 150 remainder -> Payment 150, drawer +150, duplicate confirm does not double' do
-    _user, _branch, workspace, product, token = setup_workspace(price: 250)
-    add_item(workspace, token, 0, product.default_variant.prefixed_id)
-    list = methods(workspace, token)
-    cash = list.find { |row| row['kind'] == 'cash' }
-    bank = list.find { |row| row['kind'] == 'bank_manual' }
-    expect(cash).to be_present
-    expect(bank).to be_present
+  def complete(ctx, revision, key: SecureRandom.uuid)
+    post "/api/v3/admin/pos/workspaces/#{ctx.workspace.prefixed_id}/complete", headers: headers(ctx.token, key),
+                                                                               params: editing(ctx.workspace, revision, key), as: :json
+  end
 
-    prepare(workspace, token, 1, bank['id'], 100)
+  def record_funds(token, key: SecureRandom.uuid, **attrs)
+    post '/api/v3/admin/pos/received_funds', headers: headers(token, key), params: attrs.merge(idempotency_key: key), as: :json
+    response.parsed_body['data']
+  end
+
+  def payout(token, funds_id, action = nil, payout_id = nil, **attrs)
+    key = SecureRandom.uuid
+    path = "/api/v3/admin/pos/received_funds/#{funds_id}/payouts"
+    path += "/#{payout_id}/#{action}" if action
+    post path, headers: headers(token, key), params: attrs.merge(idempotency_key: key), as: :json
+    response.parsed_body['data']
+  end
+
+  def funds_state(token, funds_id)
+    get "/api/v3/admin/pos/received_funds/#{funds_id}", headers: headers(token), as: :json
+    response.parsed_body['data']
+  end
+
+  def conflict_message
+    response.parsed_body.dig('error', 'message') || response.parsed_body['error'] || response.parsed_body.to_s
+  end
+
+  def bank_evidence(reference = 'FT001')
+    { evidence_kind: 'bank_manual', reference: reference, receiving_account: 'VCB-123' }
+  end
+
+  it 'applies only the cash remainder after a bank part, nets the change in the drawer and never doubles a confirm' do
+    ctx = setup_workspace(price: 250)
+    add_item(ctx, 0)
+
+    prepare(ctx, 1, 'bank_manual', 100)
     expect(response).to have_http_status(:ok)
-    confirm(workspace, token, 2, attempt_at(workspace, token)['id'], evidence_kind: 'bank_manual', reference: 'FT001', receiving_account: 'VCB-123')
+    confirm(ctx, 2, last_attempt(ctx)['id'], **bank_evidence)
     expect(response).to have_http_status(:ok)
 
-    prepare(workspace, token, 3, cash['id'], 150)
-    attempt_id = attempt_at(workspace, token)['id']
-    data = confirm(workspace, token, 4, attempt_id, evidence_kind: 'cash_count', handed_amount: '200')
+    prepare(ctx, 3, 'cash', 150)
+    attempt_id = last_attempt(ctx)['id']
+    key = SecureRandom.uuid
+    data = confirm(ctx, 4, attempt_id, key: key, evidence_kind: 'cash_count', handed_amount: '200')
     expect(response).to have_http_status(:ok)
-    financial = data['financial']
-    expect(financial['received']).to eq('250.0')
-    expect(financial['allocated']).to eq('250.0')
-    expect(financial['change_due']).to eq('50.0')
-    expect(financial['remaining']).to eq('0.0')
+    expect(data['financial']).to include('received' => '250.0', 'allocated' => '250.0', 'change_due' => '50.0', 'remaining' => '0.0')
 
-    order = workspace.reload.order
+    order = ctx.workspace.reload.order
     expect(order.payments.completed.sum(:amount)).to eq(BigDecimal('250'))
     expect(order.payments.completed.count).to eq(2)
-    drawer = Spree::Pos::CashMovement.where(shift: workspace.shift, kind: 'receipt').sum(:amount)
-    expect(drawer).to eq(BigDecimal('150'))
+    expect(Spree::Pos::CashMovement.where(shift: ctx.workspace.shift, kind: 'receipt').sum(:amount)).to eq(BigDecimal('150'))
 
-    # Duplicate confirm with the same intent (new key, same payload except
-    # revision advanced by the first confirm): replaying must not double
-    # money — the attempt is already confirmed, so it conflicts cleanly.
-    post "/api/v3/admin/pos/workspaces/#{workspace.prefixed_id}/tender_attempts/#{attempt_id}/confirm",
-      headers: headers(token), params: { expected_revision: 5, lease_generation: workspace.lease_generation,
-        editor_id: editor_id, evidence_kind: 'cash_count', handed_amount: '200' }, as: :json
+    # A lost response is retried with the same key and payload: the stored
+    # result comes back and nothing is recorded twice.
+    replay = confirm(ctx, 4, attempt_id, key: key, evidence_kind: 'cash_count', handed_amount: '200')
+    expect(response).to have_http_status(:ok)
+    expect(replay['revision']).to eq(data['revision'])
+
+    # A second confirm under a new key finds the attempt already confirmed.
+    confirm(ctx, 5, attempt_id, evidence_kind: 'cash_count', handed_amount: '200')
     expect(response).to have_http_status(:conflict)
     expect(order.reload.payments.completed.count).to eq(2)
+    expect(Spree::Pos::ReceivedFunds.where(workspace: ctx.workspace).count).to eq(2)
+  end
+
+  it 'refuses short, fractional and malformed cash without recording money' do
+    ctx = setup_workspace(price: 250)
+    add_item(ctx, 0)
+
+    prepare(ctx, 1, 'cash', '99.5')
+    expect(response).to have_http_status(:conflict)
+    prepare(ctx, 1, 'cash', 250)
+    expect(response).to have_http_status(:ok)
+    attempt_id = last_attempt(ctx)['id']
+
+    confirm(ctx, 2, attempt_id, evidence_kind: 'cash_count', handed_amount: '200')
+    expect(response).to have_http_status(:conflict)
+    expect(conflict_message).to include('less than the tender amount')
+    confirm(ctx, 2, attempt_id, evidence_kind: 'cash_count', handed_amount: '250.5')
+    expect(response).to have_http_status(:conflict)
+    confirm(ctx, 2, attempt_id, evidence_kind: 'cash_count', handed_amount: '200.000,5')
+    expect(response).to have_http_status(:conflict)
+    expect(Spree::Pos::ReceivedFunds.where(workspace: ctx.workspace)).to be_empty
+    expect(ctx.workspace.order.reload.payments).to be_empty
+
+    data = confirm(ctx, 2, attempt_id, evidence_kind: 'cash_count', handed_amount: '300')
+    expect(response).to have_http_status(:ok)
+    expect(data['financial']['change_due']).to eq('50.0')
+  end
+
+  it 'records a larger bank transfer as one receipt and keeps the excess unapplied' do
+    ctx = setup_workspace(price: 100)
+    add_item(ctx, 0)
+    prepare(ctx, 1, 'bank_manual', 100)
+    attempt_id = last_attempt(ctx)['id']
+
+    confirm(ctx, 2, attempt_id, evidence_kind: 'bank_manual', reference: 'FT1')
+    expect(response).to have_http_status(:conflict)
+    confirm(ctx, 2, attempt_id, received_amount: '90', **bank_evidence)
+    expect(response).to have_http_status(:conflict)
+
+    data = confirm(ctx, 2, attempt_id, received_amount: '130', **bank_evidence)
+    expect(response).to have_http_status(:ok)
+    expect(data['financial']['remaining']).to eq('0.0')
+
+    funds = Spree::Pos::ReceivedFunds.where(workspace: ctx.workspace).sole
+    expect(funds.received_net).to eq(BigDecimal('130'))
+    expect(funds.receiving_account).to eq('VCB-123')
+    expect(funds.balance.available).to eq(BigDecimal('30'))
+    expect(ctx.workspace.order.reload.payments.completed.sum(:amount)).to eq(BigDecimal('100'))
+  end
+
+  it 'keeps an unknown attempt reserved against the remaining balance' do
+    ctx = setup_workspace(price: 100)
+    add_item(ctx, 0)
+    prepare(ctx, 1, 'bank_manual', 60)
+    Spree::Pos::TenderAttempt.where(workspace: ctx.workspace).update_all(status: 'unknown')
+
+    prepare(ctx, 2, 'cash', 50)
+    expect(response).to have_http_status(:conflict)
+    prepare(ctx, 2, 'cash', 40)
+    expect(response).to have_http_status(:ok)
+  end
+
+  it 'takes cash on a branch-only shift that has no register' do
+    ctx = setup_workspace(price: 100, register: false)
+    expect(ctx.workspace.register).to be_nil
+    add_item(ctx, 0)
+    prepare(ctx, 1, 'cash', 100)
+    expect(response).to have_http_status(:ok)
+    confirm(ctx, 2, last_attempt(ctx)['id'], evidence_kind: 'cash_count', handed_amount: '100')
+    expect(response).to have_http_status(:ok)
+    movement = Spree::Pos::CashMovement.find_by!(shift: ctx.workspace.shift)
+    expect(movement.amount).to eq(BigDecimal('100'))
+    expect(movement.register).to be_nil
+  end
+
+  it 'never books a POS tender on a gateway payment method' do
+    ctx = setup_workspace(price: 100, manual_method: false)
+    add_item(ctx, 0)
+    prepare(ctx, 1, 'cash', 100)
+    expect(response).to have_http_status(:conflict)
+    expect(Spree::Pos::TenderAttempt.where(workspace: ctx.workspace)).to be_empty
+    expect(ctx.workspace.order.reload.payments).to be_empty
   end
 
   it 'locks items after prepare, refuses tracked tender, and completes + hands over only with completed receipts' do
-    user, branch, workspace, product, token = setup_workspace(price: 100)
-    add_item(workspace, token, 0, product.default_variant.prefixed_id)
-    cash = methods(workspace, token).find { |row| row['kind'] == 'cash' }
+    ctx = setup_workspace(price: 100)
+    add_item(ctx, 0)
 
-    # Completion before any receipt is refused.
-    key = SecureRandom.uuid
-    post "/api/v3/admin/pos/workspaces/#{workspace.prefixed_id}/complete", headers: headers(token, key),
-      params: { expected_revision: 1, lease_generation: workspace.lease_generation, editor_id: editor_id, idempotency_key: key }, as: :json
+    complete(ctx, 1)
     expect(response).to have_http_status(:conflict)
-    expect(workspace.reload.order).not_to be_placed
+    expect(ctx.workspace.reload.order).not_to be_placed
 
-    prepare(workspace, token, 1, cash['id'], 100)
-    # Snapshot locked while prepared.
-    post_item_status = nil
-    key2 = SecureRandom.uuid
-    post "/api/v3/admin/pos/workspaces/#{workspace.prefixed_id}/items", headers: headers(token, key2),
-      params: { expected_revision: 2, lease_generation: workspace.lease_generation, editor_id: editor_id,
-                variant_id: product.default_variant.prefixed_id, quantity: 1, idempotency_key: key2 }, as: :json
+    prepare(ctx, 1, 'cash', 100)
+    add_item(ctx, 2)
     expect(response).to have_http_status(:conflict)
 
-    confirm(workspace, token, 2, attempt_at(workspace, token)['id'], evidence_kind: 'cash_count', handed_amount: '100')
-    key3 = SecureRandom.uuid
-    post "/api/v3/admin/pos/workspaces/#{workspace.prefixed_id}/complete", headers: headers(token, key3),
-      params: { expected_revision: 3, lease_generation: workspace.lease_generation, editor_id: editor_id, idempotency_key: key3 }, as: :json
+    confirm(ctx, 2, last_attempt(ctx)['id'], evidence_kind: 'cash_count', handed_amount: '100')
+    complete(ctx, 3)
     expect(response).to have_http_status(:ok)
-    expect(workspace.reload.operational_status).to eq('completed')
-    expect(workspace.order.placed?).to be(true)
-
-    level = branch.stock_location.stock_level(product.default_variant).reload
+    expect(ctx.workspace.reload.operational_status).to eq('completed')
+    expect(ctx.workspace.order.placed?).to be(true)
+    level = ctx.branch.stock_location.stock_level(ctx.product.default_variant).reload
     expect(level.allocated_count).to eq(1)
 
-    key4 = SecureRandom.uuid
-    post "/api/v3/admin/pos/workspaces/#{workspace.prefixed_id}/handover", headers: headers(token, key4),
-      params: { idempotency_key: key4 }, as: :json
+    key = SecureRandom.uuid
+    post "/api/v3/admin/pos/workspaces/#{ctx.workspace.prefixed_id}/handover", headers: headers(ctx.token, key),
+                                                                               params: { idempotency_key: key }, as: :json
     expect(response).to have_http_status(:ok)
-    level = branch.stock_location.stock_level(product.default_variant).reload
+    level.reload
     expect(level.count_on_hand).to eq(9)
     expect(level.allocated_count).to eq(0)
   end
 
+  it 'keeps received money and completes once when placement fails after the receipt' do
+    ctx = setup_workspace(price: 100)
+    add_item(ctx, 0)
+    prepare(ctx, 1, 'cash', 100)
+    confirm(ctx, 2, last_attempt(ctx)['id'], evidence_kind: 'cash_count', handed_amount: '100')
+
+    failing = double('order complete workflow', call: double('result', success?: false))
+    allow(Spree).to receive(:order_complete_workflow).and_return(failing)
+    complete(ctx, 3)
+    expect(response).to have_http_status(:conflict)
+    expect(ctx.workspace.reload.order).not_to be_placed
+    expect(Spree::Pos::FundsAllocation.where(workspace: ctx.workspace, status: 'active').count).to eq(1)
+    expect(ctx.workspace.order.payments.completed.sum(:amount)).to eq(BigDecimal('100'))
+
+    travel 16.minutes do
+      2.times { Spree::Pos::RecoverSettlementJob.perform_now }
+    end
+    pending_entries = Spree::Pos::OutboxEntry.where(event_type: 'workspace.completion_pending', aggregate_id: ctx.workspace.id)
+    expect(pending_entries.count).to eq(1)
+
+    allow(Spree).to receive(:order_complete_workflow).and_call_original
+    complete(ctx, 3)
+    expect(response).to have_http_status(:ok)
+    expect(ctx.workspace.reload.order).to be_placed
+    expect(ctx.workspace.order.payments.count).to eq(1)
+    expect(Spree::Pos::ReceivedFunds.where(workspace: ctx.workspace).count).to eq(1)
+  end
+
+  it 'rolls back a confirm that fails mid-way and records the retry exactly once' do
+    ctx = setup_workspace(price: 100)
+    add_item(ctx, 0)
+    prepare(ctx, 1, 'cash', 100)
+    attempt_id = last_attempt(ctx)['id']
+    key = SecureRandom.uuid
+
+    allow_any_instance_of(Spree::Payment).to receive(:complete!).and_raise(ActiveRecord::StatementInvalid, 'connection lost')
+    expect do
+      Spree::Pos::Tenders::Confirm.call(workspace: ctx.workspace.reload, staff: ctx.user, revision: 2,
+                                        lease_generation: ctx.workspace.lease_generation, editor_id: editor_id,
+                                        key: key, attempt_id: attempt_id, evidence_kind: 'cash_count', handed_amount: '100')
+    end.to raise_error(ActiveRecord::StatementInvalid)
+    expect(Spree::Pos::ReceivedFunds.where(workspace: ctx.workspace)).to be_empty
+    expect(Spree::Pos::CashMovement.where(shift: ctx.workspace.shift)).to be_empty
+    expect(Spree::Pos::TenderAttempt.find_by_prefix_id!(attempt_id).status).to eq('prepared')
+
+    allow_any_instance_of(Spree::Payment).to receive(:complete!).and_call_original
+    2.times do
+      confirm(ctx, 2, attempt_id, key: key, evidence_kind: 'cash_count', handed_amount: '100')
+      expect(response).to have_http_status(:ok)
+    end
+    expect(Spree::Pos::ReceivedFunds.where(workspace: ctx.workspace).count).to eq(1)
+    expect(ctx.workspace.order.reload.payments.completed.count).to eq(1)
+  end
+
+  it 'completes a free order only with approval authority and without a payment' do
+    cashier_caps = [Spree::Pos::Capabilities::OPEN_SHIFT, Spree::Pos::Capabilities::PAYMENT]
+    ctx = setup_workspace(price: 0, capabilities: cashier_caps)
+    add_item(ctx, 0)
+    expect(response).to have_http_status(:ok)
+
+    complete(ctx, 1)
+    expect(response).to have_http_status(:forbidden)
+
+    Spree::Pos::StaffMembership.find_by!(staff: ctx.user, branch: ctx.branch).
+      update!(capabilities: cashier_caps + [Spree::Pos::Capabilities::APPROVE])
+    complete(ctx, 1)
+    expect(response).to have_http_status(:ok)
+    expect(ctx.workspace.reload.order).to be_placed
+    expect(ctx.workspace.order.payments).to be_empty
+    expect(Spree::Pos::AuditEntry.where(subject_type: ctx.workspace.class.name, subject_id: ctx.workspace.id,
+                                        action: 'workspace.complete_zero_total').count).to eq(1)
+  end
+
   it 'refuses tender for tracked (serial) goods before any money is taken' do
-    _user, branch, workspace, product, token = setup_workspace(price: 100)
-    headers_h = { 'Authorization' => "Bearer #{token}" }
-    put '/api/v3/admin/pos/units/variant', headers: headers_h,
-      params: { branch_id: branch.prefixed_id, variant_id: product.default_variant.prefixed_id,
-                sale_unit: 'item', base_unit: 'item', price_unit: 'item', tracked_mode: 'lot' }, as: :json
+    ctx = setup_workspace(price: 100)
+    put '/api/v3/admin/pos/units/variant', headers: { 'Authorization' => "Bearer #{ctx.token}" },
+                                           params: { branch_id: ctx.branch.prefixed_id, variant_id: ctx.product.default_variant.prefixed_id,
+                                                     sale_unit: 'item', base_unit: 'item', price_unit: 'item', tracked_mode: 'lot' }, as: :json
     expect(response).to have_http_status(:ok)
     key = SecureRandom.uuid
-    post "/api/v3/admin/pos/workspaces/#{workspace.prefixed_id}/items", headers: headers(token, key),
-      params: { expected_revision: 0, lease_generation: workspace.lease_generation, editor_id: editor_id,
-                variant_id: product.default_variant.prefixed_id, quantity: 1, serial_codes: ['SN-1'], idempotency_key: key }, as: :json
+    body = editing(ctx.workspace, 0, key).merge(variant_id: ctx.product.default_variant.prefixed_id, quantity: 1, serial_codes: ['SN-1'])
+    post "/api/v3/admin/pos/workspaces/#{ctx.workspace.prefixed_id}/items", headers: headers(ctx.token, key), params: body, as: :json
     expect(response).to have_http_status(:ok)
 
-    cash = methods(workspace, token).find { |row| row['kind'] == 'cash' }
-    key2 = SecureRandom.uuid
-    post "/api/v3/admin/pos/workspaces/#{workspace.prefixed_id}/tender_attempts", headers: headers(token, key2),
-      params: { expected_revision: 1, lease_generation: workspace.lease_generation, editor_id: editor_id,
-                payment_method_id: cash['id'], amount: '100', idempotency_key: key2 }, as: :json
+    prepare(ctx, 1, 'cash', 100)
     expect(response).to have_http_status(:conflict)
-    expect(Spree::Pos::ReceivedFunds.where(workspace: workspace)).to be_empty
+    expect(Spree::Pos::ReceivedFunds.where(workspace: ctx.workspace)).to be_empty
   end
 
-  it 'keeps excess as unapplied liability, reserves payout, blocks double-spend, and pays out with evidence' do
-    _user, _branch, workspace, product, token = setup_workspace(price: 100)
-    add_item(workspace, token, 0, product.default_variant.prefixed_id)
-    cash = methods(workspace, token).find { |row| row['kind'] == 'cash' }
-    prepare(workspace, token, 1, cash['id'], 100)
-    data = confirm(workspace, token, 2, attempt_at(workspace, token)['id'], evidence_kind: 'cash_count', handed_amount: '100')
-    expect(data['financial']['allocated']).to eq('100.0')
+  it 'keeps excess as liability, holds payout reservations until a second person confirms with evidence' do
+    ctx = setup_workspace(price: 100)
+    add_item(ctx, 0)
+    prepare(ctx, 1, 'cash', 100)
+    confirm(ctx, 2, last_attempt(ctx)['id'], evidence_kind: 'cash_count', handed_amount: '100')
+    shift_id = ctx.workspace.shift.prefixed_id
+    base = { branch_id: ctx.branch.prefixed_id, shift_id: shift_id, kind: 'bank_manual', handed_amount: '40',
+             workspace_id: ctx.workspace.prefixed_id }
 
-    # Unsolicited extra 40 arrives: posted as attention liability, not a Payment.
-    key = SecureRandom.uuid
-    post '/api/v3/admin/pos/received_funds', headers: headers(token, key),
-      params: { branch_id: workspace.branch.prefixed_id, shift_id: workspace.shift.prefixed_id, kind: 'bank_manual',
-                handed_amount: '40', reference: 'FT-LATE', workspace_id: workspace.prefixed_id, idempotency_key: key }, as: :json
+    record_funds(ctx.token, **base, reference: 'FT-LATE')
+    expect(response).to have_http_status(:conflict)
+    funds_id = record_funds(ctx.token, **base, reference: 'FT-LATE', receiving_account: 'VCB-123')['id']
     expect(response).to have_http_status(:created)
-    funds_id = response.parsed_body.dig('data', 'id')
-    expect(response.parsed_body.dig('data', 'available')).to eq('40.0')
-    expect(workspace.order.reload.payments.count).to eq(1)
+    expect(funds_state(ctx.token, funds_id)['available']).to eq('40.0')
+    expect(ctx.workspace.order.reload.payments.count).to eq(1)
 
-    # Reserve 40 for payout; a second payout of 40 must fail (no double spend).
-    key2 = SecureRandom.uuid
-    post "/api/v3/admin/pos/received_funds/#{funds_id}/payouts", headers: headers(token, key2),
-      params: { amount: '40', beneficiary_name: 'Khach A', reason: 'Thua chuyen khoan', idempotency_key: key2 }, as: :json
+    payout_id = payout(ctx.token, funds_id, amount: '40', beneficiary_name: 'Khach A', reason: 'Thua chuyen khoan')['id']
     expect(response).to have_http_status(:created)
-    payout_id = response.parsed_body.dig('data', 'id')
-    key3 = SecureRandom.uuid
-    post "/api/v3/admin/pos/received_funds/#{funds_id}/payouts", headers: headers(token, key3),
-      params: { amount: '40', beneficiary_name: 'Khach A', reason: 'Trung', idempotency_key: key3 }, as: :json
+    payout(ctx.token, funds_id, amount: '40', beneficiary_name: 'Khach A', reason: 'Trung')
     expect(response).to have_http_status(:conflict)
 
-    # Unknown keeps the reservation.
-    key4 = SecureRandom.uuid
-    post "/api/v3/admin/pos/received_funds/#{funds_id}/payouts/#{payout_id}/resolve", headers: headers(token, key4),
-      params: { outcome: 'unknown', idempotency_key: key4 }, as: :json
-    expect(response).to have_http_status(:ok)
-    get "/api/v3/admin/pos/received_funds/#{funds_id}", headers: headers(token), as: :json
-    expect(response.parsed_body.dig('data', 'available')).to eq('0.0')
-    expect(response.parsed_body.dig('data', 'payout_reserved')).to eq('40.0')
+    payout(ctx.token, funds_id, 'confirm', payout_id, evidence_kind: 'bank_manual', reference: 'FT-OUT')
+    expect(response).to have_http_status(:conflict)
+    expect(conflict_message).to include('other than its requester')
 
-    # Confirm payout with bank evidence.
-    key5 = SecureRandom.uuid
-    post "/api/v3/admin/pos/received_funds/#{funds_id}/payouts/#{payout_id}/confirm", headers: headers(token, key5),
-      params: { evidence_kind: 'bank_manual', reference: 'FT-OUT', idempotency_key: key5 }, as: :json
+    payout(ctx.token, funds_id, 'resolve', payout_id, outcome: 'unknown')
     expect(response).to have_http_status(:ok)
-    get "/api/v3/admin/pos/received_funds/#{funds_id}", headers: headers(token), as: :json
-    expect(response.parsed_body.dig('data', 'paid_out')).to eq('40.0')
-    expect(response.parsed_body.dig('data', 'available')).to eq('0.0')
+    payout(ctx.token, funds_id, 'resolve', payout_id, outcome: 'cancel')
+    expect(response).to have_http_status(:conflict)
+    payout(ctx.token, funds_id, 'resolve', payout_id, outcome: 'failed_no_effect')
+    expect(response).to have_http_status(:conflict)
+    expect(funds_state(ctx.token, funds_id)).to include('available' => '0.0', 'payout_reserved' => '40.0')
+
+    manager = staff_user(ctx.branch, PosSettlementSpec::CAPS)
+    manager_token = login(manager)
+    payout(manager_token, funds_id, 'confirm', payout_id, evidence_kind: 'bank_manual')
+    expect(response).to have_http_status(:conflict)
+    payout(manager_token, funds_id, 'confirm', payout_id, evidence_kind: 'bank_manual', reference: 'FT-OUT')
+    expect(response).to have_http_status(:ok)
+
+    payout(ctx.token, funds_id, 'resolve', payout_id, outcome: 'cancel')
+    expect(response).to have_http_status(:conflict)
+    expect(funds_state(ctx.token, funds_id)).to include('paid_out' => '40.0', 'available' => '0.0', 'payout_reserved' => '0.0')
   end
 
-  it 'allocates unapplied funds to a later workspace and reverses before placement' do
-    user, branch, workspace, product, token = setup_workspace(price: 100)
-    add_item(workspace, token, 0, product.default_variant.prefixed_id)
+  it 'adds unsolicited cash only to the caller\'s open drawer and keeps other cash held without a drawer movement' do
+    ctx = setup_workspace(price: 100)
+    shift = ctx.workspace.shift
+    base = { branch_id: ctx.branch.prefixed_id, shift_id: shift.prefixed_id, kind: 'cash', handed_amount: '50' }
 
-    key = SecureRandom.uuid
-    post '/api/v3/admin/pos/received_funds', headers: headers(token, key),
-      params: { branch_id: branch.prefixed_id, shift_id: workspace.shift.prefixed_id, kind: 'bank_manual',
-                handed_amount: '100', reference: 'FT-EARLY', workspace_id: workspace.prefixed_id, idempotency_key: key }, as: :json
-    funds_id = response.parsed_body.dig('data', 'id')
+    record_funds(ctx.token, **base)
+    expect(response).to have_http_status(:created)
+    expect(Spree::Pos::CashMovement.where(shift: shift, kind: 'receipt').sum(:amount)).to eq(BigDecimal('50'))
 
-    key2 = SecureRandom.uuid
-    post "/api/v3/admin/pos/workspaces/#{workspace.prefixed_id}/funds/allocate", headers: headers(token, key2),
-      params: { expected_revision: 1, lease_generation: workspace.lease_generation, editor_id: editor_id,
-                funds_id: funds_id, amount: '100', idempotency_key: key2 }, as: :json
+    other = staff_user(ctx.branch, PosSettlementSpec::CAPS)
+    other_token = login(other)
+    open_shift(other_token, ctx.branch)
+    record_funds(other_token, **base)
+    expect(response).to have_http_status(:conflict)
+
+    cashier = staff_user(ctx.branch, [Spree::Pos::Capabilities::OPEN_SHIFT, Spree::Pos::Capabilities::PAYMENT])
+    record_funds(login(cashier), **base, custody: 'held', custody_note: 'Ket sat')
+    expect(response).to have_http_status(:forbidden)
+
+    record_funds(ctx.token, **base, custody: 'held')
+    expect(response).to have_http_status(:conflict)
+    held = record_funds(ctx.token, **base, custody: 'held', custody_note: 'Nhan ca truoc, de ket sat')
+    expect(response).to have_http_status(:created)
+    expect(held).to include('custody' => 'held', 'status' => 'attention', 'available' => '50.0')
+    expect(Spree::Pos::CashMovement.where(received_funds_id: Spree::Pos::ReceivedFunds.find_by_prefix_id!(held['id']).id)).to be_empty
+
+    shift.update_columns(status: 'closed')
+    record_funds(ctx.token, **base)
+    expect(response).to have_http_status(:conflict)
+    expect(Spree::Pos::CashMovement.where(shift: shift).sum(:amount)).to eq(BigDecimal('50'))
+  end
+
+  it 'pays cash out of the confirmer\'s own open drawer, not the closed shift that received it' do
+    ctx = setup_workspace(price: 100)
+    origin = ctx.workspace.shift
+    funds_id = record_funds(ctx.token, branch_id: ctx.branch.prefixed_id, shift_id: origin.prefixed_id, kind: 'cash', handed_amount: '50')['id']
+    payout_id = payout(ctx.token, funds_id, amount: '50', beneficiary_name: 'Khach B', reason: 'Tien thua')['id']
+    expect(response).to have_http_status(:created)
+    origin.update_columns(status: 'closed')
+
+    manager = staff_user(ctx.branch, PosSettlementSpec::CAPS)
+    manager_token = login(manager)
+    payout(manager_token, funds_id, 'confirm', payout_id, evidence_kind: 'cash_count')
+    expect(response).to have_http_status(:conflict)
+
+    open_shift(manager_token, ctx.branch)
+    payout(manager_token, funds_id, 'confirm', payout_id, evidence_kind: 'cash_count')
+    expect(response).to have_http_status(:ok)
+    drawer = Spree::Pos::Shift.find_by!(owner: manager, status: 'open')
+    expect(Spree::Pos::CashMovement.where(shift: drawer).sum(:amount)).to eq(BigDecimal('-50'))
+    expect(Spree::Pos::CashMovement.where(shift: origin).sum(:amount)).to eq(BigDecimal('50'))
+  end
+
+  it 'allocates unapplied funds, reverses before placement, and leaves the order editable and cancelable' do
+    ctx = setup_workspace(price: 100)
+    add_item(ctx, 0)
+    funds_id = record_funds(ctx.token, branch_id: ctx.branch.prefixed_id, shift_id: ctx.workspace.shift.prefixed_id,
+                                       kind: 'bank_manual', handed_amount: '100', reference: 'FT-EARLY', receiving_account: 'VCB-123',
+                                       workspace_id: ctx.workspace.prefixed_id)['id']
+
+    workspace_command(ctx, 'funds/allocate', 1, funds_id: funds_id, amount: '100.5')
+    expect(response).to have_http_status(:conflict)
+    workspace_command(ctx, 'funds/allocate', 1, funds_id: funds_id, amount: '100')
     expect(response).to have_http_status(:ok)
     expect(response.parsed_body.dig('data', 'financial', 'allocated')).to eq('100.0')
-    allocation_id = Spree::Pos::FundsAllocation.find_by(workspace: workspace, status: 'active').prefixed_id
+    allocation_id = Spree::Pos::FundsAllocation.find_by!(workspace: ctx.workspace, status: 'active').prefixed_id
 
-    key3 = SecureRandom.uuid
-    post "/api/v3/admin/pos/workspaces/#{workspace.prefixed_id}/funds/reverse", headers: headers(token, key3),
-      params: { expected_revision: 2, lease_generation: workspace.lease_generation, editor_id: editor_id,
-                allocation_id: allocation_id, idempotency_key: key3 }, as: :json
+    workspace_command(ctx, 'funds/reverse', 2, allocation_id: allocation_id)
     expect(response).to have_http_status(:ok)
     expect(response.parsed_body.dig('data', 'financial', 'allocated')).to eq('0.0')
-    expect(Spree::Pos::FundsAllocation.find_by(workspace: workspace).status).to eq('reversed')
-    expect(workspace.order.reload.payments.where(status: 'completed')).to be_empty
+    expect(ctx.workspace.order.reload.payments.where(status: 'completed')).to be_empty
+    expect(funds_state(ctx.token, funds_id)['available']).to eq('100.0')
+
+    add_item(ctx, 3)
+    expect(response).to have_http_status(:ok)
+    workspace_command(ctx, 'cancel', 4)
+    expect(response).to have_http_status(:ok)
+    expect(funds_state(ctx.token, funds_id)['available']).to eq('100.0')
   end
 end

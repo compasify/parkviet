@@ -22,9 +22,25 @@ export function formatMoney(amount: string | null | undefined, currency = 'VND')
   return `${grouped}${fraction ? `,${fraction}` : ''} ${currency === 'VND' ? '₫' : currency}`;
 }
 
+// For canonical server strings such as "150000.0"; never for cashier input,
+// where a dot groups thousands.
 export function parseVndAmount(input: string): string | null {
   const value = canonicalDecimal(input);
   return value !== null && !value.includes('.') ? value : null;
+}
+
+// Cashier-typed VND: plain digits, or thousands grouped by dots or spaces
+// ("150.000", "1 500 000"). Commas, fractions and signs are rejected so a
+// grouped amount can never be misread as a smaller decimal one.
+const PLAIN_DIGITS = /^\d+$/;
+const DOT_GROUPED = /^\d{1,3}(?:\.\d{3})+$/;
+const SPACE_GROUPED = /^\d{1,3}(?:[  ]\d{3})+$/;
+
+export function parseVndInput(input: string): string | null {
+  const value = input.trim();
+  if (!PLAIN_DIGITS.test(value) && !DOT_GROUPED.test(value) && !SPACE_GROUPED.test(value))
+    return null;
+  return value.replace(/\D/g, '').replace(/^0+(?=\d)/, '');
 }
 
 export function parsePercentageInput(input: string): string | null {

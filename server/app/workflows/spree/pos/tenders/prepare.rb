@@ -26,6 +26,7 @@ module Spree
 
             order = workspace.order
             raise Conflict, 'Order has no items.' if order.line_items.empty?
+            raise Conflict, 'Amount must be a whole amount in the order currency.' unless Record.countable_money?(parsed, order.currency)
             raise Conflict, 'Payment already exists for this order.' if order.payments.where(status: 'pending').exists?
 
             resolver = PaymentMethodResolver.new(store: workspace.store)
@@ -33,7 +34,8 @@ module Spree
             raise Conflict, 'Payment method is not available for this store.' if core_method.nil?
 
             allocated = FundsAllocation.where(workspace: workspace, status: 'active').sum(:amount)
-            prepared_sum = TenderAttempt.where(workspace: workspace, status: 'prepared').sum(:amount)
+            # An unknown attempt may still have moved money, so it keeps its share.
+            prepared_sum = TenderAttempt.where(workspace: workspace, status: %w[prepared unknown]).sum(:amount)
             remaining = order.total - allocated - prepared_sum
             raise Conflict, 'Amount exceeds the remaining balance.' if parsed > remaining
 

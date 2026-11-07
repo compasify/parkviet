@@ -842,10 +842,12 @@ export function WorkspaceTabs() {
                 canResolve={Boolean(data?.capabilities.includes('pos.payment.resolve'))}
                 disabled={
                   locked ||
+                  busy ||
                   !isEditor ||
                   (active.operational_status !== 'editing' &&
                     active.operational_status !== 'completed')
                 }
+                command={(action) => command(active, action)}
               />
             </div>
           ) : (

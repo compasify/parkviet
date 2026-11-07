@@ -6,14 +6,15 @@ import { session } from '../lib/app-session';
 import { commandQueue } from '../lib/command-queue';
 import {
   FINANCIAL_RECOVERY_CHANGED,
+  type FinancialRecoveryState,
+  financialRecoveryState,
   forgetFinancialRecord,
-  hasFinancialRecords,
   scopedFinancialRecords,
 } from '../lib/financial-recovery';
 import { administrationAccess } from '../lib/pos-administration';
 import { writesLocked } from '../lib/pos-context';
 import { queryClient } from '../lib/query-client';
-import { posFailureKey } from '../lib/request-failure';
+import { failureStatus, posFailureKey } from '../lib/request-failure';
 import {
   forgetIntent,
   hasPendingIntents,
@@ -81,12 +82,16 @@ function ShellFrame() {
   const [logoutError, setLogoutError] = useState('');
   const [intentsVersion, setIntentsVersion] = useState(0);
   const [financialVersion, setFinancialVersion] = useState(0);
-  const [financialUncertain, setFinancialUncertain] = useState(false);
+  const [financialState, setFinancialState] = useState<FinancialRecoveryState>({
+    pending: 0,
+    storageUnavailable: false,
+  });
   const [checkingIntents, setCheckingIntents] = useState(false);
   const [recoveryCheck, setRecoveryCheck] = useState<{
     staffId: string;
     storeId: string;
     confirmed: number;
+    notCommitted: number;
     missing: number;
     blocked: number;
     failed: number;
@@ -130,11 +135,11 @@ function ShellFrame() {
     const staffId = context.data?.staff.id;
     const storeId = context.data?.store.id;
     if (!staffId || !storeId) {
-      setFinancialUncertain(false);
+      setFinancialState({ pending: 0, storageUnavailable: false });
       return;
     }
-    void hasFinancialRecords(staffId, storeId).then((value) => {
-      if (active) setFinancialUncertain(value);
+    void financialRecoveryState(staffId, storeId).then((value) => {
+      if (active) setFinancialState(value);
     });
     return () => {
       active = false;
@@ -164,7 +169,15 @@ function ShellFrame() {
   async function checkIntents(staffId: string, storeId: string) {
     setCheckingIntents(true);
     setRecoveryCheck(null);
-    const result = { staffId, storeId, confirmed: 0, missing: 0, blocked: 0, failed: 0 };
+    const result = {
+      staffId,
+      storeId,
+      confirmed: 0,
+      notCommitted: 0,
+      missing: 0,
+      blocked: 0,
+      failed: 0,
+    };
     function recordFailure(error: unknown) {
       const failure = posFailureKey(error);
       if (failure === 'missing') result.missing++;
@@ -192,6 +205,13 @@ function ShellFrame() {
           await forgetFinancialRecord(record.scope);
           result.confirmed++;
         } catch (error) {
+          // The receipt is written in the command's own transaction: no receipt
+          // for this user means the money command never committed.
+          if (failureStatus(error) === 404) {
+            await forgetFinancialRecord(record.scope);
+            result.notCommitted++;
+            continue;
+          }
           recordFailure(error);
           // Keep financial evidence for manual reconciliation; never mint a new tender.
         }
@@ -207,6 +227,7 @@ function ShellFrame() {
   }
 
   const failure = context.error ? posFailureKey(context.error) : null;
+  const financialUncertain = financialState.pending > 0;
   const store = context.data?.store;
   void intentsVersion;
   const uncertain =
@@ -327,6 +348,12 @@ function ShellFrame() {
               {t('uncertainWarning')}
             </p>
           ) : null}
+          {financialState.storageUnavailable ? (
+            <p className="error" role="status">
+              {t('financialStorageWarning')}{' '}
+              <Link to="/payment-attention">{t('fundsAttentionTitle')}</Link>
+            </p>
+          ) : null}
           {financialUncertain ? (
             <p className="error" role="status">
               {t('financialUncertainWarning')}{' '}
@@ -349,6 +376,9 @@ function ShellFrame() {
           recoveryCheck?.storeId === context.data?.store.id ? (
             <div className="recovery-check-result" role="status" aria-live="polite">
               <p>{t('recoveryChecked', { count: recoveryCheck.confirmed })}</p>
+              {recoveryCheck.notCommitted > 0 ? (
+                <p>{t('recoveryNotCommitted', { count: recoveryCheck.notCommitted })}</p>
+              ) : null}
               {recoveryCheck.missing > 0 ? (
                 <p>{t('recoveryMissing', { count: recoveryCheck.missing })}</p>
               ) : null}

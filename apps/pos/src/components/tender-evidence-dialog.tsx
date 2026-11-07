@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { type KeyboardEvent, useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { formatMoney, parseVndAmount } from '../lib/money';
+import { formatMoney, parseVndAmount, parseVndInput } from '../lib/money';
 import type { PosFinancialAttempt, PosWorkspace } from '../lib/pos-context';
 import { PosIcon } from './pos-icon';
 
@@ -8,75 +8,144 @@ export type TenderEvidenceItemInput = {
   attemptId: string;
   evidenceKind: 'cash_count' | 'bank_manual';
   handedAmount?: string;
+  receivedAmount?: string;
   reference?: string;
   receivingAccount?: string;
   terminalRef?: string;
 };
+
+const FOCUSABLE =
+  'button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [href], [tabindex]:not([tabindex="-1"])';
+
+// Whole VND typed by the cashier compared with a canonical server amount.
+function shortOf(typed: string | null, amount: string): boolean | null {
+  const expected = parseVndAmount(amount);
+  if (typed === null || expected === null) return null;
+  return BigInt(typed) < BigInt(expected);
+}
 
 export function TenderEvidenceDialog({
   workspace,
   attempts,
   disabled,
   busy,
+  error,
   onConfirm,
   onCancel,
-  labels,
+  onHold,
 }: {
   workspace: PosWorkspace;
   attempts: PosFinancialAttempt[];
   disabled: boolean;
   busy: boolean;
-  onConfirm: (inputs: TenderEvidenceItemInput[]) => Promise<void>;
-  onCancel: () => Promise<void>;
-  labels: {
-    cancel: string;
-    handed: string;
-    reference: string;
-    account: string;
-  };
+  error: string;
+  onConfirm: (inputs: TenderEvidenceItemInput[]) => Promise<boolean>;
+  onCancel: () => Promise<boolean>;
+  // Closes the dialog and keeps the prepared tenders for later.
+  onHold: () => void;
 }) {
   const { t } = useTranslation();
+  const titleId = useId();
+  const card = useRef<HTMLFormElement>(null);
   const cashAttempt = attempts.find((item) => item.kind === 'cash');
   const bankAttempt = attempts.find((item) => item.kind === 'bank_manual');
   const currency = workspace.totals?.currency ?? attempts[0]?.currency ?? 'VND';
-  const [handedInput, setHandedInput] = useState(
-    () => (cashAttempt ? parseVndAmount(cashAttempt.amount) : '') ?? '',
-  );
-  const parsedHanded = Number(
-    parseVndAmount(handedInput) ?? (cashAttempt ? cashAttempt.amount : 0),
-  );
-  const changePreview = cashAttempt ? Math.max(parsedHanded - Number(cashAttempt.amount), 0) : 0;
+  const [handedInput, setHandedInput] = useState('');
+  const [reference, setReference] = useState('');
+  const [account, setAccount] = useState('');
+  const [receivedInput, setReceivedInput] = useState('');
+  const [confirmingCancel, setConfirmingCancel] = useState(false);
+  const locked = disabled || busy;
+
+  const handed = parseVndInput(handedInput);
+  const handedInvalid = handedInput.trim() !== '' && handed === null;
+  const handedShort = cashAttempt ? shortOf(handed, cashAttempt.amount) : null;
+  const cashAmount = cashAttempt ? parseVndAmount(cashAttempt.amount) : null;
+  const change =
+    handed !== null && cashAmount !== null && handedShort === false
+      ? String(BigInt(handed) - BigInt(cashAmount))
+      : null;
+
+  const received = parseVndInput(receivedInput);
+  const receivedInvalid =
+    receivedInput.trim() !== '' &&
+    (received === null || (bankAttempt ? shortOf(received, bankAttempt.amount) !== false : false));
+
+  const cashReady = !cashAttempt || (handed !== null && handedShort === false);
+  const bankReady =
+    !bankAttempt || (reference.trim() !== '' && account.trim() !== '' && !receivedInvalid);
+  const ready = cashReady && bankReady;
+
+  // Hold focus on the dialog itself while the command that opened it settles,
+  // then move it to the first evidence field once the fields are enabled.
+  useEffect(() => {
+    const root = card.current;
+    if (!root) return;
+    const focused = document.activeElement;
+    if (focused && focused !== root && root.contains(focused)) return;
+    if (locked) {
+      root.focus();
+      return;
+    }
+    (
+      root.querySelector<HTMLElement>('input:not(:disabled)') ??
+      root.querySelector<HTMLElement>('button:not(:disabled)')
+    )?.focus();
+  }, [locked]);
+
+  function trapFocus(event: KeyboardEvent<HTMLFormElement>) {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
+      onHold();
+      return;
+    }
+    if (event.key !== 'Tab' || !card.current) return;
+    const items = [...card.current.querySelectorAll<HTMLElement>(FOCUSABLE)];
+    if (items.length === 0) return;
+    const first = items[0];
+    const last = items[items.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
 
   return (
     <div className="pos-popup-backdrop">
       <form
+        ref={card}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
         className="tender-evidence pos-popup-card payment-invoice-popup"
+        onKeyDown={trapFocus}
         onSubmit={(event) => {
           event.preventDefault();
-          const form = new FormData(event.currentTarget);
-          const inputs: TenderEvidenceItemInput[] = [];
-          for (const attempt of attempts) {
-            if (attempt.kind === 'cash') {
-              inputs.push({
-                attemptId: attempt.id,
-                evidenceKind: 'cash_count',
-                handedAmount: String(form.get('handed_amount') ?? '') || undefined,
-              });
-            } else {
-              inputs.push({
-                attemptId: attempt.id,
-                evidenceKind: 'bank_manual',
-                reference: String(form.get('reference') ?? '') || undefined,
-                receivingAccount: String(form.get('receiving_account') ?? '') || undefined,
-              });
-            }
-          }
+          if (locked || !ready) return;
+          const inputs: TenderEvidenceItemInput[] = attempts.map((attempt) =>
+            attempt.kind === 'cash'
+              ? { attemptId: attempt.id, evidenceKind: 'cash_count', handedAmount: handed ?? '' }
+              : {
+                  attemptId: attempt.id,
+                  evidenceKind: 'bank_manual',
+                  reference: reference.trim(),
+                  receivingAccount: account.trim(),
+                  receivedAmount: received ?? undefined,
+                },
+          );
           void onConfirm(inputs);
         }}
       >
         <div className="pos-popup-header">
           <div>
-            <h4>{bankAttempt && !cashAttempt ? t('paymentQrTitle') : t('paymentInvoiceTitle')}</h4>
+            <h4 id={titleId}>
+              {bankAttempt && !cashAttempt ? t('paymentBankTitle') : t('paymentInvoiceTitle')}
+            </h4>
             <small className="muted">
               {workspace.order_id} · {workspace.customer?.name || t('customerWalkIn')}
             </small>
@@ -84,9 +153,9 @@ export function TenderEvidenceDialog({
           <button
             type="button"
             className="cell-edit-button"
-            disabled={disabled || busy}
-            onClick={() => void onCancel()}
-            aria-label={labels.cancel}
+            onClick={onHold}
+            aria-label={t('paymentHold')}
+            title={t('paymentHold')}
           >
             <PosIcon name="close" />
           </button>
@@ -152,121 +221,105 @@ export function TenderEvidenceDialog({
         {cashAttempt ? (
           <>
             <label>
-              {labels.handed}
+              {t('paymentHanded')}
               <input
                 className="money-input"
                 name="handed_amount"
                 inputMode="numeric"
+                autoComplete="off"
                 value={handedInput}
                 onChange={(event) => setHandedInput(event.target.value)}
-                placeholder={parseVndAmount(cashAttempt.amount) ?? cashAttempt.amount}
+                placeholder={cashAmount ?? undefined}
+                aria-invalid={handedInvalid || handedShort === true}
                 required
-                disabled={disabled || busy}
+                disabled={locked}
               />
             </label>
-            <div className="invoice-line">
+            <div className="invoice-line" aria-live="polite">
               <span>{t('paymentChange')}</span>
-              <strong>{formatMoney(String(changePreview), cashAttempt.currency)}</strong>
+              <strong>
+                {handedInvalid
+                  ? t('paymentAmountInvalid')
+                  : handedShort
+                    ? t('paymentHandedShort')
+                    : change !== null
+                      ? formatMoney(change, cashAttempt.currency)
+                      : '—'}
+              </strong>
             </div>
           </>
         ) : null}
         {bankAttempt ? (
           <>
             <div className="payment-qr-box">
-              <svg
-                className="payment-qr-svg"
-                viewBox="0 0 120 120"
-                role="img"
-                aria-label={t('paymentQrTitle')}
-              >
-                <rect width="120" height="120" rx="8" fill="#ffffff" stroke="#d5e0e8" />
-                <rect
-                  x="10"
-                  y="10"
-                  width="32"
-                  height="32"
-                  fill="none"
-                  stroke="#172d40"
-                  strokeWidth="6"
-                />
-                <rect x="20" y="20" width="12" height="12" fill="#172d40" />
-                <rect
-                  x="78"
-                  y="10"
-                  width="32"
-                  height="32"
-                  fill="none"
-                  stroke="#172d40"
-                  strokeWidth="6"
-                />
-                <rect x="88" y="20" width="12" height="12" fill="#172d40" />
-                <rect
-                  x="10"
-                  y="78"
-                  width="32"
-                  height="32"
-                  fill="none"
-                  stroke="#172d40"
-                  strokeWidth="6"
-                />
-                <rect x="20" y="88" width="12" height="12" fill="#172d40" />
-                <rect x="52" y="12" width="6" height="6" fill="#172d40" />
-                <rect x="64" y="12" width="6" height="18" fill="#172d40" />
-                <rect x="52" y="26" width="8" height="8" fill="#172d40" />
-                <rect x="12" y="52" width="18" height="6" fill="#172d40" />
-                <rect x="36" y="48" width="12" height="12" fill="#0d65a8" />
-                <rect x="54" y="46" width="16" height="16" fill="#172d40" />
-                <rect x="76" y="52" width="12" height="6" fill="#172d40" />
-                <rect x="94" y="48" width="14" height="12" fill="#172d40" />
-                <rect x="48" y="68" width="12" height="12" fill="#172d40" />
-                <rect x="66" y="68" width="18" height="6" fill="#172d40" />
-                <rect x="90" y="68" width="18" height="18" fill="#172d40" />
-                <rect x="52" y="86" width="14" height="6" fill="#172d40" />
-                <rect x="72" y="82" width="12" height="14" fill="#172d40" />
-                <rect x="50" y="98" width="22" height="10" fill="#172d40" />
-                <rect x="80" y="102" width="28" height="6" fill="#172d40" />
-              </svg>
               <div className="payment-qr-info">
                 <strong>{formatMoney(bankAttempt.amount, bankAttempt.currency)}</strong>
                 <span>
                   {t('paymentTransferContent')}: <strong>{workspace.order_id}</strong>
                 </span>
-                <small className="muted">{t('paymentQrCaption')}</small>
+                <small className="muted">{t('paymentBankCaption')}</small>
               </div>
             </div>
             <div className="payment-bank-fields">
               <label>
-                {labels.reference}
+                {t('paymentReference')}
                 <input
                   name="reference"
-                  defaultValue={`CK-${workspace.order_id}`}
+                  autoComplete="off"
+                  value={reference}
+                  onChange={(event) => setReference(event.target.value)}
                   required
-                  disabled={disabled || busy}
+                  disabled={locked}
                 />
               </label>
               <label>
-                {labels.account}
+                {t('paymentAccount')}
                 <input
                   name="receiving_account"
-                  defaultValue="VCB - ParkViet POS"
+                  autoComplete="off"
+                  value={account}
+                  onChange={(event) => setAccount(event.target.value)}
                   required
-                  disabled={disabled || busy}
+                  disabled={locked}
                 />
+              </label>
+              <label>
+                {t('paymentReceivedAmount')}
+                <input
+                  className="money-input"
+                  name="received_amount"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  value={receivedInput}
+                  onChange={(event) => setReceivedInput(event.target.value)}
+                  placeholder={parseVndAmount(bankAttempt.amount) ?? undefined}
+                  aria-invalid={receivedInvalid}
+                  aria-describedby={`${titleId}-received`}
+                  disabled={locked}
+                />
+                <small className="muted" id={`${titleId}-received`}>
+                  {receivedInvalid ? t('paymentReceivedInvalid') : t('paymentReceivedHint')}
+                </small>
               </label>
             </div>
           </>
         ) : null}
+        {error ? (
+          <p className="error" role="alert">
+            {error}
+          </p>
+        ) : null}
         <div className="payment-popup-actions">
-          <button className="checkout-submit" type="submit" disabled={disabled || busy}>
+          <button className="checkout-submit" type="submit" disabled={locked || !ready}>
             {t('paymentFinish')}
           </button>
-          <button type="button" disabled={disabled || busy} onClick={() => window.print()}>
+          <button type="button" disabled={locked} onClick={() => window.print()}>
             {t('paymentPrint')}
           </button>
           <button
             type="button"
             className="primary-button"
-            disabled={disabled || busy}
+            disabled={locked || !ready}
             onClick={(event) => {
               window.print();
               event.currentTarget.form?.requestSubmit();
@@ -274,6 +327,35 @@ export function TenderEvidenceDialog({
           >
             {t('paymentPrintAndFinish')}
           </button>
+        </div>
+        <div className="payment-popup-secondary">
+          <button type="button" onClick={onHold}>
+            {t('paymentHoldAction')}
+          </button>
+          {confirmingCancel ? (
+            <fieldset className="payment-cancel-confirm">
+              <legend>{t('paymentCancelConfirm', { count: attempts.length })}</legend>
+              <button
+                type="button"
+                className="danger-button"
+                disabled={locked}
+                onClick={() =>
+                  void onCancel().then((done) => {
+                    if (!done) setConfirmingCancel(false);
+                  })
+                }
+              >
+                {t('paymentCancelYes')}
+              </button>
+              <button type="button" onClick={() => setConfirmingCancel(false)}>
+                {t('paymentCancelNo')}
+              </button>
+            </fieldset>
+          ) : (
+            <button type="button" disabled={locked} onClick={() => setConfirmingCancel(true)}>
+              {t('paymentCancel')}
+            </button>
+          )}
         </div>
       </form>
     </div>

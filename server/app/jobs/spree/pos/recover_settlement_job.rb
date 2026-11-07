@@ -2,17 +2,46 @@
 
 module Spree
   module Pos
-    # Recovery sweep: surfaces workspaces stuck with prepared/unknown tenders
-    # or completed money without placement, for staff attention. It never
-    # charges or completes anything on its own.
+    # Recovery sweep: surfaces money that is stuck for staff attention —
+    # prepared/unknown tenders, funds that already cover an order that was
+    # never placed, and payouts still awaiting an outcome. It never charges,
+    # completes or releases anything on its own, and raises each item once.
     class RecoverSettlementJob < ApplicationJob
       queue_as :default
 
+      STALE_AFTER = 15.minutes
+
       def perform
-        TenderAttempt.unresolved.where('created_at < ?', 15.minutes.ago).find_each do |attempt|
-          OutboxEntry.record!(store: attempt.store, event_type: 'tender.attention', aggregate: attempt,
-                              payload: { 'attempt_id' => attempt.prefixed_id, 'workspace_id' => attempt.workspace.prefixed_id })
+        cutoff = STALE_AFTER.ago
+        TenderAttempt.unresolved.where(created_at: ...cutoff).includes(:workspace).find_each do |attempt|
+          raise_once(attempt.store_id, 'tender.attention', attempt,
+                     'attempt_id' => attempt.prefixed_id, 'workspace_id' => attempt.workspace.prefixed_id)
         end
+        completion_pending(cutoff).each do |workspace|
+          raise_once(workspace.store_id, 'workspace.completion_pending', workspace,
+                     'workspace_id' => workspace.prefixed_id, 'order_id' => workspace.order.prefixed_id)
+        end
+        LiabilityPayout.where(status: %w[requested reserved unknown]).where(updated_at: ...cutoff).find_each do |payout|
+          raise_once(payout.store_id, 'liability_payout.attention', payout, 'payout_id' => payout.prefixed_id)
+        end
+      end
+
+      private
+
+      def completion_pending(cutoff)
+        covered = FundsAllocation.where(status: 'active').group(:workspace_id).sum(:amount)
+        Workspace.where(id: covered.keys, operational_status: 'editing').where(updated_at: ...cutoff).
+          includes(:order).select do |workspace|
+          order = workspace.order
+          order.total.positive? && covered[workspace.id] >= order.total && !order.placed? && !order.completed?
+        end
+      end
+
+      def raise_once(store_id, event_type, aggregate, payload)
+        return if OutboxEntry.exists?(event_type: event_type, aggregate_type: aggregate.class.name, aggregate_id: aggregate.id)
+
+        OutboxEntry.create!(store_id: store_id, event_type: event_type, aggregate_type: aggregate.class.name,
+                            aggregate_id: aggregate.id, payload: payload, status: 'pending', available_at: Time.current)
       end
     end
   end

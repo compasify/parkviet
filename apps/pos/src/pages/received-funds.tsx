@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LiabilityPayoutDialog } from '../components/liability-payout-dialog';
+import { LocalFinancialRecords } from '../components/local-financial-records';
 import { PosIcon } from '../components/pos-icon';
 import { PageState, PosPage } from '../components/pos-page';
 import { usePosSelection } from '../components/pos-selection';
@@ -89,6 +90,9 @@ function FundsLedger({ attentionOnly }: { attentionOnly: boolean }) {
 
   return (
     <PosPage title={title} description={t(attentionOnly ? 'fundsAttentionHint' : 'fundsHint')}>
+      {attentionOnly && data ? (
+        <LocalFinancialRecords staffId={data.staff.id} storeId={data.store.id} />
+      ) : null}
       {context.isPending ? (
         <PageState kind="loading" title={t('contextWaiting')} />
       ) : !canRead ? (

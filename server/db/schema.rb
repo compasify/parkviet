@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_07_100000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_07_110000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -2327,7 +2327,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_100000) do
   create_table "spree_pos_cash_movements", force: :cascade do |t|
     t.bigint "store_id", null: false
     t.bigint "branch_id", null: false
-    t.bigint "register_id", null: false
+    t.bigint "register_id"
     t.bigint "shift_id", null: false
     t.bigint "received_funds_id"
     t.bigint "liability_payout_id"
@@ -2564,7 +2564,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_100000) do
     t.bigint "store_id", null: false
     t.bigint "workspace_id"
     t.bigint "branch_id", null: false
-    t.bigint "register_id", null: false
+    t.bigint "register_id"
     t.bigint "shift_id", null: false
     t.bigint "tender_attempt_id"
     t.bigint "actor_id", null: false
@@ -2579,6 +2579,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_100000) do
     t.datetime "received_at", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "receiving_account", limit: 120
+    t.string "custody", limit: 16, default: "drawer", null: false
+    t.string "custody_note", limit: 200
     t.index ["actor_id"], name: "index_spree_pos_received_funds_on_actor_id"
     t.index ["branch_id"], name: "index_spree_pos_received_funds_on_branch_id"
     t.index ["register_id"], name: "index_spree_pos_received_funds_on_register_id"
@@ -2589,6 +2592,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_100000) do
     t.index ["tender_attempt_id"], name: "index_spree_pos_received_funds_on_tender_attempt_id"
     t.index ["workspace_id", "status"], name: "idx_pos_received_funds_workspace"
     t.index ["workspace_id"], name: "index_spree_pos_received_funds_on_workspace_id"
+    t.check_constraint "custody::text = ANY (ARRAY['drawer'::character varying, 'held'::character varying]::text[])", name: "chk_pos_received_funds_custody"
     t.check_constraint "handed_amount >= 0::numeric AND applied_amount >= 0::numeric AND change_amount >= 0::numeric AND received_net >= 0::numeric", name: "chk_pos_received_funds_amounts"
     t.check_constraint "kind::text = ANY (ARRAY['cash'::character varying::text, 'bank_manual'::character varying::text])", name: "chk_pos_received_funds_kind"
     t.check_constraint "status::text = ANY (ARRAY['received'::character varying::text, 'attention'::character varying::text])", name: "chk_pos_received_funds_status"
@@ -2687,7 +2691,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_100000) do
     t.bigint "store_id", null: false
     t.bigint "workspace_id", null: false
     t.bigint "branch_id", null: false
-    t.bigint "register_id", null: false
+    t.bigint "register_id"
     t.bigint "shift_id", null: false
     t.bigint "pos_payment_method_id", null: false
     t.bigint "actor_id", null: false

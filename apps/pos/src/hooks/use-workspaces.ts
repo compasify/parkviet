@@ -527,21 +527,6 @@ export function useWorkspaces(
         throw error;
       }
     },
-    async handover(workspace: PosWorkspace) {
-      try {
-        const key = crypto.randomUUID();
-        const result = await session.request<{ data: PosWorkspace }>(
-          'POST',
-          `/pos/workspaces/${workspace.id}/handover`,
-          { body: { idempotency_key: key }, idempotencyKey: key },
-        );
-        await refresh();
-        return result.data;
-      } catch (error) {
-        abandonIfNeeded(error);
-        throw error;
-      }
-    },
     rememberedIds() {
       if (!staffId || !storeId) return [];
       return readLayout(staffId, storeId)?.openWorkspaceIds ?? [];
