@@ -19,9 +19,10 @@ module Spree
       class ConfirmPayout
         AWAITING = %w[reserved unknown].freeze
 
-        def self.call(store:, staff:, key:, refund_id:, evidence_kind:, reference: nil, approval_id: nil)
+        def self.call(store:, staff:, key:, refund_id:, evidence_kind:, reference: nil, approval_id: nil, paid_from: nil)
           payload = { 'command' => 'refund.confirm', 'refund_id' => refund_id.to_s, 'evidence_kind' => evidence_kind.to_s,
-                      'reference' => reference.to_s.strip.presence, 'approval_id' => approval_id.to_s.presence }
+                      'reference' => reference.to_s.strip.presence, 'approval_id' => approval_id.to_s.presence,
+                      'paid_from' => paid_from.to_s.presence }
           authorize = lambda do
             request = Guard.request!(store, refund_id)
             raise CanCan::AccessDenied unless Guard.allows?(store, staff, request.branch, Capabilities::RETURN, Capabilities::RESOLVE)
@@ -32,7 +33,10 @@ module Spree
             raise Conflict, 'Refund evidence does not match the refund method.' unless evidence_kind.to_s == expected
             raise Conflict, 'A bank refund needs the transfer reference.' if expected == 'bank_manual' && reference.to_s.strip.blank?
 
-            drawer = expected == 'cash_count' ? open_drawer!(store, staff, request.branch) : nil
+            from_drawer = expected == 'cash_count' && CustodyPayout.drawer?(request.received_funds, paid_from, reference)
+            drawer = from_drawer ? open_drawer!(store, staff, request.branch) : nil
+            paid_from_metadata = expected == 'cash_count' ? CustodyPayout.metadata(from_drawer) : {}
+            ShiftBarrier.hold!(drawer) if drawer # shift close barrier, before the funds lock
             funds = request.received_funds
             funds.with_lock do
               request.lock!
@@ -41,7 +45,7 @@ module Spree
               approval = approve!(store, staff, request, approval_id)
               PayoutEvidence.create!(store: store, refund_request: request, actor: staff, kind: expected,
                                      reference: reference.to_s.strip.presence, attested_at: Time.current,
-                                     metadata: { approval_id: approval&.prefixed_id })
+                                     metadata: { approval_id: approval&.prefixed_id }.merge(paid_from_metadata))
               if drawer
                 CashMovement.create!(
                   store: store, branch: drawer.branch, register: drawer.register, shift: drawer, received_funds: funds,

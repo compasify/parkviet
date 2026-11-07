@@ -28,12 +28,14 @@ module Spree
 
       # Records an approval may be bound to. Each carries its own revision, so
       # a changed subject invalidates the approval.
-      SUBJECTS = %w[Spree::Pos::Workspace Spree::Pos::ReturnOperation Spree::Pos::RefundRequest].freeze
+      SUBJECTS = %w[Spree::Pos::Workspace Spree::Pos::ReturnOperation Spree::Pos::RefundRequest Spree::Pos::Shift].freeze
       # Who may ask for an approval at the branch: sellers, and return staff
       # for returns and refunds.
       REQUESTER_CAPABILITIES = {
         'Spree::Pos::ReturnOperation' => [Capabilities::RETURN],
-        'Spree::Pos::RefundRequest' => [Capabilities::RETURN]
+        'Spree::Pos::RefundRequest' => [Capabilities::RETURN],
+        # A shift close variance: the cashier, or a manager closing for them.
+        'Spree::Pos::Shift' => [Capabilities::OPEN_SHIFT, Capabilities::RECOVER]
       }.freeze
 
       def consume!(action:, amount:, currency:, revision:, subject:, requester:)

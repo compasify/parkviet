@@ -1,0 +1,87 @@
+# frozen_string_literal: true
+
+module Spree
+  module Pos
+    module Reports
+      # Placed POS orders by sale time, and returns received at the branch by
+      # return time, as two sections. Sales are not receipts: a credit sale
+      # counts in full here and its debt appears under receivables. Returns
+      # never reduce the sale rows; the summary shows them separately.
+      class Sales < Base
+        ENUMS = { 'section' => %w[sales returns] }.freeze
+        COLUMNS = %w[order_number sold_at register shift_id cashier item_total adjustment_total total currency].freeze
+        RETURN_COLUMNS = %w[return_id order_number returned_at sale_branch receiver entitlement_total credit_note_amount
+                            refund_entitlement currency].freeze
+
+        def returns?
+          filters['section'] == 'returns'
+        end
+
+        def columns
+          returns? ? RETURN_COLUMNS : COLUMNS
+        end
+
+        def relation
+          returns? ? returns.order(received_at: :desc, id: :desc) : sales.order('spree_orders.completed_at DESC, spree_orders.id DESC')
+        end
+
+        def rows(records)
+          returns? ? return_rows(records) : sale_rows(records)
+        end
+
+        def summary
+          sales_total = sales.sum('spree_orders.total')
+          returns_total = returns.sum(:entitlement_total)
+          { orders: sales.count, sales_total: money(sales_total), returns: returns.count,
+            returns_total: money(returns_total), net_sales: money(sales_total - returns_total) }
+        end
+
+        private
+
+        def sales
+          workspaces = Workspace.where(branch_id: branch.id).where(shift_id: scope.shifts.select(:id))
+          workspaces = workspaces.where(register_id: filters.register.id) if filters.register
+          workspaces = workspaces.where(shift_id: filters.shift.id) if filters.shift
+          workspaces = workspaces.where(shift_id: Shift.where(owner_id: filters.cashier.id).select(:id)) if filters.cashier
+          within_range(Spree::Order.complete.where(id: workspaces.select(:order_id)), 'spree_orders.completed_at')
+        end
+
+        def returns
+          scope_rows = ReturnOperation.where(branch_id: branch.id, status: 'received')
+          scope_rows = scope_rows.where(receiver_id: scope.staff.id) unless scope.full?
+          scope_rows = scope_rows.where(receiver_id: filters.cashier.id) if filters.cashier
+          # Returns carry no drawer or shift; those filters select the sales they came from.
+          if filters.register || filters.shift
+            origin = Workspace.all
+            origin = origin.where(register_id: filters.register.id) if filters.register
+            origin = origin.where(shift_id: filters.shift.id) if filters.shift
+            scope_rows = scope_rows.where(workspace_id: origin.select(:id))
+          end
+          within_range(scope_rows, 'spree_pos_return_operations.received_at')
+        end
+
+        def sale_rows(orders)
+          workspaces = Workspace.where(order_id: orders.map(&:id)).includes(:register, shift: :owner).index_by(&:order_id)
+          orders.map do |order|
+            workspace = workspaces[order.id]
+            { order_number: order.number, sold_at: local(order.completed_at), register: workspace&.register&.code,
+              shift_id: workspace&.shift&.prefixed_id, cashier: StaffName.call(workspace&.shift&.owner),
+              item_total: money(order.item_total), adjustment_total: money(order.adjustment_total),
+              total: money(order.total), currency: order.currency }
+          end
+        end
+
+        def return_rows(operations)
+          ActiveRecord::Associations::Preloader.new(records: operations, associations: %i[order sale_branch receiver]).call
+          operations.map do |operation|
+            { return_id: operation.prefixed_id, order_number: operation.order.number,
+              returned_at: local(operation.received_at), sale_branch: operation.sale_branch.code,
+              receiver: StaffName.call(operation.receiver), entitlement_total: money(operation.entitlement_total),
+              credit_note_amount: money(operation.credit_note_amount),
+              refund_entitlement: money(operation.refund_entitlement), currency: operation.currency }
+          end
+        end
+      end
+    end
+  end
+end

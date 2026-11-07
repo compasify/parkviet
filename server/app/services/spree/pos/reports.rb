@@ -1,0 +1,31 @@
+# frozen_string_literal: true
+
+module Spree
+  module Pos
+    # Server-side POS reports. Each report keeps its own date meaning: sales
+    # by the order's completed time, returns by when goods came back, receipts
+    # by when money actually arrived (booked time shown separately), the
+    # cashbook by shift, receivables as of today from the ledger, closures by
+    # close time. Dates are days in the branch's timezone.
+    module Reports
+      TYPES = %w[sales receipts cashbook receivables closures].freeze
+
+      def self.klass(type)
+        case type.to_s
+        when 'sales' then Sales
+        when 'receipts' then Receipts
+        when 'cashbook' then Cashbook
+        when 'receivables' then Receivables
+        when 'closures' then Closures
+        else raise ActiveRecord::RecordNotFound
+        end
+      end
+
+      # `values` are raw request strings; unknown keys are rejected.
+      def self.build(type, scope:, values:)
+        report = klass(type)
+        report.new(scope: scope, filters: Filters.new(scope: scope, values: values, report: report))
+      end
+    end
+  end
+end

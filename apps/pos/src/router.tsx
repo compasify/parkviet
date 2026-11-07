@@ -13,11 +13,13 @@ import { LoginPage } from './pages/login';
 import { OrdersPage } from './pages/orders';
 import { ReceivablesPage } from './pages/receivables';
 import { PaymentAttentionPage, ReceivedFundsPage } from './pages/received-funds';
+import { ReportsPage } from './pages/reports';
 import { ReturnExchangePage } from './pages/return-exchange';
 import { SalePage } from './pages/sale';
 import { BranchProductsPage } from './pages/settings/branch-products';
 import { LabelFormatsPage } from './pages/settings/label-formats';
 import { TopologyPage } from './pages/settings/topology';
+import { ShiftsPage } from './pages/shifts';
 
 const rootRoute = createRootRoute({
   component: () => <Outlet />,
@@ -69,6 +71,11 @@ const labelFormatsRoute = createRoute({
 const fundsRoute = createRoute({
   getParentRoute: () => authedRoute,
   path: '/funds',
+  // The received funds to open, when a shift close checklist links to it.
+  validateSearch: (search: Record<string, unknown>): { fundsId?: string } =>
+    typeof search.fundsId === 'string' && /^[\w-]{1,64}$/.test(search.fundsId)
+      ? { fundsId: search.fundsId }
+      : {},
   component: ReceivedFundsPage,
 });
 
@@ -117,6 +124,19 @@ const attentionRoute = createRoute({
   component: PaymentAttentionPage,
 });
 
+// Shift close, drawer cash and reports.
+const shiftsRoute = createRoute({
+  getParentRoute: () => authedRoute,
+  path: '/shifts',
+  component: ShiftsPage,
+});
+
+const reportsRoute = createRoute({
+  getParentRoute: () => authedRoute,
+  path: '/reports',
+  component: ReportsPage,
+});
+
 export const router = createRouter({
   routeTree: rootRoute.addChildren([
     loginRoute,
@@ -132,6 +152,8 @@ export const router = createRouter({
       attentionRoute,
       ordersRoute,
       returnsRoute,
+      shiftsRoute,
+      reportsRoute,
     ]),
   ]),
   basepath: '/pos',

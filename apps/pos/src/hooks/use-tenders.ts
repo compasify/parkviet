@@ -276,6 +276,7 @@ export function useLiabilityPayouts(staffId: string | null, storeId: string | nu
       approvalId?: string;
       evidenceKind?: string;
       reference?: string;
+      paidFrom?: 'custody';
       outcome?: string;
     }) => {
       if (input.action === 'request') {
@@ -298,7 +299,11 @@ export function useLiabilityPayouts(staffId: string | null, storeId: string | nu
           input.funds,
           'liability_payout.confirm',
           `/pos/received_funds/${input.funds.id}/payouts/${input.payoutId}/confirm`,
-          { evidence_kind: input.evidenceKind, reference: input.reference || undefined },
+          {
+            evidence_kind: input.evidenceKind,
+            reference: input.reference || undefined,
+            paid_from: input.paidFrom,
+          },
         );
       }
       return run(

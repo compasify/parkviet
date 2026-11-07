@@ -94,6 +94,34 @@ Rails.application.routes.draw do
               end
             end
             resources :shifts, only: [:index, :show, :create]
+            # Shift close, drawer cash, late-cash reconciliation, reports and exports.
+            resources :shifts, only: [] do
+              member do
+                get 'closure', to: 'shifts/closures#show'
+                post 'count', to: 'shifts/closures#count'
+                post 'close', to: 'shifts/closures#create'
+                post 'close_approval', to: 'shifts/closures#approve'
+                get 'cash_movements', to: 'shifts/cash_movements#index'
+                post 'cash_movements', to: 'shifts/cash_movements#create'
+              end
+            end
+            get 'shift_closures/pending', to: 'shifts/closures#pending'
+            get 'shift_closures/open', to: 'shifts/closures#open'
+            get 'cash_reconciliations/candidates', to: 'cash_reconciliations#candidates'
+            resources :cash_reconciliations, only: [:index, :create]
+            get 'reports/:report', to: 'reports#show', as: :report, constraints: { report: /sales|receipts|cashbook|receivables|closures/ }
+            resources :exports, only: [:index, :show, :create] do
+              member do
+                post :download_link
+              end
+            end
+            get 'export_files/:token', to: 'export_files#show', as: :export_file, format: false
+            resources :cash_movement_requests, only: [:index], controller: 'shifts/cash_movement_requests' do
+              member do
+                post :confirm
+                post :cancel
+              end
+            end
             resources :approvals, only: [:index, :show, :create] do
               member do
                 post :revoke

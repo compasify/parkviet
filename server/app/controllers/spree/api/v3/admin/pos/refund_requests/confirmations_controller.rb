@@ -19,7 +19,8 @@ module Spree
 
                 data = Spree::Pos::Refunds::ConfirmPayout.call(
                   store: current_store, staff: current_user, key: key, refund_id: params[:refund_request_id],
-                  evidence_kind: params[:evidence_kind], reference: params[:reference], approval_id: params[:approval_id]
+                  evidence_kind: params[:evidence_kind], reference: params[:reference], approval_id: params[:approval_id],
+                  paid_from: params[:paid_from]
                 )
                 render json: { data: data }
               end

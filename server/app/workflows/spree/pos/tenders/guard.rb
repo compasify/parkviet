@@ -28,9 +28,11 @@ module Spree
           raise Conflict, 'Order is already placed.' if workspace.order.completed? || workspace.order.placed?
         end
 
+        # Takes the shift close barrier (after the workspace lock, before any
+        # funds or order lock), so tender, allocation and completion commands
+        # serialize with closing the drawer and fail with `shift_closed` after it.
         def validate_open_shift!(workspace)
-          shift = workspace.shift
-          raise Conflict, 'Shift is not open.' unless shift.status == 'open'
+          ShiftBarrier.hold!(workspace.shift)
         end
 
         def tracked_guard!(workspace)

@@ -13,14 +13,15 @@ module Spree
     # custody is reconciled.
     class RecordUnsolicitedFunds
       def self.call(store:, staff:, key:, branch_id:, shift_id:, kind:, handed_amount:, reference: nil,
-                    receiving_account: nil, custody: nil, custody_note: nil, workspace_id: nil)
+                    receiving_account: nil, custody: nil, custody_note: nil, workspace_id: nil, received_at: nil)
         handed = Record.money(handed_amount.to_s)
         custody = custody.to_s.presence || 'drawer'
         payload = {
           'command' => 'funds.record_unsolicited', 'branch_id' => branch_id.to_s, 'shift_id' => shift_id.to_s,
           'kind' => kind.to_s, 'handed_amount' => handed&.to_s('F'), 'reference' => reference.to_s.presence,
           'receiving_account' => receiving_account.to_s.presence, 'custody' => custody,
-          'custody_note' => custody_note.to_s.presence, 'workspace_id' => workspace_id.to_s.presence
+          'custody_note' => custody_note.to_s.presence, 'workspace_id' => workspace_id.to_s.presence,
+          'received_at' => received_at.to_s.presence
         }
         authorize = lambda do
           branch = branch!(store, branch_id)
@@ -44,14 +45,16 @@ module Spree
           end
           currency = workspace&.order&.currency || store.default_currency
           validate_amount!(handed, currency)
+          drawer = hold_drawer!(kind.to_s, custody, shift)
           validate_source!(kind.to_s, custody, shift, staff, reference, receiving_account, custody_note)
+          actual_at = actual_received_at(received_at, drawer, shift, kind.to_s)
 
           funds = ReceivedFunds.create!(
             store: store, workspace: workspace, branch: branch, register: shift.register, shift: shift,
             actor: staff, kind: kind.to_s, status: 'attention', handed_amount: handed, applied_amount: 0,
             change_amount: 0, received_net: handed, currency: currency, reference: reference.presence,
             receiving_account: receiving_account.presence, custody: kind.to_s == 'cash' ? custody : 'drawer',
-            custody_note: custody_note.presence, received_at: Time.current
+            custody_note: custody_note.presence, received_at: actual_at
           )
           if kind.to_s == 'cash' && custody == 'drawer'
             CashMovement.create!(
@@ -78,6 +81,36 @@ module Spree
       def self.validate_amount!(handed, currency)
         raise Conflict, 'Amount is invalid.' if handed.nil? || handed <= 0
         raise Conflict, 'Amount must be a whole amount in the currency.' unless Record.countable_money?(handed, currency)
+      end
+
+      # Fresh drawer cash takes the close barrier of the receiving shift, so it
+      # cannot land in a shift that is closing; a closed shift is refused by
+      # validate_source!.
+      def self.hold_drawer!(kind, custody, shift)
+        drawer = kind == 'cash' && custody == 'drawer'
+        ShiftBarrier.hold!(shift) if drawer && shift.open?
+        drawer
+      end
+
+      # Late evidence keeps when the money actually arrived; the row's
+      # created_at is when it was booked. Fresh drawer cash arrives now.
+      # A time without an offset is read in the branch timezone. Held cash was
+      # received during the shift it is attested on; bank evidence may be up
+      # to LATE_EVIDENCE_WINDOW old. Nothing is received in the future.
+      LATE_EVIDENCE_WINDOW = 90.days
+
+      def self.actual_received_at(value, drawer, shift, kind)
+        return Time.current if drawer || value.blank?
+
+        zone = ActiveSupport::TimeZone[shift.branch.timezone] || Time.zone
+        time = zone.parse(value.to_s)
+        earliest = kind == 'cash' ? shift.opened_at : LATE_EVIDENCE_WINDOW.ago
+        latest = kind == 'cash' && shift.closed_at ? shift.closed_at : Time.current
+        raise Conflict.new('Received time is invalid.', reason: 'received_at_invalid') if time.nil? || time < earliest || time > latest
+
+        time
+      rescue ArgumentError
+        raise Conflict.new('Received time is invalid.', reason: 'received_at_invalid')
       end
 
       def self.validate_source!(kind, custody, shift, staff, reference, receiving_account, custody_note)

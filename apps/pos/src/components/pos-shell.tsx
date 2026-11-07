@@ -60,9 +60,13 @@ function ShellFrame() {
                 ? t('ordersNav')
                 : pathname.endsWith('/returns')
                   ? t('returnsNav')
-                  : t('sellingArea');
+                  : pathname.endsWith('/shifts')
+                    ? t('shiftsNav')
+                    : pathname.endsWith('/reports')
+                      ? t('reportsNav')
+                      : t('sellingArea');
   const isSale =
-    !/\/(settings|funds|receivables|credit-accounts|credit-approvals|payment-attention|orders|returns)(\/|$)/.test(
+    !/\/(settings|funds|receivables|credit-accounts|credit-approvals|payment-attention|orders|returns|shifts|reports)(\/|$)/.test(
       pathname,
     );
   const contextPicker = useRef<HTMLDetailsElement>(null);
@@ -349,6 +353,12 @@ function ShellFrame() {
                     <Link to="/returns">{t('returnsNav')}</Link>
                   </>
                 ) : null}
+              </p>
+            ) : null}
+            {context.data && context.data.capabilities.length > 0 ? (
+              <p>
+                <Link to="/shifts">{t('shiftsNav')}</Link> ·{' '}
+                <Link to="/reports">{t('reportsNav')}</Link>
               </p>
             ) : null}
             <button type="button" onClick={logout} disabled={busy}>

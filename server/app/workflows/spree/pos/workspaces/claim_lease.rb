@@ -27,6 +27,8 @@ module Spree
               end
             end
 
+            # A draft without money left on the cashier's closed shift continues on their open one.
+            ShiftRebind.call(workspace: workspace, staff: staff)
             workspace.update!(
               lease_holder: staff,
               lease_editor_digest: editor_digest,

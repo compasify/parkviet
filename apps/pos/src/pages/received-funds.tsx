@@ -1,3 +1,4 @@
+import { useSearch } from '@tanstack/react-router';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LiabilityPayoutDialog } from '../components/liability-payout-dialog';
@@ -72,7 +73,8 @@ function FundsLedger({ attentionOnly }: { attentionOnly: boolean }) {
   const canRead =
     canResolve || (!attentionOnly && Boolean(data?.capabilities.includes('pos.payment.collect')));
   const [page, setPage] = useState(1);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const linked = useSearch({ strict: false }) as { fundsId?: string };
+  const [selectedId, setSelectedId] = useState<string | null>(linked.fundsId ?? null);
   const detailHeading = useRef<HTMLHeadingElement>(null);
   const fundsQuery = useReceivedFunds(data?.store.id ?? null, branchId, null, canRead, page);
   const detailQuery = useReceivedFundDetail(selectedId, canRead && Boolean(branchId && selectedId));
@@ -265,6 +267,7 @@ function FundsLedger({ attentionOnly }: { attentionOnly: boolean }) {
                               payoutId: payout.id,
                               evidenceKind: input.evidenceKind,
                               reference: input.reference,
+                              paidFrom: input.paidFrom,
                             })
                           }
                           onResolve={(payout, input) =>

@@ -38,7 +38,8 @@ module Spree
                 store: current_store, staff: current_user, key: key, branch_id: params[:branch_id],
                 shift_id: params[:shift_id], kind: params[:kind], handed_amount: params[:handed_amount],
                 reference: params[:reference], receiving_account: params[:receiving_account],
-                custody: params[:custody], custody_note: params[:custody_note], workspace_id: params[:workspace_id]
+                custody: params[:custody], custody_note: params[:custody_note], workspace_id: params[:workspace_id],
+                received_at: params[:received_at]
               )
               render json: { data: result }, status: :created
             end
@@ -67,7 +68,7 @@ module Spree
 
               result = Spree::Pos::LiabilityPayouts::Confirm.call(
                 store: current_store, staff: current_user, key: key, payout_id: params[:payout_id],
-                evidence_kind: params[:evidence_kind], reference: params[:reference]
+                evidence_kind: params[:evidence_kind], reference: params[:reference], paid_from: params[:paid_from]
               )
               render json: { data: result }
             end

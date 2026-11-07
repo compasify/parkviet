@@ -19,6 +19,9 @@ module Spree
       validates :status, inclusion: { in: %w[active disabled] }
       validates :return_window_days, numericality: { only_integer: true, greater_than_or_equal_to: 0, less_than_or_equal_to: 3650 },
                                      allow_nil: true
+      # Shift close: a count whose variance exceeds this needs a reason and an
+      # approval. Nil means every non-zero variance needs one.
+      validates :variance_threshold, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
       validates :timezone, format: { with: /\A[A-Za-z0-9_+\-\/]{1,64}\z/ }
       validate :locations_belong_to_store
       validate :stock_location_fixed_for_open_drafts, on: :update
@@ -44,7 +47,8 @@ module Spree
           stock_location_id: stock_location.prefixed_id,
           receiving_stock_location_id: receiving_stock_location&.prefixed_id,
           receiving_note: receiving_config['note'],
-          return_window_days: return_window_days
+          return_window_days: return_window_days,
+          variance_threshold: variance_threshold&.to_s('F')
         }
       end
 

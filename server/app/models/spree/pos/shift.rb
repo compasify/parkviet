@@ -10,6 +10,13 @@ module Spree
       belongs_to :branch, class_name: 'Spree::Pos::Branch'
       belongs_to :register, class_name: 'Spree::Pos::Register', optional: true
       belongs_to :owner, class_name: staff_class_name
+      # Shift close: the pending blind count, the immutable closing snapshot
+      # and the drawer's cash movements. A closed shift never changes again.
+      belongs_to :closing_counted_by, class_name: staff_class_name, optional: true
+      has_one :closure, class_name: 'Spree::Pos::ShiftClosure', dependent: :restrict_with_error
+      has_many :cash_movements, class_name: 'Spree::Pos::CashMovement', dependent: :restrict_with_error
+      before_update :closed_is_final
+      validates :closing_reason, length: { maximum: 200 }
 
       validates :opening_float, numericality: { greater_than_or_equal_to: 0 }
       validates :currency, :status, presence: true
@@ -30,11 +37,22 @@ module Spree
           currency: currency,
           owner_id: owner.prefixed_id,
           opened_at: opened_at&.iso8601,
+          closed_at: closed_at&.iso8601,
+          revision: revision,
+          counted: !closing_counted.nil?,
           reports: false
         }
       end
 
+      def open?
+        status == 'open'
+      end
+
       private
+
+      def closed_is_final
+        raise ActiveRecord::ReadOnlyRecord, 'A closed shift cannot change.' if status_in_database == 'closed'
+      end
 
       def same_store_drawer
         errors.add(:register, :invalid) if register && (register.store_id != store_id || register.branch_id != branch_id)

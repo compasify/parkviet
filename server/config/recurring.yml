@@ -64,6 +64,10 @@ production:
   pos_recover_return_operations:
     class: Spree::Pos::RecoverReturnOperationJob
     schedule: every 5 minutes
+  # POS report exports: delete CSV files past their 24h TTL.
+  pos_purge_expired_exports:
+    class: Spree::Pos::PurgeExpiredExportsJob
+    schedule: every hour at minute 37
   pos_dispatch_outbox:
     class: Spree::Pos::DispatchOutboxJob
     schedule: every minute

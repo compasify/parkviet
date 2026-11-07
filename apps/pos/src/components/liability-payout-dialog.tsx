@@ -24,7 +24,7 @@ export function LiabilityPayoutDialog({
   }) => Promise<PosLiabilityPayout>;
   onConfirm: (
     payout: PosLiabilityPayout,
-    input: { evidenceKind: string; reference?: string },
+    input: { evidenceKind: string; reference?: string; paidFrom?: 'custody' },
   ) => Promise<PosLiabilityPayout>;
   onResolve: (
     payout: PosLiabilityPayout,
@@ -104,7 +104,7 @@ export function LiabilityPayoutDialog({
           </p>
           {['requested', 'reserved', 'unknown'].includes(payout.status) ? (
             <div className="row">
-              {funds.kind === 'cash' ? (
+              {funds.kind === 'cash' && funds.custody !== 'held' ? (
                 <button
                   type="button"
                   disabled={disabled || busy}
@@ -120,15 +120,22 @@ export function LiabilityPayoutDialog({
                     const element = event.currentTarget;
                     const reference = String(new FormData(element).get('reference') ?? '').trim();
                     if (!reference) return;
-                    void run(() =>
-                      onConfirm(payout, { evidenceKind: 'bank_manual', reference }),
-                    ).then((done) => {
+                    // Held cash is paid from custody (safe, envelope), never from a drawer.
+                    const input =
+                      funds.kind === 'cash'
+                        ? { evidenceKind: 'cash_count', reference, paidFrom: 'custody' as const }
+                        : { evidenceKind: 'bank_manual', reference };
+                    void run(() => onConfirm(payout, input)).then((done) => {
                       if (done) element.reset();
                     });
                   }}
                 >
                   <label>
-                    {t('fundsPayoutReference')}
+                    {t(
+                      funds.kind === 'cash'
+                        ? 'fundsPayoutCustodyReference'
+                        : 'fundsPayoutReference',
+                    )}
                     <input
                       name="reference"
                       required

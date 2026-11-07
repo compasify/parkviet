@@ -22,8 +22,14 @@ module Spree
       # Preparing and receiving returns and requesting refunds. Paying a refund
       # out still needs an approval from someone else.
       RETURN = 'pos.return.process'
+      # Manual drawer movements (cash in/out, safe drop) on one's own shift.
+      CASH_MOVE = 'pos.cash.move'
+      # Reading every shift's reports at a branch (others see their own
+      # shifts only), and exporting reports.
+      REPORT_READ = 'pos.report.read'
+      REPORT_EXPORT = 'pos.report.export'
       ASSIGNABLE = [MANAGE, OPEN_SHIFT, DISCOUNT, PRICE_OVERRIDE, CUSTOMER, PAYMENT, RESOLVE, RECOVER, APPROVE, TAKEOVER,
-                    CREDIT_MANAGE, CREDIT_SELL, RETURN].freeze
+                    CREDIT_MANAGE, CREDIT_SELL, RETURN, CASH_MOVE, REPORT_READ, REPORT_EXPORT].freeze
 
       def self.sanitize(values)
         Array(values).map(&:to_s).uniq

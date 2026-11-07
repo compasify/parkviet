@@ -75,6 +75,18 @@ export function PosPage({
             {t('creditApprovalsNav')}
           </Link>
         ) : null}
+        {capabilities.length > 0 ? (
+          <>
+            <Link to="/shifts" activeProps={{ className: 'is-active', 'aria-current': 'page' }}>
+              <PosIcon name="cash" />
+              {t('shiftsNav')}
+            </Link>
+            <Link to="/reports" activeProps={{ className: 'is-active', 'aria-current': 'page' }}>
+              <PosIcon name="list" />
+              {t('reportsNav')}
+            </Link>
+          </>
+        ) : null}
         {capabilities.includes('pos.payment.resolve') ? (
           <Link
             to="/payment-attention"

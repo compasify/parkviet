@@ -12,6 +12,9 @@ export const posCapabilities = [
   ['pos.credit.sell', 'capabilityCreditSell'],
   ['pos.credit.manage', 'capabilityCreditManage'],
   ['pos.return.process', 'capabilityReturn'],
+  ['pos.cash.move', 'capabilityCashMove'],
+  ['pos.report.read', 'capabilityReportRead'],
+  ['pos.report.export', 'capabilityReportExport'],
 ] as const;
 
 export const sensitiveCapabilities = [
@@ -25,4 +28,7 @@ export const sensitiveCapabilities = [
   'pos.credit.sell',
   'pos.credit.manage',
   'pos.return.process',
+  'pos.cash.move',
+  'pos.report.read',
+  'pos.report.export',
 ];

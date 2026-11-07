@@ -312,6 +312,8 @@ export type PosReceivedFunds = {
   received_net: string;
   currency: string;
   reference: string | null;
+  // Held cash is outside any drawer; paying it out is a custody-only outflow.
+  custody?: 'drawer' | 'held';
   allocated: string;
   payout_reserved: string;
   paid_out: string;

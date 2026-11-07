@@ -1,6 +1,7 @@
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { LocationOption, StaffOption } from '../hooks/use-topology';
+import { parseVndInput } from '../lib/money';
 import { posCapabilities, sensitiveCapabilities } from '../lib/pos-capabilities';
 import type { PosBranch, PosMembership } from '../lib/pos-context';
 import { posFailureKey } from '../lib/request-failure';
@@ -17,6 +18,8 @@ export type TopologyDraft = {
   receiving_note?: string | null;
   // Days a sale stays returnable at the branch; blank keeps returns off.
   return_window_days?: string | number | null;
+  // Closing variance above this needs an approval; blank means any variance does.
+  variance_threshold?: string | null;
   branch_id?: string;
   staff_id?: string;
   capabilities?: string[];
@@ -99,6 +102,14 @@ export function TopologyEditor({
       setError(t('adminReturnWindowInvalid'));
       return;
     }
+    const thresholdText = String(draft.variance_threshold ?? '')
+      .trim()
+      .replace(/\.0+$/, '');
+    const threshold = thresholdText === '' ? null : parseVndInput(thresholdText);
+    if (kind === 'branches' && thresholdText !== '' && threshold === null) {
+      setError(t('adminVarianceThresholdInvalid'));
+      return;
+    }
     const body =
       kind === 'memberships'
         ? record.id
@@ -121,6 +132,7 @@ export function TopologyEditor({
                 String(draft.return_window_days ?? '').trim() === ''
                   ? null
                   : Number(String(draft.return_window_days).trim()),
+              variance_threshold: threshold,
             };
     setBusy(true);
     setError('');
@@ -281,6 +293,18 @@ export function TopologyEditor({
                   onChange={(event) => set('return_window_days', event.target.value)}
                 />
                 <small id="return-window-hint">{t('adminReturnWindowHint')}</small>
+              </label>
+              <label>
+                {t('adminVarianceThreshold')}
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={20}
+                  value={String(draft.variance_threshold ?? '').replace(/\.0+$/, '')}
+                  aria-describedby="variance-threshold-hint"
+                  onChange={(event) => set('variance_threshold', event.target.value)}
+                />
+                <small id="variance-threshold-hint">{t('adminVarianceThresholdHint')}</small>
               </label>
               <label>
                 {t('adminReceivingNote')}

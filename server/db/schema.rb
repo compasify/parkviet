@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_07_135000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_07_150000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -2319,11 +2319,41 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_135000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer "return_window_days"
+    t.decimal "variance_threshold", precision: 19, scale: 4
     t.index ["stock_location_id"], name: "index_spree_pos_branches_on_stock_location_id"
     t.index ["store_id", "code"], name: "index_spree_pos_branches_on_store_id_and_code", unique: true
     t.index ["store_id"], name: "index_spree_pos_branches_on_store_id"
     t.check_constraint "return_window_days IS NULL OR return_window_days >= 0 AND return_window_days <= 3650", name: "chk_pos_branches_return_window"
     t.check_constraint "status::text = ANY (ARRAY['active'::character varying::text, 'disabled'::character varying::text])", name: "chk_spree_pos_branches_status"
+    t.check_constraint "variance_threshold IS NULL OR variance_threshold >= 0::numeric", name: "chk_pos_branches_variance_threshold"
+  end
+
+  create_table "spree_pos_cash_movement_requests", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "branch_id", null: false
+    t.bigint "shift_id", null: false
+    t.bigint "requester_id", null: false
+    t.bigint "confirmer_id"
+    t.bigint "cash_movement_id"
+    t.string "kind", limit: 16, null: false
+    t.string "status", limit: 16, default: "requested", null: false
+    t.decimal "amount", precision: 19, scale: 4, null: false
+    t.string "currency", limit: 16, null: false
+    t.string "reason", limit: 200, null: false
+    t.string "evidence_reference", limit: 120, null: false
+    t.string "resolution_note", limit: 200
+    t.datetime "resolved_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["branch_id", "status"], name: "idx_pos_cash_movement_requests_branch"
+    t.index ["cash_movement_id"], name: "index_spree_pos_cash_movement_requests_on_cash_movement_id", unique: true, where: "(cash_movement_id IS NOT NULL)"
+    t.index ["requester_id"], name: "index_spree_pos_cash_movement_requests_on_requester_id"
+    t.index ["shift_id"], name: "index_spree_pos_cash_movement_requests_on_shift_id"
+    t.index ["store_id"], name: "index_spree_pos_cash_movement_requests_on_store_id"
+    t.check_constraint "(status::text = 'confirmed'::text) = (cash_movement_id IS NOT NULL)", name: "chk_pos_cash_movement_requests_movement"
+    t.check_constraint "amount > 0::numeric", name: "chk_pos_cash_movement_requests_amount"
+    t.check_constraint "kind::text = ANY (ARRAY['cash_out'::character varying, 'safe_drop'::character varying]::text[])", name: "chk_pos_cash_movement_requests_kind"
+    t.check_constraint "status::text = ANY (ARRAY['requested'::character varying, 'confirmed'::character varying, 'canceled'::character varying]::text[])", name: "chk_pos_cash_movement_requests_status"
   end
 
   create_table "spree_pos_cash_movements", force: :cascade do |t|
@@ -2342,8 +2372,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_135000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "refund_request_id"
+    t.string "reason", limit: 200
+    t.string "evidence_reference", limit: 120
+    t.bigint "cash_reconciliation_id"
     t.index ["actor_id"], name: "index_spree_pos_cash_movements_on_actor_id"
     t.index ["branch_id"], name: "index_spree_pos_cash_movements_on_branch_id"
+    t.index ["cash_reconciliation_id"], name: "index_spree_pos_cash_movements_on_cash_reconciliation_id", unique: true, where: "(cash_reconciliation_id IS NOT NULL)"
     t.index ["liability_payout_id"], name: "index_spree_pos_cash_movements_on_liability_payout_id"
     t.index ["received_funds_id"], name: "index_spree_pos_cash_movements_on_received_funds_id"
     t.index ["refund_request_id"], name: "index_spree_pos_cash_movements_on_refund_request_id"
@@ -2352,7 +2386,35 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_135000) do
     t.index ["shift_id"], name: "index_spree_pos_cash_movements_on_shift_id"
     t.index ["source_type", "source_id", "kind"], name: "idx_pos_cash_movements_source", unique: true
     t.index ["store_id"], name: "index_spree_pos_cash_movements_on_store_id"
-    t.check_constraint "kind::text = ANY (ARRAY['receipt'::character varying::text, 'payout'::character varying::text])", name: "chk_pos_cash_movements_kind"
+    t.check_constraint "(kind::text <> ALL (ARRAY['cash_in'::character varying, 'cash_out'::character varying, 'safe_drop'::character varying]::text[])) OR reason IS NOT NULL", name: "chk_pos_cash_movements_reason"
+    t.check_constraint "(kind::text = ANY (ARRAY['receipt'::character varying, 'cash_in'::character varying, 'reconciliation_inflow'::character varying]::text[])) AND amount > 0::numeric OR (kind::text = ANY (ARRAY['payout'::character varying, 'cash_out'::character varying, 'safe_drop'::character varying]::text[])) AND amount < 0::numeric", name: "chk_pos_cash_movements_sign"
+    t.check_constraint "kind::text = ANY (ARRAY['receipt'::character varying, 'payout'::character varying, 'cash_in'::character varying, 'cash_out'::character varying, 'safe_drop'::character varying, 'reconciliation_inflow'::character varying]::text[])", name: "chk_pos_cash_movements_kind"
+  end
+
+  create_table "spree_pos_cash_reconciliations", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "branch_id", null: false
+    t.bigint "shift_closure_id"
+    t.bigint "received_funds_id"
+    t.bigint "target_shift_id"
+    t.bigint "actor_id", null: false
+    t.string "outcome", limit: 32, null: false
+    t.decimal "amount", precision: 19, scale: 4, null: false
+    t.string "currency", limit: 16, null: false
+    t.string "reason", limit: 200, null: false
+    t.string "custody_reference", limit: 120
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["actor_id"], name: "index_spree_pos_cash_reconciliations_on_actor_id"
+    t.index ["branch_id"], name: "index_spree_pos_cash_reconciliations_on_branch_id"
+    t.index ["received_funds_id"], name: "index_spree_pos_cash_reconciliations_on_received_funds_id", unique: true, where: "(received_funds_id IS NOT NULL)"
+    t.index ["shift_closure_id"], name: "index_spree_pos_cash_reconciliations_on_shift_closure_id"
+    t.index ["store_id"], name: "index_spree_pos_cash_reconciliations_on_store_id"
+    t.index ["target_shift_id"], name: "index_spree_pos_cash_reconciliations_on_target_shift_id"
+    t.check_constraint "amount > 0::numeric", name: "chk_pos_cash_reconciliations_amount"
+    t.check_constraint "outcome::text = 'new_physical_inflow'::text AND target_shift_id IS NOT NULL OR outcome::text = 'in_opening_float'::text OR (outcome::text = ANY (ARRAY['safe'::character varying, 'handed_over'::character varying]::text[])) AND target_shift_id IS NULL", name: "chk_pos_cash_reconciliations_target"
+    t.check_constraint "outcome::text = ANY (ARRAY['in_opening_float'::character varying, 'safe'::character varying, 'handed_over'::character varying, 'new_physical_inflow'::character varying]::text[])", name: "chk_pos_cash_reconciliations_outcome"
+    t.check_constraint "shift_closure_id IS NOT NULL OR received_funds_id IS NOT NULL", name: "chk_pos_cash_reconciliations_source"
   end
 
   create_table "spree_pos_collections", force: :cascade do |t|
@@ -2512,6 +2574,28 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_135000) do
     t.index ["replacement_workspace_id"], name: "idx_on_replacement_workspace_id_5bdb19a854", unique: true
     t.index ["return_operation_id"], name: "index_spree_pos_exchange_operations_on_return_operation_id", unique: true
     t.index ["store_id"], name: "index_spree_pos_exchange_operations_on_store_id"
+  end
+
+  create_table "spree_pos_export_requests", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "branch_id", null: false
+    t.bigint "requester_id", null: false
+    t.string "report_type", limit: 32, null: false
+    t.jsonb "filters", default: {}, null: false
+    t.string "status", limit: 16, default: "queued", null: false
+    t.integer "row_count"
+    t.string "error_message", limit: 200
+    t.datetime "expires_at", null: false
+    t.datetime "completed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.boolean "full_scope", default: false, null: false
+    t.index ["branch_id"], name: "index_spree_pos_export_requests_on_branch_id"
+    t.index ["requester_id"], name: "index_spree_pos_export_requests_on_requester_id"
+    t.index ["status", "expires_at"], name: "idx_pos_export_requests_expiry"
+    t.index ["store_id"], name: "index_spree_pos_export_requests_on_store_id"
+    t.check_constraint "report_type::text = ANY (ARRAY['sales'::character varying, 'receipts'::character varying, 'cashbook'::character varying, 'receivables'::character varying, 'closures'::character varying]::text[])", name: "chk_pos_export_requests_report"
+    t.check_constraint "status::text = ANY (ARRAY['queued'::character varying, 'processing'::character varying, 'ready'::character varying, 'failed'::character varying, 'expired'::character varying]::text[])", name: "chk_pos_export_requests_status"
   end
 
   create_table "spree_pos_funds_allocations", force: :cascade do |t|
@@ -2733,6 +2817,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_135000) do
     t.string "custody", limit: 16, default: "drawer", null: false
     t.string "custody_note", limit: 200
     t.index ["actor_id"], name: "index_spree_pos_received_funds_on_actor_id"
+    t.index ["branch_id", "received_at"], name: "idx_pos_received_funds_branch_received"
     t.index ["branch_id"], name: "index_spree_pos_received_funds_on_branch_id"
     t.index ["register_id"], name: "index_spree_pos_received_funds_on_register_id"
     t.index ["shift_id", "status"], name: "idx_pos_received_funds_shift"
@@ -2923,6 +3008,40 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_135000) do
     t.check_constraint "tracked_mode::text = ANY (ARRAY['none'::character varying::text, 'serial'::character varying::text, 'lot'::character varying::text, 'serial_lot'::character varying::text])", name: "chk_pos_sale_lines_tracked"
   end
 
+  create_table "spree_pos_shift_closures", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "branch_id", null: false
+    t.bigint "register_id"
+    t.bigint "shift_id", null: false
+    t.bigint "closer_id", null: false
+    t.bigint "approver_id"
+    t.bigint "approval_id"
+    t.string "currency", limit: 16, null: false
+    t.decimal "opening_float", precision: 19, scale: 4, null: false
+    t.decimal "inflow_total", precision: 19, scale: 4, null: false
+    t.decimal "outflow_total", precision: 19, scale: 4, null: false
+    t.decimal "expected", precision: 19, scale: 4, null: false
+    t.decimal "counted", precision: 19, scale: 4, null: false
+    t.decimal "variance", precision: 19, scale: 4, null: false
+    t.decimal "variance_threshold", precision: 19, scale: 4
+    t.string "reason", limit: 200
+    t.bigint "cutoff_movement_id"
+    t.integer "movement_count", default: 0, null: false
+    t.jsonb "breakdown", default: {}, null: false
+    t.datetime "opened_at", null: false
+    t.datetime "closed_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["branch_id", "closed_at"], name: "idx_pos_shift_closures_branch_closed"
+    t.index ["closer_id"], name: "index_spree_pos_shift_closures_on_closer_id"
+    t.index ["register_id"], name: "index_spree_pos_shift_closures_on_register_id"
+    t.index ["shift_id"], name: "index_spree_pos_shift_closures_on_shift_id", unique: true
+    t.index ["store_id"], name: "index_spree_pos_shift_closures_on_store_id"
+    t.check_constraint "counted >= 0::numeric AND inflow_total >= 0::numeric AND outflow_total >= 0::numeric", name: "chk_pos_shift_closures_amounts"
+    t.check_constraint "expected = (opening_float + inflow_total - outflow_total)", name: "chk_pos_shift_closures_expected"
+    t.check_constraint "variance = (counted - expected)", name: "chk_pos_shift_closures_variance"
+  end
+
   create_table "spree_pos_shifts", force: :cascade do |t|
     t.bigint "store_id", null: false
     t.bigint "branch_id", null: false
@@ -2934,12 +3053,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_135000) do
     t.datetime "opened_at", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "revision", default: 0, null: false
+    t.decimal "closing_counted", precision: 19, scale: 4
+    t.string "closing_reason", limit: 200
+    t.bigint "closing_counted_by_id"
+    t.datetime "closing_counted_at"
+    t.datetime "closed_at"
+    t.bigint "closing_cutoff_movement_id"
     t.index ["branch_id"], name: "index_spree_pos_shifts_on_branch_id"
     t.index ["owner_id"], name: "index_spree_pos_shifts_on_owner_id"
     t.index ["register_id"], name: "idx_spree_pos_shifts_one_open_register", unique: true, where: "((status)::text = 'open'::text)"
     t.index ["register_id"], name: "index_spree_pos_shifts_on_register_id"
     t.index ["store_id", "branch_id", "owner_id"], name: "idx_spree_pos_shifts_one_open_branch_owner", unique: true, where: "(((status)::text = 'open'::text) AND (register_id IS NULL))"
     t.index ["store_id"], name: "index_spree_pos_shifts_on_store_id"
+    t.check_constraint "closing_counted IS NULL OR closing_counted >= 0::numeric", name: "chk_pos_shifts_closing_counted"
     t.check_constraint "opening_float >= 0::numeric", name: "chk_spree_pos_shifts_opening_float_nonnegative"
     t.check_constraint "status::text = ANY (ARRAY['open'::character varying::text, 'closed'::character varying::text])", name: "chk_spree_pos_shifts_status"
   end

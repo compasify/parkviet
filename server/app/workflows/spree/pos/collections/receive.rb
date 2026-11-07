@@ -35,6 +35,10 @@ module Spree
             shift = Shift.for_store(store).open_now.find_by(branch_id: branch.id, owner_id: staff.id)
             raise Conflict.new('Open your own shift before collecting debt.', reason: 'shift_required') if shift.nil?
 
+            # Close barrier before the account and funds locks; a transfer is
+            # booked on the collector's shift too, so both kinds take it.
+            ShiftBarrier.hold!(shift)
+
             duplicate_ids = if kind.to_s == 'bank_manual'
                               ReceiptReferenceGuard.check!(store: store, staff: staff, branch: branch, reference: reference,
                                                            receiving_account: receiving_account,

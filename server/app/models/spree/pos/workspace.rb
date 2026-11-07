@@ -167,12 +167,22 @@ module Spree
         BigDecimal(value.to_s).to_s('F')
       end
 
+      # The one sanctioned change of a draft's shift: ShiftRebind moving a draft
+      # without money off its cashier's closed shift.
+      def rebind_shift!(shift)
+        @shift_rebind = true
+        update!(shift: shift, register: shift.register)
+      ensure
+        @shift_rebind = false
+      end
+
       private
 
       def source_is_immutable
         return if new_record?
 
-        %w[store_id branch_id register_id shift_id order_id].each do |attribute|
+        movable = @shift_rebind ? %w[register_id shift_id] : []
+        (%w[store_id branch_id register_id shift_id order_id] - movable).each do |attribute|
           errors.add(attribute, :invalid) if will_save_change_to_attribute?(attribute)
         end
       end

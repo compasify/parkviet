@@ -616,3 +616,30 @@ kbd { padding: var(--pos-s1); border: 1px solid var(--pos-border); border-radius
 .pos-layout .pos-popup-card.refund-evidence, .pos-popup-card.refund-evidence { width: min(480px, calc(100vw - var(--pos-s6))); display: grid; gap: var(--pos-s3); }
 .checkbox-row { display: flex; align-items: flex-start; gap: var(--pos-s2); }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto; animation-duration: .01ms; transition-duration: .01ms; } }
+
+/* Shift close, drawer cash and reports */
+.pos-layout .pos-popup-card.shift-close-dialog, .pos-layout .pos-popup-card.cash-movement-dialog { width: min(560px, calc(100vw - var(--pos-s6))); max-height: calc(100vh - var(--pos-s6)); overflow: auto; display: grid; gap: var(--pos-s3); }
+.summary-grid { display: grid; grid-template-columns: max-content 1fr; gap: var(--pos-s2) var(--pos-s4); margin: 0; }
+.summary-grid dt { font-weight: 650; }
+.summary-grid dd { margin: 0; font-variant-numeric: tabular-nums; }
+.report-summary { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.report-summary > div { border: 1px solid #d8e3dc; border-radius: 8px; padding: var(--pos-s2) var(--pos-s3); }
+.wizard-steps { display: flex; flex-wrap: wrap; gap: var(--pos-s2); list-style: none; padding: 0; margin: 0; }
+.wizard-steps li { padding: 4px 10px; border-radius: 999px; border: 1px solid #b8cbc0; }
+.wizard-steps li[aria-current='step'] { font-weight: 700; border-width: 2px; border-color: #175c49; }
+.variance { font-weight: 700; font-variant-numeric: tabular-nums; }
+.variance[data-variance='short'] { color: #8c2b29; }
+.variance[data-variance='over'] { color: #835300; }
+.variance-word { text-transform: uppercase; letter-spacing: .04em; font-size: .85em; }
+.report-tabs { display: flex; flex-wrap: wrap; gap: var(--pos-s2); }
+.report-tabs [role='tab'] { background: white; color: #175c49; border: 1px solid #b8cbc0; }
+.report-tabs [role='tab'][aria-selected='true'] { background: #175c49; color: white; border-color: #175c49; text-decoration: underline; text-underline-offset: 4px; }
+.report-filters { margin-top: var(--pos-s3); }
+.report-filters label { min-width: 150px; flex: 1 1 150px; }
+.table-scroll { overflow-x: auto; }
+.report-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+.report-table th, .report-table td { text-align: left; padding: 8px; border-bottom: 1px solid #d8e3dc; vertical-align: top; }
+.report-table td.numeric { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.shift-checklist li, .late-cash .record-list li { display: flex; flex-wrap: wrap; gap: var(--pos-s2); justify-content: space-between; align-items: center; }
+.late-cash-form fieldset { padding: var(--pos-s3); }
+.segmented { display: flex; flex-wrap: wrap; gap: var(--pos-s3); }

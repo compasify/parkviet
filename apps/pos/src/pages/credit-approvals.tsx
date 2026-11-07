@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { PageState, PosPage } from '../components/pos-page';
 import { usePosSelection } from '../components/pos-selection';
 import { RefundActions } from '../components/refund-actions';
+import { ShiftApprovals } from '../components/shift-approvals';
 import { useCreditRequests, useDecideCredit } from '../hooks/use-receivables';
 import {
   useBranchReturns,
@@ -127,6 +128,20 @@ function CreditApprovals() {
         <PageState title={t('forbidden')} />
       ) : (
         <>
+          <ShiftApprovals
+            branchId={branchId}
+            actor={{ staffId: data?.staff.id ?? null, storeId: data?.store.id ?? null }}
+            locked={locked}
+            timeZone={
+              data?.branches.find((row) => row.id === branchId)?.timezone ??
+              data?.store.timezone ??
+              'Asia/Ho_Chi_Minh'
+            }
+            canConfirmCash={Boolean(
+              data?.capabilities.includes('pos.cash.move') ||
+                data?.capabilities.includes('pos.approval.grant'),
+            )}
+          />
           <ReturnApprovals branchId={branchId} locked={locked} />
           {creditApprover ? <CreditRequests branchId={branchId} locked={locked} /> : null}
         </>

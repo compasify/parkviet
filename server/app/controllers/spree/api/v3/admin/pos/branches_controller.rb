@@ -69,6 +69,8 @@ module Spree
               attrs[:receiving_config] = { 'note' => params[:receiving_note] } if params.key?(:receiving_note) || record.nil?
               # Blank turns returns off at the branch; a number of days turns them on.
               attrs[:return_window_days] = params[:return_window_days].presence if params.key?(:return_window_days)
+              # Blank means every non-zero closing variance needs an approval.
+              attrs[:variance_threshold] = params[:variance_threshold].presence if params.key?(:variance_threshold)
               attrs
             end
           end
