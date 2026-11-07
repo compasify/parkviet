@@ -1,7 +1,7 @@
 ---
 phase: 8
 title: "Giao hàng đúng kho, trả đổi và bằng chứng hoàn tiền"
-status: pending
+status: completed
 priority: P1
 dependencies: [1, 6, 7]
 effort: "Ước tính 20–32 person-days; phụ thuộc stock/precision ADR phase 1"
@@ -93,16 +93,16 @@ Inventory repo-root; không sửa gem source, names core seams chỉ chốt theo
 
 ## Success Criteria
 
-- [ ] F12, F12a, F12b, F13: đúng branch; thiếu tồn tại quầy cảnh báo không chặn, xung đột online có dấu vết/đối soát; one allocation/depletion/restock; collection/reprint không move stock.
-- [ ] F10: cả partial/full credit-sale returns đúng balance sau credit notes, no Refund cho tiền chưa nhận.
-- [ ] F11: refund chỉ sau verified payout, cap gồm reserved/unknown, retry không payout lần hai.
-- [ ] F19, F20: goods refunds và liability payouts chung parent cap, confirmed/reserved/unknown không sống lại sau collection reversal/reallocation; không fake Return/Refund cho unapplied funds.
-- [ ] F21: cumulative 1+1+3 trả đủ2 VND, tax/discount/credit-note/refund components reconcile, full-return residual không mất, race/cancel không cấp kép.
-- [ ] F14: damaged không restock; cross-branch đúng approval/location; exchange đủ linked financial/stock legs.
-- [ ] I01–I07: exact weighted/unit bán-trả, serial uniqueness, FEFO/expiry/transfer races, mutator bypass/opening balances/recall/provenance pass; không fractional integer-API writes.
-- [ ] I08: sale-to-fulfillment-to-return mapping lossless cho từng measured line cùng variant khác price/weight/lot, không gộp entitlement.
-- [ ] A02, A03, A05: IDs/force/core-refund bypass và approval reuse bị chặn.
-- [ ] W08, F16: wizard dùng thật API/evidence; cash refund hôm sau gắn receiving shift, lịch sử sale giữ nguyên.
+- [x] F12, F12a, F12b, F13: đúng branch; thiếu tồn tại quầy cảnh báo không chặn, xung đột online có dấu vết/đối soát; one allocation/depletion/restock; collection/reprint không move stock. *(Kệ thiếu khi giao ghi `StockDiscrepancy` + attention, không ép tồn âm; `reconcile_handover` theo quyền RESOLVE; giao lại/thu nợ/in lại không trừ kho thêm — `fulfillment_returns_spec.rb`.)*
+- [x] F10: cả partial/full credit-sale returns đúng balance sau credit notes, no Refund cho tiền chưa nhận. *(`credit_returns_spec.rb`: bán 1tr trả 300k nợ 700k; trả 400k → nợ 300k không hoàn; trả hết → nợ 0, quyền hoàn 300k; không tạo Refund cho tiền chưa nhận.)*
+- [x] F11: refund chỉ sau verified payout, cap gồm reserved/unknown, retry không payout lần hai. *(`refunds_spec.rb`: Refund core chỉ tạo khi xác nhận chi; cap gồm reserved/unknown; thử lại cùng key không chi lần hai; hủy chỉ người yêu cầu/người duyệt và có lý do, đã cấp duyệt thì phải qua unknown/failed có chứng từ.)*
+- [x] F19, F20: goods refunds và liability payouts chung parent cap, confirmed/reserved/unknown không sống lại sau collection reversal/reallocation; không fake Return/Refund cho unapplied funds. *(`funds_conservation_spec.rb`: hoàn hàng, liability payout và phân bổ dùng chung cap của phiếu nhận; đảo phân bổ đã hoàn bị từ chối; đảo khoản thu nợ mà quyền hoàn trả hàng phụ thuộc bị từ chối.)*
+- [x] F21: cumulative 1+1+3 trả đủ2 VND, tax/discount/credit-note/refund components reconcile, full-return residual không mất, race/cancel không cấp kép. *(`return_entitlement_spec.rb`: 5×0,4 đ trả 1+1+3 cấp đủ 2 đ; net và thuế làm tròn lũy kế riêng, tổng = net + thuế; hủy/đua reservation không cấp kép.)*
+- [x] F14: damaged không restock; cross-branch đúng approval/location; exchange đủ linked financial/stock legs. *(Hàng hỏng không nhập lại bán được (hàng truy vết vào cách ly); trả khác chi nhánh cần duyệt, nhập kho chi nhánh nhận; đổi hàng giữ phiếu trả + đơn thay thế, chênh lệch trừ phần đã hoàn.)*
+- [x] I01–I07: exact weighted/unit bán-trả, serial uniqueness, FEFO/expiry/transfer races, mutator bypass/opening balances/recall/provenance pass; không fractional integer-API writes. *(`traceable_inventory_spec.rb`, `traceable_inventory_guards_spec.rb`, `trace_race_spec.rb`: số lượng cân nguyên đơn vị cơ sở, serial một chủ, FEFO bỏ lô hết hạn/cách ly, nhập/chuyển/kiểm có duyệt, tồn đầu kỳ phải khớp, checkout website/dashboard bị chặn trước thanh toán, writer core bị chặn hoặc phát hiện lệch.)*
+- [x] I08: sale-to-fulfillment-to-return mapping lossless cho từng measured line cùng variant khác price/weight/lot, không gộp entitlement. *(Hai dòng cân cùng variant giữ SaleLine/provenance riêng qua fulfillment và trả một phần.)*
+- [x] A02, A03, A05: IDs/force/core-refund bypass và approval reuse bị chặn. *(`returns_refunds_spec.rb`, `traceability_spec.rb`: ngoài chi nhánh/thiếu quyền bị chặn, endpoint duyệt chung không tạo được duyệt trả/hoàn/kiểm kho, tham chiếu ngân hàng bị che, không dùng được `force`/refund core.)*
+- [x] W08, F16: wizard dùng thật API/evidence; cash refund hôm sau gắn receiving shift, lịch sử sale giữ nguyên. *(Wizard trả/đổi, lịch sử đơn, trang tồn kho truy vết dùng API thật trong request spec và e2e mock 3 viewport; hoàn tiền mặt hôm sau vào ca đang mở của người chi, lịch sử bán giữ nguyên. Kiểm trên API thật chuyển phase 11.)*
 
 ## Risk Assessment
 
@@ -114,3 +114,22 @@ Inventory repo-root; không sửa gem source, names core seams chỉ chốt theo
 ## Next Steps
 
 Phase 9 đối soát toàn bộ cash/debt/returns facts đã tạo; chỉ mở full retail sau báo cáo/thiết bị/security phase 9–11.
+
+## Review 07/11/2026
+
+Phase làm hai đợt, mỗi đợt có review độc lập backend/frontend; lỗi tìm thấy đã sửa và có test. Chi tiết: [trả/hoàn/đổi](./reports/phase-08-returns-implementation.md), [truy vết serial/lô](./reports/phase-08-traceability-implementation.md).
+
+- Trả/hoàn/đổi: hàng giao lúc kệ thiếu không bao giờ được trừ kho vì chỉ chủ ca chạy lại được; số tài khoản nhận hoàn lộ ở màn hình đơn đã che khách; hạn trả không kiểm lại khi nhận hàng; ai cũng hủy được yêu cầu hoàn (có thể chi hai lần); phiếu trả bỏ dở chặn mãi các lần trả sau; đảo khoản thu nợ sau khi trả hàng làm khách nợ trên hàng đã trả. Frontend: phiếu trả không mở lại được, bấm lại sau mất phản hồi tạo phiếu trùng, hoàn tiền kẹt vì thiếu hủy/không thực hiện, chênh lệch đổi hàng tính sai.
+- Truy vết: checkout website mặt hàng đang truy vết trừ tiền rồi mới bị chặn; áp kiểm kho sau duyệt đẩy lô dưới số đã bán; hủy đơn từ core bỏ kẹt allocation; dòng `serial_lot` cũ bỏ qua truy vết; cảnh báo lệch tồn chỉ phát một lần; hàng cách ly không xóa sổ được; deadlock job hết hạn với giữ serial. Frontend: mất phản hồi khi nhập/chuyển lô có thể ghi hai lần; người duyệt không vào được tab kiểm kho; trả hàng mặc định "bán lại được".
+
+## Đóng phase 07/11/2026
+
+**Kết quả:** backend POS 396 examples, 0 failures (gồm `return_entitlement_spec`, `credit_returns_spec`, `refunds_spec`, `fulfillment_returns_spec`, `return_recovery_spec`, `returns_refunds_spec`, `return_race_spec`, `traceable_inventory_spec`, `traceable_inventory_guards_spec`, `traceability_spec`, `trace_race_spec`). `apps/pos`: e2e trả/đổi và tồn kho truy vết pass trên 3 viewport.
+
+**Migration:** `20261107130000`, `20261107135000`, `20261107160000`, `20261107160100` chỉ áp database test. Development vẫn chờ sao lưu.
+
+**Seam core (Spree 6.0.2):** dùng `Spree::Returns::{Create,Approve,Receive,Cancel}` và `Spree::Refunds::Create` trên Payment của allocation chỉ khi xác nhận chi; không dùng `Spree::Returns::Refund` (tự hoàn cả phần chưa thu) và `Spree::Exchange`. Guard kho qua decorator `StockMovement`/`StockLevel` và hook cart/checkout; SQL thô chỉ phát hiện được, khi đó chặn bán tới khi kiểm kho.
+
+**Ghi chú:** đảo một phần phân bổ thu nợ đã hoàn tiền vẫn bị từ chối (spec cho phép). Hủy đơn POS có hàng truy vết từ dashboard bị từ chối, phải xử lý qua POS. Race spec dùng dữ liệu commit nên chỉ tin cậy khi suite chạy một mình.
+
+**Chuyển phase sau:** in serial/lô trên biên nhận (phase 10); kiểm trên API thật, tải lớn và đối soát kho vận hành (phase 11). Vẫn sandbox-only.

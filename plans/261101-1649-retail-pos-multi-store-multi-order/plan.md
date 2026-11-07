@@ -65,7 +65,7 @@ Theo yêu cầu tiếp tục phát triển phase tiếp theo, các vấn đề c
 | 5 | [Catalog customers and discounts](./phase-05-catalog-customers-and-discounts.md) | Completed |
 | 6 | [Split tender and settlement](./phase-06-split-tender-and-settlement.md) | Completed |
 | 7 | [Credit sales and receivables](./phase-07-credit-sales-and-receivables.md) | Completed |
-| 8 | [Inventory handover returns and exchanges](./phase-08-inventory-handover-returns-and-exchanges.md) | Pending |
+| 8 | [Inventory handover returns and exchanges](./phase-08-inventory-handover-returns-and-exchanges.md) | Completed |
 | 9 | [Shifts cashbook and reporting](./phase-09-shifts-cashbook-and-reporting.md) | Completed |
 | 10 | [Receipts customer display and devices](./phase-10-receipts-customer-display-and-devices.md) | Pending |
 | 11 | [Quality security and rollout](./phase-11-quality-security-and-rollout.md) | Pending |
@@ -84,7 +84,9 @@ Phase 6 completed 07/11/2026 (sandbox-only): review sửa lỗi payout giải ph
 
 Phase 7 completed 07/11/2026 (sandbox-only): bán chịu có duyệt theo yêu cầu, exposure khóa theo tài khoản, sổ công nợ bất biến, thu nợ một phiếu nhiều đơn; review sửa race giao hàng bán chịu, phạm vi đọc công nợ, ghi trùng phiếu thu khi thử lại; thêm trang cấu hình công nợ và trang duyệt. Đảo một phần khoản thu đã hoàn tiền chuyển phase 8; xem [mục đóng phase](./phase-07-credit-sales-and-receivables.md#đóng-phase-07112026).
 
-Phase 9 completed 07/11/2026 (sandbox-only): đóng ca có barrier chung cho mọi đường ghi tiền mặt, đếm mù, duyệt chênh lệch, đối soát tiền trễ/tiền giữ ngoài két không đếm kép, rút/nộp két hai người, báo cáo và export CSV an toàn. Phase 8 phần serial/lô/hạn dùng vẫn đang làm; xem [mục đóng phase](./phase-09-shifts-cashbook-and-reporting.md#đóng-phase-07112026).
+Phase 8 completed 07/11/2026 (sandbox-only): lịch sử đơn, trả hàng theo quyền lũy kế từng dòng, giảm nợ trước rồi mới hoàn, hoàn tiền chỉ khi xác nhận chi, đổi hàng hai vế, giao hàng khi kệ thiếu được ghi và đối soát; truy vết serial/lô/hạn dùng với FEFO, tồn đầu kỳ, nhập/chuyển/kiểm có duyệt, chặn writer core và checkout website cho hàng truy vết; xem [mục đóng phase](./phase-08-inventory-handover-returns-and-exchanges.md#đóng-phase-07112026).
+
+Phase 9 completed 07/11/2026 (sandbox-only): đóng ca có barrier chung cho mọi đường ghi tiền mặt, đếm mù, duyệt chênh lệch, đối soát tiền trễ/tiền giữ ngoài két không đếm kép, rút/nộp két hai người, báo cáo và export CSV an toàn. xem [mục đóng phase](./phase-09-shifts-cashbook-and-reporting.md#đóng-phase-07112026).
 
 ## Dependencies
 
