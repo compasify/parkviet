@@ -1,4 +1,9 @@
-import { conflictReason, financialStorageFailure, posFailureKey } from './request-failure';
+import {
+  conflictReason,
+  featureDisabledText,
+  financialStorageFailure,
+  posFailureKey,
+} from './request-failure';
 import { readLayout, writeLayout } from './workspace-storage';
 
 // Shift close, drawer movements, late-cash reconciliation and reports. Every
@@ -405,6 +410,8 @@ const SHIFT_REASONS = new Set([
 // an unknown server message never reaches the cashier verbatim.
 export function describeShiftFailure(error: unknown, translate: (key: string) => string): string {
   if (financialStorageFailure(error)) return translate('financialStorageUnavailable');
+  const disabled = featureDisabledText(error, translate);
+  if (disabled) return disabled;
   const reason = conflictReason(error);
   if (reason && SHIFT_REASONS.has(reason)) return translate(`shiftReason_${reason}`);
   const key = posFailureKey(error);

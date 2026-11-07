@@ -80,7 +80,17 @@ module Spree
           # The refusal rolled back; the unusable reservations are released and
           # audited on their own so their exposure does not linger.
           Credit::Release.stale!(workspace: workspace, actor: staff) if e.reason == Credit::STALE
+          # Credit switched off: the approved exposure is given back at once
+          # rather than held until the approval expires.
+          release_disabled_credit!(workspace, staff) if credit && e.reason == FeaturePolicy::DISABLED
           raise
+        end
+
+        def self.release_disabled_credit!(workspace, staff)
+          ApplicationRecord.transaction do
+            workspace.lock!
+            Credit::Release.call(workspace: workspace, actor: staff, reason: 'feature_disabled')
+          end
         end
 
         def self.authorize_credit!(workspace, staff)
@@ -99,6 +109,9 @@ module Spree
         # The credit part is always the whole unpaid remainder, for an
         # identified customer; a free order has nothing to sell on credit.
         def self.credit_debt!(workspace, allocated)
+          # Selling on credit can be switched off; paid sales never are.
+          # Checked before any write of the command.
+          FeaturePolicy.require!(workspace.branch, :credit)
           raise Conflict.new('Credit needs an identified customer.', reason: 'credit_customer_required') if workspace.pos_customer.nil?
 
           debt = workspace.order.total - allocated

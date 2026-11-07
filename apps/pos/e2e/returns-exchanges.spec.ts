@@ -234,7 +234,7 @@ async function mockPos(page: Page, options: { capabilities: string[]; staffId?: 
           capabilities: branch ? capabilities : [],
           branches: [{ id: 'br_1', name: 'Branch', status: 'active' }],
           registers: branch ? [{ id: 'reg_1', branch_id: 'br_1', name: 'Quầy 1', status: 'active' }] : [],
-          shift: register ? { id: 'sh_1', owner_id: staffId, opening_float: '0', currency: 'VND' } : null,
+          shift: register ? { id: 'sh_1', branch_id: 'br_1', owner_id: staffId, opening_float: '0', currency: 'VND' } : null,
           selection: { branch_id: branch, register_id: register },
         },
       });

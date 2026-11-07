@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "biome check .",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:perf": "playwright test --config tests/performance/playwright.config.ts"
   },
   "dependencies": {
     "@spree/admin-sdk": "^6.0.2",

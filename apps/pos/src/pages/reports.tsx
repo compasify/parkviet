@@ -1,5 +1,6 @@
 import { type KeyboardEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { FeatureOffNote } from '../components/feature-off-note';
 import { PageState, PosPage } from '../components/pos-page';
 import { usePosSelection } from '../components/pos-selection';
 import { VarianceText } from '../components/shift-close-dialog';
@@ -11,6 +12,7 @@ import {
   useReport,
 } from '../hooks/use-reports';
 import { formatMoney } from '../lib/money';
+import { contextFeature } from '../lib/pos-features';
 import { failureStatus } from '../lib/request-failure';
 import {
   canExportReports,
@@ -296,6 +298,8 @@ function Reports() {
   // Rows kept from a previous query are shown only for the same report view.
   const current = report.data && report.data.view === view ? report.data : null;
   const exporting = canExportReports(data?.capabilities);
+  // Off stops new exports only; files already made stay downloadable until they expire.
+  const exportsOn = contextFeature(data, 'exports');
   const exports = useExports(selection.branchId, exporting);
   const createExport = useCreateExport();
   const columns = type === 'sales' && extra.section === 'returns' ? RETURN_COLUMNS : COLUMNS[type];
@@ -531,7 +535,8 @@ function Reports() {
               {exporting ? (
                 <button
                   type="button"
-                  disabled={!rangeValid || createExport.isPending}
+                  disabled={!rangeValid || createExport.isPending || !exportsOn}
+                  aria-describedby={exportsOn ? undefined : 'exports-off'}
                   onClick={() => {
                     if (!selection.branchId) return;
                     setError('');
@@ -549,6 +554,7 @@ function Reports() {
                 </button>
               ) : null}
             </form>
+            {exporting && !exportsOn ? <FeatureOffNote feature="exports" id="exports-off" /> : null}
             {!rangeValid ? (
               <p className="error" role="alert">
                 {t('reportRangeInvalid')}

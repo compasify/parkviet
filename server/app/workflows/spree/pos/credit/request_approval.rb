@@ -18,6 +18,7 @@ module Spree
             Workspaces::Complete.authorize_credit!(workspace, staff)
           end
           CommandExecutor.call(store: workspace.store, actor: staff, key: key, payload: payload, workspace: workspace, authorize: authorize) do
+            FeaturePolicy.require!(workspace.branch, :credit)
             Tenders::Guard.validate_editor!(workspace, staff, revision, lease_generation, editor_id)
             existing = CreditRequest.find_by(workspace_id: workspace.id, workspace_revision: workspace.revision)
             next existing.to_pos if existing

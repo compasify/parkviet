@@ -21,6 +21,8 @@ module Spree
           payload = { 'command' => 'display.pin', 'session_id' => session.prefixed_id, 'workspace_id' => workspace_id.to_s,
                       'tender_attempt_id' => tender_attempt_id.to_s.presence, 'expected_generation' => expected_generation.to_s }
           run(store, staff, key, session, payload, expected_generation) do
+            # Clearing stays open when the display is switched off.
+            FeaturePolicy.require!(session.branch, :customer_display)
             workspace = Workspace.locate(Workspace.for_store(store).where(shift_id: session.shift_id), workspace_id)
             raise ActiveRecord::RecordNotFound if workspace.nil?
             raise Conflict.new('Only an open order can be shown to the customer.', reason: 'display_order_closed') unless

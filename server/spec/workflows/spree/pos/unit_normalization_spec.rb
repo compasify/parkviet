@@ -24,6 +24,17 @@ RSpec.describe Spree::Pos::UnitNormalizer do
       .to raise_error(Spree::Pos::Conflict)
   end
 
+  it 'converts through non-terminating ratios exactly' do
+    # 3 kg sold in thirds: 3 * 1000 / 3 is exactly 1000 g, never 999.99...
+    expect(described_class.call(sale_quantity: '3', variant_unit: unit(sale: 'kg', base: 'g', denominator: 3))).to eq(1000)
+    expect(described_class.call(sale_quantity: '0.006', variant_unit: unit(sale: 'kg', base: 'g', denominator: 3))).to eq(2)
+    expect(described_class.call(sale_quantity: '7', variant_unit: unit(sale: 'l', base: 'ml', numerator: 3, denominator: 7))).to eq(3000)
+    expect(described_class.call(sale_quantity: '6', variant_unit: unit(sale: 'case', base: 'chai', numerator: 1, denominator: 6))).to eq(1)
+    # 1 kg in thirds is 333.33... g: refused, not rounded.
+    expect { described_class.call(sale_quantity: '1', variant_unit: unit(sale: 'kg', base: 'g', denominator: 3)) }.to raise_error(Spree::Pos::Conflict)
+    expect { described_class.call(sale_quantity: '5', variant_unit: unit(sale: 'case', base: 'chai', denominator: 6)) }.to raise_error(Spree::Pos::Conflict)
+  end
+
   it 'rejects non-representable precision instead of rounding' do
     expect { described_class.call(sale_quantity: '1.2345', variant_unit: unit(sale: 'kg', base: 'g')) }.to raise_error(Spree::Pos::Conflict)
     expect { described_class.call(sale_quantity: '0.0001', variant_unit: unit(sale: 'kg', base: 'g')) }.to raise_error(Spree::Pos::Conflict)
@@ -39,5 +50,11 @@ RSpec.describe Spree::Pos::UnitNormalizer do
       .to raise_error(Spree::Pos::Conflict)
     # Ratio 3 sale-units = 1 price-unit: 9000 * 3 = 27000 per kg = exactly 27 per gram.
     expect(described_class.unit_price_per_base(price: BigDecimal('9000'), variant_unit: unit(sale: 'kg', base: 'g', price: 'kg', denominator: 3))).to eq(BigDecimal('27'))
+    # A case of 24 bottles at 240000 is exactly 10000 per bottle, and 250000
+    # per case is exactly 10416.6667 only to the nearest ten-thousandth: refused.
+    expect(described_class.unit_price_per_base(price: BigDecimal('240000'), variant_unit: unit(sale: 'case', base: 'chai', numerator: 24))).
+      to eq(BigDecimal('10000'))
+    expect { described_class.unit_price_per_base(price: BigDecimal('250000'), variant_unit: unit(sale: 'case', base: 'chai', numerator: 24)) }.
+      to raise_error(Spree::Pos::Conflict)
   end
 end

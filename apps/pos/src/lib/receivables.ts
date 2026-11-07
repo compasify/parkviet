@@ -133,6 +133,7 @@ export const CREDIT_CONFLICT_REASONS = [
   'exceeds_debt',
   'duplicate_reference',
   'shift_required',
+  'shift_closed',
   'tender_unresolved',
   'allocation_consumed',
   'approval_not_active',

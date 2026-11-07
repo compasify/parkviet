@@ -19,6 +19,7 @@ import { PaymentAttentionPage, ReceivedFundsPage } from './pages/received-funds'
 import { ReportsPage } from './pages/reports';
 import { ReturnExchangePage } from './pages/return-exchange';
 import { SalePage } from './pages/sale';
+import { BranchFeaturesPage } from './pages/settings/branch-features';
 import { BranchProductsPage } from './pages/settings/branch-products';
 import { LabelFormatsPage } from './pages/settings/label-formats';
 import { TopologyPage } from './pages/settings/topology';
@@ -69,6 +70,12 @@ const labelFormatsRoute = createRoute({
   getParentRoute: () => authedRoute,
   path: '/settings/branches/$branchId/label-formats',
   component: LabelFormatsPage,
+});
+
+const branchFeaturesRoute = createRoute({
+  getParentRoute: () => authedRoute,
+  path: '/settings/branches/$branchId/features',
+  component: BranchFeaturesPage,
 });
 
 const fundsRoute = createRoute({
@@ -177,6 +184,7 @@ export const router = createRouter({
       settingsRoute,
       branchProductsRoute,
       labelFormatsRoute,
+      branchFeaturesRoute,
       fundsRoute,
       receivablesRoute,
       creditAccountsRoute,

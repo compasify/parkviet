@@ -13,6 +13,7 @@ module Spree
         def issue(store:, staff:, session_id:)
           session = Guard.session!(store, staff, session_id)
           Guard.authorize_branch!(store, staff, session.branch)
+          FeaturePolicy.require!(session.branch, :customer_display)
           code = DisplayPairing.new_code
           pairing = DisplaySession.transaction do
             session.lock!
@@ -41,6 +42,8 @@ module Spree
             session = pairing.display_session
             session.lock!
             next nil unless session.revoked_at.nil? && session.usable?
+            # A display switched off at the branch pairs no new device.
+            next nil unless FeaturePolicy.enabled?(session.branch, :customer_display)
 
             pairing.update!(used_at: Time.current)
             token = session.rotate_token!

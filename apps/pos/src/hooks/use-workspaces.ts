@@ -12,6 +12,13 @@ import { readLayout, writeLayout } from '../lib/workspace-storage';
 import { useSession } from './use-session';
 
 const channel = browserWorkspaceChannel();
+
+export class DraftReplayRefused extends Error {
+  constructor() {
+    super('draft-replay-refused');
+    this.name = 'DraftReplayRefused';
+  }
+}
 // Per-page, not localStorage/sessionStorage: duplicate tabs must not share an editor.
 export const workspaceEditorId = crypto.randomUUID();
 const editorId = workspaceEditorId;
@@ -194,6 +201,14 @@ export function useWorkspaces(
         } catch {
           // A missing receipt does not prove that the original request will not commit.
         }
+      }
+      // A lost draft-create replayed after its shift closed is refused (403)
+      // instead of answered: nothing new was made, and a draft the first
+      // attempt may have made is in the list. Stop retrying and show the list.
+      if (wasUncertain && path === '/pos/workspaces' && posFailureKey(error) === 'forbidden') {
+        forgetIntent(intent);
+        void refresh();
+        throw new DraftReplayRefused();
       }
       // A fresh request rejected by the server is not a lost response. Existing
       // uncertain attempts stay until a receipt or an exact retry resolves them.

@@ -29,7 +29,7 @@ module Spree
             policy = AccessPolicy.new(store: store, staff: staff)
             raise CanCan::AccessDenied if shift.nil? || (register && !policy.can_open_shift?(register)) || !policy.permission?('write_pos_orders')
           end
-          CommandExecutor.call(store:, actor: staff, key:, payload:, authorize:) do
+          CommandExecutor.call(store:, actor: staff, key:, payload:, authorize:, replay_authorize: replay_authorize(store, staff)) do
             shift, = selection_shift.call
             raise CanCan::AccessDenied if shift.nil?
 
@@ -56,6 +56,18 @@ module Spree
             )
             AuditEntry.record!(store: store, actor: staff, action: 'workspace.create', subject: workspace)
             workspace.to_pos
+          end
+        end
+
+        # A lost response is recovered from the receipt even after the shift
+        # that allowed the draft closed, as long as the same staff member
+        # still works at that branch with the POS order permission.
+        def self.replay_authorize(store, staff)
+          lambda do |receipt|
+            policy = AccessPolicy.new(store: store, staff: staff)
+            branch = receipt.workspace&.branch
+            member = branch && policy.membership_for(branch)
+            raise CanCan::AccessDenied unless member&.status == 'active' && policy.permission?('write_pos_orders')
           end
         end
       end

@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   usePaymentMethods,
@@ -13,6 +13,7 @@ import { creditConflictKey } from '../lib/receivables';
 import { conflictReason, posFailureKey } from '../lib/request-failure';
 import { describeTraceFailure, paymentBlock, traceReasonKey } from '../lib/traceability';
 import { CreditApprovalDialog } from './credit-approval-dialog';
+import { FeatureOffNote } from './feature-off-note';
 import { PosIcon } from './pos-icon';
 import { TenderEvidenceDialog, type TenderEvidenceItemInput } from './tender-evidence-dialog';
 
@@ -54,6 +55,8 @@ export function PaymentPanel({
   canCollect,
   canResolve,
   canSellCredit = false,
+  creditEnabled = true,
+  drawerOpen = true,
   disabled,
   command,
   reserveTrace,
@@ -64,6 +67,10 @@ export function PaymentPanel({
   canCollect: boolean;
   canResolve: boolean;
   canSellCredit?: boolean;
+  // Branch feature flag: off keeps the debt summary but offers no new credit sale.
+  creditEnabled?: boolean;
+  // The order's shift is open and this cashier owns it.
+  drawerOpen?: boolean;
   disabled: boolean;
   // Runs through the workspace's serializer and hands over its newest revision.
   command: WorkspaceCommand;
@@ -89,6 +96,15 @@ export function PaymentPanel({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [evidenceOpen, setEvidenceOpen] = useState(false);
+  // The dialog's opener ("Thanh toán") is disabled once a tender is prepared,
+  // so a dialog put on hold hands keyboard focus to the resume button instead
+  // of leaving it on the page body.
+  const resumeButton = useRef<HTMLButtonElement>(null);
+  const evidenceWasOpen = useRef(false);
+  useEffect(() => {
+    if (evidenceWasOpen.current && !evidenceOpen) resumeButton.current?.focus();
+    evidenceWasOpen.current = evidenceOpen;
+  }, [evidenceOpen]);
   const [creditOpen, setCreditOpen] = useState(false);
   const [handedOver, setHandedOver] = useState(false);
   const financial = workspace.financial;
@@ -130,6 +146,14 @@ export function PaymentPanel({
   const trace = paymentBlock(workspace);
   // Payment cannot start while the server says traced stock is not ready.
   const traceBlocked = !trace.ready && !completed;
+  // Money is recorded on the order's own shift; the server refuses with
+  // `shift_closed` once that drawer is not open, so no new payment starts.
+  const drawerBlocked = !drawerOpen && !completed;
+  const blockedBy = traceBlocked
+    ? 'pos-trace-blocked'
+    : drawerBlocked
+      ? 'pos-drawer-closed'
+      : undefined;
 
   function methodLabel(method: { kind: string; name?: string }) {
     return method.kind === 'cash'
@@ -270,6 +294,11 @@ export function PaymentPanel({
   return (
     <section className="payment-panel" aria-label={t('paymentTitle')}>
       <h3 id="pos-payment-title">{t('paymentMethods')}</h3>
+      {drawerBlocked ? (
+        <p className="attention-box" role="note" id="pos-drawer-closed">
+          {t('paymentNeedsOpenShift')}
+        </p>
+      ) : null}
       {traceBlocked ? (
         <div className="attention-box" role="alert" id="pos-trace-blocked">
           <p>{t('paymentTraceBlocked')}</p>
@@ -366,6 +395,7 @@ export function PaymentPanel({
         <div className="payment-held" role="status">
           <p>{t('paymentHeldHint')}</p>
           <button
+            ref={resumeButton}
             type="button"
             className="checkout-submit"
             disabled={busy}
@@ -466,10 +496,11 @@ export function PaymentPanel({
           <button
             className="checkout-submit"
             type="submit"
-            aria-describedby={traceBlocked ? 'pos-trace-blocked' : undefined}
+            aria-describedby={blockedBy}
             disabled={
               locked ||
               traceBlocked ||
+              drawerBlocked ||
               preparedAttempts.length > 0 ||
               !hasItems ||
               invalidRows.length > 0 ||
@@ -485,13 +516,21 @@ export function PaymentPanel({
           <button
             type="button"
             className="credit-action"
-            disabled={locked || traceBlocked || unresolvedAttempts.length > 0}
+            disabled={
+              !creditEnabled ||
+              locked ||
+              traceBlocked ||
+              drawerBlocked ||
+              unresolvedAttempts.length > 0
+            }
             aria-describedby={
-              traceBlocked
-                ? 'pos-trace-blocked'
-                : unresolvedAttempts.length > 0
-                  ? 'pos-credit-blocked'
-                  : undefined
+              !creditEnabled
+                ? 'pos-credit-off'
+                : blockedBy
+                  ? blockedBy
+                  : unresolvedAttempts.length > 0
+                    ? 'pos-credit-blocked'
+                    : undefined
             }
             title={workspace.customer ? undefined : t('creditCustomerRequired')}
             onClick={() => {
@@ -502,14 +541,15 @@ export function PaymentPanel({
             <PosIcon name="user" />
             {t('creditAction')}
           </button>
-          {unresolvedAttempts.length > 0 ? (
+          {!creditEnabled ? <FeatureOffNote feature="credit" id="pos-credit-off" /> : null}
+          {creditEnabled && unresolvedAttempts.length > 0 ? (
             <small className="muted" id="pos-credit-blocked">
               {t('creditBlockedByTender')}
             </small>
           ) : null}
         </>
       ) : null}
-      {creditOpen && !completed ? (
+      {creditOpen && creditEnabled && !completed ? (
         <CreditApprovalDialog
           workspace={workspace}
           busy={busy || disabled}
@@ -530,8 +570,8 @@ export function PaymentPanel({
         <button
           type="button"
           className="checkout-submit"
-          disabled={locked || traceBlocked || preparedAttempts.length > 0}
-          aria-describedby={traceBlocked ? 'pos-trace-blocked' : undefined}
+          disabled={locked || traceBlocked || drawerBlocked || preparedAttempts.length > 0}
+          aria-describedby={blockedBy}
           onClick={() =>
             void run(
               () => command((current) => tenders.complete(current)),

@@ -319,6 +319,15 @@ function ShellFrame() {
               <p>
                 <Link to="/settings">{t('settings')}</Link>
               </p>
+            ) : selection.branchId && context.data?.capabilities.includes('pos.topology.manage') ? (
+              <p>
+                <Link
+                  to="/settings/branches/$branchId/features"
+                  params={{ branchId: selection.branchId }}
+                >
+                  {t('branchFeaturesTitle')}
+                </Link>
+              </p>
             ) : null}
             {canAccessFunds ? (
               <p>

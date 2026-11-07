@@ -1,3 +1,4 @@
+import type { PosFeatureFlags } from './pos-features';
 import type { LotSelection, SaleLineTrace, WorkspaceTrace } from './traceability';
 
 export type PosBranch = {
@@ -44,6 +45,8 @@ export type PosSelection = {
 
 export type PosContext = {
   administration?: { read: boolean; write: boolean };
+  // Feature flags of the selected branch; absent on servers without them.
+  features?: PosFeatureFlags | null;
   staff: { id: string; email: string; full_name: string | null };
   store: {
     id: string;

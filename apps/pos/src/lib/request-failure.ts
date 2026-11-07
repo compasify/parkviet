@@ -1,3 +1,5 @@
+import { isPosFeature } from './pos-features';
+
 export type PosFailure =
   | 'unauthorized'
   | 'forbidden'
@@ -135,7 +137,23 @@ export function describeFailure(
   const lease = leaseConflict(error);
   if (lease) return translate(lease.reason === 'lease_busy' ? 'leaseBusy' : 'leaseStale');
   if (snapshotLocked(error)) return translate('editLockedPayments');
+  const disabled = featureDisabledText(error, translate);
+  if (disabled) return disabled;
   return serverFailureDetail(error) ?? translate(fallbackKey ?? posFailureKey(error));
+}
+
+// A manager switched the feature off for this branch: the server refused the
+// command before recording anything. Every describer of this app uses this text.
+export function featureDisabledText(
+  error: unknown,
+  translate: (key: string) => string,
+): string | null {
+  if (conflictReason(error) !== 'feature_disabled') return null;
+  const details = (error as { details?: { feature?: unknown } }).details;
+  const feature = details?.feature;
+  return isPosFeature(feature)
+    ? translate(`featureDisabled_${feature}`)
+    : translate('featureDisabled');
 }
 
 // The server froze the basket because a tender is prepared or a payment exists.

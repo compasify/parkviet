@@ -23,6 +23,7 @@ module Spree
           payload['request_id'] = request.prefixed_id if request
           authorize = -> { authorize_approver!(workspace, staff) }
           CommandExecutor.call(store: workspace.store, actor: staff, key: key, payload: payload, workspace: workspace, authorize: authorize) do
+            FeaturePolicy.require!(workspace.branch, :credit)
             if request
               request.lock!
               raise Conflict.new('Credit request is no longer pending.', reason: 'credit_request_closed') unless request.current_status == 'pending'

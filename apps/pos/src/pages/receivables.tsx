@@ -130,6 +130,13 @@ function ReceivablesLedger() {
   const storeId = data?.store.id ?? null;
   const canRead = Boolean(branchId && canReadReceivables(data?.capabilities));
   const canCollect = Boolean(data?.capabilities.includes('pos.payment.collect'));
+  // The server books a collection on any open shift the collector owns at the
+  // branch (maybe at another register than the selected one) and refuses
+  // with `shift_required` otherwise; this page only sees the selected
+  // register's shift, so it hints instead of blocking.
+  const ownShift = Boolean(
+    data?.shift && data.shift.owner_id === staffId && data.shift.branch_id === branchId,
+  );
   const [status, setStatus] = useState<ReceivableStatus>('open');
   const [accountId, setAccountId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
@@ -284,6 +291,7 @@ function ReceivablesLedger() {
                       pending.unavailable ||
                       !rows.some((row) => amountSign(row.balance) > 0)
                     }
+                    aria-describedby={ownShift ? undefined : 'collection-needs-shift'}
                     onClick={() => {
                       setCollectError('');
                       setNotice('');
@@ -294,6 +302,11 @@ function ReceivablesLedger() {
                     <PosIcon name="cash" />
                     {t('collectionAction')}
                   </button>
+                ) : null}
+                {selected && canCollect && !selectedPending && !ownShift ? (
+                  <small className="muted" id="collection-needs-shift">
+                    {t('collectionShiftHint')}
+                  </small>
                 ) : null}
               </div>
               {selected && selectedPending ? (

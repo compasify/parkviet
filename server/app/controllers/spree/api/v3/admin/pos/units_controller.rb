@@ -63,6 +63,11 @@ module Spree
               end
 
               record = Spree::Pos::VariantUnit.find_or_initialize_by(store: current_store, variant: variant)
+              # Starting to track a SKU by serial or lot is a traceability
+              # entry; stopping or keeping the current mode is not. The mode is
+              # store-wide, so it needs the store default on, not one branch.
+              mode = tracked_mode(params[:tracked_mode])
+              Spree::Pos::FeaturePolicy.require_store!(current_store, :traceability) if mode != 'none' && mode != record.tracked_mode
               begin
                 ActiveRecord::Base.transaction do
                   configure_variant_unit!(record, variant, sale_unit, base_unit, price_unit)

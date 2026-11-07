@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { FeatureOffNote } from '../components/feature-off-note';
 import { PageState, PosPage } from '../components/pos-page';
 import { usePosSelection } from '../components/pos-selection';
 import { RefundActions } from '../components/refund-actions';
@@ -16,6 +17,7 @@ import {
 import { formatMoney } from '../lib/money';
 import type { PosCreditRequest } from '../lib/pos-context';
 import { writesLocked } from '../lib/pos-context';
+import { contextFeature } from '../lib/pos-features';
 import { describeCreditFailure, formatInstant } from '../lib/receivables';
 import { definitiveRejection, posFailureKey } from '../lib/request-failure';
 import { canApprove, describeReturnFailure } from '../lib/returns';
@@ -23,10 +25,14 @@ import { canApprove, describeReturnFailure } from '../lib/returns';
 function RequestRow({
   request,
   disabled,
+  creditOff,
   onDecide,
 }: {
   request: PosCreditRequest;
   disabled: boolean;
+  // Credit is switched off at the request's branch: approving is refused by
+  // the server; rejecting and revoking stay open.
+  creditOff: boolean;
   onDecide: (decision: 'approve' | 'reject' | 'revoke', reason?: string) => void;
 }) {
   const { t, i18n } = useTranslation();
@@ -80,7 +86,8 @@ function RequestRow({
             <button
               type="button"
               className="checkout-submit"
-              disabled={disabled}
+              disabled={disabled || creditOff}
+              aria-describedby={creditOff ? `credit-off-${request.id}` : undefined}
               onClick={() => onDecide('approve')}
             >
               {t('creditApprove')}
@@ -88,6 +95,7 @@ function RequestRow({
             <button type="button" disabled={disabled} onClick={() => setRejecting(true)}>
               {t('creditReject')}
             </button>
+            {creditOff ? <FeatureOffNote feature="credit" id={`credit-off-${request.id}`} /> : null}
           </div>
         )
       ) : null}
@@ -152,6 +160,10 @@ function CreditApprovals() {
 
 function CreditRequests({ branchId, locked }: { branchId: string; locked: boolean }) {
   const { t } = useTranslation();
+  const { context, selection } = usePosSelection();
+  // The context's flags are those of the selected branch.
+  const creditOff = (request: PosCreditRequest) =>
+    request.branch_id === selection.branchId && !contextFeature(context.data, 'credit');
   const requests = useCreditRequests(branchId, true);
   const decide = useDecideCredit();
   const [error, setError] = useState('');
@@ -182,6 +194,7 @@ function CreditRequests({ branchId, locked }: { branchId: string; locked: boolea
             key={request.id}
             request={request}
             disabled={locked || decide.isPending}
+            creditOff={creditOff(request)}
             onDecide={(decision, reason) => {
               setError('');
               setNotice('');

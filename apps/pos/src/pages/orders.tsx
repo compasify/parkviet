@@ -1,11 +1,13 @@
 import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { FeatureOffNote } from '../components/feature-off-note';
 import { PageState, PosPage } from '../components/pos-page';
 import { usePosSelection } from '../components/pos-selection';
 import { SoldTrace } from '../components/sold-trace';
 import { type OrderFilters, useOrder, useOrders, useReconcileHandover } from '../hooks/use-returns';
 import { formatMoney } from '../lib/money';
+import { contextFeature } from '../lib/pos-features';
 import { formatInstant } from '../lib/receivables';
 import { posFailureKey } from '../lib/request-failure';
 import {
@@ -254,6 +256,7 @@ export function OrderDetail({ order, canReturn }: { order: PosOrderDetail; canRe
   const [notice, setNotice] = useState('');
   const money = (value: string | null | undefined) => formatMoney(value, order.currency);
   const returnable = order.lines.some((line) => line.returnable_quantity > 0);
+  const returnsOn = contextFeature(context.data, 'returns');
   const openGaps = order.stock.discrepancies.filter((gap) => gap.status === 'open');
   return (
     <div className="order-detail">
@@ -262,11 +265,12 @@ export function OrderDetail({ order, canReturn }: { order: PosOrderDetail; canRe
         <Link className="button-link" to="/receipts" search={{ source: order.workspace_id }}>
           {t('receiptOpen')}
         </Link>
-        {canReturn && returnable ? (
+        {canReturn && returnable && returnsOn ? (
           <Link className="button-link" to="/returns" search={{ orderId: order.id }}>
             {t('ordersStartReturn')}
           </Link>
         ) : null}
+        {canReturn && returnable && !returnsOn ? <FeatureOffNote feature="returns" /> : null}
       </div>
       <dl className="order-summary">
         <div>

@@ -10,6 +10,7 @@ import { pinDecision } from '../lib/display-generation';
 import { formatMoney } from '../lib/money';
 import type { PosWorkspace } from '../lib/pos-context';
 import { conflictReason, describeFailure } from '../lib/request-failure';
+import { FeatureOffNote } from './feature-off-note';
 
 const DISPLAY_REASONS = [
   'display_ack_required',
@@ -20,13 +21,18 @@ const DISPLAY_REASONS = [
 
 // Cashier control of the customer display. Nothing here follows the active
 // tab: the display changes only when the cashier pins or clears it.
+// With the branch feature off nothing new reaches the customer: no bind, pin,
+// pairing or rebind. Clearing and disconnecting a display that is already
+// showing something stay available so it can always be emptied.
 export function DisplayPinControl({
   shiftId,
   ownsShift,
+  enabled = true,
   workspace,
 }: {
   shiftId: string | null;
   ownsShift: boolean;
+  enabled?: boolean;
   workspace: PosWorkspace | null;
 }) {
   const { t } = useTranslation();
@@ -72,7 +78,7 @@ export function DisplayPinControl({
   const waitingBank = (workspace?.financial?.attempts ?? []).filter(
     (attempt) => attempt.kind === 'bank_manual' && attempt.status === 'prepared',
   );
-  const pinnable = workspace?.operational_status === 'editing';
+  const pinnable = enabled && workspace?.operational_status === 'editing';
   const freshness = !session
     ? null
     : session.ack_current && session.acked_generation === session.generation
@@ -85,10 +91,17 @@ export function DisplayPinControl({
   return (
     <section className="display-control" aria-label={t('displayTitle')}>
       <h3>{t('displayTitle')}</h3>
+      {!enabled ? <FeatureOffNote feature="customer_display" /> : null}
       {!session ? (
-        <button type="button" disabled={busy} onClick={() => act(() => display.bind.mutateAsync())}>
-          {t('displayBind')}
-        </button>
+        enabled ? (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => act(() => display.bind.mutateAsync())}
+          >
+            {t('displayBind')}
+          </button>
+        ) : null
       ) : (
         <>
           <p className="display-status" role="status" data-freshness={freshness}>
@@ -164,6 +177,7 @@ export function DisplayPinControl({
           <details className="checkout-optional">
             <summary>{t('displayDevice')}</summary>
             <div className="row">
+              {/* Opening the window only shows what the session already displays. */}
               <button
                 type="button"
                 disabled={busy || !canOpenDisplayWindow(session.id)}
@@ -173,25 +187,29 @@ export function DisplayPinControl({
               >
                 {t('displayOpenWindow')}
               </button>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() =>
-                  act(async () => {
-                    setRevealed(false);
-                    setPairing(await display.pairing.mutateAsync(session.id));
-                  })
-                }
-              >
-                {t('displayPairingIssue')}
-              </button>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => act(() => display.bind.mutateAsync())}
-              >
-                {t('displayRebind')}
-              </button>
+              {enabled ? (
+                <>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() =>
+                      act(async () => {
+                        setRevealed(false);
+                        setPairing(await display.pairing.mutateAsync(session.id));
+                      })
+                    }
+                  >
+                    {t('displayPairingIssue')}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => act(() => display.bind.mutateAsync())}
+                  >
+                    {t('displayRebind')}
+                  </button>
+                </>
+              ) : null}
               <button
                 type="button"
                 disabled={busy}
@@ -202,7 +220,7 @@ export function DisplayPinControl({
                 {t('displayDisconnect')}
               </button>
             </div>
-            {pairing && pairingLive ? (
+            {enabled && pairing && pairingLive ? (
               <p className="display-pairing" role="status">
                 {t('displayPairingCode')}{' '}
                 <strong data-testid="display-pairing-code">

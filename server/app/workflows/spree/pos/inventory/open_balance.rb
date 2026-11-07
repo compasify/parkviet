@@ -18,6 +18,7 @@ module Spree
           authorize = -> { Guard.authorize!(store, staff, Guard.branch!(store, branch_id)) }
           CommandExecutor.call(store: store, actor: staff, key: key, payload: payload, authorize: authorize) do
             branch = Guard.branch!(store, branch_id)
+            FeaturePolicy.require!(branch, :traceability)
             variant = Guard.variant!(store, branch, variant_id)
             # Same share lock as a first sale takes: the tracked mode cannot be
             # reconfigured while the balance opens.

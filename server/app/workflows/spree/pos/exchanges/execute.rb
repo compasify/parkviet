@@ -18,6 +18,7 @@ module Spree
           end
           CommandExecutor.call(store: store, actor: staff, key: key, payload: payload, authorize: authorize) do
             operation = Returns::Guard.operation!(store, return_id)
+            FeaturePolicy.require!(operation.branch, :exchanges)
             operation.lock!
             raise Conflict.new('A canceled return cannot be exchanged.', reason: 'return_canceled') if operation.status == 'canceled'
             raise Conflict.new('This return already has an exchange.', reason: 'exchange_exists') if operation.exchange_operation

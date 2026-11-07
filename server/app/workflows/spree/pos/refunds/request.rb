@@ -24,6 +24,7 @@ module Spree
             raise Conflict, 'A bank refund needs the beneficiary account.' if method.to_s == 'bank_manual' && beneficiary_reference.to_s.strip.blank?
 
             operation = Returns::Guard.operation!(store, return_id)
+            FeaturePolicy.require!(operation.branch, :refunds)
             operation.lock!
             raise Conflict, 'Amount is invalid.' if parsed.nil? || parsed <= 0
             raise Conflict, 'Amount must be a whole amount in the currency.' unless Record.countable_money?(parsed, operation.currency)

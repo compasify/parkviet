@@ -1,13 +1,213 @@
-# POS đang phát triển
+# ParkViet POS
 
-POS preview: hỗ trợ đơn nháp và tìm catalog chỉ đọc; chưa hỗ trợ thêm dòng, bán hàng hoặc thu tiền. Không dùng để vận hành bán hàng.
+Ứng dụng bán hàng tại quầy của ParkViet, chạy trên trình duyệt ở đường dẫn `/pos/`. Cách chạy hệ thống xem [README gốc](../../README.md).
 
-Trong thư mục này: `pnpm install`, rồi `pnpm dev`. API chạy qua Spree CLI ở thư mục gốc (`pnpm spree …`), không chạy stack thứ hai và không dùng `spree dev --app pos`. Dev proxy mặc định trỏ đến `http://localhost:3000`; có thể đặt `VITE_API_PROXY_TARGET` trong `.env.local`. Mở đường dẫn `/pos/`.
+## POS là gì
 
-Đăng nhập dùng Admin SDK và tài khoản staff thật. Access token chỉ ở bộ nhớ. Refresh dùng cookie HttpOnly và một lượt làm mới tại một thời điểm; BroadcastChannel chỉ báo khóa phiên, không gửi token. `GET /api/v3/admin/pos/context` trả danh tính, chi nhánh được phép và ca đang mở. Nhân viên cần `read_pos_orders` hoặc `write_pos_orders` để đọc context. Quyền đó không cấp `write_orders`.
+- Bán hàng tại quầy cho **nhiều chi nhánh** của cùng một cửa hàng. Mỗi chi nhánh có thể có **nhiều quầy**, và mỗi quầy có thể mở **nhiều đơn cùng lúc**.
+- Hàng được giao ngay tại quầy, không có giao sau.
+- **Cần mạng để bán.** POS không có chế độ bán offline. Khi mất mạng, màn hình khóa các thao tác ghi; khi có mạng lại, POS kiểm tra kết quả các thao tác còn dở.
+- Phiếu in ra là **"Phiếu bán hàng POS — không phải hóa đơn điện tử"**.
+- **Trạng thái hiện tại: sandbox.** Không dùng để thu tiền thật, ghi tồn kho thật hay vận hành bán hàng cho tới khi việc triển khai được phê duyệt riêng.
 
-Cấu hình chi nhánh/quầy dùng `write_pos_topology`. Mở ca dùng `write_pos_shifts` cùng capability `pos.shift.open`. Đơn nháp dùng `write_pos_workspaces` và `write_pos_orders`. Chuyển đơn sang quầy khác bị từ chối. Lease kỹ thuật mặc định 120 giây; trang danh sách tối đa 100 bản ghi. Bố cục trình duyệt chỉ giữ id, hết hạn sau 12 giờ, và bị xóa khi đăng xuất.
+## Khái niệm chính
 
-Danh mục của chi nhánh mặc định rỗng. Staff có `write_pos_topology` có thể cấp sản phẩm cùng store bằng `POST /api/v3/admin/pos/branches/:branch_id/products` với `{ "product_id": "prod_…" }`, hoặc bỏ bằng `DELETE /api/v3/admin/pos/branches/:branch_id/products/:product_id`. Chức năng này chưa có giao diện quản trị. Staff có `read_pos_orders` và membership đang hoạt động ở chi nhánh có thể tìm hàng qua `/pos/catalog?branch_id=…&q=…`; đây chỉ là danh sách tham khảo, không trả giá hay cho thêm hàng. Số on-hand là số tồn vật lý tại kho chi nhánh, không trừ allocation/reservation và không đảm bảo có thể bán. Chưa có chức năng thu tiền.
+- **Chi nhánh**: điểm bán gắn với một kho hàng và một múi giờ. Mỗi chi nhánh có danh mục hàng bán riêng.
+- **Quầy**: một máy bán hàng có một két tiền. Chi nhánh không có quầy vẫn bán được.
+- **Ca**: thu ngân phải mở ca tại quầy, kèm **Tiền đầu ca**, trước khi tạo đơn hoặc thu tiền. Mỗi ca thuộc về một nhân viên.
+- **Đơn đang bán (tab "Hóa đơn N")**: mỗi đơn là một tab. Một tab có thể đang chờ chuyển khoản trong khi thu ngân bán đơn khác. Mỗi lúc chỉ một tab hoặc một máy được giữ **quyền sửa** một đơn.
+- **Quyền theo chi nhánh**: mỗi nhân viên được cấp quyền riêng ở từng chi nhánh (xem [Quyền](#quyền)). Quyền POS không thay thế vai trò truy cập của cửa hàng.
+- **Duyệt bởi người thứ hai**: các thao tác rủi ro (ghi nợ, chi tiền hoàn, chênh lệch két, rút tiền khỏi két, điều chỉnh tồn) phải có người khác duyệt hoặc xác nhận. Không ai tự duyệt yêu cầu của chính mình.
 
-Đăng xuất lỗi mạng chỉ khóa tab. JWT access đã cấp không bị thu hồi ngay khi logout. Các phase và gate an toàn chưa hoàn tất; xem báo cáo runtime trong plan để biết bằng chứng và giới hạn hiện tại. Chỉ dùng với môi trường phát triển đáng tin cậy.
+## Chức năng
+
+### Bán hàng
+
+- Tìm hàng theo tên, SKU hoặc mã vạch, hoặc quét bằng máy quét. Xem kết quả dạng **Thẻ** hoặc **Danh sách**. Chỉ hàng được cấp cho chi nhánh mới xuất hiện. Nếu một mã khớp nhiều mặt hàng, POS không tự đoán mà để thu ngân chọn.
+- **Hàng cân / tem cân**: quét tem EAN-13 in từ cân điện tử. Máy chủ đọc khối lượng hoặc giá trên tem. Dòng hàng tem cân không sửa được số lượng, chỉ xóa được.
+- **Đơn vị quy đổi**: bán theo đơn vị bán (kg, lít, lốc, thùng…), quy đổi về đơn vị gốc theo cấu hình của SKU.
+- **Hàng theo serial / lô**: quét serial cho từng cái. Lô được chọn tự động theo hạn dùng gần nhất (FEFO), hoặc thu ngân tự chọn nếu chi nhánh cho phép.
+- **Khách hàng**: mặc định là **Khách lẻ**. Có thể tìm khách theo tên, số điện thoại hoặc email, hoặc **Tạo khách nhanh**. Nếu trùng số điện thoại, POS chỉ cảnh báo, không tự gộp hồ sơ.
+- **Giảm giá**: giảm theo dòng hoặc **Giảm giá toàn đơn** (theo phần trăm hoặc số tiền VND, kèm lý do). Có thể nhập **Mã voucher / khuyến mại (Spree)**. **Sửa giá bán** của một dòng là quyền riêng. Khi chính sách yêu cầu, thu ngân nhập **Mã duyệt của quản lý**.
+- **Ghi chú tại quầy** và **In tạm tính** (phiếu tạm tính, không phải biên nhận thanh toán).
+- **Nhiều đơn song song**: **Đơn nháp mới**, **Tạm giữ** / **Mở lại đơn**, **Hủy nháp**, **Đóng tab** (chỉ ẩn khỏi màn hình, đơn vẫn còn). Khi đơn đã ghi nhận thanh toán, hàng, giá và khách bị khóa.
+
+### Thanh toán
+
+- Hai phương thức: **Tiền mặt** (nhập số khách đưa, POS tính tiền thừa) và **Chuyển khoản** do thu ngân xác nhận thủ công (nhập mã giao dịch và tài khoản nhận).
+- **Chia nhiều phương thức**: chọn nhiều phương thức cho một đơn và nhập số tiền cho từng phương thức.
+- **Để chờ, bán đơn khác**: để khoản thu ở trạng thái chờ xác nhận rồi chuyển sang tab khác. Sau đó quay lại bằng **Tiếp tục thanh toán**.
+- Sau khi thu đủ: **Hoàn tất đơn**, **In hóa đơn**, **Giao hàng tại quầy**.
+- **Tiền chưa phân bổ**: khoản nhận dư hoặc chuyển khoản đến muộn được giữ trong **Sổ tiền đã nhận / nghĩa vụ**, không tự gán sang đơn khác. Người có quyền có thể **Áp tiền chưa dùng vào đơn này**, hoặc hoàn lại cho khách (**Giữ tiền để hoàn** → **Xác nhận đã hoàn**). Trang **Khoản thu cần chú ý** liệt kê các khoản cần xử lý.
+
+### Bán chịu và thu nợ
+
+- Quản lý mở **tài khoản công nợ** cho khách đã xác định, đặt **Hạn mức** và **Số ngày nợ**, và có thể tạm khóa tài khoản. Khách lẻ không được bán chịu.
+- Thu ngân bấm **Ghi nợ** để gửi yêu cầu. Quản lý duyệt trên trang **Duyệt**. Sau đó thu ngân bấm **Hoàn tất & ghi nợ**. Mỗi lần duyệt chỉ có hiệu lực cho đúng đơn và đúng số tiền đó.
+- Trang **Công nợ khách hàng** cho xem dư nợ, đơn quá hạn và tuổi nợ. Nút **Thu nợ** nhận một khoản tiền rồi phân bổ vào nhiều đơn (mặc định phân bổ đơn cũ trước). Thu nợ không tạo doanh số mới.
+
+### Trả hàng, hoàn tiền, đổi hàng
+
+- Từ **Đơn hàng** hoặc **Trả / đổi hàng**: tìm đơn gốc, chọn số lượng còn trả được và tình trạng hàng (**Bán lại được** / **Hư hỏng**), **Xem trước** giá trị trả, phần giảm nợ và phần được hoàn, rồi **Lập phiếu trả** → **Nhận hàng trả**.
+- Các trường hợp cần người duyệt: trả hàng của chi nhánh khác, quá hạn trả của chi nhánh, hoặc hàng hư hỏng. Chi nhánh không đặt số ngày trả hàng thì không nhận trả.
+- Nếu đơn còn nợ, giá trị trả được trừ vào nợ trước, phần còn lại mới được hoàn tiền. **Yêu cầu hoàn tiền** (tiền mặt hoặc chuyển khoản) chỉ được ghi nhận khi có người **Xác nhận đã chi**. Tiền mặt hoàn trả được trừ vào két của ca đang mở.
+- **Đổi hàng: mở đơn bán mới** tạo một đơn bán mới cho khách. Phần chênh lệch được thu thêm hoặc hoàn lại như bình thường.
+
+### Tồn kho truy xuất (serial / lô / hạn dùng)
+
+Trang **Truy xuất tồn kho** có các tab: **Mặt hàng theo dõi** (khai báo tồn đầu kỳ, đối chiếu khớp tồn), **Lô hàng** (hạn dùng, **Cách ly** / **Giải phóng**), **Tra serial**, **Nhập hàng**, **Chuyển kho**, **Kiểm kê / điều chỉnh** (có duyệt) và **Thu hồi** (tìm lô hoặc serial đã bán cho đơn nào). Hàng theo dõi chỉ bán được khi đã khai báo tồn đầu kỳ và tồn theo lô/serial khớp với tồn kho.
+
+### Ca và sổ quỹ
+
+Trang **Ca & két** có các chức năng sau:
+
+- **Thu/chi tiền mặt**:
+  - **Nộp vào két**: ghi ngay.
+  - **Lấy ra khỏi két** và **Nộp két sắt**: cần số chứng từ và một người khác xác nhận.
+- **Đóng ca** theo ba bước: **1. Kiểm tra** (các việc chặn đóng ca), **2. Đếm két**, **3. Đối chiếu**.
+- **Đếm mù**: thu ngân chỉ thấy số **Két cần có** và **Chênh lệch** sau khi đã nhập số tiền đếm được. Chênh lệch vượt ngưỡng của chi nhánh cần lý do và người duyệt khác.
+- **Ca đang mở khác**: đóng ca giúp thu ngân vắng mặt.
+- **Đối soát tiền mặt đến muộn**: dùng cho tiền phát hiện sau khi đã đóng ca. Ca đã đóng không bị sửa.
+
+### Báo cáo
+
+Trang **Báo cáo** có năm tab: **Doanh số**, **Thực thu**, **Tiền mặt trong két**, **Công nợ**, **Đóng ca**. Có thể lọc theo ngày, quầy và ca, theo múi giờ của chi nhánh. Không có quyền "Xem báo cáo cả chi nhánh" thì chỉ xem được các ca của chính mình. **Xuất CSV** chạy nền: chỉ người tạo tải được file, và file tự xóa sau 24 giờ.
+
+### Biên nhận và in
+
+Trang **Hóa đơn** dùng để tra cứu và in phiếu bán hàng, trả hàng, hoàn tiền và đóng ca. Phiếu in khổ **Cuộn 80mm** hoặc **A4**, có serial, lô và hạn dùng. Lần in đầu là bản gốc, các lần sau in nhãn **"BẢN SAO – lần N"**. Nội dung phiếu đã chốt không thay đổi khi sửa giá hay tên hàng về sau.
+
+### Màn hình khách
+
+Màn hình khách là một cửa sổ hoặc thiết bị riêng, mở ở `/pos/display`, không cần đăng nhập. Màn hình hiện đơn và số tiền cần thanh toán. Khi thanh toán chuyển khoản, màn hình hiện thông tin tài khoản nhận và nội dung chuyển khoản. Thu ngân chủ động chọn đơn cần hiện; chuyển tab không làm đổi nội dung màn hình khách. Khi màn hình không chắc dữ liệu còn mới, nó chỉ hiện "Đang cập nhật…".
+
+### Máy quét
+
+Mỗi quầy có hiệu chỉnh máy quét riêng: ký tự kết thúc (Enter hoặc Tab) và khoảng cách tối đa giữa các phím. Mặc định là Enter, 100 ms. Thiết lập lưu trên trình duyệt của máy đó.
+
+### Quản trị
+
+Trang **Cấu hình** có các mục:
+
+- **Chi nhánh**: kho bán, kho nhận hàng, múi giờ, số ngày cho phép trả hàng, ngưỡng chênh lệch đóng ca, cách **Chọn lô khi bán**, ngưỡng điều chỉnh tồn không cần duyệt.
+- **Quầy bán hàng**.
+- **Nhân viên & quyền**.
+- **Hàng bán tại chi nhánh**, kèm **Đơn vị và mã tem** của từng SKU.
+- **Mẫu tem cân**.
+
+Khi ngừng hoạt động một chi nhánh, quầy hoặc nhân viên, lịch sử không bị xóa. Muốn kích hoạt lại cần quyền **Khôi phục**. Trang **Tài khoản nợ** dùng để cấu hình công nợ.
+
+## Cách sử dụng
+
+**Phím tắt:** **F2** đưa con trỏ về ô "Tìm hàng hoặc quét mã". **Esc** đóng hộp thoại hoặc bộ chọn chi nhánh. Ngoài hai phím này, POS chưa có phím tắt nào khác.
+
+1. **Đăng nhập, chọn chi nhánh / quầy**
+   - Đăng nhập bằng **Email nhân viên** và **Mật khẩu**.
+   - Ở hộp **Chọn nơi bán hàng**, chọn chi nhánh. Chỉ cần chọn quầy nếu chi nhánh có nhiều quầy.
+   - Muốn đổi sau này, bấm vào chi nhánh / quầy trên thanh đầu trang. Menu ở đó cũng dẫn tới các trang khác.
+2. **Mở ca**: ở màn **Bán hàng**, nhập **Tiền đầu ca** rồi bấm **Mở ca**.
+3. **Bán một đơn**
+   - Bấm **Đơn nháp mới**, rồi quét hoặc tìm hàng và **Thêm vào đơn**.
+   - Gắn khách và giảm giá nếu cần.
+   - Chọn phương thức, bấm **Thanh toán**.
+   - Ở hộp xác nhận, bấm **Xác nhận đã đếm tiền mặt** hoặc **Xác nhận đã thấy chuyển khoản**.
+   - Bấm **Hoàn tất đơn** → **In hóa đơn** → **Giao hàng tại quầy**.
+4. **Bán nhiều đơn cùng lúc**
+   - Đang chờ khách A chuyển khoản thì bấm **Để chờ, bán đơn khác**, rồi **Đơn nháp mới** để bán cho khách B.
+   - Bấm tab "Hóa đơn N" để quay lại đơn A, rồi **Tiếp tục thanh toán**.
+   - Đơn đã ẩn bằng **Đóng tab** hiện lại khi bấm **Hiện lại các đơn đã đóng giao diện**.
+5. **Thanh toán chia phương thức**: bật cả **Tiền mặt** và **Chuyển khoản**, nhập số tiền của từng dòng, bấm **Thanh toán**, rồi xác nhận từng khoản.
+6. **Bán chịu**
+   - Gắn khách đã có tài khoản công nợ, bấm **Ghi nợ**.
+   - Chờ quản lý duyệt trên trang **Duyệt**.
+   - Bấm **Kiểm tra duyệt** → **Hoàn tất & ghi nợ**.
+7. **Thu nợ**: vào **Công nợ khách hàng**, chọn khách, bấm **Thu nợ**. Nhập hình thức, số tiền và phân bổ vào các đơn, rồi bấm **Ghi nhận thu nợ**. Phải có ca đang mở.
+8. **Trả hàng**
+   - Vào **Đơn hàng**, chọn đơn, bấm **Trả / đổi hàng**.
+   - Chọn hàng và tình trạng, bấm **Xem trước**, nhập lý do, rồi bấm **Lập phiếu trả** → **Nhận hàng trả**.
+   - Nếu được hoàn tiền: bấm **Yêu cầu hoàn tiền**. Khi đã chi tiền cho khách, người có quyền bấm **Xác nhận đã chi**.
+9. **Đóng ca**
+   - Vào **Ca & két**, bấm **Đóng ca**.
+   - Xử lý các việc còn chặn đóng ca.
+   - Đếm toàn bộ tiền mặt, nhập vào ô **Tổng tiền mặt đếm được**, bấm **Ghi nhận số đếm**.
+   - Xem chênh lệch. Nếu cần, bấm **Gửi lý do & chờ duyệt**.
+   - Bấm **Đóng ca**, rồi **In phiếu đóng ca**.
+10. **Xem báo cáo**: vào **Báo cáo**, chọn tab, khoảng ngày, quầy và ca. Bấm **Xuất CSV** rồi tải file ở mục **File xuất của bạn**.
+11. **Ghép màn hình khách**
+    - Trong khung thanh toán, bấm **Kết nối màn hình khách**.
+    - Nếu cùng máy: bấm **Mở cửa sổ màn hình khách**.
+    - Nếu thiết bị khác: bấm **Tạo mã kết nối thiết bị khác**, rồi nhập mã 8 ký tự trên thiết bị đó ở `/pos/display`.
+    - Bấm **Hiện đơn này cho khách** hoặc **Hiện chuyển khoản …**. Bấm **Xóa màn hình khách** trước khi phục vụ khách tiếp theo.
+12. **Hiệu chỉnh máy quét**: trong menu đầu trang, bấm **Máy quét**. Quét thử một mã vạch vào ô, rồi bấm **Lưu cho quầy này**.
+
+## Quyền
+
+Quản lý cấp quyền cho từng nhân viên ở từng chi nhánh, tại **Cấu hình → Nhân viên & quyền**.
+
+| Quyền (mã) | Tên trên màn hình | Ý nghĩa |
+| --- | --- | --- |
+| `pos.shift.open` | Mở ca | Mở ca và bán hàng |
+| `pos.discount.apply` | Áp dụng giảm giá | Giảm giá dòng và toàn đơn |
+| `pos.price.override` | Đổi giá bán | Sửa đơn giá của dòng hàng |
+| `pos.customer.write` | Quản lý khách hàng | Tạo, cập nhật khách tại quầy |
+| `pos.payment.collect` | Thu tiền | Thu tiền cho đơn |
+| `pos.payment.resolve` | Xử lý tiền thừa/trễ | Phân bổ, hoàn tiền chưa phân bổ; đối soát khoản thu cần chú ý |
+| `pos.approval.grant` | Duyệt | Duyệt ghi nợ, trả hàng, chi hoàn tiền, chênh lệch đóng ca |
+| `pos.workspace.takeover` | Nhận quyền sửa | Tiếp quản quyền sửa đơn đang bị nơi khác giữ |
+| `pos.topology.manage` | Cấu hình | Quản lý POS tại chi nhánh |
+| `pos.topology.recover` | Khôi phục | Kích hoạt lại chi nhánh, quầy, nhân viên đã ngừng |
+| `pos.credit.sell` | Bán ghi nợ | Hoàn tất đơn với phần ghi nợ đã được duyệt |
+| `pos.credit.manage` | Cấu hình công nợ | Mở tài khoản công nợ, đặt hạn mức, số ngày nợ |
+| `pos.return.process` | Trả hàng & hoàn tiền | Lập phiếu trả, nhận hàng trả, yêu cầu hoàn tiền |
+| `pos.cash.move` | Thu/chi tiền mặt trong két | Nộp vào, lấy ra, nộp két sắt trên ca của mình |
+| `pos.report.read` | Xem báo cáo cả chi nhánh | Xem báo cáo mọi ca của chi nhánh |
+| `pos.report.export` | Xuất báo cáo | Tạo file CSV |
+| `pos.inventory.manage` | Quản lý tồn truy xuất | Nhập, chuyển, kiểm kê, khai báo tồn đầu kỳ, cách ly lô/serial |
+| `pos.inventory.trace` | Truy xuất lô/serial | Tra lô/serial đã bán cho đơn và khách nào |
+
+**Cần người thứ hai** (người duyệt không được là người yêu cầu):
+
+- Ghi nợ cho khách.
+- Trả hàng của chi nhánh khác, trả quá hạn hoặc hàng hư hỏng.
+- Chi tiền hoàn.
+- Chênh lệch két khi đóng ca vượt ngưỡng của chi nhánh. Nếu chi nhánh không đặt ngưỡng, mọi chênh lệch đều cần duyệt.
+- Lấy tiền ra khỏi két, nộp két sắt.
+- Điều chỉnh tồn giảm, hoặc điều chỉnh tăng vượt ngưỡng.
+- Đối soát tiền mặt đến muộn do chính mình ghi nhận.
+
+Ngoài ra, giảm giá hoặc đổi giá vượt giới hạn cần **Mã duyệt của quản lý**, và đơn có tổng 0 ₫ cần người có quyền duyệt để hoàn tất.
+
+## Khi có sự cố
+
+- **Mất mạng giữa giao dịch**: đầu trang báo "Mất kết nối" và khóa các thao tác ghi. Khi có mạng lại, bấm **Kiểm tra kết quả thao tác** hoặc **Kiểm tra lại khoản thu chưa rõ**. **Không tạo lại đơn hay khoản thu mới.** POS gửi lại đúng thao tác cũ, nên không bị ghi hai lần.
+- **"Đang kiểm tra kết quả…"**: POS chưa biết máy chủ đã ghi nhận thao tác hay chưa. Biểu mẫu được giữ nguyên. Bấm **Kiểm tra lại**, đừng nhập lại từ đầu.
+- **Đơn chỉ xem, "Chưa nhận quyền sửa"**: đơn đang được sửa ở tab hoặc máy khác. Hãy đóng nơi đó, rồi bấm **Nhận quyền sửa** (khóa tự hết hạn tối đa sau 2 phút). Nếu được cấp quyền, có thể dùng **Tiếp quản quyền sửa**.
+- **Khoản thu cần chú ý / đối soát**: tiền đã về nhưng chưa áp vào đơn hoặc chưa xác định được. Xử lý ở **Khoản thu cần chú ý** và **Sổ tiền đã nhận / nghĩa vụ**. Nếu trình duyệt mất dữ liệu, giữ chứng từ và đối soát thủ công. Chỉ bấm **Đã đối soát** sau khi đã đối chiếu.
+- **In lỗi hoặc trình duyệt chặn in**: đơn hàng và tiền không thay đổi. Lượt in đã được ghi nhận, nên lần in lại sẽ có nhãn "BẢN SAO".
+- **Màn hình khách không phản hồi**: khi màn hình chưa xác nhận đã xóa, POS chặn hiện khách tiếp theo. Bấm **Màn hình khách không phản hồi** để ngắt màn hình đó, rồi kết nối lại. Lưu ý: khách đã chụp thông tin chuyển khoản vẫn có thể chuyển tiền. Khoản đến muộn sẽ vào tiền chưa phân bổ của đơn gốc.
+- **Đăng xuất khi còn thao tác chưa rõ kết quả**: POS hỏi xác nhận trước khi đăng xuất. Đơn trên máy chủ không bị xóa.
+
+## Giới hạn hiện tại
+
+- Mới chạy sandbox. Chưa được phép thu tiền thật hay vận hành kho thật.
+- Chưa có VietQR hay xác nhận chuyển khoản tự động. Chuyển khoản do thu ngân xác nhận thủ công, và màn hình khách chỉ hiện mô tả tài khoản nhận.
+- Chưa có thanh toán thẻ.
+- Chỉ in qua hộp thoại in của trình duyệt. Chưa có driver máy in hay ngăn kéo tiền.
+- Chưa kiểm thử với máy in, máy quét, máy cân và màn hình khách thật.
+- POS chưa có màn hình cấp **Mã duyệt của quản lý** cho giảm giá hoặc đổi giá.
+- Tám tính năng rủi ro (bán chịu, trả hàng, hoàn tiền, đổi hàng, đưa hàng vào theo dõi serial/lô, màn hình khách, thu/chi két, xuất báo cáo) **mặc định tắt**. Quản trị cửa hàng bật ở **Cấu hình → chi nhánh → Chức năng chi nhánh**; quản lý chi nhánh chỉ tắt được tại chi nhánh của mình. Khi tắt, nút tương ứng bị khóa kèm lý do; việc đang dở (khoản thu chờ, phiếu trả đã lập, hoàn tiền đã yêu cầu, hóa đơn) vẫn xử lý được.
+
+## Dành cho developer
+
+Chạy trong thư mục `apps/pos`:
+
+- `pnpm dev`: chạy Vite ở base `/pos/`. Proxy `/api` mặc định trỏ tới `http://localhost:3000`; có thể đổi bằng `VITE_API_PROXY_TARGET` trong `.env.local`. API chạy qua Spree CLI ở thư mục gốc.
+- `pnpm lint`, `pnpm typecheck`, `pnpm test` (Vitest), `pnpm build`.
+- `pnpm test:e2e`: chạy Playwright trên ba viewport desktop, tablet, mobile với API giả lập. Cổng mặc định là `5174`, có thể đổi bằng `POS_TEST_PORT` (ví dụ `POS_TEST_PORT=5177` khi 5174 bận).
+- Test với API thật (nhóm `real API` trong `e2e/full-retail.spec.ts`, `e2e/concurrency-chaos.spec.ts`, `e2e/advanced-goods.spec.ts`) bị bỏ qua mặc định. Cần stack dev đang chạy, database đã migrate và một fixture tổng hợp mới:
+  1. Chép `e2e/support/pos-live-fixture.rb` vào `server/log/` (gitignore), chạy ở thư mục gốc `pnpm spree exec bin/rails runner log/pos-live-fixture.rb`. Script chỉ chạy với database cục bộ và chỉ tạo bản ghi mới có nhãn `POS Live <tag>`: chi nhánh có hạn trả hàng, quầy, ca đang mở, một thu ngân (chỉ quyền đơn hàng và ca), một quản lý (thêm quyền cấu hình), năm sản phẩm có tồn. Credential ghi vào `server/log/pos-live-fixture.json`; chuyển file ra ngoài repo ngay.
+  2. `POS_LIVE_REVIEW=1 POS_LIVE_FIXTURE=<đường dẫn JSON> POS_TEST_PORT=5177 pnpm exec playwright test <spec> -g "real API" --project=desktop`. Test bật cờ cần dùng qua `PUT /pos/feature_flags` bằng tài khoản quản lý (mặc định cấp cửa hàng của store dev) và trả lại trạng thái cũ sau mỗi test. Chạy `full-retail` sau cùng vì nó đóng ca của fixture; lượt chạy đầy đủ tiếp theo dùng fixture mới. Đăng nhập API bị giới hạn tần suất (429), test tự chờ.
+  3. Dọn sau khi thử: `pnpm spree exec bin/rails runner log/pos-live-fixture.rb cleanup` hủy nháp chưa thu tiền, hoàn tất nháp đã thu đủ, hủy khoản thu đang chuẩn bị, đếm két đúng số cần có rồi đóng ca, và vô hiệu mọi nhân viên `pos-live-*@example.test`; không xóa gì. Thêm `store-flags-off=returns,refunds` để tắt lại mặc định cửa hàng của các cờ đó.
+  4. `e2e/live-api.spec.ts` (cũ) vẫn đọc `server/pos-live-review-credentials.json`; file này phải nằm trong gitignore trước khi tạo.
+- `pnpm test:perf`: đo thời gian chuyển tab, tìm hàng, tạo nháp và xác nhận tiền mặt bằng Performance API của trình duyệt (config riêng `tests/performance/playwright.config.ts`, không chạy trong `test:e2e`). Mặc định API giả lập, chỉ đo phía trình duyệt; thêm `POS_PERF_LIVE=1` và biến fixture ở trên để đo với API thật. Kết quả JSON ở `test-results/perf/pos-scenarios.json` (đổi bằng `POS_PERF_OUT`). Số đo không phải năng lực hệ thống.
+- Nhãn giao diện nằm ở `src/locales/vi.json`; danh sách quyền nằm ở `src/lib/pos-capabilities.ts`.

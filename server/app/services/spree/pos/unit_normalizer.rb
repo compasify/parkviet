@@ -11,7 +11,8 @@ module Spree
         quantity = parse_decimal(sale_quantity)
         raise Conflict, 'Sale quantity is invalid.' if quantity.nil? || quantity <= 0
 
-        factor = BigDecimal(variant_unit.sale_unit.factor_to_base.to_s)
+        # Rational, never BigDecimal: BigDecimal * Rational(1, 3) is rounded.
+        factor = Rational(variant_unit.sale_unit.factor_to_base.to_s)
         ratio = Rational(variant_unit.ratio_numerator, variant_unit.ratio_denominator)
         base = quantity * factor * ratio
         raise Conflict, 'Sale quantity cannot be represented exactly in base units.' unless base.denominator == 1
@@ -35,11 +36,13 @@ module Spree
 
       def self.unit_price_per_base(price:, variant_unit:)
         amount = price.is_a?(BigDecimal) ? price : BigDecimal(price.to_s)
-        per_sale_unit = amount * Rational(variant_unit.ratio_denominator, variant_unit.ratio_numerator)
-        per_base = per_sale_unit / variant_unit.price_unit.factor_to_base
+        # Rational throughout: BigDecimal * Rational(1, 24) rounds to a
+        # repeating decimal, which would refuse an exact 240000 per case of 24.
+        per_sale_unit = amount.to_r * Rational(variant_unit.ratio_denominator, variant_unit.ratio_numerator)
+        per_base = per_sale_unit / variant_unit.price_unit.factor_to_base.to_r
         raise Conflict, 'Price cannot be represented exactly per base unit.' unless (per_base * 10_000).denominator == 1
 
-        per_base
+        BigDecimal((per_base * 10_000).to_i) / 10_000
       end
     end
   end

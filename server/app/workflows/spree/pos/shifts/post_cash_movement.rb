@@ -23,6 +23,8 @@ module Spree
           authorize = -> { authorize!(store, staff, Guard.shift!(store, shift_id)) }
           CommandExecutor.call(store: store, actor: staff, key: key, payload: payload, authorize: authorize) do
             shift = Guard.shift!(store, shift_id)
+            # Requests already made can still be confirmed or canceled.
+            FeaturePolicy.require!(shift.branch, :cash_moves)
             note, evidence = validate!(kind.to_s, value, shift.currency, reason, evidence_reference)
             ShiftBarrier.hold!(shift)
             if kind.to_s == 'cash_in'

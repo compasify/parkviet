@@ -15,13 +15,19 @@ export type BranchSettingsScope = {
   storeId: string | null;
 };
 
+const SECTION_TEXT = {
+  products: { title: 'branchProductsTitle', intro: 'branchProductsIntro' },
+  labels: { title: 'labelFormatsTitle', intro: 'labelFormatsIntro' },
+  features: { title: 'branchFeaturesTitle', intro: 'branchFeaturesIntro' },
+} as const;
+
 // Frame of the per-branch administration pages. Reading needs the topology read
 // permission; every write control below it also checks `access.write`.
 export function BranchSettingsFrame({
   section,
   children,
 }: {
-  section: 'products' | 'labels';
+  section: 'products' | 'labels' | 'features';
   children: (scope: BranchSettingsScope) => ReactNode;
 }) {
   const { t } = useTranslation();
@@ -30,12 +36,12 @@ export function BranchSettingsFrame({
   const branchId = useParams({ strict: false }).branchId ?? '';
   const branches = useBranches(access.read);
   const branch = branches.data?.data.find((item) => item.id === branchId);
-  const title = t(section === 'products' ? 'branchProductsTitle' : 'labelFormatsTitle');
+  const title = t(SECTION_TEXT[section].title);
   const linkProps = { className: 'is-active', 'aria-current': 'page' } as const;
   return (
     <PosPage
       title={branch ? `${title} · ${branch.name}` : title}
-      description={t(section === 'products' ? 'branchProductsIntro' : 'labelFormatsIntro')}
+      description={t(SECTION_TEXT[section].intro)}
     >
       {context.isPending ? (
         <PageState kind="loading" title={t('contextWaiting')} />
@@ -67,6 +73,15 @@ export function BranchSettingsFrame({
             >
               <PosIcon name="list" />
               {t('labelFormatsTitle')}
+            </Link>
+            <Link
+              className="button-link"
+              to="/settings/branches/$branchId/features"
+              params={{ branchId }}
+              activeProps={linkProps}
+            >
+              <PosIcon name="cog" />
+              {t('branchFeaturesTitle')}
             </Link>
           </nav>
           {branches.isPending ? <PageState kind="loading" title={t('waiting')} /> : null}

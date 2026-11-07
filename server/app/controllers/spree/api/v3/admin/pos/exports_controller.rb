@@ -52,6 +52,7 @@ module Spree
                            'report_type' => params[:report_type].to_s, 'filters' => report.filters.to_h },
                 authorize: -> {}
               ) do
+                Spree::Pos::FeaturePolicy.require!(branch, :exports)
                 record = Spree::Pos::ExportRequest.create!(
                   store: current_store, branch: branch, requester: current_user, report_type: params[:report_type].to_s,
                   filters: report.filters.to_h, status: 'queued', full_scope: scope.full?,

@@ -103,9 +103,17 @@ RSpec.describe 'POS shift close races', type: :integration do
     end
     winners = outcomes.select { |(status, _)| status == :success }.map(&:last)
     expect(winners).to include(:confirmed), outcomes.inspect
-    # A count can only win if it ran before the confirmation, while still blocked: it never records.
-    expect(Spree::Pos::Shift.find(shift.id).closing_counted).to be_nil
+    drop = Spree::Pos::CashMovement.find_by!(shift_id: shift.id, kind: 'safe_drop')
     expect(Spree::Pos::CashMovement.where(shift_id: shift.id).sum(:amount)).to eq(BigDecimal('-30'))
+    counted = Spree::Pos::Shift.find(shift.id)
+    if winners.include?(:counted)
+      # The confirmation took the barrier first: the count ran only after it
+      # committed, against the drawer after the drop, never before it.
+      expect(counted.closing_counted_at).to be >= drop.created_at
+    else
+      # The count took the barrier first while the request was pending: it was refused and recorded nothing.
+      expect(counted.closing_counted).to be_nil
+    end
   end
 
   it 'serializes a close with late cash put into its drawer' do

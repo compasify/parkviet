@@ -3,34 +3,85 @@
 module Spree
   module Pos
     class CommandExecutor
-      def self.call(store:, actor:, key:, payload:, workspace: nil, authorize:)
-        new(store:, actor:, key:, payload:, workspace:, authorize:).call { yield }
+      STACK = :spree_pos_command_stack
+
+      # `replay_authorize`, when given, is used instead of `authorize` for a
+      # replay of a receipt this actor already holds for this key (it gets the
+      # receipt). Commands whose authorization depends on state the command
+      # itself ends (an open shift) use it so a lost response can still be
+      # recovered; it must still check the actor's membership.
+      def self.call(store:, actor:, key:, payload:, authorize:, workspace: nil, replay_authorize: nil, &)
+        new(store:, actor:, key:, payload:, workspace:, authorize:, replay_authorize:).call(&)
       end
 
-      def initialize(store:, actor:, key:, payload:, workspace:, authorize:)
+      def self.log_secret
+        @log_secret ||= Rails.application.key_generator.generate_key('spree.pos.command_log.key_digest', 32)
+      end
+
+      def initialize(store:, actor:, key:, payload:, workspace:, authorize:, replay_authorize: nil)
         @store = store
         @actor = actor
         @key = key.to_s
         @payload = payload
         @workspace = workspace
         @authorize = authorize
+        @replay_authorize = replay_authorize
         @digest = CommandReceipt.digest_for('workspace_id' => workspace&.prefixed_id, 'payload' => payload)
       end
 
-      def call
+      # Every command leaves one structured log line (see #log): which
+      # command, where, and how it ended, correlated by a keyed digest of the
+      # idempotency key. A command run inside another command's transaction
+      # is tagged with that parent; the parent logs after its own commit.
+      def call(&)
+        started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        stack = (ActiveSupport::IsolatedExecutionState[STACK] ||= [])
+        @parent = stack.last
+        stack.push(command_name)
+        outcome = 'executed'
+        result = execute(&)
+        outcome = 'replayed' if @replayed
+        result
+      rescue Conflict => e
+        outcome = e.reason == FeaturePolicy::DISABLED ? 'feature_disabled' : 'conflict'
+        @failure = e.reason
+        raise
+      rescue CanCan::AccessDenied, ActiveRecord::RecordNotFound
+        outcome = 'refused'
+        raise
+      rescue StandardError => e
+        outcome = 'error'
+        @failure = e.class.name
+        raise
+      ensure
+        if started
+          stack&.pop
+          log(outcome, started)
+        end
+      end
+
+      def execute
         raise Conflict, 'Missing idempotency key.' if key.blank?
+
+        if @replay_authorize
+          existing = find_receipt
+          if existing&.digest == digest
+            @replay_authorize.call(existing)
+            return replayed(existing)
+          end
+        end
 
         @authorize.call
 
         existing = find_receipt
-        return existing.result if existing&.digest == digest
+        return replayed(existing) if existing&.digest == digest
         raise Conflict, 'Idempotency key was reused with a different payload.' if existing
 
         ApplicationRecord.transaction do
           workspace&.lock!
           @authorize.call
           existing = find_receipt
-          next existing.result if existing&.digest == digest
+          next replayed(existing) if existing&.digest == digest
           raise Conflict, 'Idempotency key was reused with a different payload.' if existing
 
           result = stringify(yield)
@@ -57,7 +108,7 @@ module Spree
         raise if raced.nil?
 
         @authorize.call
-        return raced.result if raced.digest == digest
+        return replayed(raced) if raced.digest == digest
 
         raise Conflict, 'Idempotency key was reused with a different payload.'
       end
@@ -65,6 +116,42 @@ module Spree
       private
 
       attr_reader :store, :actor, :key, :payload, :workspace, :digest
+
+      def command_name
+        payload.is_a?(Hash) ? payload['command'] : nil
+      end
+
+      def replayed(receipt)
+        @replayed = true
+        receipt.result
+      end
+
+      # Correlation only: prefixed ids of the store, branch and workspace,
+      # the command name and a keyed (HMAC) digest of the idempotency key, so
+      # the log cannot be matched against guessed keys. Never the key itself,
+      # tokens, amounts, names or other payload values.
+      def log(outcome, started)
+        fields = {
+          event: 'pos.command', command: command_name, parent: @parent, outcome: outcome, reason: @failure,
+          store: store&.prefixed_id, branch: branch_ref, workspace: workspace&.prefixed_id, actor: actor&.prefixed_id,
+          key_digest: key.present? ? OpenSSL::HMAC.hexdigest('SHA256', self.class.log_secret, key)[0, 16] : nil,
+          duration_ms: ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - started) * 1000).round
+        }.compact
+        Rails.logger.tagged('pos', 'command') { Rails.logger.info(fields.to_json) }
+      rescue StandardError
+        nil
+      end
+
+      # Only a branch of this store; a client-sent id of another store's
+      # branch is never echoed into the log.
+      def branch_ref
+        return workspace.branch&.prefixed_id if workspace
+
+        value = payload.is_a?(Hash) ? payload['branch_id'] : nil
+        return unless value.is_a?(String) && value.match?(/\A[a-z]+_[A-Za-z0-9]{1,40}\z/)
+
+        Branch.locate(Branch.for_store(store), value)&.prefixed_id
+      end
 
       def find_receipt
         CommandReceipt.find_by(store_id: store.id, actor_id: actor.id, idempotency_key: key)

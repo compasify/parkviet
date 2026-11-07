@@ -1,5 +1,6 @@
-import { type KeyboardEvent, type ReactNode, useId, useRef, useState } from 'react';
+import { type KeyboardEvent, type ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { FeatureOffNote } from '../components/feature-off-note';
 import { PageState, PosPage } from '../components/pos-page';
 import { usePosSelection } from '../components/pos-selection';
 import {
@@ -14,6 +15,12 @@ import {
   useSerialUnits,
 } from '../hooks/use-inventory';
 import { useModalFocus } from '../lib/dialog-focus';
+import {
+  FINANCIAL_RECOVERY_CHANGED,
+  type FinancialRecoveryRecord,
+  scopedFinancialRecords,
+} from '../lib/financial-recovery';
+import { contextFeature } from '../lib/pos-features';
 import { posFailureKey } from '../lib/request-failure';
 import { formatInZone, todayIn } from '../lib/shifts';
 import {
@@ -40,6 +47,38 @@ import {
 } from '../lib/traceability';
 
 const EMPTY_LOT_ROW: LotRowDraft = { lot_code: '', expiry_on: '', quantity: '' };
+const OPENING_PATH = '/pos/inventory/opening_balances';
+
+// Opening balances this browser sent without learning the outcome, by variant.
+// They stay checkable even after the branch switched traceability off.
+function usePendingOpenings(scope: Scope) {
+  const [records, setRecords] = useState<Map<string, FinancialRecoveryRecord>>(new Map());
+  useEffect(() => {
+    let active = true;
+    const load = () => {
+      if (!scope.staffId || !scope.storeId) return;
+      void scopedFinancialRecords(scope.staffId, scope.storeId)
+        .then((rows) => {
+          if (!active) return;
+          setRecords(
+            new Map(
+              rows
+                .filter((row) => row.path === OPENING_PATH && row.body.branch_id === scope.branchId)
+                .map((row) => [String(row.body.variant_id), row]),
+            ),
+          );
+        })
+        .catch(() => undefined);
+    };
+    load();
+    window.addEventListener(FINANCIAL_RECOVERY_CHANGED, load);
+    return () => {
+      active = false;
+      window.removeEventListener(FINANCIAL_RECOVERY_CHANGED, load);
+    };
+  }, [scope.staffId, scope.storeId, scope.branchId]);
+  return records;
+}
 
 export function InventoryTraceabilityPage() {
   const { context, selection } = usePosSelection();
@@ -55,6 +94,8 @@ type Scope = {
   manage: boolean;
   // Manage or trace: may read variants, lots and serials.
   reader: boolean;
+  // Manage, and the branch allows enrolling stock into tracking.
+  enroll: boolean;
   today: string;
   timeZone: string;
 };
@@ -64,6 +105,9 @@ function Inventory() {
   const { context, selection } = usePosSelection();
   const data = context.data;
   const capabilities = data?.capabilities ?? [];
+  // The branch feature gates enrolling stock into serial/lot tracking (opening
+  // balances); stock already tracked keeps its receive, transfer and count.
+  const traceOn = contextFeature(data, 'traceability');
   const manage = canManageInventory(capabilities);
   const branch = data?.branches.find((row) => row.id === selection.branchId);
   const timeZone = branch?.timezone ?? data?.store.timezone ?? 'Asia/Ho_Chi_Minh';
@@ -97,6 +141,7 @@ function Inventory() {
         capabilities,
         manage,
         reader: manage || canTraceInventory(capabilities),
+        enroll: manage && traceOn,
         today: todayIn(timeZone),
         timeZone,
       }
@@ -114,6 +159,7 @@ function Inventory() {
         </PageState>
       ) : (
         <>
+          {manage && !traceOn ? <FeatureOffNote feature="traceability" /> : null}
           <div className="report-tabs" role="tablist" aria-label={t('inventoryTitle')}>
             {tabs.map((value, index) => (
               <button
@@ -295,6 +341,8 @@ function VariantsPanel({ scope }: { scope: Scope }) {
   const rows = variants.data?.data ?? [];
   const [opening, setOpening] = useState<PosTraceStatus | null>(null);
   const [notice, setNotice] = useState('');
+  const pendingOpenings = usePendingOpenings(scope);
+  const recheck = useInventoryCommand<PosTraceStatus>(actorOf(scope));
   return (
     <>
       <h2>{t('inventoryTab_variants')}</h2>
@@ -337,7 +385,43 @@ function VariantsPanel({ scope }: { scope: Scope }) {
                   ) : (
                     t('inventorySellable')
                   )}
-                  {scope.manage && !row.enrolled && row.tracked_mode !== 'none' ? (
+                  {pendingOpenings.has(row.variant_id) ? (
+                    <>
+                      {' '}
+                      <button
+                        type="button"
+                        disabled={recheck.isPending}
+                        aria-label={t('inventoryOpeningRecheckFor', { name: row.name })}
+                        onClick={() => {
+                          const record = pendingOpenings.get(row.variant_id);
+                          if (!record) return;
+                          setNotice('');
+                          // The very body sent before, under its stored key: a
+                          // committed opening answers from its receipt; a
+                          // switched-off branch refuses only if it never ran.
+                          recheck.run(
+                            {
+                              branchId: scope.branchId,
+                              action: 'opening',
+                              path: OPENING_PATH,
+                              body: record.body,
+                            },
+                            {
+                              onSuccess: () =>
+                                setNotice(t('inventoryOpeningDone', { name: row.name })),
+                              onError: (failure) => setNotice(describeInventoryFailure(failure, t)),
+                            },
+                          );
+                        }}
+                      >
+                        {t('inventoryCommandRecheck')}
+                      </button>
+                    </>
+                  ) : null}
+                  {scope.enroll &&
+                  !row.enrolled &&
+                  row.tracked_mode !== 'none' &&
+                  !pendingOpenings.has(row.variant_id) ? (
                     <>
                       {' '}
                       <button
@@ -538,7 +622,7 @@ function OpeningForm({
             {
               branchId: scope.branchId,
               action: 'opening',
-              path: '/pos/inventory/opening_balances',
+              path: OPENING_PATH,
               body: { branch_id: scope.branchId, variant_id: variant.variant_id, ...payload.body },
             },
             {

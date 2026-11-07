@@ -342,6 +342,15 @@ export function TopologyPage() {
                           <PosIcon name="list" />
                           {t('labelFormatsTitle')}
                         </Link>
+                        <Link
+                          className="button-link"
+                          to="/settings/branches/$branchId/features"
+                          params={{ branchId: branch.id }}
+                          aria-label={t('branchFeaturesFor', { name: branch.name })}
+                        >
+                          <PosIcon name="cog" />
+                          {t('branchFeaturesTitle')}
+                        </Link>
                       </div>
                     </li>
                   ))

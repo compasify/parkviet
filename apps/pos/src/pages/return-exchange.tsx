@@ -1,6 +1,7 @@
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { FeatureOffNote } from '../components/feature-off-note';
 import { PageState, PosPage } from '../components/pos-page';
 import { usePosSelection } from '../components/pos-selection';
 import { RefundActions } from '../components/refund-actions';
@@ -18,6 +19,7 @@ import {
 } from '../hooks/use-returns';
 import { formatMoney, parseVndAmount, parseVndInput } from '../lib/money';
 import { writesLocked } from '../lib/pos-context';
+import { contextFeature } from '../lib/pos-features';
 import { definitiveRejection, posFailureKey } from '../lib/request-failure';
 import {
   canCancelReturn,
@@ -94,6 +96,10 @@ function ReturnExchange({ search }: { search: Search }) {
         />
       ) : !canProcessReturns(data?.capabilities) ? (
         <PageState title={t('forbidden')} description={t('returnForbiddenHint')} />
+      ) : !contextFeature(data, 'returns') ? (
+        <PageState title={t('featureOffTitle')}>
+          <FeatureOffNote feature="returns" />
+        </PageState>
       ) : (
         <section className="page-card" aria-label={t('returnFindOrder')}>
           <form
@@ -648,6 +654,7 @@ function ReturnProgress({
     setNotice(result.recovered ? t('pendingRecovered') : '');
   const fail = (failure: unknown) => setError(failureText(failure, t));
   const posted = operation.entitlement_status === 'posted';
+  const refundsOn = contextFeature(context.data, 'refunds');
 
   return (
     <section className="page-card" aria-label={t('returnProgress')}>
@@ -772,7 +779,10 @@ function ReturnProgress({
       ) : null}
       <section className="refund-section" aria-label={t('refundTitle')}>
         <h3>{t('refundTitle')}</h3>
-        {posted && canProcessReturns(capabilities) ? (
+        {posted && canProcessReturns(capabilities) && !refundsOn ? (
+          <FeatureOffNote feature="refunds" />
+        ) : null}
+        {posted && canProcessReturns(capabilities) && refundsOn ? (
           <RefundForm
             key={`${operation.refundable_remaining}:${order.data?.receipts.map((row) => row.refundable).join(',')}`}
             operation={operation}
@@ -833,6 +843,10 @@ function ReturnProgress({
             }}
           />
         ) : null
+      ) : operation.status !== 'canceled' &&
+        canProcessReturns(capabilities) &&
+        !contextFeature(context.data, 'exchanges') ? (
+        <FeatureOffNote feature="exchanges" />
       ) : operation.status !== 'canceled' && canProcessReturns(capabilities) ? (
         <div className="row">
           <button

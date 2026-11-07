@@ -12,6 +12,7 @@ module Spree
       class Bind
         def self.call(store:, staff:, shift_id:)
           shift = Guard.own_shift!(store, staff, shift_id)
+          FeaturePolicy.require!(shift.branch, :customer_display)
           attempts = 0
           begin
             token = nil

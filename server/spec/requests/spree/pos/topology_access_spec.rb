@@ -284,7 +284,7 @@ RSpec.describe 'POS topology access', type: :request do
       post "/api/v3/admin/pos/approvals/#{revoked.prefixed_id}/revoke", headers: headers, as: :json
       expect(response).to have_http_status(:ok)
       expect { consume(revoked) }.to raise_error(Spree::Pos::Conflict)
-      actions = Spree::Pos::AuditEntry.where(subject_type: revoked.class.name, subject_id: revoked.id).pluck(:action)
+      actions = Spree::Pos::AuditEntry.where(subject_type: revoked.class.name, subject_id: revoked.id).order(:id).pluck(:action)
       expect(actions).to eq(%w[approval.grant approval.revoke])
 
       grant(headers)

@@ -22,6 +22,9 @@ module Spree
         registers << register if register && registers.none? { |item| item.id == register.id }
         {
           capabilities: capabilities_for(branch),
+          # Kill-switch state of the selected branch (store defaults without
+          # one); the server still refuses a disabled command on its own.
+          features: FeaturePolicy.for_branch(store, branch),
           branches: branches.map(&:to_pos),
           registers: registers.map(&:to_pos),
           shift: shift&.to_pos,

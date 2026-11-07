@@ -8,6 +8,7 @@ import {
   type PosRefundRequest,
   refundAwaitsPayout,
 } from '../lib/returns';
+import { usePosSelection } from './pos-selection';
 
 // One refund request with what the reader may do with it: confirm the payout
 // (evidence dialog), cancel it with a reason before any approval, or record
@@ -44,6 +45,16 @@ export function RefundActions({
   const cancelable = canCancelRefund(refund, staffId, capabilities);
   const failable = canFailRefund(refund, capabilities);
   const evidence = refund.evidence;
+  // Cash is paid out of any open shift the confirmer owns at the branch, which
+  // may be at another register than the one selected here. The page only
+  // sees the selected register's shift, so it hints and leaves the decision
+  // (and the `shift_required` explanation) to the server.
+  const { context } = usePosSelection();
+  const shift = context.data?.shift;
+  const drawerUnseen =
+    refund.method === 'cash' &&
+    !(shift && shift.owner_id === staffId && shift.branch_id === refund.branch_id);
+  const noteId = `refund-shift-${refund.id}`;
 
   return (
     <li className="refund-row">
@@ -81,9 +92,21 @@ export function RefundActions({
       ) : (
         <span className="row">
           {onPayout && refundAwaitsPayout(refund.status) ? (
-            <button type="button" disabled={disabled} onClick={onPayout}>
-              {t('refundPayout')}
-            </button>
+            <>
+              <button
+                type="button"
+                disabled={disabled}
+                aria-describedby={drawerUnseen ? noteId : undefined}
+                onClick={onPayout}
+              >
+                {t('refundPayout')}
+              </button>
+              {drawerUnseen ? (
+                <small className="muted" id={noteId}>
+                  {t('refundNeedsOpenShift')}
+                </small>
+              ) : null}
+            </>
           ) : null}
           {cancelable ? (
             <button

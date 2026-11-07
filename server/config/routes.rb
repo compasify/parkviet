@@ -99,6 +99,8 @@ Rails.application.routes.draw do
             get 'context/branches', to: 'context_branches#index'
             get 'context/registers', to: 'context_registers#index'
             get 'command_receipts', to: 'command_receipts#index'
+            resources :feature_flags, only: [:index, :update]
+            get 'operations/metrics', to: 'operational_metrics#show'
             resources :branches, only: [:index, :show, :create, :update] do
               member do
                 post :disable

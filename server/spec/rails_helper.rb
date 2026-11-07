@@ -88,3 +88,6 @@ RSpec.configure do |config|
   # arbitrary gems may also be filtered via:
   # config.filter_gems_from_backtrace("gem name")
 end
+
+# POS kill-switches: branches created in specs start with every feature on.
+require_relative 'support/pos_feature_helpers'

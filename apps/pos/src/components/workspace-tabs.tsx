@@ -2,11 +2,12 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { fetchCatalogPage, parseMeasurementBarcode } from '../hooks/use-catalog';
 import { useInvoiceNumbers } from '../hooks/use-invoice-numbers';
-import { useWorkspaces } from '../hooks/use-workspaces';
+import { DraftReplayRefused, useWorkspaces } from '../hooks/use-workspaces';
 import { commandQueue } from '../lib/command-queue';
 import { resolveScan, type ScanOutcome } from '../lib/measured-label';
 import { formatMoney } from '../lib/money';
 import { type PosWorkspace, writesLocked } from '../lib/pos-context';
+import { contextFeature } from '../lib/pos-features';
 import {
   describeFailure,
   leaseConflict,
@@ -234,7 +235,11 @@ export function WorkspaceTabs() {
     } catch (error) {
       if (started === scopeRef.current) {
         const conflict = leaseConflict(error);
-        setMessage(describeTraceFailure(error, t));
+        setMessage(
+          error instanceof DraftReplayRefused
+            ? t('draftReplayRefused')
+            : describeTraceFailure(error, t),
+        );
         if (conflict?.reason === 'lease_busy' && active)
           setLeaseWait({ workspaceId: active.id, until: Date.now() + conflict.seconds * 1000 });
       }
@@ -880,6 +885,12 @@ export function WorkspaceTabs() {
                 canCollect={Boolean(data?.capabilities.includes('pos.payment.collect'))}
                 canResolve={Boolean(data?.capabilities.includes('pos.payment.resolve'))}
                 canSellCredit={Boolean(data?.capabilities.includes('pos.credit.sell'))}
+                creditEnabled={contextFeature(data, 'credit')}
+                drawerOpen={Boolean(
+                  data?.shift &&
+                    data.shift.id === active.shift_id &&
+                    data.shift.owner_id === data.staff.id,
+                )}
                 disabled={
                   locked ||
                   busy ||
@@ -893,6 +904,7 @@ export function WorkspaceTabs() {
               <DisplayPinControl
                 shiftId={data?.shift?.id ?? null}
                 ownsShift={Boolean(data?.shift && data.shift.owner_id === data.staff.id)}
+                enabled={contextFeature(data, 'customer_display')}
                 workspace={active}
               />
             </div>

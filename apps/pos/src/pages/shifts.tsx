@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CashMovementDialog } from '../components/cash-movement-dialog';
 import { CashRequestList } from '../components/cash-request-list';
+import { FeatureOffNote } from '../components/feature-off-note';
 import { LateCashWizard } from '../components/late-cash-wizard';
 import { PageState, PosPage } from '../components/pos-page';
 import { usePosSelection } from '../components/pos-selection';
@@ -15,6 +16,7 @@ import {
 } from '../hooks/use-shift-close';
 import { formatMoney } from '../lib/money';
 import { writesLocked } from '../lib/pos-context';
+import { contextFeature } from '../lib/pos-features';
 import { posFailureKey } from '../lib/request-failure';
 import { canMoveCash, canReconcileCash, formatInZone } from '../lib/shifts';
 
@@ -36,6 +38,7 @@ function Shifts() {
   const branch = data?.branches.find((row) => row.id === selection.branchId);
   const timeZone = branch?.timezone ?? data?.store.timezone ?? 'Asia/Ho_Chi_Minh';
   const recover = capabilities.includes('pos.topology.recover');
+  const cashMovesOn = contextFeature(data, 'cash_moves');
   // Kept while the dialog is open: closing removes the shift from the context.
   const [closingId, setClosingId] = useState<string | null>(null);
   const [moving, setMoving] = useState(false);
@@ -91,9 +94,17 @@ function Shifts() {
                   </dd>
                 </dl>
                 <p className="muted">{t('shiftBlindNotice')}</p>
+                {own && canMoveCash(capabilities) && !cashMovesOn ? (
+                  <FeatureOffNote feature="cash_moves" id="cash-moves-off" />
+                ) : null}
                 <div className="row">
                   {own && canMoveCash(capabilities) ? (
-                    <button type="button" disabled={locked} onClick={() => setMoving(true)}>
+                    <button
+                      type="button"
+                      disabled={locked || !cashMovesOn}
+                      aria-describedby={cashMovesOn ? undefined : 'cash-moves-off'}
+                      onClick={() => setMoving(true)}
+                    >
                       {t('cashMovementOpen')}
                     </button>
                   ) : null}
@@ -221,7 +232,7 @@ function Shifts() {
           ) : null}
         </>
       )}
-      {moving && shift ? (
+      {moving && shift && cashMovesOn ? (
         <CashMovementDialog
           shiftId={shift.id}
           currency={shift.currency}

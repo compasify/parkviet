@@ -23,6 +23,7 @@ module Spree
           authorize = -> { Guard.authorize_return!(store, staff, Guard.branch!(store, branch_id)) }
           CommandExecutor.call(store: store, actor: staff, key: key, payload: payload, authorize: authorize) do
             branch = Guard.branch!(store, branch_id)
+            FeaturePolicy.require!(branch, :returns)
             raise Conflict, 'A return reason is required.' if reason.to_s.strip.blank?
 
             workspace = Guard.sale!(store, order_id)
