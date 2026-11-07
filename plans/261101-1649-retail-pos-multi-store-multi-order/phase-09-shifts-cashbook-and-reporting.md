@@ -1,7 +1,7 @@
 ---
 phase: 9
 title: "Đóng ca, sổ quỹ và báo cáo đối soát"
-status: pending
+status: completed
 priority: P1
 dependencies: [3, 6, 7, 8]
 effort: "Ước tính 9–14 person-days"
@@ -68,12 +68,12 @@ Inventory repo-root; create/modify dự kiến, không sửa upstream Spree.
 
 ## Success Criteria
 
-- [ ] F15: serialized cutoff đúng khi close đua receipt/collection/payout; một physical drawer một active shift.
-- [ ] F16: late bank/fresh current cash/overnight giữ source sale; late S1 cash reconcile variance/custody không rewrite snapshot hoặc double-count S2 opening/safe; fixture100k không thành200k.
-- [ ] F17: reversal immutable, reports/CSV-safe exports reconcile được tới source facts; fees không tạo nợ mới.
-- [ ] F01, F09–F11, F19, F20: cash change/collection/refund/liability payout reconcile once, reversal không physical inflow; bank/card/debt không vào drawer.
-- [ ] A02, A05, A06: report scope/variance approval/recovery có quyền; closed ca không bị cashier sửa.
-- [ ] W08: close checklist/variance/report filters dùng được tablet/keyboard, không chỉ màu phân loại.
+- [x] F15: serialized cutoff đúng khi close đua receipt/collection/payout; một physical drawer một active shift. *(`ShiftBarrier` khóa ca trong mọi đường ghi tiền mặt; race hai connection: đóng ca đua tiền mặt bán hàng, thu nợ, chi liability, hoàn tiền mặt, tiền ngoài luồng, nộp/rút két, late-cash và hoàn tất bán chịu — `shift_close_race_spec.rb`.)*
+- [x] F16: late bank/fresh current cash/overnight giữ source sale; late S1 cash reconcile variance/custody không rewrite snapshot hoặc double-count S2 opening/safe; fixture100k không thành200k. *(Fixture S1 thừa 100k / S2 đầu ca 100k giữ expected 100k theo cả hai thứ tự đối soát; chỉ `new_physical_inflow` tạo cash movement; tiền giữ ngoài két không đi ra từ két; ca qua nửa đêm hiện ở cả hai ngày theo múi giờ chi nhánh.)*
+- [x] F17: reversal immutable, reports/CSV-safe exports reconcile được tới source facts; fees không tạo nợ mới. *(Closure, cash movement, reconciliation chỉ đọc; sửa bằng bút toán mới có audit; CSV escape công thức, BOM UTF-8, link tải ký một phút, TTL 24h.)*
+- [x] F01, F09–F11, F19, F20: cash change/collection/refund/liability payout reconcile once, reversal không physical inflow; bank/card/debt không vào drawer. *(Expected = đầu ca + cash movement: thu ròng (đã trừ tiền thối), thu nợ, chi/hoàn âm; bank/thẻ/nợ và phân bổ/đảo phân bổ không tạo movement — `shift_closure_spec.rb`.)*
+- [x] A02, A05, A06: report scope/variance approval/recovery có quyền; closed ca không bị cashier sửa. *(Thu ngân chỉ thấy ca của mình, không thấy tổng tiền mặt ca đang mở trước khi đếm; chênh lệch vượt ngưỡng cần duyệt người khác; rút tiền/nộp két cần người thứ hai xác nhận; quản lý có quyền recover đóng được ca vắng chủ.)*
+- [x] W08: close checklist/variance/report filters dùng được tablet/keyboard, không chỉ màu phân loại. *(E2E mock 3 viewport cho đóng ca, nộp/rút két, late-cash, báo cáo; trạng thái chênh lệch hiện bằng chữ Thừa/Thiếu/Khớp. Kiểm trên API thật chuyển phase 11.)*
 
 ## Risk Assessment
 
@@ -85,3 +85,25 @@ Inventory repo-root; create/modify dự kiến, không sửa upstream Spree.
 ## Next Steps
 
 Phase 10 hiển thị/in snapshot theo financial facts này; phase 11 duyệt operational reconciliation trước full retail.
+
+## Review 07/11/2026
+
+Hai review độc lập xác nhận barrier phủ đủ 7 đường ghi cash movement với thứ tự khóa nhất quán; các lỗi tìm thấy đã sửa và có test:
+
+- Chi liability hoặc hoàn tiền mặt từ tiền đang giữ ngoài két (`held`) trừ vào két, tạo thừa giả khi đóng ca. Nay bị từ chối `held_custody`; chi từ nơi giữ thì ghi xuất custody, không đụng két.
+- Cùng một khoản tiền trễ được giải thích hai lần (qua closure và qua phiếu giữ tiền) làm S2 expected thành 200k. Nay phiếu giữ tiền tự gắn closure còn thừa, `in_opening_float` không vượt tiền đầu ca, người đóng ca và người duyệt chênh lệch không được tự đối soát.
+- Đếm két bị coi là còn hiệu lực theo giờ máy chủ. Nay so theo id cash movement cuối lúc đếm.
+- Rút tiền và nộp két chỉ một người tự khai. Nay cần chứng từ và người thứ hai xác nhận mới ghi movement.
+- Tải export không kiểm lại phạm vi đọc, dựng cả file trong bộ nhớ và nhét vào JSON. Nay kiểm lại quyền, phân trang theo khóa, ghi Tempfile, link ký một phút.
+- Frontend: mất phản hồi khi rút tiền có thể ghi hai lần (key đổi khi sửa lý do) và kết quả đếm/duyệt không tra lại được (thiếu `branch_id` trong receipt). Nay intent ổn định theo dialog/revision, receipt có `branch_id`, hiện "Đang kiểm tra kết quả". Sửa thêm: wizard late-cash không gửi số tiền, link checklist không mở đúng đơn/phiếu, sổ quỹ không hiện tóm tắt theo ca, export hết hạn vẫn cho tải, đổi tab báo cáo hiện dữ liệu cũ.
+- Đơn nháp chưa nhận tiền của ca đã đóng được chuyển sang ca mới khi thu ngân mở lại (có audit); đơn đã nhận tiền vẫn chặn đóng ca.
+
+## Đóng phase 07/11/2026
+
+**Kết quả:** backend POS 345 examples, 0 failures (thêm `shift_closure_spec.rb`, `reports_spec.rb`, `shift_close_spec.rb`, `spec/integration/spree/pos/shift_close_race_spec.rb`). `apps/pos`: lint, typecheck sạch, 111 unit; Playwright 219 passed / 6 skipped (live API opt-in). Chi tiết: [báo cáo triển khai](./reports/phase-09-implementation.md).
+
+**Migration:** `20261107143000_create_spree_pos_shift_closures`, `20261107150000_add_pos_cash_movement_requests` chỉ áp database test. Development vẫn chờ sao lưu.
+
+**Ghi chú thiết kế:** đếm và đóng là hai lệnh riêng (`Shifts::Count`, `Shifts::Close`); không có `shifts/correct.rb` vì mọi sửa chữa là bút toán mới. Một controller báo cáo allowlist phục vụ năm loại báo cáo. Đếm mù là bắt buộc trong UI và báo cáo nhưng thu ngân vẫn đếm lại được (mỗi lần đếm có audit).
+
+**Chuyển phase sau:** in phiếu đóng ca và hiển thị khách (phase 10); kiểm trên API thật, tải lớn và quy trình vận hành két (phase 11). Vẫn sandbox-only.
