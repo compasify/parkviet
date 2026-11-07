@@ -63,7 +63,7 @@ Theo yêu cầu tiếp tục phát triển phase tiếp theo, các vấn đề c
 | 3 | [Branches registers and access control](./phase-03-branches-registers-and-access-control.md) | Completed |
 | 4 | [Concurrent order workspace](./phase-04-concurrent-order-workspace.md) | Completed |
 | 5 | [Catalog customers and discounts](./phase-05-catalog-customers-and-discounts.md) | Completed |
-| 6 | [Split tender and settlement](./phase-06-split-tender-and-settlement.md) | In Progress |
+| 6 | [Split tender and settlement](./phase-06-split-tender-and-settlement.md) | Completed |
 | 7 | [Credit sales and receivables](./phase-07-credit-sales-and-receivables.md) | Pending |
 | 8 | [Inventory handover returns and exchanges](./phase-08-inventory-handover-returns-and-exchanges.md) | Pending |
 | 9 | [Shifts cashbook and reporting](./phase-09-shifts-cashbook-and-reporting.md) | Pending |
@@ -79,6 +79,8 @@ Phase 3 completed 06/11/2026: đã review và sửa 6 lỗi, có test race hai c
 Phase 4 completed 06/11/2026: đã review và sửa 6 lỗi (lease sau takeover, hủy draft còn tiền, ẩn draft khi bị gỡ quyền...), có test race hai connection cho lease và tạo draft. Mở 20 view trên trình duyệt với API thật chuyển phase 11; xem [mục đóng phase](./phase-04-concurrent-order-workspace.md#đóng-phase-06112026).
 
 Phase 5 completed 07/11/2026: review sửa lỗi backend/frontend (khóa snapshot khi có tender, số lượng nguyên, gộp gói, approval theo số tiền thực áp, scanner, tạo khách trùng...), thêm tem cân/giá EAN-13 và UI quản lý hàng chi nhánh. Migration mẫu tem mới áp database test; máy cân/quét thật chuyển phase 10, kiểm API thật chuyển phase 11; xem [mục đóng phase](./phase-05-catalog-customers-and-discounts.md#đóng-phase-07112026).
+
+Phase 6 completed 07/11/2026 (sandbox-only): review sửa lỗi payout giải phóng tiền đã chi, tiền mặt vào ca sai, tiền lẻ VND, nhập "100.000" bị đọc thành 100 đ, record khôi phục không xóa được; thêm race hai connection và fault injection. Migration mới áp database test; kiểm API thật chuyển phase 11, đối soát tiền `held` chuyển phase 9; xem [mục đóng phase](./phase-06-split-tender-and-settlement.md#đóng-phase-07112026).
 
 ## Dependencies
 

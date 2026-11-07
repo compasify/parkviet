@@ -1,7 +1,7 @@
 ---
 phase: 6
 title: "Thu nhiều phương thức và saga hoàn tất đơn"
-status: in-progress
+status: completed
 priority: P1
 dependencies: [1, 3, 4, 5]
 effort: "Ước tính 12–18 person-days"
@@ -88,13 +88,13 @@ Inventory repo-root, names proposed; chỉ tạo trong app, không fake gateway 
 ## Success Criteria
 
 - [x] F01: sale250/card-style bank100/cash handed200/change50 → cash Payment150, drawer +150, confirm lần hai không nhân đôi (sandbox request spec; thẻ thật/gateway vẫn chưa mở).
-- [ ] F03, F04, F07: partial/unknown/session lifecycle/recovery không auto-paid hoặc thu lại sau crash. Đã có browser IndexedDB financial store, command-receipt recheck và outbox/recovery job; chưa có fault-injection thật cho mất response/concurrent replay hai connection.
-- [ ] F04 offline: reload/đóng browser giữ recovery intent; commit mất response rồi reconnect cùng key không nhân tiền, Payment hay order; lỗi storage/permission/retention và mất máy tạo attention/manual reconciliation, không báo đã đồng bộ sai hoặc xóa chứng cứ chưa giải quyết. Đã implement store riêng + shell warning/manual-reconcile copy và unit test storage unavailable; chưa e2e reload/mất response thật.
+- [x] F03, F04, F07: partial/unknown/session lifecycle/recovery không auto-paid hoặc thu lại sau crash. *(Fault injection: lỗi giữa confirm rollback sạch rồi retry cùng key ghi đúng một lần; lỗi placement sau khi nhận tiền giữ tiền, recovery job báo `workspace.completion_pending` một lần, retry hoàn tất một lần. Race hai connection: confirm cùng key trả cùng kết quả, hai key khác chỉ một lần nhận tiền — `settlement_race_spec.rb`.)*
+- [x] F04 offline: reload/đóng browser giữ recovery intent; commit mất response rồi reconnect cùng key không nhân tiền, Payment hay order; lỗi storage/permission/retention và mất máy tạo attention/manual reconciliation, không báo đã đồng bộ sai hoặc xóa chứng cứ chưa giải quyết. *(Key retry không phụ thuộc editor/revision/lease nên giữ nguyên sau reload; tra receipt trước khi gửi lại; 4xx dứt khoát xóa record, lỗi mạng/5xx giữ; storage lỗi/abort/memory fallback hiện cảnh báo đối soát thủ công; trang chú ý có "Đã đối soát". Unit `financial-command.test.ts`. E2E reload trên API thật chuyển phase 11.)*
 - [x] F05, F06: excess/late/distinct actual transfers có ledger/review, commitments serialized ở mức request specs hiện có; concurrency thật hai connection vẫn thuộc gate còn thiếu.
 - [x] F19: tiền thừa/trễ allocate hoặc hoàn có evidence/approval, unknown giữ reservation; chưa allocated không tạo fake goods return/core Refund.
 - [x] F20 primitive: parent buckets disjoint, không negative/consume kép trong unit/request specs; integration collection→refund→reverse→reallocate phải pass ở phase 7/8 trước bật vận hành.
-- [ ] A03, A05, F18: no core bypass/client paid flag; zero order có audit và không fake receipt. Đã không nhận `paid/payment_pending/force` từ client và completion kiểm completed receipts riêng; audit/zero-order gate chưa có spec riêng đầy đủ.
-- [ ] W01, F12, F13: A chờ/B cash/C scan; handover đúng location và stock effect một lần đã pass trong một workspace sandbox, chưa multi-order thật.
+- [x] A03, A05, F18: no core bypass/client paid flag; zero order có audit và không fake receipt. *(Đơn 0 đ cần quyền duyệt, audit `workspace.complete_zero_total`, không tạo Payment; tiền lẻ VND bị từ chối ở tender/confirm/allocate/unsolicited/payout; POS chỉ ghi Payment lên phương thức thủ công không cần nguồn thẻ.)*
+- [x] W01, F12, F13: A chờ/B cash/C scan; handover đúng location và stock effect một lần. *(E2E mock: đơn A giữ tender chuyển khoản "Để chờ", đơn B thu tiền mặt và hoàn tất, A tiếp tục giữ tender; request spec handover trừ tồn một lần. Multi-order trên API thật chuyển phase 11.)*
 - [x] Sandbox-only 1–6: chưa full retail/real-money pilot, chưa bật credit/returns/close thiếu gates; tracked SKU chưa phase 8 bị chặn trước thu tiền.
 
 ## Risk Assessment
@@ -115,3 +115,23 @@ Phase 7 credit/collections vẫn sandbox; phase 8–10 operational integration, 
 - Frontend sandbox đã nối: `PaymentPanel` + `TenderEvidenceDialog`, hook `use-tenders`, IndexedDB financial recovery store riêng (`financial-recovery.ts`, không reuse sessionStorage intent), received-funds/liability UI tại `/funds`, payment-attention tại `/payment-attention`, shell cảnh báo/recheck command receipt và split-tender Playwright mock trên desktop/tablet/mobile. Kết quả: **31 unit tests**, lint, typecheck, build và `e2e/split-tender.spec.ts` 3 projects pass. Đây vẫn là sandbox: không gateway/ngân hàng/thẻ thật, không offline-start, không credit/returns/close.
 - Allocation detail fix: `Workspace#financial_pos` tính allocations theo `workspace_id` nên tiền unsolicited được allocate vào workspace hiển thị đúng allocated/remaining, đồng thời unapplied cộng đủ buckets từ parent funds liên quan.
 - Còn thiếu trước khi coi phase 6 là gate đóng: fault injection mất response/concurrent replay hai connection, e2e API thật/multi-order, recovery sau reload bằng API thật, qualification F16 late-cash custody và sandbox QA gate chính thức. Không dùng checkpoint này để mở tiền thật.
+
+## Review 07/11/2026
+
+Review độc lập backend và frontend tìm thấy các lỗi thật trong luồng tiền; tất cả đã sửa và có test:
+
+- Payout: resolve không kiểm lại trạng thái sau lock nên có thể hủy payout đã xác nhận (tiền đã chi quay lại available); `cancel` giải phóng payout `unknown` không cần bằng chứng. Nay chỉ cancel từ requested/reserved, `failed_no_effect` bắt buộc bằng chứng, người xác nhận phải khác người yêu cầu, chi tiền mặt ghi vào ca mở của người xác nhận; request duyệt approval trước khi khóa funds (tránh deadlock với allocate).
+- Ca không quầy (branch-only) không thu được tiền vì bảng tài chính bắt buộc register. Migration `20261107110000_relax_pos_financial_registers` bỏ ràng buộc này và thêm `receiving_account`, `custody`, `custody_note` cho ReceivedFunds.
+- Tiền mặt ngoài luồng có thể cộng vào ca đã đóng hoặc ca người khác. Nay tiền mặt `drawer` chỉ vào ca mở của chính người ghi; tiền mặt không nằm trong két hiện tại ghi `held` kèm ghi chú, không tạo cash movement. Chuyển khoản ngoài luồng cần quyền resolve, số tham chiếu và tài khoản nhận.
+- Tiền lẻ VND được chấp nhận; tiền mặt đưa thiếu được xác nhận thành thu một phần; chuyển khoản dư không ghi được thành một khoản nhận. Nay từ chối tiền lẻ và đưa thiếu; `received_amount` ghi một ReceivedFunds, phần dư nằm ở unapplied.
+- Resolver có thể ghi Payment POS lên cổng thẻ hoặc phương thức đã xóa. Nay chỉ dùng phương thức thủ công active của store, không có thì từ chối.
+- Attempt `unknown` không bị trừ khỏi số còn phải thu; Payment void sau reverse vẫn khóa đơn; recovery job ghi trùng và chưa được lên lịch; outbox không claim khi chạy song song. Đã sửa, job chạy theo `config/recurring.yml`.
+- Frontend: "100.000" bị đọc thành 100 đ; mọi 409 để lại record khôi phục không xóa được; bằng chứng chuyển khoản điền sẵn giá trị giả và QR trang trí; tiền mặt mặc định bằng số phải thu; lỗi server bị ẩn; lệnh thanh toán không qua serializer của workspace; dialog che các tab khác; key retry đổi sau reload; IndexedDB abort làm treo. Tất cả đã sửa, thêm "Để chờ, bán đơn khác" và dialog có focus trap/Escape.
+
+## Đóng phase 07/11/2026
+
+**Kết quả:** backend POS 203 examples, 0 failures (thêm 10 example settlement và `spec/integration/spree/pos/settlement_race_spec.rb` 4 example race hai connection). `apps/pos`: lint, typecheck sạch, 84 unit pass; `e2e/split-tender.spec.ts` 21 passed trên 3 viewport; toàn bộ Playwright 159 passed / 6 skipped (live API opt-in).
+
+**Migration:** `20261107110000_relax_pos_financial_registers` đã áp **chỉ database test**, cùng `20261107100000` của phase 5. Development chưa áp vì chưa sao lưu được (`pg_dump` trong container bản 17, server PostgreSQL 18).
+
+**Chuyển phase sau:** e2e multi-order và reload/mất response trên API thật (phase 11); đối soát tiền mặt `held` vào chênh lệch ca/két và F16 đầy đủ (phase 9 đóng ca); tích hợp refund thật consume parent funds F20 (phase 7/8). Vẫn sandbox-only: không tiền thật, không cổng thanh toán.
