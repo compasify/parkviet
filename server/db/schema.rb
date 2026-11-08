@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_08_160000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_08_173000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -2882,8 +2882,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_08_160000) do
     t.bigint "actor_id", null: false
     t.integer "copy_number", null: false
     t.datetime "created_at", null: false
+    t.bigint "receipt_template_id"
+    t.integer "template_version"
+    t.string "paper"
     t.index ["receipt_snapshot_id", "copy_number"], name: "idx_pos_receipt_prints_copy", unique: true
+    t.index ["receipt_template_id"], name: "idx_pos_receipt_prints_template"
     t.check_constraint "copy_number >= 0", name: "chk_pos_receipt_prints_copy_number"
+    t.check_constraint "paper IS NULL OR (paper::text = ANY (ARRAY['58mm'::character varying, '80mm'::character varying, 'a4'::character varying, 'a5'::character varying, 'a6'::character varying]::text[]))", name: "chk_pos_receipt_prints_paper"
   end
 
   create_table "spree_pos_receipt_snapshots", force: :cascade do |t|
@@ -2903,6 +2908,36 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_08_160000) do
     t.index ["source_type", "source_id"], name: "idx_pos_receipt_snapshots_source", unique: true
     t.index ["store_id", "source_type", "number"], name: "idx_pos_receipt_snapshots_number", unique: true
     t.check_constraint "source_type::text = ANY (ARRAY['sale'::character varying, 'return'::character varying, 'return_supplement'::character varying, 'refund'::character varying, 'shift_closure'::character varying]::text[])", name: "chk_pos_receipt_snapshots_source_type"
+  end
+
+  create_table "spree_pos_receipt_template_versions", force: :cascade do |t|
+    t.bigint "receipt_template_id", null: false
+    t.integer "version", null: false
+    t.jsonb "config", null: false
+    t.bigint "created_by_id"
+    t.datetime "created_at", null: false
+    t.index ["receipt_template_id", "version"], name: "idx_pos_receipt_template_versions_version", unique: true
+    t.check_constraint "version >= 1", name: "chk_pos_receipt_template_versions_version"
+  end
+
+  create_table "spree_pos_receipt_templates", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.string "name", null: false
+    t.string "document_type", null: false
+    t.string "paper", null: false
+    t.string "status", default: "active", null: false
+    t.boolean "is_default", default: false, null: false
+    t.integer "current_version", default: 1, null: false
+    t.bigint "created_by_id"
+    t.bigint "updated_by_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["store_id", "document_type", "status"], name: "idx_pos_receipt_templates_type"
+    t.index ["store_id", "document_type"], name: "idx_pos_receipt_templates_default", unique: true, where: "(is_default AND ((status)::text = 'active'::text))"
+    t.check_constraint "current_version >= 1", name: "chk_pos_receipt_templates_current_version"
+    t.check_constraint "document_type::text = ANY (ARRAY['sale'::character varying, 'prebill'::character varying, 'payment_ticket'::character varying, 'return'::character varying, 'refund'::character varying, 'shift_closure'::character varying]::text[])", name: "chk_pos_receipt_templates_document_type"
+    t.check_constraint "paper::text = ANY (ARRAY['58mm'::character varying, '80mm'::character varying, 'a4'::character varying, 'a5'::character varying, 'a6'::character varying]::text[])", name: "chk_pos_receipt_templates_paper"
+    t.check_constraint "status::text = ANY (ARRAY['active'::character varying, 'disabled'::character varying]::text[])", name: "chk_pos_receipt_templates_status"
   end
 
   create_table "spree_pos_receivable_entries", force: :cascade do |t|
@@ -5275,6 +5310,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_08_160000) do
   add_foreign_key "spree_pos_receipt_evidences", "spree_admin_users", column: "actor_id"
   add_foreign_key "spree_pos_receipt_evidences", "spree_pos_tender_attempts", column: "tender_attempt_id"
   add_foreign_key "spree_pos_receipt_evidences", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_receipt_prints", "spree_pos_receipt_templates", column: "receipt_template_id"
+  add_foreign_key "spree_pos_receipt_template_versions", "spree_admin_users", column: "created_by_id"
+  add_foreign_key "spree_pos_receipt_template_versions", "spree_pos_receipt_templates", column: "receipt_template_id"
+  add_foreign_key "spree_pos_receipt_templates", "spree_admin_users", column: "created_by_id"
+  add_foreign_key "spree_pos_receipt_templates", "spree_admin_users", column: "updated_by_id"
+  add_foreign_key "spree_pos_receipt_templates", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_receivable_entries", "spree_admin_users", column: "actor_id"
   add_foreign_key "spree_pos_receivable_entries", "spree_orders", column: "order_id"
   add_foreign_key "spree_pos_receivable_entries", "spree_pos_branches", column: "branch_id"

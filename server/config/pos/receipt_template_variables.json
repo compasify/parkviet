@@ -1,0 +1,17 @@
+[
+  "store.name",
+  "store.address",
+  "store.phone",
+  "store.email",
+  "store.url",
+  "store.facebook",
+  "store.instagram",
+  "branch.name",
+  "branch.code",
+  "branch.return_window_days",
+  "register.name",
+  "cashier",
+  "document.number",
+  "document.time",
+  "customer.name"
+]

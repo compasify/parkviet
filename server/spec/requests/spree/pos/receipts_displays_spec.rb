@@ -5,7 +5,7 @@ require_relative '../../../support/pos_shift_helpers'
 require_relative '../../../support/pos_trace_helpers'
 
 # HTTP contract for immutable receipts (lookup, search, print and copies,
-# masking) and the customer display (token scope, expiry, revoke, rotation,
+# print templates of originals and reprints, masking) and the customer display (token scope, expiry, revoke, rotation,
 # generation, acknowledgement and the content it may show).
 RSpec.describe 'POS receipts and customer display API', type: :request do
   include PosShiftHelpers
@@ -542,7 +542,8 @@ RSpec.describe 'POS receipts and customer display API', type: :request do
       key = SecureRandom.uuid
       first = call(cashier, :post, "receipts/#{receipt['id']}/prints", {}, key: key)['data']
       expect(first.dig('receipt', 'document', 'customer', 'name')).to eq('Lê Văn Bảo')
-      expect(Spree::Pos::CommandReceipt.order(:id).last.result.keys).to match_array(%w[id receipt_id copy copy_number label printed_at])
+      expect(Spree::Pos::CommandReceipt.order(:id).last.result.keys).
+        to match_array(%w[id receipt_id copy copy_number label printed_at template_id template_version paper])
 
       Spree::Pos::StaffMembership.find_by!(staff_id: cashier.id, branch_id: branch.id).
         update!(capabilities: [Spree::Pos::Capabilities::OPEN_SHIFT])
@@ -550,6 +551,153 @@ RSpec.describe 'POS receipts and customer display API', type: :request do
       expect(replay['print']).to eq(first['print'])
       expect(replay.dig('receipt', 'document', 'customer', 'name')).to eq('L• V•• B••')
       expect(Spree::Pos::ReceiptPrint.count).to eq(1)
+    end
+  end
+
+  describe 'print templates' do
+    let(:templates) { Spree::Pos::ReceiptTemplate }
+
+    def default_template(type)
+      templates.ensure_defaults!(store)
+      templates.for_store(store).active.find_by!(document_type: type, is_default: true)
+    end
+
+    def sale_receipt
+      sale = paid_sale(store, branch, cashier: cashier, price: 25_000)
+      call(cashier, :get, 'receipts/lookup', { source_id: sale.workspace.prefixed_id })['data']
+    end
+
+    def print!(receipt, body = {}, key: SecureRandom.uuid)
+      call(cashier, :post, "receipts/#{receipt['id']}/prints", body, key: key)['data']
+    end
+
+    def error_pointers
+      response.parsed_body.dig('error', 'details', 'errors').map { |error| error['pointer'] }
+    end
+
+    it "reprints with the original's template, version and paper even after it was edited or disabled" do
+      receipt = sale_receipt
+      template = default_template('sale')
+      original = print!(receipt)
+      layout = { 'template_id' => template.prefixed_id, 'template_version' => 1, 'paper' => '80mm' }
+      expect(original['print']).to include(layout.merge('copy_number' => 0))
+      expect(original['receipt']['original_print']).to eq(layout)
+      expect(Spree::Pos::AuditEntry.find_by!(action: 'receipt.print').metadata).to include(layout)
+
+      edited = template.current_config.merge('footer' => [{ 'type' => 'divider' }])
+      template.with_lock { template.revise!(config: edited, actor: nil, paper: '58mm') }
+      successor = templates.create_with_version!(store: store, document_type: 'sale', name: 'A4', paper: 'a4',
+                                                 config: edited, actor: nil)
+      template.update!(status: 'disabled', is_default: false)
+      successor.update!(is_default: true)
+
+      copy = print!(receipt)
+      expect(copy['print']).to include(layout.merge('copy_number' => 1, 'label' => 'BẢN SAO'))
+      explicit = print!(receipt, { receipt_template_id: template.prefixed_id, template_version: 1, paper: '80mm' })
+      expect(explicit['print']).to include(layout)
+      listed = call(cashier, :get, 'receipts', { branch_id: branch.prefixed_id })['data'].find { |row| row['id'] == receipt['id'] }
+      expect(listed['original_print']).to eq(layout)
+      expect(call(cashier, :get, "receipts/#{receipt['id']}")['data']['original_print']).to eq(layout)
+    end
+
+    it 'records another template of the same type and keeps defaulting to the original afterwards' do
+      receipt = sale_receipt
+      template = default_template('sale')
+      a4 = templates.create_with_version!(store: store, document_type: 'sale', name: 'A4', paper: 'a4',
+                                          config: template.current_config, actor: nil)
+      print!(receipt)
+      other = print!(receipt, { receipt_template_id: a4.prefixed_id })
+      expect(other['print']).to include('template_id' => a4.prefixed_id, 'template_version' => 1, 'paper' => 'a4', 'copy_number' => 1)
+      expect(other['receipt']['original_print']['template_id']).to eq(template.prefixed_id)
+      again = print!(receipt)
+      expect(again['print']).to include('template_id' => template.prefixed_id, 'paper' => '80mm', 'copy_number' => 2)
+      expect(Spree::Pos::ReceiptPrint.order(:copy_number).pluck(:receipt_template_id, :paper)).
+        to eq([[template.id, '80mm'], [a4.id, 'a4'], [template.id, '80mm']])
+    end
+
+    it 'refuses a template of another document type, a disabled one, an unknown version or a foreign template' do
+      receipt = sale_receipt
+      sale_template = default_template('sale')
+      spare = templates.create_with_version!(store: store, document_type: 'sale', name: 'Cũ', paper: '58mm',
+                                             config: sale_template.current_config, actor: nil)
+      spare.update!(status: 'disabled')
+      other_store = create(:store, default_currency: 'VND', supported_currencies: 'VND')
+      templates.ensure_defaults!(other_store)
+      foreign = templates.for_store(other_store).find_by!(document_type: 'sale')
+
+      [[{ receipt_template_id: default_template('return').prefixed_id }, '/receipt_template_id'],
+       [{ receipt_template_id: spare.prefixed_id }, '/receipt_template_id'],
+       [{ receipt_template_id: foreign.prefixed_id }, '/receipt_template_id'],
+       [{ receipt_template_id: sale_template.prefixed_id, template_version: 4 }, '/template_version'],
+       [{ receipt_template_id: sale_template.prefixed_id, paper: 'A3' }, '/paper'],
+       [{ template_version: 1 }, '/template_version']].each do |body, pointer|
+        print!(receipt, body)
+        expect(response).to have_http_status(:unprocessable_content), body.inspect
+        expect(error_pointers).to eq([pointer])
+      end
+      expect(Spree::Pos::ReceiptPrint.count).to eq(0)
+      expect(Spree::Pos::AuditEntry.where(action: %w[receipt.print receipt.reprint])).to be_empty
+    end
+
+    it 'prints a return with the return template and binds the chosen layout to the idempotency key' do
+      sale = paid_sale(store, branch, cashier: cashier, price: 50_000, quantity: 2)
+      operation = operation(return_and_receive(store, cashier, branch, sale, quantity: 1))
+      slip = call(cashier, :get, 'receipts/lookup', { source_id: operation.prefixed_id })['data']
+      return_template = default_template('return')
+      key = SecureRandom.uuid
+      first = print!(slip, { receipt_template_id: return_template.prefixed_id }, key: key)
+      expect(first['print']).to include('template_id' => return_template.prefixed_id, 'paper' => '80mm')
+      expect(print!(slip, { receipt_template_id: return_template.prefixed_id }, key: key)['print']['id']).to eq(first['print']['id'])
+      print!(slip, { receipt_template_id: return_template.prefixed_id, paper: '58mm' }, key: key)
+      expect(response).to have_http_status(:conflict)
+      expect(Spree::Pos::ReceiptPrint.count).to eq(1)
+    end
+
+    it "keeps the original's version and paper when only the original's template is named" do
+      receipt = sale_receipt
+      template = default_template('sale')
+      print!(receipt)
+      edited = template.current_config.merge('footer' => [{ 'type' => 'divider' }])
+      template.with_lock { template.revise!(config: edited, actor: nil, paper: 'a4') }
+
+      same = print!(receipt, { receipt_template_id: template.prefixed_id })
+      expect(same['print']).to include('template_id' => template.prefixed_id, 'template_version' => 1, 'paper' => '80mm')
+      newer = print!(receipt, { receipt_template_id: template.prefixed_id, template_version: 2 })
+      expect(newer['print']).to include('template_version' => 2, 'paper' => '80mm')
+      wider = print!(receipt, { receipt_template_id: template.prefixed_id, paper: 'a4' })
+      expect(wider['print']).to include('template_version' => 1, 'paper' => 'a4')
+    end
+
+    it 'prints a supplementary return slip with the return template and refuses a sale template' do
+      sale = paid_sale(store, branch, cashier: cashier, price: 50_000, quantity: 2)
+      first = prepare_return(store, cashier, branch, sale, quantity: 1)
+      second = prepare_return(store, cashier, branch, sale, quantity: 1)
+      receive_return(store, cashier, second)
+      Spree::Pos::Returns::Cancel.call(store: store, staff: cashier, key: SecureRandom.uuid, return_id: first['id'], reason: 'Khách đổi ý')
+      supplement = Spree::Pos::ReceiptSnapshot.find_by!(source_type: 'return_supplement', source_id: operation(second).id)
+      slip = { 'id' => supplement.prefixed_id }
+
+      print!(slip, { receipt_template_id: default_template('sale').prefixed_id })
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(error_pointers).to eq(['/receipt_template_id'])
+      expect(response.parsed_body.dig('error', 'details', 'errors', 0, 'code')).to eq('mismatch')
+
+      printed = print!(slip)
+      expect(response).to have_http_status(:created)
+      expect(printed['print']).to include('template_id' => default_template('return').prefixed_id, 'template_version' => 1, 'paper' => '80mm')
+      expect(printed['receipt']).to include('source_type' => 'return_supplement')
+      explicit = print!(slip, { receipt_template_id: default_template('return').prefixed_id })
+      expect(explicit['print']).to include('copy_number' => 1, 'template_id' => default_template('return').prefixed_id)
+    end
+
+    it 'uses the current default when the original predates templates' do
+      receipt = sale_receipt
+      snapshot = Spree::Pos::ReceiptSnapshot.find_by_prefix_id(receipt['id'])
+      Spree::Pos::ReceiptPrint.create!(store: store, receipt_snapshot: snapshot, actor: cashier, copy_number: 0)
+      expect(call(cashier, :get, "receipts/#{receipt['id']}")['data']['original_print']).to be_nil
+      copy = print!(receipt)
+      expect(copy['print']).to include('copy_number' => 1, 'template_id' => default_template('sale').prefixed_id, 'paper' => '80mm')
+      expect(copy['receipt']['original_print']).to be_nil
     end
   end
 end

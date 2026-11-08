@@ -1,0 +1,76 @@
+{
+  "schema": 1,
+  "page": {
+    "margin_mm": 3,
+    "font": "sans",
+    "font_size": "m",
+    "line_spacing": 1.35
+  },
+  "header": [
+    {
+      "type": "business",
+      "fields": [
+        "name",
+        "address",
+        "phone",
+        "branch"
+      ],
+      "align": "center"
+    },
+    {
+      "type": "text",
+      "value": "{register.name}",
+      "align": "center"
+    },
+    {
+      "type": "title"
+    }
+  ],
+  "meta": {
+    "fields": [
+      "time",
+      "cashier",
+      "order_number",
+      "return_number",
+      "customer"
+    ],
+    "labels": {}
+  },
+  "lines": {
+    "layout": "stacked",
+    "columns": [
+      "name",
+      "sku",
+      "unit",
+      "qty",
+      "price",
+      "discount",
+      "amount"
+    ],
+    "show_trace": true,
+    "show_conversion": true
+  },
+  "totals": {
+    "fields": [
+      "item_total",
+      "discount",
+      "tax",
+      "included_tax",
+      "total"
+    ],
+    "labels": {}
+  },
+  "payments": {
+    "fields": [
+      "methods",
+      "handed",
+      "change",
+      "reference",
+      "paid_total",
+      "debt",
+      "due_on"
+    ],
+    "labels": {}
+  },
+  "footer": []
+}

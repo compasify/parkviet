@@ -50,10 +50,14 @@ module Spree
 
       # `mask` hides the customer's name; the phone is always masked on a
       # printed document, the customer copy included.
-      # `copies` (number of copies, nil when never printed) may be preloaded
-      # for a list; otherwise it is read here.
-      def to_pos(mask: true, copies: :load)
+      # `copies` (number of copies, nil when never printed) and `original`
+      # (the copy-0 print, nil when none) may be preloaded for a list;
+      # otherwise they are read here. `original_print` is the template,
+      # version and paper of the original, null when it was never printed
+      # or was printed before templates existed.
+      def to_pos(mask: true, copies: :load, original: :load)
         copies = prints.maximum(:copy_number) if copies == :load
+        original = copies.nil? ? nil : prints.includes(:receipt_template).find_by(copy_number: 0) if original == :load
         data = payload.deep_dup
         if (customer = data['customer'])
           customer['name'] = self.class.masked_name(customer['name']) if mask
@@ -63,6 +67,7 @@ module Spree
           id: prefixed_id, source_type: source_type, number: number, branch_id: branch.prefixed_id,
           register_id: register&.prefixed_id, issued_at: issued_at.iso8601, issued_late: issued_late,
           disclaimer: DISCLAIMER, printed: !copies.nil?, copy_count: copies.to_i,
+          original_print: original&.receipt_template_id ? original.layout : nil,
           document: data
         }
       end

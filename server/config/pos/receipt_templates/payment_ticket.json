@@ -1,0 +1,81 @@
+{
+  "schema": 1,
+  "page": {
+    "margin_mm": 3,
+    "font": "sans",
+    "font_size": "m",
+    "line_spacing": 1.35
+  },
+  "header": [
+    {
+      "type": "business",
+      "fields": [
+        "name",
+        "address",
+        "phone",
+        "branch"
+      ],
+      "align": "center"
+    },
+    {
+      "type": "text",
+      "value": "{register.name}",
+      "align": "center"
+    },
+    {
+      "type": "title"
+    }
+  ],
+  "meta": {
+    "fields": [
+      "time",
+      "order_number",
+      "cashier",
+      "customer"
+    ],
+    "labels": {}
+  },
+  "lines": {
+    "layout": "table",
+    "columns": [
+      "index",
+      "name",
+      "unit",
+      "qty",
+      "price",
+      "discount",
+      "amount"
+    ],
+    "show_trace": false,
+    "show_conversion": false
+  },
+  "totals": {
+    "fields": [
+      "item_total",
+      "discount",
+      "tax",
+      "total"
+    ],
+    "labels": {}
+  },
+  "payments": {
+    "fields": [
+      "methods",
+      "handed",
+      "change"
+    ],
+    "labels": {}
+  },
+  "footer": [
+    {
+      "type": "divider",
+      "style": "dashed"
+    },
+    {
+      "type": "text",
+      "value": "Cảm ơn quý khách!",
+      "align": "center",
+      "size": "s"
+    }
+  ]
+}

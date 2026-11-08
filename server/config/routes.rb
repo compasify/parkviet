@@ -95,6 +95,15 @@ Rails.application.routes.draw do
                 end
               end
             end
+            resources :receipt_templates, only: [:index, :show, :create, :update] do
+              member do
+                get :versions
+                post :duplicate
+                post :default
+                post :restore
+                post :disable
+              end
+            end
             resource :context, only: [:show], controller: 'context'
             get 'context/branches', to: 'context_branches#index'
             get 'context/registers', to: 'context_registers#index'

@@ -1,0 +1,62 @@
+{
+  "schema": 1,
+  "page": {
+    "margin_mm": 3,
+    "font": "sans",
+    "font_size": "m",
+    "line_spacing": 1.35
+  },
+  "header": [
+    {
+      "type": "business",
+      "fields": [
+        "name",
+        "address",
+        "phone",
+        "branch"
+      ],
+      "align": "center"
+    },
+    {
+      "type": "text",
+      "value": "{register.name}",
+      "align": "center"
+    },
+    {
+      "type": "title"
+    }
+  ],
+  "meta": {
+    "fields": [
+      "time"
+    ],
+    "labels": {}
+  },
+  "lines": {
+    "layout": "stacked",
+    "columns": [
+      "name",
+      "unit",
+      "qty",
+      "price",
+      "amount"
+    ],
+    "show_trace": true,
+    "show_conversion": false
+  },
+  "totals": {
+    "fields": [
+      "item_total",
+      "discount",
+      "total"
+    ],
+    "labels": {}
+  },
+  "payments": {
+    "fields": [
+      "paid_total"
+    ],
+    "labels": {}
+  },
+  "footer": []
+}

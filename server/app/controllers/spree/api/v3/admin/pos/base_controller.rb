@@ -25,6 +25,7 @@ module Spree
             before_action :require_pos_staff!
 
             rescue_from Spree::Pos::Conflict, with: :render_pos_conflict
+            rescue_from Spree::Pos::ReceiptTemplateSchema::Invalid, with: :render_template_invalid
 
             private
 
@@ -80,6 +81,13 @@ module Spree
               details[:retry_after_seconds] = error.retry_after_seconds if error.retry_after_seconds
               details = error.details.merge(details) if error.details.is_a?(Hash)
               render_error(code: 'conflict', message: error.message, status: :conflict, details: details)
+            end
+
+            # Every refused print template or print layout: one 422 shape with
+            # a JSON pointer per problem.
+            def render_template_invalid(error)
+              render_error(code: 'validation_error', message: error.message, status: :unprocessable_content,
+                           details: { errors: error.errors })
             end
 
             def channel_rejected?

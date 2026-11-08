@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "page": {
+    "margin_mm": 3,
+    "font": "sans",
+    "font_size": "m",
+    "line_spacing": 1.35
+  },
+  "header": [
+    {
+      "type": "business",
+      "fields": [
+        "name",
+        "address",
+        "phone",
+        "branch"
+      ],
+      "align": "center"
+    },
+    {
+      "type": "text",
+      "value": "{register.name}",
+      "align": "center"
+    },
+    {
+      "type": "title"
+    }
+  ],
+  "meta": {
+    "fields": [
+      "time",
+      "cashier"
+    ],
+    "labels": {}
+  },
+  "footer": []
+}

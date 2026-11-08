@@ -13,13 +13,16 @@ module Spree
           # The customer's name is masked unless the reader collects,
           # approves or manages credit there; the phone is always masked.
           # Printing records an original or a numbered copy and never touches
-          # money or stock.
+          # money or stock. Each print keeps its template, version and paper;
+          # a reprint uses the original's unless another template of the same
+          # document type is asked for.
           class ReceiptsController < BaseController
             scoped_resource :pos_orders
             pos_permissions index: %w[read_pos_orders write_pos_orders], show: %w[read_pos_orders write_pos_orders],
                             lookup: %w[read_pos_orders write_pos_orders], prints: %w[write_pos_orders]
 
             UNMASKED = ReceivablesController::UNMASKED
+            LAYOUT_PARAMS = %w[receipt_template_id template_version paper].freeze
             RETURN_TYPES = %w[return return_supplement refund].freeze
             SOURCES = {
               'posworkspace' => Spree::Pos::Workspace, 'posreturn' => Spree::Pos::ReturnOperation,
@@ -44,8 +47,12 @@ module Spree
               end
               records, meta = page_scope(scope)
               copies = Spree::Pos::ReceiptPrint.where(receipt_snapshot_id: records.map(&:id)).group(:receipt_snapshot_id).maximum(:copy_number)
+              originals = Spree::Pos::ReceiptPrint.where(receipt_snapshot_id: records.map(&:id), copy_number: 0).
+                          includes(:receipt_template).index_by(&:receipt_snapshot_id)
               mask = mask?(branch)
-              render json: { data: records.map { |row| row.to_pos(mask: mask, copies: copies[row.id]) }, meta: meta }
+              render json: {
+                data: records.map { |row| row.to_pos(mask: mask, copies: copies[row.id], original: originals[row.id]) }, meta: meta
+              }
             end
 
             def show
@@ -69,6 +76,9 @@ module Spree
 
             # The command result keeps only the print; the receipt is rendered
             # fresh for the reader, so a replay never serves stale masking.
+            # `receipt_template_id`, `template_version` and `paper` choose the
+            # layout (see ReceiptPrint.layout_for!) and are part of the
+            # idempotent payload.
             def prints
               return if channel_rejected?
 
@@ -76,16 +86,19 @@ module Spree
               return if key.nil?
 
               snapshot = snapshot!(params[:id])
+              requested = LAYOUT_PARAMS.select { |name| params[name].present? }.index_with { |name| params[name].to_s }
               payload = { 'command' => 'receipt.print', 'receipt_id' => snapshot.prefixed_id }
+              payload['layout'] = requested if requested.any?
               authorize = -> { raise ActiveRecord::RecordNotFound unless readable?(snapshot.source_type, snapshot.source_record) }
               print = Spree::Pos::CommandExecutor.call(store: current_store, actor: current_user, key: key, payload: payload,
                                                        authorize: authorize) do
                 snapshot.lock!
                 copy_number = (snapshot.prints.maximum(:copy_number) || -1) + 1
+                layout = Spree::Pos::ReceiptPrint.layout_for!(snapshot, requested)
                 row = Spree::Pos::ReceiptPrint.create!(store: current_store, receipt_snapshot: snapshot, actor: current_user,
-                                                       copy_number: copy_number)
+                                                       copy_number: copy_number, **layout)
                 audit!(row.copy? ? 'receipt.reprint' : 'receipt.print', snapshot,
-                       { print_id: row.prefixed_id, copy_number: copy_number, number: snapshot.number })
+                       { print_id: row.prefixed_id, copy_number: copy_number, number: snapshot.number }.merge(row.layout))
                 row.to_pos
               end
               render json: { data: { print: print, receipt: snapshot.to_pos(mask: mask?(snapshot.branch)) } }, status: :created
