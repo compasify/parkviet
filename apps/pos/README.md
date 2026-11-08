@@ -8,7 +8,7 @@
 - Hàng được giao ngay tại quầy, không có giao sau.
 - **Cần mạng để bán.** POS không có chế độ bán offline. Khi mất mạng, màn hình khóa các thao tác ghi; khi có mạng lại, POS kiểm tra kết quả các thao tác còn dở.
 - Phiếu in ra là **"Phiếu bán hàng POS — không phải hóa đơn điện tử"**.
-- **Trạng thái hiện tại: sandbox.** Không dùng để thu tiền thật, ghi tồn kho thật hay vận hành bán hàng cho tới khi việc triển khai được phê duyệt riêng.
+- **Trạng thái hiện tại: sẵn sàng vận hành.** Nên tự thử máy in, máy quét, máy cân và màn hình khách tại cửa hàng trước khi bán đại trà.
 
 ## Khái niệm chính
 
@@ -193,7 +193,6 @@ Ngoài ra, giảm giá hoặc đổi giá vượt giới hạn cần **Mã duy�
 
 ## Giới hạn hiện tại
 
-- Mới chạy sandbox. Chưa được phép thu tiền thật hay vận hành kho thật.
 - Chuyển khoản thường vẫn do thu ngân xác nhận thủ công. Chỉ VietQR mới được đối soát tự động, qua webhook SePay hoặc PayOS (xem [Thanh toán](#thanh-toán)).
 - Chưa có thanh toán thẻ.
 - Chỉ in qua hộp thoại in của trình duyệt. Chưa có driver máy in hay ngăn kéo tiền.

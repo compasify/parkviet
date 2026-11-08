@@ -34,7 +34,7 @@ Cập nhật 08/11/2026. Nhánh phát triển chính là `v2`.
 
 | Hạng mục | Trạng thái | Chi tiết |
 | --- | --- | --- |
-| **POS bán tại quầy** (`apps/pos`) | Phase 1–10 đã xong, phase 11 (chất lượng, bảo mật, triển khai) đang làm. **Chỉ chạy sandbox**, chưa thu tiền thật. | [Giới thiệu POS](apps/pos/README.md) · [Kế hoạch](plans/261101-1649-retail-pos-multi-store-multi-order/plan.md) |
+| **POS bán tại quầy** (`apps/pos`) | Phase 1–11 đã xong. Sẵn sàng triển khai; UAT thiết bị và quy trình tại cửa hàng do người dùng tự thực hiện khi vận hành. | [Giới thiệu POS](apps/pos/README.md) · [Kế hoạch](plans/261101-1649-retail-pos-multi-store-multi-order/plan.md) |
 | **Chuyển khoản VietQR** | Đã có: gem Spree 6, trang quản trị và thanh toán VietQR trên POS. | Gem [`compasify/spree_vietqr`](https://github.com/compasify/spree_vietqr) · [Kế hoạch](plans/261108-0934-vietqr-spree6-pos/plan.md) |
 | **Tách từng gói hàng cùng mã khác giá/lô** | Chưa bắt đầu. POS cơ bản hiện chưa hỗ trợ việc này. | [Kế hoạch](plans/261103-pos-goi-hang-truy-xuat/plan.md) |
 | Các mục còn lại ở trên (đa kênh, đồng bộ sàn, quảng cáo, POD, vận chuyển, hóa đơn điện tử…) | Chưa bắt đầu. | — |

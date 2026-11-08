@@ -7,7 +7,7 @@ Ngày lập: 07/11/2026. Ma trận gốc: [API và test matrix](../specs/api-con
 - **Cần UAT** — cần thử trên thiết bị/quy trình thật tại cửa hàng.
 - **Cần ký** — cần người có thẩm quyền quyết định/ký.
 
-Kết luận hiện tại: **NO-GO** cho bán tiền thật. Phần mềm sẵn sàng cho UAT có kiểm soát trên dữ liệu thử; còn UAT thiết bị, đo hiệu năng thật, hạ tầng, sign-off.
+Kết luận (08/11/2026): **GO** theo quyết định của chủ dự án. Các mục "Cần UAT", "Cần API thật" và đo hiệu năng do người dùng tự thực hiện khi vận hành.
 
 ## A — bảo mật, quyền, ngữ cảnh
 
@@ -80,5 +80,5 @@ Kết luận hiện tại: **NO-GO** cho bán tiền thật. Phần mềm sẵn 
 | UAT truy xuất | Cần UAT ([traceability-uat](./traceability-uat.md)) |
 | Chính sách ghi nợ, ngưỡng chênh lệch két, cấu hình một két/quầy | Cần ký (quản lý) |
 | Bật từng tính năng trên production | Cần ký (theo chi nhánh pilot) |
-| Pilot tiền thật | Cần ký riêng: chi nhánh, SKU đủ điều kiện, người trực hỗ trợ, phê duyệt triển khai |
+| Vận hành tiền thật | Chủ dự án duyệt 08/11/2026; UAT do người dùng tự làm |
 | Không còn lỗi critical/high | Đạt trong phạm vi rà soát ([security review](./security-review.md)); pentest độc lập chưa có |

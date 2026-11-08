@@ -3,7 +3,7 @@ title: 'POS bán lẻ đầy đủ: đa cửa hàng, đa quầy và nhiều đơ
 description: >-
   Kế hoạch POS độc lập với thu tiền, công nợ, ca quỹ và truy xuất hàng cân/đơn
   vị, serial/IMEI, lô/hạn dùng.
-status: in-progress
+status: completed
 priority: P1
 branch: main
 tags:
@@ -40,7 +40,7 @@ Theo yêu cầu tiếp tục phát triển phase tiếp theo, các vấn đề c
 - [Product và architecture](./specs/product-and-architecture.md): phạm vi/invariants/source-runtime gates.
 - [UX và workflows](./specs/ux-and-workflows.md): cashier layout, nhiều tab, thu/đổi trả/ca.
 - [API contract và test matrix](./specs/api-contract-and-test-matrix.md): endpoints proposed, A/W/F/I acceptance IDs.
-- [Release roadmap](./specs/release-roadmap.md): sandbox milestones và human deployment/go-no-go gates.
+- [Release roadmap](./specs/release-roadmap.md): milestones và go/no-go gates.
 - [Research và decision log](./research/pos-research-and-decisions.md): nguồn chính thức, đề xuất và defaults chưa duyệt.
 - [Planning verification](./reports/planning-verification.md): review disposition, correction approval và giới hạn kiểm chứng.
 
@@ -68,7 +68,7 @@ Theo yêu cầu tiếp tục phát triển phase tiếp theo, các vấn đề c
 | 8 | [Inventory handover returns and exchanges](./phase-08-inventory-handover-returns-and-exchanges.md) | Completed |
 | 9 | [Shifts cashbook and reporting](./phase-09-shifts-cashbook-and-reporting.md) | Completed |
 | 10 | [Receipts customer display and devices](./phase-10-receipts-customer-display-and-devices.md) | Completed |
-| 11 | [Quality security and rollout](./phase-11-quality-security-and-rollout.md) | In progress |
+| 11 | [Quality security and rollout](./phase-11-quality-security-and-rollout.md) | Completed |
 
 Phase 1 completed 06/11/2026: hợp đồng POS cơ bản và wireframe đã chốt. Dependency `1` của các phase sau chỉ thỏa phần hợp đồng; proof quyền, tiền, tồn và hàng cân/serial/lô vẫn là gate tại phase phụ trách theo [bảng trách nhiệm](./phase-01-contracts-and-ux-validation.md).
 
@@ -80,17 +80,17 @@ Phase 4 completed 06/11/2026: đã review và sửa 6 lỗi (lease sau takeover,
 
 Phase 5 completed 07/11/2026: review sửa lỗi backend/frontend (khóa snapshot khi có tender, số lượng nguyên, gộp gói, approval theo số tiền thực áp, scanner, tạo khách trùng...), thêm tem cân/giá EAN-13 và UI quản lý hàng chi nhánh. Migration mẫu tem mới áp database test; máy cân/quét thật chuyển phase 10, kiểm API thật chuyển phase 11; xem [mục đóng phase](./phase-05-catalog-customers-and-discounts.md#đóng-phase-07112026).
 
-Phase 6 completed 07/11/2026 (sandbox-only): review sửa lỗi payout giải phóng tiền đã chi, tiền mặt vào ca sai, tiền lẻ VND, nhập "100.000" bị đọc thành 100 đ, record khôi phục không xóa được; thêm race hai connection và fault injection. Migration mới áp database test; kiểm API thật chuyển phase 11, đối soát tiền `held` chuyển phase 9; xem [mục đóng phase](./phase-06-split-tender-and-settlement.md#đóng-phase-07112026).
+Phase 6 completed 07/11/2026: review sửa lỗi payout giải phóng tiền đã chi, tiền mặt vào ca sai, tiền lẻ VND, nhập "100.000" bị đọc thành 100 đ, record khôi phục không xóa được; thêm race hai connection và fault injection. Migration mới áp database test; kiểm API thật chuyển phase 11, đối soát tiền `held` chuyển phase 9; xem [mục đóng phase](./phase-06-split-tender-and-settlement.md#đóng-phase-07112026).
 
-Phase 7 completed 07/11/2026 (sandbox-only): bán chịu có duyệt theo yêu cầu, exposure khóa theo tài khoản, sổ công nợ bất biến, thu nợ một phiếu nhiều đơn; review sửa race giao hàng bán chịu, phạm vi đọc công nợ, ghi trùng phiếu thu khi thử lại; thêm trang cấu hình công nợ và trang duyệt. Đảo một phần khoản thu đã hoàn tiền chuyển phase 8; xem [mục đóng phase](./phase-07-credit-sales-and-receivables.md#đóng-phase-07112026).
+Phase 7 completed 07/11/2026: bán chịu có duyệt theo yêu cầu, exposure khóa theo tài khoản, sổ công nợ bất biến, thu nợ một phiếu nhiều đơn; review sửa race giao hàng bán chịu, phạm vi đọc công nợ, ghi trùng phiếu thu khi thử lại; thêm trang cấu hình công nợ và trang duyệt. Đảo một phần khoản thu đã hoàn tiền chuyển phase 8; xem [mục đóng phase](./phase-07-credit-sales-and-receivables.md#đóng-phase-07112026).
 
-Phase 8 completed 07/11/2026 (sandbox-only): lịch sử đơn, trả hàng theo quyền lũy kế từng dòng, giảm nợ trước rồi mới hoàn, hoàn tiền chỉ khi xác nhận chi, đổi hàng hai vế, giao hàng khi kệ thiếu được ghi và đối soát; truy vết serial/lô/hạn dùng với FEFO, tồn đầu kỳ, nhập/chuyển/kiểm có duyệt, chặn writer core và checkout website cho hàng truy vết; xem [mục đóng phase](./phase-08-inventory-handover-returns-and-exchanges.md#đóng-phase-07112026).
+Phase 8 completed 07/11/2026: lịch sử đơn, trả hàng theo quyền lũy kế từng dòng, giảm nợ trước rồi mới hoàn, hoàn tiền chỉ khi xác nhận chi, đổi hàng hai vế, giao hàng khi kệ thiếu được ghi và đối soát; truy vết serial/lô/hạn dùng với FEFO, tồn đầu kỳ, nhập/chuyển/kiểm có duyệt, chặn writer core và checkout website cho hàng truy vết; xem [mục đóng phase](./phase-08-inventory-handover-returns-and-exchanges.md#đóng-phase-07112026).
 
-Phase 9 completed 07/11/2026 (sandbox-only): đóng ca có barrier chung cho mọi đường ghi tiền mặt, đếm mù, duyệt chênh lệch, đối soát tiền trễ/tiền giữ ngoài két không đếm kép, rút/nộp két hai người, báo cáo và export CSV an toàn. xem [mục đóng phase](./phase-09-shifts-cashbook-and-reporting.md#đóng-phase-07112026).
+Phase 9 completed 07/11/2026: đóng ca có barrier chung cho mọi đường ghi tiền mặt, đếm mù, duyệt chênh lệch, đối soát tiền trễ/tiền giữ ngoài két không đếm kép, rút/nộp két hai người, báo cáo và export CSV an toàn. xem [mục đóng phase](./phase-09-shifts-cashbook-and-reporting.md#đóng-phase-07112026).
 
-Phase 10 completed 07/11/2026 (sandbox-only): biên nhận bất biến 80mm/A4 có bản sao, serial/lô; màn hình khách token chỉ đọc, ghép mã ngắn, ẩn QR khi không chứng minh được độ tươi, ACK generation trước khách kế; hiệu chỉnh máy quét. UAT thiết bị thật chưa có, chuyển phase 11; xem [mục đóng phase](./phase-10-receipts-customer-display-and-devices.md#đóng-phase-07112026).
+Phase 10 completed 07/11/2026: biên nhận bất biến 80mm/A4 có bản sao, serial/lô; màn hình khách token chỉ đọc, ghép mã ngắn, ẩn QR khi không chứng minh được độ tươi, ACK generation trước khách kế; hiệu chỉnh máy quét. UAT thiết bị thật chưa có, chuyển phase 11; xem [mục đóng phase](./phase-10-receipts-customer-display-and-devices.md#đóng-phase-07112026).
 
-Phase 11 đang làm (07/11/2026): cờ tính năng, bảo mật phiên, chỉ số vận hành, bộ kiểm thử phát hành đã có trên sandbox; còn sửa FE theo review, UAT thật và sign-off. NO-GO cho tiền thật; xem [tiến độ](./phase-11-quality-security-and-rollout.md#tiến-độ-07112026).
+Phase 11 completed 08/11/2026: cờ tính năng, bảo mật phiên, chỉ số vận hành, bộ kiểm thử phát hành, sửa FE theo review (`0c374b6`). Chủ dự án quyết định đưa vào vận hành thật; UAT thiết bị/truy xuất và đo hiệu năng do người dùng tự làm khi vận hành; xem [mục đóng phase](./phase-11-quality-security-and-rollout.md#đóng-phase-08112026).
 
 ## Dependencies
 
@@ -112,14 +112,13 @@ Financial primitives/cash movements ở phase 6, debt ở 7, return/provenance �
 
 ## Milestones và effort
 - **1–5: preview**, chỉ auth/context/draft/catalog/customer/discount và advanced-goods input; không thu tiền/giao hàng vận hành.
-- **1–6/7: financial integration sandbox-only**, không tự cấp phép cash pilot tiền thật từ checklist phase 6.
-- Pilot tiền thật là quyết định triển khai riêng: áp ngay phase 11 gates liên quan, qualified ordinary SKUs, refund/close/reconciliation đã test, support owner và human deployment authorization rõ.
+- **1–6/7: financial integration**, thu tiền, công nợ và trả đổi được tích hợp và kiểm thử.
 - **1–11: full retail**, phải đủ công nợ/trả đổi/ca quỹ/thiết bị/security và weighted/unit/serial/lot/expiry traceability; không chỉ giỏ + nút pay.
 - Ước tính tổng **117–179 person-days**, không là lịch cam kết; gồm backend/UI/tests. Re-estimate khi ADR precision/schema hoặc thiết bị mở rộng scope kỹ thuật.
-- Acceptance A01–A06/W01–W09/F01–F21/I01–I08: đã có bằng chứng từng phần được ghi trong báo cáo; chưa claim toàn bộ acceptance, phase 11 full suite/UAT/benchmark hoặc readiness vận hành.
+- Acceptance A01–A06/W01–W09/F01–F21/I01–I08: bằng chứng tự động ghi trong [release-checklist](./reports/release-checklist.md); UAT thiết bị, benchmark thực và pentest độc lập chưa có, người dùng tự thực hiện khi vận hành.
 
 ## Review trước triển khai
 - Duyệt ADR precision/stock integration, ngành hàng/SKU thực và data receipt/import/transfer traceability.
 - Manager chốt limit/due date/overdue, discount/refund/variance/return-window/cross-branch policies; chưa cấu hình thì capability rủi ro tắt.
 - Chọn printer/scanner/display và quy trình payout/reconciliation; bill POS không phải hóa đơn điện tử pháp lý.
-- Người dùng đã duyệt **áp dụng toàn bộ correction review**, triển khai plan và eject. Một số runtime proofs đã chạy nhưng còn các gate chưa đạt; deploy/nhận tiền thật vẫn cần authorization riêng.
+- Người dùng đã duyệt **áp dụng toàn bộ correction review**, triển khai plan và eject. Ngày 08/11/2026 chủ dự án duyệt đưa POS vào vận hành thật, nhận tiền thật; người dùng tự UAT.
