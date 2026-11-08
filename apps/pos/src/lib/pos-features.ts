@@ -13,6 +13,10 @@ export const POS_FEATURES = [
   'cash_moves',
   'exports',
   'vietqr',
+  // Strict editing locks: on, a draft held elsewhere must be claimed or taken
+  // over by hand. Off (the default) the selling screen takes editing over by
+  // itself, for shops with one branch and one counter.
+  'edit_lease',
 ] as const;
 
 export type PosFeature = (typeof POS_FEATURES)[number];

@@ -19,7 +19,11 @@ module Spree
             active = workspace.lease_expires_at.present? && workspace.lease_expires_at > Workspace.database_now
             same_editor = workspace.lease_holder_id == staff.id && workspace.lease_editor_digest == editor_digest
             if active && !same_editor
-              allowed = takeover && AccessPolicy.new(store: workspace.store, staff: staff).allows?(workspace.branch, Capabilities::TAKEOVER)
+              # Without strict editing locks (`edit_lease` off, the default) a
+              # cashier allowed to open the draft simply takes its editing over.
+              strict = FeaturePolicy.enabled?(workspace.branch, :edit_lease)
+              allowed = !strict ||
+                (takeover && AccessPolicy.new(store: workspace.store, staff: staff).allows?(workspace.branch, Capabilities::TAKEOVER))
               unless allowed
                 seconds = [(workspace.lease_expires_at - Workspace.database_now).ceil, 1].max
                 raise Conflict.new('Workspace is being edited elsewhere.', revision: workspace.revision,

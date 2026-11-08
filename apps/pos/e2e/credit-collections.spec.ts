@@ -558,7 +558,8 @@ async function login(page: Page) {
 
 async function openTab(page: Page, workspaceId: string) {
   await page.locator(`[role="tab"][data-workspace-id="${workspaceId}"]`).click();
-  await page.getByRole('button', { name: 'Nhận quyền sửa', exact: true }).click();
+  // Strict editing locks (`edit_lease`) are off: the page takes editing over by itself.
+  await expect(page.getByRole('button', { name: 'Nhận quyền sửa', exact: true })).toHaveCount(0);
   await expect(page.locator('.payment-panel')).toBeVisible();
 }
 

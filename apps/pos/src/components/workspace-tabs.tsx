@@ -254,6 +254,54 @@ export function WorkspaceTabs() {
   const leaseWorkspaceId = active?.id;
   const leaseGeneration = active?.lease_generation;
   const leaseStatus = active?.operational_status;
+  // Strict editing locks are opt-in (`edit_lease`); without them this page
+  // takes editing of the selected draft over by itself, silently.
+  const strictLease = contextFeature(data, 'edit_lease');
+  const strictLeaseRef = useRef(strictLease);
+  strictLeaseRef.current = strictLease;
+  // Draft this page already tried to take over since it was selected or the
+  // window was focused, and the draft where that attempt failed.
+  const autoClaimed = useRef<string | null>(null);
+  const [autoClaimFailed, setAutoClaimFailed] = useState<string | null>(null);
+  const [focusTick, setFocusTick] = useState(0);
+  useEffect(() => {
+    const regain = () => {
+      if (document.visibilityState !== 'visible') return;
+      autoClaimed.current = null;
+      setFocusTick((tick) => tick + 1);
+    };
+    window.addEventListener('focus', regain);
+    document.addEventListener('visibilitychange', regain);
+    return () => {
+      window.removeEventListener('focus', regain);
+      document.removeEventListener('visibilitychange', regain);
+    };
+  }, []);
+  const autoClaimTarget =
+    !strictLease &&
+    active &&
+    !isEditor &&
+    !locked &&
+    !busy &&
+    active.operational_status !== 'canceled'
+      ? active
+      : null;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a newly selected draft re-arms the takeover
+  useEffect(() => {
+    autoClaimed.current = null;
+    setAutoClaimFailed(null);
+  }, [leaseWorkspaceId]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: focusTick re-arms the takeover
+  useEffect(() => {
+    if (!autoClaimTarget || document.visibilityState !== 'visible') return;
+    // Once per selection or focus, so two open windows do not keep stealing it.
+    if (autoClaimed.current === autoClaimTarget.id) return;
+    autoClaimed.current = autoClaimTarget.id;
+    const target = autoClaimTarget;
+    void run(() => command(target, (current) => workspaces.claim(current, true))).then(
+      (claimed) => setAutoClaimFailed(claimed ? null : target.id),
+    );
+  }, [autoClaimTarget?.id, autoClaimTarget?.lease_generation, focusTick]);
 
   useEffect(() => {
     if (!leaseWorkspaceId || !isEditor || locked || leaseStatus === 'canceled') return;
@@ -269,7 +317,10 @@ export function WorkspaceTabs() {
           return;
         // A background tab lets its lease lapse. When nobody else claimed it in the
         // meantime, take it back instead of dropping the cashier to read-only.
-        if (leaseConflict(error)?.reason === 'lease_stale') {
+        // Without strict locks a hidden window must not take a draft back from
+        // the one in use; it takes it over again when it is focused.
+        const mayReclaim = strictLeaseRef.current || document.visibilityState === 'visible';
+        if (leaseConflict(error)?.reason === 'lease_stale' && mayReclaim) {
           try {
             await claim.current(workspace);
             return;
@@ -309,6 +360,13 @@ export function WorkspaceTabs() {
     } catch (error) {
       if (started === scopeRef.current) {
         const conflict = leaseConflict(error);
+        // Without strict locks the page takes the draft back by itself.
+        // The refused action is not retried: the cashier repeats it.
+        if (!strictLeaseRef.current && conflict?.reason === 'lease_stale') {
+          autoClaimed.current = null;
+          setMessage(t('leaseRetaken'));
+          return;
+        }
         setMessage(
           error instanceof DraftReplayRefused
             ? t('draftReplayRefused')
@@ -681,7 +739,10 @@ export function WorkspaceTabs() {
           {t(posFailureKey(workspaces.selectedQuery.error))}
         </p>
       ) : null}
-      {active && !isEditor && active.operational_status !== 'canceled' ? (
+      {active &&
+      !isEditor &&
+      active.operational_status !== 'canceled' &&
+      (strictLease || autoClaimFailed === active.id) ? (
         <div className="lease-notice" role="status">
           <span>{t('leaseReadOnly')}</span>
           {leaseWait?.workspaceId === active.id ? (

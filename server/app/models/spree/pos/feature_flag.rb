@@ -9,7 +9,11 @@ module Spree
       self.table_name = 'spree_pos_feature_flags'
       has_prefix_id :posflag
 
-      FEATURES = %w[credit returns refunds exchanges traceability customer_display cash_moves exports vietqr].freeze
+      # `edit_lease` is the one switch that adds friction instead of a
+      # capability: on, a draft held by another tab or device must be claimed
+      # or taken over by hand; off (the default, for single-counter shops) a
+      # cashier opening a draft takes its editing over automatically.
+      FEATURES = %w[credit returns refunds exchanges traceability customer_display cash_moves exports vietqr edit_lease].freeze
 
       belongs_to :store, class_name: 'Spree::Store'
       belongs_to :branch, class_name: 'Spree::Pos::Branch', optional: true

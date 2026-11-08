@@ -152,6 +152,28 @@ RSpec.describe 'POS workspaces', type: :request do
     expect(Spree::Pos::Workspace.find_by_prefix_id!(workspace['id']).operational_status).to eq('canceled')
   end
 
+  it 'lets another browser take editing over without strict editing locks (the product default)' do
+    user = staff_with(%w[write_pos_orders write_pos_workspaces write_pos_shifts])
+    register, = drawer_for(user)
+    # Specs switch every feature on; this one runs with strict locks off.
+    Spree::Pos::FeatureFlag.where(store: store, branch_id: nil, feature: 'edit_lease').update_all(enabled: false)
+    headers = { 'Authorization' => "Bearer #{token_for(user)}" }
+    workspace = Spree::Pos::Workspaces::Create.call(store: store, staff: user, register_id: register.prefixed_id, key: 'simple-create', editor_id: editor_id)
+    other_editor = SecureRandom.uuid
+    post "/api/v3/admin/pos/workspaces/#{workspace['id']}/lease", headers: headers.merge('Idempotency-Key' => 'simple-claim'),
+                                                                params: { editor_id: other_editor, takeover: true }, as: :json
+    expect(response).to have_http_status(:ok)
+    generation = response.parsed_body.dig('data', 'lease_generation')
+    expect(generation).to eq(2)
+    # The page that lost editing still cannot write with its old lease.
+    post "/api/v3/admin/pos/workspaces/#{workspace['id']}/park", headers: headers.merge('Idempotency-Key' => 'simple-old'), params: {
+      editor_id: editor_id, expected_revision: 0, lease_generation: 1
+    }, as: :json
+    expect(response).to have_http_status(:conflict)
+    expect(response.parsed_body.dig('error', 'details', 'reason')).to eq('lease_stale')
+    expect(Spree::Pos::AuditEntry.where(action: 'workspace.takeover', subject_type: 'Spree::Pos::Workspace')).to exist
+  end
+
   it 'requires an explicit authorized takeover for a different browser of the same staff' do
     user = staff_with(%w[write_pos_orders write_pos_workspaces write_pos_shifts])
     register, = drawer_for(user)
