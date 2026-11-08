@@ -1,7 +1,7 @@
 ---
 phase: 4
 title: "In theo mẫu ở quầy và in lại"
-status: pending
+status: completed
 effort: "2 ngày"
 dependsOn: [2]
 ---
@@ -38,9 +38,25 @@ Mọi nơi in dùng mẫu từ server. Lần in đầu dùng mẫu mặc định
 
 ## Success Criteria
 
-- [ ] e2e: in lần đầu bằng mẫu A (K80) → sửa mẫu A → in lại vẫn ra nội dung version cũ, khổ K80, banner "BẢN SAO 1".
-- [ ] e2e: in lại chọn mẫu B (A4) → `ReceiptPrint` ghi mẫu B; lần in lại sau mặc định vẫn là mẫu của bản gốc.
-- [ ] Mẫu bản gốc đã bị tắt vẫn in lại được.
-- [ ] API mẫu lỗi → vẫn in được bằng mẫu dựng sẵn, có cảnh báo.
-- [ ] Phiếu tạm tính và phiếu thanh toán theo mẫu mặc định hiện tại; nhãn tạm tính không mất.
-- [ ] Live e2e (`live-api.spec.ts`) pass với server thật.
+- [x] e2e: in lần đầu bằng mẫu A (K80) → sửa mẫu A → in lại vẫn ra nội dung version cũ, khổ K80, banner "BẢN SAO 1".
+- [x] e2e: in lại chọn mẫu B (A4) → `ReceiptPrint` ghi mẫu B; lần in lại sau mặc định vẫn là mẫu của bản gốc.
+- [x] Mẫu bản gốc đã bị tắt vẫn in lại được.
+- [x] API mẫu lỗi → vẫn in được bằng mẫu dựng sẵn, có cảnh báo.
+- [x] Phiếu tạm tính và phiếu thanh toán theo mẫu mặc định hiện tại; nhãn tạm tính không mất.
+- [ ] Live e2e (`live-api.spec.ts`) pass với server thật. (chưa chạy: cần fixture tổng hợp)
+
+## Kết quả (08/11/2026)
+
+- Phiếu bán, tạm tính và phiếu thanh toán in theo mẫu của cửa hàng; khổ giấy đi theo mẫu. Bỏ `PaperPicker` ở quầy và các key `parkviet-pos:receipt-paper`, `parkviet-pos:ticket-paper`.
+- In lại chọn sẵn "Mẫu của bản gốc" (version và khổ của bản gốc); mẫu khác cùng loại dùng version hiện tại. Server không phải sửa.
+- Tải mẫu quá 8 giây hoặc lỗi → in bằng mẫu dựng sẵn và hiện cảnh báo. Server từ chối mẫu (422 ở `/receipt_template_id` hoặc `/template_version`) → làm mới danh sách và in lại một lần bằng mẫu mặc định của server.
+- Chờ logo tối đa 1,5 giây trước khi in; ảnh lỗi bị ẩn cho lần in đó.
+- Đã xóa wrapper `formatReceipt`/`formatPrebill`/`formatInvoiceTicket`.
+- **Lệch so với bước 5:** chưa áp dụng `page.margin_mm`. Mọi phiên bản đã lưu đều mang 3 mm, nên áp dụng sẽ đổi lề A4/A5/A6 (12/10/6 mm) và cắt mép phiếu nhiệt có độ rộng cố định khi lề ≥ 5 mm. Lề vẫn theo khổ giấy như cũ.
+
+Vấn đề còn mở:
+- Áp dụng lề mẫu cần: lề tùy chọn với mặc định theo khổ, và độ rộng phiếu tính theo lề.
+- Khi in bằng mẫu dựng sẵn (dự phòng), server vẫn ghi nhận mẫu đã chọn; in lại sau đó dùng mẫu đó.
+- In lại chưa chọn được mẫu của bản gốc ở version hiện tại.
+- Máy từng chọn khổ 58mm nay nhận khổ của mẫu mặc định (80mm) nếu cửa hàng chưa tạo mẫu 58mm.
+- Chưa chạy e2e với API thật (`live-api.spec.ts`, cần fixture tổng hợp).
