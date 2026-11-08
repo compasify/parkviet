@@ -22,6 +22,8 @@ import { SalePage } from './pages/sale';
 import { BranchFeaturesPage } from './pages/settings/branch-features';
 import { BranchProductsPage } from './pages/settings/branch-products';
 import { LabelFormatsPage } from './pages/settings/label-formats';
+import { ReceiptTemplateEditorPage } from './pages/settings/receipt-template-editor';
+import { ReceiptTemplatesPage } from './pages/settings/receipt-templates';
 import { TopologyPage } from './pages/settings/topology';
 import { ShiftsPage } from './pages/shifts';
 
@@ -82,6 +84,19 @@ const branchFeaturesRoute = createRoute({
   getParentRoute: () => authedRoute,
   path: '/settings/branches/$branchId/features',
   component: BranchFeaturesPage,
+});
+
+// Print templates belong to the store, not to a branch.
+const receiptTemplatesRoute = createRoute({
+  getParentRoute: () => authedRoute,
+  path: '/settings/receipt-templates',
+  component: ReceiptTemplatesPage,
+});
+
+const receiptTemplateEditorRoute = createRoute({
+  getParentRoute: () => authedRoute,
+  path: '/settings/receipt-templates/$templateId',
+  component: ReceiptTemplateEditorPage,
 });
 
 const fundsRoute = createRoute({
@@ -191,6 +206,8 @@ export const router = createRouter({
       branchProductsRoute,
       labelFormatsRoute,
       branchFeaturesRoute,
+      receiptTemplatesRoute,
+      receiptTemplateEditorRoute,
       fundsRoute,
       receivablesRoute,
       creditAccountsRoute,

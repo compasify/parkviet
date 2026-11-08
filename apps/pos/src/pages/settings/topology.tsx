@@ -184,6 +184,12 @@ export function TopologyPage() {
               {t(access.write ? 'adminWriteAccess' : 'adminReadAccess')}
             </span>
           </div>
+          <nav className="admin-branch-nav" aria-label={t('receiptTemplates.settingsHint')}>
+            <Link className="button-link" to="/settings/receipt-templates">
+              <PosIcon name="print" />
+              {t('receiptTemplates.settingsLink')}
+            </Link>
+          </nav>
           <nav className="admin-tabs" aria-label={t('adminSections')}>
             {(['branches', 'registers', 'memberships'] as const).map((value) => (
               <button
