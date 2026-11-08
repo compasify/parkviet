@@ -60,7 +60,7 @@ test('weighed labels, serials and FEFO lots keep their provenance through sale, 
   expect(world.serialStock.has('SN-1') || world.serialStock.has('SN-2')).toBe(false);
 
   // Partial return: 200 g of the first package, serial SN-2 and the L-02 pot.
-  await page.goto(`/pos/returns?orderId=${sheet.orderId}`);
+  await page.goto(`/returns?orderId=${sheet.orderId}`);
   const [firstPork, , phone, yogurt] = sheet.lines;
   await page.locator(`#return-qty-${firstPork.saleLineId}`).fill('200');
   await page.getByRole('group', { name: 'Serial trả lại của Điện thoại A' }).getByLabel('SN-2').check();
@@ -93,7 +93,7 @@ test('weighed labels, serials and FEFO lots keep their provenance through sale, 
 
   // What is left to return stays per line and per unit: the second package is
   // untouched and SN-2 cannot come back twice.
-  await page.goto(`/pos/returns?orderId=${sheet.orderId}`);
+  await page.goto(`/returns?orderId=${sheet.orderId}`);
   await expect(page.getByRole('group', { name: 'Serial trả lại của Điện thoại A' }).getByRole('checkbox')).toHaveCount(1);
   await expect(page.getByRole('group', { name: 'Serial trả lại của Điện thoại A' })).toContainText('SN-1');
 });
@@ -156,7 +156,7 @@ test.describe('real API', () => {
     const lotLine = sold.line_items[2];
     liveExpect(lotLine.trace?.allocations.map((row) => [row.lot_code, row.quantity])).toEqual([[`L1-${fixture.tag}`, 2], [`L2-${fixture.tag}`, 1]]);
 
-    await page.goto(`/pos/returns?orderId=${sold.order_id}`);
+    await page.goto(`/returns?orderId=${sold.order_id}`);
     await page.locator(`#return-qty-${sold.line_items[0].sale_line_id}`).fill('200');
     await page.getByRole('group', { name: `Serial trả lại của ${phone.name}` }).getByLabel(serials[1]).check();
     await page.getByLabel(`Tình trạng ${phone.name}`).selectOption('resellable');

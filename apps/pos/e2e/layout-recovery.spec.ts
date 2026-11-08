@@ -48,7 +48,7 @@ test('reload restores the selected draft and page from the server without restor
     }
     return route.fulfill({ status: 404, json: { error: { code: 'missing' } } });
   });
-  await page.goto('/pos/login');
+  await page.goto('/login');
   await page.getByLabel('Email nhân viên').fill('staff@example.test');
   await page.getByLabel('Mật khẩu', { exact: true }).fill('password');
   await page.getByRole('button', { name: 'Đăng nhập vào bán hàng', exact: true }).click();

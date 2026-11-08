@@ -83,16 +83,16 @@ test('every recovery path finishes with every feature switched off', async ({ pa
   await login(page);
 
   // A prepared return is received, another canceled.
-  await page.goto('/pos/returns?returnId=posreturn_a');
+  await page.goto('/returns?returnId=posreturn_a');
   await page.getByRole('button', { name: 'Nhận hàng trả' }).click();
   await expect(page.getByText('Đã nhận hàng · đã ghi giá trị')).toBeVisible();
-  await page.goto('/pos/returns?returnId=posreturn_b');
+  await page.goto('/returns?returnId=posreturn_b');
   await page.getByLabel('Lý do hủy').fill('Khách không trả nữa');
   await page.getByRole('button', { name: 'Hủy phiếu trả' }).click();
   await expect.poll(() => world.returns.find((row) => row.id === 'posreturn_b')?.status).toBe('canceled');
 
   // Refunds already requested: paid out, canceled, recorded as not made.
-  await page.goto('/pos/returns?returnId=posreturn_c');
+  await page.goto('/returns?returnId=posreturn_c');
   const refunds = page.getByRole('region', { name: 'Hoàn tiền' });
   await expect(refunds).toContainText('Yêu cầu hoàn tiền mới chưa được bật cho chi nhánh này');
   await expect(refunds.getByRole('button', { name: 'Yêu cầu hoàn tiền' })).toHaveCount(0);
@@ -114,7 +114,7 @@ test('every recovery path finishes with every feature switched off', async ({ pa
   await expect(page.getByText('Đổi hàng chưa được bật cho chi nhánh này', { exact: false })).toBeVisible();
 
   // The customer display still showing an order is cleared and disconnected.
-  await page.goto('/pos/');
+  await page.goto('/');
   await openTab(page, 'ws_shown');
   const display = page.getByRole('region', { name: 'Màn hình khách' });
   await display.getByRole('button', { name: 'Xóa màn hình khách' }).click();
@@ -166,7 +166,7 @@ test('a command recorded before the switch-off answers from its receipt afterwar
   soldOrder(world);
   await installRetailApi(page, world);
   await login(page);
-  await page.goto('/pos/returns?orderId=or_ws_sold');
+  await page.goto('/returns?orderId=or_ws_sold');
   await page.getByLabel('Gạo ST25', { exact: true }).fill('1');
   await page.getByRole('button', { name: 'Xem trước' }).click();
   await page.getByLabel('Lý do trả').fill('Khách đổi ý');

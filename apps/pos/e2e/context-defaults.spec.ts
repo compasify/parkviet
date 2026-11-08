@@ -41,7 +41,7 @@ async function install(page: Page, branchCount: number, registerCounts: number[]
     if (id) return route.fulfill({ json: { data: state.workspaces.find((row) => row.id === id) } });
     return route.fulfill({ json: { data: [], meta: { page: 1, pages: 0, count: 0 } } });
   });
-  await page.goto('/pos/login');
+  await page.goto('/login');
   await page.getByLabel('Email nhân viên').fill('staff@example.test');
   await page.getByLabel('Mật khẩu', { exact: true }).fill('fixture-only');
   await page.getByRole('button', { name: 'Đăng nhập vào bán hàng', exact: true }).click();

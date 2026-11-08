@@ -69,7 +69,7 @@ test('every control on the sale screen, the payment dialog and the flag settings
   await page.keyboard.press('Escape');
 
   world.administration = { read: true, write: true };
-  await page.goto('/pos/settings/branches/br_1/features');
+  await page.goto('/settings/branches/br_1/features');
   await expect(page.getByRole('list', { name: 'Danh sách chức năng' })).toBeVisible();
   expect(await unnamedControls(page)).toEqual([]);
   // Each switch names the feature it changes, not just "Bật"/"Tắt".
@@ -134,7 +134,7 @@ test('375px phone: sale, payment and the flag settings fit the width', async ({ 
   await page.keyboard.press('Escape');
 
   world.administration = { read: true, write: true };
-  await page.goto('/pos/settings/branches/br_1/features');
+  await page.goto('/settings/branches/br_1/features');
   await expect(page.getByRole('list', { name: 'Danh sách chức năng' })).toBeVisible();
   expect(await noHorizontalScroll(page)).toBe(true);
 });

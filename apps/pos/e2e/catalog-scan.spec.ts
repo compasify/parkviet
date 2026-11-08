@@ -190,7 +190,7 @@ async function installApi(page: Page, world: World) {
 }
 
 async function signInAndClaim(page: Page, workspaceId = 'ws_1') {
-  await page.goto('/pos/login');
+  await page.goto('/login');
   await page.getByLabel('Email nhân viên').fill('staff@example.test');
   await page.getByLabel('Mật khẩu', { exact: true }).fill('password');
   await page.getByRole('button', { name: 'Đăng nhập vào bán hàng', exact: true }).click();

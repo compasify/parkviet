@@ -107,7 +107,7 @@ test('cashier layout keeps the basket reachable, formats VND and safely edits qu
     }
     return route.fulfill({ status: 404, json: { error: { code: 'missing' } } });
   });
-  await page.goto('/pos/login');
+  await page.goto('/login');
   await page.getByLabel('Email nhân viên').fill('cashier@example.test');
   await page.getByLabel('Mật khẩu', { exact: true }).fill('test-only');
   await page.getByRole('button', { name: 'Đăng nhập vào bán hàng', exact: true }).click();

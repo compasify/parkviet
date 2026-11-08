@@ -39,7 +39,7 @@ export function requireLive(): LiveFixture {
 }
 
 export async function liveLogin(page: Page, fixture: LiveFixture, who: 'cashier' | 'manager' = 'cashier') {
-  await page.goto('/pos/login');
+  await page.goto('/login');
   await page.getByLabel('Email nhân viên').fill(fixture[who].email);
   await page.getByLabel('Mật khẩu', { exact: true }).fill(fixture[who].password);
   await page.getByRole('button', { name: 'Đăng nhập vào bán hàng', exact: true }).click();

@@ -195,7 +195,7 @@ async function installApi(page: Page, world: World) {
 }
 
 async function openSession(page: Page) {
-  await page.goto('/pos/login');
+  await page.goto('/login');
   await page.getByLabel('Email nhân viên').fill('lan@example.com');
   await page.getByLabel('Mật khẩu', { exact: true }).fill('secret');
   await page.getByRole('button', { name: 'Đăng nhập vào bán hàng', exact: true }).click();

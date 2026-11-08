@@ -125,11 +125,11 @@ async function install(page: Page, access = { read: true, write: true }) {
 }
 
 async function openBranchPage(page: Page, link: 'Hàng bán tại chi nhánh' | 'Mẫu tem cân') {
-  await page.goto('/pos/login');
+  await page.goto('/login');
   await page.getByLabel('Email nhân viên').fill('admin@example.test');
   await page.getByLabel('Mật khẩu', { exact: true }).fill('fixture-only');
   await page.getByRole('button', { name: 'Đăng nhập vào quản trị bán hàng', exact: true }).click();
-  await expect(page).toHaveURL(/\/pos\/settings$/);
+  await expect(page).toHaveURL(/\/settings$/);
   await page.getByRole('link', { name: `${link} Siêu thị Hiền`, exact: true }).click();
 }
 
@@ -138,7 +138,7 @@ const noHorizontalScroll = (page: Page) => page.evaluate(() => document.document
 test('search, filter, page through, assign and remove branch products', async ({ page }) => {
   const { state, products } = await install(page);
   await openBranchPage(page, 'Hàng bán tại chi nhánh');
-  await expect(page).toHaveURL(/\/pos\/settings\/branches\/branch_main\/products$/);
+  await expect(page).toHaveURL(/\/settings\/branches\/branch_main\/products$/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Hàng bán tại chi nhánh · Siêu thị Hiền');
   const list = page.getByRole('list', { name: 'Danh sách sản phẩm của chi nhánh' });
   await expect(list.getByRole('listitem')).toHaveCount(25);

@@ -1,6 +1,6 @@
 # ParkViet POS
 
-Ứng dụng bán hàng tại quầy của ParkViet, chạy trên trình duyệt ở đường dẫn `/pos/`. Cách chạy hệ thống xem [README gốc](../../README.md).
+Ứng dụng bán hàng tại quầy của ParkViet, chạy như một trang riêng, ở gốc tên miền của nó (ví dụ `pos.example.com`, khi chạy local là http://localhost:5175). Cách chạy hệ thống xem [README gốc](../../README.md).
 
 ## POS là gì
 
@@ -83,7 +83,7 @@ Trang **Hóa đơn** dùng để tra cứu và in phiếu bán hàng, trả hàn
 
 ### Màn hình khách
 
-Màn hình khách là một cửa sổ hoặc thiết bị riêng, mở ở `/pos/display`, không cần đăng nhập. Màn hình hiện đơn và số tiền cần thanh toán. Khi thanh toán chuyển khoản, màn hình hiện thông tin tài khoản nhận và nội dung chuyển khoản. Với VietQR, màn hình hiện mã QR để khách quét. Thu ngân chủ động chọn đơn cần hiện; chuyển tab không làm đổi nội dung màn hình khách. Khi màn hình không chắc dữ liệu còn mới, nó chỉ hiện "Đang cập nhật…".
+Màn hình khách là một cửa sổ hoặc thiết bị riêng, mở ở `/display`, không cần đăng nhập. Màn hình hiện đơn và số tiền cần thanh toán. Khi thanh toán chuyển khoản, màn hình hiện thông tin tài khoản nhận và nội dung chuyển khoản. Với VietQR, màn hình hiện mã QR để khách quét. Thu ngân chủ động chọn đơn cần hiện; chuyển tab không làm đổi nội dung màn hình khách. Khi màn hình không chắc dữ liệu còn mới, nó chỉ hiện "Đang cập nhật…".
 
 ### Máy quét
 
@@ -140,7 +140,7 @@ Khi ngừng hoạt động một chi nhánh, quầy hoặc nhân viên, lịch s
 11. **Ghép màn hình khách**
     - Trong khung thanh toán, bấm **Kết nối màn hình khách**.
     - Nếu cùng máy: bấm **Mở cửa sổ màn hình khách**.
-    - Nếu thiết bị khác: bấm **Tạo mã kết nối thiết bị khác**, rồi nhập mã 8 ký tự trên thiết bị đó ở `/pos/display`.
+    - Nếu thiết bị khác: bấm **Tạo mã kết nối thiết bị khác**, rồi nhập mã 8 ký tự trên thiết bị đó ở `/display`.
     - Bấm **Hiện đơn này cho khách** hoặc **Hiện chuyển khoản …**. Bấm **Xóa màn hình khách** trước khi phục vụ khách tiếp theo.
 12. **Hiệu chỉnh máy quét**: trong menu đầu trang, bấm **Máy quét**. Quét thử một mã vạch vào ô, rồi bấm **Lưu cho quầy này**.
 
@@ -205,7 +205,7 @@ Ngoài ra, giảm giá hoặc đổi giá vượt giới hạn cần **Mã duy�
 
 Chạy trong thư mục `apps/pos`:
 
-- `pnpm dev`: chạy Vite ở base `/pos/`. Proxy `/api` mặc định trỏ tới `http://localhost:3000`; có thể đổi bằng `VITE_API_PROXY_TARGET` trong `.env.local`. API chạy qua Spree CLI ở thư mục gốc.
+- `pnpm dev`: chạy Vite ở cổng `5175`, phục vụ ở gốc `/`. Chỉ khi cần gắn POS dưới một đường dẫn con mới đặt `VITE_BASE_PATH` (ví dụ `VITE_BASE_PATH=/pos/`). `spree dev` ở thư mục gốc đã tự chạy lệnh này, không cần chạy thêm. Proxy `/api` mặc định trỏ tới `http://localhost:3000`; có thể đổi bằng `VITE_API_PROXY_TARGET` trong `.env.local`. API chạy qua Spree CLI ở thư mục gốc.
 - `pnpm lint`, `pnpm typecheck`, `pnpm test` (Vitest), `pnpm build`.
 - `pnpm test:e2e`: chạy Playwright trên ba viewport desktop, tablet, mobile với API giả lập. Cổng mặc định là `5174`, có thể đổi bằng `POS_TEST_PORT` (ví dụ `POS_TEST_PORT=5177` khi 5174 bận).
 - Test với API thật (nhóm `real API` trong `e2e/full-retail.spec.ts`, `e2e/concurrency-chaos.spec.ts`, `e2e/advanced-goods.spec.ts`) bị bỏ qua mặc định. Cần stack dev đang chạy, database đã migrate và một fixture tổng hợp mới:

@@ -108,7 +108,7 @@ async function tabUntilFocused(page: Page, target: ReturnType<Page['getByLabel']
 test('login, choose branch and register, and open a shift with the keyboard only', async ({ page }) => {
   const world: World = { shiftOpen: false, shiftPosts: [] };
   await installApi(page, world);
-  await page.goto('/pos/login');
+  await page.goto('/login');
 
   const email = page.getByLabel('Email nhân viên');
   await tabUntilFocused(page, email);
@@ -154,7 +154,7 @@ test('switching register never shows the previous register shift while the new c
 }) => {
   const world: World = { shiftOpen: true, shiftPosts: [] };
   await installApi(page, world);
-  await page.goto('/pos/login');
+  await page.goto('/login');
   await page.getByLabel('Email nhân viên').fill('lan@example.com');
   await page.getByLabel('Mật khẩu', { exact: true }).fill('secret');
   await page.getByRole('button', { name: 'Đăng nhập vào bán hàng', exact: true }).click();

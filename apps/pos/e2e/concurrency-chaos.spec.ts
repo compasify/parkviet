@@ -162,7 +162,7 @@ test('lost responses on return, refund, exchange, collection and shift close nev
   exactlyOnce(world, 'collection');
   await dialog.locator('.payment-popup-actions').getByRole('button', { name: 'Đóng' }).click();
 
-  await page.goto(`/pos/returns?orderId=${sold.orderId}`);
+  await page.goto(`/returns?orderId=${sold.orderId}`);
   await page.getByLabel('Gạo ST25', { exact: true }).fill('1');
   await page.getByRole('button', { name: 'Xem trước' }).click();
   await page.getByLabel('Lý do trả').fill('Khách đổi ý');

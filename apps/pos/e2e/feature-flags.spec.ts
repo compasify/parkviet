@@ -81,7 +81,7 @@ test('a store administrator switches the store default; a branch switch only tur
   addSheet(world, 'ws_1');
   await installRetailApi(page, world);
   await login(page);
-  await page.goto('/pos/settings/branches/br_1/features');
+  await page.goto('/settings/branches/br_1/features');
   const row = page.getByRole('list', { name: 'Danh sách chức năng' }).getByRole('listitem').filter({ hasText: 'Bán ghi nợ' });
   await expect(row).toContainText('Tắt (cửa hàng chưa bật)');
 
@@ -153,7 +153,7 @@ test('money is not taken on an order whose shift is not open; cash refunds and c
     lines: [{ saleLineId: sold.lines[0].saleLineId, name: 'Gạo ST25', quantity: 1, condition: 'resellable', value: 100000 }] });
   world.refunds.push({ id: 'posrefund_1', returnId: 'posreturn_1', allocationId: 'posalloc_1', method: 'cash', status: 'reserved', amount: 100000 });
   world.shift.open = false;
-  await page.goto('/pos/returns?returnId=posreturn_1');
+  await page.goto('/returns?returnId=posreturn_1');
   const refund = page.getByRole('region', { name: 'Hoàn tiền' });
   const payout = refund.getByRole('button', { name: 'Xác nhận chi' });
   // The cashier may own an open shift at another register: the page hints,

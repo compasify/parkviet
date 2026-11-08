@@ -475,7 +475,7 @@ async function mockPos(
 const CASHIER = ['pos.shift.open', 'pos.payment.collect', 'pos.return.process'];
 
 async function login(page: Page) {
-  await page.goto('/pos/login');
+  await page.goto('/login');
   await page.getByLabel('Email nhân viên').fill('staff@example.test');
   await page.getByLabel('Mật khẩu', { exact: true }).fill('password');
   await page.getByRole('button', { name: 'Đăng nhập vào bán hàng', exact: true }).click();
@@ -593,7 +593,7 @@ test('return wizard: preview, approval wait, receive, refund with evidence and e
   await page.reload();
   await expect(page.getByText('Đã mở đơn đổi R101.')).toBeVisible();
   await page.getByRole('button', { name: 'Mở màn hình bán' }).click();
-  await expect(page).toHaveURL(/\/pos\/?$/);
+  await expect(page).toHaveURL(/:\d+\/?$/);
   const layout = await page.evaluate(() => localStorage.getItem('parkviet-pos-layout'));
   expect(JSON.parse(layout ?? '{}')).toMatchObject({ activeWorkspaceId: 'ws_2' });
 });
@@ -625,7 +625,7 @@ test('returns stay hidden without the return capability', async ({ page }) => {
 });
 
 async function preparedReturn(page: Page, api: Awaited<ReturnType<typeof mockPos>>) {
-  await page.goto('/pos/returns?orderId=or_100');
+  await page.goto('/returns?orderId=or_100');
   await expect(page.getByRole('heading', { name: 'Trả hàng đơn R100' })).toBeVisible();
   await page.getByLabel('Gạo ST25', { exact: true }).fill('1');
   await page.getByRole('button', { name: 'Xem trước' }).click();

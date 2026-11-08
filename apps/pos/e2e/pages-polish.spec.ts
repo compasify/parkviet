@@ -51,7 +51,7 @@ async function setup(page: Page, capabilities = ['pos.topology.manage', 'pos.pay
     }
     return route.fulfill({ json: { data: [], meta: { page: 1, pages: 1, count: 0 } } });
   });
-  await page.goto('/pos/login');
+  await page.goto('/login');
   await page.getByLabel('Email nhân viên').fill('staff@example.test');
   await page.getByLabel('Mật khẩu', { exact: true }).fill('fixture-only');
   await page.getByRole('button', { name: 'Đăng nhập vào bán hàng', exact: true }).click();
@@ -90,7 +90,7 @@ test('login shares register styling, reveals password and handles pending / fail
     await new Promise<void>((resolve) => { release = resolve; });
     await route.fulfill({ status: 401, json: { error: { code: 'unauthorized' } } });
   });
-  await page.goto('/pos/login');
+  await page.goto('/login');
   await expect(page.locator('.header')).toHaveCSS('background-color', 'rgb(7, 86, 154)');
   await capture(page, testInfo, 'login');
   const password = page.getByLabel('Mật khẩu', { exact: true });
@@ -113,7 +113,7 @@ test('login shares register styling, reveals password and handles pending / fail
 
 test('settings has shared navigation and independently scoped staff access form', async ({ page }, testInfo) => {
   const state = await setup(page);
-  await page.goto('/pos/settings');
+  await page.goto('/settings');
   await expect(page.getByRole('heading', { name: 'Cấu hình', exact: true })).toBeVisible();
   await expect(page.locator('.pos-page-nav a[aria-current="page"]')).toHaveText('Cấu hình');
   await expect(page.getByRole('list', { name: 'Danh sách chi nhánh' })).toContainText('Siêu thị Hiền');
@@ -132,7 +132,7 @@ test('settings has shared navigation and independently scoped staff access form'
 
 test('funds and attention show scoped details, exact money and correct canonical zero filtering', async ({ page }, testInfo) => {
   const state = await setup(page);
-  await page.goto('/pos/funds');
+  await page.goto('/funds');
   await expect(page.getByText('Mở bộ chọn chi nhánh / quầy', { exact: false })).toBeVisible();
   await chooseBranch(page, 'br_1');
   await expect(page.locator('.fund-row')).toHaveCount(4);
@@ -161,7 +161,7 @@ test('funds and attention show scoped details, exact money and correct canonical
 test('funds distinguish loading, error, detail failure and empty states without claiming success', async ({ page }, testInfo) => {
   const state = await setup(page);
   state.mode = 'loading';
-  await page.goto('/pos/funds');
+  await page.goto('/funds');
   await chooseBranch(page, 'br_1');
   await expect(page.locator('.funds-list-panel .page-state--loading')).toBeVisible();
   await capture(page, testInfo, 'funds-loading');
@@ -184,7 +184,7 @@ test('funds distinguish loading, error, detail failure and empty states without 
 test('direct secondary URLs preserve permission boundaries', async ({ page }, testInfo) => {
   const state = await setup(page, []);
   for (const path of ['settings', 'funds', 'payment-attention']) {
-    await page.goto(`/pos/${path}`);
+    await page.goto(`/${path}`);
     await expect(page.locator('.pos-page .page-state')).toContainText('Tài khoản này chưa được phép');
     await expect(page.locator('.pos-page form')).toHaveCount(0);
     await capture(page, testInfo, `${path}-denied`);
@@ -195,14 +195,14 @@ test('direct secondary URLs preserve permission boundaries', async ({ page }, te
 
 test('collection-only staff can view funds but cannot access reconciliation actions', async ({ page }, testInfo) => {
   const state = await setup(page, ['pos.payment.collect']);
-  await page.goto('/pos/funds');
+  await page.goto('/funds');
   await chooseBranch(page, 'br_1');
   await page.locator('.fund-row').first().click();
   await expect(page.getByText('Chỉ xem. Cần quyền xử lý khoản thu')).toBeVisible();
   await expect(page.locator('.liability-payouts')).toHaveCount(0);
   await expect(page.locator('.pos-page-nav').getByRole('link', { name: 'Cần chú ý' })).toHaveCount(0);
   await capture(page, testInfo, 'funds-readonly');
-  await page.goto('/pos/payment-attention');
+  await page.goto('/payment-attention');
   await expect(page.locator('.pos-page .page-state')).toContainText('Tài khoản này chưa được phép');
   expect(state.writes).toEqual([]);
 });

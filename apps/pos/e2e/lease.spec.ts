@@ -62,7 +62,7 @@ test('two browser pages cannot silently edit the same workspace', async ({ conte
   const first = await context.newPage();
   const second = await context.newPage();
   for (const page of [first, second]) {
-    await page.goto('/pos/login');
+    await page.goto('/login');
     await page.getByLabel('Email nhân viên').fill('staff@example.test');
     await page.getByLabel('Mật khẩu', { exact: true }).fill('password');
     await page.getByRole('button', { name: 'Đăng nhập vào bán hàng', exact: true }).click();

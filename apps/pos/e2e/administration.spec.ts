@@ -57,7 +57,7 @@ async function install(page: Page, access = { read: true, write: true }) {
 }
 
 async function login(page: Page, administration = true) {
-  await page.goto('/pos/login');
+  await page.goto('/login');
   await page.getByLabel('Email nhân viên').fill('admin@example.test');
   await page.getByLabel('Mật khẩu', { exact: true }).fill('fixture-only');
   await page.getByRole('button', { name: administration ? 'Đăng nhập vào quản trị bán hàng' : 'Đăng nhập vào bán hàng', exact: true }).click();
@@ -66,7 +66,7 @@ async function login(page: Page, administration = true) {
 test('administration login uses store authority without a selling membership and shows a header cog', async ({ page }, testInfo) => {
   const { state } = await install(page);
   await login(page);
-  await expect(page).toHaveURL(/\/pos\/settings$/);
+  await expect(page).toHaveURL(/\/settings$/);
   await expect(page.locator('.header-user')).toContainText('Quản trị Hiền');
   await expect(page.locator('.header-user .header-settings')).toBeVisible();
   await expect(page.getByRole('list', { name: 'Danh sách chi nhánh' })).toContainText('Kho hàng trung tâm');

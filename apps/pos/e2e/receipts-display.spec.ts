@@ -403,7 +403,7 @@ async function mockPos(context: BrowserContext) {
 }
 
 async function login(page: Page) {
-  await page.goto('/pos/login');
+  await page.goto('/login');
   await page.getByLabel('Email nhân viên').fill('staff@example.test');
   await page.getByLabel('Mật khẩu', { exact: true }).fill('password');
   await page.getByRole('button', { name: 'Đăng nhập vào bán hàng', exact: true }).click();
@@ -412,7 +412,7 @@ async function login(page: Page) {
 
 async function pairDisplay(page: Page, api: { display: { pairingCodes: string[] } }) {
   if (!api.display.pairingCodes.includes('ABCD2345')) api.display.pairingCodes.push('ABCD2345');
-  await page.goto('/pos/display');
+  await page.goto('/display');
   await page.getByLabel('Mã kết nối').fill('abcd-2345');
   await page.getByRole('button', { name: 'Kết nối', exact: true }).click();
 }
@@ -445,7 +445,7 @@ test('pinning A and selling B in another tab never changes what the customer see
   await expect(control.getByTestId('display-pairing-code')).toHaveText('ABCD-2345');
   await expect(control).not.toContainText('tok-1');
   const screen = await context.newPage();
-  await screen.goto('/pos/display');
+  await screen.goto('/display');
   await screen.getByLabel('Mã kết nối').fill('WRONG234');
   await screen.getByRole('button', { name: 'Kết nối', exact: true }).click();
   await expect(screen.getByRole('alert')).toContainText('không đúng hoặc đã hết hạn');
@@ -629,7 +629,7 @@ test('prints the server snapshot on 80mm and A4 and labels every reprint as a co
   // The print is recorded slowly: nothing may print before the labelled sheet is there.
   api.display.printDelayMs = 700;
   await login(page);
-  await page.goto('/pos/receipts?source=posworkspace_done');
+  await page.goto('/receipts?source=posworkspace_done');
   const sheet = page.getByTestId('receipt-sheet');
   await expect(sheet).toContainText('PHIẾU BÁN HÀNG');
   await expect(sheet).toContainText('1 Thùng = 24 Lon');
@@ -691,7 +691,7 @@ test('an order that is not completed has no receipt to print', async ({ context,
   const api = await mockPos(context);
   api.setLookup('open');
   await login(page);
-  await page.goto('/pos/receipts?source=posworkspace_open');
+  await page.goto('/receipts?source=posworkspace_open');
   await expect(page.getByRole('alert')).toContainText('chưa có hóa đơn');
   await expect(page.getByTestId('receipt-sheet')).toHaveCount(0);
   expect(api.printBodies).toEqual([]);
