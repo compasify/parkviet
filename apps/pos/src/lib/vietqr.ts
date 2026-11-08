@@ -32,19 +32,24 @@ export function vietqrReceived(summary: VietqrTenderSummary | null | undefined):
 
 // The evidence to confirm with: the webhook once the bank reported the
 // transfer, otherwise the cashier's attestation when they chose to give one.
+// The bank reference and receiving account are optional notes on it; the
+// server defaults the account to the one the QR was issued for.
 export function vietqrEvidence(
   summary: VietqrTenderSummary | null | undefined,
   manual: { reference: string; account: string } | null,
 ):
   | { evidenceKind: 'vietqr_webhook' }
-  | { evidenceKind: 'vietqr_manual'; reference: string; receivingAccount: string }
+  | { evidenceKind: 'vietqr_manual'; reference?: string; receivingAccount?: string }
   | null {
   if (vietqrReceived(summary)) return { evidenceKind: 'vietqr_webhook' };
   if (!manual) return null;
   const reference = manual.reference.trim();
   const receivingAccount = manual.account.trim();
-  if (reference === '' || receivingAccount === '') return null;
-  return { evidenceKind: 'vietqr_manual', reference, receivingAccount };
+  return {
+    evidenceKind: 'vietqr_manual',
+    ...(reference ? { reference } : {}),
+    ...(receivingAccount ? { receivingAccount } : {}),
+  };
 }
 
 // Whole minutes and seconds left on the QR, or null once it expired.

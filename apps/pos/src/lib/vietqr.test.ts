@@ -26,9 +26,15 @@ describe('VietQR evidence', () => {
     ).toEqual({ evidenceKind: 'vietqr_webhook' });
   });
 
-  it('needs both a reference and the receiving account to attest by hand', () => {
+  it('attests by hand with the bank details as optional notes', () => {
     expect(vietqrEvidence(waiting, null)).toBeNull();
-    expect(vietqrEvidence(waiting, { reference: ' ', account: '0123' })).toBeNull();
+    expect(vietqrEvidence(waiting, { reference: ' ', account: '' })).toEqual({
+      evidenceKind: 'vietqr_manual',
+    });
+    expect(vietqrEvidence(waiting, { reference: ' ', account: '0123' })).toEqual({
+      evidenceKind: 'vietqr_manual',
+      receivingAccount: '0123',
+    });
     expect(vietqrEvidence(waiting, { reference: ' FT1 ', account: ' 0123 ' })).toEqual({
       evidenceKind: 'vietqr_manual',
       reference: 'FT1',

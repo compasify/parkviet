@@ -71,7 +71,8 @@ module Spree
 
       # Settles the attempt's payment and returns what the receipt records.
       # `vietqr_webhook` needs the bank webhook to have completed the payment;
-      # `vietqr_manual` is the cashier's attestation of a transfer they saw.
+      # `vietqr_manual` is the cashier's attestation of a transfer they saw;
+      # the bank reference they may add is a note, not a requirement.
       #
       # @return [Hash] payment:, reference:, receiving_account:
       def confirm!(attempt:, evidence_kind:, reference:, receiving_account:)
@@ -91,9 +92,10 @@ module Spree
           return { payment: payment, reference: bank_reference(event, allocation), receiving_account: allocation.account_number }
         end
 
-        if reference.blank? || receiving_account.blank?
-          raise Conflict.new('Bank transfer evidence is required.', reason: 'vietqr_evidence_required')
-        end
+        # The cashier's attestation is the evidence; the bank's reference and
+        # the receiving account are optional notes. The account defaults to
+        # the one the QR was issued for, where the customer was told to pay.
+        receiving_account = receiving_account.presence || allocation.account_number
 
         unless allocation.confirmed?
           confirmed = SpreeVietqr::ConfirmPayment.new(payment_method: allocation.payment_method).call(allocation: allocation)
@@ -101,7 +103,7 @@ module Spree
         end
         raise Conflict.new('The VietQR payment could not be confirmed.', reason: 'vietqr_confirm_failed') unless payment.reload.status == 'completed'
 
-        { payment: payment, reference: reference, receiving_account: receiving_account }
+        { payment: payment, reference: reference.presence, receiving_account: receiving_account }
       end
 
       # Releases the QR and voids the payment. Money that already arrived

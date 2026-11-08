@@ -88,11 +88,21 @@ RSpec.describe 'POS VietQR tender', type: :request do
     expect(sale.workspace.reload.operational_status).to eq('completed')
   end
 
-  it 'lets the cashier attest a transfer by hand when no webhook arrives' do
+  it 'lets the cashier attest a transfer by hand without the bank details' do
     attempt = prepare('vietqr', 100_000)
 
-    expect { confirm(attempt, evidence_kind: 'vietqr_manual') }.
+    expect { confirm(attempt, evidence_kind: 'vietqr_other') }.
       to raise_error(Spree::Pos::Conflict) { |error| expect(error.reason).to eq('vietqr_evidence_required') }
+
+    confirm(attempt, evidence_kind: 'vietqr_manual')
+    expect(Spree::Pos::VietqrTender.payment_for(attempt).status).to eq('completed')
+    funds = Spree::Pos::ReceivedFunds.find_by!(tender_attempt: attempt)
+    expect(funds).to have_attributes(reference: nil, receiving_account: '0123456789', applied_amount: 100_000)
+    expect(Spree::Pos::ReceiptEvidence.find_by!(tender_attempt: attempt).kind).to eq('vietqr_manual')
+  end
+
+  it 'keeps the bank reference the cashier adds to a hand attestation' do
+    attempt = prepare('vietqr', 100_000)
 
     confirm(attempt, evidence_kind: 'vietqr_manual', reference: 'FT-HAND-1', receiving_account: '0123456789')
     expect(Spree::Pos::VietqrTender.payment_for(attempt).status).to eq('completed')
