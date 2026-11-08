@@ -5,7 +5,7 @@ require_relative '../../../support/pos_trace_helpers'
 
 # I08: packages of the same variant stay independent by SaleLine, while an
 # explicit `merge: true` with an identical merge key still merges.
-RSpec.describe 'POS SaleLine identity (I08)', type: :request do
+RSpec.describe 'POS SaleLine identity (I08)', type: :request, modules_off_rerun: true do
   include PosTraceHelpers
 
   let(:store) { create(:store, default_currency: 'VND', supported_currencies: 'VND') }

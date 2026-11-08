@@ -13,7 +13,7 @@ end
 # Sandbox settlement gates: split tender with cash change, receipts that never
 # double, conservation of received funds across allocation and payouts,
 # drawer custody, tracked-SKU guard and guarded completion.
-RSpec.describe 'POS split tender and settlement', type: :request do
+RSpec.describe 'POS split tender and settlement', type: :request, modules_off_rerun: true do
   include ActiveSupport::Testing::TimeHelpers
   include PosTraceHelpers
 

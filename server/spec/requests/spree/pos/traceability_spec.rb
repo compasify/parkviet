@@ -7,7 +7,7 @@ require_relative '../../../support/pos_trace_helpers'
 # HTTP contract of serial/lot stock: who may read and change typed stock at a
 # branch, recall scoped to trace holders with masked customers, the sale-line
 # trace DTO and the unit configuration lock while tracked stock exists.
-RSpec.describe 'POS traceability API', type: :request do
+RSpec.describe 'POS traceability API', type: :request, modules_off_rerun: true do
   include PosReturnHelpers
   include PosTraceHelpers
 
@@ -153,7 +153,7 @@ RSpec.describe 'POS traceability API', type: :request do
   # setup there and nothing else. Tracked stock already open keeps selling,
   # paying, completing, handing over, returning, moving and counting, and a
   # setup command already run replays.
-  it 'refuses new tracked setup with the module off and keeps selling and returning tracked stock' do
+  it 'refuses new tracked setup with the module off and keeps selling and returning tracked stock', :module_setup do
     manager = credit_staff(store, branch, [caps::MANAGE, caps::INVENTORY_MANAGE], extra_permissions: %w[write_pos_topology])
     branch.stock_location.restock(variant, 4)
     key = SecureRandom.uuid

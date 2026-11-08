@@ -6,7 +6,7 @@ require_relative '../../../support/pos_return_helpers'
 # HTTP contract for order history, returns, refunds and exchanges, including
 # who may read or write them and that core return/refund endpoints stay shut
 # to cashiers.
-RSpec.describe 'POS orders, returns and refunds API', type: :request do
+RSpec.describe 'POS orders, returns and refunds API', type: :request, modules_off_rerun: true do
   include PosReturnHelpers
 
   let(:store) { create(:store, default_currency: 'VND', supported_currencies: 'VND') }

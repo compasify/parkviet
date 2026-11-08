@@ -6,7 +6,7 @@ require_relative '../../../support/pos_credit_helpers'
 # In-store EAN-13 scale labels: a branch format claims the barcode, the SKU's
 # label code picks the variant, and the server alone turns the encoded weight
 # or price into an exact measured quantity.
-RSpec.describe 'POS scale labels and branch assortment', type: :request do
+RSpec.describe 'POS scale labels and branch assortment', type: :request, modules_off_rerun: true do
   include PosCreditHelpers
 
   let(:store) { create(:store, default_currency: 'VND', supported_currencies: 'VND') }
@@ -245,7 +245,7 @@ RSpec.describe 'POS scale labels and branch assortment', type: :request do
   # D5: with retail.measured (and then retail.units) off, configured scale
   # labels still scan and sell; only new label or unit setup is refused, and
   # narrowing back to the base unit or disabling a layout stays open.
-  it 'keeps selling configured labels with the modules off and refuses new measured or unit setup' do
+  it 'keeps selling configured labels with the modules off and refuses new measured or unit setup', :module_setup do
     Spree::Pos::StaffMembership.find_by!(staff: user, branch: branch).
       update!(capabilities: capabilities + [Spree::Pos::Capabilities::PAYMENT])
     # Cash settles on a manual core method of the store.
