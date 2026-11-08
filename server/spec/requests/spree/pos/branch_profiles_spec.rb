@@ -188,5 +188,27 @@ RSpec.describe 'POS branch profiles', type: :request, pos_modules: :default do
       expect(data['onboarded_at']).to be_present
       expect(Spree::Pos::AuditEntry.find_by!(action: 'store_profile.change').metadata).to include('from' => nil)
     end
+
+    it 'clears every interest with an empty list or null and keeps them when the field is left out' do
+      branch
+      Spree::Pos::StoreProfile.create!(store: store, profile_key: 'khac', interests: %w[quan_an cafe_tra_sua], onboarded_at: 1.day.ago)
+
+      data = call(manager, :put, 'store_profile', profile_key: 'khac', reason: 'Giữ nguyên')['data']
+      expect(data['interests']).to eq(%w[quan_an cafe_tra_sua])
+
+      # JSON `[]` must reach the workflow as an empty list, not as nil (left out).
+      data = call(manager, :put, 'store_profile', profile_key: 'khac', interests: [], reason: 'Bỏ hết')['data']
+      expect(response).to have_http_status(:ok)
+      expect(data['interests']).to eq([])
+      expect(Spree::Pos::StoreProfile.find_by!(store: store).interests).to eq([])
+      audit = Spree::Pos::AuditEntry.where(action: 'store_profile.change').order(:id).last
+      expect(audit.metadata).to include('from' => include('interests' => %w[quan_an cafe_tra_sua]), 'to' => include('interests' => []),
+                                        'reason' => 'Bỏ hết')
+
+      # An explicit `null` clears too (the key is there); only leaving it out keeps them.
+      call(manager, :put, 'store_profile', profile_key: 'khac', interests: %w[quan_an], reason: 'Lại')
+      data = call(manager, :put, 'store_profile', profile_key: 'khac', interests: nil, reason: 'Null')['data']
+      expect(data['interests']).to eq([])
+    end
   end
 end
