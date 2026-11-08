@@ -1,7 +1,7 @@
 ---
 title: "POS: mẫu in hóa đơn tùy biến"
 description: "Mẫu in theo cửa hàng, dạng ghép khối, chỉnh trong Cài đặt POS; in lại giữ mẫu bản gốc; HĐĐT máy tính tiền tách phase cuối."
-status: in-progress
+status: completed
 priority: P2
 effort: "~13 ngày công (chưa tính phase 6)"
 branch: "v2"
@@ -48,7 +48,7 @@ Research và so sánh thị trường: [261108-1500-pos-receipt-template-researc
 | 2 | [Model và API mẫu in](./phase-02-model-va-api-mau-in.md) | 2,5 ngày | Completed |
 | 3 | [Cài đặt POS → Mẫu in (editor)](./phase-03-cai-dat-mau-in-editor.md) | 3 ngày | Completed |
 | 4 | [In theo mẫu ở quầy và in lại](./phase-04-in-theo-mau-va-in-lai.md) | 2 ngày | Completed |
-| 5 | [Tùy biến nâng cao](./phase-05-tuy-bien-nang-cao.md) | 3,5 ngày | Pending |
+| 5 | [Tùy biến nâng cao](./phase-05-tuy-bien-nang-cao.md) | 3,5 ngày | Completed |
 | 6 | [Hóa đơn điện tử máy tính tiền](./phase-06-hoa-don-dien-tu-may-tinh-tien.md) | Chưa ước lượng | Deferred |
 
 Thứ tự: 1 → 2 → 3 và 4 (3, 4 làm song song được sau 2) → 5. Phase 6 chỉ mở khi có quyết định kinh doanh và chọn nhà cung cấp HĐĐT.
