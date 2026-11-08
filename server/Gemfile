@@ -17,7 +17,7 @@ end
 
 # Rails must load before Propshaft (its railtie only registers once Rails is
 # present), and Propshaft before the Spree gems.
-gem 'rails', '~> 8.1.2'
+gem 'rails', '~> 8.1.4'
 gem 'propshaft'
 
 # Spree Commerce
