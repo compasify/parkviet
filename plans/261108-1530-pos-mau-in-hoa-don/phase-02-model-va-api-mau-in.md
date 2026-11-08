@@ -1,7 +1,7 @@
 ---
 phase: 2
 title: "Model và API mẫu in"
-status: pending
+status: completed
 effort: "2,5 ngày"
 dependsOn: [1]
 ---
@@ -94,9 +94,23 @@ Quy tắc validate (`Spree::Pos::ReceiptTemplateSchema`):
 
 ## Success Criteria
 
-- [ ] `pnpm spree migrate` chạy sạch; `pnpm spree rspec spec/requests/spree/pos/receipt_templates_spec.rb spec/requests/spree/pos/receipts_displays_spec.rb` pass.
-- [ ] Thu ngân không có `write_pos_topology` đọc được mẫu nhưng mọi lệnh ghi trả 403; store khác trả 404.
-- [ ] Config sai (khối lạ, biến lạ, quá dài, field không hợp loại chứng từ) → 422 kèm vị trí lỗi.
-- [ ] PATCH với `expected_version` cũ → 409; không mất chỉnh sửa của người khác.
-- [ ] In lại không truyền mẫu → dùng mẫu + version + khổ của bản gốc, kể cả khi mẫu đã sửa hoặc đã tắt; truyền mẫu khác cùng loại → được ghi nhận; khác loại → 422.
-- [ ] Mỗi thao tác ghi có audit entry.
+- [x] `pnpm spree migrate` chạy sạch; `pnpm spree rspec spec/requests/spree/pos/receipt_templates_spec.rb spec/requests/spree/pos/receipts_displays_spec.rb` pass.
+- [x] Thu ngân không có `write_pos_topology` đọc được mẫu nhưng mọi lệnh ghi trả 403; store khác trả 404.
+- [x] Config sai (khối lạ, biến lạ, quá dài, field không hợp loại chứng từ) → 422 kèm vị trí lỗi.
+- [x] PATCH với `expected_version` cũ → 409; không mất chỉnh sửa của người khác.
+- [x] In lại không truyền mẫu → dùng mẫu + version + khổ của bản gốc, kể cả khi mẫu đã sửa hoặc đã tắt; truyền mẫu khác cùng loại → được ghi nhận; khác loại → 422.
+- [x] Mỗi thao tác ghi có audit entry.
+
+## Kết quả (08/11/2026)
+
+- Migration `20261108173000_create_spree_pos_receipt_templates` (có FK tới store, mẫu, admin user; check constraint khổ giấy ở prints).
+- Danh sách biến dùng chung ở `server/config/pos/receipt_template_variables.json`; `apps/pos/src/lib/receipt-template/server-contract.test.ts` so khớp mẫu mặc định và biến giữa server và client.
+- Mọi lỗi 422 của mẫu có dạng `details.errors[{pointer, code, message}]`, kể cả `/name` và `/paper`. 409 dùng `details.reason`: `template_version_conflict` (kèm `current_version`), `template_limit_reached` (kèm `limit`), `template_disabled`, `template_default_required`.
+- Tắt mẫu mặc định: quyền mặc định chuyển sang mẫu active cũ nhất cùng loại; nếu là mẫu active duy nhất thì 409.
+- Field chỉ hợp lệ với loại chứng từ có dữ liệu đó (ví dụ phiếu hoàn tiền chỉ có `methods`, `reference`; kết ca không có dòng hàng, tổng, thanh toán). Không đổi được nhãn `methods`.
+- In lại chỉ truyền `receipt_template_id` của bản gốc: dùng version và khổ của bản gốc. `return_supplement` dùng mẫu `return`.
+- Quyết định: mẫu do `ensure_defaults!` tạo không có audit (không có người thực hiện); nhân bản mẫu đã tắt vẫn được phép.
+
+Vấn đề còn mở:
+- Quy tắc field theo loại chứng từ chỉ có ở server; phase 3 cần sao chép hoặc lấy từ API.
+- Field `register`, `branch` ở phần thông tin được chấp nhận nhưng client chưa tạo dòng cho chúng.
