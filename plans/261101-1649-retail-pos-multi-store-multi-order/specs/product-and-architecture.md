@@ -31,6 +31,8 @@
 
 Không gọi đây là bản phát hành đầy đủ khi mới có giỏ hàng và nút thanh toán. Các mốc nội bộ có thể nhỏ hơn; release đầy đủ phải qua phase 11 và toàn bộ acceptance matrix.
 
+Hồ sơ ngành và module bán lẻ theo chi nhánh (wizard Thiết lập cửa hàng, trang Mô hình kinh doanh): [plan 261108-1830](../../261108-1830-pos-ban-le-da-nganh/plan.md). Vẫn chỉ bán lẻ; ngành ăn uống chỉ hiện "Sắp hỗ trợ", và ranh giới "không F&B" dưới đây không đổi.
+
 ### Ranh giới, không hứa thay mọi hệ thống bán lẻ
 
 - Không thêm F&B, ERP/kế toán tổng hợp, loyalty engine mới, marketplace seller settlement, SaaS đa merchant, offline-finalize, acquiring/thẻ tích hợp trực tiếp trong đợt này.

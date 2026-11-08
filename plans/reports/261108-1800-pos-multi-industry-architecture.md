@@ -287,6 +287,23 @@ Giai đoạn này không đổi hành vi của shop đang chạy. Chỉ làm nh�
 
 **Chưa làm trong giai đoạn 0, để plan F&B:** registry SaleLine kind, `Workspace.service_mode`, slot `extensions` trên màn bán, module `resources`. Mục 3.1 vẫn giữ để thiết kế không chặn chúng.
 
+### 8.1 Thực tế đã làm khác bảng trên (09/11/2026)
+
+Giai đoạn 0 đã xong (plan [261108-1830](../261108-1830-pos-ban-le-da-nganh/plan.md), commit `26b5425` → phase 5). Những chỗ khác bảng trên hoặc khác plan, gom từ phần "Kết quả" của từng phase:
+
+| Mục | Plan / bảng trên | Thực tế |
+|---|---|---|
+| 1. Backfill | Bật các module chi nhánh "đang dùng" | Mọi chi nhánh có sẵn nhận `khac` với **cả ba** module bật (`reason = 'backfill'`), không xét dữ liệu. Chi nhánh tạo sau migration nhưng trước phase 2 được migration dữ liệu thứ hai bù dòng module. Dev: 8 chi nhánh, 24 dòng. |
+| 2. Hồ sơ | Mỗi hồ sơ có đủ mặc định | Ô "–" ở bảng duyệt (chọn lô, hạn trả hàng) là **bỏ field**, không phải `null`: hồ sơ không có ý kiến, đổi hồ sơ không đề xuất gì. `lot_selection` chỉ có `fefo` / `cashier_pick`. |
+| 3. Wizard | "chọn nhóm → ngành → có bán sỉ? → xem trước → tạo chi nhánh / **kho** / quầy" | Một nhóm radio có hai nhóm con. Wizard **không tạo kho**: kho phải có sẵn trong Admin Dashboard; không có kho thì bước chi nhánh chặn và chỉ chỗ tạo. Cờ rủi ro đã tick được bật làm **mặc định cấp cửa hàng** (`FeaturePolicy.set!` không kèm chi nhánh), không phải cấp chi nhánh. Một idempotency key cho một nội dung gửi (header `Idempotency-Key`). |
+| 4. Mô hình kinh doanh | Đổi profile "chặn tắt module đang có dữ liệu mở" | **Không chặn.** Theo D5, tắt module không ảnh hưởng việc bán, nên preview chỉ báo số đang dùng (`in_use`) và để người dùng quyết. Ô áp module được tick sẵn; các mặc định không tick sẵn (D7). Thêm `GET /branches/:id/modules`. |
+| D5, chặn thiết lập | `PUT /units/variant` dùng điều kiện "bật ở ≥ 1 chi nhánh active" | Dùng module của **chi nhánh trong request**: lệnh đã cần chi nhánh và quyền Cấu hình tại đó, và client ẩn màn theo chi nhánh đang chọn. |
+| D5, nhận hàng | Ban đầu chặn cả `inventory/receipts` | Theo câu hỏi đã chốt 4 của plan: chi nhánh tắt `retail.traceability` **vẫn nhận thêm hàng** cho SKU đã theo dõi. Phiếu nhận chỉ nhận variant đã tracked và đã có tồn đầu kỳ, nên không bao giờ đưa SKU mới vào theo dõi. Chỉ chặn tồn đầu kỳ và việc chuyển SKU sang tracked. `GET /context` có thêm `module_usage` (một query `EXISTS`, cấp store) để client giữ lối vào Nhập hàng khi store còn SKU tracked. |
+| 5. Hook pipeline | Hoãn | Vẫn hoãn; `tracked_guard!` và đường tiền không đổi. Phase 5 chứng minh D5 bằng cách chạy lại năm spec bán / tồn kho với mọi module tắt (`--tag modules_off_rerun`): 48 example pass. Thử thêm một `ModulePolicy.require!` vào `tracked_guard!` thì lượt chạy này fail 22 example. |
+| 7. Client | Registry `src/modules/` | Có, kèm `use-branch-modules.ts` (không có trong plan) vì trang cấu hình hiện chi nhánh theo URL. Trang Cấu hình gọi `GET /branches/:id/modules` cho **từng** chi nhánh (cache 30 s); nếu store nhiều chi nhánh thì nên cho `GET /branches` trả kèm `modules`. |
+| Hiệu năng | `modules` một query theo chi nhánh | Đúng: `modules`, `module_usage`, store profile mỗi thứ một query, không đổi theo số chi nhánh, module hay SKU tracked (spec đếm query). Context vẫn đọc kho của từng chi nhánh trong danh sách (`Branch#to_pos`, tối đa 100), từ trước giai đoạn 0. |
+| Đa cửa hàng | Không nêu | Client POS không gửi `X-Spree-Store-Id`, nên luôn làm việc với store mặc định. Lần chạy wizard với API thật (phase 5) phải tự thêm header cho store mới. Nếu một máy chủ sau này phục vụ nhiều cửa hàng, client cần chọn store. |
+
 ---
 
 ## 9. Lộ trình

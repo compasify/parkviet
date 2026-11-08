@@ -13,6 +13,13 @@
 ## Khái niệm chính
 
 - **Chi nhánh**: điểm bán gắn với một kho hàng và một múi giờ. Mỗi chi nhánh có danh mục hàng bán riêng.
+- **Ngành / mô hình kinh doanh**: mỗi chi nhánh thuộc một ngành. Có 13 ngành bán lẻ chọn được; 6 ngành ăn uống – giải trí hiện nhãn **"Sắp hỗ trợ"**, chỉ để ghi nhận nhu cầu, không tạo được chi nhánh. Ngành là cấu hình gợi ý sẵn, không khóa gì:
+  - bật các chức năng bán lẻ hợp với ngành: **Quy đổi đơn vị**, **Hàng cân, tem cân**, **Serial, lô, hạn dùng**;
+  - gợi ý mặc định của chi nhánh (số ngày trả hàng, cách chọn lô, ngưỡng) và cách mở danh mục hàng (**Thẻ** hoặc **Danh sách**);
+  - nêu các chức năng rủi ro ngành đó thường dùng, nhưng không tự bật.
+
+  Cửa hàng có một **ngành chính**, là ngành mặc định khi tạo chi nhánh mới. Đổi ngành, bật hay tắt từng chức năng được về sau. Chi nhánh có từ trước được xếp vào ngành **Khác**, bật cả ba chức năng, nên không đổi gì.
+- **Tắt chức năng không làm đổi cách bán SKU đã cấu hình.** Tắt một chức năng ở chi nhánh chỉ ẩn màn cấu hình của nó và chặn thiết lập *mới*: đặt quy đổi mới, tạo hay sửa mẫu tem cân, gán mã tem mới, khai báo tồn đầu kỳ, đưa SKU mới vào theo dõi serial/lô. SKU đã cấu hình vẫn bán, thu tiền, hoàn tất, trả hàng và in phiếu như cũ. Hàng đã theo dõi serial/lô vẫn **nhập thêm**, chuyển kho, kiểm kê và tra cứu được; tab **Nhập hàng** còn hiện chừng nào cửa hàng còn SKU đang theo dõi.
 - **Quầy**: một máy bán hàng có một két tiền. Chi nhánh không có quầy vẫn bán được.
 - **Ca**: thu ngân phải mở ca tại quầy, kèm **Tiền đầu ca**, trước khi tạo đơn hoặc thu tiền. Mỗi ca thuộc về một nhân viên.
 - **Đơn đang bán (tab "Hóa đơn N")**: mỗi đơn là một tab. Một tab có thể đang chờ chuyển khoản trong khi thu ngân bán đơn khác. Mỗi lúc chỉ một tab hoặc một máy được giữ **quyền sửa** một đơn.
@@ -97,8 +104,21 @@ Trang **Cấu hình** có các mục:
 - **Chi nhánh**: kho bán, kho nhận hàng, múi giờ, số ngày cho phép trả hàng, ngưỡng chênh lệch đóng ca, cách **Chọn lô khi bán**, ngưỡng điều chỉnh tồn không cần duyệt.
 - **Quầy bán hàng**.
 - **Nhân viên & quyền**.
-- **Hàng bán tại chi nhánh**, kèm **Đơn vị và mã tem** của từng SKU.
-- **Mẫu tem cân**.
+- **Hàng bán tại chi nhánh**, kèm **Đơn vị và mã tem** của từng SKU. Vùng quy đổi, ô **Theo dõi hàng** và ô mã tem cân chỉ hiện khi chi nhánh bật chức năng tương ứng (SKU đang dùng thì vẫn hiện để xem và thu hẹp).
+- **Mẫu tem cân** (khi chi nhánh bật **Hàng cân, tem cân**).
+- **Mô hình kinh doanh**, mở từ link ở mỗi dòng chi nhánh hoặc trên thanh mục của chi nhánh:
+  - **Ngành hiện tại** của chi nhánh.
+  - **Đổi ngành**: chọn ngành mới rồi bấm **Xem thay đổi**. Chưa có gì được lưu. POS liệt kê:
+    - chức năng sẽ bật, sẽ tắt, và số đang dùng ở chi nhánh;
+    - các mặc định khác với ngành mới;
+    - đơn vị mẫu sẽ thêm;
+    - chức năng ngành mới thường dùng mà chi nhánh đang tắt (chỉ nhắc, không tự bật).
+
+    Ô **Bật / tắt chức năng theo ngành mới** được tick sẵn. Mỗi mặc định có một ô **Áp giá trị của ngành mới**, không tick sẵn, nên cấu hình đã chỉnh tay chỉ đổi khi bạn chọn. Nhập lý do rồi bấm **Chuyển sang …**. Nếu chi nhánh vừa được đổi ngành ở nơi khác, POS báo và tải lại thay đổi để bạn xem lại.
+  - **Chức năng của chi nhánh**: bật hay tắt từng chức năng, kèm lý do. Bật **Hàng cân, tem cân** thì **Quy đổi đơn vị** được bật kèm. Không tắt được chức năng đang được chức năng khác cần.
+  - **Hồ sơ chính của cửa hàng**: ngành mặc định cho chi nhánh mới, **Có bán sỉ**, các ngành "Sắp hỗ trợ" đang quan tâm. Đổi ở đây không đổi chi nhánh đang có.
+
+  Đổi ngành và hồ sơ cửa hàng cần quyền quản trị POS của cửa hàng. Người có quyền **Cấu hình** tại chi nhánh chỉ thấy và đổi phần chức năng của chi nhánh đó. Mọi thay đổi đều ghi nhật ký. Khi tạo chi nhánh mới có thêm ô **Ngành của chi nhánh**, mặc định là ngành chính của cửa hàng.
 
 Khi ngừng hoạt động một chi nhánh, quầy hoặc nhân viên, lịch sử không bị xóa. Muốn kích hoạt lại cần quyền **Khôi phục**. Trang **Tài khoản nợ** dùng để cấu hình công nợ.
 
@@ -106,6 +126,16 @@ Khi ngừng hoạt động một chi nhánh, quầy hoặc nhân viên, lịch s
 
 **Phím tắt:** **F2** đưa con trỏ về ô "Tìm hàng hoặc quét mã". **Esc** đóng hộp thoại hoặc bộ chọn chi nhánh. Ngoài hai phím này, POS chưa có phím tắt nào khác.
 
+0. **Thiết lập cửa hàng** (chỉ một lần, khi cửa hàng chưa có chi nhánh POS nào)
+   - Đăng nhập bằng tài khoản quản trị cửa hàng, POS tự mở trang **Thiết lập cửa hàng**. Tài khoản không có quyền chỉ thấy "Nhờ quản trị cửa hàng thiết lập POS." Cửa hàng đã có chi nhánh thì không bao giờ thấy trang này.
+   - **Bạn kinh doanh gì?**: chọn ngành. Nếu chọn một ngành "Sắp hỗ trợ", POS hỏi bạn có bán thêm hàng hóa không. Bấm **Có, chọn ngành bán lẻ** để đi tiếp với một ngành bán lẻ; ngành đang quan tâm được ghi lại.
+   - **Có bán sỉ không?**
+   - **Chi nhánh đầu tiên**: tên, mã (tự tạo từ tên, sửa được), múi giờ, **Kho bán hàng**, tên quầy đầu tiên (mặc định "Quầy 1"; để trống nếu chi nhánh bán không cần quầy), và ô **Cấp cho tôi toàn quyền tại chi nhánh này** (tick sẵn). Nếu cửa hàng chưa có kho, tạo kho trong Admin Dashboard rồi bấm **Tải lại danh sách kho**.
+   - **Xem trước**: chức năng sẽ bật, mặc định của chi nhánh (sửa được tại chỗ), đơn vị mẫu sẽ thêm, và nhóm **Ngành này thường dùng**. Các ô trong nhóm này để trống; ô nào bạn tick thì chức năng đó được **bật làm mặc định cho cả cửa hàng**.
+   - **Tạo cửa hàng**. POS chọn luôn chi nhánh và quầy mới; mở ca như bước 2.
+   - Nếu đã bỏ tick **Cấp cho tôi toàn quyền**: chi nhánh vẫn được chọn, nhưng tài khoản chỉ cấu hình được, chưa mở ca hay bán được. Cấp quyền ở **Cấu hình → Nhân viên & quyền** trước khi bán.
+   - Mất mạng ở bước cuối: POS hiện "Đang kiểm tra kết quả…". Bấm **Kiểm tra lại**, không nhập lại. POS gửi lại đúng lệnh cũ nên không tạo hai chi nhánh.
+   - Đổi ngành hay chức năng về sau: **Cấu hình → chi nhánh → Mô hình kinh doanh**.
 1. **Đăng nhập, chọn chi nhánh / quầy**
    - Đăng nhập bằng **Email nhân viên** và **Mật khẩu**.
    - Ở hộp **Chọn nơi bán hàng**, chọn chi nhánh. Chỉ cần chọn quầy nếu chi nhánh có nhiều quầy.
@@ -199,6 +229,8 @@ Ngoài ra, giảm giá hoặc đổi giá vượt giới hạn cần **Mã duy�
 - Chỉ in qua hộp thoại in của trình duyệt. Chưa có driver máy in hay ngăn kéo tiền.
 - Chưa kiểm thử với máy in, máy quét, máy cân và màn hình khách thật.
 - POS chưa có màn hình cấp **Mã duyệt của quản lý** cho giảm giá hoặc đổi giá.
+- Ngành ăn uống – giải trí chưa được hỗ trợ (chỉ ghi nhận nhu cầu). Chưa có đơn vị mét, m², m³; vật liệu xây dựng dùng đơn vị đếm (bao, tấm, cây, xe).
+- POS luôn làm việc với cửa hàng mặc định của API: client không gửi `X-Spree-Store-Id`, nên một máy chủ chạy nhiều cửa hàng chỉ dùng POS được cho cửa hàng mặc định.
 - Chín tính năng rủi ro (bán chịu, trả hàng, hoàn tiền, đổi hàng, đưa hàng vào theo dõi serial/lô, màn hình khách, thu/chi két, xuất báo cáo, chuyển khoản VietQR) **mặc định tắt**. Quản trị cửa hàng bật ở **Cấu hình → chi nhánh → Chức năng chi nhánh**; quản lý chi nhánh chỉ tắt được tại chi nhánh của mình. Khi tắt, nút tương ứng bị khóa kèm lý do; việc đang dở (khoản thu chờ, phiếu trả đã lập, hoàn tiền đã yêu cầu, hóa đơn) vẫn xử lý được.
 
 ## Dành cho developer
@@ -213,5 +245,10 @@ Chạy trong thư mục `apps/pos`:
   2. `POS_LIVE_REVIEW=1 POS_LIVE_FIXTURE=<đường dẫn JSON> POS_TEST_PORT=5177 pnpm exec playwright test <spec> -g "real API" --project=desktop`. Test bật cờ cần dùng qua `PUT /pos/feature_flags` bằng tài khoản quản lý (mặc định cấp cửa hàng của store dev) và trả lại trạng thái cũ sau mỗi test. Chạy `full-retail` sau cùng vì nó đóng ca của fixture; lượt chạy đầy đủ tiếp theo dùng fixture mới. Đăng nhập API bị giới hạn tần suất (429), test tự chờ. Khi `POS_LIVE_REVIEW=1`, Playwright mở POS ở `http://localhost:<cổng>` thay vì `127.0.0.1`: API chỉ cho làm mới phiên (`/auth/refresh`) từ origin được phép (store dev cho phép `http://localhost`), nên mở ở `127.0.0.1` thì lần tải lại trang đầu tiên sẽ bị 403 và POS quay về màn hình đăng nhập.
   3. Dọn sau khi thử: `pnpm spree exec bin/rails runner log/pos-live-fixture.rb cleanup` tắt lại các mặc định cửa hàng mà tài khoản fixture còn để bật (lượt chạy bị ngắt), hủy nháp chưa thu tiền, hoàn tất nháp đã thu đủ, hủy khoản thu đang chuẩn bị, đếm két đúng số cần có rồi đóng ca; sau đó mọi nhân viên `pos-live-*@example.test` bị tắt membership POS, gỡ vai trò admin, đổi mật khẩu ngẫu nhiên. Chỉ xóa liên kết vai trò của các tài khoản này. Thêm `store-flags-off=returns,refunds` để tắt cả các cờ đó dù ai đã bật.
   4. `e2e/live-api.spec.ts` (cũ) vẫn đọc `server/pos-live-review-credentials.json`; tên file này đã nằm trong `server/.gitignore`.
+  5. Thiết lập cửa hàng với API thật (nhóm `real API` trong `e2e/onboarding.spec.ts`) cần cửa hàng **chưa** thiết lập, nên dùng fixture riêng:
+     - Tạo: `pnpm spree exec bin/rails runner log/pos-live-fixture.rb onboarding=2`. Lệnh không đụng store dev; nó tạo hai cửa hàng mới `POS Live <tag> <n>`, mỗi cửa hàng một kho, và một chủ cửa hàng `pos-live-owner-<tag>@example.test` có vai trò cấu hình và bán trên cả hai, chưa có membership POS.
+     - Chạy: `POS_LIVE_REVIEW=1 POS_LIVE_ONBOARDING_FIXTURE=<đường dẫn JSON> POS_TEST_PORT=5177 pnpm exec playwright test e2e/onboarding.spec.ts -g "real API" --project=desktop`. Vì client không gửi `X-Spree-Store-Id`, test tự thêm header đó cho mọi request Admin API của trang (trừ `/auth/*`). Mỗi cửa hàng chỉ thiết lập được một lần, nên lượt chạy sau cần fixture mới.
+     - Dọn: `cleanup` như ở bước 3. Lệnh xóa store profile, chi nhánh, module, quầy, membership, cờ và đơn vị mà POS tạo trong các cửa hàng đó, rồi xóa mềm kho và cửa hàng (`deleted_at`). Nhật ký và biên nhận lệnh được giữ lại.
+- Hồi quy server khi tắt module (D5 của plan đa ngành): `pnpm spree rspec spec/requests/spree/pos/ --tag modules_off_rerun` chạy lại các spec bán / tồn kho có nhãn `modules_off_rerun` với shared context `with branch modules off` (`server/spec/support/pos_module_helpers.rb`): mọi chức năng tắt, trừ lúc chạy chính lệnh thiết lập. Hai example kiểm chính lệnh chặn thiết lập (`module_setup`) được bỏ qua ở lượt này.
 - `pnpm test:perf`: đo thời gian chuyển tab, tìm hàng, tạo nháp và xác nhận tiền mặt bằng Performance API của trình duyệt (config riêng `tests/performance/playwright.config.ts`, không chạy trong `test:e2e`). Mặc định API giả lập, chỉ đo phía trình duyệt; thêm `POS_PERF_LIVE=1` và biến fixture ở trên để đo với API thật. Kết quả JSON ở `test-results/perf/pos-scenarios.json` (đổi bằng `POS_PERF_OUT`). Số đo không phải năng lực hệ thống.
 - Nhãn giao diện nằm ở `src/locales/vi.json`; danh sách quyền nằm ở `src/lib/pos-capabilities.ts`.

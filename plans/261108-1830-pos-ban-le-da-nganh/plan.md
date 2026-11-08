@@ -1,7 +1,7 @@
 ---
 title: "POS: bán lẻ đa ngành — hồ sơ ngành, module chi nhánh, thiết lập ban đầu"
 description: "Giai đoạn 0 của kiến trúc đa ngành: chọn ngành khi thiết lập, 13 hồ sơ bán lẻ + 6 F&B 'Sắp hỗ trợ', bật/tắt module theo chi nhánh. Không đổi đường tiền, không đổi hành vi chi nhánh đang chạy."
-status: in-progress
+status: completed
 priority: P2
 effort: "~10 ngày công"
 branch: "v2"
@@ -50,9 +50,11 @@ Kiến trúc và lý do: [261108-1800-pos-multi-industry-architecture.md](../rep
 | 2 | [Áp hồ sơ, bật/tắt module, chặn lệnh thiết lập](./phase-02-ap-ho-so-va-module-chi-nhanh.md) | 2 ngày | Completed |
 | 3 | [Client: context, ẩn hiện theo module, mặc định hiển thị](./phase-03-client-module-va-hien-thi.md) | 2 ngày | Completed |
 | 4 | [Wizard thiết lập và trang Mô hình kinh doanh](./phase-04-wizard-thiet-lap-va-mo-hinh-kinh-doanh.md) | 2,5 ngày | Completed |
-| 5 | [Kiểm thử hồi quy, tài liệu, rollout](./phase-05-kiem-thu-tai-lieu-rollout.md) | 1,5 ngày | Pending |
+| 5 | [Kiểm thử hồi quy, tài liệu, rollout](./phase-05-kiem-thu-tai-lieu-rollout.md) | 1,5 ngày | Completed |
 
 Thứ tự: 1 → 2 → (3 và 4 làm song song được sau 2; 4 dùng hook client của 3) → 5.
+
+Đã xong 09/11/2026. `lint` (CRLF) và 6 fail e2e đã biết không do plan này nên tiêu chí client của phase 5 chưa tick; các việc còn mở ghi ở mục "Còn mở" của [phase 5](./phase-05-kiem-thu-tai-lieu-rollout.md#kết-quả-09112026).
 
 ## Luồng tổng thể
 
