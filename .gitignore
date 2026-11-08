@@ -5,3 +5,6 @@ node_modules/
 # Local Admin API credentials minted by `spree api` / `spree auth`
 .spree/
 .idea
+
+# Local database dumps
+backups/

@@ -59,6 +59,7 @@ Tham khảo thêm tại [tài liệu Spree](https://spreecommerce.org/docs), tro
 ### Yêu cầu
 
 - [Docker](https://docs.docker.com/get-docker/) đã cài và đang chạy
+- Mã nguồn kèm submodule: gem [`spree_vietqr`](https://github.com/compasify/spree_vietqr) (thanh toán chuyển khoản VietQR) nằm ở `server/vendor/gems/spree_vietqr`. Clone bằng `git clone --recurse-submodules`, hoặc chạy `git submodule update --init` trong bản clone sẵn có. Thiếu thư mục này thì API không build được.
 
 ### Chạy API Spree
 

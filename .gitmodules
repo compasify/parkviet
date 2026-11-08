@@ -1,0 +1,3 @@
+[submodule "server/vendor/gems/spree_vietqr"]
+	path = server/vendor/gems/spree_vietqr
+	url = https://github.com/compasify/spree_vietqr.git

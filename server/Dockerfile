@@ -133,6 +133,8 @@ RUN apt-get update -qq && \
 
 # Install application gems
 COPY --from=ctx /rails-src/.ruby-version /rails-src/Gemfile /rails-src/Gemfile.lock ./
+# Path gems (vendor/gems/*) must exist before bundle install resolves them.
+COPY --from=ctx /rails-src/vendor/gems ./vendor/gems
 RUN bundle install && \
   rm -rf ~/.bundle/ "${BUNDLE_PATH}"/ruby/*/cache "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git && \
   bundle exec bootsnap precompile --gemfile

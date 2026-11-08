@@ -51,6 +51,9 @@ else
 end
 
 # Extensions
+# VietQR bank transfer (SePay / PayOS webhooks). A git submodule under vendor/ so the Docker build
+# and the dev container both see it (git submodule update --init).
+gem 'spree_vietqr', path: 'vendor/gems/spree_vietqr'
 # gem 'spree_adyen'
 # gem 'spree_paypal_checkout'
 
