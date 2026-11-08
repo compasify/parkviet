@@ -105,7 +105,13 @@ export function ContextSelector({ onRegisterSelected }: { onRegisterSelected?: (
         </div>
       ) : null}
       {branchQuery.isSuccess && branches.length === 0 ? (
-        <p role="status">{t('branchesEmpty')}</p>
+        <p role="status">
+          {t('branchesEmpty')}
+          {/* The store is not set up yet and this account may not do it. */}
+          {context.data?.onboarding?.required && !context.data.onboarding.can_setup ? (
+            <> {t('setup.askAdmin')}</>
+          ) : null}
+        </p>
       ) : null}
       {notice ? <p role="status">{t(notice)}</p> : null}
     </div>

@@ -4,8 +4,23 @@ import type { LocationOption, StaffOption } from '../hooks/use-topology';
 import { parseVndInput } from '../lib/money';
 import { posCapabilities, sensitiveCapabilities } from '../lib/pos-capabilities';
 import type { PosBranch, PosMembership } from '../lib/pos-context';
+import { type BusinessProfile, profileLabelKey } from '../lib/pos-modules';
 import { posFailureKey } from '../lib/request-failure';
+import { defaultsFromProfile } from '../lib/setup-wizard';
 import { PosIcon } from './pos-icon';
+
+// A new branch's form after picking an industry: the profile and the branch
+// defaults it presets (blank where it has none), ready to edit.
+function profileDraft(profile: BusinessProfile): Partial<TopologyDraft> {
+  const defaults = defaultsFromProfile(profile);
+  return {
+    profile_key: profile.key,
+    return_window_days: defaults.return_window_days,
+    lot_selection: defaults.lot_selection,
+    variance_threshold: defaults.variance_threshold,
+    adjustment_approval_threshold: defaults.adjustment_approval_threshold,
+  };
+}
 
 export type TopologyKind = 'branches' | 'registers' | 'memberships';
 export type TopologyDraft = {
@@ -25,6 +40,8 @@ export type TopologyDraft = {
   // Base units a positive stock count may add without approval; blank means
   // every positive count needs one.
   adjustment_approval_threshold?: string | number | null;
+  // Industry profile of a new branch (sent on create only).
+  profile_key?: string;
   branch_id?: string;
   staff_id?: string;
   capabilities?: string[];
@@ -38,11 +55,17 @@ export function TopologyEditor({
   locations,
   memberships,
   hideLotSelection = false,
+  profiles = [],
+  defaultProfileKey,
   onSave,
   onClose,
 }: {
   kind: TopologyKind;
   record: TopologyDraft;
+  // Available industry profiles offered to a new branch, and the one picked
+  // first (the store's main profile).
+  profiles?: BusinessProfile[];
+  defaultProfileKey?: string;
   // The branch has `retail.traceability` off: lot picking is not offered and
   // the stored value is sent back as it is.
   hideLotSelection?: boolean;
@@ -75,6 +98,20 @@ export function TopologyEditor({
   const title = t(record.id ? 'adminEditTitle' : 'adminCreateTitle', {
     resource: t(`adminResource_${kind}`),
   });
+  const offersProfile = kind === 'branches' && !record.id && profiles.length > 0;
+
+  // The catalogue or the store's profile may arrive after the form opened:
+  // until the form is touched, it follows the store's main profile.
+  useEffect(() => {
+    if (!offersProfile || dirty) return;
+    const profile =
+      profiles.find((item) => item.key === defaultProfileKey) ??
+      profiles.find((item) => item.key === 'khac');
+    if (!profile) return;
+    setDraft((current) =>
+      current.profile_key === profile.key ? current : { ...current, ...profileDraft(profile) },
+    );
+  }, [offersProfile, dirty, defaultProfileKey, profiles]);
 
   useEffect(() => {
     const element = dialog.current;
@@ -149,6 +186,7 @@ export function TopologyEditor({
               variance_threshold: threshold,
               lot_selection: draft.lot_selection === 'cashier_pick' ? 'cashier_pick' : 'fefo',
               adjustment_approval_threshold: adjustmentText === '' ? null : Number(adjustmentText),
+              ...(offersProfile && draft.profile_key ? { profile_key: draft.profile_key } : {}),
             };
     setBusy(true);
     setError('');
@@ -247,6 +285,31 @@ export function TopologyEditor({
           ) : null}
           {kind === 'branches' ? (
             <>
+              {offersProfile ? (
+                <label>
+                  {t('businessModel.branchProfile')}
+                  <select
+                    value={draft.profile_key ?? ''}
+                    aria-describedby="branch-profile-hint"
+                    onChange={(event) => {
+                      const profile = profiles.find((item) => item.key === event.target.value);
+                      if (!profile) return;
+                      setDraft((current) => ({ ...current, ...profileDraft(profile) }));
+                      setDirty(true);
+                    }}
+                  >
+                    {draft.profile_key ? null : (
+                      <option value="">{t('businessModel.chooseProfile')}</option>
+                    )}
+                    {profiles.map((profile) => (
+                      <option key={profile.key} value={profile.key}>
+                        {t(profileLabelKey(profile.key), { defaultValue: profile.key })}
+                      </option>
+                    ))}
+                  </select>
+                  <small id="branch-profile-hint">{t('businessModel.branchProfileHint')}</small>
+                </label>
+              ) : null}
               <label>
                 {t('stockLocation')}
                 <select

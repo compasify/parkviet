@@ -26,6 +26,11 @@ export type PosBranch = {
   // Base units a positive count adjustment may add without approval; null
   // means every positive adjustment needs one.
   adjustment_approval_threshold?: number | null;
+  // Closing variance above this needs an approval; null means any variance does.
+  variance_threshold?: string | null;
+  // Industry profile of the branch; absent on servers without profiles.
+  profile_key?: string;
+  profile_version?: number;
 };
 
 export type PosRegister = {

@@ -191,6 +191,41 @@ export function normalizeBusinessProfiles(value: unknown): BusinessProfiles {
   };
 }
 
+// Modules switching `key` on would also switch on: its `depends_on`, followed
+// to the end, that are off at the branch. The server turns them on with it
+// (`also_enabled`); this only lets the page say so before asking.
+export function modulesEnabledWith(
+  key: string,
+  catalogue: BusinessModule[],
+  modules: PosModules | null | undefined,
+): string[] {
+  const found: string[] = [];
+  const visit = (current: string) => {
+    for (const dependency of catalogue.find((item) => item.key === current)?.depends_on ?? []) {
+      if (dependency === key || found.includes(dependency)) continue;
+      if (!moduleEnabled(modules, dependency)) found.push(dependency);
+      visit(dependency);
+    }
+  };
+  visit(key);
+  return found;
+}
+
+// Modules on at the branch that need `key`: the server refuses to switch it
+// off while any is on (409 `module_required_by`).
+export function modulesRequiring(
+  key: string,
+  catalogue: BusinessModule[],
+  modules: PosModules | null | undefined,
+): string[] {
+  return catalogue
+    .filter(
+      (item) =>
+        item.key !== key && item.depends_on.includes(key) && moduleEnabled(modules, item.key),
+    )
+    .map((item) => item.key);
+}
+
 export function profileLabelKey(key: string): string {
   return `profiles.${key}.label`;
 }

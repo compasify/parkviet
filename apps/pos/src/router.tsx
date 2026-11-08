@@ -21,10 +21,12 @@ import { ReturnExchangePage } from './pages/return-exchange';
 import { SalePage } from './pages/sale';
 import { BranchFeaturesPage } from './pages/settings/branch-features';
 import { BranchProductsPage } from './pages/settings/branch-products';
+import { BusinessModelPage } from './pages/settings/business-model';
 import { LabelFormatsPage } from './pages/settings/label-formats';
 import { ReceiptTemplateEditorPage } from './pages/settings/receipt-template-editor';
 import { ReceiptTemplatesPage } from './pages/settings/receipt-templates';
 import { TopologyPage } from './pages/settings/topology';
+import { SetupPage } from './pages/setup';
 import { ShiftsPage } from './pages/shifts';
 
 const rootRoute = createRootRoute({
@@ -84,6 +86,20 @@ const branchFeaturesRoute = createRoute({
   getParentRoute: () => authedRoute,
   path: '/settings/branches/$branchId/features',
   component: BranchFeaturesPage,
+});
+
+// Industry profile and modules of a branch.
+const businessModelRoute = createRoute({
+  getParentRoute: () => authedRoute,
+  path: '/settings/branches/$branchId/business-model',
+  component: BusinessModelPage,
+});
+
+// First-run setup of a store without a profile or an active branch.
+const setupRoute = createRoute({
+  getParentRoute: () => authedRoute,
+  path: '/setup',
+  component: SetupPage,
 });
 
 // Print templates belong to the store, not to a branch.
@@ -206,6 +222,8 @@ export const router = createRouter({
       branchProductsRoute,
       labelFormatsRoute,
       branchFeaturesRoute,
+      businessModelRoute,
+      setupRoute,
       receiptTemplatesRoute,
       receiptTemplateEditorRoute,
       fundsRoute,

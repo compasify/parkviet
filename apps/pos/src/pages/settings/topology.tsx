@@ -10,6 +10,8 @@ import {
   type TopologyKind,
 } from '../../components/topology-editor';
 import { useBranchModules } from '../../hooks/use-branch-modules';
+import { useBusinessProfiles } from '../../hooks/use-business-profiles';
+import { useStoreProfile } from '../../hooks/use-onboarding';
 import {
   useBranches,
   useLocationOptions,
@@ -54,6 +56,15 @@ export function TopologyPage() {
   const memberships = useMemberships(access.read);
   const staff = useStaffOptions(access.read);
   const locations = useLocationOptions(access.read);
+  // A new branch picks its industry; it starts on the store's main profile.
+  // Neither read gates the page: without them the form has no profile field
+  // and the server gives the branch the store's profile.
+  const storeId = context.data?.store.id ?? null;
+  const catalogue = useBusinessProfiles(storeId, access.write);
+  const storeProfile = useStoreProfile(storeId, access.write);
+  const branchProfiles = (catalogue.data?.profiles ?? []).filter(
+    (profile) => profile.status === 'available',
+  );
   const [kind, setKind] = useState<TopologyKind>('branches');
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('all');
@@ -382,6 +393,15 @@ export function TopologyPage() {
                           <PosIcon name="cog" />
                           {t('branchFeaturesTitle')}
                         </Link>
+                        <Link
+                          className="button-link"
+                          to="/settings/branches/$branchId/business-model"
+                          params={{ branchId: branch.id }}
+                          aria-label={t('businessModel.titleFor', { name: branch.name })}
+                        >
+                          <PosIcon name="grid" />
+                          {t('businessModel.title')}
+                        </Link>
                       </div>
                     </li>
                   ))
@@ -436,6 +456,8 @@ export function TopologyPage() {
           kind={editor.kind}
           record={editor.record}
           hideLotSelection={hideLotSelection}
+          profiles={branchProfiles}
+          defaultProfileKey={storeProfile.data?.profile_key ?? 'khac'}
           branches={branchRows}
           staff={[
             ...(staff.data?.data ?? []),

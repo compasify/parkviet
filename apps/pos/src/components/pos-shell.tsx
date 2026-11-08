@@ -46,7 +46,8 @@ function ShellFrame() {
   // Print templates load with the POS, so the first print never waits for them.
   useReceiptTemplates(true);
   const pathname = useLocation({ select: (location) => location.pathname.replace(/\/+$/, '') });
-  const pageTitle = /\/settings(\/|$)/.test(pathname)
+  const onSetup = /\/setup$/.test(pathname);
+  const sectionTitle = /\/settings(\/|$)/.test(pathname)
     ? t('settings')
     : pathname.endsWith('/payment-attention')
       ? t('attentionNav')
@@ -71,10 +72,20 @@ function ShellFrame() {
                         : pathname.endsWith('/receipts')
                           ? t('receiptsTitle')
                           : t('sellingArea');
+  const pageTitle = onSetup ? t('setup.title') : sectionTitle;
   const isSale =
-    !/\/(settings|funds|receivables|credit-accounts|credit-approvals|payment-attention|orders|returns|shifts|reports|inventory|receipts)(\/|$)/.test(
+    !/\/(settings|setup|funds|receivables|credit-accounts|credit-approvals|payment-attention|orders|returns|shifts|reports|inventory|receipts)(\/|$)/.test(
       pathname,
     );
+  // A store not set up yet, seen by someone who may set it up, goes to the
+  // setup wizard instead of the branch picker. Without that permission the
+  // picker stays and asks for an administrator (context-selector.tsx).
+  const setupNeeded = Boolean(
+    context.data?.onboarding?.required && context.data.onboarding.can_setup,
+  );
+  useEffect(() => {
+    if (setupNeeded && !onSetup) void navigate({ to: '/setup' });
+  }, [navigate, onSetup, setupNeeded]);
   const contextPicker = useRef<HTMLDetailsElement>(null);
   // A header navigation must not leave the picker covering the destination page.
   // biome-ignore lint/correctness/useExhaustiveDependencies: the route change is the dismissal trigger
@@ -346,7 +357,7 @@ function ShellFrame() {
           onClose={() => setCalibrating(false)}
         />
       ) : null}
-      <ContextSetupDialog enabled={isSale} />
+      <ContextSetupDialog enabled={isSale && !setupNeeded} />
       <section className="shell" aria-labelledby={isSale ? 'title' : 'pos-page-title'}>
         <div className="pos-context-card pos-alerts">
           {isSale && context.data && writesLocked(context.data, selection) ? (

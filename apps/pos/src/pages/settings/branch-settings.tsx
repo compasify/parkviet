@@ -24,6 +24,7 @@ const SECTION_TEXT = {
   products: { title: 'branchProductsTitle', intro: 'branchProductsIntro' },
   labels: { title: 'labelFormatsTitle', intro: 'labelFormatsIntro' },
   features: { title: 'branchFeaturesTitle', intro: 'branchFeaturesIntro' },
+  model: { title: 'businessModel.title', intro: 'businessModel.intro' },
 } as const;
 
 // Frame of the per-branch administration pages. Reading needs the topology read
@@ -32,7 +33,7 @@ export function BranchSettingsFrame({
   section,
   children,
 }: {
-  section: 'products' | 'labels' | 'features';
+  section: 'products' | 'labels' | 'features' | 'model';
   children: (scope: BranchSettingsScope) => ReactNode;
 }) {
   const { t } = useTranslation();
@@ -94,6 +95,15 @@ export function BranchSettingsFrame({
             >
               <PosIcon name="cog" />
               {t('branchFeaturesTitle')}
+            </Link>
+            <Link
+              className="button-link"
+              to="/settings/branches/$branchId/business-model"
+              params={{ branchId }}
+              activeProps={linkProps}
+            >
+              <PosIcon name="grid" />
+              {t('businessModel.title')}
             </Link>
           </nav>
           {branches.isPending ? <PageState kind="loading" title={t('waiting')} /> : null}

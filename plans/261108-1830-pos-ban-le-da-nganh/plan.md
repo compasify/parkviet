@@ -49,7 +49,7 @@ Kiến trúc và lý do: [261108-1800-pos-multi-industry-architecture.md](../rep
 | 1 | [Registry module, danh mục hồ sơ, dữ liệu](./phase-01-registry-va-du-lieu-ho-so-nganh.md) | 2 ngày | Completed |
 | 2 | [Áp hồ sơ, bật/tắt module, chặn lệnh thiết lập](./phase-02-ap-ho-so-va-module-chi-nhanh.md) | 2 ngày | Completed |
 | 3 | [Client: context, ẩn hiện theo module, mặc định hiển thị](./phase-03-client-module-va-hien-thi.md) | 2 ngày | Completed |
-| 4 | [Wizard thiết lập và trang Mô hình kinh doanh](./phase-04-wizard-thiet-lap-va-mo-hinh-kinh-doanh.md) | 2,5 ngày | Pending |
+| 4 | [Wizard thiết lập và trang Mô hình kinh doanh](./phase-04-wizard-thiet-lap-va-mo-hinh-kinh-doanh.md) | 2,5 ngày | Completed |
 | 5 | [Kiểm thử hồi quy, tài liệu, rollout](./phase-05-kiem-thu-tai-lieu-rollout.md) | 1,5 ngày | Pending |
 
 Thứ tự: 1 → 2 → (3 và 4 làm song song được sau 2; 4 dùng hook client của 3) → 5.
