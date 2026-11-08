@@ -2023,6 +2023,106 @@
   "featureDisabled_customer_display": "Màn hình khách vừa bị tắt ở chi nhánh; không hiện được đơn mới.",
   "featureDisabled_cash_moves": "Thu/chi tiền mặt vừa bị tắt ở chi nhánh; máy chủ không ghi nhận.",
   "featureDisabled_exports": "Xuất CSV vừa bị tắt ở chi nhánh; máy chủ không tạo tệp mới.",
+  "moduleOff": "Chi nhánh chưa bật chức năng này, nên màn cấu hình tương ứng bị ẩn. Hàng đã cấu hình vẫn bán bình thường.",
+  "moduleDisabled": "Chi nhánh chưa bật chức năng cần cho thao tác này; máy chủ không ghi nhận. Việc bán hàng không bị ảnh hưởng.",
+  "posModules": {
+    "retail_units": {
+      "label": "Quy đổi đơn vị",
+      "description": "Bán theo đơn vị bán (lốc, thùng, vỉ…) và quy đổi về đơn vị gốc của SKU.",
+      "off": "Chi nhánh chưa bật chức năng Quy đổi đơn vị, nên không đặt được quy đổi mới cho SKU. SKU đã có quy đổi vẫn bán bình thường và vẫn đưa về đơn vị gốc được.",
+      "disabled": "Chi nhánh chưa bật chức năng Quy đổi đơn vị; máy chủ không ghi nhận quy đổi mới. Việc bán hàng không bị ảnh hưởng."
+    },
+    "retail_measured": {
+      "label": "Hàng cân, tem cân",
+      "description": "Bán theo khối lượng hoặc thể tích, đọc tem cân EAN-13 in từ cân điện tử.",
+      "off": "Chi nhánh chưa bật chức năng Hàng cân, tem cân, nên không tạo hay sửa được mẫu tem cân và không gán được mã tem mới. Tem đã in vẫn quét và bán bình thường.",
+      "disabled": "Chi nhánh chưa bật chức năng Hàng cân, tem cân; máy chủ không ghi nhận thiết lập này. Việc bán hàng không bị ảnh hưởng."
+    },
+    "retail_traceability": {
+      "label": "Serial, lô, hạn dùng",
+      "description": "Theo dõi từng serial hoặc từng lô kèm hạn dùng, từ lúc nhập đến lúc bán và thu hồi.",
+      "off": "Chi nhánh chưa bật chức năng Serial, lô, hạn dùng, nên không khai báo được tồn đầu kỳ và không đưa thêm SKU vào theo dõi. Hàng đã theo dõi vẫn bán, nhập thêm, chuyển kho, kiểm kê và tra cứu được.",
+      "disabled": "Chi nhánh chưa bật chức năng Serial, lô, hạn dùng; máy chủ không ghi nhận thiết lập này. Việc bán hàng đã theo dõi không bị ảnh hưởng."
+    }
+  },
+  "profiles": {
+    "tap_hoa_sieu_thi": {
+      "label": "Tạp hóa & Siêu thị",
+      "description": "Quét mã vạch nhanh, quy đổi lốc/thùng, hàng cân và hạn dùng; hợp với tạp hóa, siêu thị mini, cửa hàng tiện lợi."
+    },
+    "thoi_trang": {
+      "label": "Thời trang",
+      "description": "Quần áo, giày dép, phụ kiện: xem hàng dạng thẻ, đổi trả trong hạn của cửa hàng."
+    },
+    "dien_tu_dien_may": {
+      "label": "Điện tử & Điện máy",
+      "description": "Điện thoại, máy tính, đồ điện: theo dõi từng máy bằng serial/IMEI, đổi trả và ghi nợ."
+    },
+    "vat_lieu_xay_dung": {
+      "label": "Vật liệu xây dựng",
+      "description": "Xi măng, gạch, sắt thép: bán theo bao, tấm, cây, xe và ghi nợ cho khách quen, nhà thầu."
+    },
+    "nong_san_thuc_pham": {
+      "label": "Nông sản & Thực phẩm",
+      "description": "Rau củ, trái cây, thịt cá: bán theo cân, in tem cân và quản lý hạn dùng theo lô."
+    },
+    "nha_thuoc": {
+      "label": "Nhà thuốc",
+      "description": "Bán theo viên, vỉ, hộp; quản lý lô và hạn dùng, lô hết hạn trước bán trước."
+    },
+    "xe_may_moc": {
+      "label": "Xe & Máy móc",
+      "description": "Xe máy, xe đạp, máy móc, phụ tùng: theo dõi số khung, số máy hoặc serial và ghi nợ."
+    },
+    "my_pham": {
+      "label": "Mỹ phẩm",
+      "description": "Mỹ phẩm, chăm sóc cá nhân: quản lý lô và hạn dùng, đổi hàng theo chính sách cửa hàng."
+    },
+    "noi_that_gia_dung": {
+      "label": "Nội thất & Gia dụng",
+      "description": "Bàn ghế, đồ gia dụng: bán theo bộ, xem hàng dạng thẻ, ghi nợ cho đơn lớn."
+    },
+    "me_be": {
+      "label": "Mẹ & Bé",
+      "description": "Sữa, bỉm, đồ dùng cho bé: bán theo hộp, lốc, thùng và quản lý hạn dùng."
+    },
+    "sach_van_phong_pham": {
+      "label": "Sách & Văn phòng phẩm",
+      "description": "Sách, vở, đồ dùng học tập và văn phòng: bán theo quyển, ram, hộp và ghi nợ cho đơn số lượng lớn."
+    },
+    "hoa_qua_tang": {
+      "label": "Hoa & Quà tặng",
+      "description": "Hoa tươi, giỏ quà, đồ lưu niệm: bán theo bó, theo giỏ và nhận chuyển khoản VietQR."
+    },
+    "khac": {
+      "label": "Khác",
+      "description": "Ngành chưa có trong danh sách: bật sẵn quy đổi đơn vị, hàng cân và theo dõi serial/lô; tắt bớt được về sau."
+    },
+    "quan_an": {
+      "label": "Quán ăn",
+      "description": "Thực đơn, gọi món và gửi bếp."
+    },
+    "cafe_tra_sua": {
+      "label": "Cafe, Trà sữa",
+      "description": "Thực đơn, gửi quầy pha chế và gọi khách theo số thứ tự."
+    },
+    "karaoke_bida": {
+      "label": "Karaoke, Bida",
+      "description": "Mở phòng, mở bàn, tính tiền theo giờ, gọi đồ uống và thanh toán khi ra về."
+    },
+    "bar_pub_club": {
+      "label": "Bar, Pub & Club",
+      "description": "Thực đơn đồ uống, gửi quầy bar, thanh toán sau và phí phục vụ."
+    },
+    "cang_tin_tram_dung": {
+      "label": "Căng tin & Trạm dừng nghỉ",
+      "description": "Thực đơn, gửi bếp, gọi số thứ tự và bán kèm hàng đóng gói."
+    },
+    "nha_hang": {
+      "label": "Nhà hàng",
+      "description": "Sơ đồ bàn, gọi món, gửi bếp, thanh toán sau và phí phục vụ."
+    }
+  },
   "featureName_credit": "Bán ghi nợ",
   "featureName_returns": "Trả hàng",
   "featureName_refunds": "Hoàn tiền",

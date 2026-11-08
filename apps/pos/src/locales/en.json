@@ -2024,6 +2024,106 @@
   "featureDisabled_customer_display": "The customer display was just switched off at the branch; no new order can be shown.",
   "featureDisabled_cash_moves": "Drawer cash in/out was just switched off at the branch; nothing was recorded.",
   "featureDisabled_exports": "CSV export was just switched off at the branch; no new file was made.",
+  "moduleOff": "This branch has not turned on this module, so its setup is hidden. Goods already set up keep selling.",
+  "moduleDisabled": "This branch has not turned on the module this needs; the server did not record it. Selling is not affected.",
+  "posModules": {
+    "retail_units": {
+      "label": "Unit conversion",
+      "description": "Sell in sale units (packs, cases, blisters…) converted to the SKU's base unit.",
+      "off": "This branch has not turned on Unit conversion, so no new conversion can be set for a SKU. SKUs that already convert keep selling and can still go back to their base unit.",
+      "disabled": "This branch has not turned on Unit conversion; the server did not record the new conversion. Selling is not affected."
+    },
+    "retail_measured": {
+      "label": "Weighed goods & scale labels",
+      "description": "Sell by weight or volume and read EAN-13 labels printed by the scale.",
+      "off": "This branch has not turned on Weighed goods & scale labels, so label formats cannot be added or changed and no new label code can be set. Labels already printed keep scanning and selling.",
+      "disabled": "This branch has not turned on Weighed goods & scale labels; the server did not record this setup. Selling is not affected."
+    },
+    "retail_traceability": {
+      "label": "Serials, lots & expiry",
+      "description": "Track each serial or lot with its expiry date, from receiving to sale and recall.",
+      "off": "This branch has not turned on Serials, lots & expiry, so no opening balance can be declared and no more SKUs can be tracked. Tracked stock still sells, receives, transfers, counts and traces.",
+      "disabled": "This branch has not turned on Serials, lots & expiry; the server did not record this setup. Selling tracked stock is not affected."
+    }
+  },
+  "profiles": {
+    "tap_hoa_sieu_thi": {
+      "label": "Grocery & Supermarket",
+      "description": "Fast barcode scanning, pack and case conversion, weighed goods and expiry dates; for grocery stores, mini-marts and convenience stores."
+    },
+    "thoi_trang": {
+      "label": "Fashion",
+      "description": "Clothing, shoes and accessories: card view of the catalog, returns and exchanges within the store's window."
+    },
+    "dien_tu_dien_may": {
+      "label": "Electronics & Appliances",
+      "description": "Phones, computers and appliances: each unit tracked by serial/IMEI, returns, exchanges and credit."
+    },
+    "vat_lieu_xay_dung": {
+      "label": "Building materials",
+      "description": "Cement, bricks, steel: sell by bag, sheet, bar or truckload, on credit for regular customers and contractors."
+    },
+    "nong_san_thuc_pham": {
+      "label": "Produce & Food",
+      "description": "Vegetables, fruit, meat and fish: sell by weight, print scale labels and manage expiry by lot."
+    },
+    "nha_thuoc": {
+      "label": "Pharmacy",
+      "description": "Sell by pill, blister or box; lots and expiry dates managed, earliest expiry sold first."
+    },
+    "xe_may_moc": {
+      "label": "Vehicles & Machinery",
+      "description": "Motorbikes, bicycles, machines and parts: frame, engine or serial numbers tracked, and credit."
+    },
+    "my_pham": {
+      "label": "Cosmetics",
+      "description": "Cosmetics and personal care: lots and expiry dates managed, exchanges under the store's policy."
+    },
+    "noi_that_gia_dung": {
+      "label": "Furniture & Housewares",
+      "description": "Furniture and household goods: sell by set, card view of the catalog, credit for large orders."
+    },
+    "me_be": {
+      "label": "Mother & Baby",
+      "description": "Milk, diapers and baby goods: sell by box, pack or case and manage expiry dates."
+    },
+    "sach_van_phong_pham": {
+      "label": "Books & Stationery",
+      "description": "Books, notebooks, school and office supplies: sell by copy, ream or box, on credit for bulk orders."
+    },
+    "hoa_qua_tang": {
+      "label": "Flowers & Gifts",
+      "description": "Fresh flowers, gift baskets and souvenirs: sell by bunch or basket and take VietQR transfers."
+    },
+    "khac": {
+      "label": "Other",
+      "description": "An industry not in the list: unit conversion, weighed goods and serial/lot tracking come on; turn off what you don't need later."
+    },
+    "quan_an": {
+      "label": "Eatery",
+      "description": "Menu, ordering and kitchen tickets."
+    },
+    "cafe_tra_sua": {
+      "label": "Coffee & Milk tea",
+      "description": "Menu, tickets to the drinks counter and order numbers to call customers."
+    },
+    "karaoke_bida": {
+      "label": "Karaoke & Billiards",
+      "description": "Rooms and tables billed by the hour, drinks, payment on the way out."
+    },
+    "bar_pub_club": {
+      "label": "Bar, Pub & Club",
+      "description": "Drinks menu, tickets to the bar, pay later and service charge."
+    },
+    "cang_tin_tram_dung": {
+      "label": "Canteen & Rest stop",
+      "description": "Menu, kitchen tickets, order numbers and packaged goods on the side."
+    },
+    "nha_hang": {
+      "label": "Restaurant",
+      "description": "Table plan, ordering, kitchen tickets, pay later and service charge."
+    }
+  },
   "featureName_credit": "Credit sales",
   "featureName_returns": "Returns",
   "featureName_refunds": "Refunds",

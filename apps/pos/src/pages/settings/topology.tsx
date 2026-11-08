@@ -9,6 +9,7 @@ import {
   TopologyEditor,
   type TopologyKind,
 } from '../../components/topology-editor';
+import { useBranchModules } from '../../hooks/use-branch-modules';
 import {
   useBranches,
   useLocationOptions,
@@ -19,8 +20,30 @@ import {
 import { session } from '../../lib/app-session';
 import { administrationAccess } from '../../lib/pos-administration';
 import { posCapabilities } from '../../lib/pos-capabilities';
+import type { PosBranch } from '../../lib/pos-context';
 import { queryClient } from '../../lib/query-client';
 import { posFailureKey } from '../../lib/request-failure';
+import { branchSettingVisible } from '../../modules/registry';
+
+// Scale label formats are a `retail.measured` page: a branch without the
+// module does not offer the link (the page itself still opens by URL).
+function LabelFormatsLink({ branch }: { branch: PosBranch }) {
+  const { t } = useTranslation();
+  const { context } = usePosSelection();
+  const modules = useBranchModules(branch.id);
+  if (!branchSettingVisible({ ...context.data, modules }, 'label-formats')) return null;
+  return (
+    <Link
+      className="button-link"
+      to="/settings/branches/$branchId/label-formats"
+      params={{ branchId: branch.id }}
+      aria-label={t('labelFormatsFor', { name: branch.name })}
+    >
+      <PosIcon name="list" />
+      {t('labelFormatsTitle')}
+    </Link>
+  );
+}
 
 export function TopologyPage() {
   const { t } = useTranslation();
@@ -41,6 +64,16 @@ export function TopologyPage() {
   const [failed, setFailed] = useState(false);
   const branchRows = branches.data?.data ?? [];
   const membershipRows = memberships.data?.data ?? [];
+  // Lot picking is a `retail.traceability` setting: an existing branch without
+  // the module does not offer it (its stored value is sent back unchanged).
+  // A new branch gets its modules from its profile, so the field stays.
+  const editedBranchModules = useBranchModules(
+    editor?.kind === 'branches' ? (editor.record.id ?? null) : null,
+  );
+  const hideLotSelection =
+    editor?.kind === 'branches' &&
+    Boolean(editor.record.id) &&
+    !branchSettingVisible({ ...context.data, modules: editedBranchModules }, 'lot-selection');
   const currentQuery =
     kind === 'branches' ? branches : kind === 'registers' ? registers : memberships;
   const dependencies = [branches, registers, memberships, staff, locations];
@@ -339,15 +372,7 @@ export function TopologyPage() {
                           <PosIcon name="box" />
                           {t('branchProductsTitle')}
                         </Link>
-                        <Link
-                          className="button-link"
-                          to="/settings/branches/$branchId/label-formats"
-                          params={{ branchId: branch.id }}
-                          aria-label={t('labelFormatsFor', { name: branch.name })}
-                        >
-                          <PosIcon name="list" />
-                          {t('labelFormatsTitle')}
-                        </Link>
+                        <LabelFormatsLink branch={branch} />
                         <Link
                           className="button-link"
                           to="/settings/branches/$branchId/features"
@@ -410,6 +435,7 @@ export function TopologyPage() {
         <TopologyEditor
           kind={editor.kind}
           record={editor.record}
+          hideLotSelection={hideLotSelection}
           branches={branchRows}
           staff={[
             ...(staff.data?.data ?? []),

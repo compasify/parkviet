@@ -21,6 +21,7 @@ import {
   scopedFinancialRecords,
 } from '../lib/financial-recovery';
 import { contextFeature } from '../lib/pos-features';
+import { contextModule, moduleInUse } from '../lib/pos-modules';
 import { posFailureKey } from '../lib/request-failure';
 import { formatInZone, todayIn } from '../lib/shifts';
 import {
@@ -108,10 +109,15 @@ function Inventory() {
   // The branch feature gates enrolling stock into serial/lot tracking (opening
   // balances); stock already tracked keeps its receive, transfer and count.
   const traceOn = contextFeature(data, 'traceability');
+  // The branch module gates the same setup (opening balances). With it off the
+  // page still opens: a store that still has tracked SKUs keeps receiving,
+  // moving, counting and recalling them; the server refuses new setup itself.
+  const moduleOn = contextModule(data, 'retail.traceability');
+  const tracked = moduleOn || moduleInUse(data, 'retail.traceability');
   const manage = canManageInventory(capabilities);
   const branch = data?.branches.find((row) => row.id === selection.branchId);
   const timeZone = branch?.timezone ?? data?.store.timezone ?? 'Asia/Ho_Chi_Minh';
-  const tabs = inventoryTabs(capabilities);
+  const tabs = inventoryTabs(capabilities).filter((value) => value !== 'receive' || tracked);
   const [chosen, setChosen] = useState<InventoryTab | null>(null);
   const tab = chosen && tabs.includes(chosen) ? chosen : (tabs[0] ?? 'adjust');
 
@@ -141,7 +147,7 @@ function Inventory() {
         capabilities,
         manage,
         reader: manage || canTraceInventory(capabilities),
-        enroll: manage && traceOn,
+        enroll: manage && traceOn && moduleOn,
         today: todayIn(timeZone),
         timeZone,
       }
@@ -159,7 +165,11 @@ function Inventory() {
         </PageState>
       ) : (
         <>
-          {manage && !traceOn ? <FeatureOffNote feature="traceability" /> : null}
+          {!moduleOn ? (
+            <FeatureOffNote module="retail.traceability" />
+          ) : manage && !traceOn ? (
+            <FeatureOffNote feature="traceability" />
+          ) : null}
           <div className="report-tabs" role="tablist" aria-label={t('inventoryTitle')}>
             {tabs.map((value, index) => (
               <button

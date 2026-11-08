@@ -3,9 +3,11 @@ import { useTranslation } from 'react-i18next';
 import { useCatalog } from '../hooks/use-catalog';
 import { formatMoney } from '../lib/money';
 import type { PosWorkspace } from '../lib/pos-context';
+import { catalogViewOf, type PosCatalogView } from '../lib/pos-modules';
 import { posFailureKey } from '../lib/request-failure';
 import { AddItemForm } from './add-item-form';
 import { PosIcon } from './pos-icon';
+import { usePosSelection } from './pos-selection';
 
 // Outcome of a scan reported back to the search box. `seq` changes for every
 // outcome so the same code scanned twice is reported twice.
@@ -50,7 +52,11 @@ export function CatalogSearch({
   const [input, setInput] = useState('');
   const [query, setQuery] = useState('');
   const [page, setPage] = useState(1);
-  const [view, setView] = useState<'cards' | 'list'>('cards');
+  // The branch's industry profile picks the first view (a pharmacy reads a
+  // list, a fashion shop cards). A view the cashier picks stays for the session.
+  const { context } = usePosSelection();
+  const [chosenView, setView] = useState<PosCatalogView | null>(null);
+  const view = chosenView ?? catalogViewOf(context.data);
   const [advancedIds, setAdvancedIds] = useState<Record<string, boolean>>({});
   const result = useCatalog(storeId, branchId, query, page);
   const searchRef = useRef<HTMLInputElement>(null);

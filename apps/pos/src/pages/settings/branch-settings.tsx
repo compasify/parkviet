@@ -4,15 +4,20 @@ import { useTranslation } from 'react-i18next';
 import { PosIcon } from '../../components/pos-icon';
 import { PageState, PosPage } from '../../components/pos-page';
 import { usePosSelection } from '../../components/pos-selection';
+import { useBranchModules } from '../../hooks/use-branch-modules';
 import { useBranches } from '../../hooks/use-topology';
 import { administrationAccess } from '../../lib/pos-administration';
 import type { PosBranch } from '../../lib/pos-context';
+import type { PosModules } from '../../lib/pos-modules';
 import { posFailureKey } from '../../lib/request-failure';
+import { branchSettingVisible } from '../../modules/registry';
 
 export type BranchSettingsScope = {
   branch: PosBranch;
   access: { read: boolean; write: boolean };
   storeId: string | null;
+  // Modules on at this branch; null when unknown, which hides nothing.
+  modules: PosModules | null;
 };
 
 const SECTION_TEXT = {
@@ -36,6 +41,11 @@ export function BranchSettingsFrame({
   const branchId = useParams({ strict: false }).branchId ?? '';
   const branches = useBranches(access.read);
   const branch = branches.data?.data.find((item) => item.id === branchId);
+  const modules = useBranchModules(access.read ? branchId : null);
+  // Scale label formats are a `retail.measured` page: not offered at a branch
+  // without it, but still shown while it is the page being looked at.
+  const labelsLink =
+    section === 'labels' || branchSettingVisible({ ...context.data, modules }, 'label-formats');
   const title = t(SECTION_TEXT[section].title);
   const linkProps = { className: 'is-active', 'aria-current': 'page' } as const;
   return (
@@ -65,15 +75,17 @@ export function BranchSettingsFrame({
               <PosIcon name="box" />
               {t('branchProductsTitle')}
             </Link>
-            <Link
-              className="button-link"
-              to="/settings/branches/$branchId/label-formats"
-              params={{ branchId }}
-              activeProps={linkProps}
-            >
-              <PosIcon name="list" />
-              {t('labelFormatsTitle')}
-            </Link>
+            {labelsLink ? (
+              <Link
+                className="button-link"
+                to="/settings/branches/$branchId/label-formats"
+                params={{ branchId }}
+                activeProps={linkProps}
+              >
+                <PosIcon name="list" />
+                {t('labelFormatsTitle')}
+              </Link>
+            ) : null}
             <Link
               className="button-link"
               to="/settings/branches/$branchId/features"
@@ -95,7 +107,9 @@ export function BranchSettingsFrame({
           {branches.isSuccess && !branch ? (
             <PageState kind="error" title={t('branchSettingsMissing')} />
           ) : null}
-          {branch ? children({ branch, access, storeId: context.data?.store.id ?? null }) : null}
+          {branch
+            ? children({ branch, access, storeId: context.data?.store.id ?? null, modules })
+            : null}
         </div>
       )}
     </PosPage>

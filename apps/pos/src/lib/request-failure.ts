@@ -1,4 +1,5 @@
 import { isPosFeature } from './pos-features';
+import { moduleTextKey } from './pos-modules';
 
 export type PosFailure =
   | 'unauthorized'
@@ -137,7 +138,7 @@ export function describeFailure(
   const lease = leaseConflict(error);
   if (lease) return translate(lease.reason === 'lease_busy' ? 'leaseBusy' : 'leaseStale');
   if (snapshotLocked(error)) return translate('editLockedPayments');
-  const disabled = featureDisabledText(error, translate);
+  const disabled = featureDisabledText(error, translate) ?? moduleDisabledText(error, translate);
   if (disabled) return disabled;
   return serverFailureDetail(error) ?? translate(fallbackKey ?? posFailureKey(error));
 }
@@ -154,6 +155,18 @@ export function featureDisabledText(
   return isPosFeature(feature)
     ? translate(`featureDisabled_${feature}`)
     : translate('featureDisabled');
+}
+
+// The branch has the module of a setup command off (409 `module_disabled`,
+// `details.module`): nothing was recorded. Selling never gets this refusal.
+export function moduleDisabledText(
+  error: unknown,
+  translate: (key: string) => string,
+): string | null {
+  if (conflictReason(error) !== 'module_disabled') return null;
+  const details = (error as { details?: { module?: unknown } }).details;
+  const text = typeof details?.module === 'string' ? moduleTextKey(details.module) : null;
+  return translate(text ? `posModules.${text}.disabled` : 'moduleDisabled');
 }
 
 // The server froze the basket because a tender is prepared or a payment exists.

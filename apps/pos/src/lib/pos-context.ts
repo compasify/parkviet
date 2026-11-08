@@ -1,4 +1,14 @@
-import type { PosFeatureFlags } from './pos-features';
+import { normalizeFeatures, type PosFeatureFlags } from './pos-features';
+import {
+  normalizeModules,
+  normalizeModuleUsage,
+  normalizeOnboarding,
+  normalizeProfile,
+  type PosBranchProfile,
+  type PosModules,
+  type PosModuleUsage,
+  type PosOnboarding,
+} from './pos-modules';
 import type { LotSelection, SaleLineTrace, WorkspaceTrace } from './traceability';
 
 export type PosBranch = {
@@ -59,6 +69,16 @@ export type PosContext = {
   administration?: { read: boolean; write: boolean };
   // Feature flags of the selected branch; absent on servers without them.
   features?: PosFeatureFlags | null;
+  // Modules on at the selected branch (`{}` without one); null on servers
+  // without modules, which hides nothing.
+  modules?: PosModules | null;
+  // Store-wide data a module still has ({ 'retail.traceability': bool });
+  // `{}` when the server does not send it.
+  module_usage?: PosModuleUsage | null;
+  // Industry profile of the selected branch; null without a branch.
+  profile?: PosBranchProfile | null;
+  // First-run setup; null on servers without it.
+  onboarding?: PosOnboarding | null;
   staff: { id: string; email: string; full_name: string | null };
   store: {
     id: string;
@@ -412,6 +432,19 @@ export type PosMembership = {
 };
 
 export const emptySelection: PosSelection = { branchId: null, registerId: null };
+
+// The context as the UI reads it: flags, modules and profile parsed so that a
+// missing or malformed field never throws and older servers hide nothing.
+export function normalizeContext(context: PosContext): PosContext {
+  return {
+    ...context,
+    features: normalizeFeatures(context.features),
+    modules: normalizeModules(context.modules),
+    module_usage: normalizeModuleUsage(context.module_usage),
+    profile: normalizeProfile(context.profile),
+    onboarding: normalizeOnboarding(context.onboarding),
+  };
+}
 
 export function writesLocked(context: PosContext | undefined, selection: PosSelection) {
   if (!context) return true;

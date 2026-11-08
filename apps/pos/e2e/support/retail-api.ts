@@ -170,6 +170,13 @@ export type World = {
   features?: Record<string, boolean>;
   // Stored switches: store defaults and this branch's overrides (off only).
   flags?: { store: Record<string, boolean>; branch: Record<string, boolean>; writes: Array<Record<string, unknown>> };
+  // Absent: the server predates branch modules; the context has no `modules`
+  // (nothing is hidden). Present: modules on at the branch, as the server sends.
+  modules?: Record<string, boolean>;
+  // Store-wide data a module still has (`module_usage`), e.g. tracked SKUs.
+  moduleUsage?: Record<string, boolean>;
+  // Industry profile of the selected branch (`profile` in the context).
+  profile?: { key: string; version: number; display: { catalog_view?: 'cards' | 'list' } };
   administration?: { read: boolean; write: boolean };
   products: Product[];
   serialStock: Set<string>;
@@ -233,10 +240,21 @@ export function effectiveFeatures(world: World): Record<string, boolean> | undef
   return Object.fromEntries(FEATURES.map((feature) => [feature, flags.store[feature] === true && flags.branch[feature] !== false]));
 }
 
-export function newWorld(options: { capabilities?: string[]; features?: Record<string, boolean> } = {}): World {
+export function newWorld(
+  options: {
+    capabilities?: string[];
+    features?: Record<string, boolean>;
+    modules?: Record<string, boolean>;
+    moduleUsage?: Record<string, boolean>;
+    profile?: World['profile'];
+  } = {},
+): World {
   return {
     capabilities: options.capabilities ?? FULL_CASHIER,
     features: options.features,
+    modules: options.modules,
+    moduleUsage: options.moduleUsage,
+    profile: options.profile,
     products: [
       { id: 'v_rice', name: 'Gạo ST25', sku: 'GAO-1', barcode: '8930000000011', price: 100000, mode: 'ordinary' },
       { id: 'v_water', name: 'Nước suối', sku: 'NUOC-1', barcode: '8930000000028', price: 5000, mode: 'ordinary' },
@@ -834,6 +852,10 @@ async function handle(world: World, route: Route) {
         store: { id: 'store_1', name: 'ParkViet', currency: 'VND', locale: 'vi', timezone: 'Asia/Ho_Chi_Minh' },
         capabilities: branch ? world.capabilities : [],
         ...(effectiveFeatures(world) ? { features: effectiveFeatures(world) } : {}),
+        // Like the server: modules and profile belong to the selected branch.
+        ...(world.modules ? { modules: branch ? world.modules : {} } : {}),
+        ...(world.moduleUsage ? { module_usage: world.moduleUsage } : {}),
+        ...(world.profile ? { profile: branch ? world.profile : null } : {}),
         ...(world.administration ? { administration: world.administration } : {}),
         branches: [{ id: 'br_1', name: 'Chi nhánh 1', status: 'active', timezone: 'Asia/Ho_Chi_Minh' }],
         registers: branch ? [{ id: 'reg_1', branch_id: 'br_1', name: 'Quầy 1', status: 'active' }] : [],

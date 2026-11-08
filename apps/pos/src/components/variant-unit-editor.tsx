@@ -3,6 +3,7 @@ import { type FormEvent, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type BranchProduct, useUnitDefinitions } from '../hooks/use-branch-catalog';
 import { useBranchFeatures } from '../hooks/use-branch-features';
+import { useBranchModules } from '../hooks/use-branch-modules';
 import { fetchCatalogPage } from '../hooks/use-catalog';
 import { useSession } from '../hooks/use-session';
 import { saveVariantUnit, useVariantUnit } from '../hooks/use-variant-unit';
@@ -10,7 +11,9 @@ import type { PosVariantUnit } from '../lib/pos-context';
 import { queryClient } from '../lib/query-client';
 import { describeFailure, posFailureKey } from '../lib/request-failure';
 import { describeTraceFailure } from '../lib/traceability';
+import { moduleUis, skuEditorAreas } from '../modules/registry';
 import { AdminDialog } from './admin-dialog';
+import { FeatureOffNote } from './feature-off-note';
 
 const TRACKED_MODES = ['none', 'lot', 'serial'] as const;
 const MAX_RATIO = 1_000_000;
@@ -95,6 +98,28 @@ export function VariantUnitEditor({
   );
   const trackedLocked = (mode: string) =>
     trackingOff && mode !== 'none' && mode !== loaded?.tracked_mode;
+
+  // Areas whose branch module is off are not offered (unknown modules hide
+  // nothing). An area the SKU already uses stays, so it can be read and
+  // narrowed back (to untracked, to the base unit, to no label code); the
+  // server refuses only new setup. Selling the SKU never depends on this.
+  const areas = skuEditorAreas(useBranchModules(branchId));
+  const loadedConverted = Boolean(
+    loaded &&
+      (loaded.sale_unit !== loaded.base_unit ||
+        loaded.ratio_numerator !== loaded.ratio_denominator),
+  );
+  const showUnits = areas.has('units') || loadedConverted;
+  const loadedTracked = Boolean(loaded && loaded.tracked_mode !== 'none');
+  const showTracking = areas.has('traceability') || loadedTracked;
+  const trackedModes: readonly string[] = areas.has('traceability')
+    ? TRACKED_MODES
+    : TRACKED_MODES.filter((mode) => mode === 'none' || mode === loaded?.tracked_mode);
+  const showLabelCode = areas.has('measured') || Boolean(loaded?.label_code);
+  // One "branch has not turned on …" note per hidden or narrowed area.
+  const offModules = moduleUis.flatMap((module) =>
+    module.skuEditor && !areas.has(module.skuEditor) ? [module.key] : [],
+  );
 
   const definitions = units.data?.data ?? [];
   const saleUnit = definitions.find((item) => item.code === draft?.sale_unit);
@@ -212,115 +237,130 @@ export function VariantUnitEditor({
             {draft ? (
               <>
                 <div className="admin-form-grid">
-                  <label>
-                    {t('variantUnitSale')}
-                    <select
-                      aria-label={t('variantUnitSale')}
-                      value={draft.sale_unit}
-                      disabled={!canWrite}
-                      onChange={(event) => set('sale_unit', event.target.value)}
-                    >
-                      {definitions.map((item) => (
-                        <option key={item.code} value={item.code}>
-                          {item.name} ({item.code})
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    {t('variantUnitBase')}
-                    <input
-                      aria-label={t('variantUnitBase')}
-                      value={baseUnit}
-                      readOnly
-                      aria-describedby="variant-unit-base-hint"
-                    />
-                    <small id="variant-unit-base-hint">{t('variantUnitBaseHint')}</small>
-                  </label>
-                  <label>
-                    {t('variantUnitPrice')}
-                    <select
-                      aria-label={t('variantUnitPrice')}
-                      value={draft.price_unit}
-                      disabled={!canWrite}
-                      onChange={(event) => set('price_unit', event.target.value)}
-                    >
-                      {priceOptions.map((item) => (
-                        <option key={item.code} value={item.code}>
-                          {item.name} ({item.code})
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    {t('variantUnitTracked')}
-                    <select
-                      aria-label={t('variantUnitTracked')}
-                      value={draft.tracked_mode}
-                      disabled={!canWrite}
-                      aria-describedby={trackingOff ? 'variant-unit-tracking-off' : undefined}
-                      onChange={(event) => set('tracked_mode', event.target.value)}
-                    >
-                      {TRACKED_MODES.map((mode) => (
-                        <option key={mode} value={mode} disabled={trackedLocked(mode)}>
-                          {t(`variantUnitTracked_${mode}`)}
-                        </option>
-                      ))}
-                    </select>
-                    {trackingOff ? (
-                      <small id="variant-unit-tracking-off">{t('variantUnitTrackingOff')}</small>
-                    ) : null}
-                  </label>
-                  <label>
-                    {t('variantUnitRatioNumerator')}
-                    <input
-                      aria-label={t('variantUnitRatioNumerator')}
-                      inputMode="numeric"
-                      required
-                      readOnly={!canWrite}
-                      value={draft.ratio_numerator}
-                      aria-invalid={numerator === null}
-                      onChange={(event) => set('ratio_numerator', event.target.value)}
-                    />
-                  </label>
-                  <label>
-                    {t('variantUnitRatioDenominator')}
-                    <input
-                      aria-label={t('variantUnitRatioDenominator')}
-                      inputMode="numeric"
-                      required
-                      readOnly={!canWrite}
-                      value={draft.ratio_denominator}
-                      aria-invalid={denominator === null}
-                      onChange={(event) => set('ratio_denominator', event.target.value)}
-                    />
-                  </label>
+                  {showUnits ? (
+                    <>
+                      <label>
+                        {t('variantUnitSale')}
+                        <select
+                          aria-label={t('variantUnitSale')}
+                          value={draft.sale_unit}
+                          disabled={!canWrite}
+                          onChange={(event) => set('sale_unit', event.target.value)}
+                        >
+                          {definitions.map((item) => (
+                            <option key={item.code} value={item.code}>
+                              {item.name} ({item.code})
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label>
+                        {t('variantUnitBase')}
+                        <input
+                          aria-label={t('variantUnitBase')}
+                          value={baseUnit}
+                          readOnly
+                          aria-describedby="variant-unit-base-hint"
+                        />
+                        <small id="variant-unit-base-hint">{t('variantUnitBaseHint')}</small>
+                      </label>
+                      <label>
+                        {t('variantUnitPrice')}
+                        <select
+                          aria-label={t('variantUnitPrice')}
+                          value={draft.price_unit}
+                          disabled={!canWrite}
+                          onChange={(event) => set('price_unit', event.target.value)}
+                        >
+                          {priceOptions.map((item) => (
+                            <option key={item.code} value={item.code}>
+                              {item.name} ({item.code})
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </>
+                  ) : null}
+                  {showTracking ? (
+                    <label>
+                      {t('variantUnitTracked')}
+                      <select
+                        aria-label={t('variantUnitTracked')}
+                        value={draft.tracked_mode}
+                        disabled={!canWrite}
+                        aria-describedby={trackingOff ? 'variant-unit-tracking-off' : undefined}
+                        onChange={(event) => set('tracked_mode', event.target.value)}
+                      >
+                        {trackedModes.map((mode) => (
+                          <option key={mode} value={mode} disabled={trackedLocked(mode)}>
+                            {t(`variantUnitTracked_${mode}`)}
+                          </option>
+                        ))}
+                      </select>
+                      {trackingOff ? (
+                        <small id="variant-unit-tracking-off">{t('variantUnitTrackingOff')}</small>
+                      ) : null}
+                    </label>
+                  ) : null}
+                  {showUnits ? (
+                    <>
+                      <label>
+                        {t('variantUnitRatioNumerator')}
+                        <input
+                          aria-label={t('variantUnitRatioNumerator')}
+                          inputMode="numeric"
+                          required
+                          readOnly={!canWrite}
+                          value={draft.ratio_numerator}
+                          aria-invalid={numerator === null}
+                          onChange={(event) => set('ratio_numerator', event.target.value)}
+                        />
+                      </label>
+                      <label>
+                        {t('variantUnitRatioDenominator')}
+                        <input
+                          aria-label={t('variantUnitRatioDenominator')}
+                          inputMode="numeric"
+                          required
+                          readOnly={!canWrite}
+                          value={draft.ratio_denominator}
+                          aria-invalid={denominator === null}
+                          onChange={(event) => set('ratio_denominator', event.target.value)}
+                        />
+                      </label>
+                    </>
+                  ) : null}
                 </div>
                 {numerator === null || denominator === null ? (
                   <p className="error" role="alert">
                     {t('variantUnitRatioInvalid')}
                   </p>
                 ) : null}
-                <label>
-                  {t('variantUnitLabelCode')}
-                  <input
-                    aria-label={t('variantUnitLabelCode')}
-                    inputMode="numeric"
-                    maxLength={8}
-                    readOnly={!canWrite}
-                    value={draft.label_code}
-                    aria-invalid={!labelCodeValid}
-                    aria-describedby="variant-unit-label-hint"
-                    onChange={(event) => set('label_code', event.target.value)}
-                  />
-                  <small id="variant-unit-label-hint">{t('variantUnitLabelCodeHint')}</small>
-                </label>
+                {showLabelCode ? (
+                  <label>
+                    {t('variantUnitLabelCode')}
+                    <input
+                      aria-label={t('variantUnitLabelCode')}
+                      inputMode="numeric"
+                      maxLength={8}
+                      readOnly={!canWrite}
+                      value={draft.label_code}
+                      aria-invalid={!labelCodeValid}
+                      aria-describedby="variant-unit-label-hint"
+                      onChange={(event) => set('label_code', event.target.value)}
+                    />
+                    <small id="variant-unit-label-hint">{t('variantUnitLabelCodeHint')}</small>
+                  </label>
+                ) : null}
                 {!labelCodeValid ? (
                   <p className="error" role="alert">
                     {t('variantUnitLabelCodeInvalid')}
                   </p>
                 ) : null}
                 <p className="admin-info">{t('variantUnitLockNote')}</p>
+                {offModules.map((key) => (
+                  <FeatureOffNote key={key} module={key} />
+                ))}
               </>
             ) : null}
           </fieldset>

@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { FeatureOffNote } from '../../components/feature-off-note';
 import { LabelFormatEditor } from '../../components/label-format-editor';
 import { PosIcon } from '../../components/pos-icon';
 import { PageState } from '../../components/pos-page';
 import { disableLabelFormat, useLabelFormats } from '../../hooks/use-branch-catalog';
 import type { LabelFormat } from '../../lib/label-format';
+import { moduleEnabled } from '../../lib/pos-modules';
 import { queryClient } from '../../lib/query-client';
 import { describeFailure, posFailureKey } from '../../lib/request-failure';
 import { BranchSettingsFrame, type BranchSettingsScope } from './branch-settings';
@@ -17,8 +19,13 @@ export function LabelFormatsPage() {
   );
 }
 
-function LabelFormats({ branch, access }: BranchSettingsScope) {
+function LabelFormats({ branch, access, modules }: BranchSettingsScope) {
   const { t } = useTranslation();
+  // Without `retail.measured` the branch takes no new or changed label format
+  // (the server refuses them too); the list and switching a format off stay.
+  // Labels already printed keep scanning on the sale screen either way.
+  const measuredOn = moduleEnabled(modules, 'retail.measured');
+  const canSetUp = access.write && measuredOn;
   const formats = useLabelFormats(branch.id, access.read);
   const [editor, setEditor] = useState<{ format?: LabelFormat } | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -54,7 +61,7 @@ function LabelFormats({ branch, access }: BranchSettingsScope) {
           <h2 id="label-formats-heading">{t('labelFormatsTitle')}</h2>
           <p>{t('labelFormatsHint')}</p>
         </div>
-        {access.write ? (
+        {canSetUp ? (
           <button
             type="button"
             className="primary-button"
@@ -69,6 +76,7 @@ function LabelFormats({ branch, access }: BranchSettingsScope) {
           </button>
         ) : null}
       </div>
+      {!measuredOn ? <FeatureOffNote module="retail.measured" /> : null}
       {notice ? (
         <p
           className={notice.failed ? 'error' : 'page-success'}
@@ -119,17 +127,19 @@ function LabelFormats({ branch, access }: BranchSettingsScope) {
               </span>
               {access.write && active ? (
                 <div className="admin-record-actions">
-                  <button
-                    type="button"
-                    disabled={Boolean(pendingId)}
-                    aria-label={t('adminEditName', { name: format.name })}
-                    onClick={() => {
-                      setNotice(null);
-                      setEditor({ format });
-                    }}
-                  >
-                    {t('adminEdit')}
-                  </button>
+                  {canSetUp ? (
+                    <button
+                      type="button"
+                      disabled={Boolean(pendingId)}
+                      aria-label={t('adminEditName', { name: format.name })}
+                      onClick={() => {
+                        setNotice(null);
+                        setEditor({ format });
+                      }}
+                    >
+                      {t('adminEdit')}
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     className="danger-button"

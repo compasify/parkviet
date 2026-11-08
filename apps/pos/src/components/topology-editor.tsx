@@ -37,11 +37,15 @@ export function TopologyEditor({
   staff,
   locations,
   memberships,
+  hideLotSelection = false,
   onSave,
   onClose,
 }: {
   kind: TopologyKind;
   record: TopologyDraft;
+  // The branch has `retail.traceability` off: lot picking is not offered and
+  // the stored value is sent back as it is.
+  hideLotSelection?: boolean;
   branches: PosBranch[];
   staff: StaffOption[];
   locations: LocationOption[];
@@ -306,18 +310,20 @@ export function TopologyEditor({
                 />
                 <small id="return-window-hint">{t('adminReturnWindowHint')}</small>
               </label>
-              <label>
-                {t('adminLotSelection')}
-                <select
-                  value={draft.lot_selection === 'cashier_pick' ? 'cashier_pick' : 'fefo'}
-                  aria-describedby="lot-selection-hint"
-                  onChange={(event) => set('lot_selection', event.target.value)}
-                >
-                  <option value="fefo">{t('adminLotSelection_fefo')}</option>
-                  <option value="cashier_pick">{t('adminLotSelection_cashier_pick')}</option>
-                </select>
-                <small id="lot-selection-hint">{t('adminLotSelectionHint')}</small>
-              </label>
+              {hideLotSelection ? null : (
+                <label>
+                  {t('adminLotSelection')}
+                  <select
+                    value={draft.lot_selection === 'cashier_pick' ? 'cashier_pick' : 'fefo'}
+                    aria-describedby="lot-selection-hint"
+                    onChange={(event) => set('lot_selection', event.target.value)}
+                  >
+                    <option value="fefo">{t('adminLotSelection_fefo')}</option>
+                    <option value="cashier_pick">{t('adminLotSelection_cashier_pick')}</option>
+                  </select>
+                  <small id="lot-selection-hint">{t('adminLotSelectionHint')}</small>
+                </label>
+              )}
               <label>
                 {t('adminAdjustmentThreshold')}
                 <input

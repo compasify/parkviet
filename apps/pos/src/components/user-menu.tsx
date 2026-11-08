@@ -5,7 +5,7 @@ import { administrationAccess } from '../lib/pos-administration';
 import type { PosContext } from '../lib/pos-context';
 import { canReadReceivables } from '../lib/receivables';
 import { canProcessReturns } from '../lib/returns';
-import { canOpenInventory } from '../lib/traceability';
+import { navVisible } from '../modules/registry';
 import { PosIcon } from './pos-icon';
 
 // The header account menu: every POS page, devices and sign out.
@@ -70,6 +70,9 @@ export function UserMenu({
   const creditManage = has('pos.credit.manage');
   const approve = has('pos.approval.grant');
   const staffed = Boolean(data && capabilities.length > 0);
+  // Stock tracking belongs to `retail.traceability`; it stays reachable with
+  // the module off while the store still has tracked SKUs to receive.
+  const inventory = navVisible(data, 'inventory');
 
   const groups: ReactNode[] = [];
   if (data) {
@@ -122,7 +125,7 @@ export function UserMenu({
       </MenuGroup>,
     );
   }
-  if (staffed || canOpenInventory(capabilities)) {
+  if (staffed || inventory) {
     groups.push(
       <MenuGroup key="operations" label={t('menuOperations')}>
         {staffed ? (
@@ -135,7 +138,7 @@ export function UserMenu({
             </Link>
           </>
         ) : null}
-        {canOpenInventory(capabilities) ? (
+        {inventory ? (
           <Link to="/inventory" {...item}>
             {t('inventoryNav')}
           </Link>
