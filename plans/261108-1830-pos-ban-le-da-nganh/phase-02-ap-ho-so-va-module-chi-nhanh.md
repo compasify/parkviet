@@ -143,7 +143,7 @@ Thứ tự trong lệnh: chặn sau khi executor đã loại trường hợp rep
   - `PUT /units/variant`, `retail.units`: cấu hình mới là quy đổi (đơn vị bán ≠ đơn vị gốc hoặc tỷ lệ ≠ 1:1) **và** khác bản ghi ở sale/base/price unit hoặc tỷ lệ (hoặc chưa có bản ghi).
   - `PUT /units/variant`, `retail.measured`: chuyển **vào** đơn vị bán `mass`/`volume` (bản ghi cũ không có hoặc là `count`), hoặc đặt `label_code` khác rỗng và khác bản ghi.
   - `POST` / `PATCH /branches/:id/label_formats` (`disable` không chặn), `retail.measured`.
-  - `inventory/opening_balances` (cạnh `FeaturePolicy.require!`) và `inventory/receipts`, `retail.traceability`.
+  - `inventory/opening_balances` (cạnh `FeaturePolicy.require!`), `retail.traceability`. `inventory/receipts` lúc đầu cũng bị chặn; sau đó đã bỏ chặn theo câu hỏi đã chốt 4 trong `plan.md` (xem "Sau phase 2").
   - Không chạm `Tenders::Guard`, `workspaces/complete.rb`, `tenders/*`, `funds/*`, ca, công nợ, trả hàng.
 - Migration dữ liệu `20261108210000_backfill_spree_pos_khac_branch_modules`: SQL thuần, idempotent. Chi nhánh `khac` không có dòng `branch_modules` nào nhận ba module bật, `reason = 'backfill'`. Chi nhánh đã có dòng hoặc thuộc hồ sơ khác giữ nguyên. `down` không làm gì (dữ liệu).
 - Spec helper `server/spec/support/pos_module_helpers.rb` (nạp trong `rails_helper.rb`).
@@ -177,7 +177,7 @@ Khác với plan:
   - không gửi `wholesale` / `interests` thì giữ nguyên.
 - `PUT /branches/:id/modules/:key`: module `planned` → 409 `module_unavailable`; `enabled` không phải boolean → `module_value_invalid`; lý do bắt buộc (`reason_required`, `reason_invalid`). Route nhận key có dấu chấm (`constraints: { id: %r{[^/]+} }`).
 - Thêm `GET /branches/:id/modules` (không có trong plan) cho trang Mô hình kinh doanh: trả trạng thái và dòng cài đặt của một chi nhánh bất kỳ, không chỉ chi nhánh đang chọn trong context. Quyền: `read_pos_topology`, `write_pos_topology`, hoặc `pos.topology.manage` tại chi nhánh đó.
-- `inventory/receipts` bị chặn đúng như plan. Hệ quả: chi nhánh tắt `retail.traceability` không nhận thêm hàng serial/lô qua POS cho SKU đã tracked, dù vẫn bán, chuyển kho, kiểm kê được. Xem "Còn mở".
+- `inventory/receipts`: bản đầu của phase này chặn như plan, nhưng **đã bỏ chặn** (xem "Sau phase 2"). Chi nhánh tắt `retail.traceability` vẫn nhận thêm hàng serial/lô cho SKU đã tracked.
 - `CommandExecutor` ghi outcome `conflict` (không phải `feature_disabled`) cho `module_disabled`; không sửa executor.
 
 Quyết định spec helper: **bật mặc định**. `Spree::Pos::Branch.after_create` (chỉ trong spec) ghi thẳng vào bảng các module của hồ sơ của chi nhánh (`khac` → cả ba), `reason = 'spec default'`, không audit. Example nói về chính các dòng module thì opt out bằng `pos_modules: :default`, giống `pos_features: :default`. `set_pos_module(branch, key, enabled)` để sắp xếp dữ liệu. Chọn cách này vì nó giữ nguyên mọi spec cũ cấu hình đơn vị / tem cân / tồn truy xuất trên chi nhánh tự dựng (traceability, scale labels, traceable inventory, integration…); opt in sẽ phải sửa hàng chục spec. Chỉ thêm metadata `pos_modules: :default` vào ba spec của phase 1 vốn tự tạo dòng module: `module_policy_spec.rb` và `create_spree_pos_business_profiles_spec.rb` (cấp describe), một example của `business_profiles_spec.rb`. `Branches::Create` dùng `find_or_initialize_by`, nên chạy được cả khi helper đã ghi dòng.
@@ -206,8 +206,15 @@ Cho phase 3/4 (mọi path dưới `/api/v3/admin/pos`, body JSON, kết quả b�
 - `PUT /branches/:id/modules/:key { enabled: bool, reason }` → `{ branch_id, module, enabled, changed, also_enabled: [], modules: {key: bool} }`. Lỗi 409: `module_required_by` (`details.module`, `details.required_by`), `module_unknown`, `module_unavailable`, `module_value_invalid`, `reason_required`, `reason_invalid`. 403 ở chi nhánh không quản lý.
 - `PUT /store_profile { profile_key, reason, wholesale?, interests? }` → store profile (`to_pos`). Lỗi 409: `onboarding_required`, `profile_unavailable`, `profile_unknown`, `interest_invalid`, `reason_required`, `parameter_invalid`.
 - Lệnh thiết lập bị chặn trả 409 `{ reason: 'module_disabled', module: '<key>' }`. UI nên ẩn màn cấu hình theo `context.modules`, nhưng vẫn xử lý 409 này.
+- `GET /context` có thêm `module_usage` (xem "Sau phase 2").
+
+Sau phase 2 (câu hỏi đã chốt 4 của `plan.md`: chi nhánh tắt `retail.traceability` vẫn nhập thêm hàng cho SKU đã theo dõi):
+- `Inventory::ReceiveTraceability` bỏ hẳn `ModulePolicy.require!`. Không cần điều kiện "mọi SKU nhận đều đã tracked": theo định nghĩa, một phiếu nhận chỉ có một variant, và variant đó phải đã tracked (`Guard.mode!` từ chối `none` bằng 409 `not_tracked`) **và** đã có tồn đầu kỳ ở chi nhánh (`Guard.reconciled!` → `trace_not_enrolled`). Nhận hàng vì vậy không bao giờ đưa SKU mới vào theo dõi.
+- Vẫn chặn khi module tắt: `inventory/opening_balances` và `PUT /units/variant` chuyển SKU sang `tracked_mode` khác `none`.
+- `GET /context` thêm `module_usage: { 'retail.traceability' => bool }`: `true` khi store còn ít nhất một `VariantUnit` `active` có `tracked_mode` `serial`/`lot` của variant chưa xóa. Cấp **store**, không phụ thuộc module của chi nhánh, có cả khi chưa chọn chi nhánh. Một query `EXISTS` (`ModulePolicy.usage_for(store)`). Client giữ lối vào Nhập hàng khi giá trị này `true`. Server cũ không gửi field này; client coi thiếu là `false` (chỉ dùng để *giữ* lối vào, việc ẩn vẫn theo `modules`).
+- Spec: `traceability_spec.rb` (example D5) nay khẳng định nhận lô `D2` cho SKU tracked khi module tắt → 201, và nhận cho SKU không tracked → 409 `not_tracked`. `business_profiles_spec.rb` thêm example `module_usage` (không tracked / `none` / `inactive` / store khác → `false`; tracked → `true` cả khi module tắt và khi không chọn chi nhánh; variant đã xóa → `false`). `authentication_spec.rb`: danh sách key của context thêm `module_usage`.
+- Kiểm thử: `pnpm spree rspec spec/requests/spree/pos/ spec/models/spree/pos/ spec/services/spree/pos/ spec/migrations/`: 285 examples, 0 failures (seed 64798). `pnpm spree rspec spec/workflows/spree/pos/`: 154 examples, 0 failures (seed 35855).
 
 Còn mở:
-- Nhận hàng truy xuất (`inventory/receipts`) bị chặn khi tắt `retail.traceability` (theo plan/D5). Chi nhánh tắt module mà vẫn còn SKU tracked sẽ không nhập thêm được hàng serial/lô cho SKU đó qua POS. Cần chốt lại: giữ chặn, hay chỉ chặn SKU chưa từng nhập ở chi nhánh.
 - Chưa có spec chạy hai phiên onboarding đồng thời (race). Đã khóa dòng store, và `store_profiles.store_id` là unique, nhưng chưa có race spec hai connection.
 

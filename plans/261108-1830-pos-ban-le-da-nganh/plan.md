@@ -29,7 +29,7 @@ Kiến trúc và lý do: [261108-1800-pos-multi-industry-architecture.md](../rep
 | D2 | Phạm vi là **bán lẻ**. F&B chỉ có trong danh mục với trạng thái `coming_soon`; chọn được để ghi nhận nhu cầu, nhưng không tạo được chi nhánh F&B. F&B sau này là app, có plan riêng. |
 | D3 | Danh mục hồ sơ, module, quyền và cờ do **server** trả về. Client không giữ danh sách cứng làm nguồn chân lý, để app sau này đọc cùng một hợp đồng API. |
 | D4 | Module ở giai đoạn này là ba module bán lẻ đã có code: `retail.units` (quy đổi đơn vị), `retail.measured` (hàng cân, tem cân), `retail.traceability` (serial, lô, HSD). |
-| D5 | **Module không bao giờ chặn việc bán.** Tắt module chỉ ẩn màn cấu hình ở chi nhánh và từ chối lệnh *thiết lập mới* (cấu hình SKU, mẫu tem, nhập tồn đầu kỳ / nhận hàng có truy xuất). Bán, trả hàng và các guard theo dữ liệu SKU (`Tenders::Guard.tracked_guard!` ở prepare / confirm / allocate / complete) luôn chạy như hiện tại. |
+| D5 | **Module không bao giờ chặn việc bán.** Tắt module chỉ ẩn màn cấu hình ở chi nhánh và từ chối lệnh *thiết lập mới* (cấu hình SKU, mẫu tem, nhập tồn đầu kỳ; nhận thêm hàng cho SKU đã theo dõi vẫn mở, xem câu hỏi đã chốt 4). Bán, trả hàng và các guard theo dữ liệu SKU (`Tenders::Guard.tracked_guard!` ở prepare / confirm / allocate / complete) luôn chạy như hiện tại. |
 | D6 | Hồ sơ **không tự bật** cờ rủi ro (`credit`, `returns`, `refunds`, …). Wizard chỉ gắn nhãn "Ngành này thường dùng" và để trống ô chọn. Quản lý tự tick; khi đó ghi qua `FeaturePolicy.set!` với lý do "Thiết lập theo ngành: …". Cách này giữ quyết định cũ: chức năng rủi ro mặc định tắt. |
 | D7 | Đổi hồ sơ không ghi đè cấu hình đã chỉnh tay. Server trả về **diff**; người dùng chọn áp từng giá trị mặc định. |
 | D8 | Chưa làm hook pipeline. Tách guard khỏi `Workspaces::Complete` không có lợi gì cho Giai đoạn 0, lại sinh rủi ro trên đường tiền. Hook runner sẽ làm ở module đầu tiên cần đến nó (dự kiến `warranty`). |
@@ -99,4 +99,5 @@ flowchart LR
 1. Bảng giá trị mặc định của 19 hồ sơ ở phase 1: **duyệt nguyên bảng**.
 2. Dimension `length` / `area` cho VLXD: **chưa làm**. Đợt này VLXD dùng đơn vị đếm; độ dài và diện tích làm plan riêng.
 3. Wizard: ô cờ rủi ro **để trống**; ô "cấp cho tôi toàn quyền" **tick sẵn, bỏ được**.
-4. Mỗi phase commit riêng, chỉ stage file của phase đó; không đụng các thay đổi mẫu in đang dở trên `v2`.
+4. Chi nhánh tắt `retail.traceability` **vẫn nhập thêm hàng được cho SKU đã theo dõi**. Chỉ chặn tồn đầu kỳ và việc chuyển SKU mới sang theo dõi. Lối vào Nhập hàng vẫn hiện khi store còn SKU đang theo dõi.
+5. Mỗi phase commit riêng, chỉ stage file của phase đó; không đụng các thay đổi mẫu in đang dở trên `v2`.

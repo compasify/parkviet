@@ -28,6 +28,10 @@ module Spree
           # Modules on at the selected branch ({} without one). They only
           # show or hide setup screens; selling never depends on them.
           modules: ModulePolicy.for_branch(branch),
+          # Store-wide data a module still has ({ 'retail.traceability' =>
+          # bool }), so the client keeps the receiving entry for SKUs tracked
+          # before the module was turned off at this branch.
+          module_usage: ModulePolicy.usage_for(store),
           profile: profile_for(branch),
           onboarding: onboarding,
           branches: branches.map(&:to_pos),

@@ -186,8 +186,20 @@ RSpec.describe 'POS traceability API', type: :request do
     disabled.call(call(keeper, :post, 'inventory/opening_balances', branch_id: branch.prefixed_id, variant_id: phone.default_variant.prefixed_id,
                                                                     serials: ['IMEI-D5']))
     expect(response).to have_http_status(:conflict)
-    disabled.call(call(keeper, :post, 'inventory/receipts', branch_id: branch.prefixed_id, variant_id: variant.prefixed_id,
-                                                            lots: [{ lot_code: 'D2', expiry_on: (Date.current + 30).iso8601, quantity: 1 }]))
+    # More stock for a SKU tracked before the module went off still comes in
+    # (plan.md, settled question 4): a receipt is not new setup.
+    received = call(keeper, :post, 'inventory/receipts', branch_id: branch.prefixed_id, variant_id: variant.prefixed_id,
+                                                         lots: [{ lot_code: 'D2', expiry_on: (Date.current + 30).iso8601, quantity: 1 }])
+    expect(response).to have_http_status(:created)
+    expect(received['error']).to be_nil
+    expect(Spree::Pos::InventoryLot.find_by!(variant_id: variant.id, lot_code: 'D2').on_hand).to eq(1)
+    # A receipt never tracks a SKU on its own: an untracked one is refused as
+    # before, not as module_disabled.
+    plain = create(:product, store: store, status: 'active').tap { |row| Spree::Pos::BranchProduct.create!(branch: branch, product: row) }
+    refused = call(keeper, :post, 'inventory/receipts', branch_id: branch.prefixed_id, variant_id: plain.default_variant.prefixed_id,
+                                                        lots: [{ lot_code: 'D3', quantity: 1 }])
+    expect(response).to have_http_status(:conflict)
+    expect(refused.dig('error', 'details', 'reason')).to eq('not_tracked')
     fresh = create(:product, store: store, status: 'active').tap { |row| Spree::Pos::BranchProduct.create!(branch: branch, product: row) }
     configure = lambda do |mode|
       put '/api/v3/admin/pos/units/variant', headers: { 'Authorization' => "Bearer #{token_for(manager)}" },

@@ -24,6 +24,18 @@ module Spree
         Modules.available_keys.index_with { |key| on.include?(key) }
       end
 
+      # Whether the store still has data a module's day-to-day screens work
+      # on, whatever the branch modules say. Today only
+      # `retail.traceability`: true while any live variant of the store is
+      # tracked by serial or lot, so a branch with the module off can keep
+      # receiving stock for those SKUs. One EXISTS query; {} without a store.
+      def usage_for(store)
+        return {} if store.nil?
+
+        tracked = VariantUnit.for_store(store).joins(:variant).where(status: 'active', tracked_mode: %w[serial lot]).exists?
+        { 'retail.traceability' => tracked }
+      end
+
       def enabled?(branch, key)
         definition = Modules.fetch!(key)
         return false unless definition.available?

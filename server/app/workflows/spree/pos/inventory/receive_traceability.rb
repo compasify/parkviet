@@ -16,9 +16,11 @@ module Spree
           authorize = -> { Guard.authorize!(store, staff, Guard.branch!(store, branch_id)) }
           CommandExecutor.call(store: store, actor: staff, key: key, payload: payload, authorize: authorize) do
             branch = Guard.branch!(store, branch_id)
-            # Receiving serials or lots is traceability setup at the branch
-            # (D5); after the executor ruled out a replay, before any write.
-            ModulePolicy.require!(branch, 'retail.traceability')
+            # No retail.traceability gate: a receipt only ever restocks a
+            # variant that is already tracked (`mode!` refuses `none`) and
+            # already enrolled at the branch (`reconciled!`). Turning the
+            # module off stops new setup (opening balances, switching a SKU
+            # into tracking), not more stock for SKUs tracked before.
             variant = Guard.variant!(store, branch, variant_id)
             mode = Guard.mode!(store, variant)
             location = branch.stock_location

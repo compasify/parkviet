@@ -94,7 +94,7 @@ RSpec.describe 'POS staff context', type: :request do
     expect(response).to have_http_status(:ok)
     body = response.parsed_body
     expect(body.keys).to contain_exactly(
-        'staff', 'store', 'capabilities', 'features', 'modules', 'profile', 'onboarding', 'branches', 'registers', 'shift',
+        'staff', 'store', 'capabilities', 'features', 'modules', 'module_usage', 'profile', 'onboarding', 'branches', 'registers', 'shift',
         'selection', 'administration'
     )
     expect(body['staff']).to eq(

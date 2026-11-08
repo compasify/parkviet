@@ -140,5 +140,38 @@ RSpec.describe 'POS business profiles', type: :request do
         to eq('key' => 'retired_profile', 'version' => 1, 'display' => {})
       expect(get_pos(writer, "branches/#{branch.prefixed_id}")['data']).to include('profile_key' => 'retired_profile')
     end
+
+    # Settled question 4 of plan.md: a branch with traceability off still
+    # receives stock for SKUs tracked before, so the client needs to know the
+    # store still has such SKUs. Store-wide, whatever the branch modules say.
+    it 'tells whether the store still has tracked SKUs, whatever the branch modules say', pos_modules: :default do
+      writer = staff_with(%w[write_pos_topology])
+      branch = branch_for(store)
+      usage = -> { get_pos(writer, 'context', branch_id: branch.prefixed_id)['module_usage'] }
+      expect(usage.call).to eq('retail.traceability' => false)
+      expect(get_pos(writer, 'context')['module_usage']).to eq('retail.traceability' => false)
+
+      unit_for = lambda do |target_store, mode, status: 'active'|
+        product = create(:product, store: target_store)
+        Spree::Pos::UnitDefinition.ensure_defaults!(target_store)
+        unit = Spree::Pos::UnitDefinition.find_by!(store: target_store, code: 'item')
+        Spree::Pos::VariantUnit.create!(store: target_store, variant: product.default_variant, sale_unit: unit, base_unit: unit,
+                                        price_unit: unit, ratio_numerator: 1, ratio_denominator: 1, tracked_mode: mode,
+                                        status: status, version: 1)
+      end
+      unit_for.call(store, 'none')
+      unit_for.call(store, 'lot', status: 'inactive')
+      unit_for.call(create(:store), 'serial')
+      expect(usage.call).to eq('retail.traceability' => false)
+
+      tracked = unit_for.call(store, 'serial')
+      expect(Spree::Pos::ModulePolicy.enabled?(branch, 'retail.traceability')).to be(false)
+      expect(usage.call).to eq('retail.traceability' => true)
+      expect(get_pos(writer, 'context')['module_usage']).to eq('retail.traceability' => true)
+
+      # A deleted variant no longer counts.
+      tracked.variant.update_column(:deleted_at, Time.current)
+      expect(usage.call).to eq('retail.traceability' => false)
+    end
   end
 end
