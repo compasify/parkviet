@@ -173,5 +173,49 @@ RSpec.describe 'POS business profiles', type: :request do
       tracked.variant.update_column(:deleted_at, Time.current)
       expect(usage.call).to eq('retail.traceability' => false)
     end
+
+    # Plan phase 5: `modules` costs one query for the selected branch, and the
+    # context does not grow with branches, modules or tracked SKUs.
+    it 'reads modules, module usage, profile and onboarding in a fixed number of queries' do
+      writer = staff_with(%w[write_pos_topology])
+      branch = branch_for(store)
+      Spree::Pos::StoreProfile.create!(store: store, profile_key: 'khac', onboarded_at: Time.current)
+      get_pos(writer, 'context', branch_id: branch.prefixed_id) # sign in and warm up
+      measure = lambda do
+        queries = []
+        counter = lambda do |*, payload|
+          next if payload[:name] == 'SCHEMA' || payload[:sql].start_with?('BEGIN', 'COMMIT', 'SAVEPOINT', 'RELEASE')
+
+          queries << payload[:sql]
+        end
+        ActiveSupport::Notifications.subscribed(counter, 'sql.active_record') do
+          get_pos(writer, 'context', branch_id: branch.prefixed_id)
+        end
+        expect(response).to have_http_status(:ok)
+        { total: queries.size,
+          # Branch#to_pos reads each listed branch's stock location (up to
+          # 100 branches); older than the profiles and not counted here.
+          locations: queries.count { |sql| sql.include?('FROM "spree_stock_locations"') },
+          modules: queries.count { |sql| sql.include?('spree_pos_branch_modules') },
+          usage: queries.count { |sql| sql.include?('spree_pos_variant_units') },
+          onboarding: queries.count { |sql| sql.include?('spree_pos_store_profiles') } }
+      end
+      one = measure.call
+
+      # Five more branches with every module on, and tracked SKUs.
+      5.times { branch_for(store) }
+      Spree::Pos::UnitDefinition.ensure_defaults!(store)
+      unit = Spree::Pos::UnitDefinition.find_by!(store: store, code: 'item')
+      3.times do
+        variant = create(:product, store: store).default_variant
+        Spree::Pos::VariantUnit.create!(store: store, variant: variant, sale_unit: unit, base_unit: unit, price_unit: unit,
+                                        ratio_numerator: 1, ratio_denominator: 1, tracked_mode: 'serial', status: 'active', version: 1)
+      end
+      many = measure.call
+
+      expect(one).to include(modules: 1, usage: 1, onboarding: 1)
+      expect(many).to include(modules: 1, usage: 1, onboarding: 1)
+      expect(many[:total] - many[:locations]).to eq(one[:total] - one[:locations])
+    end
   end
 end
