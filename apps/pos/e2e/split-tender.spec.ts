@@ -1,4 +1,5 @@
 import { expect, type Page, test } from '@playwright/test';
+import { receiptTemplateApi } from './support/receipt-templates';
 
 type Attempt = Record<string, unknown> & { id: string; kind: string; amount: string; status: string };
 
@@ -97,12 +98,20 @@ async function mockPos(
   );
   const prepared: Array<{ workspace: string; body: Record<string, unknown> }> = [];
   const confirmed: Array<{ workspace: string; body: ConfirmBody }> = [];
+  // The store's print templates; each prints on its own paper.
+  const templates = receiptTemplateApi([
+    { id: 'postpl_sale', type: 'sale', name: 'Bán hàng K80', paper: '80mm', isDefault: true },
+    { id: 'postpl_a5', type: 'sale', name: 'Bán hàng A5', paper: 'a5' },
+    { id: 'postpl_ticket', type: 'payment_ticket', name: 'Thanh toán K80', paper: '80mm', isDefault: true },
+    { id: 'postpl_k58', type: 'payment_ticket', name: 'Thanh toán K58', paper: '58mm' },
+  ]);
 
   await page.route('**/api/v3/admin/**', async (route) => {
     const request = route.request();
     const url = new URL(request.url());
     const path = url.pathname;
     const method = request.method();
+    if (await templates.handle(route, path.replace(/^.*\/api\/v3\/admin/, ''), url, method)) return;
     const conflict = (message: string) =>
       route.fulfill({ status: 409, json: { error: { code: 'conflict', message } } });
     if (path.endsWith('/pos/context/branches'))
@@ -381,8 +390,12 @@ test('split tender: bank 100 then cash handed 200/change 50, complete and handov
   const receiptDialog = page.getByRole('dialog');
   await expect(receiptDialog).toContainText('HD-0001');
   await expect(receiptDialog.getByTestId('receipt-sheet')).toContainText('PHIẾU BÁN HÀNG');
-  await expect(receiptDialog.getByRole('radiogroup', { name: 'Khổ giấy' }).getByRole('radio')).toHaveCount(5);
-  await receiptDialog.getByLabel('A5', { exact: true }).check();
+  // The paper follows the print template.
+  const templates = receiptDialog.getByRole('radiogroup', { name: 'Mẫu in' });
+  await expect(templates.getByRole('radio')).toHaveCount(2);
+  await expect(templates.getByRole('radio', { name: 'Bán hàng K80 · 80mm' })).toBeChecked();
+  await expect(receiptDialog.getByTestId('receipt-sheet')).toHaveAttribute('data-paper', '80mm');
+  await templates.getByRole('radio', { name: 'Bán hàng A5 · A5' }).check();
   await expect(receiptDialog.getByTestId('receipt-sheet')).toHaveAttribute('data-paper', 'a5');
   expect(page.url()).toBe(url);
   await page.keyboard.press('Escape');
@@ -540,13 +553,17 @@ test('"Đưa đủ" fills the exact cash due and the thermal preview shows the i
   await expect(dialog.getByRole('columnheader', { name: 'Giảm giá' })).toBeVisible();
   const preview = dialog.getByTestId('invoice-ticket');
   await expect(preview).toContainText('HÓA ĐƠN THANH TOÁN');
+  // The store default payment ticket template, on its paper.
+  const templates = dialog.getByRole('radiogroup', { name: 'Mẫu in' });
+  await expect(templates.getByRole('radio', { name: 'Thanh toán K80 · 80mm' })).toBeChecked();
   await expect(preview).toHaveAttribute('data-paper', '80mm');
   await dialog.getByRole('button', { name: 'Đưa đủ' }).click();
   await expect(dialog.getByLabel('Khách đưa')).toHaveValue('250000');
   await expect(dialog.getByRole('button', { name: 'Kết thúc', exact: true })).toBeFocused();
   await expect(preview).toContainText('Khách đưa');
-  await dialog.getByRole('button', { name: '58mm' }).click();
+  await templates.getByRole('radio', { name: 'Thanh toán K58 · 58mm' }).check();
   await expect(preview).toHaveAttribute('data-paper', '58mm');
+  await expect(preview).toContainText('Khách đưa');
   await dialog.getByRole('button', { name: 'Kết thúc', exact: true }).click();
   await expect(dialog).toHaveCount(0);
   expect(api.confirmed.map((item) => item.body.handed_amount)).toEqual(['250000']);

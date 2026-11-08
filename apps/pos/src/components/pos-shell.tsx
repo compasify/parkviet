@@ -1,6 +1,7 @@
 import { Link, Outlet, useLocation, useNavigate } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useReceiptTemplates } from '../hooks/use-receipt-templates';
 import { useSession } from '../hooks/use-session';
 import { session } from '../lib/app-session';
 import { commandQueue } from '../lib/command-queue';
@@ -42,6 +43,8 @@ function ShellFrame() {
   const navigate = useNavigate();
   const snapshot = useSession();
   const { context, selection, registerMode } = usePosSelection();
+  // Print templates load with the POS, so the first print never waits for them.
+  useReceiptTemplates(true);
   const pathname = useLocation({ select: (location) => location.pathname.replace(/\/+$/, '') });
   const pageTitle = /\/settings(\/|$)/.test(pathname)
     ? t('settings')

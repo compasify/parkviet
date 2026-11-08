@@ -1,4 +1,5 @@
 import { type BrowserContext, expect, type Page, type Route, test } from '@playwright/test';
+import { type PrintLayout, printLedger, receiptTemplateApi } from './support/receipt-templates';
 
 // In-memory POS API for receipts and the customer display. The display
 // channel enforces the display token and generation the way the server does;
@@ -77,7 +78,7 @@ const ORDERS: Record<string, { number: string; total: number }> = {
   ws_b: { number: 'RB200', total: 45000 },
 };
 
-function receipt(printed: boolean, copies: number) {
+function receipt(prints: { printed: boolean; copy_count: number; original_print: PrintLayout | null }) {
   return {
     id: 'posreceipt_1',
     source_type: 'sale',
@@ -86,8 +87,7 @@ function receipt(printed: boolean, copies: number) {
     issued_at: '2026-11-07T03:00:00Z',
     issued_late: false,
     disclaimer: 'Phiếu bán hàng POS — không phải hóa đơn điện tử',
-    printed,
-    copy_count: copies,
+    ...prints,
     document: {
       kind: 'sale',
       title: 'PHIẾU BÁN HÀNG',
@@ -155,7 +155,21 @@ async function mockPos(context: BrowserContext) {
     printDelayMs: 0,
   };
   const printBodies: string[] = [];
-  let prints = 0;
+  // The store's print templates: the paper follows the template.
+  const templates = receiptTemplateApi([
+    { id: 'postpl_k80', type: 'sale', name: 'Bán hàng K80', paper: '80mm', isDefault: true },
+    { id: 'postpl_a4', type: 'sale', name: 'Bán hàng A4', paper: 'a4' },
+    { id: 'postpl_k58', type: 'sale', name: 'Bán hàng K58', paper: '58mm' },
+    {
+      id: 'postpl_pre',
+      type: 'prebill',
+      name: 'Tạm tính K58',
+      paper: '58mm',
+      isDefault: true,
+      footer: 'Quét mã để thanh toán tại quầy',
+    },
+  ]);
+  const ledger = printLedger(templates, 'sale');
   let lookupStatus: 'posted' | 'open' = 'posted';
 
   const session = () =>
@@ -363,37 +377,25 @@ async function mockPos(context: BrowserContext) {
     if (path === '/pos/receipts/lookup') {
       if (lookupStatus === 'open')
         return conflict('receipt_unavailable');
-      return route.fulfill({ json: { data: receipt(prints > 0, Math.max(prints - 1, 0)) } });
+      return route.fulfill({ json: { data: receipt(ledger.receiptFields()) } });
     }
     if (path === '/pos/receipts/posreceipt_1' && method === 'GET')
-      return route.fulfill({ json: { data: receipt(prints > 0, Math.max(prints - 1, 0)) } });
+      return route.fulfill({ json: { data: receipt(ledger.receiptFields()) } });
     if (path === '/pos/receipts/posreceipt_1/prints' && method === 'POST') {
       printBodies.push(request.headers()['idempotency-key'] ?? '');
       if (display.printDelayMs) await new Promise((resolve) => setTimeout(resolve, display.printDelayMs));
-      const copyNumber = prints;
-      prints += 1;
-      return route.fulfill({
-        status: 201,
-        json: {
-          data: {
-            print: {
-              id: `posprint_${prints}`,
-              copy: copyNumber > 0,
-              copy_number: copyNumber,
-              label: copyNumber > 0 ? 'BẢN SAO' : null,
-              printed_at: '2026-11-07T03:05:00Z',
-            },
-            receipt: receipt(true, copyNumber),
-          },
-        },
-      });
+      const print = ledger.record((request.postDataJSON() ?? {}) as Record<string, unknown>);
+      if (!print) return route.fulfill({ status: 422, json: { error: { code: 'validation_error' } } });
+      return route.fulfill({ status: 201, json: { data: { print, receipt: receipt(ledger.receiptFields()) } } });
     }
+    if (await templates.handle(route, path, url, method)) return;
     return route.fulfill({ status: 404, json: { error: { code: 'missing' } } });
   });
 
   return {
     display,
     printBodies,
+    ledger,
     setLookup(value: 'posted' | 'open') {
       lookupStatus = value;
     },
@@ -628,7 +630,7 @@ async function stubPrint(page: Page) {
 const printed = (page: Page) =>
   page.evaluate(() => (window as unknown as { printed: PrintSeen[] }).printed);
 
-test('prints the server snapshot on 80mm and A4 and labels every reprint as a copy', async ({
+test('prints the server snapshot by template on 80mm and A4 and labels every reprint as a copy', async ({
   context,
   page,
 }) => {
@@ -636,6 +638,13 @@ test('prints the server snapshot on 80mm and A4 and labels every reprint as a co
   const api = await mockPos(context);
   // The print is recorded slowly: nothing may print before the labelled sheet is there.
   api.display.printDelayMs = 700;
+  // A paper chosen on this device before templates no longer applies.
+  await page.addInitScript(() => {
+    if (!sessionStorage.getItem('seeded')) {
+      localStorage.setItem('parkviet-pos:receipt-paper', 'a4');
+      sessionStorage.setItem('seeded', '1');
+    }
+  });
   await login(page);
   await page.goto('/receipts?source=posworkspace_done');
   const sheet = page.getByTestId('receipt-sheet');
@@ -646,13 +655,17 @@ test('prints the server snapshot on 80mm and A4 and labels every reprint as a co
   await expect(sheet).toContainText('Tiền thừa trả khách');
   await expect(sheet).toContainText('Phiếu bán hàng POS — không phải hóa đơn điện tử');
   await expect(sheet).not.toContainText('BẢN SAO');
+  // The store default template, on its paper.
+  const templates = page.getByRole('radiogroup', { name: 'Mẫu in' });
+  await expect(templates.getByRole('radio')).toHaveCount(3);
+  await expect(templates.getByRole('radio', { name: 'Bán hàng K80 · 80mm' })).toBeChecked();
   await expect(sheet).toHaveAttribute('data-paper', '80mm');
 
   await page.getByRole('button', { name: 'In hóa đơn', exact: true }).click();
   await expect(page.getByRole('status').filter({ hasText: 'Đã ghi nhận bản gốc' })).toBeVisible();
   await expect.poll(async () => (await printed(page)).length).toBe(1);
 
-  await page.getByLabel('A4').check();
+  await templates.getByRole('radio', { name: 'Bán hàng A4 · A4' }).check();
   await expect(sheet).toHaveAttribute('data-paper', 'a4');
   await page.getByRole('button', { name: 'In lại (bản sao)' }).click();
   await expect(page.getByRole('status').filter({ hasText: 'bản sao lần 1' })).toBeVisible();
@@ -673,20 +686,27 @@ test('prints the server snapshot on 80mm and A4 and labels every reprint as a co
   expect(await page.evaluate(() => document.documentElement.hasAttribute('data-receipt-printing'))).toBe(false);
   expect(await page.evaluate(() => document.getElementById('pos-receipt-page-size'))).toBeNull();
   expect(new Set(api.printBodies).size).toBe(2);
+  expect(api.ledger.prints.map((row) => [row.template_id, row.paper])).toEqual([
+    ['postpl_k80', '80mm'],
+    ['postpl_a4', 'a4'],
+  ]);
 
-  // Smaller sheets and the narrow roll are offered too, and the choice is kept.
-  for (const [label, paper] of [['A5', 'a5'], ['A6', 'a6'], ['58mm', '58mm']] as const) {
-    await page.getByLabel(label, { exact: true }).check();
-    await expect(sheet).toHaveAttribute('data-paper', paper);
-  }
+  // Back on the original's template; the narrow roll template is offered too.
+  await expect(templates.getByRole('radio', { name: /Bán hàng K80 · 80mm · Mẫu của bản gốc/ })).toBeChecked();
+  await templates.getByRole('radio', { name: 'Bán hàng K58 · 58mm' }).check();
+  await expect(sheet).toHaveAttribute('data-paper', '58mm');
   await page.getByRole('button', { name: 'In lại (bản sao)' }).click();
   await expect.poll(async () => (await printed(page)).length).toBe(3);
   const third = (await printed(page))[2];
   expect(third).toMatchObject({ marker: '58mm', printId: 'posprint_3' });
-  expect(await page.evaluate(() => localStorage.getItem('parkviet-pos:receipt-paper'))).toBe('58mm');
+  expect(await page.evaluate(() => localStorage.getItem('parkviet-pos:receipt-template:sale'))).toBe('postpl_k58');
+  expect(await page.evaluate(() => localStorage.getItem('parkviet-pos:receipt-paper'))).toBeNull();
 });
 
-test('a pre-bill prints from the print root, labelled as not paid', async ({ context, page }) => {
+test('a pre-bill prints from the print root by the default pre-bill template, labelled as not paid', async ({
+  context,
+  page,
+}) => {
   await stubPrint(page);
   await mockPos(context);
   await login(page);
@@ -695,11 +715,17 @@ test('a pre-bill prints from the print root, labelled as not paid', async ({ con
   await page.getByRole('button', { name: 'In tạm tính' }).click();
   const dialog = page.getByRole('dialog');
   await expect(dialog).toContainText('TẠM TÍNH – CHƯA THANH TOÁN');
+  await expect(dialog).toContainText('Quét mã để thanh toán tại quầy');
+  // One pre-bill template: nothing to pick, the paper is the template's.
+  await expect(dialog.getByRole('radiogroup')).toHaveCount(0);
+  await expect(dialog.getByTestId('receipt-sheet')).toHaveAttribute('data-paper', '58mm');
   await dialog.getByRole('button', { name: 'In phiếu tạm tính' }).click();
   await expect.poll(async () => (await printed(page)).length).toBe(1);
   const [seen] = await printed(page);
-  expect(seen.marker).toBe('80mm');
+  expect(seen.marker).toBe('58mm');
+  expect(seen.rules.join(' ')).toContain('size: 58mm 297mm');
   expect(seen.sheet).toContain('TẠM TÍNH – CHƯA THANH TOÁN');
+  expect(seen.sheet).toContain('Quét mã để thanh toán tại quầy');
   expect(seen.sheet).toContain('45.000 ₫');
   // The print copy sits at the end of <body>, outside the fixed dialog.
   expect(

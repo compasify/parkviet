@@ -1,23 +1,21 @@
 import { useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { usePrintTemplate } from '../hooks/use-receipt-templates';
 import { useModalFocus } from '../lib/dialog-focus';
 import type { PosWorkspace } from '../lib/pos-context';
-import {
-  createBrowserPrintAdapter,
-  type PaperSize,
-  prebillPrintDocument,
-  printTitle,
-} from '../lib/print-adapter';
-import { PaperPicker } from './paper-picker';
+import { createBrowserPrintAdapter, prebillPrintDocument, printTitle } from '../lib/print-adapter';
 import { PosIcon } from './pos-icon';
 import { usePosSelection } from './pos-selection';
 import { ReceiptPrintPortal, ReceiptSheet } from './receipt-sheet';
+import { TemplatePicker } from './template-picker';
 
 const adapter = createBrowserPrintAdapter();
 
 // Provisional bill of an open order, from the server figures on screen. It is
 // labelled "TẠM TÍNH – CHƯA THANH TOÁN", has no receipt number and records
-// nothing: an order is only paid by its receipts.
+// nothing: an order is only paid by its receipts. It prints with the store's
+// current default pre-bill template (or another active one picked here) on
+// that template's paper.
 export function PrebillDialog({
   workspace,
   names,
@@ -32,7 +30,8 @@ export function PrebillDialog({
   const { t } = useTranslation();
   const card = useRef<HTMLDivElement>(null);
   const titleId = useId();
-  const [paper, setPaper] = useState<PaperSize>('80mm');
+  const template = usePrintTemplate('prebill');
+  const { paper } = template;
   const [error, setError] = useState('');
   useModalFocus(card, onClose);
   // The store's address and phone, and the branch, from the POS context.
@@ -49,6 +48,7 @@ export function PrebillDialog({
     t,
     new Date(),
     timeZone,
+    template.config,
   );
   return (
     <div className="pos-popup-backdrop">
@@ -73,7 +73,13 @@ export function PrebillDialog({
           </button>
         </div>
         <div className="receipt-print-toolbar">
-          <PaperPicker value={paper} onChange={setPaper} />
+          {template.choices.length > 1 ? (
+            <TemplatePicker
+              choices={template.choices}
+              value={template.choice?.key ?? null}
+              onChange={template.pick}
+            />
+          ) : null}
           <button
             type="button"
             className="primary-button"
@@ -99,6 +105,9 @@ export function PrebillDialog({
             {t('receiptPrebillPrint')}
           </button>
         </div>
+        {template.fallback ? (
+          <p className="receipt-template-note">{t('receiptTemplates.counter.fallback')}</p>
+        ) : null}
         {error ? (
           <p className="error" role="alert">
             {error}

@@ -1,12 +1,8 @@
 import { type KeyboardEvent, useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { usePrintTemplate } from '../hooks/use-receipt-templates';
 import { useVietqrTender } from '../hooks/use-tenders';
-import {
-  invoiceTicketPrintDocument,
-  lineDiscount,
-  lineUnitPrice,
-  type TicketPaper,
-} from '../lib/invoice-ticket';
+import { invoiceTicketPrintDocument, lineDiscount, lineUnitPrice } from '../lib/invoice-ticket';
 import { formatMoney, parseVndAmount, parseVndInput } from '../lib/money';
 import type { PosFinancialAttempt, PosWorkspace } from '../lib/pos-context';
 import { createBrowserPrintAdapter, printTitle } from '../lib/print-adapter';
@@ -19,17 +15,9 @@ import {
 import { InvoiceTicketPrintPortal, InvoiceTicketSheet } from './invoice-ticket-sheet';
 import { PosIcon } from './pos-icon';
 import { usePosSelection } from './pos-selection';
+import { TemplatePicker } from './template-picker';
 
 const printer = createBrowserPrintAdapter();
-const PAPER_KEY = 'parkviet-pos:ticket-paper';
-
-function savedPaper(): TicketPaper {
-  try {
-    return window.localStorage.getItem(PAPER_KEY) === '58mm' ? '58mm' : '80mm';
-  } catch {
-    return '80mm';
-  }
-}
 
 export type TicketNames = {
   storeName?: string | null;
@@ -134,7 +122,9 @@ export function TenderEvidenceDialog({
   const ready = cashReady && bankReady && qrReady;
 
   const handedId = useId();
-  const [paper, setPaper] = useState<TicketPaper>(savedPaper);
+  // The store's current default payment ticket template, on its paper.
+  const template = usePrintTemplate('payment_ticket');
+  const { paper } = template;
   const [printError, setPrintError] = useState('');
   // The store's address and phone, and the branch, from the POS context.
   const context = usePosSelection().context.data;
@@ -155,16 +145,8 @@ export function TenderEvidenceDialog({
     t,
     new Date(now),
     timeZone,
+    template.config,
   );
-
-  function choosePaper(size: TicketPaper) {
-    setPaper(size);
-    try {
-      window.localStorage.setItem(PAPER_KEY, size);
-    } catch {
-      // Storage may be unavailable; the choice still applies to this print.
-    }
-  }
 
   async function printTicket() {
     const outcome = await printer.deliver(paper, {
@@ -595,20 +577,17 @@ export function TenderEvidenceDialog({
           <aside className="payment-invoice-preview" aria-label={t('ticketPreview')}>
             <div className="payment-invoice-preview-head">
               <strong>{t('ticketPreview')}</strong>
-              <fieldset className="segmented ticket-paper">
-                <legend className="visually-hidden">{t('receiptPaper')}</legend>
-                {(['58mm', '80mm'] as const).map((size) => (
-                  <button
-                    key={size}
-                    type="button"
-                    aria-pressed={paper === size}
-                    onClick={() => choosePaper(size)}
-                  >
-                    {size}
-                  </button>
-                ))}
-              </fieldset>
+              {template.choices.length > 1 ? (
+                <TemplatePicker
+                  choices={template.choices}
+                  value={template.choice?.key ?? null}
+                  onChange={template.pick}
+                />
+              ) : null}
             </div>
+            {template.fallback ? (
+              <p className="receipt-template-note">{t('receiptTemplates.counter.fallback')}</p>
+            ) : null}
             <div className="receipt-preview">
               <InvoiceTicketSheet document={ticket} paper={paper} />
             </div>

@@ -332,6 +332,39 @@
   margin-right: 4px;
 }
 
+/* Print template picker: the paper chips, wide enough for a template name. */
+.template-picker .paper-picker-group {
+  flex-wrap: wrap;
+}
+
+.template-picker .paper-chip {
+  gap: 2px;
+  padding: 0 10px;
+  max-width: 260px;
+  white-space: nowrap;
+}
+
+.template-chip-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.template-chip-paper,
+.template-chip-original {
+  flex: none;
+  opacity: 0.8;
+}
+
+.template-chip-original {
+  font-weight: 600;
+}
+
+.receipt-template-note {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--pos-warning, #835300);
+}
+
 /* Receipt print panel: toolbar above a scrollable preview. */
 .receipt-print-panel {
   display: grid;
@@ -395,6 +428,11 @@
   html[data-receipt-printing] .receipt-print-root,
   html[data-receipt-printing] .receipt-print-root * {
     visibility: visible;
+  }
+
+  /* A logo that did not load in time is left off this print. */
+  html[data-receipt-printing] .receipt-print-root img[data-print-skipped] {
+    display: none;
   }
 
   html[data-receipt-printing] .receipt-print-root {

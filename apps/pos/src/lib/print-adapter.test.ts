@@ -5,19 +5,54 @@ import {
   createBrowserPrintAdapter,
   formatDocumentDate,
   formatDocumentTime,
-  formatPrebill,
   formatQuantity,
-  formatReceipt,
   isPaperSize,
   PAPER_SIZES,
   PRINTING_ATTRIBUTE,
   pageRule,
+  prebillPrintDocument,
   printTitle,
+  type ReceiptPrint,
   type ReceiptSnapshot,
+  receiptPrintDocument,
   receiptPrintTitle,
+  SKIPPED_IMAGE_ATTRIBUTE,
+  settleImages,
 } from './print-adapter';
+import { DEFAULT_TEMPLATES } from './receipt-template/defaults';
+import type { PrintDocument, TemplateConfig } from './receipt-template/types';
 
 const t = (key: string, options?: Record<string, unknown>) => i18n.t(key, options ?? {}) as string;
+
+// The printed content of a stacked document, read in print order.
+function flat(document: PrintDocument) {
+  const title = document.header.find((block) => block.kind === 'title');
+  return {
+    banner: document.banners[0] ?? null,
+    title: title?.kind === 'title' ? title.title : '',
+    number: title?.kind === 'title' ? title.number : null,
+    header: document.header.flatMap((block) => (block.kind === 'text' ? block.lines : [])),
+    meta: document.meta,
+    lines:
+      document.lines.layout === 'stacked'
+        ? document.lines.items.map((line) => ({
+            name: line.index === null ? line.name : `${line.index}. ${line.name}`,
+            details: line.details,
+            amount: line.amount ?? '',
+          }))
+        : [],
+    totals: document.totals,
+    payments: document.payments,
+    notes: document.notes,
+    disclaimer: document.disclaimer ?? '',
+  };
+}
+
+const formatReceipt = (
+  receipt: ReceiptSnapshot,
+  print: Pick<ReceiptPrint, 'copy' | 'copy_number'> | null,
+  config?: TemplateConfig,
+) => flat(receiptPrintDocument(receipt, print, t, config));
 
 function sale(document: Record<string, unknown> = {}): ReceiptSnapshot {
   return {
@@ -89,7 +124,7 @@ function sale(document: Record<string, unknown> = {}): ReceiptSnapshot {
 
 describe('receipt formatting', () => {
   it('prints sale units, conversion, discounts, traceability, receipts by method and approved debt', () => {
-    const doc = formatReceipt(sale(), null, t);
+    const doc = formatReceipt(sale(), null);
     expect(doc.banner).toBeNull();
     expect(doc.title).toBe('PHIẾU BÁN HÀNG');
     expect(doc.header).toEqual(['Park Việt', 'Quận 1', 'Quầy 1']);
@@ -120,8 +155,8 @@ describe('receipt formatting', () => {
   });
 
   it('labels a reprint as a numbered copy with the same content', () => {
-    const original = formatReceipt(sale(), { copy: false, copy_number: 0 }, t);
-    const copy = formatReceipt(sale(), { copy: true, copy_number: 2 }, t);
+    const original = formatReceipt(sale(), { copy: false, copy_number: 0 });
+    const copy = formatReceipt(sale(), { copy: true, copy_number: 2 });
     expect(copy.banner).toBe('BẢN SAO – lần 2');
     expect({ ...copy, banner: null }).toEqual(original);
   });
@@ -142,7 +177,6 @@ describe('receipt formatting', () => {
         },
       },
       null,
-      t,
     );
     expect(pending.totals).toEqual([
       { label: 'Giá trị hàng trả', value: '200.000 ₫', strong: true },
@@ -163,7 +197,6 @@ describe('receipt formatting', () => {
         },
       },
       null,
-      t,
     );
     expect(closing.totals.map((row) => row.value).slice(-3)).toEqual([
       '360.000 ₫',
@@ -182,15 +215,63 @@ describe('receipt formatting', () => {
       totals: { item_total: '20000.0', discount_total: '0.0', total: '20000.0', currency: 'VND' },
       financial: { allocated: '5000.0', remaining: '15000.0' },
     } as unknown as PosWorkspace;
-    const doc = formatPrebill(
-      workspace,
-      { branchName: 'Quận 1' },
-      t,
-      new Date('2026-11-07T03:00:00Z'),
+    const doc = flat(
+      prebillPrintDocument(
+        workspace,
+        { branchName: 'Quận 1' },
+        t,
+        new Date('2026-11-07T03:00:00Z'),
+      ),
     );
     expect(doc.banner).toBe('TẠM TÍNH – CHƯA THANH TOÁN');
     expect(doc.number).toBeNull();
     expect(doc.payments.at(-1)).toEqual({ label: 'Còn phải thu', value: '15.000 ₫', strong: true });
+  });
+
+  it('lays a posted receipt out by its template but keeps the copy label and the total', () => {
+    const config: TemplateConfig = {
+      ...DEFAULT_TEMPLATES.sale,
+      header: [
+        { type: 'text', value: 'Mẫu riêng' },
+        { type: 'title', label: 'HÓA ĐƠN BÁN LẺ' },
+      ],
+      totals: { fields: [], labels: {} },
+      payments: { fields: ['methods'], labels: {} },
+    };
+    const doc = formatReceipt(sale(), { copy: true, copy_number: 1 }, config);
+    expect(doc.banner).toBe('BẢN SAO – lần 1');
+    expect(doc.header).toEqual(['Mẫu riêng']);
+    expect(doc.title).toBe('HÓA ĐƠN BÁN LẺ');
+    expect(doc.number).toBe('R100');
+    expect(doc.totals).toEqual([{ label: 'Tổng cộng', value: '5.230.000 ₫', strong: true }]);
+    expect(doc.payments.map((row) => row.label)).toEqual(['Tiền mặt', 'Chuyển khoản']);
+    expect(doc.disclaimer).toBe('Phiếu bán hàng POS — không phải hóa đơn điện tử');
+  });
+
+  it('keeps the pre-bill banner under any pre-bill template', () => {
+    const workspace = {
+      id: 'ws_1',
+      order_id: 'or_1',
+      line_items: [],
+      totals: { item_total: '0', discount_total: '0', total: '0', currency: 'VND' },
+      financial: { allocated: '0', remaining: '0' },
+    } as unknown as PosWorkspace;
+    const doc = prebillPrintDocument(
+      workspace,
+      {},
+      t,
+      new Date('2026-11-07T03:00:00Z'),
+      'Asia/Ho_Chi_Minh',
+      {
+        ...DEFAULT_TEMPLATES.prebill,
+        header: [],
+        footer: [{ type: 'text', value: 'Chân phiếu' }],
+      },
+    );
+    expect(doc.banners).toEqual(['TẠM TÍNH – CHƯA THANH TOÁN']);
+    expect(doc.footer).toEqual([
+      { kind: 'text', lines: ['Chân phiếu'], align: 'center', bold: false, size: 'm' },
+    ]);
   });
 
   it('sets the page size for rolls and A4/A5/A6 sheets', () => {
@@ -214,7 +295,7 @@ describe('receipt formatting', () => {
     expect(formatQuantity('1.25')).toBe('1,25');
     expect(formatQuantity('2.0')).toBe('2');
     expect(formatQuantity(24)).toBe('24');
-    expect(formatReceipt(sale(), null, t).meta[0]).toEqual({
+    expect(formatReceipt(sale(), null).meta[0]).toEqual({
       label: 'Thời gian',
       value: '07/11/2026 10:00',
     });
@@ -277,5 +358,64 @@ describe('receipt formatting', () => {
     await createBrowserPrintAdapter(fakeWindow).deliver('a5', { title: 'Hóa đơn R100 - Đơn R250' });
     expect(titleDuringPrint).toBe('Hóa đơn R100 - Đơn R250');
     expect(doc.title).toBe('ParkViet POS');
+  });
+});
+
+describe('logo images before printing', () => {
+  type FakeImage = {
+    decode: () => Promise<void>;
+    attrs: Set<string>;
+    setAttribute: (name: string) => void;
+    removeAttribute: (name: string) => void;
+  };
+  const image = (decode: () => Promise<void>): FakeImage => {
+    const attrs = new Set<string>();
+    return {
+      decode,
+      attrs,
+      setAttribute: (name) => attrs.add(name),
+      removeAttribute: (name) => attrs.delete(name),
+    };
+  };
+  const timers = { setTimeout, clearTimeout } as unknown as Pick<
+    Window,
+    'setTimeout' | 'clearTimeout'
+  >;
+  const docWith = (images: FakeImage[]) =>
+    ({ querySelectorAll: () => images }) as unknown as Document;
+
+  it('returns the images that failed or did not decode in time', async () => {
+    const ready = image(() => Promise.resolve());
+    const broken = image(() => Promise.reject(new Error('broken')));
+    const slow = image(() => new Promise(() => {}));
+    const skipped = await settleImages(docWith([ready, broken, slow]), timers, 20);
+    expect(skipped).toEqual([broken, slow]);
+  });
+
+  it('prints without the images that are not ready and restores them afterwards', async () => {
+    const broken = image(() => Promise.reject(new Error('broken')));
+    let skippedDuringPrint = false;
+    const doc = {
+      title: '',
+      querySelectorAll: () => [broken],
+      createElement: () => ({ id: '', textContent: '', remove: () => {} }),
+      getElementById: () => null,
+      head: { append: () => {} },
+      documentElement: { setAttribute: () => {}, removeAttribute: () => {} },
+    };
+    const fakeWindow = {
+      document: doc,
+      setTimeout,
+      clearTimeout,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      matchMedia: () => ({ matches: false }),
+      print: () => {
+        skippedDuringPrint = broken.attrs.has(SKIPPED_IMAGE_ATTRIBUTE);
+      },
+    } as unknown as Window;
+    expect(await createBrowserPrintAdapter(fakeWindow).deliver('80mm')).toEqual({ ok: true });
+    expect(skippedDuringPrint).toBe(true);
+    expect(broken.attrs.has(SKIPPED_IMAGE_ATTRIBUTE)).toBe(false);
   });
 });

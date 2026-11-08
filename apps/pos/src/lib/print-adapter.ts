@@ -7,7 +7,8 @@ import {
 } from './receipt-template/data';
 import { defaultTemplate } from './receipt-template/defaults';
 import { renderDocument } from './receipt-template/render';
-import type { PaperSize, PrintBlock, PrintDocument } from './receipt-template/types';
+import type { PrintLayout } from './receipt-template/selection';
+import type { PaperSize, PrintDocument, TemplateConfig } from './receipt-template/types';
 
 // Printing is two steps behind one interface: a template renderer turns a
 // server receipt snapshot (or a provisional pre-bill of an open order) into
@@ -39,34 +40,20 @@ export type ReceiptSnapshot = {
   disclaimer: string;
   printed: boolean;
   copy_count: number;
+  // The template, version and paper of the original print; null before the
+  // first print and for prints made before templates existed.
+  original_print?: PrintLayout | null;
   document: Record<string, unknown>;
 };
 
+// One recorded print and the layout the server recorded it with.
 export type ReceiptPrint = {
   id: string;
   copy: boolean;
   copy_number: number;
   label: string | null;
   printed_at: string;
-};
-
-export type ReceiptRow = { label: string; value: string; strong?: boolean };
-export type ReceiptLineView = { name: string; details: string[]; amount: string };
-
-// The flat view of a stacked document, kept for callers that read the
-// printed content rather than lay it out.
-export type ReceiptDocument = {
-  banner: string | null;
-  title: string;
-  number: string | null;
-  header: string[];
-  meta: ReceiptRow[];
-  lines: ReceiptLineView[];
-  totals: ReceiptRow[];
-  payments: ReceiptRow[];
-  notes: string[];
-  disclaimer: string;
-};
+} & Partial<PrintLayout>;
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
 
@@ -77,17 +64,16 @@ export function copyBanner(print: Pick<ReceiptPrint, 'copy' | 'copy_number'> | n
   return print?.copy ? t('receiptCopyBanner', { number: print.copy_number }) : null;
 }
 
-// A posted document from its server snapshot, laid out by the built-in
-// template of its type. `print` decides the banner: a copy is always
-// labelled as one.
+// A posted document from its server snapshot, laid out by `config` (the
+// built-in template of its type by default). `print` decides the banner: a
+// copy is always labelled as one, whatever the template.
 export function receiptPrintDocument(
   receipt: ReceiptSnapshot,
   print: Pick<ReceiptPrint, 'copy' | 'copy_number'> | null,
   t: Translate,
+  config: TemplateConfig = defaultTemplate(snapshotDocumentType(receipt)),
 ): PrintDocument {
-  return renderDocument(defaultTemplate(snapshotDocumentType(receipt)), snapshotData(receipt, t), {
-    banner: copyBanner(print, t),
-  });
+  return renderDocument(config, snapshotData(receipt, t), { banner: copyBanner(print, t) });
 }
 
 // A provisional bill of an open order: server figures as they stand, always
@@ -98,60 +84,9 @@ export function prebillPrintDocument(
   t: Translate,
   now: Date = new Date(),
   timeZone = 'Asia/Ho_Chi_Minh',
+  config: TemplateConfig = defaultTemplate('prebill'),
 ): PrintDocument {
-  return renderDocument(
-    defaultTemplate('prebill'),
-    prebillData(workspace, place, t, now, timeZone),
-  );
-}
-
-export const textLines = (blocks: PrintBlock[]) =>
-  blocks.flatMap((block) => (block.kind === 'text' ? block.lines : []));
-
-export function documentTitle(document: PrintDocument) {
-  const title = document.header.find((block) => block.kind === 'title');
-  return title?.kind === 'title' ? title : { title: '', number: null };
-}
-
-export function toReceiptDocument(document: PrintDocument): ReceiptDocument {
-  const { title, number } = documentTitle(document);
-  return {
-    banner: document.banners[0] ?? null,
-    title,
-    number,
-    header: textLines(document.header),
-    meta: document.meta,
-    lines:
-      document.lines.layout === 'stacked'
-        ? document.lines.items.map((line) => ({
-            name: line.index === null ? line.name : `${line.index}. ${line.name}`,
-            details: line.details,
-            amount: line.amount ?? '',
-          }))
-        : [],
-    totals: document.totals,
-    payments: document.payments,
-    notes: document.notes,
-    disclaimer: document.disclaimer ?? '',
-  };
-}
-
-export function formatReceipt(
-  receipt: ReceiptSnapshot,
-  print: Pick<ReceiptPrint, 'copy' | 'copy_number'> | null,
-  t: Translate,
-): ReceiptDocument {
-  return toReceiptDocument(receiptPrintDocument(receipt, print, t));
-}
-
-export function formatPrebill(
-  workspace: PosWorkspace,
-  context: PrintPlace,
-  t: Translate,
-  now: Date = new Date(),
-  timeZone = 'Asia/Ho_Chi_Minh',
-): ReceiptDocument {
-  return toReceiptDocument(prebillPrintDocument(workspace, context, t, now, timeZone));
+  return renderDocument(config, prebillData(workspace, place, t, now, timeZone));
 }
 
 export type PrintOutcome =
@@ -217,13 +152,49 @@ export function pageRule(paper: PaperSize): string {
   }
 }
 
-// Browser print of the receipt print root: sets the page size and the
-// printing marker, opens the print dialog and removes both afterwards
-// (on `afterprint`, or right away where the dialog blocks).
+// How long a print waits for its images (the store logo) to decode.
+export const IMAGE_WAIT_MS = 1500;
+// Set on an image that did not decode in time: hidden from that print.
+export const SKIPPED_IMAGE_ATTRIBUTE = 'data-print-skipped';
+
+// Waits until every image of the print root decoded, or the wait is over;
+// returns the images that are not ready, so the print goes out without them.
+export async function settleImages(
+  doc: Document,
+  win: Pick<Window, 'setTimeout' | 'clearTimeout'>,
+  waitMs = IMAGE_WAIT_MS,
+): Promise<HTMLImageElement[]> {
+  if (typeof doc.querySelectorAll !== 'function') return [];
+  const images = Array.from(doc.querySelectorAll<HTMLImageElement>('.receipt-print-root img'));
+  if (images.length === 0) return [];
+  let timer: number | undefined;
+  const expired = new Promise<false>((resolve) => {
+    timer = win.setTimeout(() => resolve(false), waitMs);
+  });
+  const ready = await Promise.all(
+    images.map((image) =>
+      Promise.race([
+        (typeof image.decode === 'function' ? image.decode() : Promise.resolve()).then(
+          () => true,
+          () => false,
+        ),
+        expired,
+      ]),
+    ),
+  );
+  win.clearTimeout(timer);
+  return images.filter((_, index) => !ready[index]);
+}
+
+// Browser print of the receipt print root: waits for its images, sets the
+// page size and the printing marker, opens the print dialog and removes
+// both afterwards (on `afterprint`, or right away where the dialog blocks).
 export function createBrowserPrintAdapter(win: Window = window): PrintAdapter {
   return {
     async deliver(paper, options) {
       const doc = win.document;
+      const skipped = await settleImages(doc, win);
+      for (const image of skipped) image.setAttribute(SKIPPED_IMAGE_ATTRIBUTE, '');
       const style = doc.createElement('style');
       style.id = PAGE_STYLE_ID;
       style.textContent = pageRule(paper);
@@ -237,6 +208,7 @@ export function createBrowserPrintAdapter(win: Window = window): PrintAdapter {
         if (cleaned) return;
         cleaned = true;
         style.remove();
+        for (const image of skipped) image.removeAttribute(SKIPPED_IMAGE_ATTRIBUTE);
         if (options?.title) doc.title = pageTitle;
         doc.documentElement.removeAttribute(PRINTING_ATTRIBUTE);
         win.removeEventListener('afterprint', cleanup);
