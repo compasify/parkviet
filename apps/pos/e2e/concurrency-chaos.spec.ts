@@ -108,6 +108,8 @@ test('lost responses on scan, tender, completion and handover never record twice
   exactlyOnce(world, 'tender.prepare');
 
   loseNext(world, 'tender.confirm');
+  // "Kết thúc" also completes the paid order; that response is lost too.
+  loseNext(world, 'complete');
   await dialog.getByLabel('Khách đưa').fill('100.000');
   const finish = dialog.getByRole('button', { name: 'Kết thúc', exact: true });
   await expect(async () => {
@@ -117,7 +119,6 @@ test('lost responses on scan, tender, completion and handover never record twice
   exactlyOnce(world, 'tender.confirm');
   expect(world.drawer).toBe(100000);
 
-  loseNext(world, 'complete');
   await retryUntil(panel.getByRole('button', { name: 'Hoàn tất đơn' }), page.getByRole('button', { name: 'Giao hàng tại quầy' }));
   exactlyOnce(world, 'complete');
 

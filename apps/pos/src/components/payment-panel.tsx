@@ -44,6 +44,21 @@ class RowFailure extends Error {
   }
 }
 
+// The order can be completed right away: confirmed money covers it and no
+// other tender is still waiting or in doubt (same rule as "Complete order").
+function paidInFull(workspace: PosWorkspace) {
+  const financial = workspace.financial;
+  return Boolean(
+    financial &&
+      workspace.operational_status !== 'completed' &&
+      (workspace.line_items?.length ?? 0) > 0 &&
+      parseVndAmount(financial.remaining) === '0' &&
+      !financial.attempts?.some(
+        (attempt) => attempt.status === 'prepared' || attempt.status === 'unknown',
+      ),
+  );
+}
+
 async function eachRow<T>(
   rows: T[],
   label: (row: T) => string,
@@ -272,12 +287,13 @@ export function PaymentPanel({
   function confirmEvidence(inputs: TenderEvidenceItemInput[]) {
     const kindOf = (attemptId: string) =>
       preparedAttempts.find((attempt) => attempt.id === attemptId)?.kind ?? 'cash';
-    return run(() =>
-      eachRow(
+    return run(async () => {
+      let latest: PosWorkspace | undefined;
+      await eachRow(
         inputs,
         (input) => methodLabel({ kind: kindOf(input.attemptId) }),
-        (input) =>
-          command((current) =>
+        async (input) => {
+          latest = await command((current) =>
             tenders.confirm(current, {
               attemptId: input.attemptId,
               handedAmount: input.handedAmount,
@@ -287,9 +303,14 @@ export function PaymentPanel({
               receivingAccount: input.receivingAccount,
               terminalRef: input.terminalRef,
             }),
-          ),
-      ),
-    );
+          );
+        },
+      );
+      // "Finish" in the dialog finishes the sale: once the confirmed money
+      // covers the order, complete it here instead of a second click. A
+      // refusal (e.g. lost lease) leaves the "Complete order" button as before.
+      if (latest && paidInFull(latest)) await command((current) => tenders.complete(current));
+    });
   }
 
   // A manual bank tender prepared before VietQR was offered (or switched on)

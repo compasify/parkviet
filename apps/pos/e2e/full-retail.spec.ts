@@ -42,7 +42,6 @@ test('three orders at once: bank waits, cash completes, scans keep landing on th
   // B: cash with change, completed and handed over.
   await openTab(page, 'ws_b');
   await payCash(page, '20.000');
-  await panel.getByRole('button', { name: 'Hoàn tất đơn' }).click();
   await page.getByRole('button', { name: 'Giao hàng tại quầy' }).click();
   await expect(page.getByText('Đã giao hàng tại quầy.')).toBeVisible();
   expect(b.status).toBe('completed');

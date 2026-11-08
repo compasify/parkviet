@@ -350,7 +350,6 @@ test('split tender: bank 100 then cash handed 200/change 50, complete and handov
   await expect(panel.getByText('Đã thu (đã xác nhận)')).toBeVisible();
   await expect(panel.getByText('Tiền thừa trả khách')).toBeVisible();
   await expect(panel.locator('.payment-summary')).toContainText('50');
-  await panel.getByRole('button', { name: 'Hoàn tất đơn' }).click();
   await page.getByRole('button', { name: 'Giao hàng tại quầy' }).click();
   await expect(page.getByText('Đã giao hàng tại quầy.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Giao hàng tại quầy' })).toHaveCount(0);
@@ -496,7 +495,6 @@ test('a held bank tender on one order does not block selling on another', async 
   await expect(dialog).toContainText('80.000 ₫');
   await dialog.getByRole('button', { name: 'Kết thúc', exact: true }).click();
   await expect(panel.locator('.payment-summary')).toContainText('80.000');
-  await panel.getByRole('button', { name: 'Hoàn tất đơn' }).click();
   await expect(page.getByRole('button', { name: 'Giao hàng tại quầy' })).toBeVisible();
   expect(api.state.get('ws_2')?.status).toBe('completed');
 
@@ -656,7 +654,7 @@ test('VietQR attested by hand saves without any bank details', async ({ page }) 
   await dialog.getByRole('button', { name: 'Xác nhận đã chuyển', exact: true }).click();
   await dialog.getByRole('button', { name: 'Lưu', exact: true }).click();
   await expect(dialog).toBeHidden();
-  await expect(panel.getByRole('button', { name: 'Hoàn tất đơn' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Giao hàng tại quầy' })).toBeVisible();
   const evidence = api.confirmed.map((item) => item.body);
   expect(evidence).toHaveLength(1);
   expect(evidence[0]).toMatchObject({ evidence_kind: 'vietqr_manual', receiving_account: '0123456789' });
@@ -689,7 +687,7 @@ test('VietQR split with cash, attested by hand when no bank notification comes',
   await dialog.locator('input[name="vietqr_reference"]').fill('FT-HAND-1');
   await dialog.getByRole('button', { name: 'Kết thúc', exact: true }).click();
   await expect(dialog).toBeHidden();
-  await expect(panel.getByRole('button', { name: 'Hoàn tất đơn' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Giao hàng tại quầy' })).toBeVisible();
   const evidence = api.confirmed.map((item) => item.body);
   expect(evidence).toContainEqual(expect.objectContaining({ evidence_kind: 'cash_count', handed_amount: '50000' }));
   expect(evidence).toContainEqual(

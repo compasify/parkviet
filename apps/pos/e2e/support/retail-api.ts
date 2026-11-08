@@ -1686,9 +1686,9 @@ export async function setNetwork(context: BrowserContext, world: World, online: 
   await context.setOffline(!online);
 }
 
+// "Kết thúc" in the payment dialog already completed a fully paid order;
+// only the counter handover is left.
 export async function completeAndHandOver(page: Page, timeout = 5_000) {
-  const panel = page.locator('.payment-panel');
-  await panel.getByRole('button', { name: 'Hoàn tất đơn' }).click({ timeout });
   await page.getByRole('button', { name: 'Giao hàng tại quầy' }).click({ timeout });
   await expect(page.getByText('Đã giao hàng tại quầy.')).toBeVisible({ timeout });
 }
