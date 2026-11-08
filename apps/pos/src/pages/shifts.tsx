@@ -1,4 +1,3 @@
-import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CashMovementDialog } from '../components/cash-movement-dialog';
@@ -7,6 +6,7 @@ import { FeatureOffNote } from '../components/feature-off-note';
 import { LateCashWizard } from '../components/late-cash-wizard';
 import { PageState, PosPage } from '../components/pos-page';
 import { usePosSelection } from '../components/pos-selection';
+import { ReceiptPrintButton } from '../components/receipt-print-dialog';
 import { ShiftCloseDialog, VarianceText } from '../components/shift-close-dialog';
 import {
   useCashMovementRequests,
@@ -213,13 +213,10 @@ function Shifts() {
                   />
                 </dd>
               </dl>
-              <Link
-                className="button-link"
-                to="/receipts"
-                search={{ source: closed.data.closure.id }}
-              >
-                {t('receiptOpenClosure')}
-              </Link>
+              <ReceiptPrintButton
+                sourceId={closed.data.closure.id}
+                label={t('receiptOpenClosure')}
+              />
             </section>
           ) : null}
           {canReconcileCash(capabilities) && selection.branchId ? (

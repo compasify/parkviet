@@ -8,9 +8,13 @@ import {
   formatPrebill,
   formatQuantity,
   formatReceipt,
+  isPaperSize,
+  PAPER_SIZES,
   PRINTING_ATTRIBUTE,
   pageRule,
+  printTitle,
   type ReceiptSnapshot,
+  receiptPrintTitle,
 } from './print-adapter';
 
 const t = (key: string, options?: Record<string, unknown>) => i18n.t(key, options ?? {}) as string;
@@ -189,9 +193,18 @@ describe('receipt formatting', () => {
     expect(doc.payments.at(-1)).toEqual({ label: 'Còn phải thu', value: '15.000 ₫', strong: true });
   });
 
-  it('sets the page size for 80mm rolls and A4 sheets', () => {
+  it('sets the page size for rolls and A4/A5/A6 sheets', () => {
+    expect(pageRule('58mm')).toContain('size: 58mm 297mm');
     expect(pageRule('80mm')).toContain('size: 80mm 297mm');
     expect(pageRule('a4')).toContain('size: A4');
+    expect(pageRule('a5')).toContain('size: A5');
+    expect(pageRule('a6')).toContain('size: A6');
+  });
+
+  it('recognises only the supported paper sizes', () => {
+    expect(PAPER_SIZES.every(isPaperSize)).toBe(true);
+    expect(isPaperSize('a3')).toBe(false);
+    expect(isPaperSize(null)).toBe(false);
   });
 
   it('uses Vietnamese date, time and decimal formats in the branch timezone', () => {
@@ -237,5 +250,32 @@ describe('receipt formatting', () => {
     expect(attributes.has(PRINTING_ATTRIBUTE)).toBe(false);
     expect(style.remove).toHaveBeenCalled();
     expect(listeners.size).toBe(0);
+  });
+
+  it('names the print after the document and its order, and restores the page title', async () => {
+    expect(receiptPrintTitle(sale({ order_number: 'R250' }), t)).toBe('Hóa đơn R100 - Đơn R250');
+    expect(receiptPrintTitle(sale({ order_number: 'R100' }), t)).toBe('Hóa đơn R100');
+    expect(printTitle('Tạm tính', null, 'R/7', t)).toBe('Tạm tính - Đơn R-7');
+
+    let titleDuringPrint = '';
+    const doc = {
+      title: 'ParkViet POS',
+      createElement: () => ({ id: '', textContent: '', remove: () => {} }),
+      getElementById: () => null,
+      head: { append: () => {} },
+      documentElement: { setAttribute: () => {}, removeAttribute: () => {} },
+    };
+    const fakeWindow = {
+      document: doc,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      matchMedia: () => ({ matches: false }),
+      print: () => {
+        titleDuringPrint = doc.title;
+      },
+    } as unknown as Window;
+    await createBrowserPrintAdapter(fakeWindow).deliver('a5', { title: 'Hóa đơn R100 - Đơn R250' });
+    expect(titleDuringPrint).toBe('Hóa đơn R100 - Đơn R250');
+    expect(doc.title).toBe('ParkViet POS');
   });
 });

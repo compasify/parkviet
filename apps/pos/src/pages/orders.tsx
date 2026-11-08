@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { FeatureOffNote } from '../components/feature-off-note';
 import { PageState, PosPage } from '../components/pos-page';
 import { usePosSelection } from '../components/pos-selection';
+import { ReceiptPrintButton } from '../components/receipt-print-dialog';
 import { SoldTrace } from '../components/sold-trace';
 import { type OrderFilters, useOrder, useOrders, useReconcileHandover } from '../hooks/use-returns';
 import { formatMoney } from '../lib/money';
@@ -262,9 +263,7 @@ export function OrderDetail({ order, canReturn }: { order: PosOrderDetail; canRe
     <div className="order-detail">
       <div className="pos-popup-header">
         <h2>{t('orderDetailTitle', { number: order.number })}</h2>
-        <Link className="button-link" to="/receipts" search={{ source: order.workspace_id }}>
-          {t('receiptOpen')}
-        </Link>
+        <ReceiptPrintButton sourceId={order.workspace_id} label={t('receiptOpen')} />
         {canReturn && returnable && returnsOn ? (
           <Link className="button-link" to="/returns" search={{ orderId: order.id }}>
             {t('ordersStartReturn')}

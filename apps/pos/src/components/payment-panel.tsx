@@ -1,4 +1,3 @@
-import { Link } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -17,7 +16,12 @@ import { vietqrConflictKey } from '../lib/vietqr';
 import { CreditApprovalDialog } from './credit-approval-dialog';
 import { FeatureOffNote } from './feature-off-note';
 import { PosIcon } from './pos-icon';
-import { TenderEvidenceDialog, type TenderEvidenceItemInput } from './tender-evidence-dialog';
+import { ReceiptPrintButton } from './receipt-print-dialog';
+import {
+  TenderEvidenceDialog,
+  type TenderEvidenceItemInput,
+  type TicketNames,
+} from './tender-evidence-dialog';
 
 type MethodKind = PosPaymentMethod['kind'];
 
@@ -66,7 +70,12 @@ export function PaymentPanel({
   disabled,
   command,
   reserveTrace,
+  ticketNames,
+  timeZone,
 }: {
+  // Store, branch, register and cashier printed on the payment invoice.
+  ticketNames?: TicketNames;
+  timeZone?: string;
   workspace: PosWorkspace;
   staffId: string | null;
   storeId: string | null;
@@ -114,7 +123,14 @@ export function PaymentPanel({
   const [handedOver, setHandedOver] = useState(false);
   const financial = workspace.financial;
   const credit = financial?.credit ?? null;
-  const methods = methodsQuery.data ?? [];
+  const offeredMethods = methodsQuery.data ?? [];
+  // When the branch offers VietQR it is the bank transfer: the QR fills in the
+  // account, amount and note, the bank notification confirms it, and a
+  // transfer the bank never reported is still attested by hand on the same
+  // tender. A second, QR-less transfer button would only invite mistakes.
+  const methods = offeredMethods.some((method) => method.kind === 'vietqr')
+    ? offeredMethods.filter((method) => method.kind !== 'bank_manual')
+    : offeredMethods;
   const activeMethods = methods.filter((method) => activeKinds.includes(method.kind));
   const effectiveMethods = activeMethods.length > 0 ? activeMethods : methods.slice(0, 1);
   const preparedAttempts = (financial?.attempts ?? []).filter(
@@ -168,6 +184,11 @@ export function PaymentPanel({
         : method.kind === 'vietqr'
           ? t('vietqr')
           : (method.name ?? method.kind);
+  }
+
+  // Choosing a method: VietQR is offered as "Bank transfer" (see `methods`).
+  function choiceLabel(method: PosPaymentMethod) {
+    return method.kind === 'vietqr' ? t('bankTransfer') : methodLabel(method);
   }
 
   const rowKinds = effectiveMethods.map((method) => method.kind);
@@ -269,6 +290,28 @@ export function PaymentPanel({
           ),
       ),
     );
+  }
+
+  // A manual bank tender prepared before VietQR was offered (or switched on)
+  // shows no QR. Swap it for a VietQR tender of the same amount: cancel the
+  // manual one, then prepare the QR, so only one transfer is ever waiting.
+  const vietqrMethod = offeredMethods.find((method) => method.kind === 'vietqr');
+  const manualBankAttempt = preparedAttempts.find((attempt) => attempt.kind === 'bank_manual');
+  const canShowVietqr = Boolean(
+    vietqrMethod &&
+      manualBankAttempt &&
+      !preparedAttempts.some((attempt) => attempt.kind === 'vietqr'),
+  );
+
+  function showVietqr() {
+    const attempt = manualBankAttempt;
+    const method = vietqrMethod;
+    const amount = attempt ? parseVndAmount(attempt.amount) : null;
+    if (!attempt || !method || !amount) return Promise.resolve(false);
+    return run(async () => {
+      await command((current) => tenders.cancel(current, { attemptId: attempt.id }));
+      await command((current) => tenders.prepare(current, { paymentMethodId: method.id, amount }));
+    });
   }
 
   function cancelPrepared() {
@@ -400,12 +443,15 @@ export function PaymentPanel({
       {preparedAttempts.length > 0 && evidenceOpen ? (
         <TenderEvidenceDialog
           workspace={workspace}
+          names={ticketNames}
+          timeZone={timeZone}
           attempts={preparedAttempts}
           disabled={disabled}
           busy={busy}
           error={error}
           onConfirm={confirmEvidence}
           onCancel={cancelPrepared}
+          onShowVietqr={canShowVietqr ? showVietqr : undefined}
           onHold={() => {
             setEvidenceOpen(false);
             setError('');
@@ -445,9 +491,10 @@ export function PaymentPanel({
                 aria-pressed={effectiveMethods.some((item) => item.id === method.id)}
                 disabled={locked || preparedAttempts.length > 0}
                 onClick={() => toggleMethod(method.kind)}
+                title={method.kind === 'vietqr' ? t('paymentVietqrTitle') : undefined}
               >
                 <PosIcon name={methodIcon(method.kind)} />
-                {methodLabel(method)}
+                {choiceLabel(method)}
               </button>
             ))}
           </fieldset>
@@ -456,7 +503,7 @@ export function PaymentPanel({
               <label className="payment-method-row" key={method.id} data-method={method.kind}>
                 <span className="payment-method-badge">
                   <PosIcon name={methodIcon(method.kind)} />
-                  <strong>{methodLabel(method)}</strong>
+                  <strong>{choiceLabel(method)}</strong>
                 </span>
                 <input
                   inputMode="numeric"
@@ -577,11 +624,7 @@ export function PaymentPanel({
           {t('paymentComplete')}
         </button>
       ) : null}
-      {completed ? (
-        <Link className="button-link" to="/receipts" search={{ source: workspace.id }}>
-          {t('receiptPrint')}
-        </Link>
-      ) : null}
+      {completed ? <ReceiptPrintButton sourceId={workspace.id} label={t('receiptPrint')} /> : null}
       {completed && !handedOver ? (
         <button
           className="checkout-submit"

@@ -11,13 +11,9 @@ import {
   forgetFinancialRecord,
   scopedFinancialRecords,
 } from '../lib/financial-recovery';
-import { administrationAccess } from '../lib/pos-administration';
 import { writesLocked } from '../lib/pos-context';
 import { queryClient } from '../lib/query-client';
-import { canReadReceivables } from '../lib/receivables';
 import { failureStatus, posFailureKey } from '../lib/request-failure';
-import { canProcessReturns } from '../lib/returns';
-import { canOpenInventory } from '../lib/traceability';
 import {
   forgetIntent,
   hasPendingIntents,
@@ -31,6 +27,7 @@ import { OpenShiftDialog } from './open-shift-dialog';
 import { PosIcon } from './pos-icon';
 import { PosSelectionProvider, usePosSelection } from './pos-selection';
 import { ScannerCalibrationDialog } from './scanner-calibration';
+import { UserMenu } from './user-menu';
 
 export function PosShell() {
   return (
@@ -258,11 +255,9 @@ function ShellFrame() {
   void intentsVersion;
   const uncertain =
     context.data && hasUncertainIntents(context.data.staff.id, context.data.store.id);
-  const canAccessFunds = Boolean(
-    context.data?.capabilities.includes('pos.payment.resolve') ||
-      context.data?.capabilities.includes('pos.payment.collect'),
-  );
-  const canConfigure = administrationAccess(context.data).read;
+  // From the sale screen, other pages open in a new tab so the open invoices
+  // keep their edit lease (see UserMenu).
+  const newTab = isSale ? ({ target: '_blank', rel: 'noopener' } as const) : {};
   const offline = !online || failure === 'offline';
   const connection = offline
     ? t('connectionOffline')
@@ -315,101 +310,6 @@ function ShellFrame() {
                 {t('storeLine', { name: store.name || store.id, currency: store.currency || '—' })}
               </p>
             ) : null}
-            {canConfigure ? (
-              <p>
-                <Link to="/settings">{t('settings')}</Link>
-              </p>
-            ) : selection.branchId && context.data?.capabilities.includes('pos.topology.manage') ? (
-              <p>
-                <Link
-                  to="/settings/branches/$branchId/features"
-                  params={{ branchId: selection.branchId }}
-                >
-                  {t('branchFeaturesTitle')}
-                </Link>
-              </p>
-            ) : null}
-            {canAccessFunds ? (
-              <p>
-                <Link to="/funds">{t('fundsTitle')}</Link> ·{' '}
-                <Link to="/payment-attention">{t('fundsAttentionTitle')}</Link>
-              </p>
-            ) : null}
-            {canReadReceivables(context.data?.capabilities) ? (
-              <p>
-                <Link to="/receivables">{t('receivablesTitle')}</Link>
-                {context.data?.capabilities.includes('pos.credit.manage') ? (
-                  <>
-                    {' · '}
-                    <Link to="/credit-accounts">{t('creditAccountsNav')}</Link>
-                  </>
-                ) : null}
-                {context.data?.capabilities.includes('pos.credit.manage') &&
-                context.data.capabilities.includes('pos.approval.grant') ? (
-                  <>
-                    {' · '}
-                    <Link to="/credit-approvals">{t('creditApprovalsNav')}</Link>
-                  </>
-                ) : null}
-              </p>
-            ) : null}
-            {context.data ? (
-              <p>
-                <Link to="/orders">{t('ordersNav')}</Link>
-                {context.data.capabilities.includes('pos.approval.grant') &&
-                !context.data.capabilities.includes('pos.credit.manage') ? (
-                  <>
-                    {' · '}
-                    <Link to="/credit-approvals">{t('creditApprovalsNav')}</Link>
-                  </>
-                ) : null}
-                {canProcessReturns(context.data.capabilities) ? (
-                  <>
-                    {' · '}
-                    <Link to="/returns">{t('returnsNav')}</Link>
-                  </>
-                ) : null}
-              </p>
-            ) : null}
-            {context.data && context.data.capabilities.length > 0 ? (
-              <p>
-                <Link to="/shifts">{t('shiftsNav')}</Link> ·{' '}
-                <Link to="/reports">{t('reportsNav')}</Link>
-              </p>
-            ) : null}
-            {/* Receipts and counter devices */}
-            {context.data && context.data.capabilities.length > 0 ? (
-              <p>
-                <Link to="/receipts">{t('receiptsTitle')}</Link>
-                {selection.registerId ? (
-                  <>
-                    {' · '}
-                    <button
-                      type="button"
-                      className="link-button"
-                      onClick={() => setCalibrating(true)}
-                    >
-                      {t('scannerCalibrationOpen')}
-                    </button>
-                  </>
-                ) : null}
-              </p>
-            ) : null}
-            {calibrating && selection.registerId ? (
-              <ScannerCalibrationDialog
-                registerId={selection.registerId}
-                onClose={() => setCalibrating(false)}
-              />
-            ) : null}
-            {canOpenInventory(context.data?.capabilities) ? (
-              <p>
-                <Link to="/inventory">{t('inventoryNav')}</Link>
-              </p>
-            ) : null}
-            <button type="button" onClick={logout} disabled={busy}>
-              {busy ? t('waiting') : t('logout')}
-            </button>
-            <p className="footnote">{t('security')}</p>
           </div>
         </details>
         <div className="pos-context-status">
@@ -426,21 +326,23 @@ function ShellFrame() {
             <span>{context.data?.shift ? t('shiftOpenCompact') : t('shiftNotOpen')}</span>
           ) : null}
         </div>
-        <span className="header-user" title={snapshot.name ?? ''}>
-          <PosIcon name="user" />
-          <span className="header-user-name">{snapshot.name}</span>
-          {canConfigure ? (
-            <Link
-              className="header-settings"
-              to="/settings"
-              aria-label={t('settings')}
-              title={t('settings')}
-            >
-              <PosIcon name="cog" />
-            </Link>
-          ) : null}
-        </span>
+        <UserMenu
+          name={snapshot.name}
+          data={context.data}
+          branchId={selection.branchId}
+          registerId={selection.registerId}
+          isSale={isSale}
+          busy={busy}
+          onCalibrate={() => setCalibrating(true)}
+          onLogout={() => void logout()}
+        />
       </header>
+      {calibrating && selection.registerId ? (
+        <ScannerCalibrationDialog
+          registerId={selection.registerId}
+          onClose={() => setCalibrating(false)}
+        />
+      ) : null}
       <ContextSetupDialog enabled={isSale} />
       <section className="shell" aria-labelledby={isSale ? 'title' : 'pos-page-title'}>
         <div className="pos-context-card pos-alerts">
@@ -457,13 +359,17 @@ function ShellFrame() {
           {financialState.storageUnavailable ? (
             <p className="error" role="status">
               {t('financialStorageWarning')}{' '}
-              <Link to="/payment-attention">{t('fundsAttentionTitle')}</Link>
+              <Link to="/payment-attention" {...newTab}>
+                {t('fundsAttentionTitle')}
+              </Link>
             </p>
           ) : null}
           {financialUncertain ? (
             <p className="error" role="status">
               {t('financialUncertainWarning')}{' '}
-              <Link to="/payment-attention">{t('fundsAttentionTitle')}</Link>
+              <Link to="/payment-attention" {...newTab}>
+                {t('fundsAttentionTitle')}
+              </Link>
             </p>
           ) : null}
           {(uncertain || financialUncertain) && context.data ? (

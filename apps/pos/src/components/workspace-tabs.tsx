@@ -1,3 +1,4 @@
+import { useNavigate, useSearch } from '@tanstack/react-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { fetchCatalogPage, parseMeasurementBarcode } from '../hooks/use-catalog';
@@ -23,9 +24,11 @@ import {
   shouldCaptureScannerKey,
 } from '../lib/scanner-queue';
 import { describeTraceFailure } from '../lib/traceability';
+import { workspaceHasContent, workspaceIsSettled } from '../lib/workspace-content';
 import { createWorkspaceSerializer } from '../lib/workspace-serializer';
 import { readLayout } from '../lib/workspace-storage';
 import { CatalogSearch, type ScanNotice } from './catalog-search';
+import { CloseTabDialog } from './close-tab-dialog';
 import { CustomerPanel } from './customer-panel';
 import { DiscountForm } from './discount-form';
 import { DisplayPinControl } from './display-pin-control';
@@ -87,6 +90,11 @@ export function WorkspaceTabs() {
   const [leaseWait, setLeaseWait] = useState<{ workspaceId: string; until: number } | null>(null);
   const [leaseSeconds, setLeaseSeconds] = useState(0);
   const [hidden, setHidden] = useState<string[]>([]);
+  const hiddenRef = useRef(hidden);
+  hiddenRef.current = hidden;
+  const [closeRequest, setCloseRequest] = useState<{ workspace: PosWorkspace } | null>(null);
+  // Tab whose close is being decided; its details are loading or its cancel is running.
+  const [closing, setClosing] = useState<string | null>(null);
   const scope = `${staffId}:${storeId}:${selection.branchId}:${selection.registerId}`;
   const scopeRef = useRef(scope);
   scopeRef.current = scope;
@@ -163,7 +171,10 @@ export function WorkspaceTabs() {
   useEffect(() => {
     if (!activeTabId) return;
     const list = tablist.current;
-    const selected = list?.querySelector<HTMLElement>('[aria-selected="true"]');
+    // Measure the tab's wrapper, which also holds its close button.
+    const selected = list
+      ?.querySelector<HTMLElement>('[aria-selected="true"]')
+      ?.closest<HTMLElement>('.workspace-tab');
     if (!list || !selected) return;
     // Scroll only the tab strip, never jump the cashier's document position.
     const left = selected.offsetLeft - list.offsetLeft;
@@ -171,6 +182,69 @@ export function WorkspaceTabs() {
     else if (left + selected.offsetWidth > list.scrollLeft + list.clientWidth)
       list.scrollLeft = left + selected.offsetWidth - list.clientWidth;
   }, [activeTabId]);
+  // The URL and the page title follow the selected tab (`/?order=R250`,
+  // "R250 · Hóa đơn 1 – ParkViet POS"). An order asked for by the URL (reload,
+  // shared link) wins over the remembered tab until the list has loaded.
+  const search = useSearch({ from: '/authed/' });
+  const navigate = useNavigate();
+  // Order the URL asks for and that is not selected yet.
+  const requestedOrder = useRef<string | null>(search.order ?? null);
+  // The URL as of the last render, and the order this component last wrote
+  // to it: a URL change that is not our own write (back, a link) is a request.
+  const lastSearchOrder = useRef(search.order ?? null);
+  const writtenOrder = useRef<string | null>(search.order ?? null);
+  // A tab selected for the URL whose render has not happened yet.
+  const selecting = useRef<string | null>(null);
+  const listLoaded = workspaces.query.isSuccess;
+  useEffect(() => {
+    const order = search.order ?? null;
+    if (order !== lastSearchOrder.current) {
+      lastSearchOrder.current = order;
+      if (order !== writtenOrder.current) {
+        writtenOrder.current = order;
+        requestedOrder.current = order;
+      }
+    }
+    const wanted = requestedOrder.current;
+    if (!wanted) return;
+    const match = rows.find((workspace) => workspace.order_id === wanted);
+    if (match) {
+      requestedOrder.current = null;
+      if (match.id !== activeIdRef.current) {
+        selecting.current = match.id;
+        setActiveId(match.id);
+        workspaces.rememberView(match.id, workspaces.page);
+      }
+    } else if (listLoaded) {
+      requestedOrder.current = null;
+    }
+  });
+  const activeOrder = active?.order_id ?? null;
+  useEffect(() => {
+    if (requestedOrder.current) return;
+    if (selecting.current) {
+      if (active?.id !== selecting.current) return;
+      selecting.current = null;
+    }
+    // Already in the URL, or already on its way there.
+    if (writtenOrder.current === activeOrder) return;
+    writtenOrder.current = activeOrder;
+    void navigate({ to: '/', search: activeOrder ? { order: activeOrder } : {}, replace: true });
+  });
+  const baseTitle = useRef(document.title);
+  const activeTitle =
+    active && activeOrder
+      ? `${activeOrder} · ${t('invoiceTab', { number: tabNumbers[active.id] })} – ${baseTitle.current}`
+      : baseTitle.current;
+  useEffect(() => {
+    document.title = activeTitle;
+  }, [activeTitle]);
+  useEffect(() => {
+    const base = baseTitle.current;
+    return () => {
+      document.title = base;
+    };
+  }, []);
   const heartbeat = useRef(workspaces.heartbeat);
   heartbeat.current = workspaces.heartbeat;
   const claim = useRef(workspaces.claim);
@@ -243,6 +317,66 @@ export function WorkspaceTabs() {
         if (conflict?.reason === 'lease_busy' && active)
           setLeaseWait({ workspaceId: active.id, until: Date.now() + conflict.seconds * 1000 });
       }
+    }
+  }
+
+  function hideWorkspace(workspaceId: string) {
+    // Read the latest list: an async close may finish after other tabs closed.
+    const next = [...hiddenRef.current, workspaceId];
+    hiddenRef.current = next;
+    setHidden(next);
+    workspaces.rememberClosed(next);
+    if (workspaceId === activeIdRef.current || workspaceId === active?.id) {
+      setActiveId(null);
+      workspaces.rememberView(null, workspaces.page);
+    }
+    if (staffId && storeId) {
+      workspaces.remember(workspaces.rememberedIds().filter((id) => id !== workspaceId));
+    }
+    setCloseRequest((current) => (current?.workspace.id === workspaceId ? null : current));
+  }
+
+  // Only the lease holder may cancel, and recorded payments must be settled first.
+  function cancellable(workspace: PosWorkspace) {
+    return (
+      workspaces.owns(workspace) &&
+      !locked &&
+      workspace.operational_status === 'editing' &&
+      !workspace.payments
+    );
+  }
+
+  async function cancelAndHide(workspace: PosWorkspace) {
+    await command(workspace, (current) => workspaces.change(current, 'cancel'));
+    hideWorkspace(workspace.id);
+  }
+
+  // A blank tab is discarded at once; a tab holding work asks first.
+  async function requestClose(summary: PosWorkspace) {
+    if (closing) return;
+    if (workspaceIsSettled(summary)) {
+      hideWorkspace(summary.id);
+      return;
+    }
+    setClosing(summary.id);
+    setMessage('');
+    try {
+      const detail =
+        active && active.id === summary.id && active.line_items
+          ? active
+          : await workspaces.detail(summary.id);
+      if (workspaceHasContent(detail)) {
+        setCloseRequest({ workspace: detail });
+        return;
+      }
+      if (cancellable(detail)) {
+        // Best effort: a lapsed lease leaves the empty draft on the server, hidden here.
+        await cancelAndHide(detail).catch(() => hideWorkspace(detail.id));
+      } else hideWorkspace(detail.id);
+    } catch (error) {
+      setMessage(describeFailure(error, t));
+    } finally {
+      setClosing(null);
     }
   }
 
@@ -410,27 +544,56 @@ export function WorkspaceTabs() {
         ) : null}
         <div className="tablist" ref={tablist} role="tablist" aria-label={t('draftList')}>
           {visible.map((workspace) => (
-            <button
-              key={workspace.id}
-              type="button"
-              role="tab"
-              aria-label={t('invoiceTab', { number: tabNumbers[workspace.id] })}
-              data-workspace-id={workspace.id}
-              title={t(
-                `orderStatus_${workspace.id === active?.id ? active.operational_status : workspace.operational_status}`,
-                { defaultValue: workspace.operational_status },
-              )}
-              aria-selected={workspace.id === active?.id}
-              onClick={() => {
-                setActiveId(workspace.id);
-                workspaces.rememberView(workspace.id, workspaces.page);
-              }}
-            >
-              <strong>{t('invoiceTab', { number: tabNumbers[workspace.id] })}</strong>
-            </button>
+            <span key={workspace.id} className="workspace-tab" role="presentation">
+              <button
+                type="button"
+                role="tab"
+                aria-label={t('invoiceTab', { number: tabNumbers[workspace.id] })}
+                data-workspace-id={workspace.id}
+                title={t(
+                  `orderStatus_${workspace.id === active?.id ? active.operational_status : workspace.operational_status}`,
+                  { defaultValue: workspace.operational_status },
+                )}
+                aria-selected={workspace.id === active?.id}
+                onClick={() => {
+                  setActiveId(workspace.id);
+                  workspaces.rememberView(workspace.id, workspaces.page);
+                }}
+              >
+                <strong>{t('invoiceTab', { number: tabNumbers[workspace.id] })}</strong>
+              </button>
+              <button
+                type="button"
+                className="workspace-tab-close"
+                aria-label={t('closeTabAction', { number: tabNumbers[workspace.id] })}
+                title={t('closeTabAction', { number: tabNumbers[workspace.id] })}
+                disabled={closing === workspace.id || Boolean(pendingCounts[workspace.id])}
+                onClick={() => void requestClose(workspace)}
+              >
+                <PosIcon name="close" />
+              </button>
+            </span>
           ))}
         </div>
       </div>
+      {closeRequest ? (
+        <CloseTabDialog
+          workspace={closeRequest.workspace}
+          number={tabNumbers[closeRequest.workspace.id]}
+          canCancel={cancellable(closeRequest.workspace)}
+          busy={closing === closeRequest.workspace.id}
+          onDismiss={() => setCloseRequest(null)}
+          onKeep={() => hideWorkspace(closeRequest.workspace.id)}
+          onCancelInvoice={() => {
+            const target = closeRequest.workspace;
+            setClosing(target.id);
+            void run(() => cancelAndHide(target).then(() => undefined)).finally(() => {
+              setClosing(null);
+              setCloseRequest((current) => (current?.workspace.id === target.id ? null : current));
+            });
+          }}
+        />
+      ) : null}
       {overflow > 0 ? (
         <label>
           {t('moreDrafts')}
@@ -682,20 +845,7 @@ export function WorkspaceTabs() {
                     >
                       {t('cancelDraft')}
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setHidden((current) => [...current, active.id]);
-                        workspaces.rememberClosed([...hidden, active.id]);
-                        setActiveId(null);
-                        workspaces.rememberView(null, workspaces.page);
-                        if (staffId && storeId) {
-                          workspaces.remember(
-                            workspaces.rememberedIds().filter((id) => id !== active.id),
-                          );
-                        }
-                      }}
-                    >
+                    <button type="button" onClick={() => hideWorkspace(active.id)}>
                       {t('closeView')}
                     </button>
                     <button
@@ -900,6 +1050,17 @@ export function WorkspaceTabs() {
                 }
                 command={(action) => command(active, action)}
                 reserveTrace={(current) => workspaces.reserveTrace(current)}
+                ticketNames={{
+                  storeName: data?.store.name,
+                  branchName: data?.branches.find((row) => row.id === active.branch_id)?.name,
+                  registerName: data?.registers.find((row) => row.id === active.register_id)?.name,
+                  cashier: data?.staff.full_name || data?.staff.email,
+                }}
+                timeZone={
+                  data?.branches.find((row) => row.id === active.branch_id)?.timezone ??
+                  data?.store.timezone ??
+                  'Asia/Ho_Chi_Minh'
+                }
               />
               <DisplayPinControl
                 shiftId={data?.shift?.id ?? null}

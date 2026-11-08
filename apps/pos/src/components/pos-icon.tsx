@@ -87,6 +87,12 @@ const paths = {
       <path d="m12 3 10 18H2L12 3Z M12 9v5 M12 17h.01" />
     </>
   ),
+  print: (
+    <>
+      <path d="M6 9V3h12v6 M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+      <path d="M6 14h12v7H6Z" />
+    </>
+  ),
   settings: (
     <>
       <path d="M4 6h16 M4 12h16 M4 18h16" />

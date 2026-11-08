@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useContextBranches, useContextRegisters } from '../hooks/use-context-options';
 import { posFailureKey } from '../lib/request-failure';
 import { usePosSelection } from './pos-selection';
+import { SearchableSelect } from './searchable-select';
 
 export function ContextSelector({ onRegisterSelected }: { onRegisterSelected?: () => void }) {
   const { t } = useTranslation();
@@ -35,119 +36,55 @@ export function ContextSelector({ onRegisterSelected }: { onRegisterSelected?: (
   if (selectedRegister && !registers.some((register) => register.id === selectedRegister.id))
     registers.push(selectedRegister);
 
+  const optionLabel = (row: { name: string; status: string }) =>
+    `${row.name} · ${t(row.status === 'disabled' ? 'statusDisabled' : 'statusActive')}`;
+
   return (
     <div className="selector" data-registers={registerMode}>
       <div className="selector-group">
-        {(branchQuery.data?.meta.count ?? branches.length) > 5 || branchSearch ? (
-          <label>
-            {t('searchBranch')}
-            <input
-              value={branchSearch}
-              onChange={(event) => {
-                setBranchSearch(event.target.value);
-                setBranchPage(1);
-              }}
-            />
-          </label>
-        ) : null}
-        <label>
-          {t('branch')}
-          <select
-            value={selection.branchId ?? ''}
-            onChange={(event) => {
-              setRegisterPage(1);
-              setRegisterSearch('');
-              setSelection({ branchId: event.target.value || null, registerId: null });
-            }}
-          >
-            <option value="">{t('chooseBranch')}</option>
-            {branches.map((branch) => (
-              <option key={branch.id} value={branch.id}>
-                {branch.name} ·{' '}
-                {t(branch.status === 'disabled' ? 'statusDisabled' : 'statusActive')}
-              </option>
-            ))}
-          </select>
-        </label>
-        {(branchQuery.data?.meta.pages ?? 1) > 1 ? (
-          <div className="row">
-            <button
-              type="button"
-              disabled={branchPage <= 1}
-              onClick={() => setBranchPage(branchPage - 1)}
-            >
-              {t('previousPage')}
-            </button>
-            <span>
-              {branchPage} / {branchQuery.data?.meta.pages}
-            </span>
-            <button
-              type="button"
-              disabled={branchPage >= (branchQuery.data?.meta.pages ?? 1)}
-              onClick={() => setBranchPage(branchPage + 1)}
-            >
-              {t('nextPage')}
-            </button>
-          </div>
-        ) : null}
+        <SearchableSelect
+          label={t('branch')}
+          placeholder={t('chooseBranch')}
+          searchPlaceholder={t('searchBranch')}
+          value={selection.branchId}
+          options={branches.map((branch) => ({ value: branch.id, label: optionLabel(branch) }))}
+          onSearch={setBranchSearch}
+          page={branchPage}
+          pages={branchQuery.data?.meta.pages ?? 1}
+          onPage={setBranchPage}
+          onChange={(branchId) => {
+            setRegisterPage(1);
+            setRegisterSearch('');
+            setSelection({ branchId, registerId: null });
+          }}
+        />
       </div>
       {selection.branchId && registerMode !== 'none' ? (
         <div className="selector-group">
-          {(registerQuery.data?.meta.count ?? registers.length) > 5 || registerSearch ? (
-            <label>
-              {t('searchRegister')}
-              <input
-                value={registerSearch}
-                onChange={(event) => {
-                  setRegisterSearch(event.target.value);
-                  setRegisterPage(1);
-                }}
-              />
-            </label>
-          ) : null}
-          <label>
-            {t('register')}
-            <select
-              value={selection.registerId ?? ''}
-              disabled={!registerQuery.isSuccess}
-              onChange={(event) => {
-                setSelection({
-                  branchId: selection.branchId,
-                  registerId: event.target.value || null,
-                });
-                if (event.target.value) onRegisterSelected?.();
-              }}
-            >
-              <option value="">{t('chooseRegister')}</option>
-              {registers.map((register) => (
-                <option key={register.id} value={register.id}>
-                  {register.name} ·{' '}
-                  {t(register.status === 'disabled' ? 'statusDisabled' : 'statusActive')}
-                </option>
-              ))}
-            </select>
-          </label>
-          {(registerQuery.data?.meta.pages ?? 1) > 1 ? (
-            <div className="row">
-              <button
-                type="button"
-                disabled={registerPage <= 1}
-                onClick={() => setRegisterPage(registerPage - 1)}
-              >
-                {t('previousPage')}
-              </button>
-              <span>
-                {registerPage} / {registerQuery.data?.meta.pages}
-              </span>
-              <button
-                type="button"
-                disabled={registerPage >= (registerQuery.data?.meta.pages ?? 1)}
-                onClick={() => setRegisterPage(registerPage + 1)}
-              >
-                {t('nextPage')}
-              </button>
-            </div>
-          ) : null}
+          <SearchableSelect
+            label={t('register')}
+            placeholder={t('chooseRegister')}
+            searchPlaceholder={t('searchRegister')}
+            value={selection.registerId}
+            // A search in flight must not disable (and blur) the field being typed in.
+            disabled={
+              !context.isSuccess ||
+              registerQuery.isError ||
+              (!registerQuery.isSuccess && !registerSearch)
+            }
+            options={registers.map((register) => ({
+              value: register.id,
+              label: optionLabel(register),
+            }))}
+            onSearch={setRegisterSearch}
+            page={registerPage}
+            pages={registerQuery.data?.meta.pages ?? 1}
+            onPage={setRegisterPage}
+            onChange={(registerId) => {
+              setSelection({ branchId: selection.branchId, registerId });
+              onRegisterSelected?.();
+            }}
+          />
         </div>
       ) : null}
       {branchQuery.isLoading || (selection.branchId && registerQuery.isLoading) ? (

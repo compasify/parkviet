@@ -1,4 +1,3 @@
-import { Link } from '@tanstack/react-router';
 import { type ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatMoney } from '../lib/money';
@@ -9,6 +8,7 @@ import {
   refundAwaitsPayout,
 } from '../lib/returns';
 import { usePosSelection } from './pos-selection';
+import { ReceiptPrintButton } from './receipt-print-dialog';
 
 // One refund request with what the reader may do with it: confirm the payout
 // (evidence dialog), cancel it with a reason before any approval, or record
@@ -77,9 +77,7 @@ export function RefundActions({
         {waiting ? ` · ${t('refundWaitApproval')}` : ''}
       </span>
       {refund.status === 'confirmed' ? (
-        <Link to="/receipts" search={{ source: refund.id }}>
-          {t('receiptOpenRefund')}
-        </Link>
+        <ReceiptPrintButton sourceId={refund.id} label={t('receiptOpenRefund')} />
       ) : null}
       {extra}
       {checking ? (

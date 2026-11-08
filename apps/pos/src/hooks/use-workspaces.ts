@@ -233,6 +233,17 @@ export function useWorkspaces(
     owns(workspace: PosWorkspace) {
       return owned[workspace.id] === workspace.lease_generation;
     },
+    // Full workspace for one tab; list rows omit lines and customer.
+    async detail(workspaceId: string) {
+      try {
+        return (
+          await session.request<{ data: PosWorkspace }>('GET', `/pos/workspaces/${workspaceId}`)
+        ).data;
+      } catch (error) {
+        abandonIfNeeded(error);
+        throw error;
+      }
+    },
     async create(registerId: string | null) {
       try {
         const { workspace: result, recovered } = await sendIntent(

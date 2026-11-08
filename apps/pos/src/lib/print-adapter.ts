@@ -8,7 +8,13 @@ import type { PosWorkspace } from './pos-context';
 // printing would be another adapter after merchant device approval. A
 // failed or blocked print is reported and never undoes or repeats a sale.
 
-export type PaperSize = '80mm' | 'a4';
+export type PaperSize = '58mm' | '80mm' | 'a4' | 'a5' | 'a6';
+
+// Every size a posted receipt can print on: thermal rolls first, then sheets.
+export const PAPER_SIZES: readonly PaperSize[] = ['58mm', '80mm', 'a4', 'a5', 'a6'];
+
+export const isPaperSize = (value: unknown): value is PaperSize =>
+  typeof value === 'string' && (PAPER_SIZES as readonly string[]).includes(value);
 
 export type ReceiptSnapshot = {
   id: string;
@@ -358,8 +364,39 @@ export type PrintOutcome =
   | { ok: true }
   | { ok: false; reason: 'blocked' | 'failed'; message?: string };
 
+// `title` replaces the page title while printing: browsers print it in the
+// page header and use it as the file name when saving as PDF.
+export type PrintOptions = { title?: string | null };
+
 export interface PrintAdapter {
-  deliver(paper: PaperSize): Promise<PrintOutcome>;
+  deliver(paper: PaperSize, options?: PrintOptions): Promise<PrintOutcome>;
+}
+
+// "Hóa đơn HD-0001 - Đơn R250": the document name and the order it belongs
+// to, without characters a file name cannot carry.
+export function printTitle(
+  name: string,
+  number: string | null | undefined,
+  orderNumber: string | null | undefined,
+  t: Translate,
+): string {
+  const parts = [number ? `${name} ${number}` : name];
+  if (orderNumber && orderNumber !== number)
+    parts.push(t('receiptPrintTitleOrder', { number: orderNumber }));
+  return parts
+    .join(' - ')
+    .replace(/[\\/:*?"<>|]+/g, '-')
+    .trim();
+}
+
+// The print title of a posted receipt.
+export function receiptPrintTitle(receipt: ReceiptSnapshot, t: Translate): string {
+  return printTitle(
+    t(`receiptPrintTitle_${receipt.source_type}`),
+    receipt.number,
+    str(receipt.document.order_number),
+    t,
+  );
 }
 
 const PAGE_STYLE_ID = 'pos-receipt-page-size';
@@ -369,10 +406,21 @@ export const PRINTING_ATTRIBUTE = 'data-receipt-printing';
 
 // Roll paper has no fixed length; browsers need a definite size, so 80mm
 // rolls use a long page that thermal drivers cut after the content.
+// Sheet margins match the printable widths in receipt.css (A4 186mm, A5
+// 128mm, A6 93mm).
 export function pageRule(paper: PaperSize): string {
-  return paper === '80mm'
-    ? '@page { size: 80mm 297mm; margin: 3mm; }'
-    : '@page { size: A4; margin: 12mm; }';
+  switch (paper) {
+    case '58mm':
+      return '@page { size: 58mm 297mm; margin: 2mm; }';
+    case '80mm':
+      return '@page { size: 80mm 297mm; margin: 3mm; }';
+    case 'a5':
+      return '@page { size: A5; margin: 10mm; }';
+    case 'a6':
+      return '@page { size: A6; margin: 6mm; }';
+    default:
+      return '@page { size: A4; margin: 12mm; }';
+  }
 }
 
 // Browser print of the receipt print root: sets the page size and the
@@ -380,7 +428,7 @@ export function pageRule(paper: PaperSize): string {
 // (on `afterprint`, or right away where the dialog blocks).
 export function createBrowserPrintAdapter(win: Window = window): PrintAdapter {
   return {
-    async deliver(paper) {
+    async deliver(paper, options) {
       const doc = win.document;
       const style = doc.createElement('style');
       style.id = PAGE_STYLE_ID;
@@ -388,11 +436,14 @@ export function createBrowserPrintAdapter(win: Window = window): PrintAdapter {
       doc.getElementById(PAGE_STYLE_ID)?.remove();
       doc.head.append(style);
       doc.documentElement.setAttribute(PRINTING_ATTRIBUTE, paper);
+      const pageTitle = doc.title;
+      if (options?.title) doc.title = options.title;
       let cleaned = false;
       const cleanup = () => {
         if (cleaned) return;
         cleaned = true;
         style.remove();
+        if (options?.title) doc.title = pageTitle;
         doc.documentElement.removeAttribute(PRINTING_ATTRIBUTE);
         win.removeEventListener('afterprint', cleanup);
       };

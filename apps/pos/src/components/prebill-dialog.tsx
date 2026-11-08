@@ -2,7 +2,13 @@ import { useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useModalFocus } from '../lib/dialog-focus';
 import type { PosWorkspace } from '../lib/pos-context';
-import { createBrowserPrintAdapter, formatPrebill, type PaperSize } from '../lib/print-adapter';
+import {
+  createBrowserPrintAdapter,
+  formatPrebill,
+  type PaperSize,
+  printTitle,
+} from '../lib/print-adapter';
+import { PaperPicker } from './paper-picker';
 import { PosIcon } from './pos-icon';
 import { ReceiptPrintPortal, ReceiptSheet } from './receipt-sheet';
 
@@ -37,7 +43,7 @@ export function PrebillDialog({
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className="pos-popup-card"
+        className="pos-popup-card receipt-print-dialog"
       >
         <div className="pos-popup-header">
           <h4 id={titleId}>{t('receiptPrebillTitle')}</h4>
@@ -51,34 +57,33 @@ export function PrebillDialog({
             <PosIcon name="close" />
           </button>
         </div>
-        <fieldset className="row">
-          <legend>{t('receiptPaper')}</legend>
-          {(['80mm', 'a4'] as const).map((size) => (
-            <label key={size}>
-              <input
-                type="radio"
-                name="prebill-paper"
-                checked={paper === size}
-                onChange={() => setPaper(size)}
-              />
-              {t(`receiptPaper_${size}`)}
-            </label>
-          ))}
-        </fieldset>
-        <button
-          type="button"
-          onClick={() =>
-            void adapter.deliver(paper).then((outcome) => {
-              setError(
-                outcome.ok
-                  ? ''
-                  : t(outcome.reason === 'blocked' ? 'prebillPrintBlocked' : 'prebillPrintFailed'),
-              );
-            })
-          }
-        >
-          {t('receiptPrebillPrint')}
-        </button>
+        <div className="receipt-print-toolbar">
+          <PaperPicker value={paper} onChange={setPaper} />
+          <button
+            type="button"
+            className="primary-button"
+            onClick={() =>
+              void adapter
+                .deliver(paper, {
+                  title: printTitle(t('receiptPrebillTitle'), null, workspace.order_id, t),
+                })
+                .then((outcome) => {
+                  setError(
+                    outcome.ok
+                      ? ''
+                      : t(
+                          outcome.reason === 'blocked'
+                            ? 'prebillPrintBlocked'
+                            : 'prebillPrintFailed',
+                        ),
+                  );
+                })
+            }
+          >
+            <PosIcon name="print" />
+            {t('receiptPrebillPrint')}
+          </button>
+        </div>
         {error ? (
           <p className="error" role="alert">
             {error}

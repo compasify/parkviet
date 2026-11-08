@@ -16,10 +16,71 @@
   font-size: 12px;
 }
 
-.receipt-a4 {
+.receipt-58mm {
+  width: 48mm;
+  font-size: 11px;
+  padding: 4px;
+}
+
+/* Payment invoice for thermal rolls: text plus one items table. */
+.ticket-table {
   width: 100%;
-  max-width: 186mm;
+  border-collapse: collapse;
+  border-top: 1px dashed #000;
+  margin-top: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ticket-table th {
+  font-weight: 600;
+  border-bottom: 1px dashed #000;
+  padding: 2px 0;
+}
+
+.ticket-table th,
+.ticket-table td {
+  text-align: right;
+  white-space: nowrap;
+  padding-left: 4px;
+}
+
+.ticket-table :is(th, td):first-child {
+  text-align: left;
+  padding-left: 0;
+}
+
+.ticket-table .ticket-name td {
+  text-align: left;
+  white-space: normal;
+  padding: 3px 0 0;
+  font-weight: 600;
+}
+
+.ticket-table .ticket-figures td {
+  padding-bottom: 2px;
+}
+
+/* Sheets preview at their real paper width, margins included; they shrink
+   to fit a narrow screen. */
+.receipt-a4 {
+  width: 210mm;
+  max-width: 100%;
   font-size: 14px;
+  padding: min(12mm, 4vw);
+}
+
+.receipt-a5 {
+  width: 148mm;
+  max-width: 100%;
+  font-size: 13px;
+  padding: min(10mm, 4vw);
+}
+
+.receipt-a6 {
+  width: 105mm;
+  max-width: 100%;
+  font-size: 11.5px;
+  padding: min(6mm, 3vw);
 }
 
 .receipt-sheet p,
@@ -111,9 +172,139 @@
 }
 
 .receipt-preview {
-  background: #f2f2f2;
-  padding: 12px;
+  background: #eef1f4;
+  padding: 16px;
   overflow: auto;
+  display: flex;
+  justify-content: safe center;
+  align-items: flex-start;
+}
+
+.receipt-preview .receipt-sheet {
+  flex: 0 1 auto;
+  min-width: 0;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.16), 0 6px 18px rgb(0 0 0 / 0.08);
+}
+
+/* Paper size picker: compact chips over real radios (keyboard and labels
+   still work as a radio group). */
+.paper-picker {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.paper-picker-group {
+  display: inline-flex;
+  border: 1px solid var(--pos-border, #c9d3dc);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--pos-surface, #fff);
+}
+
+.paper-picker-group + .paper-picker-group {
+  margin-left: 6px;
+}
+
+.paper-picker .paper-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  height: 32px;
+  padding: 0 10px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.paper-picker .paper-chip + .paper-chip {
+  border-left: 1px solid var(--pos-border, #c9d3dc);
+}
+
+.paper-picker .paper-chip input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  margin: 0;
+  cursor: inherit;
+}
+
+.paper-picker .paper-chip:hover {
+  background: var(--pos-selected, #e8f1f8);
+}
+
+.paper-picker .paper-chip:has(input:checked) {
+  background: var(--pos-blue, #1f6fb2);
+  color: #fff;
+}
+
+.paper-picker .paper-chip:has(input:focus-visible) {
+  outline: 2px solid var(--pos-blue, #1f6fb2);
+  outline-offset: -2px;
+}
+
+.paper-picker .paper-chip:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.paper-picker-label {
+  font-size: 0.8125rem;
+  color: var(--pos-muted, #5b6b7a);
+  margin-right: 4px;
+}
+
+/* Receipt print panel: toolbar above a scrollable preview. */
+.receipt-print-panel {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.receipt-print-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+
+.receipt-print-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.receipt-print-status {
+  margin: 0;
+  font-size: 0.8125rem;
+}
+
+.receipt-print-panel .receipt-preview,
+.receipt-print-dialog .receipt-preview {
+  border: 1px solid var(--pos-border, #c9d3dc);
+  border-radius: 8px;
+  max-height: min(68dvh, 720px);
+}
+
+.receipt-print-dialog .receipt-preview {
+  max-height: calc(100dvh - 220px);
+}
+
+.receipt-print-panel p[role="status"],
+.receipt-print-panel .error {
+  margin: 0;
 }
 
 /* A print-only copy of a sheet, rendered at the end of <body> so a modal's
@@ -145,6 +336,12 @@
     padding: 0;
   }
 
+  /* 58mm rolls print about 48mm wide. */
+  html[data-receipt-printing="58mm"] .receipt-sheet {
+    width: 48mm;
+    padding: 0;
+  }
+
   html[data-receipt-printing="80mm"] .receipt-sheet {
     width: 72mm;
     padding: 0;
@@ -152,6 +349,18 @@
 
   html[data-receipt-printing="a4"] .receipt-sheet {
     width: 186mm;
+    max-width: none;
+    padding: 0;
+  }
+
+  html[data-receipt-printing="a5"] .receipt-sheet {
+    width: 128mm;
+    max-width: none;
+    padding: 0;
+  }
+
+  html[data-receipt-printing="a6"] .receipt-sheet {
+    width: 93mm;
     max-width: none;
     padding: 0;
   }

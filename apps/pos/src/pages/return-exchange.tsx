@@ -1,9 +1,10 @@
-import { Link, useNavigate, useSearch } from '@tanstack/react-router';
+import { useNavigate, useSearch } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FeatureOffNote } from '../components/feature-off-note';
 import { PageState, PosPage } from '../components/pos-page';
 import { usePosSelection } from '../components/pos-selection';
+import { ReceiptPrintButton } from '../components/receipt-print-dialog';
 import { RefundActions } from '../components/refund-actions';
 import { RefundEvidenceDialog } from '../components/refund-evidence-dialog';
 import { lotLabel, SoldTrace } from '../components/sold-trace';
@@ -672,9 +673,7 @@ function ReturnProgress({
           : ''}
       </p>
       {operation.status === 'received' ? (
-        <Link to="/receipts" search={{ source: operation.id }}>
-          {t('receiptOpenReturn')}
-        </Link>
+        <ReceiptPrintButton sourceId={operation.id} label={t('receiptOpenReturn')} />
       ) : null}
       {operation.status === 'pending_approval' && !approvalActive ? (
         <p className="attention-box" role="note">

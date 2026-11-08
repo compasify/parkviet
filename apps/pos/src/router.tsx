@@ -51,6 +51,12 @@ const authedRoute = createRoute({
 const saleRoute = createRoute({
   getParentRoute: () => authedRoute,
   path: '/',
+  // The order of the selected invoice tab, so a reload or a shared link
+  // opens the same tab.
+  validateSearch: (search: Record<string, unknown>): { order?: string } =>
+    typeof search.order === 'string' && /^[\w-]{1,64}$/.test(search.order)
+      ? { order: search.order }
+      : {},
   component: SalePage,
 });
 

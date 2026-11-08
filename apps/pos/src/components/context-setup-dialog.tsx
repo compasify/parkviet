@@ -21,7 +21,7 @@ export function ContextSetupDialog({ enabled }: { enabled: boolean }) {
     }
   }, [enabled, needsSelection, selectionComplete, dismissed]);
   useEffect(() => {
-    if (visible) dialog.current?.querySelector('select')?.focus();
+    if (visible) dialog.current?.querySelector<HTMLInputElement>('[role="combobox"]')?.focus();
   }, [visible]);
 
   return (
