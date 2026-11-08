@@ -400,10 +400,14 @@ kbd { padding: var(--pos-s1); border: 1px solid var(--pos-border); border-radius
 .payment-qr-image { width: 220px; height: 220px; background: #fff; border-radius: var(--pos-radius); }
 .vietqr-status { margin: 0; font-weight: 600; color: var(--pos-muted); }
 .vietqr-status.received { color: var(--pos-success); }
-.vietqr-manual { display: grid; gap: var(--pos-s2); }
-.vietqr-manual-save { justify-self: start; min-width: 120px; }
 .vietqr-manual-start { justify-self: start; display: inline-flex; align-items: center; gap: var(--pos-s1); }
-.vietqr-manual { padding: var(--pos-s2); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); }
+/* Optional notes after "Confirm transfer received": compact, one row with Save. */
+.vietqr-manual { display: grid; gap: var(--pos-s1); padding: var(--pos-s2); font-size: var(--pos-small); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); }
+.vietqr-manual > strong { font-size: var(--pos-body); }
+.vietqr-manual .payment-bank-fields { grid-template-columns: minmax(0,1fr) minmax(0,1fr) auto; align-items: end; gap: var(--pos-s2); }
+.vietqr-manual label { display: grid; gap: 2px; font-size: var(--pos-small); }
+.pos-layout .vietqr-manual input { min-height: 32px; padding: 4px var(--pos-s2); font-size: var(--pos-body); }
+.pos-layout .vietqr-manual .vietqr-manual-save { width: auto; min-height: 32px; padding: 4px var(--pos-s3); }
 .payment-bank-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: var(--pos-s2); }
 .payment-popup-actions { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: var(--pos-s2); align-items: center; }
 .pos-layout .payment-popup-actions button { min-height: 44px; padding: var(--pos-s2); }

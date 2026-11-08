@@ -572,16 +572,16 @@ export function TenderEvidenceDialog({
                           disabled={locked}
                         />
                       </label>
+                      {/* Saving confirms the payment, the same as "Finish". */}
+                      <button
+                        ref={qrSaveButton}
+                        type="submit"
+                        className="checkout-submit vietqr-manual-save"
+                        disabled={locked || !ready}
+                      >
+                        {t('vietqrManualSave')}
+                      </button>
                     </div>
-                    {/* Saving confirms the payment, the same as "Finish". */}
-                    <button
-                      ref={qrSaveButton}
-                      type="submit"
-                      className="checkout-submit vietqr-manual-save"
-                      disabled={locked || !ready}
-                    >
-                      {t('vietqrManualSave')}
-                    </button>
                   </div>
                 ) : null}
               </>
