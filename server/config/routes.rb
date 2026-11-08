@@ -109,6 +109,8 @@ Rails.application.routes.draw do
             get 'context/registers', to: 'context_registers#index'
             get 'command_receipts', to: 'command_receipts#index'
             resources :feature_flags, only: [:index, :update]
+            get 'business_profiles', to: 'business_profiles#show'
+            resource :store_profile, only: [:show]
             get 'operations/metrics', to: 'operational_metrics#show'
             resources :branches, only: [:index, :show, :create, :update] do
               member do

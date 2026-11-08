@@ -25,6 +25,11 @@ module Spree
           # Kill-switch state of the selected branch (store defaults without
           # one); the server still refuses a disabled command on its own.
           features: FeaturePolicy.for_branch(store, branch),
+          # Modules on at the selected branch ({} without one). They only
+          # show or hide setup screens; selling never depends on them.
+          modules: ModulePolicy.for_branch(branch),
+          profile: profile_for(branch),
+          onboarding: onboarding,
           branches: branches.map(&:to_pos),
           registers: registers.map(&:to_pos),
           shift: shift&.to_pos,
@@ -62,6 +67,22 @@ module Spree
         return Register.none if branch.nil?
 
         Register.for_store(store).where(branch_id: branch.id).order(:name).limit(100)
+      end
+
+      # Industry profile of the selected branch. A key the catalog no longer
+      # lists still comes back, with no display hints.
+      def profile_for(branch)
+        return if branch.nil?
+
+        { key: branch.profile_key, version: branch.profile_version,
+          display: BusinessProfiles.find(branch.profile_key)&.display || {} }
+      end
+
+      # The first-run setup is needed only by a store with neither a store
+      # profile nor an active branch; stores that already run never see it.
+      def onboarding
+        required = !StoreProfile.for_store(store).exists? && !Branch.for_store(store).where(status: 'active').exists?
+        { required: required, can_setup: policy.permission?('write_pos_topology') }
       end
 
       def capabilities_for(branch)

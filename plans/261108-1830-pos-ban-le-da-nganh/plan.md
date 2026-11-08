@@ -1,7 +1,7 @@
 ---
 title: "POS: bán lẻ đa ngành — hồ sơ ngành, module chi nhánh, thiết lập ban đầu"
 description: "Giai đoạn 0 của kiến trúc đa ngành: chọn ngành khi thiết lập, 13 hồ sơ bán lẻ + 6 F&B 'Sắp hỗ trợ', bật/tắt module theo chi nhánh. Không đổi đường tiền, không đổi hành vi chi nhánh đang chạy."
-status: pending
+status: in-progress
 priority: P2
 effort: "~10 ngày công"
 branch: "v2"
@@ -46,7 +46,7 @@ Kiến trúc và lý do: [261108-1800-pos-multi-industry-architecture.md](../rep
 
 | Phase | Tên | Effort | Status |
 |---|---|---|---|
-| 1 | [Registry module, danh mục hồ sơ, dữ liệu](./phase-01-registry-va-du-lieu-ho-so-nganh.md) | 2 ngày | Pending |
+| 1 | [Registry module, danh mục hồ sơ, dữ liệu](./phase-01-registry-va-du-lieu-ho-so-nganh.md) | 2 ngày | Completed |
 | 2 | [Áp hồ sơ, bật/tắt module, chặn lệnh thiết lập](./phase-02-ap-ho-so-va-module-chi-nhanh.md) | 2 ngày | Pending |
 | 3 | [Client: context, ẩn hiện theo module, mặc định hiển thị](./phase-03-client-module-va-hien-thi.md) | 2 ngày | Pending |
 | 4 | [Wizard thiết lập và trang Mô hình kinh doanh](./phase-04-wizard-thiet-lap-va-mo-hinh-kinh-doanh.md) | 2,5 ngày | Pending |

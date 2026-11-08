@@ -6,6 +6,12 @@ module Spree
       self.table_name = 'spree_pos_branches'
       has_prefix_id :posbranch
 
+      # Shared with BusinessProfiles, which checks profile branch defaults
+      # against the same rules without touching the database.
+      LOT_SELECTIONS = %w[fefo cashier_pick].freeze
+      RETURN_WINDOW_DAYS = (0..3650)
+      PROFILE_KEY_FORMAT = /\A[a-z_]{2,40}\z/
+
       belongs_to :store, class_name: 'Spree::Store'
       belongs_to :stock_location, class_name: 'Spree::StockLocation'
       belongs_to :receiving_stock_location, class_name: 'Spree::StockLocation', optional: true
@@ -17,8 +23,16 @@ module Spree
       validates :name, :code, :timezone, :status, presence: true
       validates :code, uniqueness: { scope: :store_id }, format: { with: /\A[a-z0-9][a-z0-9_-]{0,31}\z/ }
       validates :status, inclusion: { in: %w[active disabled] }
-      validates :return_window_days, numericality: { only_integer: true, greater_than_or_equal_to: 0, less_than_or_equal_to: 3650 },
+      validates :return_window_days, numericality: { only_integer: true, greater_than_or_equal_to: RETURN_WINDOW_DAYS.min,
+                                                     less_than_or_equal_to: RETURN_WINDOW_DAYS.max },
                                      allow_nil: true
+      validates :lot_selection, inclusion: { in: LOT_SELECTIONS }
+      validates :adjustment_approval_threshold, numericality: { only_integer: true, greater_than_or_equal_to: 0 }, allow_nil: true
+      # The industry profile the branch was set up with. Code never checks
+      # it (modules decide behaviour), and a key the catalog no longer lists
+      # is kept as it is.
+      validates :profile_key, format: { with: PROFILE_KEY_FORMAT }
+      validates :profile_version, numericality: { only_integer: true, greater_than_or_equal_to: 1 }
       # Shift close: a count whose variance exceeds this needs a reason and an
       # approval. Nil means every non-zero variance needs one.
       validates :variance_threshold, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
@@ -53,7 +67,8 @@ module Spree
           return_window_days: return_window_days,
           variance_threshold: variance_threshold&.to_s('F'),
           display_freshness_ttl_seconds: display_freshness_ttl_seconds,
-          lot_selection: lot_selection, adjustment_approval_threshold: adjustment_approval_threshold
+          lot_selection: lot_selection, adjustment_approval_threshold: adjustment_approval_threshold,
+          profile_key: profile_key, profile_version: profile_version
         }
       end
 

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_08_173000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_08_183000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -2296,6 +2296,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_08_173000) do
     t.index ["subject_type", "subject_id"], name: "index_spree_pos_audit_entries_on_subject_type_and_subject_id"
   end
 
+  create_table "spree_pos_branch_modules", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "branch_id", null: false
+    t.string "module_key", limit: 64, null: false
+    t.boolean "enabled", null: false
+    t.string "reason", limit: 200
+    t.bigint "changed_by_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["branch_id", "module_key"], name: "idx_pos_branch_modules_key", unique: true
+    t.index ["store_id"], name: "index_spree_pos_branch_modules_on_store_id"
+  end
+
   create_table "spree_pos_branch_products", force: :cascade do |t|
     t.bigint "branch_id", null: false
     t.bigint "product_id", null: false
@@ -2323,12 +2336,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_08_173000) do
     t.string "lot_selection", limit: 16, default: "fefo", null: false
     t.bigint "adjustment_approval_threshold"
     t.integer "display_freshness_ttl_seconds"
+    t.string "profile_key", limit: 40, default: "khac", null: false
+    t.integer "profile_version", default: 1, null: false
     t.index ["stock_location_id"], name: "index_spree_pos_branches_on_stock_location_id"
     t.index ["store_id", "code"], name: "index_spree_pos_branches_on_store_id_and_code", unique: true
     t.index ["store_id"], name: "index_spree_pos_branches_on_store_id"
     t.check_constraint "adjustment_approval_threshold IS NULL OR adjustment_approval_threshold >= 0", name: "chk_pos_branches_adjustment_threshold"
     t.check_constraint "display_freshness_ttl_seconds IS NULL OR display_freshness_ttl_seconds >= 5 AND display_freshness_ttl_seconds <= 120", name: "chk_pos_branches_display_freshness"
     t.check_constraint "lot_selection::text = ANY (ARRAY['fefo'::character varying, 'cashier_pick'::character varying]::text[])", name: "chk_pos_branches_lot_selection"
+    t.check_constraint "profile_version >= 1", name: "chk_pos_branches_profile_version"
     t.check_constraint "return_window_days IS NULL OR return_window_days >= 0 AND return_window_days <= 3650", name: "chk_pos_branches_return_window"
     t.check_constraint "status::text = ANY (ARRAY['active'::character varying, 'disabled'::character varying]::text[])", name: "chk_spree_pos_branches_status"
     t.check_constraint "variance_threshold IS NULL OR variance_threshold >= 0::numeric", name: "chk_pos_branches_variance_threshold"
@@ -3313,6 +3329,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_08_173000) do
     t.index ["workspace_id"], name: "index_spree_pos_stock_discrepancies_on_workspace_id"
     t.check_constraint "needed > 0", name: "chk_pos_stock_discrepancies_needed"
     t.check_constraint "status::text = ANY (ARRAY['open'::character varying, 'resolved'::character varying]::text[])", name: "chk_pos_stock_discrepancies_status"
+  end
+
+  create_table "spree_pos_store_profiles", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.string "profile_key", limit: 40, null: false
+    t.integer "profile_version", default: 1, null: false
+    t.boolean "wholesale", default: false, null: false
+    t.string "interests", default: [], null: false, array: true
+    t.datetime "onboarded_at"
+    t.bigint "changed_by_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["store_id"], name: "index_spree_pos_store_profiles_on_store_id", unique: true
+    t.check_constraint "profile_version >= 1", name: "chk_pos_store_profiles_version"
   end
 
   create_table "spree_pos_tender_attempts", force: :cascade do |t|
@@ -5225,6 +5255,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_08_173000) do
   add_foreign_key "spree_pos_approvals", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_audit_entries", "spree_admin_users", column: "actor_id"
   add_foreign_key "spree_pos_audit_entries", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_branch_modules", "spree_admin_users", column: "changed_by_id"
+  add_foreign_key "spree_pos_branch_modules", "spree_pos_branches", column: "branch_id"
+  add_foreign_key "spree_pos_branch_modules", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_branch_products", "spree_pos_branches", column: "branch_id"
   add_foreign_key "spree_pos_branch_products", "spree_products", column: "product_id"
   add_foreign_key "spree_pos_branches", "spree_stock_locations", column: "receiving_stock_location_id"
@@ -5382,6 +5415,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_08_173000) do
   add_foreign_key "spree_pos_stock_discrepancies", "spree_stock_locations", column: "stock_location_id"
   add_foreign_key "spree_pos_stock_discrepancies", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_stock_discrepancies", "spree_variants", column: "variant_id"
+  add_foreign_key "spree_pos_store_profiles", "spree_admin_users", column: "changed_by_id"
+  add_foreign_key "spree_pos_store_profiles", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_tender_attempts", "spree_admin_users", column: "actor_id"
   add_foreign_key "spree_pos_tender_attempts", "spree_pos_branches", column: "branch_id"
   add_foreign_key "spree_pos_tender_attempts", "spree_pos_payment_methods", column: "pos_payment_method_id"

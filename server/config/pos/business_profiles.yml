@@ -1,0 +1,201 @@
+# Industry profiles offered when a store sets up the POS. Loaded and
+# validated at boot by Spree::Pos::BusinessProfiles; a bad entry stops the
+# app from booting and fails spec/services/spree/pos/business_profiles_spec.rb.
+#
+# A profile is a preset for a branch, never a lock: it lists the modules to
+# turn on, suggested branch defaults, how the catalog is shown, which risky
+# features the industry usually uses (only shown as a hint; never turned on
+# by the profile) and sample units to add. Code checks modules, never the
+# profile key. Labels are not here: clients translate `profiles.<key>.label`
+# and `profiles.<key>.description`.
+#
+# `status` is computed: available when every module is available, otherwise
+# coming_soon (F&B profiles today).
+#
+# Fields
+#   group                 retail | fnb
+#   order                 position in the picker, unique
+#   modules               keys registered in config/initializers/pos_modules.rb
+#   branch_defaults       return_window_days | lot_selection | variance_threshold |
+#                         adjustment_approval_threshold, valid for Spree::Pos::Branch.
+#                         A field left out means the profile has no opinion: a new
+#                         branch keeps the column default (returns off,
+#                         lot_selection fefo) and a profile change proposes nothing.
+#   display               catalog_view: cards | list
+#   recommended_features  Spree::Pos::FeatureFlag::FEATURES
+#   sample_units          default unit codes or codes in config/pos/sample_units.yml
+#
+# Bump `version` when a change to a profile should be offered to branches
+# already set up with it.
+version: 1
+profiles:
+  tap_hoa_sieu_thi:
+    group: retail
+    order: 1
+    modules: [retail.units, retail.measured, retail.traceability]
+    branch_defaults: { return_window_days: 7, lot_selection: fefo }
+    display: { catalog_view: list }
+    recommended_features: [credit, vietqr, customer_display]
+    sample_units: [pack, case, kg]
+
+  thoi_trang:
+    group: retail
+    order: 2
+    modules: []
+    branch_defaults: { return_window_days: 7 }
+    display: { catalog_view: cards }
+    recommended_features: [returns, refunds, exchanges, vietqr]
+    sample_units: []
+
+  dien_tu_dien_may:
+    group: retail
+    order: 3
+    modules: [retail.traceability]
+    branch_defaults: { return_window_days: 7 }
+    display: { catalog_view: cards }
+    recommended_features: [traceability, returns, refunds, exchanges, credit]
+    sample_units: []
+
+  vat_lieu_xay_dung:
+    group: retail
+    order: 4
+    modules: [retail.units]
+    branch_defaults: { return_window_days: 7 }
+    display: { catalog_view: list }
+    recommended_features: [credit, vietqr]
+    sample_units: [bao, tam, cay, xe]
+
+  nong_san_thuc_pham:
+    group: retail
+    order: 5
+    modules: [retail.units, retail.measured, retail.traceability]
+    branch_defaults: { return_window_days: 1, lot_selection: fefo }
+    display: { catalog_view: cards }
+    recommended_features: [vietqr]
+    sample_units: [kg]
+
+  nha_thuoc:
+    group: retail
+    order: 6
+    modules: [retail.units, retail.traceability]
+    branch_defaults: { return_window_days: 7, lot_selection: fefo }
+    display: { catalog_view: list }
+    recommended_features: [traceability, returns, refunds]
+    sample_units: [vien, vi, hop, chai]
+
+  xe_may_moc:
+    group: retail
+    order: 7
+    modules: [retail.traceability]
+    branch_defaults: { return_window_days: 7 }
+    display: { catalog_view: list }
+    recommended_features: [traceability, credit]
+    sample_units: [bo]
+
+  my_pham:
+    group: retail
+    order: 8
+    modules: [retail.traceability]
+    branch_defaults: { return_window_days: 7, lot_selection: fefo }
+    display: { catalog_view: cards }
+    recommended_features: [returns, exchanges]
+    sample_units: []
+
+  noi_that_gia_dung:
+    group: retail
+    order: 9
+    modules: [retail.units]
+    branch_defaults: { return_window_days: 7 }
+    display: { catalog_view: cards }
+    recommended_features: [credit]
+    sample_units: [bo]
+
+  me_be:
+    group: retail
+    order: 10
+    modules: [retail.units, retail.traceability]
+    branch_defaults: { return_window_days: 7, lot_selection: fefo }
+    display: { catalog_view: cards }
+    recommended_features: [returns, exchanges]
+    sample_units: [hop, pack, case]
+
+  sach_van_phong_pham:
+    group: retail
+    order: 11
+    modules: [retail.units]
+    branch_defaults: { return_window_days: 7 }
+    display: { catalog_view: list }
+    recommended_features: [credit]
+    sample_units: [quyen, ram, hop]
+
+  hoa_qua_tang:
+    group: retail
+    order: 12
+    modules: []
+    branch_defaults: {}
+    display: { catalog_view: cards }
+    recommended_features: [vietqr]
+    sample_units: [bo_hoa, gio]
+
+  khac:
+    group: retail
+    order: 13
+    modules: [retail.units, retail.measured, retail.traceability]
+    branch_defaults: {}
+    display: { catalog_view: cards }
+    recommended_features: []
+    sample_units: []
+
+  quan_an:
+    group: fnb
+    order: 14
+    modules: [fnb.menu, fnb.kitchen]
+    branch_defaults: {}
+    display: {}
+    recommended_features: []
+    sample_units: []
+
+  cafe_tra_sua:
+    group: fnb
+    order: 15
+    modules: [fnb.menu, fnb.kitchen, fnb.order_number]
+    branch_defaults: {}
+    display: {}
+    recommended_features: []
+    sample_units: []
+
+  karaoke_bida:
+    group: fnb
+    order: 16
+    modules: [resources, timed_billing, fnb.menu, fnb.postpay]
+    branch_defaults: {}
+    display: {}
+    recommended_features: []
+    sample_units: []
+
+  bar_pub_club:
+    group: fnb
+    order: 17
+    modules: [fnb.menu, fnb.kitchen, fnb.postpay, fnb.service_charge]
+    branch_defaults: {}
+    display: {}
+    recommended_features: []
+    sample_units: []
+
+  cang_tin_tram_dung:
+    group: fnb
+    order: 18
+    modules: [fnb.menu, fnb.kitchen, fnb.order_number, retail.units]
+    branch_defaults: {}
+    display: {}
+    recommended_features: []
+    sample_units: []
+
+  nha_hang:
+    group: fnb
+    order: 19
+    modules: [fnb.menu, fnb.kitchen, resources, fnb.tables, fnb.postpay, fnb.service_charge]
+    branch_defaults: {}
+    display: {}
+    recommended_features: []
+    sample_units: []

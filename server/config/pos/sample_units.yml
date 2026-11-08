@@ -1,0 +1,43 @@
+# Sample units an industry profile may add to a store (see
+# `sample_units` in business_profiles.yml). They are created only when a
+# profile is applied (`Spree::Pos::UnitDefinition.ensure_samples!`), never for
+# every store, and an existing unit with the same code is left as it is.
+#
+# Every sample is its own canonical unit: base_code = code, factor_to_base 1,
+# sale_precision 0. How many base units a SKU's pack holds is set per SKU
+# (variant unit ratio), not here.
+#
+# Codes are ASCII, at most 16 characters, and must not reuse a default unit
+# code (item, g, kg, ml, l, chai, pack, case). Profiles that mean a default
+# unit use its code directly: lốc = pack, thùng = case, kg = kg, chai = chai.
+#
+# Code    -> name
+#   vien   -> Viên
+#   vi     -> Vỉ
+#   hop    -> Hộp
+#   bao    -> Bao
+#   tam    -> Tấm
+#   cay    -> Cây
+#   xe     -> Xe
+#   quyen  -> Quyển
+#   ram    -> Ram
+#   bo     -> Bộ
+#   bo_hoa -> Bó   (bộ and bó both slug to "bo"; bó takes bo_hoa)
+#   gio    -> Giỏ
+#
+# Only the count dimension for now: length and area (m, m², m³) need a new
+# dimension and are planned separately.
+version: 1
+units:
+  vien: { name: "Viên", dimension: count }
+  vi: { name: "Vỉ", dimension: count }
+  hop: { name: "Hộp", dimension: count }
+  bao: { name: "Bao", dimension: count }
+  tam: { name: "Tấm", dimension: count }
+  cay: { name: "Cây", dimension: count }
+  xe: { name: "Xe", dimension: count }
+  quyen: { name: "Quyển", dimension: count }
+  ram: { name: "Ram", dimension: count }
+  bo: { name: "Bộ", dimension: count }
+  bo_hoa: { name: "Bó", dimension: count }
+  gio: { name: "Giỏ", dimension: count }
