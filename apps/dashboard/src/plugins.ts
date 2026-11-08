@@ -25,11 +25,45 @@
 //
 // Docs: https://spreecommerce.org/docs/developer/dashboard/customization/quickstart
 
-import { i18n } from '@spree/dashboard'
+import { defineDashboardPlugin, i18n, Subject } from '@spree/dashboard'
+import { BanknoteIcon } from '@spree/dashboard-ui/icons'
 import en from './locales/en.json'
 import vi from './locales/vi.json'
+import { VietqrSettingsPage } from './pages/vietqr-settings'
+import { VietqrPaymentMethodGuide } from './slots/vietqr-payment-method-guide'
 
 // Merges your `admin.*` keys into the dashboard's namespace without dropping
 // its own. Add a bundle per locale you ship.
 i18n.addResourceBundle('en', 'translation', en, true, true)
 i18n.addResourceBundle('vi', 'translation', vi, true, true)
+
+// VietQR (spree_vietqr): receiving accounts and bank webhooks live in
+// Settings; the payment method editor links there.
+defineDashboardPlugin({
+  settingsNav: [
+    {
+      key: 'settings.vietqr',
+      labelKey: 'admin.vietqr.nav',
+      descriptionKey: 'admin.vietqr.nav_description',
+      keywords: ['vietqr', 'qr', 'bank transfer', 'chuyển khoản', 'sepay', 'payos', 'webhook'],
+      path: '/vietqr',
+      icon: BanknoteIcon,
+      group: 'selling',
+      position: 210,
+      subject: Subject.PaymentMethod,
+    },
+  ],
+  routes: [
+    {
+      key: 'settings.vietqr',
+      path: '/settings/vietqr',
+      component: VietqrSettingsPage,
+      subject: Subject.PaymentMethod,
+    },
+  ],
+  slots: {
+    'payment_method.guide.vietqr': [
+      { id: 'vietqr-guide', component: VietqrPaymentMethodGuide as never },
+    ],
+  },
+})

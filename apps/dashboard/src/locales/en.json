@@ -1,3 +1,122 @@
 {
-  "admin": {}
+  "admin": {
+    "vietqr": {
+      "nav": "VietQR",
+      "nav_description": "Bank accounts that receive VietQR transfers, and the bank notifications they sent.",
+      "title": "VietQR bank transfers",
+      "subtitle": "Customers scan a QR at checkout or at the counter; the bank's notification confirms the payment.",
+      "payment_method": "Payment method",
+      "no_method": {
+        "title": "No VietQR payment method yet",
+        "description": "Add a payment method of type VietQR under Settings → Payment methods, then come back to add the bank accounts it receives money on."
+      },
+      "tabs": {
+        "accounts": "Receiving accounts",
+        "events": "Bank notifications"
+      },
+      "providers": {
+        "sepay": "SePay",
+        "payos": "PayOS",
+        "manual": "Manual (no webhook)"
+      },
+      "provider_help": {
+        "sepay": "SePay sends a webhook for every incoming transfer. Paste the webhook URL below into SePay and use the same secret.",
+        "payos": "PayOS creates a payment link per order and calls the webhook when it is paid.",
+        "manual": "No bank notification: staff confirm each transfer by hand."
+      },
+      "fields": {
+        "provider": "Provider",
+        "bank": "Bank",
+        "bank_bin": "Bank",
+        "bank_placeholder": "Choose a bank",
+        "bank_name": "Bank name",
+        "account_number": "Account number",
+        "account_name": "Account holder",
+        "keyword_init": "Transfer prefix",
+        "sub_account": "SePay sub-account",
+        "virtual_account_number": "Virtual account number",
+        "payos_client_id": "PayOS client ID",
+        "webhook_secret": "Webhook secret",
+        "payos_api_key": "PayOS API key",
+        "payos_checksum_key": "PayOS checksum key",
+        "webhook_url": "Webhook URL",
+        "priority": "Priority",
+        "routing_weight": "Routing weight",
+        "monthly_quota_amount": "Monthly quota (₫)",
+        "monthly_threshold_amount": "Monthly threshold (₫)",
+        "active": "Active",
+        "period_confirmed": "Received this month",
+        "status": "Status",
+        "amount": "Amount",
+        "order": "Order",
+        "transaction": "Bank reference",
+        "received_at": "Received",
+        "error": "Error"
+      },
+      "help": {
+        "account_name": "As printed by the bank, without accents.",
+        "keyword_init": "Starts the transfer content, e.g. PV + order number. Leave blank to use the payment method's prefix.",
+        "sub_account": "Only when SePay routes this account through a sub-account.",
+        "priority": "Lower numbers are chosen first (single and quota waterfall strategies).",
+        "routing_weight": "Stored for weighted routing; no strategy uses it yet.",
+        "monthly_quota": "Stop routing here once this much was allocated this month. Blank for no limit.",
+        "monthly_threshold": "The quota waterfall strategy prefers other accounts above this amount. Blank for none."
+      },
+      "validation": {
+        "required": "Required"
+      },
+      "accounts": {
+        "add": "Add account",
+        "help": "Payments are routed across the active accounts by the payment method's routing strategy.",
+        "empty": "No receiving account yet — VietQR is hidden at checkout and at the POS until you add one.",
+        "sheet_description": "The QR shown to customers pays into this account.",
+        "delete_confirm": {
+          "title": "Remove this account?",
+          "message": "{{account}} will no longer receive VietQR payments. An account that already received payments is deactivated instead, so past payments keep their record."
+        },
+        "messages": {
+          "created": "Account added",
+          "updated": "Account saved",
+          "removed": "Account removed"
+        }
+      },
+      "events": {
+        "search_placeholder": "Search by reference or order…",
+        "all_statuses": "All statuses",
+        "statuses": {
+          "received": "Received",
+          "verified": "Verified",
+          "matched": "Matched",
+          "confirmed": "Confirmed",
+          "rejected": "Rejected",
+          "unmatched": "Unmatched",
+          "duplicate": "Duplicate",
+          "error": "Error"
+        },
+        "empty": "No bank notification yet.",
+        "previous": "Previous",
+        "next": "Next",
+        "page": "Page {{page}} of {{pages}}",
+        "detail_title": "Bank notification",
+        "payload": "Raw payload",
+        "resolve_title": "Resolve this transfer",
+        "resolve_help": "Match it to the order the customer paid for, or process it again after fixing the account setup.",
+        "order_number_placeholder": "Order number, e.g. R123456789",
+        "match": "Match order",
+        "retry": "Process again",
+        "messages": {
+          "matched": "Transfer matched to the order",
+          "retried": "Notification processed again"
+        }
+      },
+      "guide": {
+        "intro": "VietQR shows a bank-transfer QR with the exact amount and transfer content; the bank's notification confirms the payment.",
+        "after_create": "After saving, add the bank accounts it receives money on under Settings → VietQR.",
+        "no_account": "No active receiving account — customers cannot pay with VietQR yet.",
+        "accounts_one": "{{count}} active receiving account.",
+        "accounts_other": "{{count}} active receiving accounts.",
+        "manage": "Manage accounts"
+      }
+    }
+  }
 }

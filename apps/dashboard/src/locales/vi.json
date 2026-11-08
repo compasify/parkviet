@@ -6727,6 +6727,124 @@
       "run_label": "Chạy cái này",
       "copy_command": "Sao chép lệnh",
       "cli_then_sign_in": "Nó sẽ mở trình duyệt của bạn để đăng nhập và phê duyệt những gì đại lý có thể làm."
+    },
+    "vietqr": {
+      "nav": "VietQR",
+      "nav_description": "Tài khoản ngân hàng nhận chuyển khoản VietQR và thông báo giao dịch từ ngân hàng.",
+      "title": "Chuyển khoản VietQR",
+      "subtitle": "Khách quét mã QR khi thanh toán online hoặc tại quầy; thông báo từ ngân hàng xác nhận thanh toán.",
+      "payment_method": "Phương thức thanh toán",
+      "no_method": {
+        "title": "Chưa có phương thức thanh toán VietQR",
+        "description": "Thêm phương thức thanh toán loại VietQR trong Cài đặt → Phương thức thanh toán, sau đó quay lại để thêm tài khoản nhận tiền."
+      },
+      "tabs": {
+        "accounts": "Tài khoản nhận tiền",
+        "events": "Thông báo ngân hàng"
+      },
+      "providers": {
+        "sepay": "SePay",
+        "payos": "PayOS",
+        "manual": "Thủ công (không webhook)"
+      },
+      "provider_help": {
+        "sepay": "SePay gửi webhook cho mỗi giao dịch tiền vào. Dán URL webhook bên dưới vào SePay và dùng cùng một mã bí mật.",
+        "payos": "PayOS tạo link thanh toán cho từng đơn và gọi webhook khi đã thanh toán.",
+        "manual": "Không có thông báo từ ngân hàng: nhân viên tự xác nhận từng giao dịch."
+      },
+      "fields": {
+        "provider": "Nhà cung cấp",
+        "bank": "Ngân hàng",
+        "bank_bin": "Ngân hàng",
+        "bank_placeholder": "Chọn ngân hàng",
+        "bank_name": "Tên ngân hàng",
+        "account_number": "Số tài khoản",
+        "account_name": "Chủ tài khoản",
+        "keyword_init": "Tiền tố nội dung chuyển khoản",
+        "sub_account": "Tài khoản phụ SePay",
+        "virtual_account_number": "Số tài khoản ảo",
+        "payos_client_id": "PayOS client ID",
+        "webhook_secret": "Mã bí mật webhook",
+        "payos_api_key": "PayOS API key",
+        "payos_checksum_key": "PayOS checksum key",
+        "webhook_url": "URL webhook",
+        "priority": "Độ ưu tiên",
+        "routing_weight": "Trọng số phân bổ",
+        "monthly_quota_amount": "Hạn mức tháng (₫)",
+        "monthly_threshold_amount": "Ngưỡng tháng (₫)",
+        "active": "Đang hoạt động",
+        "period_confirmed": "Đã nhận tháng này",
+        "status": "Trạng thái",
+        "amount": "Số tiền",
+        "order": "Đơn hàng",
+        "transaction": "Mã giao dịch",
+        "received_at": "Nhận lúc",
+        "error": "Lỗi"
+      },
+      "help": {
+        "account_name": "Đúng như ngân hàng in, không dấu.",
+        "keyword_init": "Mở đầu nội dung chuyển khoản, ví dụ PV + số đơn. Để trống để dùng tiền tố của phương thức thanh toán.",
+        "sub_account": "Chỉ khi SePay nhận tiền tài khoản này qua tài khoản phụ.",
+        "priority": "Số nhỏ hơn được chọn trước (chiến lược một tài khoản và thác hạn mức).",
+        "routing_weight": "Được lưu cho phân bổ theo trọng số; hiện chưa chiến lược nào dùng.",
+        "monthly_quota": "Ngừng phân bổ vào đây khi đã đạt số tiền này trong tháng. Để trống nếu không giới hạn.",
+        "monthly_threshold": "Chiến lược thác hạn mức ưu tiên tài khoản khác khi vượt số tiền này. Để trống nếu không có."
+      },
+      "validation": {
+        "required": "Bắt buộc"
+      },
+      "accounts": {
+        "add": "Thêm tài khoản",
+        "help": "Thanh toán được phân bổ qua các tài khoản đang hoạt động theo chiến lược của phương thức thanh toán.",
+        "empty": "Chưa có tài khoản nhận tiền — VietQR sẽ ẩn ở trang thanh toán và POS cho đến khi bạn thêm.",
+        "sheet_description": "Mã QR hiển thị cho khách sẽ chuyển tiền vào tài khoản này.",
+        "delete_confirm": {
+          "title": "Xóa tài khoản này?",
+          "message": "{{account}} sẽ không nhận thanh toán VietQR nữa. Tài khoản đã từng nhận tiền sẽ được tắt thay vì xóa để giữ lịch sử giao dịch."
+        },
+        "messages": {
+          "created": "Đã thêm tài khoản",
+          "updated": "Đã lưu tài khoản",
+          "removed": "Đã xóa tài khoản"
+        }
+      },
+      "events": {
+        "search_placeholder": "Tìm theo mã giao dịch hoặc đơn hàng…",
+        "all_statuses": "Tất cả trạng thái",
+        "statuses": {
+          "received": "Đã nhận",
+          "verified": "Đã xác thực",
+          "matched": "Đã khớp",
+          "confirmed": "Đã xác nhận",
+          "rejected": "Bị từ chối",
+          "unmatched": "Chưa khớp",
+          "duplicate": "Trùng lặp",
+          "error": "Lỗi"
+        },
+        "empty": "Chưa có thông báo nào từ ngân hàng.",
+        "previous": "Trước",
+        "next": "Sau",
+        "page": "Trang {{page}}/{{pages}}",
+        "detail_title": "Thông báo ngân hàng",
+        "payload": "Dữ liệu gốc",
+        "resolve_title": "Xử lý giao dịch này",
+        "resolve_help": "Khớp với đơn hàng khách đã thanh toán, hoặc xử lý lại sau khi sửa cấu hình tài khoản.",
+        "order_number_placeholder": "Số đơn hàng, ví dụ R123456789",
+        "match": "Khớp đơn",
+        "retry": "Xử lý lại",
+        "messages": {
+          "matched": "Đã khớp giao dịch với đơn hàng",
+          "retried": "Đã xử lý lại thông báo"
+        }
+      },
+      "guide": {
+        "intro": "VietQR hiển thị mã QR chuyển khoản với đúng số tiền và nội dung; thông báo từ ngân hàng xác nhận thanh toán.",
+        "after_create": "Sau khi lưu, thêm tài khoản nhận tiền trong Cài đặt → VietQR.",
+        "no_account": "Chưa có tài khoản nhận tiền đang hoạt động — khách chưa thể thanh toán bằng VietQR.",
+        "accounts_one": "{{count}} tài khoản nhận tiền đang hoạt động.",
+        "accounts_other": "{{count}} tài khoản nhận tiền đang hoạt động.",
+        "manage": "Quản lý tài khoản"
+      }
     }
   }
 }
