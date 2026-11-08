@@ -119,7 +119,7 @@ RSpec.describe 'POS business profiles', type: :request do
       expect(get_pos(writer, 'context').dig('onboarding', 'required')).to be(false)
     end
 
-    it 'shows the modules and profile of the selected branch' do
+    it 'shows the modules and profile of the selected branch', pos_modules: :default do
       writer = staff_with(%w[write_pos_topology])
       branch = branch_for(store)
       Spree::Pos::BranchModule.create!(store: store, branch: branch, module_key: 'retail.units', enabled: true, reason: 'spec')

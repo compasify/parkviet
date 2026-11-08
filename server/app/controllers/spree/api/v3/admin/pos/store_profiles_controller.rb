@@ -7,6 +7,8 @@ module Spree
         module Pos
           # The current store's main industry profile, or null before the
           # first-run setup. Only the current store's row is ever read.
+          # Changing it (`write_pos_topology`) only changes the default of
+          # branches created afterwards.
           class StoreProfilesController < BaseController
             scoped_resource :pos_topology
             pos_permissions show: %w[read_pos_topology write_pos_topology]
@@ -15,6 +17,16 @@ module Spree
               return if channel_rejected?
 
               render json: { data: Spree::Pos::StoreProfile.for_store(current_store).includes(:changed_by).first&.to_pos }
+            end
+
+            def update
+              return if channel_rejected?
+
+              data = Spree::Pos::Profiles::UpdateStore.call(
+                store: current_store, actor: current_user, profile_key: params[:profile_key], reason: params[:reason],
+                wholesale: params.key?(:wholesale) ? params[:wholesale] : nil, interests: params.key?(:interests) ? Array(params[:interests]) : nil
+              )
+              render json: { data: data }
             end
           end
         end

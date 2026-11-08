@@ -91,3 +91,5 @@ end
 
 # POS kill-switches: branches created in specs start with every feature on.
 require_relative 'support/pos_feature_helpers'
+# POS modules: branches created in specs start with their profile's modules on.
+require_relative 'support/pos_module_helpers'

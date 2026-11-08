@@ -7,7 +7,7 @@ require_relative '../support/pos_credit_helpers'
 # `khac`, all three retail modules on, and a store profile so the store never
 # sees the first-run setup. Runs the migration's own SQL on rows this example
 # created.
-RSpec.describe CreateSpreePosBusinessProfiles do
+RSpec.describe CreateSpreePosBusinessProfiles, pos_modules: :default do
   include PosCreditHelpers
 
   def backfill!

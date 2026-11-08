@@ -148,6 +148,51 @@ RSpec.describe 'POS topology', type: :request do
     expect(response.parsed_body.to_json).not_to include(branch_id)
   end
 
+  it 'creates a branch with the store profile, or the one named, its modules and its defaults', pos_modules: :default do
+    manager = staff_with(%w[write_pos_topology])
+    headers = { 'Authorization' => "Bearer #{login_as(manager)}" }
+    location = location_for(store)
+    create_branch = lambda do |code, **extra|
+      post '/api/v3/admin/pos/branches', headers: headers, params: {
+        name: code, code: code, timezone: 'Asia/Ho_Chi_Minh', stock_location_id: location.prefixed_id
+      }.merge(extra), as: :json
+      response.parsed_body
+    end
+
+    # No store profile: `khac`, all three modules, no defaults (returns stay off).
+    data = create_branch.call('q1')['data']
+    expect(response).to have_http_status(:created)
+    expect(data).to include('profile_key' => 'khac', 'profile_version' => 1, 'return_window_days' => nil, 'lot_selection' => 'fefo')
+    first = Spree::Pos::Branch.find_by_prefix_id!(data['id'])
+    expect(Spree::Pos::BranchModule.where(branch: first).pluck(:module_key, :enabled, :reason)).to contain_exactly(
+      ['retail.units', true, 'profile:khac'], ['retail.measured', true, 'profile:khac'], ['retail.traceability', true, 'profile:khac']
+    )
+    audit = Spree::Pos::AuditEntry.find_by!(action: 'branch.create', subject_id: first.id)
+    expect(audit.metadata).to include('profile_key' => 'khac', 'modules' => %w[retail.units retail.measured retail.traceability])
+
+    # The store profile is the default; fields the request sends win over the profile's defaults.
+    Spree::Pos::StoreProfile.create!(store: store, profile_key: 'nha_thuoc', onboarded_at: Time.current)
+    data = create_branch.call('q2', lot_selection: 'cashier_pick')['data']
+    expect(data).to include('profile_key' => 'nha_thuoc', 'return_window_days' => 7, 'lot_selection' => 'cashier_pick')
+    second = Spree::Pos::Branch.find_by_prefix_id!(data['id'])
+    expect(Spree::Pos::ModulePolicy.for_branch(second)).to eq('retail.units' => true, 'retail.measured' => false, 'retail.traceability' => true)
+    expect(Spree::Pos::UnitDefinition.for_store(store).pluck(:code)).to include('vien', 'vi', 'hop', 'chai')
+
+    data = create_branch.call('q3', profile_key: 'thoi_trang', return_window_days: nil)['data']
+    expect(data).to include('profile_key' => 'thoi_trang', 'return_window_days' => nil)
+    expect(Spree::Pos::BranchModule.where(branch: Spree::Pos::Branch.find_by_prefix_id!(data['id']))).to be_empty
+
+    expect(create_branch.call('q4', profile_key: 'nha_hang').dig('error', 'details', 'reason')).to eq('profile_unavailable')
+    expect(response).to have_http_status(:conflict)
+    expect(create_branch.call('q4', profile_key: 'tiem_vang').dig('error', 'details', 'reason')).to eq('profile_unknown')
+    expect(Spree::Pos::Branch.for_store(store).where(code: 'q4')).to be_empty
+
+    # A failing branch leaves no module rows behind.
+    create_branch.call('q1')
+    expect(response).to have_http_status(:unprocessable_content)
+    expect(Spree::Pos::BranchModule.for_store(store).count).to eq(5)
+  end
+
   it 'binds an approval to the original action and does not offer a consume route' do
     manager = staff_with(%w[write_pos_topology])
     requester = staff_with(%w[read_pos_orders write_pos_orders write_pos_workspaces write_pos_shifts])

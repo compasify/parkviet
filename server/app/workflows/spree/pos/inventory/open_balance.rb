@@ -19,6 +19,8 @@ module Spree
           CommandExecutor.call(store: store, actor: staff, key: key, payload: payload, authorize: authorize) do
             branch = Guard.branch!(store, branch_id)
             FeaturePolicy.require!(branch, :traceability)
+            # Opening tracked stock is traceability setup at the branch (D5).
+            ModulePolicy.require!(branch, 'retail.traceability')
             variant = Guard.variant!(store, branch, variant_id)
             # Same share lock as a first sale takes: the tracked mode cannot be
             # reconfigured while the balance opens.

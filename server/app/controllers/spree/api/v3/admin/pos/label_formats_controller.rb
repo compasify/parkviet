@@ -22,6 +22,8 @@ module Spree
               return if channel_rejected?
 
               branch = branch!(params[:branch_id])
+              # A new scale label layout is measured-goods setup (D5).
+              Spree::Pos::ModulePolicy.require!(branch, 'retail.measured')
               Spree::Pos::UnitDefinition.ensure_defaults!(current_store)
               format = Spree::Pos::LabelFormat.create!(format_attributes.merge(store: current_store, branch: branch, status: 'active', version: 1))
               audit!('label_format.create', branch, format.to_pos)
@@ -34,6 +36,8 @@ module Spree
               return if channel_rejected?
 
               format = format!
+              # Changing a layout is setup too; disabling one (below) is not.
+              Spree::Pos::ModulePolicy.require!(format.branch, 'retail.measured')
               format.with_lock do
                 raise Spree::Pos::Conflict, 'A disabled label format cannot be changed.' if format.disabled?
 

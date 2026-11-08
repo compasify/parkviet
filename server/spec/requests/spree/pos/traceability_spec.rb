@@ -149,6 +149,108 @@ RSpec.describe 'POS traceability API', type: :request do
     expect(response).to have_http_status(:conflict)
   end
 
+  # D5: turning retail.traceability off at a branch refuses new traceability
+  # setup there and nothing else. Tracked stock already open keeps selling,
+  # paying, completing, handing over, returning, moving and counting, and a
+  # setup command already run replays.
+  it 'refuses new tracked setup with the module off and keeps selling and returning tracked stock' do
+    manager = credit_staff(store, branch, [caps::MANAGE, caps::INVENTORY_MANAGE], extra_permissions: %w[write_pos_topology])
+    branch.stock_location.restock(variant, 4)
+    key = SecureRandom.uuid
+    opening = { branch_id: branch.prefixed_id, variant_id: variant.prefixed_id,
+                lots: [{ lot_code: 'D1', expiry_on: (Date.current + 9).iso8601, quantity: 4 }] }
+    send_opening = lambda do
+      post '/api/v3/admin/pos/inventory/opening_balances', headers: { 'Authorization' => "Bearer #{token_for(keeper)}", 'Idempotency-Key' => key },
+                                                           params: opening.merge(idempotency_key: key), as: :json
+      response.parsed_body
+    end
+    opened = send_opening.call
+    expect(response).to have_http_status(:created)
+
+    put "/api/v3/admin/pos/branches/#{branch.prefixed_id}/modules/retail.traceability",
+        headers: { 'Authorization' => "Bearer #{token_for(manager)}" }, params: { enabled: false, reason: 'Không bán hàng lô nữa' }, as: :json
+    expect(response).to have_http_status(:ok)
+    expect(Spree::Pos::ModulePolicy.enabled?(branch, 'retail.traceability')).to be(false)
+
+    # The command already run replays.
+    expect(send_opening.call).to eq(opened)
+    expect(response).to have_http_status(:created)
+
+    disabled = ->(body) { expect(body.dig('error', 'details')).to include('reason' => 'module_disabled', 'module' => 'retail.traceability') }
+    phone = create(:product, store: store, status: 'active', name: 'Điện thoại').tap do |row|
+      row.default_variant.set_price('VND', 1_000_000)
+      Spree::Pos::BranchProduct.create!(branch: branch, product: row)
+    end
+    track_variant!(store, phone.default_variant, 'serial')
+    branch.stock_location.restock(phone.default_variant, 1)
+    disabled.call(call(keeper, :post, 'inventory/opening_balances', branch_id: branch.prefixed_id, variant_id: phone.default_variant.prefixed_id,
+                                                                    serials: ['IMEI-D5']))
+    expect(response).to have_http_status(:conflict)
+    disabled.call(call(keeper, :post, 'inventory/receipts', branch_id: branch.prefixed_id, variant_id: variant.prefixed_id,
+                                                            lots: [{ lot_code: 'D2', expiry_on: (Date.current + 30).iso8601, quantity: 1 }]))
+    fresh = create(:product, store: store, status: 'active').tap { |row| Spree::Pos::BranchProduct.create!(branch: branch, product: row) }
+    configure = lambda do |mode|
+      put '/api/v3/admin/pos/units/variant', headers: { 'Authorization' => "Bearer #{token_for(manager)}" },
+                                             params: { branch_id: branch.prefixed_id, variant_id: fresh.default_variant.prefixed_id,
+                                                       sale_unit: 'item', tracked_mode: mode }, as: :json
+      response.parsed_body
+    end
+    disabled.call(configure.call('lot'))
+    expect(Spree::Pos::VariantUnit.where(variant: fresh.default_variant)).to be_empty
+    # Narrowing back to untracked is never refused.
+    track_variant!(store, fresh.default_variant, 'lot')
+    expect(configure.call('none').dig('data', 'tracked_mode')).to eq('none')
+    expect(response).to have_http_status(:ok)
+
+    # Selling, paying, completing, handing over and returning lot stock.
+    sale = open_sale(store, branch, cashier: cashier, product: product, quantity: 2)
+    complete_paid(sale)
+    hand_over(sale)
+    lot = Spree::Pos::InventoryLot.find_by!(lot_code: 'D1')
+    expect(lot.reload.on_hand).to eq(2)
+    return_and_receive(store, cashier, branch, sale, quantity: 1)
+    expect(lot.reload.on_hand).to eq(3)
+
+    # The same for a serial.
+    enroll_serials!(branch, phone.default_variant, ['IMEI-1'], opened_by: keeper)
+    editor_id = SecureRandom.uuid
+    register = Spree::Pos::Shift.for_store(store).open_now.find_by!(branch_id: branch.id, owner_id: cashier.id).register
+    created = Spree::Pos::Workspaces::Create.call(store: store, staff: cashier, register_id: register.prefixed_id, key: SecureRandom.uuid,
+                                                  editor_id: editor_id)
+    workspace = Spree::Pos::Workspace.find_by_prefix_id!(created['id'])
+    Spree::Pos::Workspaces::ManageLineItem.add(workspace: workspace, staff: cashier, revision: 0, key: SecureRandom.uuid,
+                                               lease_generation: workspace.lease_generation, editor_id: editor_id,
+                                               variant_id: phone.default_variant.prefixed_id, quantity: 1, serial_codes: ['IMEI-1'])
+    serial_sale = PosCreditHelpers::Sale.new(workspace: workspace.reload, cashier: cashier, editor_id: editor_id, product: phone)
+    complete_paid(serial_sale)
+    hand_over(serial_sale)
+    expect(Spree::Pos::SerialUnit.find_by!(serial: 'IMEI-1').status).to eq('sold')
+    prepared = Spree::Pos::Returns::Prepare.call(
+      store: store, staff: cashier, key: SecureRandom.uuid, branch_id: branch.prefixed_id, order_id: serial_sale.workspace.order.prefixed_id,
+      reason: 'Khách trả', lines: [{ 'sale_line_id' => sale_line(serial_sale).prefixed_id, 'quantity' => 1, 'condition' => 'resellable',
+                                     'serial_codes' => ['IMEI-1'] }]
+    )
+    receive_return(store, cashier, prepared)
+    expect(Spree::Pos::SerialUnit.find_by!(serial: 'IMEI-1').status).to eq('in_stock')
+
+    # Moving, counting, reading and recall stay open.
+    target = returns_branch(store)
+    Spree::Pos::BranchProduct.create!(branch: target, product: product)
+    Spree::Pos::StaffMembership.create!(store: store, branch: target, staff: keeper, capabilities: [caps::INVENTORY_MANAGE], status: 'active')
+    call(keeper, :post, 'inventory/opening_balances', branch_id: target.prefixed_id, variant_id: variant.prefixed_id, lots: [])
+    expect(response).to have_http_status(:created)
+    call(keeper, :post, 'inventory/transfers', from_branch_id: branch.prefixed_id, to_branch_id: target.prefixed_id,
+                                               variant_id: variant.prefixed_id, lots: [{ lot_id: lot.prefixed_id, quantity: 1 }])
+    expect(response).to have_http_status(:created)
+    adjustment = call(keeper, :post, 'inventory/adjustments', branch_id: branch.prefixed_id, variant_id: variant.prefixed_id,
+                                                              reason: 'Kiểm kê', lots: [{ lot_id: lot.prefixed_id, counted: 1 }])['data']
+    expect(adjustment).to include('status' => 'pending_approval', 'delta' => -1)
+    expect(call(cashier, :get, 'traceability', branch_id: branch.prefixed_id, variant_id: variant.prefixed_id)['data']).
+      to include('tracked_mode' => 'lot', 'sellable' => true)
+    expect(call(tracer, :get, 'inventory/recall', lot_code: 'D1')['data']['sales']).not_to be_empty
+    expect(response).to have_http_status(:ok)
+  end
+
   it 'scopes recall to trace holders and masks customer phones' do
     enroll_lots!(branch, variant, [['R1', Date.current + 9, 5]], opened_by: keeper)
     profile = credit_customer(store, cashier, name: 'Chi Hoa')

@@ -5,7 +5,7 @@ require_relative '../../../support/pos_credit_helpers'
 # Module switches per branch: no row means off, a planned module is never
 # on, store-wide checks look at active branches only, and a refusal is the
 # same 409 shape as a feature kill-switch.
-RSpec.describe Spree::Pos::ModulePolicy do
+RSpec.describe Spree::Pos::ModulePolicy, pos_modules: :default do
   include PosCreditHelpers
 
   let(:store) { create(:store, default_currency: 'VND', supported_currencies: 'VND') }

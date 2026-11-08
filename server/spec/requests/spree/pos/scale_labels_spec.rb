@@ -1,11 +1,14 @@
 # frozen_string_literal: true
 
 require 'spree/api/testing_support/v3/base'
+require_relative '../../../support/pos_credit_helpers'
 
 # In-store EAN-13 scale labels: a branch format claims the barcode, the SKU's
 # label code picks the variant, and the server alone turns the encoded weight
 # or price into an exact measured quantity.
 RSpec.describe 'POS scale labels and branch assortment', type: :request do
+  include PosCreditHelpers
+
   let(:store) { create(:store, default_currency: 'VND', supported_currencies: 'VND') }
   let(:password) { 'secret123' }
   let(:editor_id) { SecureRandom.uuid }
@@ -237,6 +240,75 @@ RSpec.describe 'POS scale labels and branch assortment', type: :request do
     expect(response.parsed_body['data']).to include('label_code' => '54321', 'version' => 1)
     configure(pork, sale_unit: 'g', price_unit: 'g', label_code: '54321')
     expect(response).to have_http_status(:conflict)
+  end
+
+  # D5: with retail.measured (and then retail.units) off, configured scale
+  # labels still scan and sell; only new label or unit setup is refused, and
+  # narrowing back to the base unit or disabling a layout stays open.
+  it 'keeps selling configured labels with the modules off and refuses new measured or unit setup' do
+    Spree::Pos::StaffMembership.find_by!(staff: user, branch: branch).
+      update!(capabilities: capabilities + [Spree::Pos::Capabilities::PAYMENT])
+    # Cash settles on a manual core method of the store.
+    create(:check_payment_method, store: store, name: 'Bank transfer', active: true)
+    create_format
+    format_id = response.parsed_body.dig('data', 'id')
+    configure(pork)
+    beef = create(:product, store: store, status: 'active', name: 'Thit bo')
+    beef.default_variant.set_price('VND', 200_000)
+    Spree::Pos::BranchProduct.create!(branch: branch, product: beef)
+    configure(beef, label_code: '22222')
+    expect(response).to have_http_status(:ok)
+    switch = lambda do |key|
+      put "/api/v3/admin/pos/branches/#{branch.prefixed_id}/modules/#{key}", headers: auth, params: { enabled: false, reason: 'Tắt' }, as: :json
+      expect(response).to have_http_status(:ok)
+    end
+    switch.call('retail.measured')
+    disabled = lambda do |key|
+      expect(response).to have_http_status(:conflict)
+      expect(response.parsed_body.dig('error', 'details')).to include('reason' => 'module_disabled', 'module' => key)
+    end
+
+    label = ean('211234501250')
+    parse(label)
+    expect(response.parsed_body.dig('data', 'kind')).to eq('measured_label')
+    workspace = open_draft
+    add_label(workspace, label, revision: 0)
+    expect(response).to have_http_status(:ok)
+    sale = PosCreditHelpers::Sale.new(workspace: workspace.reload, cashier: user, editor_id: editor_id, product: pork)
+    take_tender(sale, 'cash', workspace.order.total.to_i)
+    Spree::Pos::Workspaces::Complete.call(**editing_args(sale))
+    expect(workspace.reload.operational_status).to eq('completed')
+    expect(Spree::Pos::SaleLine.where(workspace_id: workspace.id).sole).to have_attributes(base_quantity: 1250, label_format_version: 1)
+
+    create_format(prefix: '22', kind: 'price', value_unit_code: nil)
+    disabled.call('retail.measured')
+    patch "/api/v3/admin/pos/branches/#{branch.prefixed_id}/label_formats/#{format_id}", headers: auth, params: { price_tolerance: '100' }, as: :json
+    disabled.call('retail.measured')
+    lamb = create(:product, store: store, status: 'active', name: 'Thit cuu')
+    Spree::Pos::BranchProduct.create!(branch: branch, product: lamb)
+    configure(lamb, label_code: nil)
+    disabled.call('retail.measured')
+    configure(pork, label_code: '33333')
+    disabled.call('retail.measured')
+    # Unchanged configuration and clearing a label code pass.
+    configure(pork)
+    expect(response).to have_http_status(:ok)
+    configure(beef, label_code: nil)
+    expect(response.parsed_body.dig('data', 'label_code')).to be_nil
+
+    switch.call('retail.units')
+    rice = create(:product, store: store, status: 'active', name: 'Gao')
+    Spree::Pos::BranchProduct.create!(branch: branch, product: rice)
+    configure(rice, sale_unit: 'case', base_unit: 'chai', price_unit: 'case', ratio_numerator: 24, label_code: nil)
+    disabled.call('retail.units')
+    # Back to the base unit at 1:1 is narrowing.
+    configure(beef, sale_unit: 'g', base_unit: 'g', price_unit: 'g', label_code: nil)
+    expect(response).to have_http_status(:ok)
+    expect(response.parsed_body['data']).to include('sale_unit' => 'g', 'base_unit' => 'g')
+
+    post "/api/v3/admin/pos/branches/#{branch.prefixed_id}/label_formats/#{format_id}/disable", headers: auth, as: :json
+    expect(response.parsed_body.dig('data', 'status')).to eq('disabled')
+    expect(Spree::Pos::LabelFormat.for_store(store).count).to eq(1)
   end
 
   it 'lists store products with their assignment for managing the branch assortment' do

@@ -68,6 +68,7 @@ module Spree
               # store-wide, so it needs the store default on, not one branch.
               mode = tracked_mode(params[:tracked_mode])
               Spree::Pos::FeaturePolicy.require_store!(current_store, :traceability) if mode != 'none' && mode != record.tracked_mode
+              require_setup_modules!(branch, record, mode, [sale_unit, base_unit, price_unit])
               begin
                 ActiveRecord::Base.transaction do
                   configure_variant_unit!(record, variant, sale_unit, base_unit, price_unit)
@@ -80,6 +81,33 @@ module Spree
             end
 
             private
+
+            # Module gates (D5) for what this request newly sets up at the
+            # branch, compared with the stored configuration: starting serial
+            # or lot tracking (retail.traceability); a conversion other than
+            # the base unit at 1:1 (retail.units); switching to a mass or
+            # volume sale unit, or a new scale label code (retail.measured).
+            # Keeping a value, or narrowing back to `none` or to the base unit
+            # at 1:1, or clearing the label code, never needs a module.
+            def require_setup_modules!(branch, record, mode, units)
+              sale_unit, base_unit, price_unit = units
+              stored = record.persisted? ? record : nil
+              Spree::Pos::ModulePolicy.require!(branch, 'retail.traceability') if mode != 'none' && mode != (stored&.tracked_mode || 'none')
+
+              numerator = ratio_value(params[:ratio_numerator], 1)
+              denominator = ratio_value(params[:ratio_denominator], 1)
+              converted = sale_unit.id != base_unit.id || numerator != denominator
+              conversion_changed = stored.nil? || [stored.sale_unit_id, stored.base_unit_id, stored.price_unit_id, stored.ratio_numerator,
+                                                   stored.ratio_denominator] != [sale_unit.id, base_unit.id, price_unit.id, numerator, denominator]
+              Spree::Pos::ModulePolicy.require!(branch, 'retail.units') if converted && conversion_changed
+
+              measured = Spree::Pos::UnitDefinition::DIMENSIONS.excluding('count')
+              was_measured = stored && measured.include?(stored.sale_unit&.dimension)
+              label = params.key?(:label_code) ? params[:label_code].to_s.strip.presence : nil
+              new_label = label.present? && label != stored&.label_code
+              entering = measured.include?(sale_unit.dimension) && !was_measured
+              Spree::Pos::ModulePolicy.require!(branch, 'retail.measured') if entering || new_label
+            end
 
             def configure_variant_unit!(record, variant, sale_unit, base_unit, price_unit)
               variant.lock!

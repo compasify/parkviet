@@ -110,13 +110,18 @@ Rails.application.routes.draw do
             get 'command_receipts', to: 'command_receipts#index'
             resources :feature_flags, only: [:index, :update]
             get 'business_profiles', to: 'business_profiles#show'
-            resource :store_profile, only: [:show]
+            resource :store_profile, only: [:show, :update]
+            post 'onboarding', to: 'onboarding#create'
             get 'operations/metrics', to: 'operational_metrics#show'
             resources :branches, only: [:index, :show, :create, :update] do
               member do
                 post :disable
                 post :enable
+                post 'profile/preview', action: :profile_preview
+                put :profile
               end
+              # Module keys contain a dot (retail.units), so the id takes any segment.
+              resources :modules, only: [:index, :update], controller: 'branch_modules', constraints: { id: %r{[^/]+} }
             end
             resources :registers, only: [:index, :show, :create, :update] do
               member do
