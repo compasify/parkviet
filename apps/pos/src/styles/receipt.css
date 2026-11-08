@@ -13,13 +13,27 @@
 
 .receipt-80mm {
   width: 72mm;
-  font-size: 12px;
+  font-size: calc(12px * var(--receipt-scale, 1));
 }
 
 .receipt-58mm {
   width: 48mm;
-  font-size: 11px;
+  font-size: calc(11px * var(--receipt-scale, 1));
   padding: 4px;
+}
+
+/* Template page settings: smaller or larger text on every paper, and a
+   fixed-width font. */
+.receipt-scale-s {
+  --receipt-scale: 0.9;
+}
+
+.receipt-scale-l {
+  --receipt-scale: 1.15;
+}
+
+.receipt-font-mono {
+  font-family: ui-monospace, "Cascadia Mono", "Noto Sans Mono", Consolas, monospace;
 }
 
 /* Payment invoice for thermal rolls: text plus one items table. */
@@ -65,21 +79,21 @@
 .receipt-a4 {
   width: 210mm;
   max-width: 100%;
-  font-size: 14px;
+  font-size: calc(14px * var(--receipt-scale, 1));
   padding: min(12mm, 4vw);
 }
 
 .receipt-a5 {
   width: 148mm;
   max-width: 100%;
-  font-size: 13px;
+  font-size: calc(13px * var(--receipt-scale, 1));
   padding: min(10mm, 4vw);
 }
 
 .receipt-a6 {
   width: 105mm;
   max-width: 100%;
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--receipt-scale, 1));
   padding: min(6mm, 3vw);
 }
 
@@ -111,6 +125,60 @@
 
 .receipt-number {
   font-weight: 600;
+}
+
+/* Template header and footer blocks. Long text wraps anywhere so it never
+   widens a narrow roll. */
+.receipt-header p,
+.receipt-footer p {
+  overflow-wrap: anywhere;
+}
+
+.receipt-footer {
+  text-align: center;
+}
+
+.receipt-align-left {
+  text-align: left;
+}
+
+.receipt-align-right {
+  text-align: right;
+}
+
+.receipt-bold {
+  font-weight: 700;
+}
+
+.receipt-size-s {
+  font-size: 0.85em;
+}
+
+.receipt-size-l {
+  font-size: 1.15em;
+}
+
+.receipt-logo img {
+  display: inline-block;
+  max-width: 100%;
+  height: auto;
+}
+
+.receipt-divider {
+  border-top: 1px dashed #000;
+  margin-top: 6px;
+  padding-top: 4px;
+}
+
+.receipt-divider-solid {
+  border-top-style: solid;
+}
+
+.ticket-table .ticket-detail td {
+  text-align: left;
+  white-space: normal;
+  font-size: 0.9em;
+  padding-left: 8px;
 }
 
 .receipt-meta,

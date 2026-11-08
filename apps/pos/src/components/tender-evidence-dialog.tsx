@@ -2,7 +2,7 @@ import { type KeyboardEvent, useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useVietqrTender } from '../hooks/use-tenders';
 import {
-  formatInvoiceTicket,
+  invoiceTicketPrintDocument,
   lineDiscount,
   lineUnitPrice,
   type TicketPaper,
@@ -18,6 +18,7 @@ import {
 } from '../lib/vietqr';
 import { InvoiceTicketPrintPortal, InvoiceTicketSheet } from './invoice-ticket-sheet';
 import { PosIcon } from './pos-icon';
+import { usePosSelection } from './pos-selection';
 
 const printer = createBrowserPrintAdapter();
 const PAPER_KEY = 'parkviet-pos:ticket-paper';
@@ -135,13 +136,21 @@ export function TenderEvidenceDialog({
   const handedId = useId();
   const [paper, setPaper] = useState<TicketPaper>(savedPaper);
   const [printError, setPrintError] = useState('');
-  const ticket = formatInvoiceTicket(
+  // The store's address and phone, and the branch, from the POS context.
+  const context = usePosSelection().context.data;
+  const branch = context?.branches.find((row) => row.id === workspace.branch_id);
+  const ticket = invoiceTicketPrintDocument(
     {
       workspace,
       attempts,
       handed: handed !== null && handedShort === false ? handed : null,
       change,
-      names,
+      names: {
+        ...names,
+        storeProfile: context?.store.profile,
+        branchCode: branch?.code,
+        returnWindowDays: branch?.return_window_days,
+      },
     },
     t,
     new Date(now),
@@ -601,7 +610,7 @@ export function TenderEvidenceDialog({
               </fieldset>
             </div>
             <div className="receipt-preview">
-              <InvoiceTicketSheet ticket={ticket} paper={paper} />
+              <InvoiceTicketSheet document={ticket} paper={paper} />
             </div>
             {printError ? (
               <p className="error" role="alert">
@@ -610,7 +619,7 @@ export function TenderEvidenceDialog({
             ) : null}
           </aside>
         </div>
-        <InvoiceTicketPrintPortal ticket={ticket} paper={paper} />
+        <InvoiceTicketPrintPortal document={ticket} paper={paper} />
         <div className="payment-popup-actions payment-popup-row">
           <button
             ref={finishButton}

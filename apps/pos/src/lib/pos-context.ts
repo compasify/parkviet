@@ -43,6 +43,18 @@ export type PosSelection = {
   registerId: string | null;
 };
 
+// The store's business details as `Spree::Store` holds them, printed in
+// the header of documents of an open order. Blank fields are null.
+export type PosStoreProfile = {
+  address: string | null;
+  contact_phone: string | null;
+  customer_support_email: string | null;
+  url: string | null;
+  facebook: string | null;
+  instagram: string | null;
+  logo_url: string | null;
+};
+
 export type PosContext = {
   administration?: { read: boolean; write: boolean };
   // Feature flags of the selected branch; absent on servers without them.
@@ -54,6 +66,8 @@ export type PosContext = {
     currency: string | null;
     locale: string | null;
     timezone: string | null;
+    // Printable business details; absent on servers that do not send them.
+    profile?: PosStoreProfile | null;
   };
   capabilities: string[];
   branches: PosBranch[];

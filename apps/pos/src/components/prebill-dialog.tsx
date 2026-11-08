@@ -4,12 +4,13 @@ import { useModalFocus } from '../lib/dialog-focus';
 import type { PosWorkspace } from '../lib/pos-context';
 import {
   createBrowserPrintAdapter,
-  formatPrebill,
   type PaperSize,
+  prebillPrintDocument,
   printTitle,
 } from '../lib/print-adapter';
 import { PaperPicker } from './paper-picker';
 import { PosIcon } from './pos-icon';
+import { usePosSelection } from './pos-selection';
 import { ReceiptPrintPortal, ReceiptSheet } from './receipt-sheet';
 
 const adapter = createBrowserPrintAdapter();
@@ -34,7 +35,21 @@ export function PrebillDialog({
   const [paper, setPaper] = useState<PaperSize>('80mm');
   const [error, setError] = useState('');
   useModalFocus(card, onClose);
-  const document = formatPrebill(workspace, names, t, new Date(), timeZone);
+  // The store's address and phone, and the branch, from the POS context.
+  const context = usePosSelection().context.data;
+  const branch = context?.branches.find((row) => row.id === workspace.branch_id);
+  const document = prebillPrintDocument(
+    workspace,
+    {
+      ...names,
+      storeProfile: context?.store.profile,
+      branchCode: branch?.code,
+      returnWindowDays: branch?.return_window_days,
+    },
+    t,
+    new Date(),
+    timeZone,
+  );
   return (
     <div className="pos-popup-backdrop">
       <div

@@ -5,11 +5,11 @@ import { abandonIfNeeded } from '../hooks/use-tenders';
 import { session } from '../lib/app-session';
 import {
   createBrowserPrintAdapter,
-  formatReceipt,
   isPaperSize,
   type PaperSize,
   type ReceiptPrint,
   type ReceiptSnapshot,
+  receiptPrintDocument,
   receiptPrintTitle,
 } from '../lib/print-adapter';
 import { describeFailure } from '../lib/request-failure';
@@ -82,7 +82,7 @@ export function ReceiptPrintPanel({
   // previews the next print (a copy once the original was used).
   const preview = useMemo(() => {
     const next = receipt.printed ? { copy: true, copy_number: receipt.copy_count + 1 } : null;
-    return formatReceipt(receipt, job ? job.print : next, t);
+    return receiptPrintDocument(receipt, job ? job.print : next, t);
   }, [receipt, job, t]);
 
   // Print only once the print copy carrying this print's label is in the DOM.

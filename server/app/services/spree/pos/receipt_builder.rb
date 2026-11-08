@@ -19,6 +19,17 @@ module Spree
     class ReceiptBuilder
       UNAVAILABLE = 'receipt_unavailable'
       TYPES = { Workspace => 'sale', ReturnOperation => 'return', RefundRequest => 'refund', ShiftClosure => 'shift_closure' }.freeze
+      # Business details of `Spree::Store` printed in a receipt header. The
+      # store has no tax code, so none is printed.
+      STORE_PROFILE_FIELDS = %w[address contact_phone customer_support_email url facebook instagram].freeze
+
+      # The store's printable details as they stand now, blank ones left out.
+      def self.store_profile(store)
+        STORE_PROFILE_FIELDS.each_with_object({}) do |field, profile|
+          value = store.respond_to?(field) ? store.public_send(field).to_s.strip : ''
+          profile[field] = value if value.present?
+        end
+      end
 
       def self.issue_safely!(source, actor:, type: nil)
         ReceiptSnapshot.transaction(requires_new: true) { issue!(source, actor: actor, type: type) }
@@ -88,8 +99,10 @@ module Spree
       def base(branch, register, number, title, at)
         store = branch.store
         {
-          'kind' => type, 'title' => title, 'number' => number, 'store' => { 'name' => store.name },
-          'branch' => { 'name' => branch.name, 'code' => branch.code }, 'register' => register&.name,
+          'kind' => type, 'title' => title, 'number' => number,
+          'store' => { 'name' => store.name }.merge(self.class.store_profile(store)),
+          'branch' => { 'name' => branch.name, 'code' => branch.code, 'return_window_days' => branch.return_window_days },
+          'register' => register&.name,
           'timezone' => branch.timezone, 'at' => at&.iso8601
         }
       end
