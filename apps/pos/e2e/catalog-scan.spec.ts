@@ -193,7 +193,7 @@ async function signInAndClaim(page: Page, workspaceId = 'ws_1') {
   await page.goto('/login');
   await page.getByLabel('Email nhân viên').fill('staff@example.test');
   await page.getByLabel('Mật khẩu', { exact: true }).fill('password');
-  await page.getByRole('button', { name: 'Đăng nhập vào bán hàng', exact: true }).click();
+  await page.getByRole('button', { name: 'Đăng nhập bán hàng', exact: true }).click();
   await expect(page.getByRole('tab', { name: 'Hóa đơn 1' })).toBeVisible();
   await page.locator(`[role="tab"][data-workspace-id="${workspaceId}"]`).click();
   await page.getByRole('button', { name: 'Nhận quyền sửa', exact: true }).click();

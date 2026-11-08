@@ -43,7 +43,7 @@ export async function liveLogin(page: Page, fixture: LiveFixture, who: 'cashier'
   await page.goto('/login');
   await page.getByLabel('Email nhân viên').fill(fixture[who].email);
   await page.getByLabel('Mật khẩu', { exact: true }).fill(fixture[who].password);
-  await page.getByRole('button', { name: 'Đăng nhập vào bán hàng', exact: true }).click();
+  await page.getByRole('button', { name: 'Đăng nhập bán hàng', exact: true }).click();
   await liveExpect(page.locator('.header-user')).not.toBeEmpty({ timeout: 60_000 });
   const chooser = page.getByRole('dialog', { name: 'Chọn nơi bán hàng' });
   const summary = page.locator('.pos-context-details > summary');

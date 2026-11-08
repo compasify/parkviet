@@ -45,7 +45,7 @@ async function install(page: Page, branchCount: number, registerCounts: number[]
   await page.goto('/login');
   await page.getByLabel('Email nhân viên').fill('staff@example.test');
   await page.getByLabel('Mật khẩu', { exact: true }).fill('fixture-only');
-  await page.getByRole('button', { name: 'Đăng nhập vào bán hàng', exact: true }).click();
+  await page.getByRole('button', { name: 'Đăng nhập bán hàng', exact: true }).click();
   return state;
 }
 

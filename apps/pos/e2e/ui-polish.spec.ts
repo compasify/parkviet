@@ -110,7 +110,7 @@ test('cashier layout keeps the basket reachable, formats VND and safely edits qu
   await page.goto('/login');
   await page.getByLabel('Email nhân viên').fill('cashier@example.test');
   await page.getByLabel('Mật khẩu', { exact: true }).fill('test-only');
-  await page.getByRole('button', { name: 'Đăng nhập vào bán hàng', exact: true }).click();
+  await page.getByRole('button', { name: 'Đăng nhập bán hàng', exact: true }).click();
   await expect(page.locator('.pos-context-details > summary')).toContainText('Quầy 01');
   await expect(page.locator('.pos-context-details')).not.toHaveAttribute('open');
   await expect(page.locator('.catalog-product')).toHaveCount(12);

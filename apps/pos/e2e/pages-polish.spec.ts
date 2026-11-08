@@ -55,7 +55,7 @@ async function setup(page: Page, capabilities = ['pos.topology.manage', 'pos.pay
   await page.goto('/login');
   await page.getByLabel('Email nhân viên').fill('staff@example.test');
   await page.getByLabel('Mật khẩu', { exact: true }).fill('fixture-only');
-  await page.getByRole('button', { name: 'Đăng nhập vào bán hàng', exact: true }).click();
+  await page.getByRole('button', { name: 'Đăng nhập bán hàng', exact: true }).click();
   await expect(page.locator('.header-user')).toHaveText('Thu ngân Hiền');
   return state;
 }
@@ -93,6 +93,13 @@ test('login shares register styling, reveals password and handles pending / fail
   });
   await page.goto('/login');
   await expect(page.locator('.header')).toHaveCSS('background-color', 'rgb(7, 86, 154)');
+  await expect(page.getByText('Phiên chỉ lưu trong bộ nhớ trình duyệt.')).toHaveCount(0);
+  const saleButton = page.getByRole('button', { name: 'Đăng nhập bán hàng', exact: true });
+  const adminButton = page.getByRole('button', { name: 'Đăng nhập quản trị', exact: true });
+  const saleBox = (await saleButton.boundingBox())!;
+  const adminBox = (await adminButton.boundingBox())!;
+  expect(saleBox.y).toBeCloseTo(adminBox.y, 1);
+  expect(adminBox.x).toBeGreaterThan(saleBox.x);
   await capture(page, testInfo, 'login');
   const password = page.getByLabel('Mật khẩu', { exact: true });
   await password.fill('fixture-only');
@@ -101,10 +108,12 @@ test('login shares register styling, reveals password and handles pending / fail
   await page.getByRole('button', { name: 'Ẩn mật khẩu' }).click();
   await expect(password).toHaveAttribute('type', 'password');
   await page.getByLabel('Email nhân viên').fill('staff@example.test');
-  await page.getByRole('button', { name: 'Đăng nhập vào bán hàng', exact: true }).click();
+  await saleButton.click();
   await expect(password).toBeDisabled();
-  await expect(page.getByRole('button', { name: 'Đang xử lý…', exact: true })).toHaveCount(2);
-  for (const button of await page.getByRole('button', { name: 'Đang xử lý…', exact: true }).all()) await expect(button).toBeDisabled();
+  const waitingButton = page.getByRole('button', { name: 'Đang xử lý…', exact: true });
+  await expect(waitingButton).toHaveCount(1);
+  await expect(waitingButton).toBeDisabled();
+  await expect(adminButton).toBeDisabled();
   release();
   await expect(page.getByRole('alert')).toContainText('Không thể đăng nhập');
   await expect(password).toHaveValue('');

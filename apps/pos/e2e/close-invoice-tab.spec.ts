@@ -64,7 +64,7 @@ test('the close button drops a blank invoice tab at once and asks before closing
   await page.goto('/login');
   await page.getByLabel('Email nhân viên').fill('staff@example.test');
   await page.getByLabel('Mật khẩu', { exact: true }).fill('password');
-  await page.getByRole('button', { name: 'Đăng nhập vào bán hàng', exact: true }).click();
+  await page.getByRole('button', { name: 'Đăng nhập bán hàng', exact: true }).click();
   const workspace = page.getByRole('region', { name: 'Đơn nháp trên quầy này' });
   const tab = (id: string) => workspace.locator(`[role="tab"][data-workspace-id="${id}"]`);
   const closeButton = (id: string) => workspace.locator(`.workspace-tab:has([data-workspace-id="${id}"]) .workspace-tab-close`);

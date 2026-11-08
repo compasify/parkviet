@@ -368,7 +368,7 @@ async function login(page: Page) {
   await page.goto('/login');
   await page.getByLabel('Email nhân viên').fill('staff@example.test');
   await page.getByLabel('Mật khẩu', { exact: true }).fill('password');
-  await page.getByRole('button', { name: 'Đăng nhập vào bán hàng', exact: true }).click();
+  await page.getByRole('button', { name: 'Đăng nhập bán hàng', exact: true }).click();
   await expect(page.getByRole('tab').first()).toBeVisible();
 }
 

@@ -9,16 +9,17 @@ export function LoginPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [busy, setBusy] = useState(false);
+  const [busyTarget, setBusyTarget] = useState<'sale' | 'administration' | null>(null);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const busy = busyTarget !== null;
 
   async function login(event: FormEvent) {
     event.preventDefault();
     if (busy) return;
     const submitter = (event.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
     const administration = submitter?.value === 'administration';
-    setBusy(true);
+    setBusyTarget(administration ? 'administration' : 'sale');
     setError('');
     try {
       await session.login(email, password);
@@ -28,7 +29,7 @@ export function LoginPage() {
       setPassword('');
       setError(t('failure'));
     } finally {
-      setBusy(false);
+      setBusyTarget(null);
     }
   }
 
@@ -94,22 +95,21 @@ export function LoginPage() {
                 </button>
               </div>
             </div>
-            <button className="checkout-submit" type="submit" value="sale" disabled={busy}>
-              <PosIcon name="cash" /> {busy ? t('waiting') : t('loginSale')}
-            </button>
-            <button
-              className="auth-admin-submit"
-              type="submit"
-              value="administration"
-              disabled={busy}
-            >
-              <PosIcon name="cog" /> {busy ? t('waiting') : t('loginAdministration')}
-            </button>
+            <div className="auth-actions">
+              <button className="checkout-submit" type="submit" value="sale" disabled={busy}>
+                <PosIcon name="cash" /> {busyTarget === 'sale' ? t('waiting') : t('loginSale')}
+              </button>
+              <button
+                className="auth-admin-submit"
+                type="submit"
+                value="administration"
+                disabled={busy}
+              >
+                <PosIcon name="cog" />{' '}
+                {busyTarget === 'administration' ? t('waiting') : t('loginAdministration')}
+              </button>
+            </div>
           </form>
-          <p className="auth-security">
-            <PosIcon name="lock" />
-            {t('security')}
-          </p>
         </section>
         <p className="auth-help">{t('loginHelp')}</p>
       </div>

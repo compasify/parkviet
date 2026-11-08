@@ -61,7 +61,7 @@ async function login(page: Page, administration = true) {
   await page.goto('/login');
   await page.getByLabel('Email nhân viên').fill('admin@example.test');
   await page.getByLabel('Mật khẩu', { exact: true }).fill('fixture-only');
-  await page.getByRole('button', { name: administration ? 'Đăng nhập vào quản trị bán hàng' : 'Đăng nhập vào bán hàng', exact: true }).click();
+  await page.getByRole('button', { name: administration ? 'Đăng nhập quản trị' : 'Đăng nhập bán hàng', exact: true }).click();
 }
 
 test('administration login uses store authority without a selling membership and shows a header cog', async ({ page }, testInfo) => {

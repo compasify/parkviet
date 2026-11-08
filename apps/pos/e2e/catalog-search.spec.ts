@@ -30,7 +30,7 @@ test('catalog search is scoped to the selected branch and remains read-only', as
   await page.goto('/login');
   await page.getByLabel('Email nhân viên').fill('staff@example.test');
   await page.getByLabel('Mật khẩu', { exact: true }).fill('password');
-  await page.getByRole('button', { name: 'Đăng nhập vào bán hàng', exact: true }).click();
+  await page.getByRole('button', { name: 'Đăng nhập bán hàng', exact: true }).click();
   await expect(page.locator('.pos-context-details > summary')).toContainText('Branch');
   await page.getByRole('searchbox', { name: 'Tìm hàng hoặc quét mã' }).fill('ao');
   await page.getByRole('button', { name: 'Tìm hàng', exact: true }).click();

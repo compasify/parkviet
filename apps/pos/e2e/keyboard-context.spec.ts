@@ -164,7 +164,7 @@ test('switching register never shows the previous register shift while the new c
   await page.goto('/login');
   await page.getByLabel('Email nhân viên').fill('lan@example.com');
   await page.getByLabel('Mật khẩu', { exact: true }).fill('secret');
-  await page.getByRole('button', { name: 'Đăng nhập vào bán hàng', exact: true }).click();
+  await page.getByRole('button', { name: 'Đăng nhập bán hàng', exact: true }).click();
 
   const setup = page.getByRole('dialog', { name: 'Chọn nơi bán hàng' });
   await pickOption(setup, 'Chi nhánh', branch.id);

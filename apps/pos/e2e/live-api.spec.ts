@@ -38,7 +38,7 @@ test('real API preserves one editor and rejects a stale browser after takeover',
       await page.goto('http://127.0.0.1:5174/login');
       await page.getByLabel('Email nhân viên').fill(credentials.email);
       await page.getByLabel('Mật khẩu', { exact: true }).fill(credentials.password);
-      await page.getByRole('button', { name: 'Đăng nhập vào bán hàng', exact: true }).click();
+      await page.getByRole('button', { name: 'Đăng nhập bán hàng', exact: true }).click();
       await expect(page.locator('.header-user')).toHaveText('POS Review', { timeout: 25_000 });
       await selectReviewContext(page, credentials);
       await expect(page.getByText('Ca đang mở:', { exact: false })).toBeVisible();
@@ -126,7 +126,7 @@ test('real API recovers a committed draft after its response is lost and the pag
     await page.goto('http://127.0.0.1:5174/login');
     await page.getByLabel('Email nhân viên').fill(credentials.email);
     await page.getByLabel('Mật khẩu', { exact: true }).fill(credentials.password);
-    await page.getByRole('button', { name: 'Đăng nhập vào bán hàng', exact: true }).click();
+    await page.getByRole('button', { name: 'Đăng nhập bán hàng', exact: true }).click();
     await expect(page.locator('.header-user')).toHaveText('POS Review', { timeout: 25_000 });
     await selectReviewContext(page, credentials);
     await expect(page.getByText('Ca đang mở:', { exact: false })).toBeVisible();

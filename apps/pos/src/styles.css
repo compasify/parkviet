@@ -38,7 +38,7 @@ fieldset { border: 1px solid #d8e3dc; border-radius: 8px; display: grid; gap: 8p
   --pos-s4: 16px; --pos-s5: 20px; --pos-s6: 24px;
   --pos-small: .75rem; --pos-body: .875rem; --pos-heading: 1rem;
   --pos-target: 44px; --pos-overlay: 20; --pos-shadow: 0 12px 32px #102c4233;
-  --pos-page-width: 1200px; --pos-auth-width: 440px; --pos-page-title: 1.5rem;
+  --pos-page-width: 1200px; --pos-auth-width: 480px; --pos-page-title: 1.5rem;
   color: var(--pos-ink); background: var(--pos-bg); font-size: var(--pos-body); line-height: 1.45;
 }
 .pos-layout :is(button, input, select, textarea) { font: inherit; border: 1px solid var(--pos-border); border-radius: var(--pos-radius); min-height: var(--pos-target); }
@@ -83,7 +83,8 @@ fieldset { border: 1px solid #d8e3dc; border-radius: 8px; display: grid; gap: 8p
 .pos-layout .user-menu-item:hover, .pos-layout .user-menu-item:focus-visible { background: var(--pos-tint); }
 .pos-layout .user-menu-item.active { color: var(--pos-blue); font-weight: 600; }
 .pos-layout .user-menu-logout { color: var(--pos-danger); }
-.auth-admin-submit { width: 100%; }
+.auth-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--pos-s3); }
+.pos-layout .auth-admin-submit { width: 100%; min-height: 48px; padding: var(--pos-s3); }
 .pos-administration { display: grid; gap: var(--pos-s4); min-width: 0; }
 .admin-overview { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--pos-s3); padding: var(--pos-s5); background: var(--pos-surface); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); }
 .admin-overview h2 { margin: var(--pos-s1) 0; }

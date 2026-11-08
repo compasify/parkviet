@@ -128,7 +128,7 @@ async function openBranchPage(page: Page, link: 'Hàng bán tại chi nhánh' | 
   await page.goto('/login');
   await page.getByLabel('Email nhân viên').fill('admin@example.test');
   await page.getByLabel('Mật khẩu', { exact: true }).fill('fixture-only');
-  await page.getByRole('button', { name: 'Đăng nhập vào quản trị bán hàng', exact: true }).click();
+  await page.getByRole('button', { name: 'Đăng nhập quản trị', exact: true }).click();
   await expect(page).toHaveURL(/\/settings$/);
   await page.getByRole('link', { name: `${link} Siêu thị Hiền`, exact: true }).click();
 }

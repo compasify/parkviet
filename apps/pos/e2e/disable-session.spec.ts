@@ -199,7 +199,7 @@ async function openSession(page: Page) {
   await page.goto('/login');
   await page.getByLabel('Email nhân viên').fill('lan@example.com');
   await page.getByLabel('Mật khẩu', { exact: true }).fill('secret');
-  await page.getByRole('button', { name: 'Đăng nhập vào bán hàng', exact: true }).click();
+  await page.getByRole('button', { name: 'Đăng nhập bán hàng', exact: true }).click();
   await expect(page.locator('.header-user')).toHaveText('Lan');
   await expect(page.getByText('Ca đang mở', { exact: true })).toBeAttached();
   await expect(page.getByRole('tab', { name: 'Hóa đơn 1' })).toBeVisible();
