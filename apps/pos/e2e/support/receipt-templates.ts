@@ -16,6 +16,8 @@ export type TemplateSeed = {
   // A footer text line that tells the versions apart on the printed sheet.
   footer?: string;
   marginMm?: number;
+  // Prints made by the first press of a sale receipt.
+  copies?: number;
 };
 
 export type PrintLayout = {
@@ -36,10 +38,11 @@ type MockTemplate = {
 
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
-function configOf(type: DocumentType, footer?: string, marginMm?: number): TemplateConfig {
+function configOf(type: DocumentType, footer?: string, marginMm?: number, copies?: number): TemplateConfig {
   const config = clone(DEFAULT_TEMPLATES[type]);
   if (footer) config.footer = [...config.footer, { type: 'text', value: footer, align: 'center' }];
   if (marginMm !== undefined) config.page = { ...config.page, margin_mm: marginMm };
+  if (copies !== undefined) config.page = { ...config.page, copies };
   return config;
 }
 
@@ -51,7 +54,7 @@ export function receiptTemplateApi(seeds: TemplateSeed[]) {
     paper: seed.paper,
     status: 'active',
     is_default: seed.isDefault ?? false,
-    versions: [configOf(seed.type, seed.footer, seed.marginMm)],
+    versions: [configOf(seed.type, seed.footer, seed.marginMm, seed.copies)],
   }));
   const state = { failing: false, versionReads: [] as string[] };
   const toPos = (template: MockTemplate, version = template.versions.length) => ({

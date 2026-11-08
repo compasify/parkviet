@@ -711,3 +711,101 @@ test('VietQR split with cash, attested by hand when no bank notification comes',
     expect.objectContaining({ evidence_kind: 'vietqr_manual', reference: 'FT-HAND-1', receiving_account: '0123456789' }),
   );
 });
+
+// The sale receipt of ws_1 for the print popup, recording prints like the server.
+async function mockSaleReceipt(page: Page) {
+  const prints: Record<string, unknown>[] = [];
+  const receipt = () => ({
+    id: 'posreceipt_R250',
+    source_type: 'sale',
+    number: 'HD-0001',
+    branch_id: 'br_1',
+    issued_at: '2026-11-07T03:00:00Z',
+    issued_late: false,
+    disclaimer: 'Phiếu bán hàng POS — không phải hóa đơn điện tử',
+    printed: prints.length > 0,
+    copy_count: Math.max(prints.length - 1, 0),
+    document: { title: 'PHIẾU BÁN HÀNG', currency: 'VND', lines: [], totals: { item_total: '250000', total: '250000' } },
+  });
+  await page.route('**/pos/receipts/lookup?*', (route) => route.fulfill({ json: { data: receipt() } }));
+  await page.route('**/pos/receipts/posreceipt_R250/prints', (route) => {
+    prints.push((route.request().postDataJSON() ?? {}) as Record<string, unknown>);
+    const copyNumber = prints.length - 1;
+    return route.fulfill({
+      status: 201,
+      json: {
+        data: {
+          print: { id: `posprint_${prints.length}`, copy: copyNumber > 0, copy_number: copyNumber, label: null, printed_at: '2026-11-07T03:01:00Z' },
+          receipt: receipt(),
+        },
+      },
+    });
+  });
+  await page.addInitScript(() => {
+    window.print = () => {
+      const sheet = window.document.querySelector('[data-testid="receipt-print-sheet"]');
+      const seen = window as unknown as { receiptPrints?: string[] };
+      seen.receiptPrints = [...(seen.receiptPrints ?? []), sheet?.getAttribute('data-print-id') ?? ''];
+    };
+  });
+  return prints;
+}
+
+const receiptPrints = (page: Page) =>
+  page.evaluate(() => (window as unknown as { receiptPrints?: string[] }).receiptPrints ?? []);
+
+async function payInCash(page: Page) {
+  await page.locator('.payment-panel').getByRole('button', { name: 'Thanh toán', exact: true }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByRole('button', { name: 'Đưa đủ' }).click();
+  await dialog.getByRole('button', { name: 'Kết thúc', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Giao hàng tại quầy' })).toBeVisible();
+}
+
+test('a device set to print automatically prints the sale receipt as soon as the payment completes', async ({ page }) => {
+  await mockPos(page, [{ id: 'ws_1', order_id: 'R250', total: 250000 }]);
+  const prints = await mockSaleReceipt(page);
+  await page.addInitScript(() => localStorage.setItem('parkviet-pos:auto-print:sale', 'on'));
+  await login(page);
+  await openTab(page, 'ws_1');
+  await payInCash(page);
+
+  const receiptDialog = page.getByRole('dialog');
+  await expect(receiptDialog).toContainText('HD-0001');
+  await expect.poll(() => receiptPrints(page)).toEqual(['posprint_1']);
+  // Recorded like a print by hand.
+  expect(prints).toHaveLength(1);
+  expect(prints[0]).toHaveProperty('idempotency_key');
+  await expect(receiptDialog.getByRole('status').filter({ hasText: 'Đã ghi nhận bản gốc' })).toBeVisible();
+  await expect(receiptDialog.getByRole('checkbox', { name: /Tự in phiếu bán hàng/ })).toBeChecked();
+});
+
+test('automatic printing is off by default and set per device', async ({ page, browser }) => {
+  await mockPos(page, [{ id: 'ws_1', order_id: 'R250', total: 250000 }]);
+  const prints = await mockSaleReceipt(page);
+  await login(page);
+  await openTab(page, 'ws_1');
+  await payInCash(page);
+  // Nothing opens or prints by itself.
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  expect(await receiptPrints(page)).toEqual([]);
+  expect(prints).toEqual([]);
+
+  await page.locator('.payment-panel').getByRole('button', { name: 'In hóa đơn', exact: true }).click();
+  const autoPrint = page.getByRole('dialog').getByRole('checkbox', { name: /Tự in phiếu bán hàng/ });
+  await expect(autoPrint).not.toBeChecked();
+  await autoPrint.check();
+  expect(await page.evaluate(() => localStorage.getItem('parkviet-pos:auto-print:sale'))).toBe('on');
+  // Opening the popup by hand or turning the setting on prints nothing.
+  expect(prints).toEqual([]);
+
+  // Another device keeps its own setting.
+  const other = await browser.newContext();
+  const otherPage = await other.newPage();
+  await otherPage.goto(page.url());
+  expect(await otherPage.evaluate(() => localStorage.getItem('parkviet-pos:auto-print:sale'))).toBeNull();
+  await other.close();
+
+  await autoPrint.uncheck();
+  expect(await page.evaluate(() => localStorage.getItem('parkviet-pos:auto-print:sale'))).toBeNull();
+});

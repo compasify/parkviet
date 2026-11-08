@@ -4,7 +4,7 @@ import type { PosFinancialAttempt, PosWorkspace } from '../pos-context';
 import type { ReceiptSnapshot } from '../print-adapter';
 import { paymentTicketData, prebillData, snapshotData } from './data';
 import { DEFAULT_TEMPLATES, defaultTemplate, TEST_PRINT_BANNER } from './defaults';
-import { renderDocument } from './render';
+import { isWebUrl, printCopies, renderDocument } from './render';
 import { DOCUMENT_TYPES, type PrintBlock, type PrintDocument, type TemplateConfig } from './types';
 
 const t = (key: string, options?: Record<string, unknown>) => i18n.t(key, options ?? {}) as string;
@@ -282,6 +282,7 @@ describe('built-in templates', () => {
     );
     expect(doc.lines).toEqual({
       layout: 'table',
+      headings: { index: 'STT', name: 'Tên hàng' },
       columns: [
         { key: 'qty', label: 'SL' },
         { key: 'price', label: 'Đ.giá' },
@@ -399,7 +400,15 @@ describe('template blocks', () => {
     };
     const config = {
       ...defaultTemplate('sale'),
-      header: [{ type: 'logo', width_pct: 5 }, { type: 'qr' }, null, 'x', 7, { type: 'title' }],
+      header: [
+        { type: 'logo', width_pct: 5 },
+        { type: 'html' },
+        { type: 'qr' },
+        null,
+        'x',
+        7,
+        { type: 'title' },
+      ],
     } as unknown as TemplateConfig;
     expect(renderDocument(config, withLogo).header[0]).toEqual({
       kind: 'image',
@@ -407,6 +416,7 @@ describe('template blocks', () => {
       alt: 'Park Việt',
       widthPct: 20,
       align: 'center',
+      monochrome: false,
     });
     const unsafe = { ...data(), store: { ...data().store, logoUrl: 'javascript:alert(1)' } };
     expect(renderDocument(config, unsafe).header).toHaveLength(1);
@@ -430,11 +440,131 @@ describe('template blocks', () => {
     );
     expect(doc.lines).toEqual({
       layout: 'table',
+      headings: { index: 'STT', name: 'Tên hàng' },
       columns: [
         { key: 'qty', label: 'SL' },
         { key: 'amount', label: 'T.tiền' },
       ],
       rows: [{ index: 1, name: 'Bia lon', cells: ['1', '230.000'], details: ['Lô: L01'] }],
     });
+  });
+});
+
+describe('QR codes, barcodes, signatures and copies', () => {
+  const sale = (store: Record<string, unknown> = {}) =>
+    snapshotData(
+      snapshot('sale', { ...saleDocument, store: { ...saleDocument.store, ...store } }),
+      t,
+    );
+  const footer = (blocks: unknown[], data = sale(), type: 'sale' | 'prebill' = 'sale') =>
+    renderDocument({ ...defaultTemplate(type), footer: blocks } as unknown as TemplateConfig, data)
+      .footer;
+
+  it('prints a QR code of an http(s) link and skips any other link', () => {
+    expect(
+      footer([
+        { type: 'qr', source: 'url', value: 'https://zalo.me/parkviet', caption: ' Zalo OA ' },
+        { type: 'qr', source: 'url', value: 'javascript:alert(1)' },
+        { type: 'qr', source: 'url', value: 'https://x.vn/a b' },
+        { type: 'qr', source: 'url', value: `https://${'a'.repeat(300)}.vn` },
+        { type: 'qr', source: 'vietqr_payment' },
+        { type: 'qr', source: 'url', value: 'http://shop.vn', align: 'left' },
+      ]),
+    ).toEqual([
+      { kind: 'qr', value: 'https://zalo.me/parkviet', caption: 'Zalo OA', align: 'center' },
+      { kind: 'qr', value: 'http://shop.vn', caption: null, align: 'left' },
+    ]);
+  });
+
+  it('links a store page given as a link, a domain or a handle, and hides a missing one', () => {
+    const data = sale({ url: 'parkviet.vn', facebook: '@parkviet', instagram: 'instagram.com/pv' });
+    const qr = (field: string) => ({ type: 'qr', source: 'store_social', field });
+    expect(
+      footer([qr('url'), qr('facebook'), qr('instagram')], data).map(
+        (block) => block.kind === 'qr' && block.value,
+      ),
+    ).toEqual([
+      'https://parkviet.vn',
+      'https://www.facebook.com/parkviet',
+      'https://instagram.com/pv',
+    ]);
+    expect(footer([qr('facebook')], sale({ facebook: 'https://fb.com/pv' }))).toEqual([
+      { kind: 'qr', value: 'https://fb.com/pv', caption: null, align: 'center' },
+    ]);
+    expect(footer([qr('facebook'), qr('zalo')], sale())).toEqual([]);
+  });
+
+  it('prints the document number as a barcode only when there is one set B can carry', () => {
+    expect(footer([{ type: 'barcode', align: 'right' }])).toEqual([
+      { kind: 'barcode', value: 'R100', align: 'right' },
+    ]);
+    const unnumbered = { ...sale(), number: null };
+    expect(footer([{ type: 'barcode' }], unnumbered)).toEqual([]);
+    expect(footer([{ type: 'barcode' }], { ...sale(), number: 'Đơn 1' })).toEqual([]);
+  });
+
+  it('prints the chosen signature boxes in a fixed order with their labels', () => {
+    expect(
+      footer([
+        {
+          type: 'signatures',
+          parties: ['cashier', 'buyer', 'boss'],
+          labels: { buyer: ' Khách hàng ', cashier: '  ' },
+        },
+        { type: 'signatures', parties: [] },
+      ]),
+    ).toEqual([
+      {
+        kind: 'signatures',
+        parties: [
+          { party: 'buyer', label: 'Khách hàng' },
+          { party: 'cashier', label: 'Thu ngân' },
+        ],
+      },
+    ]);
+  });
+
+  it('prints a monochrome logo when asked', () => {
+    const data = { ...sale(), store: { ...sale().store, logoUrl: '/logo.png' } };
+    expect(footer([{ type: 'logo', monochrome: true }], data)).toEqual([
+      expect.objectContaining({ kind: 'image', monochrome: true }),
+    ]);
+  });
+
+  it('prints copies of sale receipts only, one to three', () => {
+    const withCopies = (copies: unknown) =>
+      ({
+        ...defaultTemplate('sale'),
+        page: { ...defaultTemplate('sale').page, copies },
+      }) as TemplateConfig;
+    expect(printCopies(defaultTemplate('sale'), 'sale')).toBe(1);
+    expect(printCopies(withCopies(2), 'sale')).toBe(2);
+    expect(printCopies(withCopies(9), 'sale')).toBe(3);
+    expect(printCopies(withCopies(0), 'sale')).toBe(1);
+    expect(printCopies(withCopies(1.5), 'sale')).toBe(1);
+    expect(printCopies(withCopies(2), 'refund')).toBe(1);
+    expect(printCopies(null, 'sale')).toBe(1);
+  });
+
+  it('accepts only absolute http(s) links without spaces', () => {
+    expect(isWebUrl('https://parkviet.vn/a?b=1')).toBe(true);
+    expect(isWebUrl('HTTP://PARKVIET.VN')).toBe(true);
+    for (const link of [
+      '',
+      'parkviet.vn',
+      'ftp://x.vn',
+      'https://',
+      ' https://x.vn',
+      'mailto:a@b.vn',
+      'http:example.com',
+      'https:/example.com',
+      'https://cửahàng.vn',
+      'https://shop.vn/đổi-trả',
+      'https://shop.vn/a b',
+      'https://shop.vn/%zz',
+      'https://shop.vn/{id}',
+    ])
+      expect(isWebUrl(link)).toBe(false);
+    expect(isWebUrl('https://shop.vn:8443/a/b?x=1&y=%C3%A1#top')).toBe(true);
   });
 });

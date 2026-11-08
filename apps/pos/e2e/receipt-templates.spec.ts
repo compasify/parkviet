@@ -384,3 +384,104 @@ test('a restore refused as stale is retried against the current version, never o
   expect(state.writes.filter((write) => write.method === 'PATCH')).toHaveLength(patches);
   await expect(conflict).toHaveCount(0);
 });
+
+test('blocks reorder by dragging or from the keyboard, and QR codes, barcodes, signatures, copies and overflow show in the preview', async ({ page }) => {
+  const { state } = await install(page);
+  await openTemplates(page);
+  await page.getByRole('link', { name: 'Sửa mẫu Phiếu bán hàng', exact: true }).click();
+
+  // Keyboard: pick a block up, move it, cancel with Escape, then put it down.
+  const header = await openSection(page, 'Đầu phiếu');
+  const handle = (name: string) => header.getByRole('button', { name: `Kéo để sắp xếp ${name}` });
+  await handle('Khối 1: Thông tin cửa hàng').focus();
+  await page.keyboard.press('Enter');
+  await expect(handle('Khối 1: Thông tin cửa hàng')).toHaveAttribute('aria-pressed', 'true');
+  await page.keyboard.press('ArrowDown');
+  await expect(handle('Khối 2: Thông tin cửa hàng')).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(handle('Khối 1: Thông tin cửa hàng')).toBeFocused();
+  await expect(header.getByRole('listitem', { name: 'Khối 2: Văn bản' })).toBeVisible();
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Enter');
+  await expect(handle('Khối 2: Thông tin cửa hàng')).toHaveAttribute('aria-pressed', 'false');
+  await expect(header.getByRole('listitem', { name: 'Khối 1: Văn bản' })).toBeVisible();
+
+  // Pointer: drag the title above every other block.
+  await handle('Khối 3: Tiêu đề chứng từ').evaluate((element) => element.scrollIntoView({ block: 'center' }));
+  const grip = await handle('Khối 3: Tiêu đề chứng từ').boundingBox();
+  const first = await header.getByRole('listitem', { name: 'Khối 1: Văn bản' }).boundingBox();
+  if (!grip || !first) throw new Error('blocks are not laid out');
+  await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(first.x + 40, first.y + 4, { steps: 6 });
+  await expect(header.getByRole('listitem', { name: 'Khối 1: Văn bản' })).toHaveAttribute('data-drop', 'before');
+  await page.mouse.up();
+  await expect(header.getByRole('listitem', { name: 'Khối 1: Tiêu đề chứng từ' })).toBeVisible();
+  await expect(header.getByRole('listitem', { name: 'Khối 3: Thông tin cửa hàng' })).toBeVisible();
+
+  // A QR code takes http(s) links only and is drawn here, not fetched.
+  const footer = await openSection(page, 'Chân phiếu');
+  await footer.getByLabel('Loại khối').selectOption({ label: 'Mã QR' });
+  await footer.getByRole('button', { name: 'Thêm khối chân phiếu' }).click();
+  const qr = footer.getByRole('listitem', { name: 'Khối 1: Mã QR' });
+  await qr.getByLabel('Đường link (http:// hoặc https://)').fill('javascript:alert(1)');
+  await expect(qr).toContainText('Đường link phải bắt đầu bằng http:// hoặc https://.');
+  await qr.getByLabel('Đường link (http:// hoặc https://)').fill('https://zalo.me/parkviet');
+  await qr.getByLabel('Chú thích dưới mã (không bắt buộc)').fill('Zalo OA');
+  await expect(qr.locator('.rt-error')).toHaveCount(0);
+  await footer.getByLabel('Loại khối').selectOption({ label: 'Mã vạch số chứng từ' });
+  await footer.getByRole('button', { name: 'Thêm khối chân phiếu' }).click();
+  // Signature boxes are offered on A4 and A5 sheets only.
+  await expect(footer.getByLabel('Loại khối').locator('option', { hasText: 'Ô chữ ký' })).toHaveCount(0);
+
+  await show(page, 'Xem trước');
+  const qrCode = preview(page).locator('[data-qr-value="https://zalo.me/parkviet"]');
+  await expect(qrCode).toContainText('Zalo OA');
+  await expect(qrCode.locator('svg path')).toHaveAttribute('d', /^M\d/);
+  await expect(preview(page).locator('[data-barcode-value="R100245"] rect').first()).toBeAttached();
+  await expect(preview(page).locator('[data-barcode-value="R100245"]')).toContainText('R100245');
+  await show(page, 'Chỉnh sửa');
+
+  // On A4 a table template is a ruled grid and signature boxes print.
+  const pageSection = await openSection(page, 'Trang & giấy');
+  await pageSection.getByRole('radio', { name: 'A4' }).check();
+  await pageSection.getByLabel('Số liên mỗi lần in').selectOption('2');
+  const lines = await openSection(page, 'Dòng hàng');
+  await lines.getByLabel('Kiểu trình bày').selectOption('table');
+  await footer.getByLabel('Loại khối').selectOption({ label: 'Ô chữ ký' });
+  await footer.getByRole('button', { name: 'Thêm khối chân phiếu' }).click();
+  await footer
+    .getByRole('listitem', { name: 'Khối 3: Ô chữ ký' })
+    .getByLabel('Nhãn ô Người bán')
+    .fill('Nhân viên');
+  await show(page, 'Xem trước');
+  await expect(preview(page).locator('table.receipt-grid th').first()).toHaveText('Tên hàng');
+  await expect(preview(page).locator('.receipt-signatures')).toContainText('Người mua');
+  await expect(preview(page).locator('.receipt-signatures')).toContainText('Nhân viên');
+  await show(page, 'Chỉnh sửa');
+
+  // On a 58mm roll the part of a line that wraps is underlined.
+  await pageSection.getByRole('radio', { name: '58mm' }).check();
+  await footer.getByLabel('Loại khối').selectOption({ label: 'Văn bản' });
+  await footer.getByRole('button', { name: 'Thêm khối chân phiếu' }).click();
+  const long = 'Đổi trả trong bảy ngày khi còn hóa đơn và tem nhãn';
+  await footer.getByRole('listitem', { name: 'Khối 4: Văn bản' }).getByLabel('Nội dung').fill(long);
+  await expect(footer.getByRole('listitem', { name: 'Khối 4: Văn bản' })).toContainText('khoảng 32 ký tự');
+  await show(page, 'Xem trước');
+  await expect(preview(page).getByTestId('receipt-overflow')).toHaveText(long.slice(32));
+  await expect(preview(page).locator('.receipt-signatures')).toHaveCount(0);
+  await show(page, 'Chỉnh sửa');
+
+  await page.getByRole('button', { name: 'Lưu', exact: true }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Đã lưu phiên bản 2.' })).toBeVisible();
+  const config = state.writes.at(-1)?.body?.config as TemplateConfig;
+  expect(config.page.copies).toBe(2);
+  expect(config.header.map((block) => block.type)).toEqual(['title', 'text', 'business']);
+  expect(config.footer).toEqual([
+    { type: 'qr', source: 'url', value: 'https://zalo.me/parkviet', align: 'center', caption: 'Zalo OA' },
+    { type: 'barcode', align: 'center' },
+    { type: 'signatures', parties: ['buyer', 'seller'], labels: { seller: 'Nhân viên' } },
+    { type: 'text', value: long, align: 'center' },
+  ]);
+});

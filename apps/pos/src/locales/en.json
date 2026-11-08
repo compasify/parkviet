@@ -654,6 +654,18 @@
   "variantUnitLabelCodeInvalid": "The label code is up to 8 digits only.",
   "variantUnitLockNote": "Once the SKU has sale lines only the label code can change; unit or ratio changes are refused.",
   "receiptTemplates": {
+    "counter": {
+      "picker": "Print template",
+      "original": "Original's template",
+      "loadingName": "Original template",
+      "loading": "Loading the print template…",
+      "fallback": "The store's print template could not be loaded; printing with the built-in template.",
+      "autoPrint": "Print sale receipts right after payment (this device only)",
+      "copies": "This template prints {{count}} copies on the first print.",
+      "printedCopies_one": "Original and {{count}} copy recorded.",
+      "printedCopies_other": "Original and {{count}} copies recorded.",
+      "copiesFailed": "Only {{done}} of {{total}} copies could be recorded, so only those print: {{reason}}"
+    },
     "title": "Print templates",
     "intro": "The store's print templates: header, footer and the fields printed on each document type.",
     "settingsLink": "Print templates",
@@ -664,13 +676,6 @@
     "groupList": "{{type}} templates",
     "groupEmpty": "No templates yet.",
     "create": "Create template",
-    "counter": {
-      "picker": "Print template",
-      "original": "Original's template",
-      "loadingName": "Original template",
-      "loading": "Loading the print template…",
-      "fallback": "The store's print template could not be loaded; printing with the built-in template."
-    },
     "createTitle": "Create print template",
     "createHint": "A new template starts from the suggested template of its document type.",
     "createSubmit": "Create and edit",
@@ -765,7 +770,12 @@
       "fontSans": "Sans-serif",
       "fontMono": "Monospace",
       "fontSize": "Font size",
-      "lineSpacing": "Line spacing"
+      "lineSpacing": "Line spacing",
+      "copies": "Copies per print",
+      "copiesCount_one": "{{count}} copy",
+      "copiesCount_other": "{{count}} copies",
+      "copiesHint": "The first print makes the original and the copies after it; each is recorded on its own and labelled as a copy.",
+      "marginHint": "Prints still use the paper’s own margins; this value is saved but not applied yet."
     },
     "size": {
       "s": "Small",
@@ -784,7 +794,10 @@
       "text": "Text",
       "title": "Document title",
       "divider": "Divider",
-      "spacer": "Spacer"
+      "spacer": "Spacer",
+      "qr": "QR code",
+      "barcode": "Document number barcode",
+      "signatures": "Signature boxes"
     },
     "blockPosition": "Block {{position}}: {{name}}",
     "addBlock": {
@@ -810,7 +823,21 @@
       "dividerStyle": "Divider style",
       "dashed": "Dashed",
       "solid": "Solid",
-      "spacerMm": "Height (mm)"
+      "spacerMm": "Height (mm)",
+      "monochrome": "Print the logo in black and white (thermal paper)",
+      "qrSource": "QR code links to",
+      "qrSourceUrl": "A link entered here",
+      "qrSourceStore": "A store page",
+      "qrUrl": "Link (http:// or https://)",
+      "qrField": "Page",
+      "qrCaption": "Caption under the code (optional)",
+      "qrStoreMissing": "The store has no such page, so the QR code is not printed.",
+      "barcodeNote": "Prints {{number}} as a Code 128 barcode, to scan the order on the Returns and Orders screens.",
+      "barcodeNone": "This document has no number, so no barcode is printed.",
+      "signatureParties": "Signature boxes",
+      "signatureLabel": "Label of the {{name}} box",
+      "signaturesSheetOnly": "Signature boxes print on A4 and A5 sheets only.",
+      "barcodeTooWide": "{{number}} is too long for a scannable barcode on {{paper}}; this block is not printed."
     },
     "business": {
       "name": "Store name",
@@ -911,7 +938,8 @@
       "receiptFailed": "Could not load the latest receipt; showing sample data.",
       "width": "{{paper}} paper fits about {{count}} characters per line.",
       "noMembership": "You are not a member of any branch, so real receipts cannot be shown; use sample data.",
-      "memberBranches": "Only branches you are a member of are listed."
+      "memberBranches": "Only branches you are a member of are listed.",
+      "overflow": "Underlined text wraps to the next line when printed."
     },
     "history": {
       "open": "History",
@@ -941,7 +969,8 @@
       "unknown_key": "Contains an unsupported setting.",
       "unsupported": "This template version is not supported.",
       "not_found": "Not found.",
-      "mismatch": "Does not match the document type."
+      "mismatch": "Does not match the document type.",
+      "invalid_url": "The link must start with http:// or https://."
     },
     "sample": {
       "cashier": "Lan Nguyen",
@@ -952,6 +981,21 @@
       "unitCase": "Case",
       "conversion": "1 Case = 24 Cartons",
       "reason": "Changed mind"
+    },
+    "print": {
+      "index": "No.",
+      "name": "Item",
+      "buyer": "Buyer",
+      "seller": "Seller",
+      "cashier": "Cashier"
+    },
+    "drag": {
+      "handle": "Drag to reorder {{name}}",
+      "help": "Press Enter or Space to pick the block up, the up or down arrow to move it, Enter to put it down, Escape to cancel.",
+      "grabbed": "Picked up {{name}}. Use the up or down arrow to move it, Enter to put it down, Escape to cancel.",
+      "moved": "{{name}}: position {{position}} of {{count}}.",
+      "dropped": "Put {{name}} down at position {{position}}.",
+      "cancelled": "Cancelled; {{name}} is back where it was."
     }
   },
   "labelFormatVersion": "version {{version}}",

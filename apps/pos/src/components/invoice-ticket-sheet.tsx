@@ -16,5 +16,11 @@ export function InvoiceTicketSheet({
 }
 
 export function InvoiceTicketPrintPortal(props: { document: PrintDocument; paper: PaperSize }) {
-  return <PrintPortal {...props} testId="invoice-ticket-print" />;
+  return (
+    <PrintPortal
+      sheets={[{ document: props.document }]}
+      paper={props.paper}
+      testId="invoice-ticket-print"
+    />
+  );
 }

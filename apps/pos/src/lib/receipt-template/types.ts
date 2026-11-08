@@ -36,7 +36,8 @@ export type BusinessField =
   | 'facebook'
   | 'instagram';
 
-export type LogoBlock = { type: 'logo'; width_pct?: number; align?: Align };
+// `monochrome` prints the logo in black and white, for thermal paper.
+export type LogoBlock = { type: 'logo'; width_pct?: number; align?: Align; monochrome?: boolean };
 export type BusinessBlock = { type: 'business'; fields: BusinessField[]; align?: Align };
 export type TextBlock = {
   type: 'text';
@@ -51,13 +52,31 @@ export type TitleBlock = { type: 'title'; label?: string };
 export type DividerBlock = { type: 'divider'; style?: 'solid' | 'dashed' };
 export type SpacerBlock = { type: 'spacer'; mm?: number };
 
+// The store pages a QR code can link to, read from the store when printing.
+export type SocialField = 'url' | 'facebook' | 'instagram';
+export type QrBlock =
+  | { type: 'qr'; source: 'url'; value: string; caption?: string; align?: Align }
+  | { type: 'qr'; source: 'store_social'; field: SocialField; caption?: string; align?: Align };
+// The document number as a Code 128 barcode, for the scanners at the counter.
+export type BarcodeBlock = { type: 'barcode'; align?: Align };
+export type SignatureParty = 'buyer' | 'seller' | 'cashier';
+// Signature boxes; printed on A4 and A5 sheets only.
+export type SignaturesBlock = {
+  type: 'signatures';
+  parties: SignatureParty[];
+  labels?: Partial<Record<SignatureParty, string>>;
+};
+
 export type TemplateBlock =
   | LogoBlock
   | BusinessBlock
   | TextBlock
   | TitleBlock
   | DividerBlock
-  | SpacerBlock;
+  | SpacerBlock
+  | QrBlock
+  | BarcodeBlock
+  | SignaturesBlock;
 
 export type MetaField =
   | 'time'
@@ -107,6 +126,8 @@ export type PageSettings = {
   font: 'sans' | 'mono';
   font_size: TextSize;
   line_spacing: number;
+  // Sale receipts only: the original and up to two copies with one press.
+  copies?: number;
 };
 
 // Schema 1. A section a document type has no data for (lines of a shift
@@ -128,7 +149,17 @@ export type PrintRow = { label: string; value: string; strong?: boolean };
 
 export type PrintBlock =
   | { kind: 'text'; lines: string[]; align: Align; bold: boolean; size: TextSize }
-  | { kind: 'image'; src: string; alt: string; widthPct: number; align: Align }
+  | {
+      kind: 'image';
+      src: string;
+      alt: string;
+      widthPct: number;
+      align: Align;
+      monochrome: boolean;
+    }
+  | { kind: 'qr'; value: string; caption: string | null; align: Align }
+  | { kind: 'barcode'; value: string; align: Align }
+  | { kind: 'signatures'; parties: { party: SignatureParty; label: string }[] }
   | { kind: 'title'; title: string; number: string | null }
   | { kind: 'divider'; style: 'solid' | 'dashed' }
   | { kind: 'spacer'; mm: number };
@@ -141,6 +172,8 @@ export type PrintStackedLine = {
 };
 
 export type PrintTableColumn = { key: 'qty' | 'price' | 'discount' | 'amount'; label: string };
+// Headings of the ruled table a sheet prints the lines in.
+export type PrintTableHeadings = { index: string | null; name: string };
 export type PrintTableRow = {
   index: number | null;
   name: string;
@@ -150,7 +183,12 @@ export type PrintTableRow = {
 
 export type PrintLines =
   | { layout: 'stacked'; items: PrintStackedLine[] }
-  | { layout: 'table'; columns: PrintTableColumn[]; rows: PrintTableRow[] };
+  | {
+      layout: 'table';
+      headings: PrintTableHeadings;
+      columns: PrintTableColumn[];
+      rows: PrintTableRow[];
+    };
 
 export type PrintDocument = {
   documentType: DocumentType;

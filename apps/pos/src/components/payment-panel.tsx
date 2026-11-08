@@ -9,6 +9,7 @@ import {
 import { formatMoney, parseVndAmount, parseVndInput } from '../lib/money';
 import { type RowAmounts, rebalanceRows, splitRowValues } from '../lib/payment-split';
 import type { PosPaymentMethod, PosWorkspace } from '../lib/pos-context';
+import { autoPrintEnabled } from '../lib/receipt-template/selection';
 import { creditConflictKey } from '../lib/receivables';
 import { conflictReason, posFailureKey } from '../lib/request-failure';
 import { describeTraceFailure, paymentBlock, traceReasonKey } from '../lib/traceability';
@@ -152,6 +153,14 @@ export function PaymentPanel({
     (attempt) => attempt.status === 'prepared',
   );
   const completed = workspace.operational_status === 'completed';
+  // A sale completed while this panel is open prints by itself on a device
+  // set to do so; reopening a completed order never does.
+  const [autoPrint, setAutoPrint] = useState(false);
+  const wasCompleted = useRef(completed);
+  useEffect(() => {
+    if (completed && !wasCompleted.current && autoPrintEnabled()) setAutoPrint(true);
+    wasCompleted.current = completed;
+  }, [completed]);
   const remainingIsZero = financial ? parseVndAmount(financial.remaining) === '0' : false;
   const totalIsZero = parseVndAmount(workspace.totals?.total ?? '') === '0';
   const currency = workspace.totals?.currency ?? 'VND';
@@ -645,7 +654,13 @@ export function PaymentPanel({
           {t('paymentComplete')}
         </button>
       ) : null}
-      {completed ? <ReceiptPrintButton sourceId={workspace.id} label={t('receiptPrint')} /> : null}
+      {completed ? (
+        <ReceiptPrintButton
+          sourceId={workspace.id}
+          label={t('receiptPrint')}
+          autoPrint={autoPrint}
+        />
+      ) : null}
       {completed && !handedOver ? (
         <button
           className="checkout-submit"

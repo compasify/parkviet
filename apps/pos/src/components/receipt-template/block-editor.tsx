@@ -1,15 +1,34 @@
-import { useId } from 'react';
+import { type ReactNode, useId } from 'react';
 import { useTranslation } from 'react-i18next';
+import { barcodeWidthMm } from '../../lib/receipt-template/code128';
 import type { TemplateData } from '../../lib/receipt-template/data';
-import { MAX_TEXT_LENGTH, MAX_TITLE_LENGTH } from '../../lib/receipt-template/render';
+import {
+  businessLines,
+  MAX_CAPTION_LENGTH,
+  MAX_LABEL_LENGTH,
+  MAX_TEXT_LENGTH,
+  MAX_TITLE_LENGTH,
+  MAX_URL_LENGTH,
+} from '../../lib/receipt-template/render';
 import type {
   Align,
   BusinessField,
   PaperSize,
+  QrBlock,
+  SignatureParty,
+  SocialField,
   TemplateBlock,
   TextSize,
 } from '../../lib/receipt-template/types';
-import { BUSINESS_FIELDS, charsPerLine, overlongLines } from '../../lib/receipt-template/validate';
+import {
+  BUSINESS_FIELDS,
+  charsPerLine,
+  overlongLines,
+  PRINTABLE_WIDTH_MM,
+  SIGNATURE_PARTIES,
+  SOCIAL_FIELDS,
+  WIDE_PAPERS,
+} from '../../lib/receipt-template/validate';
 import { resolveText, variableValues } from '../../lib/receipt-template/variables';
 import { TemplateTextField } from './variable-picker';
 
@@ -106,6 +125,15 @@ export function BlockEditor({
             readOnly={readOnly}
             onChange={(align) => onChange({ ...block, align })}
           />
+          <label>
+            <input
+              type="checkbox"
+              checked={block.monochrome === true}
+              disabled={readOnly}
+              onChange={(event) => onChange({ ...block, monochrome: event.target.checked })}
+            />
+            {t('receiptTemplates.block.monochrome')}
+          </label>
           {data.store.logoUrl ? null : (
             <small className="rt-field-note">{t('receiptTemplates.block.logoMissing')}</small>
           )}
@@ -113,6 +141,8 @@ export function BlockEditor({
       );
     case 'business': {
       const enabled = new Set<string>(block.fields);
+      const limit = charsPerLine(paper, pageSize);
+      const long = overlongLines(businessLines(block.fields, data), limit);
       const toggle = (field: BusinessField, on: boolean) =>
         onChange({
           ...block,
@@ -137,6 +167,11 @@ export function BlockEditor({
             ))}
           </fieldset>
           {error('fields')}
+          {long.length > 0 ? (
+            <small className="rt-warning">
+              {t('receiptTemplates.block.tooWide', { count: limit ?? 0, paper })}
+            </small>
+          ) : null}
           <AlignPicker
             value={block.align}
             readOnly={readOnly}
@@ -246,6 +281,100 @@ export function BlockEditor({
           </label>
         </div>
       );
+    case 'qr':
+      return (
+        <QrFields
+          block={block}
+          data={data}
+          readOnly={readOnly}
+          error={error}
+          describedBy={describedBy}
+          problems={problems}
+          onChange={onChange}
+        />
+      );
+    case 'barcode':
+      return (
+        <div className="rt-block-fields">
+          <AlignPicker
+            value={block.align}
+            readOnly={readOnly}
+            onChange={(align) => onChange({ ...block, align })}
+          />
+          <small className="rt-field-note">
+            {data.number
+              ? t('receiptTemplates.block.barcodeNote', { number: data.number })
+              : t('receiptTemplates.block.barcodeNone')}
+          </small>
+          {data.number && barcodeWidthMm(data.number, PRINTABLE_WIDTH_MM[paper]) === null ? (
+            <small className="rt-warning">
+              {t('receiptTemplates.block.barcodeTooWide', { number: data.number, paper })}
+            </small>
+          ) : null}
+        </div>
+      );
+    case 'signatures': {
+      const chosen = new Set<string>(block.parties);
+      // Labels are kept only for chosen parties and only when not blank.
+      const update = (
+        parties: SignatureParty[],
+        labels: Partial<Record<SignatureParty, string>>,
+      ) => {
+        const kept = Object.fromEntries(
+          Object.entries(labels).filter(
+            ([party, label]) => label && parties.includes(party as SignatureParty),
+          ),
+        );
+        const { labels: _previous, ...rest } = block;
+        onChange(
+          Object.keys(kept).length > 0 ? { ...rest, parties, labels: kept } : { ...rest, parties },
+        );
+      };
+      const toggle = (party: SignatureParty, on: boolean) =>
+        update(
+          on
+            ? SIGNATURE_PARTIES.filter((item) => item === party || chosen.has(item))
+            : block.parties.filter((item) => item !== party),
+          block.labels ?? {},
+        );
+      const relabel = (party: SignatureParty, text: string) =>
+        update(block.parties, { ...(block.labels ?? {}), [party]: text });
+      return (
+        <div className="rt-block-fields">
+          <fieldset className="rt-checks" aria-describedby={describedBy('parties')}>
+            <legend>{t('receiptTemplates.block.signatureParties')}</legend>
+            {SIGNATURE_PARTIES.map((party) => (
+              <label key={party}>
+                <input
+                  type="checkbox"
+                  checked={chosen.has(party)}
+                  disabled={readOnly}
+                  onChange={(event) => toggle(party, event.target.checked)}
+                />
+                {data.signatureLabels[party]}
+              </label>
+            ))}
+          </fieldset>
+          {error('parties')}
+          {block.parties.map((party) => (
+            <label key={party}>
+              {t('receiptTemplates.block.signatureLabel', { name: data.signatureLabels[party] })}
+              <input
+                value={block.labels?.[party] ?? ''}
+                placeholder={data.signatureLabels[party]}
+                maxLength={MAX_LABEL_LENGTH}
+                disabled={readOnly}
+                onChange={(event) => relabel(party, event.target.value)}
+              />
+            </label>
+          ))}
+          {error('labels')}
+          {WIDE_PAPERS.includes(paper) ? null : (
+            <small className="rt-warning">{t('receiptTemplates.block.signaturesSheetOnly')}</small>
+          )}
+        </div>
+      );
+    }
     case 'spacer':
       return (
         <div className="rt-block-fields">
@@ -266,4 +395,113 @@ export function BlockEditor({
         </div>
       );
   }
+}
+
+// The settings of a QR code: a link typed here, or one of the store's pages.
+function QrFields({
+  block,
+  data,
+  readOnly,
+  problems,
+  error,
+  describedBy,
+  onChange,
+}: {
+  block: QrBlock;
+  data: TemplateData;
+  readOnly: boolean;
+  problems: BlockProblems;
+  error: (key: string) => ReactNode;
+  describedBy: (key: string) => string | undefined;
+  onChange: (block: TemplateBlock) => void;
+}) {
+  const { t } = useTranslation();
+  const shared = {
+    type: 'qr' as const,
+    ...(block.caption !== undefined ? { caption: block.caption } : {}),
+    ...(block.align !== undefined ? { align: block.align } : {}),
+  };
+  return (
+    <div className="rt-block-fields">
+      <label>
+        {t('receiptTemplates.block.qrSource')}
+        <select
+          value={block.source}
+          disabled={readOnly}
+          onChange={(event) =>
+            onChange(
+              event.target.value === 'store_social'
+                ? { ...shared, source: 'store_social', field: 'facebook' }
+                : { ...shared, source: 'url', value: '' },
+            )
+          }
+        >
+          <option value="url">{t('receiptTemplates.block.qrSourceUrl')}</option>
+          <option value="store_social">{t('receiptTemplates.block.qrSourceStore')}</option>
+        </select>
+      </label>
+      {block.source === 'url' ? (
+        <>
+          <label>
+            {t('receiptTemplates.block.qrUrl')}
+            <input
+              type="url"
+              inputMode="url"
+              value={block.value}
+              placeholder="https://"
+              maxLength={MAX_URL_LENGTH}
+              disabled={readOnly}
+              aria-invalid={problems.value ? true : undefined}
+              aria-describedby={describedBy('value')}
+              onChange={(event) => onChange({ ...block, value: event.target.value })}
+            />
+          </label>
+          {error('value')}
+        </>
+      ) : (
+        <>
+          <label>
+            {t('receiptTemplates.block.qrField')}
+            <select
+              value={block.field}
+              disabled={readOnly}
+              aria-invalid={problems.field ? true : undefined}
+              aria-describedby={describedBy('field')}
+              onChange={(event) => onChange({ ...block, field: event.target.value as SocialField })}
+            >
+              {SOCIAL_FIELDS.map((field) => (
+                <option key={field} value={field}>
+                  {t(`receiptTemplates.business.${field}`)}
+                </option>
+              ))}
+            </select>
+          </label>
+          {error('field')}
+          {data.store[block.field] ? null : (
+            <small className="rt-field-note">{t('receiptTemplates.block.qrStoreMissing')}</small>
+          )}
+        </>
+      )}
+      <label>
+        {t('receiptTemplates.block.qrCaption')}
+        <input
+          value={block.caption ?? ''}
+          maxLength={MAX_CAPTION_LENGTH}
+          disabled={readOnly}
+          aria-invalid={problems.caption ? true : undefined}
+          aria-describedby={describedBy('caption')}
+          onChange={(event) => {
+            const { caption: _previous, ...rest } = block;
+            onChange(event.target.value === '' ? rest : { ...rest, caption: event.target.value });
+          }}
+        />
+      </label>
+      {error('caption')}
+      <AlignPicker
+        value={block.align}
+        readOnly={readOnly}
+        onChange={(align) => onChange({ ...block, align })}
+      />
+    </div>
+  );
 }

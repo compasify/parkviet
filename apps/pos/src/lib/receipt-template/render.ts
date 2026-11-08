@@ -1,8 +1,10 @@
+import { code128Values } from './code128';
 import type { DataRow, LineData, TemplateData } from './data';
 import { TEST_PRINT_BANNER } from './defaults';
 import type {
   Align,
   BusinessField,
+  DocumentType,
   FieldSection,
   LineColumn,
   LinesSection,
@@ -12,6 +14,10 @@ import type {
   PrintLines,
   PrintRow,
   PrintTableColumn,
+  QrBlock,
+  SignatureParty,
+  SignaturesBlock,
+  SocialField,
   TemplateBlock,
   TemplateConfig,
   TextSize,
@@ -36,6 +42,12 @@ export const MAX_BLOCKS = 8;
 export const MAX_TEXT_LENGTH = 500;
 export const MAX_TITLE_LENGTH = 60;
 export const MAX_LABEL_LENGTH = 40;
+export const MAX_URL_LENGTH = 300;
+export const MAX_CAPTION_LENGTH = 60;
+export const MAX_COPIES = 3;
+
+export const SIGNATURE_PARTIES: readonly SignatureParty[] = ['buyer', 'seller', 'cashier'];
+export const SOCIAL_FIELDS: readonly SocialField[] = ['url', 'facebook', 'instagram'];
 
 const ALIGNS: readonly Align[] = ['left', 'center', 'right'];
 const SIZES: readonly TextSize[] = ['s', 'm', 'l'];
@@ -72,7 +84,71 @@ function page(settings: Partial<PageSettings> | undefined): PageSettings {
   };
 }
 
-function businessLines(fields: unknown, data: TemplateData): string[] {
+// How many prints one press makes: the original and its copies, on sale
+// receipts only. Anything out of range prints once.
+export function printCopies(config: TemplateConfig | null | undefined, type: DocumentType): number {
+  const copies = config?.page?.copies;
+  return type === 'sale' && Number.isInteger(copies) && copies !== undefined
+    ? Math.min(MAX_COPIES, Math.max(1, copies))
+    : 1;
+}
+
+// What the server's link check (Ruby's RFC 3986 parser) accepts: http(s),
+// `//`, an ASCII host and an optional port, then only URI characters and
+// well-formed percent escapes. Stricter is fine; looser would let the
+// editor show a link as valid that the server refuses.
+const PCHAR = "(?:[A-Za-z0-9\\-._~!$&'()*+,;=:@]|%[0-9A-Fa-f]{2})";
+const WEB_URL = new RegExp(
+  `^https?://[A-Za-z0-9\\-._~]+(?::\\d+)?(?:/(?:${PCHAR}|/)*)?(?:\\?(?:${PCHAR}|[/?])*)?(?:#(?:${PCHAR}|[/?])*)?$`,
+  'i',
+);
+
+// An absolute http(s) link, the only links a QR code prints.
+export function isWebUrl(value: string): boolean {
+  if (value === '' || value.length > MAX_URL_LENGTH || !WEB_URL.test(value)) return false;
+  try {
+    const url = new URL(value);
+    return (url.protocol === 'http:' || url.protocol === 'https:') && url.hostname !== '';
+  } catch {
+    return false;
+  }
+}
+
+const SOCIAL_PAGES: Record<Exclude<SocialField, 'url'>, string> = {
+  facebook: 'https://www.facebook.com/',
+  instagram: 'https://www.instagram.com/',
+};
+
+// A store page as a link: stores keep their website and social pages as
+// full links, bare domains or (social pages) a handle.
+function storePage(field: SocialField, data: TemplateData): string | null {
+  const value = data.store[field]?.trim() ?? '';
+  if (value === '') return null;
+  if (/^https?:\/\//i.test(value)) return value;
+  if (field === 'url' || /^[\w-]+(\.[\w-]+)+(\/|$)/.test(value)) return `https://${value}`;
+  return `${SOCIAL_PAGES[field]}${value.replace(/^@/, '')}`;
+}
+
+function qrLink(block: QrBlock, data: TemplateData): string | null {
+  const link =
+    block.source === 'url'
+      ? textOf(block.value)
+      : block.source === 'store_social' && SOCIAL_FIELDS.includes(block.field)
+        ? storePage(block.field, data)
+        : null;
+  return link && isWebUrl(link) ? link : null;
+}
+
+function signatureLabels(block: SignaturesBlock, data: TemplateData) {
+  const parties = Array.isArray(block.parties) ? block.parties : [];
+  const labels = (block.labels ?? {}) as Partial<Record<string, unknown>>;
+  return SIGNATURE_PARTIES.filter((party) => parties.includes(party)).map((party) => ({
+    party,
+    label: clip(textOf(labels[party]), MAX_LABEL_LENGTH) || data.signatureLabels[party],
+  }));
+}
+
+export function businessLines(fields: unknown, data: TemplateData): string[] {
   if (!Array.isArray(fields)) return [];
   const values: Record<BusinessField, string | null> = {
     name: data.store.name,
@@ -110,7 +186,27 @@ function resolveBlock(block: TemplateBlock, data: TemplateData): PrintBlock | nu
         alt: data.store.name ?? '',
         widthPct: clamp(block.width_pct, 20, 100, 60),
         align,
+        monochrome: block.monochrome === true,
       };
+    }
+    case 'qr': {
+      const value = qrLink(block, data);
+      if (!value) return null;
+      return {
+        kind: 'qr',
+        value,
+        caption: clip(textOf(block.caption), MAX_CAPTION_LENGTH) || null,
+        align,
+      };
+    }
+    case 'barcode':
+      // Documents without a number (pre-bill, payment ticket) have nothing to scan.
+      return data.number && code128Values(data.number)
+        ? { kind: 'barcode', value: data.number, align }
+        : null;
+    case 'signatures': {
+      const parties = signatureLabels(block, data);
+      return parties.length > 0 ? { kind: 'signatures', parties } : null;
     }
     case 'business': {
       const lines = businessLines(block.fields, data);
@@ -232,6 +328,10 @@ function lines(data: TemplateData, section: LinesSection | undefined): PrintLine
             : line.amountCell;
     return {
       layout: 'table',
+      headings: {
+        index: columns.has('index') ? data.lineLabels.index : null,
+        name: data.lineLabels.name,
+      },
       columns: keys.map((key) => ({ key, label: data.lineLabels[key] })),
       rows: data.lines.map((line, position) => ({
         index: index(position),

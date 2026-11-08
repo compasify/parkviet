@@ -134,7 +134,7 @@ RSpec.describe 'POS receipt templates API', type: :request do
 
   it 'refuses invalid configs and parameters with a pointer to the problem' do
     config = Spree::Pos::ReceiptTemplate.default_config('shift_closure')
-    config['footer'] = [{ 'type' => 'qr', 'value' => 'x' }, { 'type' => 'text', 'value' => 'Gọi {store.hotline}' },
+    config['footer'] = [{ 'type' => 'html', 'value' => 'x' }, { 'type' => 'text', 'value' => 'Gọi {store.hotline}' },
                         { 'type' => 'text', 'value' => 'x' * 501 }]
     config['lines'] = Spree::Pos::ReceiptTemplate.default_config('sale')['lines']
     call(admin, :post, 'receipt_templates', { document_type: 'shift_closure', config: config })
@@ -170,6 +170,36 @@ RSpec.describe 'POS receipt templates API', type: :request do
     expect(error_pointers).to eq(['/name'])
     expect(Spree::Pos::ReceiptTemplate.find_by_prefix_id(sale['id']).current_version).to eq(1)
     expect(Spree::Pos::ReceiptTemplate.for_store(store).count).to eq(6)
+  end
+
+  it 'saves QR, barcode, signature blocks and sale copies, and refuses a QR link that is not http(s)' do
+    sale = default_of('sale')
+    config = Spree::Pos::ReceiptTemplate.default_config('sale')
+    config['page']['copies'] = 2
+    config['header'].unshift({ 'type' => 'logo', 'monochrome' => true })
+    config['footer'] = [
+      { 'type' => 'qr', 'source' => 'url', 'value' => 'https://zalo.me/parkviet', 'caption' => 'Zalo OA' },
+      { 'type' => 'qr', 'source' => 'store_social', 'field' => 'facebook', 'align' => 'left' },
+      { 'type' => 'barcode' },
+      { 'type' => 'signatures', 'parties' => %w[buyer seller], 'labels' => { 'seller' => 'Nhân viên' } }
+    ]
+    saved = call(admin, :patch, "receipt_templates/#{sale['id']}", { expected_version: 1, config: config })['data']
+    expect(response).to have_http_status(:ok)
+    expect(saved).to include('current_version' => 2, 'config' => config)
+
+    config['footer'][0]['value'] = 'javascript:alert(1)'
+    call(admin, :patch, "receipt_templates/#{sale['id']}", { expected_version: 2, config: config })
+    expect(response).to have_http_status(:unprocessable_content)
+    expect(response.parsed_body.dig('error', 'details', 'errors')).to eq(
+      [{ 'pointer' => '/config/footer/0/value', 'code' => 'invalid_url', 'message' => 'The link must start with http:// or https://.' }]
+    )
+
+    prebill = Spree::Pos::ReceiptTemplate.default_config('prebill')
+    prebill['page']['copies'] = 2
+    call(admin, :post, 'receipt_templates', { document_type: 'prebill', config: prebill })
+    expect(response).to have_http_status(:unprocessable_content)
+    expect(error_pointers).to eq(['/config/page/copies'])
+    expect(Spree::Pos::ReceiptTemplate.find_by_prefix_id(sale['id']).current_version).to eq(2)
   end
 
   it 'saves each edit as a new version and refuses a stale expected_version' do

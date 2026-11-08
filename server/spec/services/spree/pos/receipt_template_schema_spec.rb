@@ -108,6 +108,63 @@ RSpec.describe Spree::Pos::ReceiptTemplateSchema do
     expect(errors_of(duplicated)).to eq([{ pointer: '/config/meta/fields/1', code: 'duplicate', message: 'time is listed twice.' }])
   end
 
+  it 'accepts QR codes, barcodes, signatures, a monochrome logo and sale copies' do
+    config = config_for('sale')
+    config['page']['copies'] = 3
+    config['header'].unshift({ 'type' => 'logo', 'width_pct' => 50, 'monochrome' => true })
+    config['footer'] = [
+      { 'type' => 'qr', 'source' => 'url', 'value' => 'http://example.vn/review?id=1', 'caption' => 'Đánh giá', 'align' => 'right' },
+      *described_class::SOCIAL_FIELDS.map { |field| { 'type' => 'qr', 'source' => 'store_social', 'field' => field } },
+      { 'type' => 'barcode', 'align' => 'left' },
+      { 'type' => 'signatures', 'parties' => described_class::SIGNATURE_PARTIES, 'labels' => { 'buyer' => 'Khách hàng' } }
+    ]
+    expect(errors_of(config)).to eq([])
+  end
+
+  it 'refuses QR links that are not http(s) and malformed QR or signature blocks' do
+    config = config_for('sale')
+    config['footer'] = [
+      { 'type' => 'qr', 'source' => 'url', 'value' => 'javascript:alert(1)' },
+      { 'type' => 'qr', 'source' => 'url', 'value' => "https://#{'a' * 300}.vn" },
+      { 'type' => 'qr', 'source' => 'url', 'field' => 'url', 'value' => 'ftp://example.vn' },
+      { 'type' => 'qr', 'source' => 'store_social', 'field' => 'zalo', 'value' => 'https://x.vn' },
+      { 'type' => 'qr', 'source' => 'vietqr_payment' },
+      { 'type' => 'signatures', 'parties' => [], 'labels' => { 'boss' => 'x' } },
+      { 'type' => 'logo', 'monochrome' => 'yes' },
+      { 'type' => 'barcode', 'value' => 'R1' }
+    ]
+    expect(errors_of(config).map { |error| [error[:pointer], error[:code]] }).to contain_exactly(
+      ['/config/footer/0/value', 'invalid_url'], ['/config/footer/1/value', 'too_long'],
+      ['/config/footer/2/field', 'unknown_key'], ['/config/footer/2/value', 'invalid_url'],
+      ['/config/footer/3/value', 'unknown_key'], ['/config/footer/3/field', 'invalid_value'],
+      ['/config/footer/4/source', 'invalid_value'],
+      ['/config/footer/5/parties', 'blank'], ['/config/footer/5/labels/boss', 'unknown_key'],
+      ['/config/footer/6/monochrome', 'invalid_type'], ['/config/footer/7/value', 'unknown_key']
+    )
+    malformed = config_for('sale')
+    malformed['footer'] = ['http:example.com', 'https:/example.com', 'https://cửahàng.vn', 'https://shop.vn/đổi-trả',
+                           'https://shop.vn/%zz', 'https://shop.vn/{id}'].map { |link| { 'type' => 'qr', 'source' => 'url', 'value' => link } }
+    expect(errors_of(malformed).map { |error| error[:code] }).to eq(['invalid_url'] * 6)
+    good = config_for('sale')
+    good['footer'] = [{ 'type' => 'qr', 'source' => 'url', 'value' => 'https://shop.vn:8443/a/b?x=1&y=%C3%A1#top' }]
+    expect(errors_of(good)).to eq([])
+
+    missing = config_for('sale')
+    missing['footer'] = [{ 'type' => 'qr', 'source' => 'url' }, { 'type' => 'qr' }, { 'type' => 'qr', 'source' => 'store_social' }]
+    expect(pointers(missing)).to contain_exactly('/config/footer/0/value', '/config/footer/1/source', '/config/footer/2/field')
+  end
+
+  it 'prints several copies at once only for sale receipts, from one to three' do
+    sale = config_for('sale')
+    sale['page']['copies'] = 4
+    expect(errors_of(sale)).to eq([{ pointer: '/config/page/copies', code: 'invalid_value', message: 'copies must be a whole number from 1 to 3.' }])
+    sale['page']['copies'] = 1.5
+    expect(pointers(sale)).to eq(['/config/page/copies'])
+    refund = config_for('refund')
+    refund['page']['copies'] = 2
+    expect(errors_of(refund, 'refund').map { |error| error[:code] }).to eq(['field_unavailable'])
+  end
+
   it 'raises the errors from validate!' do
     expect { described_class.validate!({ 'schema' => 1 }, 'sale') }.to raise_error(described_class::Invalid) { |error|
       expect(error.errors.length).to eq(3)

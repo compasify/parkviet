@@ -115,7 +115,12 @@ function Receipts() {
         </p>
       ) : null}
       {receipt ? (
-        <ReceiptPrintPanel key={receipt.id} receipt={receipt} onBusyChange={setBusy} />
+        <ReceiptPrintPanel
+          key={receipt.id}
+          receipt={receipt}
+          onBusyChange={setBusy}
+          refreshing={(selectedId ? byId : bySource).isFetching}
+        />
       ) : null}
     </PosPage>
   );

@@ -1,4 +1,15 @@
-import { MAX_BLOCKS, MAX_LABEL_LENGTH, MAX_TEXT_LENGTH, MAX_TITLE_LENGTH } from './render';
+import {
+  isWebUrl,
+  MAX_BLOCKS,
+  MAX_CAPTION_LENGTH,
+  MAX_COPIES,
+  MAX_LABEL_LENGTH,
+  MAX_TEXT_LENGTH,
+  MAX_TITLE_LENGTH,
+  MAX_URL_LENGTH,
+  SIGNATURE_PARTIES,
+  SOCIAL_FIELDS,
+} from './render';
 import type {
   BusinessField,
   DocumentType,
@@ -6,6 +17,7 @@ import type {
   MetaField,
   PaperSize,
   PaymentField,
+  SignatureParty,
   TemplateBlock,
   TemplateConfig,
   TextSize,
@@ -98,8 +110,31 @@ export const LOCKED_COLUMNS: readonly LineColumn[] = ['name'];
 // Payment method rows are labelled by their method.
 export const FIXED_LABELS: readonly string[] = ['methods'];
 
-export const BLOCK_TYPES = ['logo', 'business', 'text', 'title', 'divider', 'spacer'] as const;
+export const BLOCK_TYPES = [
+  'logo',
+  'business',
+  'text',
+  'title',
+  'divider',
+  'spacer',
+  'qr',
+  'barcode',
+  'signatures',
+] as const;
 export type BlockType = (typeof BLOCK_TYPES)[number];
+export { SIGNATURE_PARTIES, SOCIAL_FIELDS };
+// The width each paper prints on, as laid out by the print page rules.
+export const PRINTABLE_WIDTH_MM: Readonly<Record<PaperSize, number>> = {
+  '58mm': 48,
+  '80mm': 72,
+  a4: 186,
+  a5: 128,
+  a6: 93,
+};
+// Sheets wide enough for a ruled line table and signature boxes.
+export const WIDE_PAPERS: readonly PaperSize[] = ['a4', 'a5'];
+// Document types printed in several copies with one press.
+export const COPIES_TYPES: readonly DocumentType[] = ['sale'];
 export const BUSINESS_FIELDS: readonly BusinessField[] = [
   'name',
   'branch',
@@ -128,6 +163,27 @@ function checkBlock(block: TemplateBlock, at: string, add: Add) {
     case 'logo':
       if (block.width_pct !== undefined && !between(block.width_pct, 20, 100))
         add(`${at}/width_pct`, 'invalid_value');
+      if (block.monochrome !== undefined && typeof block.monochrome !== 'boolean')
+        add(`${at}/monochrome`, 'invalid_type');
+      break;
+    case 'qr':
+      if ((block.caption ?? '').length > MAX_CAPTION_LENGTH) add(`${at}/caption`, 'too_long');
+      if (block.source === 'url') {
+        if (block.value.length > MAX_URL_LENGTH) add(`${at}/value`, 'too_long');
+        else if (!isWebUrl(block.value)) add(`${at}/value`, 'invalid_url');
+      } else if (block.source === 'store_social') {
+        if (!SOCIAL_FIELDS.includes(block.field)) add(`${at}/field`, 'invalid_value');
+      } else add(`${at}/source`, 'invalid_value');
+      break;
+    case 'barcode':
+      break;
+    case 'signatures':
+      if (block.parties.length === 0) add(`${at}/parties`, 'blank');
+      for (const [party, label] of Object.entries(block.labels ?? {})) {
+        if (!SIGNATURE_PARTIES.includes(party as SignatureParty))
+          add(`${at}/labels/${party}`, 'unknown_key');
+        else if ((label ?? '').length > MAX_LABEL_LENGTH) add(`${at}/labels/${party}`, 'too_long');
+      }
       break;
     case 'business':
       if (block.fields.length === 0) add(`${at}/fields`, 'blank');
@@ -207,6 +263,12 @@ export function validateTemplate(
   const { config } = draft;
   if (!between(config.page.margin_mm, 0, 20)) add('/config/page/margin_mm', 'invalid_value');
   if (!between(config.page.line_spacing, 1, 1.6)) add('/config/page/line_spacing', 'invalid_value');
+  const { copies } = config.page;
+  if (copies !== undefined) {
+    if (!COPIES_TYPES.includes(documentType)) add('/config/page/copies', 'field_unavailable');
+    else if (!Number.isInteger(copies) || !between(copies, 1, MAX_COPIES))
+      add('/config/page/copies', 'invalid_value');
+  }
   checkBlocks(config.header, 'header', add);
   checkBlocks(config.footer, 'footer', add);
 
@@ -334,6 +396,9 @@ export function editableConfig(config: TemplateConfig, documentType: DocumentTyp
       font: source.page?.font ?? 'sans',
       font_size: source.page?.font_size ?? 'm',
       line_spacing: source.page?.line_spacing ?? 1.35,
+      ...(COPIES_TYPES.includes(documentType) && source.page?.copies !== undefined
+        ? { copies: source.page.copies }
+        : {}),
     },
     header: blocks(source.header),
     footer: blocks(source.footer),

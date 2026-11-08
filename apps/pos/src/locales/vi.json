@@ -654,6 +654,18 @@
   "variantUnitLabelCodeInvalid": "Mã tem chỉ gồm tối đa 8 chữ số.",
   "variantUnitLockNote": "Khi SKU đã có dòng bán, chỉ đổi được mã tem; đổi đơn vị hoặc tỷ lệ quy đổi sẽ bị từ chối.",
   "receiptTemplates": {
+    "counter": {
+      "picker": "Mẫu in",
+      "original": "Mẫu của bản gốc",
+      "loadingName": "Mẫu bản gốc",
+      "loading": "Đang tải mẫu in…",
+      "fallback": "Không tải được mẫu in của cửa hàng; phiếu in bằng mẫu dựng sẵn.",
+      "autoPrint": "Tự in phiếu bán hàng ngay sau thanh toán (chỉ trên máy này)",
+      "copies": "Mẫu này in {{count}} liên mỗi lần in đầu.",
+      "printedCopies_one": "Đã ghi nhận bản gốc và {{count}} bản sao.",
+      "printedCopies_other": "Đã ghi nhận bản gốc và {{count}} bản sao.",
+      "copiesFailed": "Chỉ ghi nhận được {{done}}/{{total}} liên nên chỉ in các liên đã ghi nhận: {{reason}}"
+    },
     "title": "Mẫu in",
     "intro": "Mẫu in phiếu của cửa hàng: đầu phiếu, chân phiếu và các trường in trên từng loại chứng từ.",
     "settingsLink": "Mẫu in",
@@ -664,13 +676,6 @@
     "groupList": "Mẫu {{type}}",
     "groupEmpty": "Chưa có mẫu.",
     "create": "Tạo mẫu",
-    "counter": {
-      "picker": "Mẫu in",
-      "original": "Mẫu của bản gốc",
-      "loadingName": "Mẫu bản gốc",
-      "loading": "Đang tải mẫu in…",
-      "fallback": "Không tải được mẫu in của cửa hàng; phiếu in bằng mẫu dựng sẵn."
-    },
     "createTitle": "Tạo mẫu in",
     "createHint": "Mẫu mới bắt đầu từ mẫu gợi ý của loại chứng từ.",
     "createSubmit": "Tạo và chỉnh sửa",
@@ -764,7 +769,12 @@
       "fontSans": "Không chân",
       "fontMono": "Đơn cách",
       "fontSize": "Cỡ chữ",
-      "lineSpacing": "Giãn dòng"
+      "lineSpacing": "Giãn dòng",
+      "copies": "Số liên mỗi lần in",
+      "copiesCount_one": "{{count}} liên",
+      "copiesCount_other": "{{count}} liên",
+      "copiesHint": "Lần in đầu tạo bản gốc và các bản sao kế tiếp; mỗi liên được ghi nhận riêng và in nhãn BẢN SAO.",
+      "marginHint": "Lề in hiện vẫn theo khổ giấy; giá trị này được lưu nhưng chưa áp dụng khi in."
     },
     "size": {
       "s": "Nhỏ",
@@ -783,7 +793,10 @@
       "text": "Văn bản",
       "title": "Tiêu đề chứng từ",
       "divider": "Đường kẻ",
-      "spacer": "Khoảng trống"
+      "spacer": "Khoảng trống",
+      "qr": "Mã QR",
+      "barcode": "Mã vạch số chứng từ",
+      "signatures": "Ô chữ ký"
     },
     "blockPosition": "Khối {{position}}: {{name}}",
     "addBlock": {
@@ -809,7 +822,21 @@
       "dividerStyle": "Kiểu đường kẻ",
       "dashed": "Nét đứt",
       "solid": "Nét liền",
-      "spacerMm": "Chiều cao (mm)"
+      "spacerMm": "Chiều cao (mm)",
+      "monochrome": "In logo đen trắng (cho khổ nhiệt)",
+      "qrSource": "Mã QR dẫn tới",
+      "qrSourceUrl": "Đường link nhập ở đây",
+      "qrSourceStore": "Trang của cửa hàng",
+      "qrUrl": "Đường link (http:// hoặc https://)",
+      "qrField": "Trang",
+      "qrCaption": "Chú thích dưới mã (không bắt buộc)",
+      "qrStoreMissing": "Cửa hàng chưa khai báo trang này nên mã QR sẽ không in.",
+      "barcodeNote": "In số {{number}} dạng mã vạch Code 128 để quét tìm đơn ở màn Trả hàng và Đơn hàng.",
+      "barcodeNone": "Chứng từ này không có số nên không in mã vạch.",
+      "signatureParties": "Ô chữ ký",
+      "signatureLabel": "Nhãn ô {{name}}",
+      "signaturesSheetOnly": "Ô chữ ký chỉ in trên khổ A4 và A5.",
+      "barcodeTooWide": "Số {{number}} quá dài để in mã vạch quét được trên khổ {{paper}}; khối này sẽ không in."
     },
     "business": {
       "name": "Tên cửa hàng",
@@ -910,7 +937,8 @@
       "receiptFailed": "Không tải được phiếu gần nhất; đang hiện dữ liệu mẫu.",
       "width": "Khổ {{paper}} in được khoảng {{count}} ký tự mỗi dòng.",
       "noMembership": "Bạn chưa là thành viên chi nhánh nào nên không xem được phiếu thật; dùng dữ liệu mẫu.",
-      "memberBranches": "Chỉ hiện các chi nhánh bạn là thành viên."
+      "memberBranches": "Chỉ hiện các chi nhánh bạn là thành viên.",
+      "overflow": "Phần gạch chân sẽ bị xuống dòng khi in."
     },
     "history": {
       "open": "Lịch sử",
@@ -940,7 +968,8 @@
       "unknown_key": "Có thiết lập không được hỗ trợ.",
       "unsupported": "Phiên bản mẫu không được hỗ trợ.",
       "not_found": "Không tìm thấy.",
-      "mismatch": "Không khớp với loại chứng từ."
+      "mismatch": "Không khớp với loại chứng từ.",
+      "invalid_url": "Đường link phải bắt đầu bằng http:// hoặc https://."
     },
     "sample": {
       "cashier": "Nguyễn Lan",
@@ -951,6 +980,21 @@
       "unitCase": "Thùng",
       "conversion": "1 Thùng = 24 Hộp",
       "reason": "Khách đổi ý"
+    },
+    "print": {
+      "index": "STT",
+      "name": "Tên hàng",
+      "buyer": "Người mua",
+      "seller": "Người bán",
+      "cashier": "Thu ngân"
+    },
+    "drag": {
+      "handle": "Kéo để sắp xếp {{name}}",
+      "help": "Nhấn Enter hoặc phím cách để nhấc khối, mũi tên lên hoặc xuống để di chuyển, Enter để đặt xuống, Esc để hủy.",
+      "grabbed": "Đã nhấc {{name}}. Dùng mũi tên lên hoặc xuống để di chuyển, Enter để đặt xuống, Esc để hủy.",
+      "moved": "{{name}}: vị trí {{position}} trên {{count}}.",
+      "dropped": "Đã đặt {{name}} ở vị trí {{position}}.",
+      "cancelled": "Đã hủy, {{name}} về lại chỗ cũ."
     }
   },
   "labelFormatVersion": "phiên bản {{version}}",

@@ -174,6 +174,115 @@
   border-top-style: solid;
 }
 
+/* Black-and-white logo for thermal paper, which prints colour as noise. */
+.receipt-logo-mono img {
+  filter: grayscale(1) contrast(1.6);
+}
+
+/* QR codes and barcodes, generated in the browser. */
+.receipt-qr,
+.receipt-barcode {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin: 6px 0 0;
+  break-inside: avoid;
+}
+
+.receipt-code-left {
+  align-items: flex-start;
+}
+
+.receipt-code-right {
+  align-items: flex-end;
+}
+
+.receipt-qr svg {
+  width: 30mm;
+  height: 30mm;
+}
+
+.receipt-58mm .receipt-qr svg {
+  width: 26mm;
+  height: 26mm;
+}
+
+.receipt-barcode svg {
+  height: 10mm;
+  max-width: 100%;
+}
+
+.receipt-qr figcaption,
+.receipt-barcode figcaption {
+  font-size: 0.85em;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
+.receipt-barcode figcaption {
+  letter-spacing: 0.08em;
+}
+
+/* Signature boxes on A4 and A5 sheets. */
+.receipt-signatures {
+  display: grid;
+  gap: 8mm;
+  margin-top: 8mm;
+  text-align: center;
+  break-inside: avoid;
+}
+
+.receipt-signature {
+  min-height: 26mm;
+}
+
+/* Lines of a table template on A4 and A5: a ruled grid. */
+.receipt-grid {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.receipt-grid th,
+.receipt-grid td {
+  border: 1px solid #000;
+  padding: 3px 6px;
+  text-align: right;
+  vertical-align: top;
+  white-space: nowrap;
+}
+
+.receipt-grid th {
+  font-weight: 600;
+  text-align: center;
+}
+
+.receipt-grid .receipt-grid-name {
+  width: 100%;
+  text-align: left;
+  white-space: normal;
+}
+
+.receipt-grid .receipt-grid-index {
+  text-align: center;
+}
+
+.receipt-grid-name small {
+  display: block;
+  font-size: 0.85em;
+}
+
+/* Editor preview: the part of a line past the estimated width, which the
+   printer will wrap. */
+.receipt-overflow {
+  background: #fdecea;
+  text-decoration: underline wavy #c0392b;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
 .ticket-table .ticket-detail td {
   text-align: left;
   white-space: normal;
@@ -387,6 +496,14 @@
   margin-left: auto;
 }
 
+/* This device's setting to print sale receipts right after payment. */
+.receipt-auto-print {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8125rem;
+}
+
 .receipt-print-status {
   margin: 0;
   font-size: 0.8125rem;
@@ -433,6 +550,12 @@
   /* A logo that did not load in time is left off this print. */
   html[data-receipt-printing] .receipt-print-root img[data-print-skipped] {
     display: none;
+  }
+
+  /* The original and its copies, one press: each on its own page (a cut
+     on thermal printers). */
+  html[data-receipt-printing] .receipt-print-root > .receipt-sheet + .receipt-sheet {
+    break-before: page;
   }
 
   html[data-receipt-printing] .receipt-print-root {

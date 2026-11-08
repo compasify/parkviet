@@ -57,6 +57,14 @@
 .rt-block-actions { display: flex; gap: var(--pos-s1); }
 .rt-block-actions button { min-width: var(--pos-target); padding-inline: var(--pos-s2); }
 .pos-layout .rt-block-actions button[aria-disabled='true'] { opacity: .55; cursor: not-allowed; }
+/* Drag handle: pointer drags must not scroll the page on touch screens. */
+.rt-drag-handle { min-width: var(--pos-target); padding-inline: var(--pos-s2); cursor: grab; touch-action: none; }
+.rt-drag-handle:active { cursor: grabbing; }
+.rt-drag-handle[aria-pressed='true'] { background: var(--pos-selected); border-color: var(--pos-blue); color: var(--pos-blue); }
+/* The block being moved, and where a pointer drag would put it. */
+.rt-block[data-dragging='true'] { border-color: var(--pos-blue); background: var(--pos-selected); opacity: .85; box-shadow: var(--pos-shadow); }
+.rt-block[data-drop='before'] { box-shadow: 0 -4px 0 0 var(--pos-blue); }
+.rt-block[data-drop='after'] { box-shadow: 0 4px 0 0 var(--pos-blue); }
 .rt-block-fields { display: grid; gap: var(--pos-s2); min-width: 0; }
 .rt-inline-fields { display: flex; flex-wrap: wrap; align-items: end; gap: var(--pos-s3); }
 .rt-inline-fields > label:not(:has(> input[type='checkbox'])) { flex: 1 1 140px; }

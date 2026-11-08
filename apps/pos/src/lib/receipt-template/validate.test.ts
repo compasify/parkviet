@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_TEMPLATES } from './defaults';
 import { DOCUMENT_TYPES, type DocumentType, type TemplateConfig } from './types';
 import {
+  BLOCK_TYPES,
   charsPerLine,
   editableConfig,
   issueTarget,
@@ -127,7 +128,7 @@ describe('editable config', () => {
       {
         schema: 1,
         page: DEFAULT_TEMPLATES.sale.page,
-        header: [{ type: 'title' }, null as never, { type: 'qr' } as never],
+        header: [{ type: 'title' }, null as never, { type: 'html' } as never],
         totals: { fields: ['item_total'], labels: {} },
         lines: { layout: 'table', columns: ['qty'], show_trace: false, show_conversion: false },
         footer: [],
@@ -187,5 +188,77 @@ describe('line width', () => {
     expect(charsPerLine('a4', 'm')).toBeNull();
     expect(overlongLines(['ngắn', 'x'.repeat(40)], 32)).toEqual(['x'.repeat(40)]);
     expect(overlongLines(['x'.repeat(400)], null)).toEqual([]);
+  });
+});
+
+describe('QR, barcode and signature blocks and copies', () => {
+  const serverSchema = () =>
+    readFileSync(
+      new URL(
+        '../../../../../server/app/services/spree/pos/receipt_template_schema.rb',
+        import.meta.url,
+      ),
+      'utf8',
+    );
+
+  it('offers exactly the block types the server schema accepts', () => {
+    const schema = serverSchema();
+    const start = schema.indexOf('BLOCK_KEYS = {');
+    const body = schema.slice(start, schema.indexOf('}.freeze', start));
+    const server = [...body.matchAll(/'(\w+)' => %w\[/g)].map(([, type]) => type);
+    expect(server.sort()).toEqual([...BLOCK_TYPES].sort());
+  });
+
+  it('marks a QR link that is not http(s), a store page that does not exist and long captions', () => {
+    const config = sale();
+    config.footer = [
+      { type: 'qr', source: 'url', value: 'https://zalo.me/parkviet', caption: 'Zalo' },
+      { type: 'qr', source: 'url', value: 'javascript:alert(1)' },
+      { type: 'qr', source: 'url', value: `https://${'a'.repeat(300)}.vn` },
+      { type: 'qr', source: 'store_social', field: 'zalo' as never, caption: 'x'.repeat(61) },
+      { type: 'qr', source: 'vietqr_payment' } as never,
+    ];
+    expect(codes(config)).toEqual([
+      '/config/footer/1/value invalid_url',
+      '/config/footer/2/value too_long',
+      '/config/footer/3/caption too_long',
+      '/config/footer/3/field invalid_value',
+      '/config/footer/4/source invalid_value',
+    ]);
+  });
+
+  it('needs at least one signature box and short labels', () => {
+    const config = sale();
+    config.footer = [
+      { type: 'signatures', parties: ['buyer'], labels: { buyer: 'Khách' } },
+      { type: 'signatures', parties: [], labels: { seller: 'x'.repeat(41) } },
+      { type: 'barcode', align: 'left' },
+      { type: 'logo', monochrome: true },
+    ];
+    expect(codes(config)).toEqual([
+      '/config/footer/1/parties blank',
+      '/config/footer/1/labels/seller too_long',
+    ]);
+  });
+
+  it('takes one to three copies on sale templates only', () => {
+    const config = sale();
+    config.page = { ...config.page, copies: 3 };
+    expect(codes(config)).toEqual([]);
+    config.page = { ...config.page, copies: 4 };
+    expect(codes(config)).toEqual(['/config/page/copies invalid_value']);
+    const prebill = editableConfig(DEFAULT_TEMPLATES.prebill, 'prebill');
+    prebill.page = { ...prebill.page, copies: 2 };
+    expect(codes(prebill, 'prebill')).toEqual(['/config/page/copies field_unavailable']);
+  });
+
+  it('keeps the copies of a sale template and drops them from other documents', () => {
+    const source = {
+      ...DEFAULT_TEMPLATES.sale,
+      page: { ...DEFAULT_TEMPLATES.sale.page, copies: 2 },
+    };
+    expect(editableConfig(source, 'sale').page.copies).toBe(2);
+    expect(editableConfig(source, 'refund').page).not.toHaveProperty('copies');
+    expect(editableConfig(DEFAULT_TEMPLATES.sale, 'sale').page).not.toHaveProperty('copies');
   });
 });

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useCallback, useId, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSession } from '../hooks/use-session';
 import { abandonIfNeeded } from '../hooks/use-tenders';
@@ -11,23 +11,36 @@ import { PosIcon } from './pos-icon';
 import { ReceiptPrintPanel } from './receipt-print-panel';
 
 // A button that opens the print popup for a posted document's receipt.
+// `autoPrint` turning true opens the popup by itself and prints right away
+// (a sale just issued on a device set to print automatically).
 export function ReceiptPrintButton({
   sourceId,
   label,
   className,
+  autoPrint = false,
 }: {
   sourceId: string;
   label: string;
   className?: string;
+  autoPrint?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState<'manual' | 'auto' | null>(null);
+  useEffect(() => {
+    if (autoPrint) setOpen('auto');
+  }, [autoPrint]);
   return (
     <>
-      <button type="button" className={className} onClick={() => setOpen(true)}>
+      <button type="button" className={className} onClick={() => setOpen('manual')}>
         <PosIcon name="print" />
         {label}
       </button>
-      {open ? <ReceiptPrintDialog sourceId={sourceId} onClose={() => setOpen(false)} /> : null}
+      {open ? (
+        <ReceiptPrintDialog
+          sourceId={sourceId}
+          autoPrint={open === 'auto'}
+          onClose={() => setOpen(null)}
+        />
+      ) : null}
     </>
   );
 }
@@ -37,9 +50,11 @@ export function ReceiptPrintButton({
 export function ReceiptPrintDialog({
   sourceId,
   onClose,
+  autoPrint = false,
 }: {
   sourceId: string;
   onClose: () => void;
+  autoPrint?: boolean;
 }) {
   const { t } = useTranslation();
   const card = useRef<HTMLDivElement>(null);
@@ -110,7 +125,13 @@ export function ReceiptPrintDialog({
           </p>
         ) : null}
         {receipt ? (
-          <ReceiptPrintPanel key={receipt.id} receipt={receipt} onBusyChange={setBusy} />
+          <ReceiptPrintPanel
+            key={receipt.id}
+            receipt={receipt}
+            onBusyChange={setBusy}
+            autoPrint={autoPrint}
+            refreshing={lookup.isFetching}
+          />
         ) : null}
       </div>
     </div>

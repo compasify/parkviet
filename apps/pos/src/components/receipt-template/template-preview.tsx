@@ -162,16 +162,19 @@ export function TemplatePreview({
   data,
   paper,
   testId = 'receipt-template-preview',
+  markOverflow = false,
 }: {
   config: TemplateConfig;
   data: TemplateData;
   paper: PaperSize;
   testId?: string;
+  // Underline the text a thermal roll would wrap.
+  markOverflow?: boolean;
 }) {
   const document = useMemo(() => renderDocument(config, data), [config, data]);
   return (
     <div className="receipt-preview rt-preview-sheet">
-      <PrintSheet document={document} paper={paper} testId={testId} />
+      <PrintSheet document={document} paper={paper} testId={testId} markOverflow={markOverflow} />
     </div>
   );
 }

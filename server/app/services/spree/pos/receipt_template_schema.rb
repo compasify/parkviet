@@ -26,23 +26,37 @@ module Spree
       LAYOUTS = %w[stacked table].freeze
       DIVIDER_STYLES = %w[solid dashed].freeze
       BUSINESS_FIELDS = %w[name branch address phone email url facebook instagram].freeze
+      # A QR code links to a page given here or to one of the store's own.
+      QR_SOURCES = %w[url store_social].freeze
+      SOCIAL_FIELDS = %w[url facebook instagram].freeze
+      MAX_URL_LENGTH = 300
+      MAX_CAPTION_LENGTH = 60
+      SIGNATURE_PARTIES = %w[buyer seller cashier].freeze
+      # Document types printed in several copies with one press; each copy is
+      # recorded as its own print.
+      COPIES_TYPES = %w[sale].freeze
+      MAX_COPIES = 3
 
       # Shared with the POS client, which resolves exactly these names.
       VARIABLES = JSON.parse(Rails.root.join('config/pos/receipt_template_variables.json').read).freeze
       VARIABLE_PATTERN = /\{([a-z_]+(?:\.[a-z_]+)?)\}/
 
       BLOCK_KEYS = {
-        'logo' => %w[type width_pct align],
+        'logo' => %w[type width_pct align monochrome],
         'business' => %w[type fields align],
         'text' => %w[type value align bold size],
         'title' => %w[type label],
         'divider' => %w[type style],
-        'spacer' => %w[type mm]
+        'spacer' => %w[type mm],
+        'qr' => %w[type source value field caption align],
+        'barcode' => %w[type align],
+        'signatures' => %w[type parties labels]
       }.freeze
 
       TOP_KEYS = %w[schema page header meta lines totals payments footer].freeze
       REQUIRED_KEYS = %w[schema page header footer].freeze
-      PAGE_KEYS = %w[margin_mm font font_size line_spacing].freeze
+      PAGE_KEYS = %w[margin_mm font font_size line_spacing copies].freeze
+      REQUIRED_PAGE_KEYS = %w[margin_mm font font_size line_spacing].freeze
       LINES_KEYS = %w[layout columns show_trace show_conversion].freeze
       FIELD_SECTION_KEYS = %w[fields labels].freeze
 
@@ -102,6 +116,7 @@ module Spree
       def initialize(config, document_type, root)
         @errors = []
         @root = root
+        @document_type = document_type
         @sections = SECTIONS.fetch(document_type) { raise ArgumentError, "Unknown document type #{document_type}" }
         check_config(config)
       end
@@ -152,11 +167,19 @@ module Spree
         return unless object?(page, 'page')
 
         known_keys(page, PAGE_KEYS, 'page')
-        PAGE_KEYS.each { |key| add(at('page', key), 'missing', "#{key} is required.") unless page.key?(key) }
+        REQUIRED_PAGE_KEYS.each { |key| add(at('page', key), 'missing', "#{key} is required.") unless page.key?(key) }
+        check_copies(page) if page.key?('copies')
         number(page, 'margin_mm', 0, 20, 'page') if page.key?('margin_mm')
         number(page, 'line_spacing', 1, 1.6, 'page') if page.key?('line_spacing')
         choice(page, 'font', FONTS, 'page') if page.key?('font')
         choice(page, 'font_size', SIZES, 'page') if page.key?('font_size')
+      end
+
+      def check_copies(page)
+        return add(at('page', 'copies'), 'field_unavailable', 'This document prints one copy at a time.') unless COPIES_TYPES.include?(@document_type)
+        return if page['copies'].is_a?(Integer) && page['copies'].between?(1, MAX_COPIES)
+
+        add(at('page', 'copies'), 'invalid_value', "copies must be a whole number from 1 to #{MAX_COPIES}.")
       end
 
       def check_blocks(blocks, place)
@@ -185,6 +208,7 @@ module Spree
         case block['type']
         when 'logo'
           number(block, 'width_pct', 20, 100, *path) if block.key?('width_pct')
+          boolean(block, 'monochrome', *path) if block.key?('monochrome')
         when 'business'
           list(block, 'fields', BUSINESS_FIELDS, *path, required: true, present: true)
         when 'text'
@@ -195,6 +219,52 @@ module Spree
           choice(block, 'style', DIVIDER_STYLES, *path) if block.key?('style')
         when 'spacer'
           number(block, 'mm', 1, 10, *path) if block.key?('mm')
+        when 'qr'
+          check_qr(block, *path)
+        when 'signatures'
+          check_signatures(block, *path)
+        end
+      end
+
+      # `url` prints the link given; `store_social` the store's website,
+      # Facebook or Instagram page (`field`), read when printing.
+      def check_qr(block, *path)
+        text?(block, 'caption', MAX_CAPTION_LENGTH, *path) if block.key?('caption')
+        return add(at(*path, 'source'), 'missing', 'source is required.') unless block.key?('source')
+        return choice(block, 'source', QR_SOURCES, *path) unless QR_SOURCES.include?(block['source'])
+
+        if block['source'] == 'url'
+          add(at(*path, 'field'), 'unknown_key', 'field is not supported.') if block.key?('field')
+          return add(at(*path, 'value'), 'missing', 'A link is required.') unless block.key?('value')
+          return unless text?(block, 'value', MAX_URL_LENGTH, *path)
+
+          add(at(*path, 'value'), 'invalid_url', 'The link must start with http:// or https://.') unless web_url?(block['value'])
+        else
+          add(at(*path, 'value'), 'unknown_key', 'value is not supported.') if block.key?('value')
+          return add(at(*path, 'field'), 'missing', 'field is required.') unless block.key?('field')
+
+          choice(block, 'field', SOCIAL_FIELDS, *path)
+        end
+      end
+
+      def web_url?(value)
+        uri = URI.parse(value)
+        uri.is_a?(URI::HTTP) && uri.host.present?
+      rescue URI::InvalidURIError
+        false
+      end
+
+      def check_signatures(block, *path)
+        list(block, 'parties', SIGNATURE_PARTIES, *path, required: true, present: true)
+        return unless block.key?('labels')
+
+        labels = block['labels']
+        return unless object?(labels, *path, 'labels')
+
+        labels.each_key do |party|
+          next text?(labels, party, MAX_LABEL_LENGTH, *path, 'labels') if SIGNATURE_PARTIES.include?(party)
+
+          add(at(*path, 'labels', party), 'unknown_key', "#{party} is not a signature.")
         end
       end
 

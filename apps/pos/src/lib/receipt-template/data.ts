@@ -6,7 +6,7 @@ import type {
   PosWorkspace,
 } from '../pos-context';
 import type { ReceiptSnapshot } from '../print-adapter';
-import type { DocumentType, MetaField, PaymentField, TotalField } from './types';
+import type { DocumentType, MetaField, PaymentField, SignatureParty, TotalField } from './types';
 
 // Every printable document reduced to one shape, from a posted receipt
 // snapshot, an open order (pre-bill) or an order being paid (payment
@@ -70,7 +70,15 @@ export type TemplateData = {
   customerName: string | null;
   meta: DataRow<MetaField>[];
   lines: LineData[];
-  lineLabels: { qty: string; price: string; discount: string; amount: string };
+  lineLabels: {
+    index: string;
+    name: string;
+    qty: string;
+    price: string;
+    discount: string;
+    amount: string;
+  };
+  signatureLabels: Record<SignatureParty, string>;
   totals: DataRow<TotalField>[];
   payments: DataRow<PaymentField>[];
   notes: string[];
@@ -142,10 +150,20 @@ export function lineDiscount(line: PosLineItem): string | null {
 
 function lineLabels(t: Translate): TemplateData['lineLabels'] {
   return {
+    index: t('receiptTemplates.print.index'),
+    name: t('receiptTemplates.print.name'),
     qty: t('ticketQty'),
     price: t('ticketPrice'),
     discount: t('ticketDiscount'),
     amount: t('ticketTotal'),
+  };
+}
+
+function signatureLabels(t: Translate): TemplateData['signatureLabels'] {
+  return {
+    buyer: t('receiptTemplates.print.buyer'),
+    seller: t('receiptTemplates.print.seller'),
+    cashier: t('receiptTemplates.print.cashier'),
   };
 }
 
@@ -487,6 +505,7 @@ export function snapshotData(receipt: ReceiptSnapshot, t: Translate): TemplateDa
     meta,
     lines,
     lineLabels: lineLabels(t),
+    signatureLabels: signatureLabels(t),
     totals,
     payments,
     notes,
@@ -583,6 +602,7 @@ export function prebillData(
     meta: [{ field: 'time', label: t('receiptTime'), value: time }],
     lines,
     lineLabels: lineLabels(t),
+    signatureLabels: signatureLabels(t),
     totals: totalRows,
     payments,
     notes: [t('receiptPrebillNote')],
@@ -701,6 +721,7 @@ export function paymentTicketData(
     meta,
     lines,
     lineLabels: lineLabels(t),
+    signatureLabels: signatureLabels(t),
     totals,
     payments,
     notes: [],

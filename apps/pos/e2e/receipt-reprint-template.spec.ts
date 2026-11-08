@@ -7,7 +7,14 @@ import { printLedger, receiptTemplateApi } from './support/receipt-templates';
 // disabled, another template only when picked, and a template outage still
 // prints with the built-in template. Presentation fixtures only.
 
-type PrintSeen = { marker: string | null; sheet: string; printId: string | null; rules: string[] };
+type PrintSeen = {
+  marker: string | null;
+  sheet: string;
+  printId: string | null;
+  rules: string[];
+  // Every sheet of the print, in page order.
+  sheets: { printId: string | null; text: string }[];
+};
 
 const workspace = {
   id: 'ws_a',
@@ -45,9 +52,9 @@ const document = {
   credit: null,
 };
 
-async function install(page: Page) {
+async function install(page: Page, { copies }: { copies?: number } = {}) {
   const templates = receiptTemplateApi([
-    { id: 'postpl_a', type: 'sale', name: 'Bán hàng K80', paper: '80mm', isDefault: true, footer: 'Mẫu A bản 1' },
+    { id: 'postpl_a', type: 'sale', name: 'Bán hàng K80', paper: '80mm', isDefault: true, footer: 'Mẫu A bản 1', copies },
     { id: 'postpl_b', type: 'sale', name: 'Bán hàng A4', paper: 'a4', footer: 'Mẫu B', marginMm: 10 },
   ]);
   const ledger = printLedger(templates, 'sale');
@@ -76,6 +83,10 @@ async function install(page: Page) {
         sheet: sheet?.textContent ?? '',
         printId: sheet?.getAttribute('data-print-id') ?? null,
         rules: [...(style?.sheet?.cssRules ?? [])].map((rule) => rule.cssText),
+        sheets: [...window.document.querySelectorAll('[data-testid="receipt-print-sheet"]')].map((item) => ({
+          printId: item.getAttribute('data-print-id'),
+          text: item.textContent ?? '',
+        })),
       });
       sessionStorage.setItem('printed', JSON.stringify(seen));
     };
@@ -137,7 +148,7 @@ async function install(page: Page) {
     }
     return route.fulfill({ json: { data: [], meta: { page: 1, pages: 1, count: 0, next: null } } });
   });
-  return { templates, ledger, refused };
+  return { templates, ledger, refused, receipt };
 }
 
 async function login(page: Page) {
@@ -296,4 +307,112 @@ test('a template disabled after the list loaded is refused once, then the print 
   // The refreshed list no longer offers B.
   await expect(choice(page, /Bán hàng A4/)).toHaveCount(0);
   await expect(choice(page, /Bán hàng K80 · 80mm · Mẫu của bản gốc/)).toBeChecked();
+});
+
+test('a sale template with two copies records the original and one copy with one press and prints both', async ({
+  page,
+}) => {
+  const { ledger } = await install(page, { copies: 2 });
+  await login(page);
+  await openReceipt(page);
+  await expect(page.getByTestId('receipt-copies-note')).toContainText('2 liên');
+
+  await page.getByRole('button', { name: 'In hóa đơn', exact: true }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Đã ghi nhận bản gốc và 1 bản sao.' })).toBeVisible();
+  await expect.poll(async () => (await printed(page)).length).toBe(1);
+  // Two recorded prints, one after the other, each under its own key and on the original's layout.
+  expect(ledger.prints.map((row) => row.copy_number)).toEqual([0, 1]);
+  expect(new Set(ledger.prints.map((row) => row.body.idempotency_key)).size).toBe(2);
+  expect(ledger.prints[1].body).toMatchObject({ receipt_template_id: 'postpl_a', template_version: 1, paper: '80mm' });
+  // One print dialog with the original and then the copy, each with its own label.
+  const [seen] = await printed(page);
+  expect(seen.marker).toBe('80mm');
+  expect(seen.sheets.map((sheet) => sheet.printId)).toEqual(['posprint_1', 'posprint_2']);
+  expect(seen.sheets[0].text).not.toContain('BẢN SAO');
+  expect(seen.sheets[1].text).toContain('BẢN SAO – lần 1');
+  expect(seen.sheets.every((sheet) => sheet.text.includes('Mẫu A bản 1'))).toBe(true);
+
+  // A reprint is one more copy, not another set.
+  await expect(page.getByTestId('receipt-copies-note')).toHaveCount(0);
+  await page.getByRole('button', { name: 'In lại (bản sao)' }).click();
+  await expect.poll(async () => (await printed(page)).length).toBe(2);
+  expect(ledger.prints).toHaveLength(3);
+  const reprint = (await printed(page))[1];
+  expect(reprint.sheets.map((sheet) => sheet.printId)).toEqual(['posprint_3']);
+  expect(reprint.sheets[0].text).toContain('BẢN SAO – lần 2');
+});
+
+test('a copy that could not be recorded is never printed; the prints recorded before it are', async ({ page }) => {
+  const { ledger } = await install(page, { copies: 3 });
+  let calls = 0;
+  await page.route('**/pos/receipts/posreceipt_1/prints', (route) => {
+    calls += 1;
+    if (calls === 2)
+      return route.fulfill({
+        status: 409,
+        json: { error: { code: 'conflict', message: 'Receipt unavailable.', details: { reason: 'receipt_unavailable' } } },
+      });
+    return route.fallback();
+  });
+  await login(page);
+  await openReceipt(page);
+  await page.getByRole('button', { name: 'In hóa đơn', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('Chỉ ghi nhận được 1/3 liên');
+  await expect.poll(async () => (await printed(page)).length).toBe(1);
+  // The copy that failed is not retried and the third is not asked for.
+  expect(calls).toBe(2);
+  expect(ledger.prints.map((row) => row.copy_number)).toEqual([0]);
+  const [seen] = await printed(page);
+  expect(seen.sheets.map((sheet) => sheet.printId)).toEqual(['posprint_1']);
+  expect(seen.sheet).not.toContain('BẢN SAO');
+});
+
+test('a receipt read before its last print still prints one copy, never another set of copies', async ({ page }) => {
+  const { ledger, receipt } = await install(page, { copies: 3 });
+  // Printed on another device; this counter's read is from before that.
+  ledger.record({});
+  let lookups = 0;
+  await page.route('**/pos/receipts/lookup?*', (route) => {
+    lookups += 1;
+    const stale = { ...receipt(), printed: false, copy_count: 0, original_print: null };
+    return route.fulfill({ json: { data: lookups === 1 ? stale : receipt() } });
+  });
+  await login(page);
+  await page.goto('/receipts?source=posworkspace_done');
+  await expect(page.getByTestId('receipt-sheet')).toContainText('RD300');
+  await page.getByRole('button', { name: /^In hóa đơn$|^In lại \(bản sao\)$/ }).click();
+  await expect.poll(async () => (await printed(page)).length).toBe(1);
+  // The server recorded a copy, so no further copies were asked for.
+  expect(ledger.prints.map((row) => row.copy_number)).toEqual([0, 1]);
+  const [seen] = await printed(page);
+  expect(seen.sheets.map((sheet) => sheet.printId)).toEqual(['posprint_2']);
+  expect(seen.sheets[0].text).toContain('BẢN SAO – lần 1');
+  await expect(page.getByRole('status').filter({ hasText: 'Đã ghi nhận bản sao' })).toBeVisible();
+});
+
+test('reopening the print popup after a print starts from the printed receipt', async ({ page }) => {
+  const { ledger, receipt } = await install(page, { copies: 2 });
+  // Only the first lookup answers; later ones never do, so only the cache
+  // the print updated can know the receipt was printed.
+  const first = receipt();
+  let lookups = 0;
+  await page.route('**/pos/receipts/lookup?*', async (route) => {
+    lookups += 1;
+    if (lookups > 1) await new Promise(() => {});
+    return route.fulfill({ json: { data: first } });
+  });
+  await login(page);
+  await page.goto('/receipts?source=posworkspace_done');
+  await expect(page.getByTestId('receipt-sheet')).toContainText('RD300');
+  await page.getByRole('button', { name: 'In hóa đơn', exact: true }).click();
+  await expect.poll(async () => (await printed(page)).length).toBe(1);
+  expect(ledger.prints).toHaveLength(2);
+
+  // Back on the same screen: the cached receipt is the printed one.
+  await page.getByRole('link', { name: 'Về quầy' }).click();
+  await page.goBack();
+  await expect(page.getByRole('button', { name: 'In lại (bản sao)' })).toBeVisible();
+  await expect(page.getByTestId('receipt-sheet')).toContainText('BẢN SAO – lần 2');
+  await expect(page.getByTestId('receipt-copies-note')).toHaveCount(0);
+  expect(lookups).toBe(2);
 });

@@ -31,7 +31,7 @@ import { useBranches, useMemberships, useRegisters } from '../../hooks/use-topol
 import { administrationAccess } from '../../lib/pos-administration';
 import { createBrowserPrintAdapter } from '../../lib/print-adapter';
 import { DEFAULT_TEMPLATES } from '../../lib/receipt-template/defaults';
-import { renderDocument } from '../../lib/receipt-template/render';
+import { MAX_COPIES, renderDocument } from '../../lib/receipt-template/render';
 import type {
   DocumentType,
   LineColumn,
@@ -41,6 +41,7 @@ import type {
   TextSize,
 } from '../../lib/receipt-template/types';
 import {
+  COPIES_TYPES,
   charsPerLine,
   editableConfig,
   type IssueArea,
@@ -69,7 +70,17 @@ type Draft = {
 };
 
 // Block settings the block editor marks next to their own field.
-const BLOCK_FIELDS = ['value', 'label', 'width_pct', 'mm', 'fields'];
+const BLOCK_FIELDS = [
+  'value',
+  'label',
+  'width_pct',
+  'mm',
+  'fields',
+  'field',
+  'caption',
+  'parties',
+  'labels',
+];
 
 type Conflict = {
   current: number;
@@ -645,9 +656,13 @@ function TemplateEditor({
                   value={config.page.margin_mm}
                   disabled={readOnly}
                   aria-invalid={fieldProblem('page', 'margin_mm') ? true : undefined}
+                  aria-describedby="rt-margin-hint"
                   onChange={(event) => editPage({ margin_mm: Number(event.target.value) })}
                 />
               </label>
+              <small id="rt-margin-hint" className="rt-field-note">
+                {t('receiptTemplates.page.marginHint')}
+              </small>
               {fieldProblem('page', 'margin_mm') ? (
                 <small className="rt-error">{fieldProblem('page', 'margin_mm')}</small>
               ) : null}
@@ -692,6 +707,32 @@ function TemplateEditor({
               {fieldProblem('page', 'line_spacing') ? (
                 <small className="rt-error">{fieldProblem('page', 'line_spacing')}</small>
               ) : null}
+              {COPIES_TYPES.includes(type) ? (
+                <label>
+                  {t('receiptTemplates.page.copies')}
+                  <select
+                    value={config.page.copies ?? 1}
+                    disabled={readOnly}
+                    aria-invalid={fieldProblem('page', 'copies') ? true : undefined}
+                    aria-describedby="rt-copies-hint"
+                    onChange={(event) => editPage({ copies: Number(event.target.value) })}
+                  >
+                    {Array.from({ length: MAX_COPIES }, (_, index) => index + 1).map((count) => (
+                      <option key={count} value={count}>
+                        {t('receiptTemplates.page.copiesCount', { count })}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
+              {COPIES_TYPES.includes(type) ? (
+                <small id="rt-copies-hint" className="rt-field-note">
+                  {t('receiptTemplates.page.copiesHint')}
+                </small>
+              ) : null}
+              {fieldProblem('page', 'copies') ? (
+                <small className="rt-error">{fieldProblem('page', 'copies')}</small>
+              ) : null}
             </div>
           </Section>
 
@@ -700,6 +741,7 @@ function TemplateEditor({
               place="header"
               blocks={draft.header}
               data={preview.data}
+              documentType={type}
               paper={draft.paper}
               pageSize={config.page.font_size}
               readOnly={readOnly}
@@ -842,6 +884,7 @@ function TemplateEditor({
               place="footer"
               blocks={draft.footer}
               data={preview.data}
+              documentType={type}
               paper={draft.paper}
               pageSize={config.page.font_size}
               readOnly={readOnly}
@@ -884,15 +927,16 @@ function TemplateEditor({
           />
           {widthLimit !== null ? (
             <small className="rt-field-note">
-              {t('receiptTemplates.preview.width', { count: widthLimit, paper: draft.paper })}
+              {t('receiptTemplates.preview.width', { count: widthLimit, paper: draft.paper })}{' '}
+              {t('receiptTemplates.preview.overflow')}
             </small>
           ) : null}
-          <TemplatePreview config={config} data={preview.data} paper={draft.paper} />
+          <TemplatePreview config={config} data={preview.data} paper={draft.paper} markOverflow />
         </section>
       </div>
       {testDocument ? (
         <PrintPortal
-          document={testDocument}
+          sheets={[{ document: testDocument }]}
           paper={draft.paper}
           testId="receipt-template-test-print"
         />
