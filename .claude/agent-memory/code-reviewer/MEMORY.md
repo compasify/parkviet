@@ -1,0 +1,1 @@
+- [Spree core source location](reference_spree_core_source.md) — read core gem in container via `pnpm spree exec`; force/payment_pending semantics

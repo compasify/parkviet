@@ -1,0 +1,1 @@
+- [POS e2e probe technique](pos-e2e-probe-technique.md) — run patched copies of apps/pos Playwright specs from scratchpad without editing repo
