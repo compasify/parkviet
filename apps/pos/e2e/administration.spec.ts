@@ -1,5 +1,6 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { expect, type Page, test } from '@playwright/test';
+import { openUserMenu } from './support/menu';
 
 // Presentation fixtures only: these tests do not grant real account privileges.
 async function install(page: Page, access = { read: true, write: true }) {
@@ -68,7 +69,9 @@ test('administration login uses store authority without a selling membership and
   await login(page);
   await expect(page).toHaveURL(/\/settings$/);
   await expect(page.locator('.header-user')).toContainText('Quản trị Hiền');
-  await expect(page.locator('.header-user .header-settings')).toBeVisible();
+  await openUserMenu(page);
+  await expect(page.locator('.user-menu .header-settings')).toBeVisible();
+  await page.keyboard.press('Escape');
   await expect(page.getByRole('list', { name: 'Danh sách chi nhánh' })).toContainText('Kho hàng trung tâm');
   await expect(page.getByRole('button', { name: 'Thêm chi nhánh' })).toBeEnabled();
   expect(state.staffPages).toEqual(expect.arrayContaining([1, 2]));

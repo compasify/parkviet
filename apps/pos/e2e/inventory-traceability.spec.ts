@@ -1,4 +1,5 @@
 import { expect, type Page, type Route, test } from '@playwright/test';
+import { goToMenuPage } from './support/menu';
 
 // Serial and lot stock against an in-memory POS API: the inventory page, a
 // sale whose traced stock must be held before payment, and a return that
@@ -491,8 +492,7 @@ async function login(page: Page) {
 }
 
 async function openMenuLink(page: Page, name: string) {
-  await page.locator('.pos-context-details summary').click();
-  await page.getByRole('link', { name, exact: true }).first().click();
+  await goToMenuPage(page, name);
 }
 
 const STOCK_KEEPER = ['pos.shift.open', 'pos.inventory.manage', 'pos.inventory.trace', 'pos.approval.grant'];

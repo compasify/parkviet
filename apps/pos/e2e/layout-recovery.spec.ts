@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { openUserMenu } from './support/menu';
 
 test('reload restores the selected draft and page from the server without restoring the lease', async ({ page }) => {
   let releaseCreate: () => void = () => {};
@@ -68,7 +69,7 @@ test('reload restores the selected draft and page from the server without restor
   movedDraft = true;
   await page.reload();
   await page.locator('.pos-context-details > summary').click();
-  await expect(page.getByRole('combobox', { name: 'Quầy' })).toHaveValue('reg_1');
+  await expect(page.getByRole('combobox', { name: 'Quầy' })).toHaveAttribute('data-value', 'reg_1');
   await expect(workspace.locator('[role="tab"][data-workspace-id="ws_B2"]')).toHaveAttribute('aria-selected', 'true');
   await expect(workspace.locator('[role="tab"][data-workspace-id="ws_B2"]')).toHaveAttribute('title', 'Tạm giữ');
   await expect(workspace.getByRole('button', { name: 'Mở lại đơn' })).toBeDisabled();
@@ -96,10 +97,9 @@ test('reload restores the selected draft and page from the server without restor
   await page.reload();
   await expect(warning).toBeVisible();
   page.once('dialog', (dialog) => dialog.dismiss());
-  await page.locator('.pos-context-details > summary').click();
+  await openUserMenu(page);
   await page.getByRole('button', { name: 'Đăng xuất' }).click();
   await expect(warning).toBeVisible();
-  await page.locator('.pos-context-details > summary').click();
   await page.getByRole('button', { name: 'Kiểm tra kết quả thao tác' }).click();
   await expect(warning).toBeVisible();
   await expect(page.getByRole('button', { name: 'Kiểm tra kết quả thao tác' })).toBeEnabled();

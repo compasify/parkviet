@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { goToMenuPage } from './support/menu';
 import {
   addLine,
   addSheet,
@@ -44,11 +45,9 @@ test('switched-off features disable their entry points with a reason; recovery p
   await expect(page.getByRole('button', { name: 'Đóng ca', exact: true })).toBeEnabled();
 
   // Work that is already started stays reachable whatever the switches say.
-  await page.locator('.pos-context-details summary').click();
-  await page.getByRole('link', { name: 'Khoản thu cần chú ý' }).click();
+  await goToMenuPage(page, 'Khoản thu cần chú ý');
   await expect(page.locator('.header-title')).toHaveText('Cần chú ý');
-  await page.locator('.pos-context-details summary').click();
-  await page.getByRole('link', { name: 'Hóa đơn', exact: true }).click();
+  await goToMenuPage(page, 'Hóa đơn');
   await expect(page.locator('.header-title')).toHaveText('Hóa đơn');
 });
 

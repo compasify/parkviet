@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { type APIRequestContext, expect, type Page, test } from '@playwright/test';
+import { picker, pickerValue, pickOption } from './searchable-select';
 
 // Opt-in runs against the real development API. They need POS_LIVE_REVIEW=1
 // and POS_LIVE_FIXTURE pointing at the JSON written by the synthetic fixture
@@ -51,16 +52,15 @@ export async function liveLogin(page: Page, fixture: LiveFixture, who: 'cashier'
     .toBe(true);
   if (await chooser.isVisible()) await chooser.getByRole('button', { name: 'Để sau' }).click();
   await summary.click();
-  const branch = page.getByRole('combobox', { name: 'Chi nhánh', exact: true });
-  if ((await branch.inputValue()) !== fixture.branch_id) await branch.selectOption(fixture.branch_id);
-  const register = page.getByRole('combobox', { name: 'Quầy', exact: true });
+  if ((await pickerValue(page, 'Chi nhánh')) !== fixture.branch_id) await pickOption(page, 'Chi nhánh', fixture.branch_id);
+  const register = picker(page, 'Quầy');
   // A branch with one register selects it on its own once the context loads.
   await expect
-    .poll(async () => (await register.inputValue()) === fixture.register_id || (await register.isEnabled()), {
+    .poll(async () => (await pickerValue(page, 'Quầy')) === fixture.register_id || (await register.isEnabled()), {
       timeout: 15_000,
     })
     .toBe(true);
-  if ((await register.inputValue()) !== fixture.register_id) await register.selectOption(fixture.register_id);
+  if ((await pickerValue(page, 'Quầy')) !== fixture.register_id) await pickOption(page, 'Quầy', fixture.register_id);
   await liveExpect(page.getByText('Ca đang mở', { exact: false }).first()).toBeAttached({ timeout: 15_000 });
   await page.locator('.pos-context-details').evaluate((element) => {
     (element as HTMLDetailsElement).open = false;

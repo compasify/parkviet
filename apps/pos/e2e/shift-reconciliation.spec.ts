@@ -1,4 +1,5 @@
 import { expect, type Page, test } from '@playwright/test';
+import { goToMenuPage } from './support/menu';
 
 // Mocked POS API for shift close, drawer movements, late-cash reconciliation,
 // variance approvals and reports. It enforces the rules the client must not
@@ -372,8 +373,7 @@ async function login(page: Page) {
 }
 
 async function openPage(page: Page, name: string) {
-  await page.locator('.pos-context-details summary').click();
-  await page.getByRole('link', { name, exact: true }).click();
+  await goToMenuPage(page, name);
 }
 
 test('cashier requests a safe drop and closes the shift with a blind count and an approved shortage', async ({ page }) => {

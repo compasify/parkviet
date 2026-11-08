@@ -1,4 +1,5 @@
 import { expect, type Page, type Route, test } from '@playwright/test';
+import { goToMenuPage } from './support/menu';
 
 type Status = 'active' | 'disabled';
 
@@ -218,7 +219,7 @@ test('an open session keeps history and locks writes when branch or staff is dis
   page.on('dialog', (dialog) => dialog.accept());
   await openSession(page);
 
-  await page.locator('.header-settings').click();
+  await goToMenuPage(page, 'Cấu hình');
   await page.getByRole('button', { name: 'Nhân viên & quyền' }).click();
   const staffList = page.getByRole('list', { name: 'Danh sách nhân viên' });
   await staffList.getByRole('button', { name: 'Ngừng hoạt động', exact: true }).click();
@@ -236,7 +237,7 @@ test('an open session keeps history and locks writes when branch or staff is dis
   await expect(page.getByRole('button', { name: 'Tạm giữ' })).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Mở ca' })).toHaveCount(0);
 
-  await page.locator('.header-settings').click();
+  await goToMenuPage(page, 'Cấu hình');
   const branchList = page.getByRole('list', { name: 'Danh sách chi nhánh' });
   await branchList.getByRole('button', { name: 'Ngừng hoạt động', exact: true }).click();
   await expect.poll(() => world.hits.join('\n')).toContain(`/pos/branches/${branchId}/disable`);
@@ -257,7 +258,7 @@ test('only the recover capability can enable a disabled branch or staff member',
   await installApi(page, world);
   page.on('dialog', (dialog) => dialog.accept());
   await openSession(page);
-  await page.locator('.header-settings').click();
+  await goToMenuPage(page, 'Cấu hình');
 
   const branchList = page.getByRole('list', { name: 'Danh sách chi nhánh' });
   await branchList.getByRole('button', { name: 'Ngừng hoạt động', exact: true }).click();

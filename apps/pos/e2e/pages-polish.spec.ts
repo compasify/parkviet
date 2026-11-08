@@ -1,5 +1,6 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { expect, type Page, test, type TestInfo } from '@playwright/test';
+import { pickOption } from './support/searchable-select';
 
 // Isolated UI fixtures: no real account, funds or financial writes.
 const branches = [
@@ -61,7 +62,7 @@ async function setup(page: Page, capabilities = ['pos.topology.manage', 'pos.pay
 
 async function chooseBranch(page: Page, id: string) {
   await page.locator('.pos-context-details > summary').click();
-  await page.locator('.context-popover').getByRole('combobox', { name: 'Chi nhánh', exact: true }).selectOption(id);
+  await pickOption(page.locator('.context-popover'), 'Chi nhánh', id);
   await page.keyboard.press('Escape');
   await expect(page.locator('.pos-context-details')).not.toHaveAttribute('open');
   await expect(page.locator('.pos-context-details > summary')).toContainText(branches.find((branch) => branch.id === id)!.name);

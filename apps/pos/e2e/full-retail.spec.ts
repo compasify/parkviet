@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { openUserMenu } from './support/menu';
 import { liveApi, liveEnableFeatures, liveExpect, liveLogin, liveNewDraft, requireLive, restoreLiveFeatures } from './support/live';
 import {
   addLine,
@@ -34,7 +35,7 @@ test('three orders at once: bank waits, cash completes, scans keep landing on th
   await panel.getByRole('button', { name: 'Tiền mặt', exact: true }).click();
   await panel.getByRole('button', { name: 'Thanh toán', exact: true }).click();
   const dialog = page.getByRole('dialog');
-  await dialog.getByRole('button', { name: 'Để chờ, bán đơn khác' }).click();
+  await dialog.getByRole('button', { name: 'Hủy bỏ', exact: true }).click();
   await expect(dialog).toHaveCount(0);
   expect(a.attempts.map((attempt) => [attempt.kind, attempt.status])).toEqual([['bank_manual', 'prepared']]);
 
@@ -80,7 +81,7 @@ test('a full day: credit sale, collection, return with cash refund, exchange, th
   await panel.getByRole('button', { name: 'Chuyển khoản', exact: true }).click();
   await panel.getByRole('button', { name: 'Tiền mặt', exact: true }).click();
   await panel.getByRole('button', { name: 'Thanh toán', exact: true }).click();
-  await dialog.getByRole('button', { name: 'Để chờ, bán đơn khác' }).click();
+  await dialog.getByRole('button', { name: 'Hủy bỏ', exact: true }).click();
 
   // Credit sale: 300k cash now, 200k on manager-approved credit.
   await openTab(page, 'ws_credit');
@@ -190,7 +191,7 @@ test('reload, network flapping, an expired session and logout lose no order and 
   await panel.getByRole('button', { name: 'Chuyển khoản', exact: true }).click();
   await panel.getByRole('button', { name: 'Tiền mặt', exact: true }).click();
   await panel.getByRole('button', { name: 'Thanh toán', exact: true }).click();
-  await dialog.getByRole('button', { name: 'Để chờ, bán đơn khác' }).click();
+  await dialog.getByRole('button', { name: 'Hủy bỏ', exact: true }).click();
   await openTab(page, 'ws_sell');
 
   // Reload: both orders and the waiting transfer come back from the server.
@@ -234,7 +235,7 @@ test('reload, network flapping, an expired session and logout lose no order and 
 
   // Logout and back in: the orders were never stored only in the browser.
   page.on('dialog', (prompt) => void prompt.accept());
-  await page.locator('.pos-context-details summary').click();
+  await openUserMenu(page);
   await page.getByRole('button', { name: 'Đăng xuất' }).click();
   await expect(page.getByLabel('Email nhân viên')).toBeVisible();
   await login(page);

@@ -1,4 +1,5 @@
 import { expect, type Page, test } from '@playwright/test';
+import { picker, pickOption } from './support/searchable-select';
 
 async function install(page: Page, branchCount: number, registerCounts: number[], optionsError = false) {
   const branches = Array.from({ length: branchCount }, (_, i) => ({ id: `br_${i + 1}`, name: `Chi nhánh ${i + 1}`, status: 'active' }));
@@ -53,8 +54,8 @@ test('sole branch and sole register are selected without any popup or write', as
   await expect(page.locator('.pos-context-details > summary')).toContainText('Quầy 1');
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.locator('.pos-context-details > summary').click();
-  await expect(page.getByRole('combobox', { name: 'Chi nhánh', exact: true })).toHaveValue('br_1');
-  await expect(page.getByRole('combobox', { name: 'Quầy', exact: true })).toHaveValue('br_1_reg_1');
+  await expect(picker(page, 'Chi nhánh')).toHaveAttribute('data-value', 'br_1');
+  await expect(picker(page, 'Quầy')).toHaveAttribute('data-value', 'br_1_reg_1');
   expect(state.writes).toEqual([]);
 });
 
@@ -63,7 +64,7 @@ test('multiple branches prompt once; sole register auto-selects after choosing b
   const dialog = page.getByRole('dialog', { name: 'Chọn nơi bán hàng' });
   await expect(dialog).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath('context-choice.png'), fullPage: true });
-  await dialog.getByRole('combobox', { name: 'Chi nhánh', exact: true }).selectOption('br_2');
+  await pickOption(dialog, 'Chi nhánh', 'br_2');
   await expect(dialog).not.toBeVisible();
   await expect(page.locator('.pos-context-details > summary')).toContainText('Chi nhánh 2');
   await expect(page.locator('.pos-context-details > summary')).toContainText('Quầy 1');
@@ -74,8 +75,8 @@ test('sole branch and multiple registers prompt only for the remaining choice', 
   await install(page, 1, [2]);
   const dialog = page.getByRole('dialog');
   await expect(dialog).toBeVisible();
-  await expect(dialog.getByRole('combobox', { name: 'Chi nhánh', exact: true })).toHaveValue('br_1');
-  await dialog.getByRole('combobox', { name: 'Quầy', exact: true }).selectOption('br_1_reg_2');
+  await expect(picker(dialog, 'Chi nhánh')).toHaveAttribute('data-value', 'br_1');
+  await pickOption(dialog, 'Quầy', 'br_1_reg_2');
   await expect(dialog).not.toBeVisible();
   await page.reload();
   await expect(page.locator('.pos-context-details > summary')).toContainText('Quầy 2');

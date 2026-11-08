@@ -1,4 +1,5 @@
 import { expect, type Page, type Route, test } from '@playwright/test';
+import { pickOption, picker as combobox } from './support/searchable-select';
 
 // Keyboard-only path from login to an open shift, and context switches whose
 // earlier response arrives late, on every configured viewport.
@@ -118,15 +119,21 @@ test('login, choose branch and register, and open a shift with the keyboard only
   await page.keyboard.press('Enter');
 
   const setup = page.getByRole('dialog', { name: 'Chọn nơi bán hàng' });
-  const branchSelect = setup.getByLabel('Chi nhánh');
+  const branchSelect = combobox(setup, 'Chi nhánh');
   await expect(branchSelect).toBeFocused();
   await page.keyboard.press('ArrowDown');
-  await expect(branchSelect).toHaveValue(branch.id);
+  await expect(branchSelect).toHaveAttribute('aria-expanded', 'true');
+  // Typing filters the list inside the dropdown itself.
+  await page.keyboard.type(branch.name);
+  await expect(setup.getByRole('option')).toHaveCount(1);
+  await page.keyboard.press('Enter');
+  await expect(branchSelect).toHaveAttribute('data-value', branch.id);
 
-  const registerSelect = setup.getByLabel('Quầy');
+  const registerSelect = combobox(setup, 'Quầy');
   await expect(registerSelect).toBeEnabled();
   await tabUntilFocused(page, registerSelect);
   await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Enter');
   await expect(setup).toBeHidden();
 
   const float = page.getByLabel('Tiền đầu ca');
@@ -160,8 +167,8 @@ test('switching register never shows the previous register shift while the new c
   await page.getByRole('button', { name: 'Đăng nhập vào bán hàng', exact: true }).click();
 
   const setup = page.getByRole('dialog', { name: 'Chọn nơi bán hàng' });
-  await setup.getByLabel('Chi nhánh').selectOption(branch.id);
-  await setup.getByLabel('Quầy').selectOption(register.id);
+  await pickOption(setup, 'Chi nhánh', branch.id);
+  await pickOption(setup, 'Quầy', register.id);
   await expect(setup).toBeHidden();
   await expect(page.getByText('Ca đang mở', { exact: true })).toBeAttached();
 
@@ -171,7 +178,7 @@ test('switching register never shows the previous register shift while the new c
   const picker = page.locator('.pos-context-details');
   const summary = picker.locator('summary');
   await summary.click();
-  await picker.getByLabel('Quầy').selectOption(otherRegister.id);
+  await pickOption(picker, 'Quầy', otherRegister.id);
   await expect.poll(() => world.slowStartedAt ?? 0).toBeGreaterThan(0);
   expect(world.lateServedAt).toBeUndefined();
   await expect(page.getByText('Ca đang mở', { exact: true })).toHaveCount(0);

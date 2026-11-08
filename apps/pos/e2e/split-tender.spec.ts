@@ -256,7 +256,7 @@ async function mockPos(
             status: 409,
             json: { error: { code: 'conflict', message: 'Not received.', details: { reason: 'vietqr_not_received' } } },
           });
-      } else if (!body.reference || !body.receiving_account) {
+      } else if (attempt.kind === 'bank_manual' && (!body.reference || !body.receiving_account)) {
         return route.fulfill({
           status: 422,
           json: { error: { code: 'validation_error', message: 'Reference is required.' } },
@@ -296,6 +296,36 @@ async function openTab(page: Page, workspaceId: string) {
   await expect(page.locator('.payment-panel')).toBeVisible();
 }
 
+test('the URL and page title follow the selected invoice tab, and a link opens its tab', async ({ page }) => {
+  await mockPos(page, [
+    { id: 'ws_1', order_id: 'R250', total: 250 },
+    { id: 'ws_2', order_id: 'R251', total: 100 },
+  ]);
+  await login(page);
+  const tab = (id: string) => page.locator(`[role="tab"][data-workspace-id="${id}"]`);
+
+  await tab('ws_2').click();
+  await expect(page).toHaveURL(/[?&]order=R251\b/);
+  await expect(page).toHaveTitle(/^R251 · Hóa đơn \d+ – ParkViet POS$/);
+  await tab('ws_1').click();
+  await expect(page).toHaveURL(/[?&]order=R250\b/);
+  await expect(page).toHaveTitle(/^R250 · /);
+
+  // A reload or a shared link opens that order's tab, not the remembered one.
+  await page.goto('/?order=R251');
+  await expect(tab('ws_2')).toHaveAttribute('aria-selected', 'true');
+  await expect(page).toHaveURL(/[?&]order=R251\b/);
+  await expect(page).toHaveTitle(/^R251 · /);
+
+  // An unknown order falls back to the selected tab and fixes the URL.
+  await page.goto('/?order=R999');
+  await expect(page).toHaveURL(/[?&]order=R25[01]\b/);
+
+  // Other pages keep the plain app title.
+  await page.goto('/orders');
+  await expect(page).toHaveTitle('ParkViet POS');
+});
+
 test('split tender: bank 100 then cash handed 200/change 50, complete and handover', async ({ page }) => {
   const api = await mockPos(page, [{ id: 'ws_1', order_id: 'R250', total: 250 }]);
   await login(page);
@@ -315,6 +345,8 @@ test('split tender: bank 100 then cash handed 200/change 50, complete and handov
   await dialog.getByLabel('Khách đưa').fill('200');
   await expect(dialog).toContainText('50 ₫');
   await dialog.getByRole('button', { name: 'Kết thúc', exact: true }).click();
+  // The invoice preview repeats these labels while the dialog is open.
+  await expect(dialog).toHaveCount(0);
   await expect(panel.getByText('Đã thu (đã xác nhận)')).toBeVisible();
   await expect(panel.getByText('Tiền thừa trả khách')).toBeVisible();
   await expect(panel.locator('.payment-summary')).toContainText('50');
@@ -325,6 +357,37 @@ test('split tender: bank 100 then cash handed 200/change 50, complete and handov
   expect(api.confirmed.map((item) => item.body.handed_amount ?? item.body.reference).sort()).toEqual(
     ['200', 'FT001'],
   );
+
+  // "In hóa đơn" opens a print popup over the sale instead of leaving it.
+  await page.route('**/pos/receipts/lookup?*', (route) =>
+    route.fulfill({
+      json: {
+        data: {
+          id: 'posreceipt_R250',
+          source_type: 'sale',
+          number: 'HD-0001',
+          branch_id: 'branch_1',
+          issued_at: '2026-11-07T03:00:00Z',
+          issued_late: false,
+          disclaimer: 'Phiếu bán hàng POS — không phải hóa đơn điện tử',
+          printed: false,
+          copy_count: 0,
+          document: { title: 'PHIẾU BÁN HÀNG', currency: 'VND', lines: [], totals: { item_total: '250', total: '250' } },
+        },
+      },
+    }),
+  );
+  const url = page.url();
+  await panel.getByRole('button', { name: 'In hóa đơn', exact: true }).click();
+  const receiptDialog = page.getByRole('dialog');
+  await expect(receiptDialog).toContainText('HD-0001');
+  await expect(receiptDialog.getByTestId('receipt-sheet')).toContainText('PHIẾU BÁN HÀNG');
+  await expect(receiptDialog.getByRole('radiogroup', { name: 'Khổ giấy' }).getByRole('radio')).toHaveCount(5);
+  await receiptDialog.getByLabel('A5', { exact: true }).check();
+  await expect(receiptDialog.getByTestId('receipt-sheet')).toHaveAttribute('data-paper', 'a5');
+  expect(page.url()).toBe(url);
+  await page.keyboard.press('Escape');
+  await expect(receiptDialog).toHaveCount(0);
 });
 
 test('grouped VND amounts are read as thousands and sent canonical', async ({ page }) => {
@@ -422,7 +485,7 @@ test('a held bank tender on one order does not block selling on another', async 
   const dialog = page.getByRole('dialog');
   await expect(dialog).toBeVisible();
   await expect(dialog.getByLabel('Mã tham chiếu giao dịch')).toBeFocused();
-  await dialog.getByRole('button', { name: 'Để chờ, bán đơn khác' }).click();
+  await dialog.getByRole('button', { name: 'Hủy bỏ', exact: true }).click();
   await expect(dialog).toHaveCount(0);
   await expect(panel.getByRole('button', { name: 'Tiếp tục thanh toán' })).toBeVisible();
 
@@ -468,6 +531,29 @@ test('closing the evidence dialog never cancels; cancel needs confirmation', asy
   expect(api.state.get('ws_1')?.attempts.map((attempt) => attempt.status)).toEqual(['canceled']);
 });
 
+test('"Đưa đủ" fills the exact cash due and the thermal preview shows the invoice table', async ({
+  page,
+}) => {
+  const api = await mockPos(page, [{ id: 'ws_1', order_id: 'R250', total: 250000 }]);
+  await login(page);
+  await openTab(page, 'ws_1');
+  await page.locator('.payment-panel').getByRole('button', { name: 'Thanh toán', exact: true }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.getByRole('columnheader', { name: 'Giảm giá' })).toBeVisible();
+  const preview = dialog.getByTestId('invoice-ticket');
+  await expect(preview).toContainText('HÓA ĐƠN THANH TOÁN');
+  await expect(preview).toHaveAttribute('data-paper', '80mm');
+  await dialog.getByRole('button', { name: 'Đưa đủ' }).click();
+  await expect(dialog.getByLabel('Khách đưa')).toHaveValue('250000');
+  await expect(dialog.getByRole('button', { name: 'Kết thúc', exact: true })).toBeFocused();
+  await expect(preview).toContainText('Khách đưa');
+  await dialog.getByRole('button', { name: '58mm' }).click();
+  await expect(preview).toHaveAttribute('data-paper', '58mm');
+  await dialog.getByRole('button', { name: 'Kết thúc', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  expect(api.confirmed.map((item) => item.body.handed_amount)).toEqual(['250000']);
+});
+
 test('the tender evidence print keeps its own content when receipt print styles are loaded', async ({
   page,
 }) => {
@@ -490,9 +576,12 @@ test('VietQR: shows the QR, waits for the bank and confirms from its notificatio
   await openTab(page, 'ws_1');
 
   const panel = page.locator('.payment-panel');
-  await panel.getByRole('button', { name: 'VietQR', exact: true }).click();
+  // With VietQR offered, "Chuyển khoản" is the VietQR tender: no QR-less twin.
+  await expect(panel.getByRole('button', { name: 'VietQR', exact: true })).toHaveCount(0);
+  await expect(panel.getByRole('button', { name: 'Chuyển khoản', exact: true })).toHaveCount(1);
+  await panel.getByRole('button', { name: 'Chuyển khoản', exact: true }).click();
   await panel.getByRole('button', { name: 'Tiền mặt', exact: true }).click();
-  await expect(panel.getByLabel('VietQR')).toHaveValue('500000');
+  await expect(panel.getByLabel('Chuyển khoản', { exact: true })).toHaveValue('500000');
   await panel.getByRole('button', { name: 'Thanh toán', exact: true }).click();
 
   const dialog = page.getByRole('dialog', { name: 'Chuyển khoản VietQR' });
@@ -514,15 +603,75 @@ test('VietQR: shows the QR, waits for the bank and confirms from its notificatio
   expect(api.confirmed.map((item) => item.body.evidence_kind)).toEqual(['vietqr_webhook']);
 });
 
+test('a manual bank tender held from before VietQR switches to a VietQR QR of the same amount', async ({ page }) => {
+  const api = await mockPos(page, [{ id: 'ws_1', order_id: 'R160', total: 160000 }], { vietqr: true });
+  const ws = api.state.get('ws_1');
+  if (!ws) throw new Error('missing workspace');
+  ws.attempts.push({
+    id: 'ten_ws_1_1',
+    workspace_id: 'ws_1',
+    payment_method_id: 'posmethod-bank_manual',
+    kind: 'bank_manual',
+    status: 'prepared',
+    amount: money(160000),
+    order_total_snapshot: money(160000),
+    currency: 'VND',
+    workspace_revision: 1,
+    received_funds_id: null,
+    confirmed_at: null,
+    canceled_at: null,
+  });
+  await login(page);
+  await openTab(page, 'ws_1');
+
+  await page.locator('.payment-panel').getByRole('button', { name: 'Tiếp tục thanh toán' }).click();
+  const bankDialog = page.getByRole('dialog', { name: 'Xác nhận chuyển khoản' });
+  await bankDialog.getByRole('button', { name: 'Hiện mã VietQR' }).click();
+
+  const dialog = page.getByRole('dialog', { name: 'Chuyển khoản VietQR' });
+  await expect(dialog.getByRole('img', { name: 'Mã VietQR để quét bằng ứng dụng ngân hàng' })).toHaveAttribute(
+    'src',
+    '/qr/ten_ws_1_2.png',
+  );
+  await expect(dialog.getByRole('button', { name: 'Hiện mã VietQR' })).toHaveCount(0);
+  expect(ws.attempts.map((item) => [item.kind, item.status])).toEqual([
+    ['bank_manual', 'canceled'],
+    ['vietqr', 'prepared'],
+  ]);
+  expect(api.prepared.map((item) => [item.body.payment_method_id, item.body.amount])).toEqual([
+    ['posmethod-vietqr', '160000'],
+  ]);
+});
+
+test('VietQR attested by hand saves without any bank details', async ({ page }) => {
+  const api = await mockPos(page, [{ id: 'ws_1', order_id: 'R300', total: 300000 }], { vietqr: true });
+  await login(page);
+  await openTab(page, 'ws_1');
+
+  const panel = page.locator('.payment-panel');
+  await panel.getByRole('button', { name: 'Chuyển khoản', exact: true }).click();
+  await panel.getByRole('button', { name: 'Tiền mặt', exact: true }).click();
+  await panel.getByRole('button', { name: 'Thanh toán', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Chuyển khoản VietQR' });
+  await dialog.getByRole('button', { name: 'Xác nhận đã chuyển', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Lưu', exact: true }).click();
+  await expect(dialog).toBeHidden();
+  await expect(panel.getByRole('button', { name: 'Hoàn tất đơn' })).toBeVisible();
+  const evidence = api.confirmed.map((item) => item.body);
+  expect(evidence).toHaveLength(1);
+  expect(evidence[0]).toMatchObject({ evidence_kind: 'vietqr_manual', receiving_account: '0123456789' });
+  expect(evidence[0]).not.toHaveProperty('reference');
+});
+
 test('VietQR split with cash, attested by hand when no bank notification comes', async ({ page }) => {
   const api = await mockPos(page, [{ id: 'ws_1', order_id: 'R100', total: 100000 }], { vietqr: true });
   await login(page);
   await openTab(page, 'ws_1');
 
   const panel = page.locator('.payment-panel');
-  await panel.getByRole('button', { name: 'VietQR', exact: true }).click();
+  await panel.getByRole('button', { name: 'Chuyển khoản', exact: true }).click();
   await panel.getByLabel('Tiền mặt').fill('40000');
-  await expect(panel.getByLabel('VietQR')).toHaveValue('60000');
+  await expect(panel.getByLabel('Chuyển khoản', { exact: true })).toHaveValue('60000');
   await panel.getByRole('button', { name: 'Thanh toán', exact: true }).click();
   const dialog = page.getByRole('dialog');
   await expect(dialog.getByLabel('Khách đưa')).toBeEnabled();
@@ -533,7 +682,10 @@ test('VietQR split with cash, attested by hand when no bank notification comes',
 
   await dialog.getByLabel('Khách đưa').fill('50000');
   await expect(dialog.getByRole('button', { name: 'Kết thúc', exact: true })).toBeDisabled();
-  await dialog.getByText('Khách đã chuyển nhưng chưa có thông báo từ ngân hàng').click();
+  await dialog.getByRole('button', { name: 'Xác nhận đã chuyển', exact: true }).click();
+  // The bank details are optional notes: the cashier may still add them.
+  await expect(dialog.getByRole('button', { name: 'Lưu', exact: true })).toBeFocused();
+  await expect(dialog.getByRole('button', { name: 'Kết thúc', exact: true })).toBeEnabled();
   await dialog.locator('input[name="vietqr_reference"]').fill('FT-HAND-1');
   await dialog.getByRole('button', { name: 'Kết thúc', exact: true }).click();
   await expect(dialog).toBeHidden();

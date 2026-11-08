@@ -229,8 +229,8 @@ test('cashier layout keeps the basket reachable, formats VND and safely edits qu
   const smallTargets = await page.evaluate(() => Array.from(document.querySelectorAll('button, input, select, summary, a[href]')).filter((el) => {
     if (!el.checkVisibility() || el.closest('.visually-hidden') || el.classList.contains('skip-link')) return false;
     const box = el.getBoundingClientRect();
-    // Quantity controls and inline cell/customer icon buttons deliberately use 28..32px.
-    if (el.matches('.quantity-control button, .cell-edit-button, .customer-icon-button, .input-clear-button, .checkout-tools > .checkout-optional > summary')) return box.width < 27.5 || box.height < 27.5;
+    // Quantity controls, inline cell/customer icon buttons and tab close buttons deliberately use 28..32px.
+    if (el.matches('.quantity-control button, .cell-edit-button, .workspace-tab-close, .customer-icon-button, .input-clear-button, .checkout-tools > .checkout-optional > summary')) return box.width < 27.5 || box.height < 27.5;
     if (el.matches('.quantity-control input, .line-price-edit > summary, .basket-table .line-options > summary')) return box.height < 29.5;
     const compact = el.matches('.view-toggle button, #pos-product-search, .product-search-row > button, .customer-search-row input, .payment-methods button, .payment-method-row input, .sale-panel-nav a, .basket-actions > button, .basket-actions summary, .item-discount-editor input, .item-discount-editor select, .item-discount-editor button, .item-discount-editor summary');
     return box.width < 43.5 || box.height < (compact ? 31.5 : 43.5);

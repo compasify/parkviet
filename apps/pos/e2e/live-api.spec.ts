@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { expect, type Page, test } from '@playwright/test';
+import { picker, pickerValue, pickOption } from './support/searchable-select';
 
 async function selectReviewContext(page: Page, credentials: { branch_id: string; register_id: string }) {
   const chooser = page.getByRole('dialog', { name: 'Chọn nơi bán hàng' });
@@ -9,11 +10,9 @@ async function selectReviewContext(page: Page, credentials: { branch_id: string;
     ((await summary.textContent()) ?? '').includes('Quầy:')).toBe(true);
   if (await chooser.isVisible()) await chooser.getByRole('button', { name: 'Để sau' }).click();
   await summary.click();
-  const branch = page.getByRole('combobox', { name: 'Chi nhánh', exact: true });
-  if (await branch.inputValue() !== credentials.branch_id) await branch.selectOption(credentials.branch_id);
-  const register = page.getByRole('combobox', { name: 'Quầy', exact: true });
-  await expect(register).toBeEnabled();
-  if (await register.inputValue() !== credentials.register_id) await register.selectOption(credentials.register_id);
+  if (await pickerValue(page, 'Chi nhánh') !== credentials.branch_id) await pickOption(page, 'Chi nhánh', credentials.branch_id);
+  await expect(picker(page, 'Quầy')).toBeEnabled();
+  if (await pickerValue(page, 'Quầy') !== credentials.register_id) await pickOption(page, 'Quầy', credentials.register_id);
   await page.locator('.pos-context-details').evaluate((element) => { (element as HTMLDetailsElement).open = false; });
 }
 
@@ -59,7 +58,7 @@ test('real API preserves one editor and rejects a stale browser after takeover',
     });
     await second.reload();
     await second.locator('.pos-context-details > summary').click();
-    await expect(second.getByRole('combobox', { name: 'Quầy' })).toHaveValue(credentials.register_id);
+    await expect(second.getByRole('combobox', { name: 'Quầy' })).toHaveAttribute('data-value', credentials.register_id);
     const secondDraft = await findDraft(second, draft);
     try {
       await expect(secondDraft).toBeVisible();
@@ -154,7 +153,7 @@ test('real API recovers a committed draft after its response is lost and the pag
     await page.unrouteAll({ behavior: 'wait' });
     await page.reload();
     await page.locator('.pos-context-details > summary').click();
-    await expect(page.getByRole('combobox', { name: 'Quầy' })).toHaveValue(credentials.register_id);
+    await expect(page.getByRole('combobox', { name: 'Quầy' })).toHaveAttribute('data-value', credentials.register_id);
     await expect(page.getByText('Có thao tác chưa rõ kết quả.', { exact: false })).toBeVisible();
     const retryResponse = page.waitForResponse((response) => response.url().endsWith('/pos/workspaces') && response.request().method() === 'POST');
     await page.getByRole('button', { name: 'Đơn nháp mới' }).click();

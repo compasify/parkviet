@@ -1,4 +1,5 @@
 import { expect, type Page, test } from '@playwright/test';
+import { goToMenuPage } from './support/menu';
 
 type Attempt = Record<string, unknown> & { id: string; kind: string; amount: string; status: string };
 
@@ -626,8 +627,7 @@ test('collection: one cash receipt split oldest debt first, with change and a bo
 }) => {
   const api = await mockPos(page, { id: 'ws_1', order_id: 'R500', total: 500000, customer: null });
   await login(page);
-  await page.locator('.pos-context-details summary').click();
-  await page.getByRole('link', { name: 'Công nợ khách hàng' }).click();
+  await goToMenuPage(page, 'Công nợ khách hàng');
   await expect(page.getByRole('heading', { name: 'Công nợ khách hàng' })).toBeVisible();
   await expect(page.getByText('Quá hạn 8 ngày')).toBeVisible();
 
@@ -668,8 +668,7 @@ test('collection: one cash receipt split oldest debt first, with change and a bo
 });
 
 async function openReceivables(page: Page) {
-  await page.locator('.pos-context-details summary').click();
-  await page.getByRole('link', { name: 'Công nợ khách hàng' }).click();
+  await goToMenuPage(page, 'Công nợ khách hàng');
   await expect(page.getByRole('heading', { name: 'Công nợ khách hàng' })).toBeVisible();
 }
 
@@ -712,8 +711,7 @@ test('a credit manager opens, edits and suspends customer credit accounts', asyn
     { capabilities: ['pos.shift.open', 'pos.payment.collect', 'pos.credit.manage'] },
   );
   await login(page);
-  await page.locator('.pos-context-details summary').click();
-  await page.getByRole('link', { name: 'Tài khoản nợ' }).click();
+  await goToMenuPage(page, 'Tài khoản nợ');
   const list = page.getByRole('list', { name: 'Tài khoản công nợ của chi nhánh' });
   await expect(list).toContainText('Chị Lan');
   await expect(list).toContainText('1.000.000 ₫');
@@ -749,8 +747,7 @@ test('an approver approves, declines with a reason and revokes credit requests',
     { capabilities: ['pos.shift.open', 'pos.approval.grant', 'pos.credit.manage'] },
   );
   await login(page);
-  await page.locator('.pos-context-details summary').click();
-  await page.getByRole('link', { name: 'Duyệt', exact: true }).click();
+  await goToMenuPage(page, 'Duyệt');
   const list = page.getByRole('list', { name: 'Duyệt ghi nợ' });
   await expect(list.getByRole('listitem')).toHaveCount(3);
   await expect(list).toContainText('Thu ngân Mai');
@@ -782,8 +779,7 @@ test('with credit switched off an approver cannot approve, but still declines an
     { capabilities: ['pos.shift.open', 'pos.approval.grant', 'pos.credit.manage'], creditOff: true },
   );
   await login(page);
-  await page.locator('.pos-context-details summary').click();
-  await page.getByRole('link', { name: 'Duyệt', exact: true }).click();
+  await goToMenuPage(page, 'Duyệt');
   const list = page.getByRole('list', { name: 'Duyệt ghi nợ' });
   await expect(list.getByRole('listitem')).toHaveCount(3);
 

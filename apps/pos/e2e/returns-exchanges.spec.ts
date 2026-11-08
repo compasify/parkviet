@@ -1,4 +1,5 @@
 import { expect, type Page, test } from '@playwright/test';
+import { goToMenuPage, openUserMenu } from './support/menu';
 
 // In-memory POS API for order history, returns, refunds and exchanges. It
 // enforces the rules the client must not bypass (returnable quantities,
@@ -483,8 +484,7 @@ async function login(page: Page) {
 }
 
 async function openMenuLink(page: Page, name: string) {
-  await page.locator('.pos-context-details summary').click();
-  await page.getByRole('link', { name, exact: true }).first().click();
+  await goToMenuPage(page, name);
 }
 
 test('order history filters on the server and shows the order timeline', async ({ page }) => {
@@ -593,7 +593,8 @@ test('return wizard: preview, approval wait, receive, refund with evidence and e
   await page.reload();
   await expect(page.getByText('Đã mở đơn đổi R101.')).toBeVisible();
   await page.getByRole('button', { name: 'Mở màn hình bán' }).click();
-  await expect(page).toHaveURL(/:\d+\/?$/);
+  // The sale screen, with the selected invoice tab's order in the URL.
+  await expect(page).toHaveURL(/:\d+\/(\?order=[\w-]+)?$/);
   const layout = await page.evaluate(() => localStorage.getItem('parkviet-pos-layout'));
   expect(JSON.parse(layout ?? '{}')).toMatchObject({ activeWorkspaceId: 'ws_2' });
 });
@@ -619,7 +620,7 @@ test('an approver approves pending returns and refunds on the Duyệt page', asy
 test('returns stay hidden without the return capability', async ({ page }) => {
   await mockPos(page, { capabilities: ['pos.shift.open', 'pos.payment.collect'] });
   await login(page);
-  await page.locator('.pos-context-details summary').click();
+  await openUserMenu(page);
   await expect(page.getByRole('link', { name: 'Đơn hàng', exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Trả / đổi hàng', exact: true })).toHaveCount(0);
 });

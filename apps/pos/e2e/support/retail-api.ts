@@ -1,3 +1,4 @@
+import { goToMenuPage } from './menu';
 import { type BrowserContext, expect, type Page, type Request, type Route } from '@playwright/test';
 
 // An in-memory POS server for whole-day journeys. It keeps one shared state
@@ -1666,8 +1667,7 @@ export async function scan(page: Page, ...codes: string[]) {
 }
 
 export async function openMenuLink(page: Page, name: string) {
-  await page.locator('.pos-context-details summary').click();
-  await page.getByRole('link', { name, exact: true }).first().click();
+  await goToMenuPage(page, name);
 }
 
 // `timeout` is raised by the real-API runs, which answer slower than the mocks.

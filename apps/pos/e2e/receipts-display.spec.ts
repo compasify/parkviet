@@ -92,6 +92,7 @@ function receipt(printed: boolean, copies: number) {
       kind: 'sale',
       title: 'PHIẾU BÁN HÀNG',
       number: 'RD300',
+      order_number: 'R300',
       store: { name: 'Park Việt' },
       branch: { name: 'Chi nhánh 1', code: 'cn1' },
       register: 'Quầy 1',
@@ -598,7 +599,13 @@ test('sleep and resume hide the transfer before revalidating and show it only af
   expect(api.display.acks.at(-1)).toEqual({ generation: 2, lease_id: 'lease-2' });
 });
 
-type PrintSeen = { marker: string | null; sheet: string; printId: string | null; rules: string[] };
+type PrintSeen = {
+  marker: string | null;
+  sheet: string;
+  printId: string | null;
+  rules: string[];
+  title: string;
+};
 
 async function stubPrint(page: Page) {
   await page.addInitScript(() => {
@@ -612,6 +619,7 @@ async function stubPrint(page: Page) {
         sheet: sheet?.textContent ?? '',
         printId: sheet?.getAttribute('data-print-id') ?? null,
         rules: [...(style?.sheet?.cssRules ?? [])].map((rule) => rule.cssText),
+        title: document.title,
       });
     };
   });
@@ -655,6 +663,9 @@ test('prints the server snapshot on 80mm and A4 and labels every reprint as a co
   expect(first.sheet).toContain('PHIẾU BÁN HÀNG');
   expect(first.sheet).not.toContain('BẢN SAO');
   expect(first.rules.join(' ')).toContain('size: 80mm 297mm');
+  // The browser's print header and "Save as PDF" file name carry the order.
+  expect(first.title).toBe('Hóa đơn RD300 - Đơn R300');
+  expect(await page.title()).not.toContain('RD300');
   expect(second).toMatchObject({ marker: 'a4', printId: 'posprint_2' });
   expect(second.sheet).toContain('BẢN SAO – lần 1');
   expect(second.rules.join(' ')).toMatch(/size: A4/i);
@@ -662,6 +673,17 @@ test('prints the server snapshot on 80mm and A4 and labels every reprint as a co
   expect(await page.evaluate(() => document.documentElement.hasAttribute('data-receipt-printing'))).toBe(false);
   expect(await page.evaluate(() => document.getElementById('pos-receipt-page-size'))).toBeNull();
   expect(new Set(api.printBodies).size).toBe(2);
+
+  // Smaller sheets and the narrow roll are offered too, and the choice is kept.
+  for (const [label, paper] of [['A5', 'a5'], ['A6', 'a6'], ['58mm', '58mm']] as const) {
+    await page.getByLabel(label, { exact: true }).check();
+    await expect(sheet).toHaveAttribute('data-paper', paper);
+  }
+  await page.getByRole('button', { name: 'In lại (bản sao)' }).click();
+  await expect.poll(async () => (await printed(page)).length).toBe(3);
+  const third = (await printed(page))[2];
+  expect(third).toMatchObject({ marker: '58mm', printId: 'posprint_3' });
+  expect(await page.evaluate(() => localStorage.getItem('parkviet-pos:receipt-paper'))).toBe('58mm');
 });
 
 test('a pre-bill prints from the print root, labelled as not paid', async ({ context, page }) => {
