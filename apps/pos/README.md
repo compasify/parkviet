@@ -194,7 +194,7 @@ Ngoài ra, giảm giá hoặc đổi giá vượt giới hạn cần **Mã duy�
 ## Giới hạn hiện tại
 
 - Mới chạy sandbox. Chưa được phép thu tiền thật hay vận hành kho thật.
-- Chưa có VietQR hay xác nhận chuyển khoản tự động. Chuyển khoản do thu ngân xác nhận thủ công, và màn hình khách chỉ hiện mô tả tài khoản nhận.
+- Chuyển khoản thường vẫn do thu ngân xác nhận thủ công. Chỉ VietQR mới được đối soát tự động, qua webhook SePay hoặc PayOS (xem [Thanh toán](#thanh-toán)).
 - Chưa có thanh toán thẻ.
 - Chỉ in qua hộp thoại in của trình duyệt. Chưa có driver máy in hay ngăn kéo tiền.
 - Chưa kiểm thử với máy in, máy quét, máy cân và màn hình khách thật.

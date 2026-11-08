@@ -6,8 +6,8 @@
 
 Trọng tâm của ParkViet là **phát triển các ứng dụng và tiện ích phù hợp với thị trường Việt Nam, cách kinh doanh và nhu cầu sử dụng của người Việt**, chẳng hạn như:
 
-- **Ứng dụng bán hàng tại cửa hàng (POS):** hỗ trợ nhân viên tạo đơn và phục vụ khách ngay tại quầy.
-- **Các phương thức thanh toán phổ biến tại Việt Nam:** hướng tới tích hợp chuyển khoản ngân hàng, mã QR, ví điện tử và các dịch vụ thanh toán trong nước.
+- **Ứng dụng bán hàng tại cửa hàng (POS):** hỗ trợ nhân viên tạo đơn và phục vụ khách ngay tại quầy. Xem [chức năng POS](apps/pos/README.md#chức-năng).
+- **Các phương thức thanh toán phổ biến tại Việt Nam:** hướng tới tích hợp chuyển khoản ngân hàng, mã QR, ví điện tử và các dịch vụ thanh toán trong nước. Chuyển khoản VietQR đã có qua gem [`spree_vietqr`](https://github.com/compasify/spree_vietqr).
 - **Quản lý bán hàng đa kênh tại một nơi:** tập trung đơn hàng, sản phẩm và tồn kho từ website, cửa hàng và các sàn thương mại điện tử, giúp người bán không phải quản lý từng kênh riêng lẻ.
 - **Đồng bộ hàng hóa lên nhiều sàn:** hướng tới kết nối Shopee, Lazada, TikTok Shop và website để đăng bán sản phẩm, cập nhật giá và số lượng tồn kho, hạn chế bán vượt số hàng thực có.
 - **Tích hợp quản lý quảng cáo:** kết nối các kênh như Facebook, Google và TikTok để theo dõi chi phí, đơn hàng và doanh thu liên quan đến quảng cáo, giúp người bán đánh giá hiệu quả trên cùng một hệ thống.
@@ -25,6 +25,43 @@ Ví dụ, một cửa hàng có thể quản lý việc bán tại quầy, trên
 Với một cửa hàng POD, đơn mua áo in thiết kế riêng có thể được chuyển đến đối tác sản xuất, sau đó cập nhật tiến độ in và mã vận đơn về hệ thống để người bán theo dõi từ lúc đặt hàng đến khi khách nhận hàng.
 
 ParkViet sẽ tận dụng những khả năng mở rộng mà Spree hỗ trợ để bổ sung ứng dụng, kết nối dịch vụ và phát triển thêm tính năng khi nhu cầu kinh doanh thay đổi. Hiểu đơn giản: **Spree cung cấp nền tảng thương mại, còn ParkViet tập trung làm cho nền tảng đó phù hợp và dễ sử dụng hơn tại Việt Nam.**
+
+## Tiến độ phát triển
+
+Cập nhật 08/11/2026. Nhánh phát triển chính là `v2`.
+
+**Nền tảng:** Spree **6.0.3** ([release notes](https://github.com/spree/spree/releases/tag/v6.0.3)). Dự án đã eject, nên API được build từ `server/` và có thể tùy biến trực tiếp.
+
+| Hạng mục | Trạng thái | Chi tiết |
+| --- | --- | --- |
+| **POS bán tại quầy** (`apps/pos`) | Phase 1–10 đã xong, phase 11 (chất lượng, bảo mật, triển khai) đang làm. **Chỉ chạy sandbox**, chưa thu tiền thật. | [Giới thiệu POS](apps/pos/README.md) · [Kế hoạch](plans/261101-1649-retail-pos-multi-store-multi-order/plan.md) |
+| **Chuyển khoản VietQR** | Đã có: gem Spree 6, trang quản trị và thanh toán VietQR trên POS. | Gem [`compasify/spree_vietqr`](https://github.com/compasify/spree_vietqr) · [Kế hoạch](plans/261108-0934-vietqr-spree6-pos/plan.md) |
+| **Tách từng gói hàng cùng mã khác giá/lô** | Chưa bắt đầu. POS cơ bản hiện chưa hỗ trợ việc này. | [Kế hoạch](plans/261103-pos-goi-hang-truy-xuat/plan.md) |
+| Các mục còn lại ở trên (đa kênh, đồng bộ sàn, quảng cáo, POD, vận chuyển, hóa đơn điện tử…) | Chưa bắt đầu. | — |
+
+### POS đã có những gì?
+
+POS phục vụ nhiều chi nhánh, nhiều quầy, và cho mở nhiều đơn cùng lúc trên một quầy. Mỗi nhóm chức năng có mô tả chi tiết trong README của POS:
+
+- [Bán hàng](apps/pos/README.md#bán-hàng): tìm hoặc quét mã vạch, hàng cân bằng tem EAN-13, đơn vị quy đổi, hàng theo serial/lô, khách hàng, giảm giá, nhiều đơn song song.
+- [Thanh toán](apps/pos/README.md#thanh-toán): tiền mặt, chuyển khoản xác nhận tay, VietQR tự đối soát qua webhook SePay/PayOS, chia nhiều phương thức, sổ tiền chưa phân bổ.
+- [Bán chịu và thu nợ](apps/pos/README.md#bán-chịu-và-thu-nợ): hạn mức, duyệt ghi nợ, tuổi nợ, thu nợ cho nhiều đơn.
+- [Trả hàng, hoàn tiền, đổi hàng](apps/pos/README.md#trả-hàng-hoàn-tiền-đổi-hàng).
+- [Tồn kho truy xuất](apps/pos/README.md#tồn-kho-truy-xuất-serial--lô--hạn-dùng): serial, lô, hạn dùng (FEFO), nhập, chuyển, kiểm kê, thu hồi.
+- [Ca và sổ quỹ](apps/pos/README.md#ca-và-sổ-quỹ): mở/đóng ca, đếm mù, thu/chi két có người xác nhận.
+- [Báo cáo](apps/pos/README.md#báo-cáo): doanh số, thực thu, tiền mặt, công nợ, đóng ca, xuất CSV.
+- [Biên nhận và in](apps/pos/README.md#biên-nhận-và-in), [màn hình khách](apps/pos/README.md#màn-hình-khách), [máy quét](apps/pos/README.md#máy-quét).
+- [Quản trị](apps/pos/README.md#quản-trị) và [phân quyền](apps/pos/README.md#quyền) theo chi nhánh.
+
+Những gì POS chưa làm được (thẻ, driver máy in, thử với thiết bị thật…) nằm ở mục [Giới hạn hiện tại](apps/pos/README.md#giới-hạn-hiện-tại). Các tính năng rủi ro mặc định tắt và được bật theo từng chi nhánh.
+
+### VietQR
+
+Gem [`spree_vietqr`](https://github.com/compasify/spree_vietqr) (bản 1.0.0 cho Spree 6, nhánh `master`) được gắn vào dự án dưới dạng git submodule tại `server/vendor/gems/spree_vietqr`. Bản cho Spree 5 vẫn giữ ở tag `v0.1.0-spree5` và nhánh `spree-5-stable`.
+
+- **Cấu hình** trong bảng quản trị: tạo phương thức thanh toán VietQR ở **Settings → Payment methods**, sau đó thêm tài khoản nhận tiền và xem thông báo ngân hàng ở **Settings → VietQR**.
+- **Trên POS:** chọn VietQR thì quầy và màn hình khách đều hiện mã QR. Khi webhook SePay hoặc PayOS báo đã nhận tiền, thu ngân bấm **Kết thúc**. Nếu ngân hàng chưa báo, thu ngân có thể nhập mã giao dịch bằng tay. Chi nhánh phải bật tính năng **Chuyển khoản VietQR**.
+- **Chưa bật PayOS cho POS:** PayOS lấy chữ số trong số đơn làm `orderCode`, nên cần kiểm tra với số đơn POS trước.
 
 ## Spree 6.0 đã cung cấp những gì?
 
