@@ -9,20 +9,20 @@ importers:
   .:
     dependencies:
       '@spree/admin-sdk':
-        specifier: ^6.0.2
-        version: 6.0.2(typescript@7.0.2)(zod@4.6.7)
+        specifier: ^6.0.3
+        version: 6.0.3(typescript@7.0.2)(zod@4.6.7)
       '@spree/dashboard-core':
-        specifier: ^6.0.2
-        version: 6.0.2(bd05c310afc008162106e5422b401e89)
+        specifier: ^6.0.3
+        version: 6.0.3(eb0a27856998365c8cc07058597c7869)
       '@spree/dashboard-ui':
-        specifier: ^6.0.2
-        version: 6.0.2(@babel/runtime@7.29.10)(@date-fns/tz@1.5.0)(@floating-ui/dom@1.8.0)(@tanstack/react-router@1.170.46(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@tiptap/extensions@3.32.0(@tiptap/core@3.32.0(@tiptap/pm@3.32.0))(@tiptap/pm@3.32.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(i18next@26.5.12(typescript@7.0.2))(react-dom@19.3.1(react@19.3.1))(react-hook-form@7.91.0(@types/react@19.3.0)(react@19.3.1))(react-i18next@17.1.9(i18next@26.5.12(typescript@7.0.2))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@7.0.2))(react-is@19.3.1)(react@19.3.1)(redux@5.0.1)(tailwindcss@4.3.3)
+        specifier: ^6.0.3
+        version: 6.0.3(@babel/runtime@7.29.10)(@date-fns/tz@1.5.0)(@floating-ui/dom@1.8.0)(@tanstack/react-router@1.170.46(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@tiptap/extensions@3.32.0(@tiptap/core@3.32.0(@tiptap/pm@3.32.0))(@tiptap/pm@3.32.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(i18next@26.5.12(typescript@7.0.2))(react-dom@19.3.1(react@19.3.1))(react-hook-form@7.91.0(@types/react@19.3.0)(react@19.3.1))(react-i18next@17.1.9(i18next@26.5.12(typescript@7.0.2))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@7.0.2))(react-is@19.3.1)(react@19.3.1)(redux@5.0.1)(tailwindcss@4.3.3)
       '@spree/seller-dashboard':
-        specifier: ^6.0.2
-        version: 6.0.2(569206bd34946b85d699963d0eff62b0)
+        specifier: ^6.0.3
+        version: 6.0.3(6a94c01ae5f59c6afc3aa30633f32d59)
       '@spree/seller-sdk':
-        specifier: ^6.0.2
-        version: 6.0.2(typescript@7.0.2)(zod@4.6.7)
+        specifier: ^6.0.3
+        version: 6.0.3(typescript@7.0.2)(zod@4.6.7)
       '@tanstack/react-query':
         specifier: ^5.104.5
         version: 5.105.0(@types/react@19.3.0)(react@19.3.1)
@@ -551,8 +551,8 @@ packages:
   '@rolldown/pluginutils@1.0.1':
     resolution: {integrity: sha512-2j9bGt5Jh8hj+vPtgzPtl72j0yRxHAyumoo6TNfAjsLB04UtpSvPbPcDcBMxz7n+9CYB0c1GxQFxYRg2jimqGw==}
 
-  '@spree/admin-sdk@6.0.2':
-    resolution: {integrity: sha512-4NFzLsJsrPhFs386TxLyCLXzZ1D2jKsILCkcY6W3cdFbtroU1KVp3h+fz4QZX7Qcj/7ZC6RDFes+RGBlnm7tZQ==}
+  '@spree/admin-sdk@6.0.3':
+    resolution: {integrity: sha512-Fz9b1KMJPu+OvJr3fkO5Rl3CM3NRky8MP9Ok3zcD56o2AnHy6vr5Wd0LIfDWPPA05PKG/Cp8grL47egJ7LbPRw==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       typescript: '>=4.7.0'
@@ -563,15 +563,15 @@ packages:
       zod:
         optional: true
 
-  '@spree/core@6.0.2':
-    resolution: {integrity: sha512-r9ofHuSkqFkjSPDDbxHvjVlTgX8vyqb8j2wsomR05IP7997gjqY+w1gG9XvG64Dlk9IS0ZVPMOFjHLBHy6yRUw==}
+  '@spree/core@6.0.3':
+    resolution: {integrity: sha512-ju3iJHWwjGrNKeZoqOijMG7XE4rAzzdflTwoIZX5q8AZ4FjXicgIC7c3cg8biruzTb6HNkbZeujDNakp56k/eA==}
     engines: {node: '>=18.0.0'}
 
-  '@spree/dashboard-core@6.0.2':
-    resolution: {integrity: sha512-cZbA3tYw/oAr6sFqyXck37hH27CvvhcIl+1mq97dkD1LovrvabQYkqXnOKnJgzV4sruBEZtISR+9JJUnWd4Dvg==}
+  '@spree/dashboard-core@6.0.3':
+    resolution: {integrity: sha512-0i7FyMxPOH4QtxphgH5B1ZXj1TfbrCX98GVG47qUn161L9bXq3XdHAYG9d15lBwUUM7cZd6ntSyiTeT00epGAg==}
     peerDependencies:
-      '@spree/admin-sdk': '>=6.0.2 <7.0.0-0'
-      '@spree/dashboard-ui': '>=6.0.2 <7.0.0-0'
+      '@spree/admin-sdk': '>=6.0.3 <7.0.0-0'
+      '@spree/dashboard-ui': '>=6.0.3 <7.0.0-0'
       '@tanstack/react-query': ^5.100.9
       '@tanstack/react-router': ^1.169.2
       i18next: ^26.2.0
@@ -580,8 +580,8 @@ packages:
       react-hook-form: ^7.75.0
       react-i18next: ^17.0.8
 
-  '@spree/dashboard-ui@6.0.2':
-    resolution: {integrity: sha512-iuxsiuHHUiK8AXxYJ2Le8+KMkaB8x7z47E/eD9mYXp2fuWVQAfQtklcsi+jviPTb99HF16QIm3YlHUndduZEwQ==}
+  '@spree/dashboard-ui@6.0.3':
+    resolution: {integrity: sha512-dZxfe/3+F7PjyjG1fYtFzV27b52EhTfuaOdbzNzUqMpUFWGothmhOhMasS9/Q/cti/NwhFkt+Ye5H+0firZ0XQ==}
     peerDependencies:
       '@tanstack/react-router': ^1.169.2
       i18next: ^26.2.0
@@ -591,12 +591,12 @@ packages:
       react-i18next: ^17.0.8
       tailwindcss: ^4.2.4
 
-  '@spree/seller-dashboard@6.0.2':
-    resolution: {integrity: sha512-LqldJLe0dfLuPky3W9PhQvV56i8WMkF8pp54Se5iKWJ6awErBDLTWY8P37359x9zBLeTK3H1xfDMv808qWmYiA==}
+  '@spree/seller-dashboard@6.0.3':
+    resolution: {integrity: sha512-rtnKX9/SXMZkSeoPby2IoEfnUGN4rMGebYasRYFSoqqVDYfedV7F/SxsTDRg09hIDz64gF1E5AL+UDVHXnoArQ==}
     peerDependencies:
-      '@spree/admin-sdk': ^6.0.2
-      '@spree/dashboard-core': ^6.0.2
-      '@spree/dashboard-ui': ^6.0.2
+      '@spree/admin-sdk': ^6.0.3
+      '@spree/dashboard-core': ^6.0.3
+      '@spree/dashboard-ui': ^6.0.3
       '@tanstack/react-query': ^5.104.5
       '@tanstack/react-router': ^1.170.45
       i18next: ^26.5.3
@@ -605,8 +605,8 @@ packages:
       react-hook-form: ^7.90.0
       react-i18next: ^17.1.0
 
-  '@spree/seller-sdk@6.0.2':
-    resolution: {integrity: sha512-5nZq4o9ApQkCpo3eET4Cnnm5WM8I6yyBOnQJDzmM2kZyrpmSpIaXbpvk7ROtq+4y6y6lDSef8XUsgksY/k2CdA==}
+  '@spree/seller-sdk@6.0.3':
+    resolution: {integrity: sha512-yW+z5Fim8u7IlLmV/aZ+q3l3UzIeBMBd2d2V4Ii6pRzEITqp2jBLid+aXga4WrImPOQZ7FU5QcpcqJ5gEdplBw==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       typescript: '>=4.7.0'
@@ -1571,15 +1571,6 @@ packages:
       '@types/react':
         optional: true
 
-  lucide-react@1.66.0:
-    resolution: {integrity: sha512-8zjbi/Us+ETXqfBwmXF/FHrWGIqOdE6zT1yUdRJLQVoptomSkB0zdFWVIM667t9K8djWDaXdkBkqi2qVTuDNiw==}
-    peerDependencies:
-      '@types/react': '*'
-      react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
-    peerDependenciesMeta:
-      '@types/react':
-        optional: true
-
   magic-string@0.30.21:
     resolution: {integrity: sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ==}
 
@@ -2373,7 +2364,7 @@ snapshots:
       immer: 11.2.9
       redux: 5.0.1
       redux-thunk: 3.1.0(redux@5.0.1)
-      reselect: 5.2.0
+      reselect: 5.3.0
     optionalDependencies:
       react: 19.3.1
       react-redux: 9.3.1(@types/react@19.3.0)(react@19.3.1)(redux@5.0.1)
@@ -2425,22 +2416,22 @@ snapshots:
 
   '@rolldown/pluginutils@1.0.1': {}
 
-  '@spree/admin-sdk@6.0.2(typescript@7.0.2)(zod@4.6.7)':
+  '@spree/admin-sdk@6.0.3(typescript@7.0.2)(zod@4.6.7)':
     optionalDependencies:
       typescript: 7.0.2
       zod: 4.6.7
 
-  '@spree/core@6.0.2': {}
+  '@spree/core@6.0.3': {}
 
-  '@spree/dashboard-core@6.0.2(bd05c310afc008162106e5422b401e89)':
+  '@spree/dashboard-core@6.0.3(eb0a27856998365c8cc07058597c7869)':
     dependencies:
       '@dnd-kit/core': 6.3.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@dnd-kit/sortable': 10.0.0(@dnd-kit/core@6.3.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react@19.3.1)
       '@dnd-kit/utilities': 3.2.2(react@19.3.1)
       '@hookform/resolvers': 6.0.2(@standard-schema/spec@1.1.0)(ajv-formats@2.1.1(ajv@8.20.0))(ajv@8.20.0)(react-hook-form@7.91.0(@types/react@19.3.0)(react@19.3.1))(zod@4.6.7)
-      '@spree/admin-sdk': 6.0.2(typescript@7.0.2)(zod@4.6.7)
-      '@spree/core': 6.0.2
-      '@spree/dashboard-ui': 6.0.2(@babel/runtime@7.29.10)(@date-fns/tz@1.5.0)(@floating-ui/dom@1.8.0)(@tanstack/react-router@1.170.46(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@tiptap/extensions@3.32.0(@tiptap/core@3.32.0(@tiptap/pm@3.32.0))(@tiptap/pm@3.32.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(i18next@26.5.12(typescript@7.0.2))(react-dom@19.3.1(react@19.3.1))(react-hook-form@7.91.0(@types/react@19.3.0)(react@19.3.1))(react-i18next@17.1.9(i18next@26.5.12(typescript@7.0.2))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@7.0.2))(react-is@19.3.1)(react@19.3.1)(redux@5.0.1)(tailwindcss@4.3.3)
+      '@spree/admin-sdk': 6.0.3(typescript@7.0.2)(zod@4.6.7)
+      '@spree/core': 6.0.3
+      '@spree/dashboard-ui': 6.0.3(@babel/runtime@7.29.10)(@date-fns/tz@1.5.0)(@floating-ui/dom@1.8.0)(@tanstack/react-router@1.170.46(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@tiptap/extensions@3.32.0(@tiptap/core@3.32.0(@tiptap/pm@3.32.0))(@tiptap/pm@3.32.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(i18next@26.5.12(typescript@7.0.2))(react-dom@19.3.1(react@19.3.1))(react-hook-form@7.91.0(@types/react@19.3.0)(react@19.3.1))(react-i18next@17.1.9(i18next@26.5.12(typescript@7.0.2))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@7.0.2))(react-is@19.3.1)(react@19.3.1)(redux@5.0.1)(tailwindcss@4.3.3)
       '@tailwindcss/vite': 4.3.3(vite@8.3.5(jiti@2.7.0))
       '@tanstack/react-hotkeys': 0.16.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@tanstack/react-query': 5.105.0(@types/react@19.3.0)(react@19.3.1)
@@ -2448,7 +2439,7 @@ snapshots:
       date-fns: 4.4.0
       date-fns-tz: 3.2.0(date-fns@4.4.0)
       i18next: 26.5.12(typescript@7.0.2)
-      lucide-react: 1.66.0(@types/react@19.3.0)(react@19.3.1)
+      lucide-react: 1.60.0(@types/react@19.3.0)(react@19.3.1)
       react: 19.3.1
       react-dom: 19.3.1(react@19.3.1)
       react-hook-form: 7.91.0(@types/react@19.3.0)(react@19.3.1)
@@ -2480,7 +2471,7 @@ snapshots:
       - vite
       - yup
 
-  '@spree/dashboard-ui@6.0.2(@babel/runtime@7.29.10)(@date-fns/tz@1.5.0)(@floating-ui/dom@1.8.0)(@tanstack/react-router@1.170.46(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@tiptap/extensions@3.32.0(@tiptap/core@3.32.0(@tiptap/pm@3.32.0))(@tiptap/pm@3.32.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(i18next@26.5.12(typescript@7.0.2))(react-dom@19.3.1(react@19.3.1))(react-hook-form@7.91.0(@types/react@19.3.0)(react@19.3.1))(react-i18next@17.1.9(i18next@26.5.12(typescript@7.0.2))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@7.0.2))(react-is@19.3.1)(react@19.3.1)(redux@5.0.1)(tailwindcss@4.3.3)':
+  '@spree/dashboard-ui@6.0.3(@babel/runtime@7.29.10)(@date-fns/tz@1.5.0)(@floating-ui/dom@1.8.0)(@tanstack/react-router@1.170.46(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@tiptap/extensions@3.32.0(@tiptap/core@3.32.0(@tiptap/pm@3.32.0))(@tiptap/pm@3.32.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(i18next@26.5.12(typescript@7.0.2))(react-dom@19.3.1(react@19.3.1))(react-hook-form@7.91.0(@types/react@19.3.0)(react@19.3.1))(react-i18next@17.1.9(i18next@26.5.12(typescript@7.0.2))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@7.0.2))(react-is@19.3.1)(react@19.3.1)(redux@5.0.1)(tailwindcss@4.3.3)':
     dependencies:
       '@base-ui/react': 1.8.0(@date-fns/tz@1.5.0)(@types/react@19.3.0)(date-fns@4.4.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@codemirror/autocomplete': 6.20.4
@@ -2497,7 +2488,7 @@ snapshots:
       '@dnd-kit/utilities': 3.2.2(react@19.3.1)
       '@fontsource-variable/geist': 5.3.0
       '@fontsource-variable/geist-mono': 5.3.0
-      '@spree/core': 6.0.2
+      '@spree/core': 6.0.3
       '@tanstack/react-hotkeys': 0.16.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@tanstack/react-router': 1.170.46(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@tanstack/react-table': 9.3.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -2536,14 +2527,14 @@ snapshots:
       - react-is
       - redux
 
-  '@spree/seller-dashboard@6.0.2(569206bd34946b85d699963d0eff62b0)':
+  '@spree/seller-dashboard@6.0.3(6a94c01ae5f59c6afc3aa30633f32d59)':
     dependencies:
       '@hookform/resolvers': 6.0.2(@standard-schema/spec@1.1.0)(ajv-formats@2.1.1(ajv@8.20.0))(ajv@8.20.0)(react-hook-form@7.91.0(@types/react@19.3.0)(react@19.3.1))(zod@4.6.7)
-      '@spree/admin-sdk': 6.0.2(typescript@7.0.2)(zod@4.6.7)
-      '@spree/core': 6.0.2
-      '@spree/dashboard-core': 6.0.2(bd05c310afc008162106e5422b401e89)
-      '@spree/dashboard-ui': 6.0.2(@babel/runtime@7.29.10)(@date-fns/tz@1.5.0)(@floating-ui/dom@1.8.0)(@tanstack/react-router@1.170.46(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@tiptap/extensions@3.32.0(@tiptap/core@3.32.0(@tiptap/pm@3.32.0))(@tiptap/pm@3.32.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(i18next@26.5.12(typescript@7.0.2))(react-dom@19.3.1(react@19.3.1))(react-hook-form@7.91.0(@types/react@19.3.0)(react@19.3.1))(react-i18next@17.1.9(i18next@26.5.12(typescript@7.0.2))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@7.0.2))(react-is@19.3.1)(react@19.3.1)(redux@5.0.1)(tailwindcss@4.3.3)
-      '@spree/seller-sdk': 6.0.2(typescript@7.0.2)(zod@4.6.7)
+      '@spree/admin-sdk': 6.0.3(typescript@7.0.2)(zod@4.6.7)
+      '@spree/core': 6.0.3
+      '@spree/dashboard-core': 6.0.3(eb0a27856998365c8cc07058597c7869)
+      '@spree/dashboard-ui': 6.0.3(@babel/runtime@7.29.10)(@date-fns/tz@1.5.0)(@floating-ui/dom@1.8.0)(@tanstack/react-router@1.170.46(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@tiptap/extensions@3.32.0(@tiptap/core@3.32.0(@tiptap/pm@3.32.0))(@tiptap/pm@3.32.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(i18next@26.5.12(typescript@7.0.2))(react-dom@19.3.1(react@19.3.1))(react-hook-form@7.91.0(@types/react@19.3.0)(react@19.3.1))(react-i18next@17.1.9(i18next@26.5.12(typescript@7.0.2))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@7.0.2))(react-is@19.3.1)(react@19.3.1)(redux@5.0.1)(tailwindcss@4.3.3)
+      '@spree/seller-sdk': 6.0.3(typescript@7.0.2)(zod@4.6.7)
       '@tanstack/react-query': 5.105.0(@types/react@19.3.0)(react@19.3.1)
       '@tanstack/react-router': 1.170.46(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@tanstack/router-plugin': 1.168.48(@tanstack/react-router@1.170.46(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(rolldown@1.2.16)(vite@8.3.5(jiti@2.7.0))
@@ -2591,7 +2582,7 @@ snapshots:
       - webpack
       - yup
 
-  '@spree/seller-sdk@6.0.2(typescript@7.0.2)(zod@4.6.7)':
+  '@spree/seller-sdk@6.0.3(typescript@7.0.2)(zod@4.6.7)':
     optionalDependencies:
       typescript: 7.0.2
       zod: 4.6.7
@@ -3367,12 +3358,6 @@ snapshots:
       yallist: 3.1.1
 
   lucide-react@1.60.0(@types/react@19.3.0)(react@19.3.1):
-    dependencies:
-      react: 19.3.1
-    optionalDependencies:
-      '@types/react': 19.3.0
-
-  lucide-react@1.66.0(@types/react@19.3.0)(react@19.3.1):
     dependencies:
       react: 19.3.1
     optionalDependencies:
