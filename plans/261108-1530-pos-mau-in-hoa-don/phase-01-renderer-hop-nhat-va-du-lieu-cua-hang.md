@@ -1,7 +1,7 @@
 ---
 phase: 1
 title: "Renderer hợp nhất và dữ liệu cửa hàng"
-status: pending
+status: completed
 effort: "2 ngày"
 dependsOn: []
 ---
@@ -50,7 +50,20 @@ Chưa có tùy biến. Mục tiêu là đưa mọi phiếu về một renderer c
 
 ## Success Criteria
 
-- [ ] Toàn bộ test hiện có pass không sửa kỳ vọng: `print-adapter.test.ts`, `invoice-ticket.test.ts`, e2e `receipts-display`, `split-tender`, `close-invoice-tab`.
-- [ ] Test mới: mỗi loại chứng từ render từ mẫu mặc định ra đúng thứ tự và nội dung như trước; không thể tắt các phần bị khóa dù config tắt chúng.
-- [ ] Snapshot mới có địa chỉ/SĐT cửa hàng; snapshot cũ vẫn render, khối trống bị ẩn.
-- [ ] Không có số tiền nào được tính ở client ngoài tiền thừa đang có sẵn.
+- [x] Toàn bộ test hiện có pass không sửa kỳ vọng: `print-adapter.test.ts`, `invoice-ticket.test.ts`, e2e `receipts-display`, `split-tender`, `close-invoice-tab`.
+- [x] Test mới: mỗi loại chứng từ render từ mẫu mặc định ra đúng thứ tự và nội dung như trước; không thể tắt các phần bị khóa dù config tắt chúng.
+- [x] Snapshot mới có địa chỉ/SĐT cửa hàng; snapshot cũ vẫn render, khối trống bị ẩn.
+- [x] Không có số tiền nào được tính ở client ngoài tiền thừa đang có sẵn.
+
+## Kết quả (08/11/2026)
+
+- Mọi chứng từ đi qua `renderDocument` (`apps/pos/src/lib/receipt-template/`); mẫu mặc định cho ra đúng phiếu cũ, ngoài dòng địa chỉ/SĐT cửa hàng và dòng cảm ơn của phiếu thanh toán (nay là khối chân phiếu).
+- Ngoài các phần khóa trong plan, số tiền đã hoàn của phiếu hoàn tiền cũng luôn in. Khối hỏng (không phải object) bị bỏ qua; khối text ẩn từng dòng có biến đều rỗng.
+- Context lấy `logo_url` bằng `cdn_image_url`; lỗi thiếu host mặc định chỉ trả `null` và báo qua `Rails.error`.
+- Spec mới: `server/spec/requests/spree/pos/receipt_store_profile_spec.rb`. Thư mục `spec/models/spree/pos/` chưa tồn tại.
+- Phase 2 cần chép `DEFAULT_TEMPLATES` và `TEMPLATE_VARIABLES` sang server.
+
+Vấn đề còn mở:
+- `return_supplement` vẫn không in số tiền (giữ nguyên hành vi cũ).
+- Mẫu bán hàng tắt được `paid_total`, `debt`, `due_on`; phiếu bán nợ có thể không in số còn nợ. Cần quyết định có khóa các dòng này không.
+- Tiêu đề chứng từ đổi được nhãn (vẫn luôn in, kèm số chứng từ).
