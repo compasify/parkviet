@@ -46,7 +46,7 @@ Research và so sánh thị trường: [261108-1500-pos-receipt-template-researc
 |---|---|---|---|
 | 1 | [Renderer hợp nhất và dữ liệu cửa hàng](./phase-01-renderer-hop-nhat-va-du-lieu-cua-hang.md) | 2 ngày | Completed |
 | 2 | [Model và API mẫu in](./phase-02-model-va-api-mau-in.md) | 2,5 ngày | Completed |
-| 3 | [Cài đặt POS → Mẫu in (editor)](./phase-03-cai-dat-mau-in-editor.md) | 3 ngày | Pending |
+| 3 | [Cài đặt POS → Mẫu in (editor)](./phase-03-cai-dat-mau-in-editor.md) | 3 ngày | Completed |
 | 4 | [In theo mẫu ở quầy và in lại](./phase-04-in-theo-mau-va-in-lai.md) | 2 ngày | Pending |
 | 5 | [Tùy biến nâng cao](./phase-05-tuy-bien-nang-cao.md) | 3,5 ngày | Pending |
 | 6 | [Hóa đơn điện tử máy tính tiền](./phase-06-hoa-don-dien-tu-may-tinh-tien.md) | Chưa ước lượng | Deferred |

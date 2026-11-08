@@ -1,7 +1,7 @@
 ---
 phase: 3
 title: "Cài đặt POS → Mẫu in (editor)"
-status: pending
+status: completed
 effort: "3 ngày"
 dependsOn: [2]
 ---
@@ -71,8 +71,22 @@ Mirror các giới hạn server (độ dài, số khối, biến hợp lệ) đ�
 
 ## Success Criteria
 
-- [ ] e2e: tạo mẫu từ gợi ý → đổi text chân phiếu có biến → preview cập nhật ngay → lưu → tải lại thấy đúng; đặt mặc định; nhân bản; ngừng dùng; khôi phục version cũ.
-- [ ] e2e: người dùng chỉ đọc không thấy nút ghi; 409 hiện thông báo xung đột; 422 đánh dấu đúng khối.
-- [ ] Không tắt được các phần bị khóa trên UI.
-- [ ] In thử không tạo `ReceiptPrint`.
-- [ ] Đủ i18n vi/en; điều khiển dùng được bằng bàn phím (accordion, checkbox, nút lên/xuống).
+- [x] e2e: tạo mẫu từ gợi ý → đổi text chân phiếu có biến → preview cập nhật ngay → lưu → tải lại thấy đúng; đặt mặc định; nhân bản; ngừng dùng; khôi phục version cũ.
+- [x] e2e: người dùng chỉ đọc không thấy nút ghi; 409 hiện thông báo xung đột; 422 đánh dấu đúng khối.
+- [x] Không tắt được các phần bị khóa trên UI.
+- [x] In thử không tạo `ReceiptPrint`.
+- [x] Đủ i18n vi/en; điều khiển dùng được bằng bàn phím (accordion, checkbox, nút lên/xuống).
+
+## Kết quả (08/11/2026)
+
+- Trang `Cài đặt POS → Mẫu in` (danh sách) và editor ghép khối, preview trực tiếp từ dữ liệu mẫu hoặc phiếu gần nhất. CSS riêng ở `apps/pos/src/styles/receipt-templates.css`; chuỗi vi/en trong khối `receiptTemplates`.
+- `validate.ts` sao chép quy tắc field theo loại chứng từ của server; unit test đọc `receipt_template_schema.rb` và báo lỗi khi hai bên lệch.
+- Xung đột 409: khi lưu thì giữ bản nháp, cho "Tải lại bản mới" hoặc "Ghi đè" (chỉ khi có thay đổi chưa lưu); khi khôi phục thì chỉ thử lại khôi phục với version hiện tại, không bao giờ lưu bản nháp.
+- Form bị khóa khi đang lưu/khôi phục. Lịch sử tải 10 phiên bản mỗi trang.
+- "Phiếu gần nhất" chỉ cho chọn chi nhánh mà người dùng là thành viên (API receipts yêu cầu thành viên).
+- Field `register`, `branch` không hiện trong editor (client chưa in), nhưng được giữ nguyên trong config đã lưu.
+- Mẫu đã tắt hiện trong danh sách, chỉ xem và nhân bản.
+
+Vấn đề còn mở:
+- Chưa có e2e cho việc gõ trong lúc đang lưu (đã khóa form).
+- Ước lượng độ rộng dòng (≈32 ký tự cho 58mm, 48 cho 80mm) chỉ là cảnh báo.
