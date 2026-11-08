@@ -78,10 +78,18 @@ module Spree
       end
 
       # Only a bank tender still waiting is shown; confirmed, canceled or
-      # unknown attempts drop off the screen.
+      # unknown attempts drop off the screen. A VietQR tender adds its QR and
+      # the receiving account it was issued for.
       def payment(order)
         attempt = session.pinned_tender_attempt
         return nil if attempt.nil? || attempt.status != 'prepared'
+
+        if attempt.pos_payment_method.kind == 'vietqr'
+          qr = VietqrTender.display(attempt)
+          return nil if qr.nil?
+
+          return { kind: 'vietqr', amount: money(attempt.amount), currency: attempt.currency }.merge(qr)
+        end
 
         { kind: 'bank_manual', amount: money(attempt.amount), currency: attempt.currency,
           transfer_note: order.number, account_text: account_text(attempt) }

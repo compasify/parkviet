@@ -15,6 +15,7 @@ type MockWorkspace = {
 };
 
 type ConfirmBody = {
+  evidence_kind?: string;
   handed_amount?: string;
   reference?: string;
   receiving_account?: string;
@@ -76,8 +77,10 @@ function serialize(ws: MockWorkspace) {
 async function mockPos(
   page: Page,
   workspaces: Array<Pick<MockWorkspace, 'id' | 'order_id' | 'total'>>,
-  options: { rejectConfirm?: (body: ConfirmBody) => string | null } = {},
+  options: { rejectConfirm?: (body: ConfirmBody) => string | null; vietqr?: boolean } = {},
 ) {
+  // Attempts the bank has reported a VietQR transfer for (the webhook landed).
+  const bankReported = new Set<string>();
   const state = new Map<string, MockWorkspace>(
     workspaces.map((ws) => [
       ws.id,
@@ -173,9 +176,34 @@ async function mockPos(
           data: [
             { id: 'posmethod-cash', code: 'cash', name: 'Cash', kind: 'cash', status: 'active', position: 0 },
             { id: 'posmethod-bank_manual', code: 'bank_transfer', name: 'Bank transfer', kind: 'bank_manual', status: 'active', position: 1 },
+            ...(options.vietqr
+              ? [{ id: 'posmethod-vietqr', code: 'vietqr', name: 'VietQR', kind: 'vietqr', status: 'active', position: 2 }]
+              : []),
           ],
         },
       });
+    const qrMatch = /^\/tender_attempts\/([^/]+)\/vietqr$/.exec(rest);
+    if (qrMatch && method === 'GET') {
+      const attempt = ws.attempts.find((item) => item.id === qrMatch[1]);
+      if (!attempt) return route.fulfill({ status: 404, json: { error: { code: 'missing' } } });
+      return route.fulfill({
+        json: {
+          data: {
+            status: bankReported.has(attempt.id) || attempt.status === 'confirmed' ? 'confirmed' : 'allocated',
+            amount: Number.parseInt(attempt.amount, 10),
+            currency: 'VND',
+            qr_url: `/qr/${attempt.id}.png`,
+            bank_name: 'Vietcombank',
+            account_number: '0123456789',
+            account_name: 'PARK VIET',
+            transfer_content: `MMO${ws.order_id}`,
+            expires_at: new Date(Date.now() + 15 * 60_000).toISOString(),
+            attempt_id: attempt.id,
+            attempt_status: attempt.status,
+          },
+        },
+      });
+    }
     if (rest === '/tender_attempts' && method === 'POST') {
       const body = request.postDataJSON() as { payment_method_id: string; amount: string };
       prepared.push({ workspace: ws.id, body });
@@ -186,7 +214,11 @@ async function mockPos(
           id: `ten_${ws.id}_${ws.attempts.length + 1}`,
           workspace_id: ws.id,
           payment_method_id: body.payment_method_id,
-          kind: body.payment_method_id.endsWith('cash') ? 'cash' : 'bank_manual',
+          kind: body.payment_method_id.endsWith('cash')
+            ? 'cash'
+            : body.payment_method_id.endsWith('vietqr')
+              ? 'vietqr'
+              : 'bank_manual',
           status: 'prepared',
           amount: money(Number(body.amount)),
           order_total_snapshot: money(ws.total),
@@ -218,6 +250,12 @@ async function mockPos(
         const handed = Number(body.handed_amount);
         if (!(handed >= applied)) return conflict('Handed cash is less than the tender amount.');
         ws.changeDue += handed - applied;
+      } else if (attempt.kind === 'vietqr' && body.evidence_kind === 'vietqr_webhook') {
+        if (!bankReported.has(attempt.id))
+          return route.fulfill({
+            status: 409,
+            json: { error: { code: 'conflict', message: 'Not received.', details: { reason: 'vietqr_not_received' } } },
+          });
       } else if (!body.reference || !body.receiving_account) {
         return route.fulfill({
           status: 422,
@@ -241,7 +279,7 @@ async function mockPos(
     return route.fulfill({ status: 404, json: { error: { code: 'missing' } } });
   });
 
-  return { state, prepared, confirmed };
+  return { state, prepared, confirmed, bankReported };
 }
 
 async function login(page: Page) {
@@ -444,4 +482,65 @@ test('the tender evidence print keeps its own content when receipt print styles 
   await expect(dialog.getByLabel('Khách đưa')).toBeVisible();
   await expect(dialog.getByRole('button', { name: 'Kết thúc', exact: true })).toBeVisible();
   await page.emulateMedia({ media: 'screen' });
+});
+
+test('VietQR: shows the QR, waits for the bank and confirms from its notification', async ({ page }) => {
+  const api = await mockPos(page, [{ id: 'ws_1', order_id: 'R500', total: 500000 }], { vietqr: true });
+  await login(page);
+  await openTab(page, 'ws_1');
+
+  const panel = page.locator('.payment-panel');
+  await panel.getByRole('button', { name: 'VietQR', exact: true }).click();
+  await panel.getByRole('button', { name: 'Tiền mặt', exact: true }).click();
+  await expect(panel.getByLabel('VietQR')).toHaveValue('500000');
+  await panel.getByRole('button', { name: 'Thanh toán', exact: true }).click();
+
+  const dialog = page.getByRole('dialog', { name: 'Chuyển khoản VietQR' });
+  await expect(dialog.getByRole('img', { name: 'Mã VietQR để quét bằng ứng dụng ngân hàng' })).toHaveAttribute(
+    'src',
+    '/qr/ten_ws_1_1.png',
+  );
+  await expect(dialog).toContainText('0123456789');
+  await expect(dialog).toContainText('MMOR500');
+  await expect(dialog).toContainText('Đang chờ ngân hàng');
+  await expect(dialog.getByRole('button', { name: 'Kết thúc', exact: true })).toBeDisabled();
+
+  api.bankReported.add('ten_ws_1_1');
+  await expect(dialog).toContainText('Ngân hàng đã báo nhận tiền', { timeout: 10_000 });
+  await expect(dialog.getByRole('button', { name: 'Kết thúc', exact: true })).toBeFocused();
+  await dialog.getByRole('button', { name: 'Kết thúc', exact: true }).click();
+  await expect(panel.getByText('Đã thu (đã xác nhận)')).toBeVisible();
+  expect(api.prepared.map((item) => item.body.payment_method_id)).toEqual(['posmethod-vietqr']);
+  expect(api.confirmed.map((item) => item.body.evidence_kind)).toEqual(['vietqr_webhook']);
+});
+
+test('VietQR split with cash, attested by hand when no bank notification comes', async ({ page }) => {
+  const api = await mockPos(page, [{ id: 'ws_1', order_id: 'R100', total: 100000 }], { vietqr: true });
+  await login(page);
+  await openTab(page, 'ws_1');
+
+  const panel = page.locator('.payment-panel');
+  await panel.getByRole('button', { name: 'VietQR', exact: true }).click();
+  await panel.getByLabel('Tiền mặt').fill('40000');
+  await expect(panel.getByLabel('VietQR')).toHaveValue('60000');
+  await panel.getByRole('button', { name: 'Thanh toán', exact: true }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.getByLabel('Khách đưa')).toBeEnabled();
+  expect(api.prepared.map((item) => [item.body.payment_method_id, item.body.amount])).toEqual([
+    ['posmethod-cash', '40000'],
+    ['posmethod-vietqr', '60000'],
+  ]);
+
+  await dialog.getByLabel('Khách đưa').fill('50000');
+  await expect(dialog.getByRole('button', { name: 'Kết thúc', exact: true })).toBeDisabled();
+  await dialog.getByText('Khách đã chuyển nhưng chưa có thông báo từ ngân hàng').click();
+  await dialog.locator('input[name="vietqr_reference"]').fill('FT-HAND-1');
+  await dialog.getByRole('button', { name: 'Kết thúc', exact: true }).click();
+  await expect(dialog).toBeHidden();
+  await expect(panel.getByRole('button', { name: 'Hoàn tất đơn' })).toBeVisible();
+  const evidence = api.confirmed.map((item) => item.body);
+  expect(evidence).toContainEqual(expect.objectContaining({ evidence_kind: 'cash_count', handed_amount: '50000' }));
+  expect(evidence).toContainEqual(
+    expect.objectContaining({ evidence_kind: 'vietqr_manual', reference: 'FT-HAND-1', receiving_account: '0123456789' }),
+  );
 });

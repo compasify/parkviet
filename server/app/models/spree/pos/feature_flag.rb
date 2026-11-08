@@ -9,7 +9,7 @@ module Spree
       self.table_name = 'spree_pos_feature_flags'
       has_prefix_id :posflag
 
-      FEATURES = %w[credit returns refunds exchanges traceability customer_display cash_moves exports].freeze
+      FEATURES = %w[credit returns refunds exchanges traceability customer_display cash_moves exports vietqr].freeze
 
       belongs_to :store, class_name: 'Spree::Store'
       belongs_to :branch, class_name: 'Spree::Pos::Branch', optional: true

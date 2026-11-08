@@ -12,6 +12,7 @@ export const POS_FEATURES = [
   'customer_display',
   'cash_moves',
   'exports',
+  'vietqr',
 ] as const;
 
 export type PosFeature = (typeof POS_FEATURES)[number];

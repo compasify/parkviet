@@ -27,11 +27,20 @@ module Spree
             order = workspace.order
             raise Conflict, 'Order has no items.' if order.line_items.empty?
             raise Conflict, 'Amount must be a whole amount in the order currency.' unless Record.countable_money?(parsed, order.currency)
-            raise Conflict, 'Payment already exists for this order.' if order.payments.where(status: 'pending').exists?
+            open_vietqr = VietqrTender.open_payment_ids(workspace)
+            if order.payments.where(status: 'pending').where.not(id: open_vietqr).exists?
+              raise Conflict, 'Payment already exists for this order.'
+            end
 
             resolver = PaymentMethodResolver.new(store: workspace.store)
             row, core_method = resolver.resolve!(payment_method_id)
             raise Conflict, 'Payment method is not available for this store.' if core_method.nil?
+
+            if row.kind == 'vietqr'
+              FeaturePolicy.require!(workspace.branch, :vietqr)
+              # One QR at a time: a second one would void the first payment.
+              raise Conflict.new('A VietQR transfer is already waiting for this sale.', reason: 'vietqr_open') if open_vietqr.any?
+            end
 
             allocated = FundsAllocation.where(workspace: workspace, status: 'active').sum(:amount)
             # An unknown attempt may still have moved money, so it keeps its share.
@@ -46,6 +55,7 @@ module Spree
               workspace_revision: workspace.revision,
               snapshot: { 'total' => order.total.to_s('F'), 'currency' => order.currency, 'payment_method_type' => core_method.type }
             )
+            VietqrTender.open!(attempt: attempt, order: order, core_method: core_method) if row.kind == 'vietqr'
             workspace.update!(revision: workspace.revision + 1)
             AuditEntry.record!(store: workspace.store, actor: staff, action: 'tender.prepare', subject: workspace,
                                metadata: { attempt_id: attempt.prefixed_id, amount: attempt.amount.to_s('F'), kind: attempt.pos_payment_method.kind })

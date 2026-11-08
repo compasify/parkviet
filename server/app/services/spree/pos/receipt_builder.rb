@@ -162,9 +162,11 @@ module Spree
       # its own received funds, not later debt collections.
       def receipts(workspace)
         FundsAllocation.where(workspace_id: workspace.id, status: 'active', collection_id: nil).
-          includes(:received_funds).order(:id).map do |allocation|
+          includes(received_funds: { tender_attempt: :pos_payment_method }).order(:id).map do |allocation|
           funds = allocation.received_funds
-          row = { 'method' => funds.kind, 'amount' => money(allocation.amount) }
+          # A VietQR transfer is recorded as bank money but printed as VietQR.
+          method = funds.tender_attempt&.pos_payment_method&.kind == 'vietqr' ? 'vietqr' : funds.kind
+          row = { 'method' => method, 'amount' => money(allocation.amount) }
           if funds.kind == 'cash'
             row['handed'] = money(funds.handed_amount)
             row['change'] = money(funds.change_amount)

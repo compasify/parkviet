@@ -187,6 +187,7 @@ Rails.application.routes.draw do
                 member do
                   post :confirm, to: 'workspaces/tender_attempts#confirm'
                   post :cancel, to: 'workspaces/tender_attempts#cancel'
+                  get :vietqr, to: 'workspaces/tender_attempts#vietqr'
                 end
               end
               post 'funds/allocate', to: 'workspaces/funds#allocate'

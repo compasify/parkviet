@@ -73,7 +73,7 @@ module Spree
 
           attempt = TenderAttempt.locate(TenderAttempt.where(workspace_id: workspace.id), tender_attempt_id)
           raise ActiveRecord::RecordNotFound if attempt.nil?
-          unless attempt.status == 'prepared' && attempt.pos_payment_method.kind == 'bank_manual'
+          unless attempt.status == 'prepared' && %w[bank_manual vietqr].include?(attempt.pos_payment_method.kind)
             raise Conflict.new('Only a waiting bank transfer can be shown to the customer.', reason: 'display_attempt_invalid')
           end
 

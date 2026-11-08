@@ -9,6 +9,7 @@ import type {
 } from '../lib/pos-context';
 import { posFailureKey } from '../lib/request-failure';
 import { SessionSuperseded } from '../lib/session-coordinator';
+import { VIETQR_POLL_MS, type VietqrEvidenceKind, type VietqrTenderSummary } from '../lib/vietqr';
 import { useSession } from './use-session';
 import { workspaceEditorId } from './use-workspaces';
 
@@ -18,7 +19,7 @@ export type TenderCommandInput = {
   attemptId?: string;
   handedAmount?: string;
   receivedAmount?: string;
-  evidenceKind?: 'cash_count' | 'bank_manual';
+  evidenceKind?: 'cash_count' | 'bank_manual' | VietqrEvidenceKind;
   reference?: string;
   receivingAccount?: string;
   terminalRef?: string;
@@ -100,6 +101,29 @@ export function useReceivedFundDetail(fundsId: string | null, enabled: boolean) 
         const result = await session.request<{ data: PosReceivedFunds }>(
           'GET',
           `/pos/received_funds/${fundsId}`,
+        );
+        return result.data;
+      } catch (error) {
+        abandonIfNeeded(error);
+        throw error;
+      }
+    },
+  });
+}
+
+// The QR of a prepared VietQR tender, polled until the bank reports the
+// transfer. Read-only: it never reserves an account.
+export function useVietqrTender(workspaceId: string | null, attemptId: string | null) {
+  const snapshot = useSession();
+  return useQuery({
+    queryKey: ['pos', 'vietqr', snapshot.generation, workspaceId, attemptId],
+    enabled: snapshot.status === 'authenticated' && Boolean(workspaceId && attemptId),
+    refetchInterval: (query) => (query.state.data?.status === 'confirmed' ? false : VIETQR_POLL_MS),
+    queryFn: async (): Promise<VietqrTenderSummary | null> => {
+      try {
+        const result = await session.request<{ data: VietqrTenderSummary | null }>(
+          'GET',
+          `/pos/workspaces/${workspaceId}/tender_attempts/${attemptId}/vietqr`,
         );
         return result.data;
       } catch (error) {

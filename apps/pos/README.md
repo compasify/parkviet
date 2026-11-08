@@ -34,7 +34,11 @@
 
 ### Thanh toán
 
-- Hai phương thức: **Tiền mặt** (nhập số khách đưa, POS tính tiền thừa) và **Chuyển khoản** do thu ngân xác nhận thủ công (nhập mã giao dịch và tài khoản nhận).
+- Ba phương thức:
+  - **Tiền mặt**: nhập số khách đưa, POS tính tiền thừa.
+  - **Chuyển khoản**: thu ngân xác nhận thủ công, nhập mã giao dịch và tài khoản nhận.
+  - **VietQR**: POS hiện mã QR có sẵn số tiền và nội dung chuyển khoản. Khi ngân hàng báo nhận tiền (webhook SePay hoặc PayOS), hộp thanh toán tự báo **Ngân hàng đã báo nhận tiền** và thu ngân bấm **Kết thúc**. Nếu khách đã chuyển mà chưa có thông báo, thu ngân mở **Khách đã chuyển nhưng chưa có thông báo từ ngân hàng** và nhập mã giao dịch. Mỗi đơn chỉ có một mã VietQR đang chờ. Hủy khoản thu sẽ trả lại mã QR, nhưng không hủy được khi ngân hàng đã báo nhận tiền.
+- VietQR chỉ hiện khi cửa hàng có phương thức thanh toán VietQR với ít nhất một tài khoản nhận tiền đang hoạt động, và chi nhánh đã bật tính năng **Chuyển khoản VietQR**. Phương thức và tài khoản nhận tiền được cài đặt trong trang quản trị (Admin Dashboard), ở **Settings → Payment methods** và **Settings → VietQR**. POS không lưu cấu hình ngân hàng.
 - **Chia nhiều phương thức**: chọn nhiều phương thức cho một đơn và nhập số tiền cho từng phương thức.
 - **Để chờ, bán đơn khác**: để khoản thu ở trạng thái chờ xác nhận rồi chuyển sang tab khác. Sau đó quay lại bằng **Tiếp tục thanh toán**.
 - Sau khi thu đủ: **Hoàn tất đơn**, **In hóa đơn**, **Giao hàng tại quầy**.
@@ -79,7 +83,7 @@ Trang **Hóa đơn** dùng để tra cứu và in phiếu bán hàng, trả hàn
 
 ### Màn hình khách
 
-Màn hình khách là một cửa sổ hoặc thiết bị riêng, mở ở `/pos/display`, không cần đăng nhập. Màn hình hiện đơn và số tiền cần thanh toán. Khi thanh toán chuyển khoản, màn hình hiện thông tin tài khoản nhận và nội dung chuyển khoản. Thu ngân chủ động chọn đơn cần hiện; chuyển tab không làm đổi nội dung màn hình khách. Khi màn hình không chắc dữ liệu còn mới, nó chỉ hiện "Đang cập nhật…".
+Màn hình khách là một cửa sổ hoặc thiết bị riêng, mở ở `/pos/display`, không cần đăng nhập. Màn hình hiện đơn và số tiền cần thanh toán. Khi thanh toán chuyển khoản, màn hình hiện thông tin tài khoản nhận và nội dung chuyển khoản. Với VietQR, màn hình hiện mã QR để khách quét. Thu ngân chủ động chọn đơn cần hiện; chuyển tab không làm đổi nội dung màn hình khách. Khi màn hình không chắc dữ liệu còn mới, nó chỉ hiện "Đang cập nhật…".
 
 ### Máy quét
 
@@ -195,7 +199,7 @@ Ngoài ra, giảm giá hoặc đổi giá vượt giới hạn cần **Mã duy�
 - Chỉ in qua hộp thoại in của trình duyệt. Chưa có driver máy in hay ngăn kéo tiền.
 - Chưa kiểm thử với máy in, máy quét, máy cân và màn hình khách thật.
 - POS chưa có màn hình cấp **Mã duyệt của quản lý** cho giảm giá hoặc đổi giá.
-- Tám tính năng rủi ro (bán chịu, trả hàng, hoàn tiền, đổi hàng, đưa hàng vào theo dõi serial/lô, màn hình khách, thu/chi két, xuất báo cáo) **mặc định tắt**. Quản trị cửa hàng bật ở **Cấu hình → chi nhánh → Chức năng chi nhánh**; quản lý chi nhánh chỉ tắt được tại chi nhánh của mình. Khi tắt, nút tương ứng bị khóa kèm lý do; việc đang dở (khoản thu chờ, phiếu trả đã lập, hoàn tiền đã yêu cầu, hóa đơn) vẫn xử lý được.
+- Chín tính năng rủi ro (bán chịu, trả hàng, hoàn tiền, đổi hàng, đưa hàng vào theo dõi serial/lô, màn hình khách, thu/chi két, xuất báo cáo, chuyển khoản VietQR) **mặc định tắt**. Quản trị cửa hàng bật ở **Cấu hình → chi nhánh → Chức năng chi nhánh**; quản lý chi nhánh chỉ tắt được tại chi nhánh của mình. Khi tắt, nút tương ứng bị khóa kèm lý do; việc đang dở (khoản thu chờ, phiếu trả đã lập, hoàn tiền đã yêu cầu, hóa đơn) vẫn xử lý được.
 
 ## Dành cho developer
 

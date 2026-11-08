@@ -10,7 +10,7 @@ module Spree
       belongs_to :tender_attempt, class_name: 'Spree::Pos::TenderAttempt'
       belongs_to :actor, class_name: staff_class_name
 
-      validates :kind, inclusion: { in: %w[cash_count bank_manual external_card] }
+      validates :kind, inclusion: { in: %w[cash_count bank_manual external_card vietqr_webhook vietqr_manual] }
       validates :attested_at, presence: true
 
       def to_pos

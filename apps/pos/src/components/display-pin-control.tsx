@@ -76,7 +76,9 @@ export function DisplayPinControl({
 
   const decision = workspace ? pinDecision(session, workspace.id) : null;
   const waitingBank = (workspace?.financial?.attempts ?? []).filter(
-    (attempt) => attempt.kind === 'bank_manual' && attempt.status === 'prepared',
+    (attempt) =>
+      (attempt.kind === 'bank_manual' || attempt.kind === 'vietqr') &&
+      attempt.status === 'prepared',
   );
   const pinnable = enabled && workspace?.operational_status === 'editing';
   const freshness = !session

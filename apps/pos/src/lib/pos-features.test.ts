@@ -38,6 +38,7 @@ describe('branch feature flags', () => {
       customer_display: false,
       cash_moves: false,
       exports: false,
+      vietqr: false,
     });
     expect(featureEnabled(flags, 'credit')).toBe(true);
     expect(featureEnabled(flags, 'returns')).toBe(false);

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_07_180001) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_08_100000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -2657,7 +2657,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_180001) do
     t.index ["store_id", "feature"], name: "idx_pos_feature_flags_store_default", unique: true, where: "(branch_id IS NULL)"
     t.index ["store_id"], name: "index_spree_pos_feature_flags_on_store_id"
     t.check_constraint "char_length(reason::text) >= 1 AND char_length(reason::text) <= 200", name: "chk_pos_feature_flags_reason"
-    t.check_constraint "feature::text = ANY (ARRAY['credit'::character varying, 'returns'::character varying, 'refunds'::character varying, 'exchanges'::character varying, 'traceability'::character varying, 'customer_display'::character varying, 'cash_moves'::character varying, 'exports'::character varying]::text[])", name: "chk_pos_feature_flags_feature"
+    t.check_constraint "feature::text = ANY (ARRAY['credit'::character varying, 'returns'::character varying, 'refunds'::character varying, 'exchanges'::character varying, 'traceability'::character varying, 'customer_display'::character varying, 'cash_moves'::character varying, 'exports'::character varying, 'vietqr'::character varying]::text[])", name: "chk_pos_feature_flags_feature"
   end
 
   create_table "spree_pos_funds_allocations", force: :cascade do |t|
@@ -2833,7 +2833,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_180001) do
     t.index ["store_id", "code"], name: "idx_pos_payment_methods_store_code", unique: true
     t.index ["store_id", "status", "position"], name: "idx_pos_payment_methods_active"
     t.index ["store_id"], name: "index_spree_pos_payment_methods_on_store_id"
-    t.check_constraint "kind::text = ANY (ARRAY['cash'::character varying, 'bank_manual'::character varying]::text[])", name: "chk_pos_payment_methods_kind"
+    t.check_constraint "kind::text = ANY (ARRAY['cash'::character varying, 'bank_manual'::character varying, 'vietqr'::character varying]::text[])", name: "chk_pos_payment_methods_kind"
     t.check_constraint "status::text = ANY (ARRAY['active'::character varying, 'disabled'::character varying]::text[])", name: "chk_pos_payment_methods_status"
   end
 
@@ -2873,7 +2873,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_180001) do
     t.index ["store_id"], name: "index_spree_pos_receipt_evidences_on_store_id"
     t.index ["tender_attempt_id", "created_at"], name: "idx_pos_receipt_evidences_attempt"
     t.index ["tender_attempt_id"], name: "index_spree_pos_receipt_evidences_on_tender_attempt_id"
-    t.check_constraint "kind::text = ANY (ARRAY['cash_count'::character varying, 'bank_manual'::character varying, 'external_card'::character varying]::text[])", name: "chk_pos_receipt_evidences_kind"
+    t.check_constraint "kind::text = ANY (ARRAY['cash_count'::character varying, 'bank_manual'::character varying, 'external_card'::character varying, 'vietqr_webhook'::character varying, 'vietqr_manual'::character varying]::text[])", name: "chk_pos_receipt_evidences_kind"
   end
 
   create_table "spree_pos_receipt_prints", force: :cascade do |t|
@@ -4980,6 +4980,108 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_180001) do
     t.index ["track_inventory"], name: "index_spree_variants_on_track_inventory"
   end
 
+  create_table "spree_vietqr_payment_allocations", force: :cascade do |t|
+    t.bigint "payment_id", null: false
+    t.bigint "order_id", null: false
+    t.bigint "payment_method_id", null: false
+    t.bigint "receiving_account_id"
+    t.bigint "webhook_event_id"
+    t.string "provider", null: false
+    t.string "bank_bin", null: false
+    t.string "account_number", null: false
+    t.string "account_name", null: false
+    t.string "sub_account", default: "", null: false
+    t.string "virtual_account_number", default: "", null: false
+    t.bigint "expected_amount", null: false
+    t.string "transfer_content", null: false
+    t.string "order_number", null: false
+    t.string "provider_order_code"
+    t.string "payment_link_id"
+    t.string "provider_checkout_url"
+    t.text "provider_qr_code"
+    t.string "status", default: "allocated", null: false
+    t.datetime "expires_at"
+    t.datetime "confirmed_at"
+    t.datetime "released_at"
+    t.string "release_reason"
+    t.jsonb "metadata", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["order_id"], name: "index_spree_vietqr_payment_allocations_on_order_id"
+    t.index ["payment_id"], name: "idx_vietqr_payment_allocations_active_payment", unique: true, where: "(released_at IS NULL)"
+    t.index ["payment_id"], name: "index_spree_vietqr_payment_allocations_on_payment_id"
+    t.index ["payment_method_id"], name: "index_spree_vietqr_payment_allocations_on_payment_method_id"
+    t.index ["provider", "account_number", "bank_bin", "status"], name: "idx_vietqr_payment_allocations_account_lookup"
+    t.index ["provider", "order_number", "status"], name: "idx_vietqr_payment_allocations_order_lookup"
+    t.index ["provider", "payment_link_id", "status"], name: "idx_vietqr_payment_allocations_payment_link_lookup"
+    t.index ["provider", "provider_order_code", "status"], name: "idx_vietqr_payment_allocations_provider_order_lookup"
+    t.index ["receiving_account_id"], name: "index_spree_vietqr_payment_allocations_on_receiving_account_id"
+    t.index ["webhook_event_id"], name: "index_spree_vietqr_payment_allocations_on_webhook_event_id"
+  end
+
+  create_table "spree_vietqr_receiving_accounts", force: :cascade do |t|
+    t.bigint "payment_method_id", null: false
+    t.string "provider", null: false
+    t.string "bank_bin", null: false
+    t.string "bank_name"
+    t.string "account_number", null: false
+    t.string "account_name", null: false
+    t.string "keyword_init", default: "", null: false
+    t.string "sub_account", default: "", null: false
+    t.string "virtual_account_number", default: "", null: false
+    t.boolean "active", default: true, null: false
+    t.integer "priority", default: 0, null: false
+    t.integer "routing_weight", default: 1, null: false
+    t.bigint "monthly_quota_amount"
+    t.bigint "monthly_threshold_amount"
+    t.string "current_period", null: false
+    t.bigint "period_allocated_amount", default: 0, null: false
+    t.bigint "period_confirmed_amount", default: 0, null: false
+    t.datetime "last_allocated_at"
+    t.string "webhook_secret"
+    t.string "payos_client_id"
+    t.string "payos_api_key"
+    t.string "payos_checksum_key"
+    t.jsonb "metadata", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["payment_method_id", "active", "priority"], name: "idx_vietqr_receiving_accounts_routing"
+    t.index ["payment_method_id", "provider", "bank_bin", "account_number", "sub_account", "virtual_account_number", "keyword_init"], name: "idx_vietqr_receiving_accounts_identity", unique: true
+    t.index ["payment_method_id"], name: "index_spree_vietqr_receiving_accounts_on_payment_method_id"
+  end
+
+  create_table "spree_vietqr_webhook_events", force: :cascade do |t|
+    t.string "provider", null: false
+    t.string "provider_transaction_id"
+    t.string "status", default: "received", null: false
+    t.jsonb "raw_payload", default: {}, null: false
+    t.jsonb "raw_headers", default: {}
+    t.bigint "receiving_account_id"
+    t.bigint "payment_allocation_id"
+    t.string "matched_order_number"
+    t.bigint "payment_method_id"
+    t.bigint "payment_id"
+    t.bigint "amount_cents"
+    t.string "parsed_order_code"
+    t.string "account_number"
+    t.string "bank_bin"
+    t.string "sub_account"
+    t.string "virtual_account_number"
+    t.string "payment_link_id"
+    t.string "provider_order_code"
+    t.string "error_message"
+    t.datetime "processed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["payment_allocation_id"], name: "index_spree_vietqr_webhook_events_on_payment_allocation_id"
+    t.index ["payment_id"], name: "index_spree_vietqr_webhook_events_on_payment_id"
+    t.index ["payment_method_id"], name: "index_spree_vietqr_webhook_events_on_payment_method_id"
+    t.index ["provider", "provider_transaction_id"], name: "idx_webhook_events_provider_tx_id", where: "(provider_transaction_id IS NOT NULL)"
+    t.index ["provider"], name: "index_spree_vietqr_webhook_events_on_provider"
+    t.index ["provider_transaction_id"], name: "index_spree_vietqr_webhook_events_on_provider_transaction_id"
+    t.index ["receiving_account_id"], name: "index_spree_vietqr_webhook_events_on_receiving_account_id"
+  end
+
   create_table "spree_webhook_deliveries", force: :cascade do |t|
     t.bigint "webhook_endpoint_id", null: false
     t.string "event_name", null: false
@@ -5280,4 +5382,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_180001) do
   add_foreign_key "spree_product_translations", "spree_products"
   add_foreign_key "spree_store_translations", "spree_stores"
   add_foreign_key "spree_taxonomy_translations", "spree_taxonomies"
+  add_foreign_key "spree_vietqr_payment_allocations", "spree_orders", column: "order_id"
+  add_foreign_key "spree_vietqr_payment_allocations", "spree_payment_methods", column: "payment_method_id"
+  add_foreign_key "spree_vietqr_payment_allocations", "spree_payments", column: "payment_id"
+  add_foreign_key "spree_vietqr_payment_allocations", "spree_vietqr_receiving_accounts", column: "receiving_account_id"
+  add_foreign_key "spree_vietqr_payment_allocations", "spree_vietqr_webhook_events", column: "webhook_event_id"
+  add_foreign_key "spree_vietqr_receiving_accounts", "spree_payment_methods", column: "payment_method_id"
+  add_foreign_key "spree_vietqr_webhook_events", "spree_payment_methods", column: "payment_method_id"
+  add_foreign_key "spree_vietqr_webhook_events", "spree_payments", column: "payment_id"
+  add_foreign_key "spree_vietqr_webhook_events", "spree_vietqr_payment_allocations", column: "payment_allocation_id"
+  add_foreign_key "spree_vietqr_webhook_events", "spree_vietqr_receiving_accounts", column: "receiving_account_id"
 end

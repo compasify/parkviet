@@ -144,7 +144,13 @@ function salePayments(document: Doc, currency: string, t: Translate) {
   const money = (value: unknown) => formatMoney(str(value), currency);
   const result: ReceiptRow[] = [];
   for (const receipt of rows(document.receipts)) {
-    const method = str(receipt.method) === 'cash' ? t('receiptCash') : t('receiptBank');
+    const kind = str(receipt.method);
+    const method =
+      kind === 'cash'
+        ? t('receiptCash')
+        : kind === 'vietqr'
+          ? t('receiptVietqr')
+          : t('receiptBank');
     result.push({ label: method, value: money(receipt.amount) });
     if (str(receipt.method) === 'cash') {
       result.push({ label: t('receiptHanded'), value: money(receipt.handed) });

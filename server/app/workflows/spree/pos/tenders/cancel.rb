@@ -21,6 +21,7 @@ module Spree
             raise ActiveRecord::RecordNotFound if attempt.nil?
             raise Conflict, 'Only a prepared tender can be canceled.' unless attempt.status == 'prepared'
 
+            VietqrTender.cancel!(attempt) if attempt.pos_payment_method.kind == 'vietqr'
             attempt.update!(status: 'canceled', canceled_at: Time.current)
             workspace.update!(revision: workspace.revision + 1)
             AuditEntry.record!(store: workspace.store, actor: staff, action: 'tender.cancel', subject: workspace,

@@ -352,6 +352,13 @@ kbd { padding: var(--pos-s1); border: 1px solid var(--pos-border); border-radius
 .payment-qr-box { display: grid; gap: var(--pos-s3); align-items: center; padding: var(--pos-s3); background: var(--pos-tint); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); }
 .payment-qr-info { display: grid; gap: var(--pos-s1); font-size: var(--pos-small); }
 .payment-qr-info > strong { font-size: 1.25rem; color: var(--pos-blue); font-variant-numeric: tabular-nums; }
+.customer-display-qr { width: min(280px, 60vw); height: auto; background: #fff; border-radius: var(--pos-radius); justify-self: center; }
+.payment-vietqr { grid-template-columns: auto minmax(0,1fr); }
+.payment-qr-image { width: 220px; height: 220px; background: #fff; border-radius: var(--pos-radius); }
+.vietqr-status { margin: 0; font-weight: 600; color: var(--pos-muted); }
+.vietqr-status.received { color: var(--pos-success); }
+.vietqr-manual { display: grid; gap: var(--pos-s2); }
+.vietqr-manual summary { cursor: pointer; font-size: var(--pos-small); }
 .payment-bank-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: var(--pos-s2); }
 .payment-popup-actions { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: var(--pos-s2); align-items: center; }
 .pos-layout .payment-popup-actions button { min-height: 44px; padding: var(--pos-s2); }

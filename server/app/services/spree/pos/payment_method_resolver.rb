@@ -5,9 +5,14 @@ module Spree
     # Resolves POS tender methods from the store's Admin payment-method
     # configuration. Cash always exists; bank_manual follows an active core
     # payment method, with a POS-specific mapping when one is configured.
+    # VietQR is offered when the store has an active VietQR payment method
+    # with a receiving account (set up in the dashboard) and the branch has
+    # the `vietqr` feature on.
     class PaymentMethodResolver
       CASH_CODE = 'cash'
       BANK_CODE = 'bank_transfer'
+      VIETQR_CODE = 'vietqr'
+      VIETQR_TYPE = 'Spree::PaymentMethod::Vietqr'
 
       def initialize(store:)
         @store = store
@@ -24,6 +29,8 @@ module Spree
           core = core_bank_method
           result << (core ? transient_bank(core) : default_bank)
         end
+        vietqr = vietqr_row(rows, branch)
+        result << vietqr if vietqr
         result.sort_by { |row| [row.position, row.id || 0] }
       end
 
@@ -54,6 +61,7 @@ module Spree
       # method of this store: one that needs no card/gateway source. A gateway
       # method would make the completed Payment look like a captured charge.
       def core_for(row)
+        return vietqr_for(row) if row.kind == 'vietqr'
         return manual_methods.find_by(id: row.payment_method_id) if row.payment_method_id
 
         case row.kind
@@ -64,13 +72,41 @@ module Spree
         end
       end
 
+      # The VietQR core method a vietqr row settles on; nil when it is gone or
+      # has no receiving account left.
+      def vietqr_for(row)
+        scope = vietqr_methods
+        row.payment_method_id ? scope.find_by(id: row.payment_method_id) : scope.first
+      end
+
       private
 
       attr_reader :store
 
+      # Staff-attested methods only: VietQR is confirmed by the bank, so it is
+      # never the fallback for cash or a manual transfer.
       def manual_methods
-        ids = Spree::PaymentMethod.where(store_id: store.id, active: true, deleted_at: nil).select { |method| manual?(method) }.map(&:id)
+        ids = Spree::PaymentMethod.where(store_id: store.id, active: true, deleted_at: nil).where.not(type: VIETQR_TYPE).
+              select { |method| manual?(method) }.map(&:id)
         Spree::PaymentMethod.where(id: ids).order(:position, :id)
+      end
+
+      def vietqr_methods
+        return Spree::PaymentMethod.none unless defined?(Spree::PaymentMethod::Vietqr)
+
+        Spree::PaymentMethod::Vietqr.where(store_id: store.id, active: true, deleted_at: nil).
+          where(id: SpreeVietqr::ReceivingAccount.active.select(:payment_method_id)).order(:position, :id)
+      end
+
+      def vietqr_row(rows, branch)
+        return nil if branch && !FeaturePolicy.enabled?(branch, :vietqr)
+
+        mapped = rows.find { |row| row.kind == 'vietqr' }
+        core = mapped ? vietqr_for(mapped) : vietqr_methods.first
+        return nil if core.nil?
+
+        mapped || PosPaymentMethod.new(store: store, code: VIETQR_CODE, name: core.name.presence || 'VietQR', kind: 'vietqr',
+                                       status: 'active', position: 2, payment_method_id: core.id, payment_method_type: core.type)
       end
 
       def manual?(method)

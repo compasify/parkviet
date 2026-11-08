@@ -1,12 +1,19 @@
 import { type KeyboardEvent, useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useVietqrTender } from '../hooks/use-tenders';
 import { formatMoney, parseVndAmount, parseVndInput } from '../lib/money';
 import type { PosFinancialAttempt, PosWorkspace } from '../lib/pos-context';
+import {
+  type VietqrEvidenceKind,
+  vietqrEvidence,
+  vietqrReceived,
+  vietqrTimeLeft,
+} from '../lib/vietqr';
 import { PosIcon } from './pos-icon';
 
 export type TenderEvidenceItemInput = {
   attemptId: string;
-  evidenceKind: 'cash_count' | 'bank_manual';
+  evidenceKind: 'cash_count' | 'bank_manual' | VietqrEvidenceKind;
   handedAmount?: string;
   receivedAmount?: string;
   reference?: string;
@@ -49,6 +56,20 @@ export function TenderEvidenceDialog({
   const card = useRef<HTMLFormElement>(null);
   const cashAttempt = attempts.find((item) => item.kind === 'cash');
   const bankAttempt = attempts.find((item) => item.kind === 'bank_manual');
+  const qrAttempt = attempts.find((item) => item.kind === 'vietqr');
+  const qrQuery = useVietqrTender(workspace.id, qrAttempt?.id ?? null);
+  const qr = qrQuery.data ?? null;
+  const qrReceived = vietqrReceived(qr);
+  const [qrManual, setQrManual] = useState(false);
+  const [qrReference, setQrReference] = useState('');
+  const [qrAccount, setQrAccount] = useState('');
+  const qrInput = vietqrEvidence(
+    qr,
+    qrManual ? { reference: qrReference, account: qrAccount || (qr?.account_number ?? '') } : null,
+  );
+  const [now, setNow] = useState(() => Date.now());
+  const qrTimeLeft = vietqrTimeLeft(qr?.expires_at, now);
+  const finishButton = useRef<HTMLButtonElement>(null);
   const currency = workspace.totals?.currency ?? attempts[0]?.currency ?? 'VND';
   const [handedInput, setHandedInput] = useState('');
   const [reference, setReference] = useState('');
@@ -74,7 +95,24 @@ export function TenderEvidenceDialog({
   const cashReady = !cashAttempt || (handed !== null && handedShort === false);
   const bankReady =
     !bankAttempt || (reference.trim() !== '' && account.trim() !== '' && !receivedInvalid);
-  const ready = cashReady && bankReady;
+  const qrReady = !qrAttempt || qrInput !== null;
+  const ready = cashReady && bankReady && qrReady;
+
+  // The QR counts down while the bank has not reported the transfer.
+  useEffect(() => {
+    if (!qrAttempt || qrReceived) return;
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [qrAttempt, qrReceived]);
+
+  // Once the bank reports the money, finishing is one key press away.
+  useEffect(() => {
+    if (qrReceived) finishButton.current?.focus();
+  }, [qrReceived]);
+
+  function label(kind: string) {
+    return kind === 'cash' ? t('cash') : kind === 'vietqr' ? t('vietqr') : t('bankTransfer');
+  }
 
   // Hold focus on the dialog itself while the command that opened it settles,
   // then move it to the first evidence field once the fields are enabled.
@@ -130,13 +168,15 @@ export function TenderEvidenceDialog({
           const inputs: TenderEvidenceItemInput[] = attempts.map((attempt) =>
             attempt.kind === 'cash'
               ? { attemptId: attempt.id, evidenceKind: 'cash_count', handedAmount: handed ?? '' }
-              : {
-                  attemptId: attempt.id,
-                  evidenceKind: 'bank_manual',
-                  reference: reference.trim(),
-                  receivingAccount: account.trim(),
-                  receivedAmount: received ?? undefined,
-                },
+              : attempt.kind === 'vietqr' && qrInput
+                ? { attemptId: attempt.id, ...qrInput }
+                : {
+                    attemptId: attempt.id,
+                    evidenceKind: 'bank_manual',
+                    reference: reference.trim(),
+                    receivingAccount: account.trim(),
+                    receivedAmount: received ?? undefined,
+                  },
           );
           void onConfirm(inputs);
         }}
@@ -144,7 +184,11 @@ export function TenderEvidenceDialog({
         <div className="pos-popup-header">
           <div>
             <h4 id={titleId}>
-              {bankAttempt && !cashAttempt ? t('paymentBankTitle') : t('paymentInvoiceTitle')}
+              {qrAttempt && attempts.length === 1
+                ? t('paymentVietqrTitle')
+                : bankAttempt && !cashAttempt
+                  ? t('paymentBankTitle')
+                  : t('paymentInvoiceTitle')}
             </h4>
             <small className="muted">
               {workspace.order_id} · {workspace.customer?.name || t('customerWalkIn')}
@@ -213,7 +257,7 @@ export function TenderEvidenceDialog({
           ) : null}
           {attempts.map((attempt) => (
             <div className="invoice-line invoice-line-highlight" key={attempt.id}>
-              <span>{attempt.kind === 'cash' ? t('cash') : t('bankTransfer')}</span>
+              <span>{label(attempt.kind)}</span>
               <strong>{formatMoney(attempt.amount, attempt.currency)}</strong>
             </div>
           ))}
@@ -304,13 +348,94 @@ export function TenderEvidenceDialog({
             </div>
           </>
         ) : null}
+        {qrAttempt ? (
+          <>
+            <div className="payment-qr-box payment-vietqr">
+              {qr?.qr_url && !qrReceived ? (
+                <img
+                  className="payment-qr-image"
+                  src={qr.qr_url}
+                  alt={t('vietqrImageAlt')}
+                  width={220}
+                  height={220}
+                />
+              ) : null}
+              <div className="payment-qr-info">
+                <strong>{formatMoney(qrAttempt.amount, qrAttempt.currency)}</strong>
+                {qr ? (
+                  <>
+                    <span>
+                      {qr.bank_name} · <strong>{qr.account_number}</strong>
+                    </span>
+                    <span>{qr.account_name}</span>
+                    <span>
+                      {t('paymentTransferContent')}: <strong>{qr.transfer_content}</strong>
+                    </span>
+                  </>
+                ) : null}
+                <p
+                  className={qrReceived ? 'vietqr-status received' : 'vietqr-status'}
+                  role="status"
+                >
+                  {qrQuery.isLoading
+                    ? t('waiting')
+                    : qrQuery.isError
+                      ? t('vietqrStatusUnknown')
+                      : qrReceived
+                        ? t('vietqrReceived')
+                        : qrTimeLeft
+                          ? t('vietqrWaiting', { time: qrTimeLeft })
+                          : t('vietqrExpired')}
+                </p>
+              </div>
+            </div>
+            {!qrReceived ? (
+              <details
+                className="vietqr-manual"
+                open={qrManual}
+                onToggle={(event) => setQrManual(event.currentTarget.open)}
+              >
+                <summary>{t('vietqrManual')}</summary>
+                <small className="muted">{t('vietqrManualHint')}</small>
+                <div className="payment-bank-fields">
+                  <label>
+                    {t('paymentReference')}
+                    <input
+                      name="vietqr_reference"
+                      autoComplete="off"
+                      value={qrReference}
+                      onChange={(event) => setQrReference(event.target.value)}
+                      disabled={locked}
+                    />
+                  </label>
+                  <label>
+                    {t('paymentAccount')}
+                    <input
+                      name="vietqr_receiving_account"
+                      autoComplete="off"
+                      value={qrAccount}
+                      placeholder={qr?.account_number ?? undefined}
+                      onChange={(event) => setQrAccount(event.target.value)}
+                      disabled={locked}
+                    />
+                  </label>
+                </div>
+              </details>
+            ) : null}
+          </>
+        ) : null}
         {error ? (
           <p className="error" role="alert">
             {error}
           </p>
         ) : null}
         <div className="payment-popup-actions">
-          <button className="checkout-submit" type="submit" disabled={locked || !ready}>
+          <button
+            ref={finishButton}
+            className="checkout-submit"
+            type="submit"
+            disabled={locked || !ready}
+          >
             {t('paymentFinish')}
           </button>
           <button type="button" disabled={locked} onClick={() => window.print()}>

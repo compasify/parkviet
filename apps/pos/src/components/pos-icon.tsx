@@ -54,6 +54,14 @@ const paths = {
       <path d="m3 8 9-5 9 5H3Z M3 21h18 M6 11v7 M12 11v7 M18 11v7" />
     </>
   ),
+  qr: (
+    <>
+      <rect x="3" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="3" width="7" height="7" rx="1" />
+      <rect x="3" y="14" width="7" height="7" rx="1" />
+      <path d="M14 14h3v3h-3z M20 14v1 M14 20h1 M18 18h3v3" />
+    </>
+  ),
   chevron: <path d="m6 9 6 6 6-6" />,
   check: <path d="m5 12 4 4L19 6" />,
   back: <path d="m10 5-7 7 7 7 M3 12h18" />,

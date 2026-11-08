@@ -8,6 +8,7 @@ module Spree
           module Workspaces
             class TenderAttemptsController < BaseController
               scoped_resource :pos_orders
+              pos_permissions vietqr: %w[read_pos_orders]
 
               def index
                 return if channel_rejected?
@@ -15,6 +16,22 @@ module Spree
                 workspace = workspace!(params[:workspace_id])
                 attempts = Spree::Pos::TenderAttempt.where(workspace_id: workspace.id).order(:id)
                 render json: { data: attempts.map(&:to_pos) }
+              end
+
+              # QR and bank details of a waiting VietQR tender, or its confirmed
+              # state once the bank webhook matched the transfer. Polled by the
+              # cashier screen; the QR was reserved when the tender was prepared.
+              def vietqr
+                return if channel_rejected?
+
+                workspace = workspace!(params[:workspace_id])
+                attempt = Spree::Pos::TenderAttempt.locate(Spree::Pos::TenderAttempt.where(workspace_id: workspace.id), params[:id])
+                raise ActiveRecord::RecordNotFound if attempt.nil? || attempt.pos_payment_method.kind != 'vietqr'
+
+                summary = Spree::Pos::VietqrTender.summary(attempt, request_base_url: request.base_url)
+                raise Spree::Pos::Conflict.new('This tender has no VietQR payment.', reason: 'vietqr_missing') if summary.nil?
+
+                render json: { data: summary }
               end
 
               def create

@@ -8,16 +8,22 @@ import {
   useTenders,
 } from '../hooks/use-tenders';
 import { formatMoney, parseVndAmount, parseVndInput } from '../lib/money';
+import { type RowAmounts, rebalanceRows, splitRowValues } from '../lib/payment-split';
 import type { PosPaymentMethod, PosWorkspace } from '../lib/pos-context';
 import { creditConflictKey } from '../lib/receivables';
 import { conflictReason, posFailureKey } from '../lib/request-failure';
 import { describeTraceFailure, paymentBlock, traceReasonKey } from '../lib/traceability';
+import { vietqrConflictKey } from '../lib/vietqr';
 import { CreditApprovalDialog } from './credit-approval-dialog';
 import { FeatureOffNote } from './feature-off-note';
 import { PosIcon } from './pos-icon';
 import { TenderEvidenceDialog, type TenderEvidenceItemInput } from './tender-evidence-dialog';
 
-type MethodKind = 'cash' | 'bank_manual';
+type MethodKind = PosPaymentMethod['kind'];
+
+function methodIcon(kind: MethodKind) {
+  return kind === 'cash' ? 'cash' : kind === 'vietqr' ? 'qr' : 'bank';
+}
 type WorkspaceCommand = (
   action: (current: PosWorkspace) => Promise<PosWorkspace>,
 ) => Promise<PosWorkspace>;
@@ -90,8 +96,7 @@ export function PaymentPanel({
   const [activeKinds, setActiveKinds] = useState<MethodKind[]>(['cash']);
   const [customAmounts, setCustomAmounts] = useState<{
     base: string;
-    cash?: string;
-    bank_manual?: string;
+    amounts: RowAmounts;
   } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -160,34 +165,20 @@ export function PaymentPanel({
       ? t('cash')
       : method.kind === 'bank_manual'
         ? t('bankTransfer')
-        : (method.name ?? method.kind);
+        : method.kind === 'vietqr'
+          ? t('vietqr')
+          : (method.name ?? method.kind);
   }
 
-  function getRowValue(kind: MethodKind): string {
-    const current = customAmounts?.base === defaultAmount ? customAmounts : null;
-    if (effectiveMethods.length === 1) {
-      return current?.[kind] ?? defaultAmount;
-    }
-    if (kind === 'cash') {
-      return current?.cash ?? defaultAmount;
-    }
-    const cashVal = BigInt(parseVndInput(current?.cash ?? defaultAmount) ?? 0);
-    const target = BigInt(defaultAmount || 0);
-    return current?.bank_manual ?? String(target > cashVal ? target - cashVal : 0n);
-  }
+  const rowKinds = effectiveMethods.map((method) => method.kind);
+  // Typed amounts belong to the target they were typed against.
+  const typedAmounts = customAmounts?.base === defaultAmount ? customAmounts.amounts : null;
+  const rowValues = splitRowValues(rowKinds, defaultAmount, typedAmounts);
 
   function updateRowValue(kind: MethodKind, rawValue: string) {
-    const target = BigInt(defaultAmount || 0);
-    const parsed = BigInt(parseVndInput(rawValue) ?? 0);
-    const remainder = String(target > parsed ? target - parsed : 0n);
-    setCustomAmounts((prev) => {
-      const current = prev?.base === defaultAmount ? prev : { base: defaultAmount };
-      if (effectiveMethods.length > 1) {
-        return kind === 'cash'
-          ? { base: defaultAmount, cash: rawValue, bank_manual: remainder }
-          : { base: defaultAmount, bank_manual: rawValue, cash: remainder };
-      }
-      return { ...current, base: defaultAmount, [kind]: rawValue };
+    setCustomAmounts({
+      base: defaultAmount,
+      amounts: rebalanceRows(rowKinds, defaultAmount, typedAmounts, kind, rawValue),
     });
   }
 
@@ -211,7 +202,8 @@ export function PaymentPanel({
   const parsedAllocate = parseVndInput(allocateAmount);
 
   function explain(failure: unknown, fallbackKey?: string) {
-    const key = creditConflictKey(conflictReason(failure));
+    const reason = conflictReason(failure);
+    const key = creditConflictKey(reason) ?? vietqrConflictKey(reason);
     return key ? t(key) : describeTraceFailure(failure, t, fallbackKey);
   }
 
@@ -247,7 +239,7 @@ export function PaymentPanel({
   }
 
   const rows = effectiveMethods.map((method) => {
-    const raw = getRowValue(method.kind);
+    const raw = rowValues[method.kind] ?? defaultAmount;
     return { method, raw, amount: parseVndInput(raw) };
   });
   const invalidRows = rows.filter((row) => row.raw.trim() !== '' && row.amount === null);
@@ -380,7 +372,7 @@ export function PaymentPanel({
             {nonCanceledAttempts.map((attempt) => (
               <li key={attempt.id}>
                 <span>
-                  {attempt.kind === 'cash' ? t('cash') : t('bankTransfer')}
+                  {methodLabel(attempt)}
                   <small>
                     {t(`tenderStatus_${attempt.status}`, { defaultValue: attempt.status })}
                   </small>
@@ -454,7 +446,7 @@ export function PaymentPanel({
                 disabled={locked || preparedAttempts.length > 0}
                 onClick={() => toggleMethod(method.kind)}
               >
-                <PosIcon name={method.kind === 'cash' ? 'cash' : 'bank'} />
+                <PosIcon name={methodIcon(method.kind)} />
                 {methodLabel(method)}
               </button>
             ))}
@@ -463,7 +455,7 @@ export function PaymentPanel({
             {rows.map(({ method, raw, amount }) => (
               <label className="payment-method-row" key={method.id} data-method={method.kind}>
                 <span className="payment-method-badge">
-                  <PosIcon name={method.kind === 'cash' ? 'cash' : 'bank'} />
+                  <PosIcon name={methodIcon(method.kind)} />
                   <strong>{methodLabel(method)}</strong>
                 </span>
                 <input

@@ -305,7 +305,7 @@ export type PosPaymentMethod = {
   id: string;
   code: string;
   name: string;
-  kind: 'cash' | 'bank_manual';
+  kind: 'cash' | 'bank_manual' | 'vietqr';
   status: string;
   position: number;
 };

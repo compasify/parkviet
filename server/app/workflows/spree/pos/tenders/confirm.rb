@@ -45,17 +45,28 @@ module Spree
 
             evidence = evidence_for(kind, evidence_kind, reference, receiving_account, terminal_ref)
             duplicate_ids = bank_duplicates!(kind, workspace, staff, reference: reference, receiving_account: receiving_account,
-                                                                     confirm_duplicate: confirm_duplicate)
+                                                                     confirm_duplicate: confirm_duplicate, evidence: evidence)
 
             attempt.lock!
             raise Conflict, 'Tender attempt is not prepared.' unless attempt.status == 'prepared'
+
+            # VietQR settles its own core payment (the bank webhook or the
+            # cashier's attestation completes it) and the receipt records the
+            # bank's reference, so the money reads as an ordinary transfer.
+            settled = nil
+            if kind == 'vietqr'
+              settled = VietqrTender.confirm!(attempt: attempt, evidence_kind: evidence, reference: reference,
+                                              receiving_account: receiving_account)
+              reference = settled[:reference]
+              receiving_account = settled[:receiving_account]
+            end
 
             funds = nil
             allocation = nil
             workspace.order.with_lock do
               funds = ReceivedFunds.create!(
                 store: workspace.store, workspace: workspace, branch: workspace.branch, register: workspace.register,
-                shift: workspace.shift, tender_attempt: attempt, actor: staff, kind: kind, status: 'received',
+                shift: workspace.shift, tender_attempt: attempt, actor: staff, kind: funds_kind(kind), status: 'received',
                 handed_amount: money[:handed], applied_amount: money[:applied], change_amount: money[:change],
                 received_net: money[:net], currency: order.currency, reference: reference.presence,
                 receiving_account: receiving_account.presence, received_at: Time.current
@@ -66,11 +77,14 @@ module Spree
                 terminal_ref: terminal_ref.presence, attested_at: Time.current
               )
               if money[:applied].positive?
-                core_method = PaymentMethodResolver.new(store: workspace.store).core_for(attempt.pos_payment_method)
-                raise Conflict, 'Payment method is not available for this store.' if core_method.nil?
+                payment = settled&.dig(:payment)
+                if payment.nil?
+                  core_method = PaymentMethodResolver.new(store: workspace.store).core_for(attempt.pos_payment_method)
+                  raise Conflict, 'Payment method is not available for this store.' if core_method.nil?
 
-                payment = order.payments.create!(payment_method: core_method, amount: money[:applied])
-                payment.complete!
+                  payment = order.payments.create!(payment_method: core_method, amount: money[:applied])
+                  payment.complete!
+                end
                 allocation = FundsAllocation.create!(
                   store: workspace.store, received_funds: funds, workspace: workspace, order: order,
                   payment: payment, status: 'active', amount: money[:applied], currency: order.currency
@@ -98,8 +112,15 @@ module Spree
           end
         end
 
-        def self.bank_duplicates!(kind, workspace, staff, reference:, receiving_account:, confirm_duplicate:)
-          return [] unless kind == 'bank_manual'
+        # Received funds of a VietQR tender are a bank transfer like any other.
+        def self.funds_kind(kind)
+          kind == 'vietqr' ? 'bank_manual' : kind
+        end
+
+        # Only a reference typed by the cashier can repeat an earlier one; a
+        # webhook transfer is deduplicated by spree_vietqr itself.
+        def self.bank_duplicates!(kind, workspace, staff, reference:, receiving_account:, confirm_duplicate:, evidence: nil)
+          return [] unless kind == 'bank_manual' || evidence == 'vietqr_manual'
 
           ReceiptReferenceGuard.check!(store: workspace.store, staff: staff, branch: workspace.branch, reference: reference,
                                        receiving_account: receiving_account, confirm_duplicate: confirm_duplicate)
@@ -123,6 +144,10 @@ module Spree
             raise Conflict, 'Received transfer is less than the tender amount.' if actual < attempt.amount
 
             { handed: actual, applied: attempt.amount, change: BigDecimal('0'), net: actual }
+          when 'vietqr'
+            # The QR asks for the exact amount; any excess the bank reports is
+            # handled by spree_vietqr (store credit), never as POS liability.
+            { handed: attempt.amount, applied: attempt.amount, change: BigDecimal('0'), net: attempt.amount }
           else
             raise Conflict, 'Unsupported tender kind.'
           end
@@ -141,6 +166,12 @@ module Spree
             end
 
             'bank_manual'
+          when 'vietqr'
+            unless VietqrTender::EVIDENCE_KINDS.include?(evidence_kind.to_s)
+              raise Conflict.new('VietQR evidence is required.', reason: 'vietqr_evidence_required')
+            end
+
+            evidence_kind.to_s
           else
             raise Conflict, 'Unsupported tender kind.'
           end

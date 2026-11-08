@@ -218,7 +218,30 @@ export function CustomerDisplayPage() {
               <dd className="money">{formatMoney(state.order.amount_due, state.order.currency)}</dd>
             </div>
           </dl>
-          {view.showPayment && state.payment ? (
+          {view.showPayment && state.payment?.kind === 'vietqr' ? (
+            <section
+              className="customer-display-payment customer-display-vietqr"
+              data-testid="display-payment"
+            >
+              <h2>{t('customerDisplayVietqrTitle')}</h2>
+              <img
+                className="customer-display-qr"
+                src={state.payment.qr_url}
+                alt={t('vietqrImageAlt')}
+                width={280}
+                height={280}
+              />
+              <p className="money customer-display-amount">
+                {formatMoney(state.payment.amount, state.payment.currency)}
+              </p>
+              <p>
+                {state.payment.bank_name} · {state.payment.account_number}
+              </p>
+              <p>{state.payment.account_name}</p>
+              <p>{t('customerDisplayTransferNote', { note: state.payment.transfer_note })}</p>
+              <p className="muted">{t('customerDisplayVietqrHint')}</p>
+            </section>
+          ) : view.showPayment && state.payment?.kind === 'bank_manual' ? (
             <section className="customer-display-payment" data-testid="display-payment">
               <h2>{t('customerDisplayBankTitle')}</h2>
               <p className="money customer-display-amount">

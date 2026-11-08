@@ -9,7 +9,7 @@ module Spree
       belongs_to :store, class_name: 'Spree::Store'
 
       validates :code, :name, presence: true
-      validates :kind, inclusion: { in: %w[cash bank_manual] }
+      validates :kind, inclusion: { in: %w[cash bank_manual vietqr] }
       validates :status, inclusion: { in: %w[active disabled] }
 
       scope :for_store, ->(store) { where(store_id: store.id) }

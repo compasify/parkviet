@@ -27,13 +27,28 @@ export type DisplayOrder = {
   amount_due?: string;
 };
 
-export type DisplayPayment = {
-  kind: 'bank_manual';
-  amount: string;
-  currency: string;
-  transfer_note: string;
-  account_text: string | null;
-};
+export type DisplayPayment =
+  | {
+      kind: 'bank_manual';
+      amount: string;
+      currency: string;
+      transfer_note: string;
+      account_text: string | null;
+    }
+  | {
+      // A VietQR tender: the customer scans the QR; the details are the
+      // receiving account it was issued for, for a manual transfer.
+      kind: 'vietqr';
+      amount: string;
+      currency: string;
+      transfer_note: string;
+      qr_url: string;
+      bank_name: string | null;
+      account_number: string;
+      account_name: string;
+    };
+
+const DISPLAY_PAYMENT_KINDS = ['bank_manual', 'vietqr'];
 
 export type DisplayState = {
   session_id: string;
@@ -90,7 +105,13 @@ export function readDisplayState(data: unknown): DisplayState | null {
   )
     return null;
   const payment = body.payment as Record<string, unknown> | null | undefined;
-  if (payment != null && (payment.kind !== 'bank_manual' || !isText(payment.amount))) return null;
+  if (
+    payment != null &&
+    (!DISPLAY_PAYMENT_KINDS.includes(payment.kind as string) ||
+      !isText(payment.amount) ||
+      (payment.kind === 'vietqr' && !isText(payment.qr_url)))
+  )
+    return null;
   const order = body.order as Record<string, unknown> | null | undefined;
   if (order != null && (!isText(order.number) || !isText(order.total))) return null;
   return data as DisplayState;
