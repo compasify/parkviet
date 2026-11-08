@@ -6,8 +6,19 @@
 # `pnpm spree exec bin/rails runner log/pos-live-fixture.rb cleanup`.
 #
 #   bin/rails runner log/pos-live-fixture.rb            create a new fixture
+#   bin/rails runner log/pos-live-fixture.rb onboarding=2
+#                                                       create 2 stores that were never set up
 #   bin/rails runner log/pos-live-fixture.rb cleanup    retire every fixture
 #   bin/rails runner log/pos-live-fixture.rb cleanup store-flags-off=returns,refunds
+#
+# `onboarding=N` (N from 1 to 3) leaves the development store alone: it
+# creates N new stores `POS Live <tag> <n>` (code `pos-live-<tag>-<n>`), each
+# with one active stock location and nothing of POS (no store profile, no
+# branch), and one owner `pos-live-owner-<tag>@example.test` whose role on
+# every one of them has the topology and selling permissions but no POS
+# membership. The JSON lists the stores; the browser has to send
+# `X-Spree-Store-Id` for them (the POS client itself always talks to the
+# default store).
 #
 # Create makes new records tagged `POS Live <tag>` (never touches others) and
 # writes the credentials, readable by the owner only, to
@@ -25,8 +36,15 @@
 #   closed;
 # - the staff lose their POS memberships, admin roles and password, and are
 #   deactivated where the user model supports it.
-# It prints what it did and anything it left. No record is deleted except the
-# role grants of the fixture accounts.
+# - every onboarding store (`POS Live %`, code `pos-live-%`, never the
+#   default store) loses what POS created in it: feature flags, branch
+#   modules, memberships, registers, branch assortments, branches, units and
+#   the store profile are deleted; then its stock locations and the store are
+#   soft-deleted (Spree keeps them with `deleted_at`, and the store takes its
+#   fixture roles and their grants with it). Audit entries and command
+#   receipts stay, as the history of the run.
+# It prints what it did and anything it left. Besides the onboarding stores,
+# no record is deleted except the role grants of the fixture accounts.
 require 'fileutils'
 require 'json'
 require 'securerandom'
@@ -44,9 +62,40 @@ EMAIL_PATTERN = 'pos-live-%@example.test'
 
 def key = SecureRandom.uuid
 
+# Stores made by `onboarding=N`. Never the default store, whatever its name.
+def onboarding_stores
+  Spree::Store.where('name LIKE ? AND code LIKE ?', 'POS Live %', 'pos-live-%').where(default: false).to_a
+end
+
+def cleanup_onboarding_stores(report)
+  onboarding_stores.each do |target|
+    ActiveRecord::Base.transaction do
+      branch_ids = Spree::Pos::Branch.where(store_id: target.id).pluck(:id)
+      removed = {
+        feature_flags: Spree::Pos::FeatureFlag.where(store_id: target.id).delete_all,
+        branch_modules: Spree::Pos::BranchModule.where(store_id: target.id).delete_all,
+        memberships: Spree::Pos::StaffMembership.where(store_id: target.id).delete_all,
+        registers: Spree::Pos::Register.where(store_id: target.id).delete_all,
+        branch_products: Spree::Pos::BranchProduct.where(branch_id: branch_ids).delete_all,
+        branches: Spree::Pos::Branch.where(store_id: target.id).delete_all,
+        units: Spree::Pos::UnitDefinition.where(store_id: target.id).delete_all,
+        store_profiles: Spree::Pos::StoreProfile.where(store_id: target.id).delete_all
+      }
+      Spree::StockLocation.where(store_id: target.id).find_each(&:destroy!)
+      # A role with users cannot be destroyed, and the store destroys its roles.
+      Spree::RoleUser.where(role_id: Spree::Role.where(resource: target).select(:id)).destroy_all
+      target.destroy!
+      report[:onboarding_stores_removed] << "#{target.prefixed_id} #{target.name}: #{removed.select { |_, count| count.positive? }.to_json}"
+    end
+  rescue StandardError => e
+    report[:onboarding_stores_left] << "#{target.prefixed_id} #{target.name}: #{e.class}: #{e.message}"
+  end
+end
+
 def cleanup(store, flags_off)
   staff = Spree.admin_user_class.where('email LIKE ?', EMAIL_PATTERN).to_a
   report = Hash.new { |hash, name| hash[name] = [] }
+  cleanup_onboarding_stores(report)
   # The live runs only switch a store default on when it was off, so one a
   # fixture account left on is a leftover of an interrupted run.
   left_on = Spree::Pos::FeatureFlag.for_store(store).where(branch_id: nil, enabled: true, changed_by_id: staff.map(&:id))
@@ -123,6 +172,50 @@ if ARGV.first == 'cleanup'
   exit
 end
 
+def write_fixture(result)
+  # log/ is bind-mounted from server/log (gitignored); the container's tmp/ is not.
+  directory = Rails.root.join('log/pos-live')
+  FileUtils.mkdir_p(directory)
+  path = directory.join("fixture-#{result[:tag]}.json")
+  File.open(path, File::WRONLY | File::CREAT | File::TRUNC, 0o600) { |file| file.write(JSON.pretty_generate(result)) }
+  path
+end
+
+onboarding = ARGV.find { |arg| arg.start_with?('onboarding=') }&.split('=', 2)&.last
+if onboarding
+  count = Integer(onboarding, exception: false)
+  abort 'onboarding= takes a number of stores from 1 to 3' unless count&.between?(1, 3)
+  tag = SecureRandom.hex(5)
+  # Sets the store up (write_pos_topology), then sells at the branch it
+  # creates once the setup grants it a membership there.
+  owner_permissions = %w[read_pos_orders write_pos_orders write_pos_workspaces read_pos_shifts write_pos_shifts
+                         read_pos_topology write_pos_topology]
+  template = store.attributes.slice('default_currency', 'default_locale', 'default_country_code').compact
+  result = ActiveRecord::Base.transaction do
+    password = SecureRandom.base58(20)
+    owner = Spree.admin_user_class.create!(email: "pos-live-owner-#{tag}@example.test", password: password,
+                                           password_confirmation: password)
+    owner.update!(first_name: 'POS Live', last_name: 'Chủ cửa hàng') if owner.respond_to?(:first_name=)
+    stores = (1..count).map do |number|
+      target = Spree::Store.create!(name: "POS Live #{tag} #{number}", code: "pos-live-#{tag}-#{number}",
+                                    url: "pos-live-#{tag}-#{number}.example.test", mail_from_address: "pos-live-#{tag}@example.test",
+                                    **template.symbolize_keys)
+      location = Spree::StockLocation.create!(
+        store: target, name: "POS Live #{tag} #{number}", address1: '1 Synthetic St', city: 'HCM', zipcode: '70000',
+        country_code: 'VN', active: true, backorderable_default: false, propagate_all_variants: false
+      )
+      role = Spree::Role.create!(name: "pos-live-owner-#{tag}-#{number}", resource: target, permissions: owner_permissions)
+      Spree::RoleUser.create!(role: role, user: owner)
+      { store_id: target.prefixed_id, name: target.name, stock_location_id: location.prefixed_id, stock_location_name: location.name }
+    end
+    { tag: tag, onboarding: true, owner: { email: owner.email, password: password }, stores: stores }
+  end
+  path = write_fixture(result)
+  puts "POS live onboarding fixture #{tag}: #{result[:stores].map { |row| "#{row[:store_id]} (#{row[:name]})" }.join(', ')}, " \
+       "credentials in server/log/pos-live/#{path.basename}"
+  exit
+end
+
 tag = SecureRandom.hex(5)
 # The cashier only sells: order and shift permissions, no topology writes.
 cashier_permissions = %w[read_pos_orders write_pos_orders write_pos_workspaces read_pos_shifts write_pos_shifts]
@@ -185,10 +278,6 @@ result = ActiveRecord::Base.transaction do
   }
 end
 
-# log/ is bind-mounted from server/log (gitignored); the container's tmp/ is not.
-directory = Rails.root.join('log/pos-live')
-FileUtils.mkdir_p(directory)
-path = directory.join("fixture-#{result[:tag]}.json")
-File.open(path, File::WRONLY | File::CREAT | File::TRUNC, 0o600) { |file| file.write(JSON.pretty_generate(result)) }
+path = write_fixture(result)
 puts "POS live fixture #{result[:tag]}: branch #{result[:branch_id]}, register #{result[:register_id]}, " \
      "credentials in server/log/pos-live/#{path.basename}"

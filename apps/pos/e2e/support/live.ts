@@ -139,11 +139,15 @@ export async function restoreLiveFeatures(request: APIRequestContext) {
 const tokens = new Map<string, string>();
 
 async function apiToken(request: APIRequestContext, fixture: LiveFixture, who: 'cashier' | 'manager') {
-  const cached = tokens.get(fixture[who].email);
+  return loginToken(request, fixture[who]);
+}
+
+async function loginToken(request: APIRequestContext, account: { email: string; password: string }) {
+  const cached = tokens.get(account.email);
   if (cached) return cached;
   for (let attempt = 0; attempt < 6; attempt += 1) {
     const login = await request.post('/api/v3/admin/auth/login', {
-      data: { email: fixture[who].email, password: fixture[who].password },
+      data: { email: account.email, password: account.password },
     });
     if (login.status() === 429) {
       const wait = Number(login.headers()['retry-after'] ?? '20');
@@ -152,7 +156,7 @@ async function apiToken(request: APIRequestContext, fixture: LiveFixture, who: '
     }
     liveExpect(login.status()).toBe(200);
     const token = (await login.json()).token as string;
-    tokens.set(fixture[who].email, token);
+    tokens.set(account.email, token);
     return token;
   }
   throw new Error('Login stayed rate-limited');
@@ -175,6 +179,64 @@ export async function liveApi(request: APIRequestContext, fixture: LiveFixture, 
         data: { ...data, idempotency_key: key },
       });
       return { status: response.status(), body: await response.json().catch(() => null), key };
+    },
+  };
+}
+
+// First-run setup against the real API: `pos-live-fixture.rb onboarding=N`
+// makes N stores that were never set up, plus one owner with a role on each
+// and no POS membership. Opt in with POS_LIVE_REVIEW=1 and
+// POS_LIVE_ONBOARDING_FIXTURE pointing at that JSON.
+export type LiveOnboardingStore = { store_id: string; name: string; stock_location_id: string; stock_location_name: string };
+export type LiveOnboardingFixture = {
+  tag: string;
+  onboarding: true;
+  owner: { email: string; password: string };
+  stores: LiveOnboardingStore[];
+};
+
+export function requireLiveOnboarding(stores: number): LiveOnboardingFixture {
+  const path = process.env.POS_LIVE_ONBOARDING_FIXTURE;
+  const fixture =
+    process.env.POS_LIVE_REVIEW === '1' && path ? (JSON.parse(readFileSync(path, 'utf8')) as LiveOnboardingFixture) : null;
+  test.skip(
+    !fixture,
+    'Real API setup run: set POS_LIVE_REVIEW=1 and POS_LIVE_ONBOARDING_FIXTURE to the JSON of `pos-live-fixture.rb onboarding=2` (README)',
+  );
+  test.skip((fixture?.stores.length ?? 0) < stores, `Needs a fixture with at least ${stores} onboarding stores`);
+  return fixture as LiveOnboardingFixture;
+}
+
+const STORE_HEADER = 'X-Spree-Store-Id';
+
+// The POS client never names a store, so the API answers for the default
+// one. Sends the onboarding store with every Admin API call of the page,
+// except the store-agnostic sign-in and session refresh.
+export async function routeToStore(page: Page, storeId: string) {
+  await page.route('**/api/v3/admin/**', (route) => {
+    const path = new URL(route.request().url()).pathname;
+    if (/\/api\/v3\/admin\/auth\//.test(path)) return route.continue();
+    return route.continue({ headers: { ...route.request().headers(), [STORE_HEADER.toLowerCase()]: storeId } });
+  });
+}
+
+// Admin API as the onboarding owner, on one onboarding store. Answers come
+// back whatever their status; the caller asserts.
+export async function liveStoreApi(request: APIRequestContext, fixture: LiveOnboardingFixture, storeId: string) {
+  const token = await loginToken(request, fixture.owner);
+  const headers = (key?: string) => ({
+    authorization: `Bearer ${token}`,
+    [STORE_HEADER]: storeId,
+    ...(key ? { 'Idempotency-Key': key } : {}),
+  });
+  return {
+    async get<T = unknown>(path: string, params: Record<string, string> = {}) {
+      const response = await request.get(`/api/v3/admin${path}`, { headers: headers(), params });
+      return { status: response.status(), body: (await response.json().catch(() => null)) as T };
+    },
+    async send<T = unknown>(method: 'POST' | 'PUT' | 'PATCH', path: string, data: unknown, key?: string) {
+      const response = await request.fetch(`/api/v3/admin${path}`, { method, headers: headers(key), data });
+      return { status: response.status(), body: (await response.json().catch(() => null)) as T };
     },
   };
 }

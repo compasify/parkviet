@@ -1,5 +1,7 @@
+import { randomUUID } from 'node:crypto';
 import { expect, type Page, test } from '@playwright/test';
 import { BUSINESS_PROFILES, PROFILE_MODULES, profileOf } from './support/business-profiles';
+import { liveExpect, liveStoreApi, requireLiveOnboarding, routeToStore } from './support/live';
 
 // First-run store setup (plan 261108-1830, phase 4): a store with neither a
 // profile nor an active branch sends whoever may set it up to /setup. Five
@@ -430,4 +432,166 @@ test('keyboard only: arrows pick an industry, each step moves focus to its headi
   await page.keyboard.press('ArrowDown');
   await page.getByLabel('Tên chi nhánh').press('Enter');
   await expect(step(page, 'Xem trước')).toBeFocused();
+});
+
+// The wizard end to end against the development API, on stores made by
+// `pos-live-fixture.rb onboarding=2` (README). A store is set up only once,
+// so each test runs on desktop only and takes its own store.
+test.describe('real API', () => {
+  type Onboarded = {
+    data: {
+      store_profile: { profile_key: string; interests: string[] };
+      branch: { id: string; name: string; code: string; profile_key: string };
+      register: { id: string; name: string } | null;
+      membership: { id: string; capabilities: string[] } | null;
+      features: Record<string, boolean>;
+      modules: Record<string, boolean>;
+    };
+  };
+  type Failure = { error?: { details?: { reason?: string } } };
+  type Flags = { data: { switches?: Record<string, { store: boolean; branch_override: boolean | null }>; features: Record<string, boolean> } };
+  // GET /pos/context answers unwrapped.
+  type Context = { capabilities: string[]; onboarding: { required: boolean; can_setup: boolean } };
+
+  async function signInOwner(page: Page, owner: { email: string; password: string }) {
+    await page.goto('/login');
+    await page.getByLabel('Email nhân viên').fill(owner.email);
+    await page.getByLabel('Mật khẩu', { exact: true }).fill(owner.password);
+    await page.getByRole('button', { name: 'Đăng nhập bán hàng', exact: true }).click();
+  }
+
+  test('sets up a new store as a pharmacy: one branch, a replay returns it again, a second setup is refused', async ({ page, request }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'A store is set up once; desktop only');
+    test.setTimeout(180_000);
+    const fixture = requireLiveOnboarding(1);
+    const store = fixture.stores[0];
+    const api = await liveStoreApi(request, fixture, store.store_id);
+    await routeToStore(page, store.store_id);
+    const locations = page.waitForResponse((response) => response.url().includes('/pos/configuration/locations'));
+    const posted = page.waitForRequest((sent) => sent.url().endsWith('/pos/onboarding') && sent.method() === 'POST');
+    const answered = page.waitForResponse((response) => response.url().endsWith('/pos/onboarding') && response.request().method() === 'POST');
+
+    await signInOwner(page, fixture.owner);
+    await liveExpect(page).toHaveURL(/\/setup$/, { timeout: 60_000 });
+    await radio(page, 'Nhà thuốc').check();
+    await next(page);
+    await next(page);
+    await liveExpect(step(page, 'Chi nhánh đầu tiên')).toBeVisible();
+    const branchName = `Nhà thuốc Live ${fixture.tag}`;
+    await page.getByLabel('Tên chi nhánh').fill(branchName);
+    // The owner's only role is on this store, so its one location is picked.
+    liveExpect((await locations).status()).toBe(200);
+    await liveExpect(page.getByLabel('Kho bán hàng')).toHaveValue(store.stock_location_id);
+    await liveExpect(page.getByRole('checkbox', { name: /Cấp cho tôi toàn quyền tại chi nhánh này/ })).toBeChecked();
+    await next(page);
+    await liveExpect(step(page, 'Xem trước')).toBeVisible();
+    await page.getByRole('group', { name: 'Ngành này thường dùng' }).getByRole('checkbox', { name: 'Trả hàng', exact: true }).check();
+    await next(page);
+    await page.getByRole('button', { name: 'Tạo cửa hàng', exact: true }).click();
+
+    const response = await answered;
+    const first = (await response.json()) as Onboarded;
+    liveExpect(response.status(), JSON.stringify(first)).toBe(201);
+    const request1 = await posted;
+    const key = request1.headers()['idempotency-key'];
+    const body = request1.postDataJSON() as Record<string, unknown>;
+    liveExpect(key).toMatch(/^[0-9a-f-]{36}$/);
+    liveExpect(body).toMatchObject({ profile_key: 'nha_thuoc', grant_self: true, features: ['returns'], register: { name: 'Quầy 1' } });
+
+    // The new branch and register are the selling context, ready to open a shift.
+    await liveExpect(page).toHaveURL(/\/$/);
+    const context = page.locator('.pos-context-details summary');
+    await liveExpect(context).toContainText(branchName);
+    await liveExpect(context).toContainText('Quầy 1');
+    await liveExpect(page.getByLabel('Tiền đầu ca')).toBeVisible();
+    await liveExpect(page.getByRole('dialog', { name: 'Chọn nơi bán hàng' })).toHaveCount(0);
+
+    const { branch, register, membership, modules, features, store_profile } = first.data;
+    liveExpect(branch).toMatchObject({ name: branchName, profile_key: 'nha_thuoc' });
+    liveExpect(register?.name).toBe('Quầy 1');
+    liveExpect(membership?.capabilities).toContain('pos.shift.open');
+    liveExpect(store_profile).toMatchObject({ profile_key: 'nha_thuoc', interests: [] });
+    liveExpect(modules).toEqual({ 'retail.units': true, 'retail.measured': false, 'retail.traceability': true });
+    liveExpect(features.returns).toBe(true);
+    liveExpect(features.refunds).toBe(false);
+
+    // The same key and answers again: the first result, no second branch.
+    const replay = await api.send<Onboarded>('POST', '/pos/onboarding', body, key);
+    liveExpect(replay.status).toBe(201);
+    liveExpect(replay.body).toEqual(first);
+    const branches = await api.get<{ data: Array<{ id: string }> }>('/pos/context/branches');
+    liveExpect(branches.status).toBe(200);
+    liveExpect(branches.body.data.map((row) => row.id)).toEqual([branch.id]);
+
+    // Another setup (another device, another key) is refused.
+    const again = await api.send<Failure>('POST', '/pos/onboarding',
+      { ...body, branch: { ...(body.branch as object), code: `second-${fixture.tag}` } }, randomUUID());
+    liveExpect(again.status, JSON.stringify(again.body)).toBe(409);
+    liveExpect(again.body.error?.details?.reason).toBe('already_onboarded');
+    liveExpect((await api.get<{ data: Array<{ id: string }> }>('/pos/context/branches')).body.data).toHaveLength(1);
+
+    // The setup account reads the store's stock locations.
+    const listed = await api.get<{ data: Array<{ id: string }> }>('/pos/configuration/locations');
+    liveExpect(listed.status).toBe(200);
+    liveExpect(listed.body.data.map((row) => row.id)).toContain(store.stock_location_id);
+
+    // A ticked feature is a store default (no branch switch); the others stay off.
+    const flags = await api.get<Flags>('/pos/feature_flags', { branch_id: branch.id });
+    liveExpect(flags.status).toBe(200);
+    liveExpect(flags.body.data.switches?.returns).toMatchObject({ store: true, branch_override: null });
+    liveExpect(flags.body.data.switches?.refunds).toMatchObject({ store: false, branch_override: null });
+    liveExpect(flags.body.data.features.returns).toBe(true);
+    liveExpect(flags.body.data.features.refunds).toBe(false);
+    const context2 = await api.get<Context>('/pos/context');
+    liveExpect(context2.status).toBe(200);
+    liveExpect(context2.body.onboarding).toEqual({ required: false, can_setup: true });
+  });
+
+  test('unticking "full access" sets the store up without a membership for the owner', async ({ page, request }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'A store is set up once; desktop only');
+    test.setTimeout(180_000);
+    const fixture = requireLiveOnboarding(2);
+    const store = fixture.stores[1];
+    const api = await liveStoreApi(request, fixture, store.store_id);
+    await routeToStore(page, store.store_id);
+    const answered = page.waitForResponse((response) => response.url().endsWith('/pos/onboarding') && response.request().method() === 'POST');
+
+    await signInOwner(page, fixture.owner);
+    await liveExpect(page).toHaveURL(/\/setup$/, { timeout: 60_000 });
+    await radio(page, 'Thời trang').check();
+    await next(page);
+    await next(page);
+    const branchName = `Thời trang Live ${fixture.tag}`;
+    await page.getByLabel('Tên chi nhánh').fill(branchName);
+    await liveExpect(page.getByLabel('Kho bán hàng')).toHaveValue(store.stock_location_id);
+    await page.getByRole('checkbox', { name: /Cấp cho tôi toàn quyền/ }).uncheck();
+    await next(page);
+    await next(page);
+    await page.getByRole('button', { name: 'Tạo cửa hàng', exact: true }).click();
+    const response = await answered;
+    const result = (await response.json()) as Onboarded;
+    liveExpect(response.status(), JSON.stringify(result)).toBe(201);
+    liveExpect(result.data.membership).toBeNull();
+    liveExpect(result.data.modules).toEqual({ 'retail.units': false, 'retail.measured': false, 'retail.traceability': false });
+    liveExpect(Object.values(result.data.features).every((on) => on === false)).toBe(true);
+
+    // A store administrator sees every branch, so the new branch and register
+    // are still selected; without a membership the owner may configure but
+    // not open a shift, and the sale screen says so instead of failing.
+    await liveExpect(page).toHaveURL(/\/$/);
+    const context = page.locator('.pos-context-details summary');
+    await liveExpect(context).toContainText(branchName);
+    await liveExpect(context).toContainText('Quầy 1');
+    await liveExpect(page.getByText('Cần có ca đang mở và thuộc tài khoản của bạn để tạo đơn.')).toBeVisible();
+    await liveExpect(page.getByLabel('Tiền đầu ca')).toHaveCount(0);
+    await liveExpect(page.getByRole('button', { name: 'Mở ca', exact: true })).toHaveCount(0);
+    await liveExpect(page.getByRole('button', { name: 'Đơn nháp mới' })).toBeDisabled();
+    const live = await api.get<Context>('/pos/context', { branch_id: result.data.branch.id });
+    liveExpect(live.status).toBe(200);
+    liveExpect([...live.body.capabilities].sort()).toEqual(['pos.topology.manage', 'pos.topology.read']);
+    liveExpect(live.body.onboarding).toEqual({ required: false, can_setup: true });
+    // The setup is done: /setup no longer offers the wizard.
+    await page.goto('/setup');
+    await liveExpect(page.getByRole('radiogroup')).toHaveCount(0);
+  });
 });
