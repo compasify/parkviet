@@ -1,7 +1,7 @@
 ---
 phase: 2
 title: "Triển khai dữ liệu và workflow"
-status: pending
+status: completed
 effort: ""
 ---
 
@@ -20,5 +20,5 @@ Triển khai seam được duyệt với thay đổi BE nhỏ nhất, bảo toà
 
 ## Success Criteria
 
-- [ ] Hai gói cùng variant khác giá/lô tồn tại độc lập qua edit/remove/checkout/return.
-- [ ] Không mất tiền, không trùng phân bổ/refund hoặc làm sai stock khi retry/race.
+- [x] Hai gói cùng variant khác giá/lô tồn tại độc lập qua edit/remove/checkout/return. *(`package_split_spec.rb` khác giá; `traceable_inventory_spec.rb` khác lô/cân; `sale_lines_spec.rb` draft.)*
+- [x] Không mất tiền, không trùng phân bổ/refund hoặc làm sai stock khi retry/race. *(`return_entitlement_spec.rb`, `return_race_spec.rb`, `fulfillment_returns_spec.rb` retry complete/handover/receive.)*

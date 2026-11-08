@@ -1,7 +1,7 @@
 ---
 phase: 3
 title: "Kiểm thử đối soát và phát hành"
-status: pending
+status: in-progress
 effort: ""
 ---
 
@@ -19,5 +19,5 @@ Kiểm chứng end-to-end, đối soát và phát hành có kiểm soát capabil
 
 ## Success Criteria
 
-- [ ] Acceptance I08/F21 tương ứng và regression tài chính/tồn kho pass với bằng chứng.
-- [ ] Có đối soát, runbook và quyết định release riêng trước khi bật.
+- [x] Acceptance I08/F21 tương ứng và regression tài chính/tồn kho pass với bằng chứng. *(08/11/2026: 8 file spec, 61 examples, 0 failures.)*
+- [ ] Có đối soát, runbook và quyết định release riêng trước khi bật. *(Chờ UAT hàng mẫu tại cửa hàng và quyết định của người dùng.)*

@@ -27,6 +27,7 @@
 - **Hàng cân / tem cân**: quét tem EAN-13 in từ cân điện tử. Máy chủ đọc khối lượng hoặc giá trên tem. Dòng hàng tem cân không sửa được số lượng, chỉ xóa được.
 - **Đơn vị quy đổi**: bán theo đơn vị bán (kg, lít, lốc, thùng…), quy đổi về đơn vị gốc theo cấu hình của SKU.
 - **Hàng theo serial / lô**: quét serial cho từng cái. Lô được chọn tự động theo hạn dùng gần nhất (FEFO), hoặc thu ngân tự chọn nếu chi nhánh cho phép.
+- **Tách từng gói cùng mã**: mỗi lần thêm hàng tạo một dòng riêng, nên hai gói cùng mã nhưng khác giá, lô hoặc hạn dùng không bị gộp hay ghi đè nhau. Chỉ gộp khi thu ngân tích ô **gộp** và gói mới trùng mã, giá, đơn vị, lô, hạn dùng; hàng cân và hàng serial không bao giờ gộp. Sửa số lượng, xóa, giảm giá, sửa giá, trả hàng và hoàn tiền đều theo từng gói (trả gói nào hoàn đúng giá gói đó). Quét nhanh từ danh mục vẫn gộp hàng thường cùng giá.
 - **Khách hàng**: mặc định là **Khách lẻ**. Có thể tìm khách theo tên, số điện thoại hoặc email, hoặc **Tạo khách nhanh**. Nếu trùng số điện thoại, POS chỉ cảnh báo, không tự gộp hồ sơ.
 - **Giảm giá**: giảm theo dòng hoặc **Giảm giá toàn đơn** (theo phần trăm hoặc số tiền VND, kèm lý do). Có thể nhập **Mã voucher / khuyến mại (Spree)**. **Sửa giá bán** của một dòng là quyền riêng. Khi chính sách yêu cầu, thu ngân nhập **Mã duyệt của quản lý**.
 - **Ghi chú tại quầy** và **In tạm tính** (phiếu tạm tính, không phải biên nhận thanh toán).

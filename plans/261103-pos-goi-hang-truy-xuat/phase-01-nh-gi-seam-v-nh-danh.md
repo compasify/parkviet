@@ -1,7 +1,7 @@
 ---
 phase: 1
 title: "Đánh giá seam và định danh"
-status: pending
+status: completed
 effort: ""
 ---
 
@@ -19,5 +19,5 @@ Chọn seam ít thay đổi backend nhất để biểu diễn từng gói độ
 
 ## Success Criteria
 
-- [ ] Có ADR được duyệt và mapping không mất identity qua cart → order → return.
-- [ ] Không âm thầm gộp gói khác giá/lô hoặc bật tính năng khi chưa đủ dữ liệu.
+- [x] Có ADR được duyệt và mapping không mất identity qua cart → order → return. *([adr-saleline-seam.md](reports/adr-saleline-seam.md); `package_split_spec.rb`, `traceable_inventory_spec.rb` "measured packages of one variant".)*
+- [x] Không âm thầm gộp gói khác giá/lô hoặc bật tính năng khi chưa đủ dữ liệu. *(`sale_lines_spec.rb`: gộp chỉ khi `merge: true` + cùng merge key.)*
