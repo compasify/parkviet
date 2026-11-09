@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_09_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_09_140000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -2674,7 +2674,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_09_120000) do
     t.index ["store_id", "feature"], name: "idx_pos_feature_flags_store_default", unique: true, where: "(branch_id IS NULL)"
     t.index ["store_id"], name: "index_spree_pos_feature_flags_on_store_id"
     t.check_constraint "char_length(reason::text) >= 1 AND char_length(reason::text) <= 200", name: "chk_pos_feature_flags_reason"
-    t.check_constraint "feature::text = ANY (ARRAY['credit'::character varying, 'returns'::character varying, 'refunds'::character varying, 'exchanges'::character varying, 'traceability'::character varying, 'customer_display'::character varying, 'cash_moves'::character varying, 'exports'::character varying, 'vietqr'::character varying, 'edit_lease'::character varying]::text[])", name: "chk_pos_feature_flags_feature"
+    t.check_constraint "feature::text = ANY (ARRAY['credit'::character varying, 'returns'::character varying, 'refunds'::character varying, 'exchanges'::character varying, 'traceability'::character varying, 'customer_display'::character varying, 'cash_moves'::character varying, 'exports'::character varying, 'vietqr'::character varying, 'edit_lease'::character varying, 'quick_credit'::character varying]::text[])", name: "chk_pos_feature_flags_feature"
   end
 
   create_table "spree_pos_funds_allocations", force: :cascade do |t|

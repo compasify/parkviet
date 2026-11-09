@@ -49,6 +49,22 @@ module Spree
                 render json: { data: result }, status: :created
               end
 
+              # Quick credit (`quick_credit` on): the cashier approves the
+              # unpaid remainder themselves, then completes with the approval.
+              def quick
+                return if channel_rejected?
+
+                key = idempotency_key
+                return if key.nil?
+
+                result = Spree::Pos::Credit::QuickApprove.call(
+                  workspace: workspace!(params[:workspace_id]), staff: current_user,
+                  revision: params[:expected_revision].to_i, lease_generation: params[:lease_generation].to_i,
+                  editor_id: params[:editor_id], key: key
+                )
+                render json: { data: result }, status: :created
+              end
+
               def create
                 return if channel_rejected? || currency_rejected?
 

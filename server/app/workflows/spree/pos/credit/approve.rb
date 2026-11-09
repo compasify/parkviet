@@ -48,22 +48,8 @@ module Spree
             account = CreditAccount.for_store(workspace.store).find_by(customer_profile_id: profile.id, currency: order.currency)
             raise Conflict.new('Customer has no credit account.', reason: 'credit_account_missing') if account.nil?
 
-            Release.call(workspace: workspace, actor: staff, reason: 'superseded')
-            account.lock!
-            raise Conflict.new('Credit account is suspended.', reason: 'credit_account_suspended') unless account.active?
-            raise Conflict.new('Credit limit would be exceeded.', reason: 'credit_limit_exceeded') unless account.exposure.fits?(parsed)
-
-            approval = Approval.create!(
-              store: workspace.store, branch: workspace.branch, approver: staff, requester: requester,
-              subject_type: workspace.class.name, subject_id: workspace.id, action: ACTION, amount: parsed,
-              currency: order.currency, revision: workspace.revision.to_s, status: 'active',
-              expires_at: expiry(expires_at)
-            )
-            reservation = CreditReservation.create!(
-              store: workspace.store, credit_account: account, workspace: workspace, approval: approval,
-              customer_profile: profile, amount: parsed, currency: order.currency,
-              workspace_revision: workspace.revision, status: 'active'
-            )
+            approval, reservation = reserve!(workspace: workspace, approver: staff, requester: requester, account: account,
+                                             amount: parsed, expires_at: expiry(expires_at))
             request&.update!(status: 'approved', decided_by: staff, decided_at: Time.current, credit_reservation: reservation)
             AuditEntry.record!(store: workspace.store, actor: staff, action: 'credit.approve', subject: workspace,
                                metadata: { reservation_id: reservation.prefixed_id, approval_id: approval.prefixed_id,
@@ -71,6 +57,30 @@ module Spree
                                            requester_id: requester.prefixed_id, request_id: request&.prefixed_id })
             reservation.to_pos
           end
+        end
+
+        # Supersedes the workspace's earlier reservations, then reserves the
+        # amount under the account lock. Shared with QuickApprove; callers
+        # hold the workspace lock (and any request lock) already. Approver and
+        # requester are the same person only for quick credit.
+        def self.reserve!(workspace:, approver:, requester:, account:, amount:, expires_at:)
+          Release.call(workspace: workspace, actor: approver, reason: 'superseded')
+          account.lock!
+          raise Conflict.new('Credit account is suspended.', reason: 'credit_account_suspended') unless account.active?
+          raise Conflict.new('Credit limit would be exceeded.', reason: 'credit_limit_exceeded') unless account.exposure.fits?(amount)
+
+          approval = Approval.create!(
+            store: workspace.store, branch: workspace.branch, approver: approver, requester: requester,
+            subject_type: workspace.class.name, subject_id: workspace.id, action: ACTION, amount: amount,
+            currency: account.currency, revision: workspace.revision.to_s, status: 'active',
+            expires_at: expires_at, self_credit: approver.id == requester.id
+          )
+          reservation = CreditReservation.create!(
+            store: workspace.store, credit_account: account, workspace: workspace, approval: approval,
+            customer_profile: account.customer_profile, amount: amount, currency: account.currency,
+            workspace_revision: workspace.revision, status: 'active'
+          )
+          [approval, reservation]
         end
 
         def self.authorize_approver!(workspace, staff)

@@ -17,6 +17,9 @@ export const POS_FEATURES = [
   // over by hand. Off (the default) the selling screen takes editing over by
   // itself, for shops with one branch and one counter.
   'edit_lease',
+  // Quick credit refines `credit` (both must be on): the cashier approves
+  // their own credit sale, for one-person shops.
+  'quick_credit',
 ] as const;
 
 export type PosFeature = (typeof POS_FEATURES)[number];

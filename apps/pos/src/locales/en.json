@@ -2822,5 +2822,11 @@
   "customerSaveAddress": "Save and update order",
   "receiptDeliveryAddress": "Deliver to",
   "customerAddress": "Delivery address",
-  "customerAddressHint": "e.g. 1205 block S1.02, hang on the door"
+  "customerAddressHint": "e.g. 1205 block S1.02, hang on the door",
+  "featureName_quick_credit": "Quick credit (one-person shop)",
+  "featureHint_quick_credit": "For one-person shops. On together with “Credit sales”: the cashier puts the unpaid remainder on the customer's tab without a second person approving. A customer without a credit account gets one with a 2,000,000 ₫ limit, due in 30 days; going over the limit is still refused.",
+  "featureDisabled_quick_credit": "Quick credit was just switched off at the branch; nothing was recorded. Collect the full amount or ask a manager to approve the credit.",
+  "quickCreditConfirm": "Put {{amount}} on {{name}}'s tab and complete the order?",
+  "quickCreditHint": "A customer without a credit account gets one with the default limit. Credit over the limit is refused.",
+  "quickCreditAction": "Put on tab & complete"
 }

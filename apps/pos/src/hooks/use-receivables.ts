@@ -7,6 +7,7 @@ import type {
   PosCollection,
   PosCreditAccount,
   PosCreditRequest,
+  PosCreditReservation,
   PosReceivable,
   PosReceivableAccount,
   PosWorkspace,
@@ -124,6 +125,23 @@ export function useRequestCredit() {
       return result.data;
     },
   });
+}
+
+// Quick credit (one-person shops): the cashier approves the unpaid remainder
+// themselves; the server opens a credit account with default terms when the
+// customer has none. Only reserves exposure, so a retry with a new key just
+// supersedes the earlier reservation. The caller then completes on it.
+export async function quickApproveCredit(workspace: PosWorkspace) {
+  const result = await write<PosCreditReservation>(
+    'POST',
+    `/pos/workspaces/${workspace.id}/quick_credit`,
+    {
+      expected_revision: workspace.revision,
+      lease_generation: workspace.lease_generation,
+      editor_id: workspaceEditorId,
+    },
+  );
+  return result.data;
 }
 
 export type CollectInput = {

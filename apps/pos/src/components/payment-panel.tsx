@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { quickApproveCredit } from '../hooks/use-receivables';
 import {
   usePaymentMethods,
   useReceivedFundDetail,
@@ -17,6 +18,7 @@ import { vietqrConflictKey } from '../lib/vietqr';
 import { CreditApprovalDialog } from './credit-approval-dialog';
 import { FeatureOffNote } from './feature-off-note';
 import { PosIcon } from './pos-icon';
+import { QuickCreditDialog } from './quick-credit-dialog';
 import { ReceiptPrintButton } from './receipt-print-dialog';
 import {
   TenderEvidenceDialog,
@@ -82,6 +84,7 @@ export function PaymentPanel({
   canResolve,
   canSellCredit = false,
   creditEnabled = true,
+  quickCredit = false,
   drawerOpen = true,
   disabled,
   command,
@@ -100,6 +103,8 @@ export function PaymentPanel({
   canSellCredit?: boolean;
   // Branch feature flag: off keeps the debt summary but offers no new credit sale.
   creditEnabled?: boolean;
+  // `quick_credit` on: the cashier approves their own credit sale, no manager.
+  quickCredit?: boolean;
   // The order's shift is open and this cashier owns it.
   drawerOpen?: boolean;
   disabled: boolean;
@@ -618,7 +623,28 @@ export function PaymentPanel({
           ) : null}
         </>
       ) : null}
-      {creditOpen && creditEnabled && !completed ? (
+      {creditOpen && creditEnabled && quickCredit && !completed ? (
+        <QuickCreditDialog
+          workspace={workspace}
+          busy={busy || disabled}
+          error={error}
+          onClose={() => {
+            setCreditOpen(false);
+            setError('');
+          }}
+          onConfirm={() =>
+            void run(() =>
+              command(async (current) => {
+                const held = await quickApproveCredit(current);
+                return tenders.complete(current, held.approval_id);
+              }),
+            ).then((done) => {
+              if (done) setCreditOpen(false);
+            })
+          }
+        />
+      ) : null}
+      {creditOpen && creditEnabled && !quickCredit && !completed ? (
         <CreditApprovalDialog
           workspace={workspace}
           busy={busy || disabled}

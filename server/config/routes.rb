@@ -214,6 +214,7 @@ Rails.application.routes.draw do
               get 'credit', to: 'workspaces/credit_approvals#index'
               post 'credit_approvals', to: 'workspaces/credit_approvals#create'
               post 'credit_requests', to: 'workspaces/credit_approvals#request_approval'
+              post 'quick_credit', to: 'workspaces/credit_approvals#quick'
               member do
                 post 'discount/clear', to: 'workspaces/discounts#clear'
                 post :park

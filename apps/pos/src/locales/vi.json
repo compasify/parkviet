@@ -2813,5 +2813,11 @@
   "customerSaveAddress": "Lưu và cập nhật đơn",
   "receiptDeliveryAddress": "Giao đến",
   "customerAddress": "Địa chỉ giao hàng",
-  "customerAddressHint": "VD: 1205 tòa S1.02, treo tay nắm cửa"
+  "customerAddressHint": "VD: 1205 tòa S1.02, treo tay nắm cửa",
+  "featureName_quick_credit": "Ghi nợ nhanh (một người bán)",
+  "featureHint_quick_credit": "Dành cho cửa hàng một người. Bật cùng “Bán ghi nợ”: thu ngân tự ghi nợ phần còn thiếu cho khách, không cần người thứ hai duyệt. Khách chưa có sổ nợ được mở với hạn mức 2.000.000 ₫, hạn trả 30 ngày; vẫn chặn khi vượt hạn mức.",
+  "featureDisabled_quick_credit": "Ghi nợ nhanh vừa bị tắt ở chi nhánh; máy chủ không ghi nhận. Hãy thu đủ tiền hoặc nhờ quản lý duyệt ghi nợ.",
+  "quickCreditConfirm": "Ghi nợ {{amount}} cho {{name}} và hoàn tất đơn?",
+  "quickCreditHint": "Khách chưa có sổ nợ sẽ được mở với hạn mức mặc định. Không thể ghi nợ vượt hạn mức.",
+  "quickCreditAction": "Ghi nợ & hoàn tất"
 }

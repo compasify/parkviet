@@ -70,6 +70,11 @@ module Spree
         FeatureFlag.where(store_id: branch.store_id, branch_id: nil, feature: feature).pick(:enabled) || false
       end
 
+      # Quick credit refines credit: it is usable only while both are on.
+      def quick_credit?(branch)
+        enabled?(branch, :credit) && enabled?(branch, :quick_credit)
+      end
+
       # Raised at the start of a new command of the feature, after the
       # executor has ruled out a replay.
       def require!(branch, feature)

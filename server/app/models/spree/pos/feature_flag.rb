@@ -13,7 +13,10 @@ module Spree
       # capability: on, a draft held by another tab or device must be claimed
       # or taken over by hand; off (the default, for single-counter shops) a
       # cashier opening a draft takes its editing over automatically.
-      FEATURES = %w[credit returns refunds exchanges traceability customer_display cash_moves exports vietqr edit_lease].freeze
+      # `quick_credit` refines `credit` and works only while `credit` is on
+      # too: the cashier approves their own credit sale (one-person shops).
+      FEATURES = %w[credit returns refunds exchanges traceability customer_display cash_moves exports vietqr edit_lease
+                    quick_credit].freeze
 
       belongs_to :store, class_name: 'Spree::Store'
       belongs_to :branch, class_name: 'Spree::Pos::Branch', optional: true

@@ -15,6 +15,9 @@ module Spree
       belongs_to :approver, class_name: staff_class_name
       belongs_to :requester, class_name: staff_class_name
 
+      # Set only by Credit::QuickApprove: the cashier's own credit approval.
+      attr_accessor :self_credit
+
       validates :action, :revision, :expires_at, :subject_type, :subject_id, presence: true
       validates :status, inclusion: { in: %w[active revoked consumed] }
       validate :approver_is_distinct
@@ -68,7 +71,7 @@ module Spree
         amount_matches = self.amount.nil? ? incoming.nil? : incoming && self.amount == incoming && self.currency == currency
         subject_matches = subject_type.present? && subject_type == subject&.class&.name && subject_id == subject&.id
         current_revision = subject.respond_to?(:revision) && subject.reload.revision.to_s == revision.to_s
-        approver_allowed = AccessPolicy.new(store: store, staff: approver).allows?(branch, Capabilities::APPROVE)
+        approver_allowed = approver_allowed?
         requester_capabilities = REQUESTER_CAPABILITIES.fetch(subject_type, [Capabilities::OPEN_SHIFT])
         requester_policy = AccessPolicy.new(store: store, staff: requester)
         requester_capable = requester_capabilities.any? { |capability| requester_policy.allows?(branch, capability) }
@@ -108,8 +111,27 @@ module Spree
         errors.add(:expires_at, :invalid) unless expires_at > now && expires_at <= now + MAX_TTL
       end
 
+      # A quick credit self-approval stays valid only while the switch is on
+      # and its cashier may still sell on credit.
+      def approver_allowed?
+        policy = AccessPolicy.new(store: store, staff: approver)
+        return FeaturePolicy.quick_credit?(branch) && policy.allows?(branch, Capabilities::CREDIT_SELL) if self_approved_credit?
+
+        policy.allows?(branch, Capabilities::APPROVE)
+      end
+
+      # Only a quick credit sale may be approved by its own cashier.
+      def self_approved_credit?
+        approver_id.present? && approver_id == requester_id && action == Credit::ACTION
+      end
+
+      # A self-approval is created only with `self_credit`; once stored it may
+      # be consumed or revoked like any other approval.
       def approver_is_distinct
-        errors.add(:approver, :invalid) if approver_id.present? && approver_id == requester_id
+        return unless approver_id.present? && approver_id == requester_id
+        return if action == Credit::ACTION && (self_credit || (persisted? && !approver_id_changed? && !requester_id_changed?))
+
+        errors.add(:approver, :invalid)
       end
     end
   end

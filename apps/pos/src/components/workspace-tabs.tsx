@@ -1150,6 +1150,8 @@ export function WorkspaceTabs() {
                 canResolve={Boolean(data?.capabilities.includes('pos.payment.resolve'))}
                 canSellCredit={Boolean(data?.capabilities.includes('pos.credit.sell'))}
                 creditEnabled={contextFeature(data, 'credit')}
+                // Only an explicit switch skips the second person.
+                quickCredit={data?.features?.quick_credit === true}
                 drawerOpen={Boolean(
                   data?.shift &&
                     data.shift.id === active.shift_id &&
