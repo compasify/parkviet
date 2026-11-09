@@ -51,15 +51,16 @@ Một gia đình nấu đồ ăn nhà làm bán cho hàng xóm trong khu chung c
 7. **Cuối tuần nhắc nợ:** mở **Khách đang nợ**, xem ai nợ bao lâu, lần nhắc gần nhất là khi nào. Bấm **Nhắc nợ qua Zalo** để có sẵn tin nhắn lịch sự liệt kê các đơn chưa trả, kèm một mã QR cho cả số nợ.
 8. **Xem kênh nào bán tốt:** báo cáo doanh số **Theo nguồn đơn** cho biết số đơn, doanh số và số còn nợ của Facebook, Zalo và bán trực tiếp.
 
-**Bật gì để dùng được như trên?** (mặc định đều tắt, bật theo chi nhánh)
+**Bật gì để dùng được như trên?** (mặc định đều tắt; bật cho cả cửa hàng ở **Cấu hình → Chi nhánh → Chức năng chi nhánh**, chi nhánh nào không dùng thì tắt riêng)
 
 - [ ] `credit`: bán chịu.
 - [ ] `quick_credit`: ghi nợ nhanh không cần người duyệt thứ hai.
 - [ ] `vietqr`: chuyển khoản VietQR, để in mã trả sau.
 - [ ] `delivery`: đơn giao hàng và trang Đơn cần giao.
+- [ ] Cấp cho người tạo đơn (kể cả chủ cửa hàng nếu tự đứng bán) quyền **Thu tiền** và **Bán ghi nợ** (`pos.credit.sell`) ở **Cấu hình → Nhân viên & quyền**. Thiếu quyền này thì nút **Ghi nợ** không hiện.
 - [ ] Kết nối webhook SePay với tài khoản nhận tiền ở **Settings → VietQR** để khoản thu được ghi tự động.
 
-Đọc thêm: [Bán đồ ăn trong chung cư với ParkViet](https://parkviet.com/blog/ban-do-an-chung-cu-voi-parkviet).
+Đọc thêm: [Bán hàng qua Facebook, Zalo, ship cư dân, hàng treo cửa, thu tiền QR sau](https://parkviet.com/blog/ban-do-an-chung-cu-voi-parkviet).
 
 ## Tiến độ phát triển
 
@@ -95,7 +96,7 @@ POS phục vụ nhiều chi nhánh, nhiều quầy, và cho mở nhiều đơn c
 - [Biên nhận và in](apps/pos/README.md#biên-nhận-và-in), [màn hình khách](apps/pos/README.md#màn-hình-khách), [máy quét](apps/pos/README.md#máy-quét).
 - [Quản trị](apps/pos/README.md#quản-trị) và [phân quyền](apps/pos/README.md#quyền) theo chi nhánh.
 
-Những gì POS chưa làm được (thẻ, driver máy in, thử với thiết bị thật…) nằm ở mục [Giới hạn hiện tại](apps/pos/README.md#giới-hạn-hiện-tại). Các tính năng rủi ro mặc định tắt và được bật theo từng chi nhánh; các công tắc mới (`quick_credit`, `delivery`) cũng vậy.
+Những gì POS chưa làm được (thẻ, driver máy in, thử với thiết bị thật…) nằm ở mục [Giới hạn hiện tại](apps/pos/README.md#giới-hạn-hiện-tại). Các tính năng rủi ro mặc định tắt; bật cho cả cửa hàng và tắt riêng được ở từng chi nhánh. Các công tắc mới (`quick_credit`, `delivery`) cũng vậy.
 
 ### VietQR
 
