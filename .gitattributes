@@ -1,3 +1,6 @@
+# Biome and the Linux containers expect LF everywhere, regardless of personal core.autocrlf.
+* text=auto eol=lf
+
 # Rails binstubs run inside Linux containers. CRLF turns the shebang into `ruby\r`.
 server/bin/** text eol=lf
 *.sh text eol=lf
