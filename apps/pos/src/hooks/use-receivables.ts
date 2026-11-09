@@ -80,6 +80,29 @@ export function useReceivableAccounts(branchId: string | null, enabled: boolean)
   });
 }
 
+// Notes that a debt reminder was shared or copied ("Nhắc lần cuối").
+export function useRemindDebt() {
+  const snapshot = useSession();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      branchId: string;
+      creditAccountId: string;
+      via: 'share' | 'copy';
+    }) => {
+      const result = await write<{ credit_account_id: string; last_reminded_at: string }>(
+        'POST',
+        `/pos/receivables/customers/${input.creditAccountId}/remind`,
+        { branch_id: input.branchId, via: input.via },
+      );
+      await queryClient.invalidateQueries({
+        queryKey: ['pos', 'receivables', snapshot.generation, input.branchId, 'accounts'],
+      });
+      return result.data;
+    },
+  });
+}
+
 // Credit terms, the cashier's request and the approval currently holding
 // exposure for one draft. Polls while the cashier waits for a manager.
 export function useWorkspaceCredit(

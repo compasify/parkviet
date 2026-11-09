@@ -306,7 +306,22 @@ export type PosWorkspaceCredit = {
   request?: PosCreditRequest | null;
 };
 
-export type PosReceivableCustomer = { id: string; name: string; phone: string | null };
+export type PosReceivableCustomer = {
+  id: string;
+  name: string;
+  phone: string | null;
+  // Only on the customers list, and null for readers who see masked contacts.
+  address?: string | null;
+};
+
+// One open order a debt reminder lists (oldest due first).
+export type PosReminderOrder = {
+  order_id: string;
+  order_number: string;
+  placed_at: string | null;
+  due_on: string | null;
+  balance: string;
+};
 
 export type PosReceivable = {
   order_id: string;
@@ -346,6 +361,16 @@ export type PosReceivableAccount = {
   days_31_60: string;
   days_61_90: string;
   days_over_90: string;
+  oldest_due_on?: string | null;
+  oldest_placed_at?: string | null;
+  // Days since the oldest open order was sold, and since its due date passed.
+  days_owed?: number;
+  days_overdue?: number;
+  last_reminded_at?: string | null;
+  // At most 20; `orders` counts them all.
+  open_orders?: PosReminderOrder[];
+  // One pay-later VietQR for the whole balance (lib/pay-later).
+  pay_later?: unknown;
 };
 
 export type PosCollection = {

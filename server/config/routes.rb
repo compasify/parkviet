@@ -81,6 +81,7 @@ Rails.application.routes.draw do
             resources :exchanges, only: [:show, :create]
             get 'receivables', to: 'receivables#index'
             get 'receivables/customers', to: 'receivables#customers'
+            post 'receivables/customers/:id/remind', to: 'receivables#remind'
             resources :collections, only: [:show, :create] do
               resources :allocations, only: [:create], controller: 'collections/allocations' do
                 member do

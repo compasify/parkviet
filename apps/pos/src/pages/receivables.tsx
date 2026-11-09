@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CollectionDialog } from '../components/collection-dialog';
+import { DebtReminderActions } from '../components/debt-reminder-actions';
 import { LocalFinancialRecords } from '../components/local-financial-records';
 import { PosIcon } from '../components/pos-icon';
 import { PageState, PosPage } from '../components/pos-page';
@@ -13,14 +14,17 @@ import {
   useReceivables,
   useRecheckCollection,
 } from '../hooks/use-receivables';
+import { canRemindDebt, matchesDebtor, shortDate } from '../lib/debt-reminder';
 import { formatMoney } from '../lib/money';
 import type { PosCollection, PosReceivable, PosReceivableAccount } from '../lib/pos-context';
 import { writesLocked } from '../lib/pos-context';
+import { contextFeature } from '../lib/pos-features';
 import {
   amountSign,
   canReadReceivables,
   describeCreditFailure,
   formatDueDate,
+  formatInstant,
 } from '../lib/receivables';
 import { posFailureKey } from '../lib/request-failure';
 
@@ -91,25 +95,49 @@ function AccountRow({
   selected: boolean;
   onSelect: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const phone = account.customer.phone;
+  // Only an unmasked phone is dialable.
+  const dialable = phone && /^[+\d\s.-]+$/.test(phone) ? phone.replace(/[\s.-]/g, '') : null;
   return (
-    <li>
+    <li className="debtor-row">
       <button className="fund-row" type="button" aria-pressed={selected} onClick={onSelect}>
         <span className="record-copy">
           <strong>{account.customer.name}</strong>
           <small>
-            {account.customer.phone ?? ''} · {t('receivablesOrderCount', { count: account.orders })}
+            {phone && !dialable ? `${phone} · ` : ''}
+            {t('receivablesOrderCount', { count: account.orders })}
+            {account.oldest_placed_at
+              ? ` · ${t('debtorsSince', { date: shortDate(account.oldest_placed_at), count: account.days_owed ?? 0 })}`
+              : ''}
           </small>
+          {account.customer.address ? <small>{account.customer.address}</small> : null}
           {amountSign(account.overdue) > 0 ? (
             <span className="status-tag" data-warning="true">
-              {t('receivablesOverdue')}: {formatMoney(account.overdue, account.currency)}
+              {(account.days_overdue ?? 0) > 0
+                ? t('receivablesDaysOverdue', { count: account.days_overdue })
+                : t('receivablesOverdue')}
+              : {formatMoney(account.overdue, account.currency)}
             </span>
           ) : null}
+          <small className="muted">
+            {account.last_reminded_at
+              ? t('debtorsLastReminded', {
+                  time: formatInstant(account.last_reminded_at, i18n.language),
+                })
+              : t('debtorsNeverReminded')}
+          </small>
         </span>
         <span className="fund-row-money">
           <strong>{formatMoney(account.balance, account.currency)}</strong>
         </span>
       </button>
+      {dialable ? (
+        <a className="debtor-phone" href={`tel:${dialable}`}>
+          <PosIcon name="user" />
+          {phone}
+        </a>
+      ) : null}
     </li>
   );
 }
@@ -145,7 +173,13 @@ function ReceivablesLedger() {
   const [done, setDone] = useState<{ collection: PosCollection; recovered: boolean } | null>(null);
   const [collectError, setCollectError] = useState('');
   const [notice, setNotice] = useState('');
+  const [search, setSearch] = useState('');
+  // Reminders belong to credit sales: hidden while `credit` is off.
+  const canRemind = Boolean(
+    data && contextFeature(data, 'credit') && canRemindDebt(data.capabilities),
+  );
   const accounts = useReceivableAccounts(branchId, canRead);
+  const debtors = (accounts.data?.data ?? []).filter((row) => matchesDebtor(row, search));
   const selected = accounts.data?.data.find((row) => row.credit_account_id === accountId) ?? null;
   const debts = useReceivables(
     branchId,
@@ -248,12 +282,24 @@ function ReceivablesLedger() {
           <div className="funds-layout">
             <section className="page-card funds-list-panel" aria-label={t('receivablesCustomers')}>
               <h2>{t('receivablesCustomers')}</h2>
+              <label className="debtor-search">
+                <span className="visually-hidden">{t('debtorsSearch')}</span>
+                <input
+                  type="search"
+                  value={search}
+                  placeholder={t('debtorsSearch')}
+                  onChange={(event) => setSearch(event.target.value)}
+                />
+              </label>
               {accounts.isLoading ? <PageState kind="loading" title={t('waiting')} /> : null}
               {accounts.isError ? (
                 <PageState kind="error" title={t(posFailureKey(accounts.error))} />
               ) : null}
               {accounts.isSuccess && accounts.data.data.length === 0 ? (
                 <PageState kind="empty" title={t('receivablesEmpty')} />
+              ) : null}
+              {accounts.isSuccess && accounts.data.data.length > 0 && debtors.length === 0 ? (
+                <PageState kind="empty" title={t('debtorsNoMatch')} />
               ) : null}
               <ul className="fund-list">
                 <li>
@@ -268,7 +314,7 @@ function ReceivablesLedger() {
                     </span>
                   </button>
                 </li>
-                {(accounts.data?.data ?? []).map((account) => (
+                {debtors.map((account) => (
                   <AccountRow
                     key={account.credit_account_id}
                     account={account}
@@ -307,6 +353,14 @@ function ReceivablesLedger() {
                   <small className="muted" id="collection-needs-shift">
                     {t('collectionShiftHint')}
                   </small>
+                ) : null}
+                {selected && canRemind && branchId ? (
+                  <DebtReminderActions
+                    key={selected.credit_account_id}
+                    account={selected}
+                    branchId={branchId}
+                    storeName={data?.store.name}
+                  />
                 ) : null}
               </div>
               {selected && selectedPending ? (

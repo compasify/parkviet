@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_09_170100) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_09_180000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -2480,6 +2480,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_09_170100) do
     t.bigint "updated_by_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.datetime "last_reminded_at"
     t.index ["branch_id"], name: "index_spree_pos_credit_accounts_on_branch_id"
     t.index ["customer_profile_id"], name: "index_spree_pos_credit_accounts_on_customer_profile_id"
     t.index ["store_id", "customer_profile_id", "currency"], name: "idx_pos_credit_accounts_customer", unique: true

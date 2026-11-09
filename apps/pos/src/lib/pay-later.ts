@@ -133,18 +133,35 @@ export async function sharePayLater(
   storeName?: string | null,
   nav: Partial<ShareNavigator> = navigator,
 ): Promise<ShareOutcome> {
-  const message = payLaterMessage(qr, t, storeName);
+  return shareMessage(payLaterMessage(qr, t, storeName), qr, t('payLaterShareTitle'), nav);
+}
+
+// Any message with an optional QR picture: the share sheet where there is
+// one, else the clipboard.
+export async function shareMessage(
+  message: string,
+  qr: PayLaterQr | null,
+  title: string,
+  nav: Partial<ShareNavigator> = navigator,
+): Promise<ShareOutcome> {
   if (typeof nav.share === 'function') {
-    const file = await payLaterQrFile(qr);
+    const file = qr ? await payLaterQrFile(qr) : null;
     const withFile = file && nav.canShare?.({ files: [file] }) ? { files: [file] } : {};
     try {
-      await nav.share({ title: t('payLaterShareTitle'), text: message, ...withFile });
+      await nav.share({ title, text: message, ...withFile });
       return 'shared';
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') return 'cancelled';
       // Some share targets refuse the file or the call; copying still works.
     }
   }
+  return copyMessage(message, nav);
+}
+
+export async function copyMessage(
+  message: string,
+  nav: Partial<ShareNavigator> = navigator,
+): Promise<ShareOutcome> {
   try {
     await nav.clipboard?.writeText(message);
     return nav.clipboard ? 'copied' : 'failed';

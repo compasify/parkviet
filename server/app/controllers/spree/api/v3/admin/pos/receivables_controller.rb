@@ -14,6 +14,8 @@ module Spree
             STATUSES = %w[open overdue settled all].freeze
             UNMASKED = [Spree::Pos::Capabilities::PAYMENT, Spree::Pos::Capabilities::APPROVE,
                         Spree::Pos::Capabilities::CREDIT_MANAGE].freeze
+            # A reminder lists at most this many open orders; `orders` counts all.
+            REMINDER_ORDERS = 20
 
             def index
               return if channel_rejected?
@@ -26,7 +28,11 @@ module Spree
               render json: { data: serialize(projection, records, mask?(branch), branch), meta: meta }
             end
 
-            # Per-customer balance, overdue and aging for the branch.
+            # "Khách nợ": one row per customer who owes at the branch, with
+            # balance, overdue and aging, how long the oldest debt has been
+            # open, when they were last reminded, and what a reminder lists
+            # (open orders oldest due first, one pay-later QR for the total).
+            # Most overdue first, then the largest debt.
             def customers
               return if channel_rejected?
 
@@ -34,20 +40,61 @@ module Spree
               projection = projection_for(branch)
               rows = projection.order_rows(status: 'open').to_a
               accounts = Spree::Pos::CreditAccount.where(id: rows.map(&:credit_account_id).uniq).includes(:customer_profile).index_by(&:id)
+              orders = Spree::Order.where(id: rows.map(&:order_id)).index_by(&:id)
+              context = { projection: projection, orders: orders, mask: mask?(branch), branch: branch,
+                          receiving: Spree::Pos::PayLater.receiving_account(current_store, branch) }
               data = rows.group_by(&:credit_account_id).map do |account_id, account_rows|
-                account = accounts.fetch(account_id)
-                projection.summary(account_rows).merge(
-                  'credit_account_id' => account.prefixed_id, 'currency' => account.currency,
-                  'customer' => Spree::Pos::ReceivableProjection.customer(account.customer_profile, mask?(branch)),
-                  'orders' => account_rows.length, 'credit_limit' => account.credit_limit.to_s('F'),
-                  'account_status' => account.status
-                )
+                customer_row(accounts.fetch(account_id), account_rows, context)
               end
-              data.sort_by! { |row| [-BigDecimal(row['overdue']), -BigDecimal(row['balance'])] }
+              data.sort_by! { |row| [-row['days_overdue'], -BigDecimal(row['balance'])] }
               render json: { data: data, meta: { count: data.length, totals: projection.summary(rows) } }
             end
 
+            # Records that a debt reminder was just shared or copied.
+            def remind
+              return if channel_rejected?
+
+              key = idempotency_key
+              return if key.nil?
+
+              result = Spree::Pos::Credit::Remind.call(store: current_store, staff: current_user, key: key, branch_id: params[:branch_id],
+                                                       account_id: params[:id], via: params[:via])
+              render json: { data: result }
+            end
+
             private
+
+            # The reminder's one QR carries the note of the oldest-due order
+            # with the whole balance as the amount: the bank webhook
+            # (Collections::ReceiveTransfer) books the coded order first and
+            # spends the rest on the customer's other debts oldest due first,
+            # so one transfer settles every listed order in that order.
+            def customer_row(account, rows, context)
+              projection = context[:projection]
+              ordered = rows.sort_by { |row| [row.due_on || Date.new(9999), row.order_id] }
+              summary = projection.summary(rows)
+              placed = ordered.filter_map { |row| context[:orders].fetch(row.order_id).completed_at }.min
+              profile = account.customer_profile
+              customer = Spree::Pos::ReceivableProjection.customer(profile, context[:mask])
+              summary.merge(
+                'credit_account_id' => account.prefixed_id, 'currency' => account.currency,
+                'customer' => customer.merge(address: context[:mask] ? nil : profile.address.presence),
+                'orders' => rows.length, 'credit_limit' => account.credit_limit.to_s('F'), 'account_status' => account.status,
+                'oldest_due_on' => ordered.first.due_on&.iso8601, 'oldest_placed_at' => placed&.iso8601,
+                'days_owed' => placed ? [(projection.today - placed.in_time_zone(context[:branch].timezone).to_date).to_i, 0].max : 0,
+                'days_overdue' => ordered.map { |row| projection.days_overdue(row) }.max,
+                'last_reminded_at' => account.last_reminded_at&.iso8601,
+                'open_orders' => ordered.first(REMINDER_ORDERS).map { |row| reminder_order(row, context[:orders]) },
+                'pay_later' => Spree::Pos::PayLater.details(order: context[:orders].fetch(ordered.first.order_id),
+                                                            amount: summary['balance'], account: context[:receiving])
+              )
+            end
+
+            def reminder_order(row, orders)
+              order = orders.fetch(row.order_id)
+              { 'order_id' => order.prefixed_id, 'order_number' => order.number, 'placed_at' => order.completed_at&.iso8601,
+                'due_on' => row.due_on&.iso8601, 'balance' => BigDecimal(row.balance.to_s).to_s('F') }
+            end
 
             def readable_branch!
               branch = branch!(params[:branch_id])

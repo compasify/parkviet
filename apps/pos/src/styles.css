@@ -689,6 +689,10 @@ kbd { padding: var(--pos-s1); border: 1px solid var(--pos-border); border-radius
 .collection-allocations .money-input { width: 100%; min-width: 7rem; }
 .pay-later-share { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--pos-s2); margin-left: var(--pos-s2); }
 .pay-later-share button { display: inline-flex; align-items: center; gap: 4px; }
+.debtor-search { display: block; margin-bottom: var(--pos-s2); }
+.debtor-search input { width: 100%; }
+.debtor-row .debtor-phone { display: inline-flex; align-items: center; gap: 4px; margin: 0 var(--pos-s3) var(--pos-s2); }
+.debt-reminder-actions { margin-left: 0; }
 .delivery-filter, .delivery-names { border: 0; margin: 0; padding: 0; min-width: 0; }
 .delivery-filter { display: inline-flex; flex-wrap: wrap; gap: var(--pos-s1); }
 .delivery-filter button[aria-pressed='true'], .delivery-names button[aria-pressed='true'] { border-color: var(--pos-accent, currentColor); font-weight: 700; }
