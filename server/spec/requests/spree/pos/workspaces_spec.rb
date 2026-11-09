@@ -328,6 +328,21 @@ RSpec.describe 'POS workspaces', type: :request do
     end
   end
 
+  it 'lists only the requested statuses so settled invoices leave the tab strip' do
+    user = staff_with(%w[write_pos_orders write_pos_workspaces write_pos_shifts])
+    register, shift = drawer_for(user)
+    open = %w[editing parked].map { |status| persist_workspace(user, shift, register, status) }
+    %w[canceled completed].each { |status| persist_workspace(user, shift, register, status) }
+    headers = { 'Authorization' => "Bearer #{token_for(user)}" }
+
+    get '/api/v3/admin/pos/workspaces', headers: headers, params: { status: 'editing,parked,bogus' }, as: :json
+    expect(response).to have_http_status(:ok)
+    expect(response.parsed_body.fetch('data').map { |row| row['id'] }).to match_array(open.map(&:prefixed_id))
+
+    get '/api/v3/admin/pos/workspaces', headers: headers, as: :json
+    expect(response.parsed_body.dig('meta', 'count')).to eq(4)
+  end
+
   def persist_workspace(user, shift, register, status)
     draft = Pos::CreateWalkInDraft.call(store: store, staff: user)
     Spree::Pos::Workspace.create!(

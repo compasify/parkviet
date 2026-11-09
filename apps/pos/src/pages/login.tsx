@@ -1,8 +1,10 @@
 import { useNavigate } from '@tanstack/react-router';
 import { type FormEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { LoginShowcase } from '../components/login-showcase';
 import { PosIcon } from '../components/pos-icon';
 import { session } from '../lib/app-session';
+import '../styles/login.css';
 
 export function LoginPage() {
   const { t } = useTranslation();
@@ -34,18 +36,18 @@ export function LoginPage() {
   }
 
   return (
-    <main className="layout pos-layout pos-auth-layout">
-      <header className="header">
-        <strong>
-          ParkViet <span>POS</span>
-        </strong>
-        <span className="header-title">{t('sellingArea')}</span>
-      </header>
-      <div className="auth-main">
+    <main className="layout pos-layout login-split">
+      <div className="login-side">
         <section className="auth-panel" aria-labelledby="title">
-          <span className="auth-symbol">
-            <PosIcon name="cash" />
-          </span>
+          <div className="login-side-brand">
+            <span className="auth-symbol">
+              <PosIcon name="cash" />
+            </span>
+            <strong>
+              ParkViet <span>POS</span>
+            </strong>
+            <span className="login-side-area">{t('sellingArea')}</span>
+          </div>
           <div className="auth-eyebrow">{t('staffAccess')}</div>
           <h1 id="title">{t('title')}</h1>
           <p className="auth-intro">{t('intro')}</p>
@@ -110,9 +112,10 @@ export function LoginPage() {
               </button>
             </div>
           </form>
+          <p className="auth-help">{t('loginHelp')}</p>
         </section>
-        <p className="auth-help">{t('loginHelp')}</p>
       </div>
+      <LoginShowcase />
     </main>
   );
 }

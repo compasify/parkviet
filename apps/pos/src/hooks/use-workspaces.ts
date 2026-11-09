@@ -62,6 +62,10 @@ export function useWorkspaces(
             page: String(page),
             branch_id: branchId ?? undefined,
             register_id: registerId ?? undefined,
+            // Tabs are open work only. A canceled or paid invoice stays on screen
+            // while it is the selected tab (see `selectedQuery`) and is reviewed
+            // from the orders page afterwards; it never comes back as a tab.
+            status: 'editing,parked',
           },
         });
       } catch (error) {

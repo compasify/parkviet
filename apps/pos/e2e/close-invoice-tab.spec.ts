@@ -20,7 +20,9 @@ function summary(workspace: Record<string, unknown>) {
 
 test('the close button drops a blank invoice tab at once and asks before closing one with work', async ({ page }) => {
   const canceled: string[] = [];
-  let created = false;
+  // Drafts the POS created, newest last: ws_new, then ws_new2.
+  const created: Record<string, unknown>[] = [];
+  const blankNew2 = { ...empty, id: 'ws_new2', order_id: 'NEW2' };
   await page.route('**/api/v3/admin/**', async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -44,21 +46,25 @@ test('the close button drops a blank invoice tab at once and asks before closing
     }
     if (path.endsWith('/pos/workspaces') && request.method() === 'GET') {
       const rows = [filled, empty].map(summary);
-      if (created && !canceled.includes('ws_new')) rows.unshift(summary(blankNew));
+      for (const draft of created)
+        if (!canceled.includes(draft.id as string)) rows.unshift(summary(draft));
       return route.fulfill({ json: { data: rows, meta: { page: 1, pages: 1, count: rows.length } } });
     }
     if (path.endsWith('/pos/workspaces/ws_E') && request.method() === 'GET') return route.fulfill({ json: { data: empty } });
     if (path.endsWith('/pos/workspaces/ws_F') && request.method() === 'GET') return route.fulfill({ json: { data: filled } });
     if (path.endsWith('/pos/workspaces/ws_new') && request.method() === 'GET') return route.fulfill({ json: { data: blankNew } });
+    if (path.endsWith('/pos/workspaces/ws_new2') && request.method() === 'GET') return route.fulfill({ json: { data: blankNew2 } });
     if (path.endsWith('/pos/workspaces') && request.method() === 'POST') {
-      created = true;
-      return route.fulfill({ json: { data: blankNew } });
+      const draft = created.length === 0 ? blankNew : blankNew2;
+      created.push(draft);
+      return route.fulfill({ json: { data: draft } });
     }
     if (path.endsWith('/pos/workspaces/ws_new/cancel') && request.method() === 'POST') {
       canceled.push('ws_new');
       return route.fulfill({ json: { data: { ...blankNew, revision: 1, operational_status: 'canceled' } } });
     }
     if (path.endsWith('/ws_new/lease')) return route.fulfill({ json: { data: blankNew } });
+    if (path.endsWith('/ws_new2/lease')) return route.fulfill({ json: { data: blankNew2 } });
     return route.fulfill({ status: 404, json: { error: { code: 'missing' } } });
   });
   await page.goto('/login');
@@ -91,11 +97,16 @@ test('the close button drops a blank invoice tab at once and asks before closing
   await expect(tab('ws_F')).toHaveCount(0);
   expect(canceled).toEqual([]);
 
-  // A blank draft this register opened is canceled on the server, not left behind.
-  await workspace.getByRole('button', { name: 'Đơn nháp mới' }).click();
+  // Closing the last tab never leaves the counter without an invoice.
   await expect(tab('ws_new')).toBeVisible();
+  await expect(tab('ws_new')).toHaveAttribute('aria-selected', 'true');
+
+  // A blank draft this register opened is canceled on the server, not left
+  // behind, and its place is taken by a fresh one.
   await tab('ws_new').hover();
   await closeButton('ws_new').click();
   await expect(tab('ws_new')).toHaveCount(0);
   expect(canceled).toEqual(['ws_new']);
+  await expect(tab('ws_new2')).toBeVisible();
+  expect(created).toHaveLength(2);
 });

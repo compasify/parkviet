@@ -24,7 +24,7 @@ import {
   shouldCaptureScannerKey,
 } from '../lib/scanner-queue';
 import { describeTraceFailure } from '../lib/traceability';
-import { workspaceHasContent, workspaceIsSettled } from '../lib/workspace-content';
+import { workspaceHasContent, workspaceIsSettled, workspacePhase } from '../lib/workspace-content';
 import { createWorkspaceSerializer } from '../lib/workspace-serializer';
 import { readLayout } from '../lib/workspace-storage';
 import { CatalogSearch, type ScanNotice } from './catalog-search';
@@ -126,6 +126,8 @@ export function WorkspaceTabs() {
     !rows.some((row) => row.id === pinned.id)
   )
     rows.unshift(pinned);
+  const rowsRef = useRef(rows);
+  rowsRef.current = rows;
   const matching = rows.filter((workspace) => workspace.order_id.includes(query.trim()));
   const tabNumbers = useInvoiceNumbers(
     staffId,
@@ -145,6 +147,7 @@ export function WorkspaceTabs() {
   const activeSummary = rows.find((workspace) => workspace.id === activeId) ?? visible[0] ?? null;
   const active = pinned && activeSummary && pinned.id === activeSummary.id ? pinned : activeSummary;
   const isEditor = active ? workspaces.owns(active) : false;
+  const activePhase = active ? workspacePhase(active) : 'editing';
   const busy =
     creating || (active ? Boolean(pendingCounts[active.id]) || active.id in blockedScans : false);
   // Recorded payments freeze the basket: the tender was prepared for these lines.
@@ -385,6 +388,7 @@ export function WorkspaceTabs() {
     setHidden(next);
     workspaces.rememberClosed(next);
     if (workspaceId === activeIdRef.current || workspaceId === active?.id) {
+      activeIdRef.current = null;
       setActiveId(null);
       workspaces.rememberView(null, workspaces.page);
     }
@@ -392,6 +396,27 @@ export function WorkspaceTabs() {
       workspaces.remember(workspaces.rememberedIds().filter((id) => id !== workspaceId));
     }
     setCloseRequest((current) => (current?.workspace.id === workspaceId ? null : current));
+    // The counter always keeps one invoice open: closing the last tab starts a
+    // fresh draft. Read the latest rows; an async close may finish late.
+    if (canCreate && !rowsRef.current.some((row) => !next.includes(row.id))) createDraft();
+  }
+
+  const canCreate = Boolean(
+    !locked && selectionComplete && data?.shift && data.shift.owner_id === data.staff.id,
+  );
+
+  function createDraft() {
+    if (!selectionComplete || creating) return;
+    const started = scopeRef.current;
+    const selectedAtStart = activeIdRef.current;
+    setCreating(true);
+    void run(() => workspaces.create(selection.registerId)).then((created) => {
+      setCreating(false);
+      if (created && started === scopeRef.current && selectedAtStart === activeIdRef.current) {
+        setActiveId(created.id);
+        workspaces.rememberView(created.id, workspaces.page);
+      }
+    });
   }
 
   // Only the lease holder may cancel, and recorded payments must be settled first.
@@ -550,33 +575,7 @@ export function WorkspaceTabs() {
   return (
     <section className="draft-workspace" aria-label={t('draftList')}>
       <div className="draft-toolbar">
-        <button
-          type="button"
-          disabled={
-            busy ||
-            locked ||
-            !selectionComplete ||
-            !data?.shift ||
-            data.shift.owner_id !== data.staff.id
-          }
-          onClick={() => {
-            if (!selectionComplete) return;
-            const started = scopeRef.current;
-            const selectedAtStart = activeIdRef.current;
-            setCreating(true);
-            void run(() => workspaces.create(selection.registerId)).then((created) => {
-              setCreating(false);
-              if (
-                created &&
-                started === scopeRef.current &&
-                selectedAtStart === activeIdRef.current
-              ) {
-                setActiveId(created.id);
-                workspaces.rememberView(created.id, workspaces.page);
-              }
-            });
-          }}
-        >
+        <button type="button" disabled={busy || !canCreate} onClick={createDraft}>
           <PosIcon name="plus" /> {t('newDraft')}
         </button>
         <details className="draft-filter">
@@ -601,37 +600,44 @@ export function WorkspaceTabs() {
           </button>
         ) : null}
         <div className="tablist" ref={tablist} role="tablist" aria-label={t('draftList')}>
-          {visible.map((workspace) => (
-            <span key={workspace.id} className="workspace-tab" role="presentation">
-              <button
-                type="button"
-                role="tab"
-                aria-label={t('invoiceTab', { number: tabNumbers[workspace.id] })}
-                data-workspace-id={workspace.id}
-                title={t(
-                  `orderStatus_${workspace.id === active?.id ? active.operational_status : workspace.operational_status}`,
-                  { defaultValue: workspace.operational_status },
-                )}
-                aria-selected={workspace.id === active?.id}
-                onClick={() => {
-                  setActiveId(workspace.id);
-                  workspaces.rememberView(workspace.id, workspaces.page);
-                }}
-              >
-                <strong>{t('invoiceTab', { number: tabNumbers[workspace.id] })}</strong>
-              </button>
-              <button
-                type="button"
-                className="workspace-tab-close"
-                aria-label={t('closeTabAction', { number: tabNumbers[workspace.id] })}
-                title={t('closeTabAction', { number: tabNumbers[workspace.id] })}
-                disabled={closing === workspace.id || Boolean(pendingCounts[workspace.id])}
-                onClick={() => void requestClose(workspace)}
-              >
-                <PosIcon name="close" />
-              </button>
-            </span>
-          ))}
+          {visible.map((workspace) => {
+            const phase = workspacePhase(workspace.id === active?.id ? active : workspace);
+            return (
+              <span key={workspace.id} className="workspace-tab" role="presentation">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-label={t('invoiceTab', { number: tabNumbers[workspace.id] })}
+                  aria-description={t(`workspacePhase_${phase}`)}
+                  data-workspace-id={workspace.id}
+                  title={t(`workspacePhase_${phase}`)}
+                  aria-selected={workspace.id === active?.id}
+                  onClick={() => {
+                    setActiveId(workspace.id);
+                    workspaces.rememberView(workspace.id, workspaces.page);
+                  }}
+                >
+                  <strong>{t('invoiceTab', { number: tabNumbers[workspace.id] })}</strong>
+                  {/* Selling is the default; only a state that changes what to do is badged. */}
+                  {phase === 'editing' ? null : (
+                    <span className={`workspace-phase workspace-phase-${phase}`} aria-hidden="true">
+                      {t(`workspacePhase_${phase}`)}
+                    </span>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  className="workspace-tab-close"
+                  aria-label={t('closeTabAction', { number: tabNumbers[workspace.id] })}
+                  title={t('closeTabAction', { number: tabNumbers[workspace.id] })}
+                  disabled={closing === workspace.id || Boolean(pendingCounts[workspace.id])}
+                  onClick={() => void requestClose(workspace)}
+                >
+                  <PosIcon name="close" />
+                </button>
+              </span>
+            );
+          })}
         </div>
       </div>
       {closeRequest ? (
@@ -775,6 +781,26 @@ export function WorkspaceTabs() {
           ) : null}
         </div>
       ) : null}
+      {active && (activePhase === 'parked' || workspaceIsSettled(active)) ? (
+        <div className={`lease-notice phase-notice phase-notice-${activePhase}`} role="status">
+          <span>{t(`workspacePhaseHint_${activePhase}`)}</span>
+          {activePhase === 'parked' ? (
+            <button
+              type="button"
+              disabled={busy || locked || !isEditor}
+              onClick={() =>
+                void run(() => command(active, (current) => workspaces.change(current, 'reopen')))
+              }
+            >
+              {t('reopenDraft')}
+            </button>
+          ) : (
+            <button type="button" onClick={() => hideWorkspace(active.id)}>
+              {t('closeView')}
+            </button>
+          )}
+        </div>
+      ) : null}
       <nav className="sale-panel-nav" aria-label={t('sellingArea')}>
         {[
           ['pos-catalog', 'catalogTitle'],
@@ -859,6 +885,15 @@ export function WorkspaceTabs() {
         >
           <div className="basket-heading">
             <h2>{t('basketTitle')}</h2>
+            {active ? (
+              <span
+                className={`workspace-phase workspace-phase-${activePhase}`}
+                role="status"
+                title={t(`workspacePhaseHint_${activePhase}`)}
+              >
+                {t(`workspacePhase_${activePhase}`)}
+              </span>
+            ) : null}
             {active ? (
               <span>
                 {active.line_items?.length ?? 0} {t('basketLines')}

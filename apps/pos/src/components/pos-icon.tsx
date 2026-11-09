@@ -63,6 +63,8 @@ const paths = {
     </>
   ),
   chevron: <path d="m6 9 6 6 6-6" />,
+  play: <path d="M8 5v14l11-7Z" />,
+  pause: <path d="M8 5v14 M16 5v14" />,
   check: <path d="m5 12 4 4L19 6" />,
   back: <path d="m10 5-7 7 7 7 M3 12h18" />,
   lock: (

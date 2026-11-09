@@ -8,6 +8,8 @@ module Spree
           class WorkspacesController < BaseController
             scoped_resource :pos_workspaces
 
+            STATUSES = %w[editing parked canceled completed].freeze
+
             def index
               return if channel_rejected?
 
@@ -19,6 +21,12 @@ module Spree
                 scope = scope.where(branch_id: branch.id)
               end
               scope = scope.where(register_id: register!(params[:register_id]).id) if params[:register_id].present?
+              # `status=editing,parked` lists only open work: the register's tab
+              # strip must not bring back invoices that were canceled or paid.
+              if params[:status].present?
+                statuses = params[:status].to_s.split(',').map(&:strip) & STATUSES
+                scope = scope.where(operational_status: statuses)
+              end
               records, meta = page_scope(scope.includes(:branch, :register, :shift, :order).order(id: :desc))
               render json: { data: Spree::Pos::WorkspaceSummary.list(records), meta: meta }
             end

@@ -186,6 +186,15 @@ fieldset { border: 1px solid #d8e3dc; border-radius: 8px; display: grid; gap: 8p
 .pos-layout .tablist .workspace-tab > button[role='tab'] { padding-right: calc(var(--pos-s1) + 28px); }
 .pos-layout .tablist .workspace-tab-close { position: absolute; top: 50%; right: var(--pos-s1); transform: translateY(-50%); min-width: 28px; max-width: none; min-height: 28px; width: 28px; height: 28px; padding: 0; justify-content: center; border: 0; border-radius: 50%; background: transparent; color: var(--pos-muted); opacity: 0; pointer-events: none; }
 .workspace-tab-close .pos-icon { width: 14px; height: 14px; }
+.workspace-tab > button[role='tab'] { gap: 6px; }
+.workspace-phase { display: inline-flex; align-items: center; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; line-height: 18px; white-space: nowrap; color: #1d4f7a; background: #e3eef8; }
+.workspace-phase-paying { color: var(--pos-warning); background: #fff4d9; }
+.workspace-phase-parked { color: var(--pos-muted); background: #eef1f4; }
+.workspace-phase-completed { color: var(--pos-success); background: #e2f3ea; }
+.workspace-phase-canceled { color: var(--pos-danger); background: #fff0ee; }
+.phase-notice-completed { color: var(--pos-success); background: #e2f3ea; }
+.phase-notice-canceled { color: var(--pos-danger); background: #fff0ee; }
+.phase-notice-parked { color: var(--pos-muted); background: #eef1f4; }
 .pos-layout .tablist .workspace-tab:hover .workspace-tab-close, .pos-layout .tablist .workspace-tab:focus-within .workspace-tab-close { opacity: 1; pointer-events: auto; }
 .pos-layout .tablist .workspace-tab-close:not(:disabled):hover { color: var(--pos-danger); background: #fff0ee; }
 @media (hover: none) { .pos-layout .tablist .workspace-tab-close { opacity: 1; pointer-events: auto; } }
@@ -548,8 +557,6 @@ kbd { padding: var(--pos-s1); border: 1px solid var(--pos-border); border-radius
   .pos-sale .catalog-results--cards { grid-template-columns: repeat(auto-fill,minmax(min(100%,230px),1fr)); }
 }
 /* Login uses the same header, fields, spacing, radius and action colors as the register. */
-.pos-auth-layout { display: flex; flex-direction: column; min-height: 100dvh; }
-.auth-main { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: var(--pos-s6) var(--pos-s4); gap: var(--pos-s4); }
 .auth-panel { width: 100%; max-width: var(--pos-auth-width); padding: calc(var(--pos-s4) * 2); background: var(--pos-surface); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); }
 .auth-symbol { display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: var(--pos-radius); color: var(--pos-blue); background: var(--pos-selected); margin-bottom: var(--pos-s5); }
 .auth-symbol .pos-icon { width: 24px; height: 24px; }
@@ -661,7 +668,6 @@ kbd { padding: var(--pos-s1); border: 1px solid var(--pos-border); border-radius
 @media (max-width: 900px) { .settings-grid, .funds-layout { grid-template-columns: minmax(0,1fr); }.settings-memberships { grid-column: auto; } }
 @media (max-width: 700px) {
   .pos-layout .auth-panel { padding: var(--pos-s6); }
-  .auth-main { justify-content: flex-start; padding-top: var(--pos-s6); }
   .page-heading { flex-direction: column; gap: var(--pos-s3); padding: var(--pos-s5) 0; }
   .page-card { padding: var(--pos-s4); }
   .pos-page-nav a { flex: 1 1 calc(50% - var(--pos-s1)); justify-content: flex-start; }

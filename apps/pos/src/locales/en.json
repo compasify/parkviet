@@ -475,6 +475,16 @@
   "takeoverLease": "Take over editing",
   "cancelDraft": "Cancel draft",
   "closeView": "Close tab",
+  "workspacePhase_editing": "Selling",
+  "workspacePhase_paying": "Paying",
+  "workspacePhase_parked": "On hold",
+  "workspacePhase_canceled": "Canceled",
+  "workspacePhase_completed": "Completed",
+  "workspacePhaseHint_editing": "Add items, pick a customer, then collect payment.",
+  "workspacePhaseHint_paying": "A payment is recorded: the basket is locked. Collect the rest or resolve the payment to finish.",
+  "workspacePhaseHint_parked": "This invoice is on hold. Reopen it to add items or take payment.",
+  "workspacePhaseHint_canceled": "This invoice was canceled, so items can no longer be added or changed. Close the tab and start a new draft to keep selling.",
+  "workspacePhaseHint_completed": "This invoice is complete. You can close the tab; review or return it from the Orders page.",
   "handoverUnavailable": "Moving a draft to another register is not available.",
   "settings": "Settings",
   "selectionRestored": "The branch did not change. The previous choice stays.",
@@ -998,16 +1008,6 @@
       "cancelled": "Cancelled; {{name}} is back where it was."
     }
   },
-  "labelFormatVersion": "version {{version}}",
-  "labelFormatDisableFor": "Disable label format {{name}}",
-  "labelFormatConfirmDisable": "Disable label format “{{name}}”? Labels printed with it will no longer be read as scale labels. Sales history is kept.",
-  "labelFormatDisabled": "Label format “{{name}}” disabled.",
-  "labelFormatSaved": "Label format “{{name}}” saved.",
-  "labelFormatCreateTitle": "Add scale label format",
-  "labelFormatEditTitle": "Edit scale label format",
-  "labelFormatName": "Format name",
-  "labelFormatKind": "Label type",
-  "labelFormatLayout": "Layout of the first 12 digits",
   "labelFormatsHint": "Each format describes an EAN-13 code: prefix, item code, value (weight or price) and check digit.",
   "labelFormatCreate": "Add label format",
   "labelFormatsEmpty": "No scale label formats yet",
@@ -1018,6 +1018,16 @@
   "labelFormatKind_price": "Price label",
   "labelFormatToleranceShort": "tolerance {{tolerance}}",
   "labelFormatDecimalsShort": "{{decimals}} decimal digits",
+  "labelFormatVersion": "version {{version}}",
+  "labelFormatDisableFor": "Disable label format {{name}}",
+  "labelFormatConfirmDisable": "Disable label format “{{name}}”? Labels printed with it will no longer be read as scale labels. Sales history is kept.",
+  "labelFormatDisabled": "Label format “{{name}}” disabled.",
+  "labelFormatSaved": "Label format “{{name}}” saved.",
+  "labelFormatCreateTitle": "Add scale label format",
+  "labelFormatEditTitle": "Edit scale label format",
+  "labelFormatName": "Format name",
+  "labelFormatKind": "Label type",
+  "labelFormatLayout": "Layout of the first 12 digits",
   "labelFormatPrefix": "Prefix",
   "labelFormatItemCodeLength": "Item code digits",
   "labelFormatValueLength": "Value digits",
@@ -2403,5 +2413,406 @@
   "closeTabPayments": "Payments are recorded on this invoice. It can only be hidden; settle or refund the payments before canceling it.",
   "closeTabBack": "Go back",
   "closeTabKeep": "Close tab, keep draft",
-  "closeTabCancelInvoice": "Cancel invoice"
+  "closeTabCancelInvoice": "Cancel invoice",
+  "loginShowcase": {
+    "label": "ParkViet POS features",
+    "eyebrow": "ParkViet POS · Multi-branch retail",
+    "headline": "Counter selling with control, from the cash drawer to every batch",
+    "lead": "One system for cashiers, managers and owners: run several orders side by side, take cash, bank transfer and VietQR, sell on credit with approval, trace batches and serials, and reconcile every shift.",
+    "carouselLabel": "Key features",
+    "slideLabel": "Feature {{n}} of {{total}}",
+    "previous": "Previous feature",
+    "next": "Next feature",
+    "pause": "Pause auto-advance",
+    "resume": "Resume auto-advance",
+    "highlightsLabel": "Highlights",
+    "highlights": [
+      {
+        "value": "3",
+        "label": "tender types, splittable on one order"
+      },
+      {
+        "value": "18",
+        "label": "POS permissions granted per branch"
+      },
+      {
+        "value": "5",
+        "label": "report views by date, register and shift"
+      },
+      {
+        "value": "2",
+        "label": "receipt sizes: 80mm roll and A4"
+      }
+    ],
+    "slides": [
+      {
+        "id": "sale",
+        "tag": "Selling",
+        "title": "Scan, search and sell several orders at once",
+        "body": "Every order is its own tab: customer A waits on a transfer while the cashier keeps serving customer B.",
+        "points": [
+          "Search by name, SKU or barcode, or use a scanner",
+          "Scale labels read from EAN-13, sell in converted units",
+          "Same-code packs with different price, batch or expiry stay apart",
+          "Line and order discounts, Spree vouchers, manager approval codes"
+        ]
+      },
+      {
+        "id": "payment",
+        "tag": "VietQR & transfers",
+        "title": "Cash, bank transfer and VietQR on one order",
+        "body": "VietQR codes carry the amount and reference; when the bank reports the money through SePay or PayOS, POS tells the cashier.",
+        "points": [
+          "Change is calculated for cash",
+          "Split one order across several tenders",
+          "Leave a tender pending and serve another order",
+          "Overpaid or late money goes to an unallocated ledger, never guessed"
+        ]
+      },
+      {
+        "id": "credit",
+        "tag": "Credit",
+        "title": "Approved credit sales, collections by age",
+        "body": "Each customer has a credit limit and terms; every approval covers exactly one order and one amount.",
+        "points": [
+          "Open or suspend credit accounts for known customers",
+          "Managers approve credit on the Approvals page",
+          "Track balances, overdue orders and debt age",
+          "One collection allocates across orders, oldest first"
+        ]
+      },
+      {
+        "id": "inventory",
+        "tag": "Batches & serials",
+        "title": "Trace every batch, serial and expiry date",
+        "body": "Batches are picked by nearest expiry (FEFO); for a recall, look up which orders received a batch or serial.",
+        "points": [
+          "Opening stock declaration and stock reconciliation",
+          "Quarantine and release batches",
+          "Receiving, transfers and approved stock counts",
+          "Recall by batch or serial"
+        ]
+      },
+      {
+        "id": "shift",
+        "tag": "Shifts & drawer",
+        "title": "Transparent shifts with blind cash counts",
+        "body": "Cashiers see the expected drawer only after entering their count; variances over the limit need a reason and another approver.",
+        "points": [
+          "Open a shift with a float, one owner per shift",
+          "Cash in, cash out and safe drops with documents",
+          "Three-step close: check, count, reconcile",
+          "Late cash reconciliation without editing closed shifts"
+        ]
+      },
+      {
+        "id": "display",
+        "tag": "Customer display & print",
+        "title": "A clear customer display and stable receipts",
+        "body": "Customers see the order, amount and QR code on their own screen; a finalised receipt never changes when prices or names change later.",
+        "points": [
+          "Pair the same device or another one with an 8-character code",
+          "80mm roll or A4 with serials, batches and expiry",
+          "Reprints are stamped “COPY – no. N”",
+          "Shows “Updating…” whenever data may be stale"
+        ]
+      },
+      {
+        "id": "reports",
+        "tag": "Reports",
+        "title": "Reports by date, register and shift",
+        "body": "Five views for each branch, in that branch's own time zone, with background CSV export.",
+        "points": [
+          "Sales and collections",
+          "Drawer cash and receivables",
+          "Shift close reports",
+          "CSV files only for their creator, deleted after 24 hours"
+        ]
+      }
+    ],
+    "groupsEyebrow": "Feature details",
+    "groupsTitle": "Everything a multi-branch store needs at the counter",
+    "groupsLead": "Each feature group is built for real operations: clear permissions, a second approver where it matters, and no duplicate writes when the network drops.",
+    "groupsNav": "Feature groups",
+    "groups": [
+      {
+        "id": "sale",
+        "title": "Selling",
+        "summary": "Fast at the counter, exact down to each pack.",
+        "items": [
+          {
+            "title": "Search and scan",
+            "body": "Search by name, SKU or barcode in card or list view. Only goods assigned to the branch appear; ambiguous codes let the cashier choose."
+          },
+          {
+            "title": "Weighed goods and scale labels",
+            "body": "Scan EAN-13 labels printed by a scale; the server reads the weight or price on the label."
+          },
+          {
+            "title": "Unit conversion",
+            "body": "Sell by kg, litre, pack, case… converted to the SKU's base unit."
+          },
+          {
+            "title": "Serials and batches",
+            "body": "Scan a serial per item; batches are picked by nearest expiry (FEFO), or chosen by the cashier where the branch allows it."
+          },
+          {
+            "title": "Separate packs per code",
+            "body": "Two packs with the same code but a different price, batch or expiry are separate lines; a returned pack refunds its own price."
+          },
+          {
+            "title": "Customers",
+            "body": "Walk-in by default; search by name, phone or email, or quick-create. A duplicate phone only warns, records are never merged automatically."
+          },
+          {
+            "title": "Discounts and price overrides",
+            "body": "Line or order discounts (percent or VND with a reason) and Spree vouchers. Price overrides are a separate permission; going past limits needs a manager approval code."
+          },
+          {
+            "title": "Parallel orders",
+            "body": "New draft, hold, reopen, discard draft and close tab; counter notes and pre-bill printing."
+          }
+        ]
+      },
+      {
+        "id": "payment",
+        "title": "Tenders",
+        "summary": "Three tenders, splittable, every đồng accounted for.",
+        "items": [
+          {
+            "title": "Cash",
+            "body": "Enter the amount given and POS calculates change."
+          },
+          {
+            "title": "Bank transfer",
+            "body": "The cashier confirms with the transaction reference and receiving account."
+          },
+          {
+            "title": "Self-reconciling VietQR",
+            "body": "The QR code carries the amount and reference; SePay or PayOS webhooks report receipt right in the dialog. One pending VietQR code per order."
+          },
+          {
+            "title": "Split tenders",
+            "body": "Enter an amount for each tender on the same order."
+          },
+          {
+            "title": "Wait and serve another order",
+            "body": "Keep a tender pending confirmation, switch tabs and come back to continue."
+          },
+          {
+            "title": "Unallocated money",
+            "body": "Overpayments and late transfers go to the received-funds ledger; authorised staff apply them to an order or hold them for a refund."
+          }
+        ]
+      },
+      {
+        "id": "credit",
+        "title": "Credit & collections",
+        "summary": "Let regulars buy on account while risk stays controlled.",
+        "items": [
+          {
+            "title": "Credit accounts",
+            "body": "Limits, terms and suspension for each known customer; walk-in customers cannot buy on credit."
+          },
+          {
+            "title": "Approved credit",
+            "body": "The cashier requests, a manager approves, then the order completes on credit. Each approval covers that order and amount only."
+          },
+          {
+            "title": "Customer receivables",
+            "body": "Balances, overdue orders and debt age per customer."
+          },
+          {
+            "title": "Allocated collections",
+            "body": "One collection spreads across orders, oldest first by default; collections never create new sales."
+          }
+        ]
+      },
+      {
+        "id": "returns",
+        "title": "Returns & exchanges",
+        "summary": "Right returns, right refunds, approval when needed.",
+        "items": [
+          {
+            "title": "Find the original order",
+            "body": "Pick the returnable quantity and condition: resellable or damaged."
+          },
+          {
+            "title": "Preview the return",
+            "body": "See the return value, debt reduction and refund before creating the slip."
+          },
+          {
+            "title": "Approval for risky returns",
+            "body": "Other-branch returns, late returns and damaged goods need an approver."
+          },
+          {
+            "title": "Debt first, refund after",
+            "body": "Return value reduces outstanding debt first; refunds count only once someone confirms the payout."
+          },
+          {
+            "title": "Exchanges",
+            "body": "Open a new sale for the customer; the difference is collected or refunded as usual."
+          }
+        ]
+      },
+      {
+        "id": "inventory",
+        "title": "Traceable inventory",
+        "summary": "Know where every batch and serial is, and who bought it.",
+        "items": [
+          {
+            "title": "Tracked items",
+            "body": "Declare opening stock and reconcile before selling."
+          },
+          {
+            "title": "Batches",
+            "body": "Expiry tracking, quarantine and release per batch."
+          },
+          {
+            "title": "Serial lookup",
+            "body": "Status and history for every serial."
+          },
+          {
+            "title": "Receiving and transfers",
+            "body": "Record receipts and moves between stock locations by batch and serial."
+          },
+          {
+            "title": "Counts and adjustments",
+            "body": "Decreases, or increases over the limit, need an approver."
+          },
+          {
+            "title": "Recall",
+            "body": "Find which orders and customers received a batch or serial."
+          }
+        ]
+      },
+      {
+        "id": "shift",
+        "title": "Shifts & cash book",
+        "summary": "Someone answers for every đồng in the drawer.",
+        "items": [
+          {
+            "title": "Open a shift",
+            "body": "Enter the opening float; each shift belongs to one staff member at one register."
+          },
+          {
+            "title": "Cash in and out",
+            "body": "Cash in posts immediately; cash out and safe drops need a document number and a confirmer."
+          },
+          {
+            "title": "Three-step close",
+            "body": "Clear blockers, count the drawer, then reconcile."
+          },
+          {
+            "title": "Blind count",
+            "body": "Expected cash and variance appear only after the count; over the branch limit needs a reason and an approver."
+          },
+          {
+            "title": "Close on behalf",
+            "body": "Close an open shift for an absent cashier."
+          },
+          {
+            "title": "Late cash",
+            "body": "Reconcile cash found after closing; closed shifts are never edited."
+          }
+        ]
+      },
+      {
+        "id": "reports",
+        "title": "Reports",
+        "summary": "The right branch, shift and viewer.",
+        "items": [
+          {
+            "title": "Five report tabs",
+            "body": "Sales, Collections, Drawer cash, Receivables and Shift close."
+          },
+          {
+            "title": "Flexible filters",
+            "body": "By date, register and shift, in the branch's time zone."
+          },
+          {
+            "title": "Viewing rights",
+            "body": "Without the branch-wide report permission, staff see only their own shifts."
+          },
+          {
+            "title": "Background CSV export",
+            "body": "Only the creator can download; files are deleted after 24 hours."
+          }
+        ]
+      },
+      {
+        "id": "display",
+        "title": "Receipts, printing & customer display",
+        "summary": "Clear for customers, consistent on paper.",
+        "items": [
+          {
+            "title": "Find and print slips",
+            "body": "Sale, return, refund and shift slips on 80mm roll or A4, with serials, batches and expiry."
+          },
+          {
+            "title": "Originals and copies",
+            "body": "The first print is the original; later prints are stamped “COPY – no. N”. Receipts read “POS sales slip — not an e-invoice”."
+          },
+          {
+            "title": "Customer display",
+            "body": "Its own window or device, no sign-in; shows the order, amount, receiving account and VietQR code."
+          },
+          {
+            "title": "Cashier in control",
+            "body": "The cashier chooses what to show; switching tabs never changes the customer display."
+          },
+          {
+            "title": "Per-register scanner",
+            "body": "Tune the terminator key and key interval per register; F2 jumps to product search."
+          }
+        ]
+      },
+      {
+        "id": "admin",
+        "title": "Administration & permissions",
+        "summary": "Configured per branch, granted per person.",
+        "items": [
+          {
+            "title": "Branches",
+            "body": "Selling and receiving stock locations, time zone, return window, shift variance limit, batch picking at sale."
+          },
+          {
+            "title": "Registers and staff",
+            "body": "Deactivation keeps history; reactivation needs the Recover permission."
+          },
+          {
+            "title": "18 per-branch permissions",
+            "body": "Open shifts, discounts, price overrides, approvals, returns, credit, inventory, report export… granted per staff member per branch."
+          },
+          {
+            "title": "Branch assortment",
+            "body": "Each branch's own catalog, units and label codes per SKU, and scale label templates."
+          }
+        ]
+      },
+      {
+        "id": "safety",
+        "title": "Operational safety",
+        "summary": "No duplicates, no self-approval, nothing lost.",
+        "items": [
+          {
+            "title": "Second-person approval",
+            "body": "Credit, refund payouts, drawer variances, cash out and stock adjustments; nobody approves their own request."
+          },
+          {
+            "title": "No duplicate writes offline",
+            "body": "Writes lock while offline; once back online, POS replays the same action to check its outcome."
+          },
+          {
+            "title": "Order edit lock",
+            "body": "Only one tab or device edits an order at a time; locks expire and can be taken over with permission."
+          },
+          {
+            "title": "Safe sign-out",
+            "body": "With unresolved actions, POS asks before signing out; orders on the server are never deleted."
+          }
+        ]
+      }
+    ]
+  }
 }

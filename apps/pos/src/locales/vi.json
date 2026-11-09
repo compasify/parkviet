@@ -475,6 +475,16 @@
   "takeoverLease": "Tiếp quản quyền sửa",
   "cancelDraft": "Hủy nháp",
   "closeView": "Đóng tab",
+  "workspacePhase_editing": "Đang bán",
+  "workspacePhase_paying": "Đang thanh toán",
+  "workspacePhase_parked": "Tạm giữ",
+  "workspacePhase_canceled": "Đã hủy",
+  "workspacePhase_completed": "Hoàn tất",
+  "workspacePhaseHint_editing": "Thêm hàng, chọn khách rồi thu tiền.",
+  "workspacePhaseHint_paying": "Đã ghi nhận thanh toán: giỏ hàng bị khóa, hãy thu đủ tiền hoặc xử lý khoản thanh toán để kết thúc.",
+  "workspacePhaseHint_parked": "Đơn đang tạm giữ. Mở lại đơn để thêm hàng hoặc thu tiền.",
+  "workspacePhaseHint_canceled": "Hóa đơn này đã bị hủy nên không thể thêm hàng hay sửa nữa. Đóng tab rồi tạo đơn mới để bán tiếp.",
+  "workspacePhaseHint_completed": "Hóa đơn đã hoàn tất. Có thể đóng tab; muốn xem lại hoặc đổi trả thì mở từ trang Đơn hàng.",
   "handoverUnavailable": "Chuyển quầy chưa được bật.",
   "settings": "Cấu hình",
   "selectionRestored": "Không đổi được chi nhánh. Giữ lựa chọn trước đó.",
@@ -997,16 +1007,6 @@
       "cancelled": "Đã hủy, {{name}} về lại chỗ cũ."
     }
   },
-  "labelFormatVersion": "phiên bản {{version}}",
-  "labelFormatDisableFor": "Ngừng mẫu tem {{name}}",
-  "labelFormatConfirmDisable": "Ngừng mẫu tem “{{name}}”? Tem in theo mẫu này sẽ không còn được đọc là tem cân. Lịch sử bán không bị xóa.",
-  "labelFormatDisabled": "Đã ngừng mẫu tem “{{name}}”.",
-  "labelFormatSaved": "Đã lưu mẫu tem “{{name}}”.",
-  "labelFormatCreateTitle": "Thêm mẫu tem cân",
-  "labelFormatEditTitle": "Sửa mẫu tem cân",
-  "labelFormatName": "Tên mẫu",
-  "labelFormatKind": "Loại tem",
-  "labelFormatLayout": "Bố cục 12 chữ số đầu",
   "labelFormatsHint": "Mỗi mẫu mô tả mã EAN-13: tiền tố, mã hàng, giá trị (khối lượng hoặc tiền) và số kiểm tra.",
   "labelFormatCreate": "Thêm mẫu tem",
   "labelFormatsEmpty": "Chưa có mẫu tem cân",
@@ -1017,6 +1017,16 @@
   "labelFormatKind_price": "Tem giá tiền",
   "labelFormatToleranceShort": "sai lệch {{tolerance}}",
   "labelFormatDecimalsShort": "{{decimals}} chữ số thập phân",
+  "labelFormatVersion": "phiên bản {{version}}",
+  "labelFormatDisableFor": "Ngừng mẫu tem {{name}}",
+  "labelFormatConfirmDisable": "Ngừng mẫu tem “{{name}}”? Tem in theo mẫu này sẽ không còn được đọc là tem cân. Lịch sử bán không bị xóa.",
+  "labelFormatDisabled": "Đã ngừng mẫu tem “{{name}}”.",
+  "labelFormatSaved": "Đã lưu mẫu tem “{{name}}”.",
+  "labelFormatCreateTitle": "Thêm mẫu tem cân",
+  "labelFormatEditTitle": "Sửa mẫu tem cân",
+  "labelFormatName": "Tên mẫu",
+  "labelFormatKind": "Loại tem",
+  "labelFormatLayout": "Bố cục 12 chữ số đầu",
   "labelFormatPrefix": "Tiền tố",
   "labelFormatItemCodeLength": "Số chữ số mã hàng",
   "labelFormatValueLength": "Số chữ số giá trị",
@@ -2394,5 +2404,406 @@
   "closeTabPayments": "Hóa đơn đã ghi nhận thanh toán nên chỉ có thể ẩn tab; hãy xử lý hoặc hoàn các khoản đó trước khi hủy.",
   "closeTabBack": "Quay lại",
   "closeTabKeep": "Đóng tab, giữ đơn nháp",
-  "closeTabCancelInvoice": "Hủy hóa đơn"
+  "closeTabCancelInvoice": "Hủy hóa đơn",
+  "loginShowcase": {
+    "label": "Giới thiệu tính năng ParkViet POS",
+    "eyebrow": "ParkViet POS · Bán hàng đa chi nhánh",
+    "headline": "Bán hàng tại quầy chặt chẽ, từ két tiền đến từng lô hàng",
+    "lead": "Một hệ thống cho thu ngân, quản lý và chủ cửa hàng: bán nhiều đơn song song, nhận tiền mặt, chuyển khoản và VietQR, bán chịu có duyệt, truy xuất lô/serial và đối soát ca minh bạch.",
+    "carouselLabel": "Tính năng chính",
+    "slideLabel": "Tính năng {{n}} trên {{total}}",
+    "previous": "Tính năng trước",
+    "next": "Tính năng tiếp theo",
+    "pause": "Tạm dừng tự chuyển",
+    "resume": "Tiếp tục tự chuyển",
+    "highlightsLabel": "Con số nổi bật",
+    "highlights": [
+      {
+        "value": "3",
+        "label": "phương thức nhận tiền, chia được trên cùng một đơn"
+      },
+      {
+        "value": "18",
+        "label": "quyền POS cấp riêng cho từng chi nhánh"
+      },
+      {
+        "value": "5",
+        "label": "góc nhìn báo cáo theo ngày, quầy và ca"
+      },
+      {
+        "value": "2",
+        "label": "khổ phiếu in: cuộn 80mm và A4"
+      }
+    ],
+    "slides": [
+      {
+        "id": "sale",
+        "tag": "Bán hàng",
+        "title": "Quét, tìm và bán nhiều đơn song song",
+        "body": "Mỗi đơn là một tab riêng: khách A đang chờ chuyển khoản, thu ngân vẫn bán tiếp cho khách B.",
+        "points": [
+          "Tìm theo tên, SKU, mã vạch hoặc quét bằng máy quét",
+          "Hàng cân đọc tem EAN-13, bán theo đơn vị quy đổi",
+          "Gói cùng mã nhưng khác giá, lô, hạn dùng không bị gộp",
+          "Giảm giá dòng, toàn đơn, voucher Spree và mã duyệt quản lý"
+        ]
+      },
+      {
+        "id": "payment",
+        "tag": "VietQR & chuyển khoản",
+        "title": "Tiền mặt, chuyển khoản và VietQR trên cùng một đơn",
+        "body": "Mã VietQR có sẵn số tiền và nội dung; khi ngân hàng báo nhận tiền qua SePay hoặc PayOS, POS tự báo cho thu ngân.",
+        "points": [
+          "Tự tính tiền thừa khi nhận tiền mặt",
+          "Chia một đơn cho nhiều phương thức",
+          "Để khoản thu chờ xác nhận rồi bán đơn khác",
+          "Tiền dư hoặc đến muộn vào sổ chưa phân bổ, không tự gán nhầm"
+        ]
+      },
+      {
+        "id": "credit",
+        "tag": "Công nợ",
+        "title": "Bán chịu có duyệt, thu nợ theo tuổi nợ",
+        "body": "Mỗi khách có hạn mức và số ngày nợ riêng; mỗi lần duyệt chỉ có hiệu lực cho đúng đơn và đúng số tiền.",
+        "points": [
+          "Mở, tạm khóa tài khoản công nợ cho khách đã xác định",
+          "Quản lý duyệt ghi nợ trên trang Duyệt",
+          "Theo dõi dư nợ, đơn quá hạn và tuổi nợ",
+          "Một lần thu nợ phân bổ vào nhiều đơn, đơn cũ trước"
+        ]
+      },
+      {
+        "id": "inventory",
+        "tag": "Lô & serial",
+        "title": "Truy xuất từng lô, serial và hạn dùng",
+        "body": "Lô được chọn theo hạn dùng gần nhất (FEFO); khi cần thu hồi, tra ngay lô hoặc serial đã bán cho đơn nào.",
+        "points": [
+          "Khai báo tồn đầu kỳ và đối chiếu khớp tồn",
+          "Cách ly và giải phóng lô hàng",
+          "Nhập hàng, chuyển kho, kiểm kê có duyệt",
+          "Thu hồi theo lô hoặc serial"
+        ]
+      },
+      {
+        "id": "shift",
+        "tag": "Ca & két",
+        "title": "Ca và két tiền minh bạch với đếm mù",
+        "body": "Thu ngân chỉ thấy số két cần có sau khi đã nhập số đếm; chênh lệch vượt ngưỡng cần lý do và người duyệt khác.",
+        "points": [
+          "Mở ca với tiền đầu ca, mỗi ca thuộc một nhân viên",
+          "Nộp vào, lấy ra, nộp két sắt có chứng từ",
+          "Đóng ca ba bước: kiểm tra, đếm két, đối chiếu",
+          "Đối soát tiền mặt đến muộn mà không sửa ca đã đóng"
+        ]
+      },
+      {
+        "id": "display",
+        "tag": "Màn hình khách & in",
+        "title": "Màn hình khách và phiếu in rõ ràng",
+        "body": "Khách thấy đơn, số tiền và mã QR trên màn hình riêng; phiếu đã chốt không đổi khi sửa giá hay tên hàng về sau.",
+        "points": [
+          "Ghép màn hình cùng máy hoặc thiết bị khác bằng mã 8 ký tự",
+          "Phiếu cuộn 80mm hoặc A4 có serial, lô, hạn dùng",
+          "Lần in sau tự gắn nhãn “BẢN SAO – lần N”",
+          "Chỉ hiện “Đang cập nhật…” khi dữ liệu chưa chắc còn mới"
+        ]
+      },
+      {
+        "id": "reports",
+        "tag": "Báo cáo",
+        "title": "Báo cáo theo ngày, quầy và ca",
+        "body": "Năm góc nhìn cho từng chi nhánh, tính theo đúng múi giờ của chi nhánh đó, xuất CSV chạy nền.",
+        "points": [
+          "Doanh số và thực thu",
+          "Tiền mặt trong két và công nợ",
+          "Báo cáo đóng ca",
+          "File CSV chỉ người tạo tải được, tự xóa sau 24 giờ"
+        ]
+      }
+    ],
+    "groupsEyebrow": "Chi tiết tính năng",
+    "groupsTitle": "Mọi thứ cửa hàng nhiều chi nhánh cần ở quầy",
+    "groupsLead": "Từng nhóm tính năng được làm cho vận hành thật: quyền rõ ràng, có người duyệt thứ hai và không ghi trùng khi mất mạng.",
+    "groupsNav": "Nhóm tính năng",
+    "groups": [
+      {
+        "id": "sale",
+        "title": "Bán hàng",
+        "summary": "Nhanh ở quầy, chính xác tới từng gói hàng.",
+        "items": [
+          {
+            "title": "Tìm và quét hàng",
+            "body": "Tìm theo tên, SKU, mã vạch; xem dạng thẻ hoặc danh sách. Chỉ hàng được cấp cho chi nhánh mới xuất hiện; mã khớp nhiều mặt hàng thì để thu ngân chọn."
+          },
+          {
+            "title": "Hàng cân và tem cân",
+            "body": "Quét tem EAN-13 in từ cân điện tử; máy chủ đọc khối lượng hoặc giá trên tem."
+          },
+          {
+            "title": "Đơn vị quy đổi",
+            "body": "Bán theo kg, lít, lốc, thùng… và quy đổi về đơn vị gốc theo cấu hình của SKU."
+          },
+          {
+            "title": "Serial và lô",
+            "body": "Quét serial cho từng cái; lô chọn tự động theo hạn dùng gần nhất (FEFO), hoặc thu ngân tự chọn nếu chi nhánh cho phép."
+          },
+          {
+            "title": "Tách từng gói cùng mã",
+            "body": "Hai gói cùng mã nhưng khác giá, lô hoặc hạn dùng là hai dòng riêng; trả gói nào hoàn đúng giá gói đó."
+          },
+          {
+            "title": "Khách hàng",
+            "body": "Mặc định Khách lẻ; tìm theo tên, số điện thoại, email hoặc tạo khách nhanh. Trùng số điện thoại chỉ cảnh báo, không tự gộp hồ sơ."
+          },
+          {
+            "title": "Giảm giá và sửa giá",
+            "body": "Giảm theo dòng hoặc toàn đơn (phần trăm hoặc VND, kèm lý do), nhập voucher Spree. Sửa giá là quyền riêng; vượt giới hạn cần mã duyệt của quản lý."
+          },
+          {
+            "title": "Nhiều đơn song song",
+            "body": "Đơn nháp mới, tạm giữ, mở lại, hủy nháp, đóng tab; ghi chú tại quầy và in tạm tính."
+          }
+        ]
+      },
+      {
+        "id": "payment",
+        "title": "Thanh toán",
+        "summary": "Ba phương thức, chia được, không thất lạc một đồng.",
+        "items": [
+          {
+            "title": "Tiền mặt",
+            "body": "Nhập số khách đưa, POS tính tiền thừa."
+          },
+          {
+            "title": "Chuyển khoản",
+            "body": "Thu ngân xác nhận kèm mã giao dịch và tài khoản nhận."
+          },
+          {
+            "title": "VietQR tự đối soát",
+            "body": "Mã QR có sẵn số tiền và nội dung; webhook SePay hoặc PayOS báo nhận tiền ngay trên hộp thanh toán. Mỗi đơn chỉ có một mã VietQR đang chờ."
+          },
+          {
+            "title": "Chia nhiều phương thức",
+            "body": "Nhập số tiền cho từng phương thức trên cùng một đơn."
+          },
+          {
+            "title": "Để chờ, bán đơn khác",
+            "body": "Giữ khoản thu ở trạng thái chờ xác nhận, chuyển sang tab khác rồi quay lại tiếp tục."
+          },
+          {
+            "title": "Tiền chưa phân bổ",
+            "body": "Khoản dư hoặc chuyển khoản đến muộn vào Sổ tiền đã nhận / nghĩa vụ; người có quyền áp vào đơn hoặc giữ để hoàn cho khách."
+          }
+        ]
+      },
+      {
+        "id": "credit",
+        "title": "Bán chịu & thu nợ",
+        "summary": "Cho khách quen nợ mà vẫn kiểm soát rủi ro.",
+        "items": [
+          {
+            "title": "Tài khoản công nợ",
+            "body": "Hạn mức, số ngày nợ và tạm khóa cho từng khách đã xác định; khách lẻ không được bán chịu."
+          },
+          {
+            "title": "Ghi nợ có duyệt",
+            "body": "Thu ngân gửi yêu cầu, quản lý duyệt, rồi hoàn tất và ghi nợ. Mỗi lần duyệt chỉ cho đúng đơn và số tiền đó."
+          },
+          {
+            "title": "Công nợ khách hàng",
+            "body": "Xem dư nợ, đơn quá hạn và tuổi nợ của từng khách."
+          },
+          {
+            "title": "Thu nợ phân bổ",
+            "body": "Một khoản thu phân bổ vào nhiều đơn, mặc định đơn cũ trước; thu nợ không tạo doanh số mới."
+          }
+        ]
+      },
+      {
+        "id": "returns",
+        "title": "Trả hàng & đổi hàng",
+        "summary": "Trả đúng, hoàn đúng, có người duyệt khi cần.",
+        "items": [
+          {
+            "title": "Tìm đơn gốc",
+            "body": "Chọn số lượng còn trả được và tình trạng hàng: bán lại được hoặc hư hỏng."
+          },
+          {
+            "title": "Xem trước giá trị trả",
+            "body": "Thấy giá trị trả, phần giảm nợ và phần được hoàn trước khi lập phiếu."
+          },
+          {
+            "title": "Duyệt khi có rủi ro",
+            "body": "Trả hàng của chi nhánh khác, quá hạn trả hoặc hàng hư hỏng cần người duyệt."
+          },
+          {
+            "title": "Trừ nợ trước, hoàn sau",
+            "body": "Giá trị trả trừ vào nợ còn lại; tiền hoàn chỉ ghi nhận khi có người xác nhận đã chi."
+          },
+          {
+            "title": "Đổi hàng",
+            "body": "Mở đơn bán mới cho khách; phần chênh lệch thu thêm hoặc hoàn lại như bình thường."
+          }
+        ]
+      },
+      {
+        "id": "inventory",
+        "title": "Tồn kho truy xuất",
+        "summary": "Biết từng lô, từng serial đang ở đâu và đã bán cho ai.",
+        "items": [
+          {
+            "title": "Mặt hàng theo dõi",
+            "body": "Khai báo tồn đầu kỳ và đối chiếu khớp tồn trước khi bán."
+          },
+          {
+            "title": "Lô hàng",
+            "body": "Theo dõi hạn dùng, cách ly và giải phóng từng lô."
+          },
+          {
+            "title": "Tra serial",
+            "body": "Tra trạng thái và lịch sử của từng serial."
+          },
+          {
+            "title": "Nhập hàng và chuyển kho",
+            "body": "Ghi nhận hàng nhập và chuyển giữa các kho theo lô, serial."
+          },
+          {
+            "title": "Kiểm kê / điều chỉnh",
+            "body": "Điều chỉnh tồn giảm, hoặc tăng vượt ngưỡng, cần người duyệt."
+          },
+          {
+            "title": "Thu hồi",
+            "body": "Tìm lô hoặc serial đã bán cho đơn nào và khách nào."
+          }
+        ]
+      },
+      {
+        "id": "shift",
+        "title": "Ca & sổ quỹ",
+        "summary": "Mỗi đồng trong két đều có người chịu trách nhiệm.",
+        "items": [
+          {
+            "title": "Mở ca",
+            "body": "Nhập tiền đầu ca; mỗi ca thuộc về một nhân viên tại một quầy."
+          },
+          {
+            "title": "Thu/chi tiền mặt",
+            "body": "Nộp vào két ghi ngay; lấy ra khỏi két và nộp két sắt cần số chứng từ và người xác nhận."
+          },
+          {
+            "title": "Đóng ca ba bước",
+            "body": "Kiểm tra các việc chặn đóng ca, đếm két, rồi đối chiếu."
+          },
+          {
+            "title": "Đếm mù",
+            "body": "Số két cần có và chênh lệch chỉ hiện sau khi nhập số đếm; vượt ngưỡng chi nhánh cần lý do và người duyệt."
+          },
+          {
+            "title": "Đóng ca giúp",
+            "body": "Đóng ca đang mở của thu ngân vắng mặt."
+          },
+          {
+            "title": "Tiền mặt đến muộn",
+            "body": "Đối soát tiền phát hiện sau khi đóng ca; ca đã đóng không bị sửa."
+          }
+        ]
+      },
+      {
+        "id": "reports",
+        "title": "Báo cáo",
+        "summary": "Số liệu đúng chi nhánh, đúng ca, đúng người xem.",
+        "items": [
+          {
+            "title": "Năm tab báo cáo",
+            "body": "Doanh số, Thực thu, Tiền mặt trong két, Công nợ và Đóng ca."
+          },
+          {
+            "title": "Lọc linh hoạt",
+            "body": "Theo ngày, quầy và ca, tính theo múi giờ của chi nhánh."
+          },
+          {
+            "title": "Quyền xem",
+            "body": "Không có quyền xem báo cáo cả chi nhánh thì chỉ thấy các ca của chính mình."
+          },
+          {
+            "title": "Xuất CSV chạy nền",
+            "body": "Chỉ người tạo tải được file; file tự xóa sau 24 giờ."
+          }
+        ]
+      },
+      {
+        "id": "display",
+        "title": "Hóa đơn, in & màn hình khách",
+        "summary": "Khách thấy rõ, phiếu in nhất quán.",
+        "items": [
+          {
+            "title": "Tra cứu và in phiếu",
+            "body": "Phiếu bán hàng, trả hàng, hoàn tiền và đóng ca; khổ cuộn 80mm hoặc A4, có serial, lô và hạn dùng."
+          },
+          {
+            "title": "Bản gốc và bản sao",
+            "body": "Lần in đầu là bản gốc, các lần sau gắn nhãn “BẢN SAO – lần N”. Phiếu in là “Phiếu bán hàng POS — không phải hóa đơn điện tử”."
+          },
+          {
+            "title": "Màn hình khách",
+            "body": "Cửa sổ hoặc thiết bị riêng, không cần đăng nhập; hiện đơn, số tiền, tài khoản nhận và mã VietQR."
+          },
+          {
+            "title": "Thu ngân làm chủ màn hình",
+            "body": "Chủ động chọn đơn cần hiện; chuyển tab không làm đổi nội dung màn hình khách."
+          },
+          {
+            "title": "Máy quét theo quầy",
+            "body": "Hiệu chỉnh ký tự kết thúc và khoảng cách phím cho từng quầy; phím F2 đưa con trỏ về ô tìm hàng."
+          }
+        ]
+      },
+      {
+        "id": "admin",
+        "title": "Quản trị & phân quyền",
+        "summary": "Cấu hình theo từng chi nhánh, cấp quyền theo từng người.",
+        "items": [
+          {
+            "title": "Chi nhánh",
+            "body": "Kho bán, kho nhận hàng, múi giờ, số ngày cho phép trả hàng, ngưỡng chênh lệch đóng ca, cách chọn lô khi bán."
+          },
+          {
+            "title": "Quầy và nhân viên",
+            "body": "Ngừng hoạt động không xóa lịch sử; kích hoạt lại cần quyền Khôi phục."
+          },
+          {
+            "title": "18 quyền theo chi nhánh",
+            "body": "Mở ca, giảm giá, đổi giá, duyệt, trả hàng, công nợ, tồn kho, xuất báo cáo… cấp riêng cho từng nhân viên ở từng chi nhánh."
+          },
+          {
+            "title": "Hàng bán tại chi nhánh",
+            "body": "Danh mục riêng của chi nhánh, đơn vị và mã tem của từng SKU, mẫu tem cân."
+          }
+        ]
+      },
+      {
+        "id": "safety",
+        "title": "An toàn vận hành",
+        "summary": "Không ghi trùng, không tự duyệt, không mất dấu.",
+        "items": [
+          {
+            "title": "Người thứ hai duyệt",
+            "body": "Ghi nợ, chi hoàn, chênh lệch két, rút tiền khỏi két, điều chỉnh tồn; không ai tự duyệt yêu cầu của chính mình."
+          },
+          {
+            "title": "Không ghi trùng khi mất mạng",
+            "body": "Mất mạng thì khóa thao tác ghi; có mạng lại, POS gửi lại đúng thao tác cũ để kiểm tra kết quả."
+          },
+          {
+            "title": "Quyền sửa đơn",
+            "body": "Mỗi lúc chỉ một tab hoặc một máy giữ quyền sửa một đơn; khóa tự hết hạn và có thể tiếp quản khi được cấp quyền."
+          },
+          {
+            "title": "Đăng xuất an toàn",
+            "body": "Còn thao tác chưa rõ kết quả thì POS hỏi xác nhận trước khi đăng xuất; đơn trên máy chủ không bị xóa."
+          }
+        ]
+      }
+    ]
+  }
 }

@@ -24,7 +24,7 @@ import {
 } from './traceability';
 
 const translate = (key: string, options: Record<string, unknown> = {}) =>
-  ((vi as Record<string, string>)[key] ?? key).replace(/{{(\w+)}}/g, (_, name) =>
+  ((vi as unknown as Record<string, string>)[key] ?? key).replace(/{{(\w+)}}/g, (_, name) =>
     String(options[name]),
   );
 const conflict = (reason: string, message = 'Conflict') => ({
