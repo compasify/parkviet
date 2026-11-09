@@ -44,7 +44,7 @@ export const DEFAULT_TEMPLATES: Readonly<Record<DocumentType, TemplateConfig>> =
     schema: 1,
     page: PAGE,
     header: HEADER,
-    meta: { fields: ['time'], labels: {} },
+    meta: { fields: ['time', 'customer'], labels: {} },
     lines: {
       layout: 'stacked',
       columns: ['name', 'unit', 'qty', 'price', 'amount'],

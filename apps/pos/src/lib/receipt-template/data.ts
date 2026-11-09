@@ -68,6 +68,9 @@ export type TemplateData = {
   cashier: string | null;
   time: string;
   customerName: string | null;
+  customerPhone?: string | null;
+  // Where to deliver, one printable line.
+  customerAddress?: string | null;
   meta: DataRow<MetaField>[];
   lines: LineData[];
   lineLabels: {
@@ -339,6 +342,44 @@ function salePayments(document: Doc, currency: string, t: Translate): DataRow<Pa
   return result;
 }
 
+export type CustomerPrint = {
+  name: string | null;
+  phone: string | null;
+  address: string | null;
+};
+
+// The customer as an order is printed with it. The customer field also
+// carries where to deliver, so a template that prints the customer prints
+// the delivery address with it.
+function customerRows(
+  customer: CustomerPrint | null,
+  t: Translate,
+  walkIn?: string,
+): DataRow<MetaField>[] {
+  const value = customer ? [customer.name, customer.phone].filter(Boolean).join(' · ') : '';
+  const result: DataRow<MetaField>[] = [];
+  if (value || walkIn)
+    result.push({ field: 'customer', label: t('receiptCustomer'), value: value || walkIn || '' });
+  if (customer?.address)
+    result.push({
+      field: 'customer',
+      label: t('receiptDeliveryAddress'),
+      value: customer.address,
+      strong: true,
+    });
+  return result;
+}
+
+function workspaceCustomer(workspace: PosWorkspace): CustomerPrint | null {
+  const customer = workspace.customer;
+  if (!customer) return null;
+  return {
+    name: customer.name || null,
+    phone: customer.phone || null,
+    address: customer.address || null,
+  };
+}
+
 const SNAPSHOT_TYPES: Record<string, DocumentType> = {
   sale: 'sale',
   return: 'return',
@@ -376,11 +417,16 @@ export function snapshotData(receipt: ReceiptSnapshot, t: Translate): TemplateDa
       value: str(document.return_number) ?? '',
     });
   const customer = obj(document.customer);
-  const customerValue = customer
-    ? [str(customer.name), str(customer.phone)].filter(Boolean).join(' · ')
-    : '';
-  if (customerValue)
-    meta.push({ field: 'customer', label: t('receiptCustomer'), value: customerValue });
+  meta.push(
+    ...customerRows(
+      customer && {
+        name: str(customer.name),
+        phone: str(customer.phone),
+        address: str(customer.address),
+      },
+      t,
+    ),
+  );
 
   let lines: LineData[] = [];
   let totals: DataRow<TotalField>[] = [];
@@ -502,6 +548,8 @@ export function snapshotData(receipt: ReceiptSnapshot, t: Translate): TemplateDa
     cashier,
     time,
     customerName: str(customer?.name),
+    customerPhone: str(customer?.phone),
+    customerAddress: str(customer?.address),
     meta,
     lines,
     lineLabels: lineLabels(t),
@@ -599,13 +647,21 @@ export function prebillData(
     cashier: null,
     time,
     customerName: workspace.customer?.name || null,
-    meta: [{ field: 'time', label: t('receiptTime'), value: time }],
+    customerPhone: workspace.customer?.phone || null,
+    customerAddress: workspace.customer?.address || null,
+    meta: [
+      { field: 'time', label: t('receiptTime'), value: time },
+      ...customerRows(workspaceCustomer(workspace), t),
+    ],
     lines,
     lineLabels: lineLabels(t),
     signatureLabels: signatureLabels(t),
     totals: totalRows,
     payments,
-    notes: [t('receiptPrebillNote')],
+    // The order note carries what the customer asked for in their message.
+    notes: [workspace.note?.trim(), t('receiptPrebillNote')].filter((note): note is string =>
+      Boolean(note),
+    ),
     disclaimer: t('receiptDisclaimer'),
   };
 }
@@ -635,11 +691,7 @@ export function paymentTicketData(
     meta.push({ field: 'order_number', label: t('ticketOrder'), value: workspace.order_id });
   if (names.cashier)
     meta.push({ field: 'cashier', label: t('receiptCashier'), value: names.cashier });
-  meta.push({
-    field: 'customer',
-    label: t('receiptCustomer'),
-    value: workspace.customer?.name || t('customerWalkIn'),
-  });
+  meta.push(...customerRows(workspaceCustomer(workspace), t, t('customerWalkIn')));
 
   const lines = (workspace.line_items ?? []).map((line): LineData => {
     const price = lineUnitPrice(line);
@@ -718,6 +770,8 @@ export function paymentTicketData(
     cashier: names.cashier || null,
     time,
     customerName: workspace.customer?.name || null,
+    customerPhone: workspace.customer?.phone || null,
+    customerAddress: workspace.customer?.address || null,
     meta,
     lines,
     lineLabels: lineLabels(t),

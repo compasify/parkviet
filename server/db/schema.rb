@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_08_210000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_09_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -2554,6 +2554,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_08_210000) do
     t.string "email", limit: 254
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "address", limit: 255
     t.index ["customer_id"], name: "index_spree_pos_customers_on_customer_id"
     t.index ["store_id", "email"], name: "idx_pos_customers_store_email"
     t.index ["store_id", "normalized_phone"], name: "idx_pos_customers_store_phone"

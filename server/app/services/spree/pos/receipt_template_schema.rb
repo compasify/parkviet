@@ -70,7 +70,7 @@ module Spree
       SECTIONS = {
         'sale' => { 'meta' => META_ALL, 'lines' => COLUMNS_ALL, 'totals' => TOTALS_ALL, 'payments' => PAYMENTS_ALL },
         'prebill' => {
-          'meta' => %w[time register branch], 'lines' => %w[index name sku unit qty price amount],
+          'meta' => %w[time register branch customer], 'lines' => %w[index name sku unit qty price amount],
           'totals' => %w[item_total discount total], 'payments' => %w[paid_total]
         },
         'payment_ticket' => {

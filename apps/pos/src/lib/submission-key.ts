@@ -21,6 +21,8 @@ export function customerSubmissionContent(input: {
   name: string;
   phone?: string;
   email?: string;
+  address?: string;
 }): string {
-  return JSON.stringify([input.branchId, input.name, input.phone || '', input.email || '']);
+  const base = [input.branchId, input.name, input.phone || '', input.email || ''];
+  return JSON.stringify(input.address ? [...base, input.address] : base);
 }

@@ -186,6 +186,8 @@ export type PosCustomer = {
   email: string | null;
   customer_id: string | null;
   has_account: boolean;
+  // Where to deliver, free text as the seller writes it.
+  address?: string | null;
 };
 
 export type PosCustomerProfile = {
@@ -195,6 +197,7 @@ export type PosCustomerProfile = {
   email: string | null;
   customer_id: string | null;
   has_account: boolean;
+  address?: string | null;
   duplicates?: PosCustomerProfile[];
 };
 

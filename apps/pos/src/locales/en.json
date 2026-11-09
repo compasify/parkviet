@@ -321,7 +321,7 @@
   "customerHasAccount": "Has account",
   "customerClear": "Remove customer",
   "customerNone": "Walk-in draft — no customer attached.",
-  "customerSearch": "Search by name, phone or email",
+  "customerSearch": "Search by name, phone or address",
   "customerFind": "Find customer",
   "customerResults": "Customer results",
   "customerAssign": "Attach to draft",
@@ -932,7 +932,9 @@
         "time": "Document time"
       },
       "customer": {
-        "name": "Customer name"
+        "name": "Customer name",
+        "phone": "Customer phone",
+        "address": "Delivery address"
       }
     },
     "preview": {
@@ -990,7 +992,8 @@
       "unitPack": "Pack",
       "unitCase": "Case",
       "conversion": "1 Case = 24 Cartons",
-      "reason": "Changed mind"
+      "reason": "Changed mind",
+      "address": "1205 block S1.02, hang on the door"
     },
     "print": {
       "index": "No.",
@@ -2814,5 +2817,10 @@
         ]
       }
     ]
-  }
+  },
+  "customerEditAddress": "Edit customer",
+  "customerSaveAddress": "Save and update order",
+  "receiptDeliveryAddress": "Deliver to",
+  "customerAddress": "Delivery address",
+  "customerAddressHint": "e.g. 1205 block S1.02, hang on the door"
 }

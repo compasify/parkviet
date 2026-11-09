@@ -63,7 +63,11 @@ function snapshotDocument(type: SourceType, place: SamplePlace, at: string, t: T
     at,
     currency: 'VND',
     cashier: place.cashier ?? t('receiptTemplates.sample.cashier'),
-    customer: { name: t('receiptTemplates.sample.customer'), phone: '090***4567' },
+    customer: {
+      name: t('receiptTemplates.sample.customer'),
+      phone: '090***4567',
+      address: t('receiptTemplates.sample.address'),
+    },
   };
   switch (type) {
     case 'sale':
@@ -156,7 +160,10 @@ function sampleWorkspace(t: Translate): PosWorkspace {
   return {
     id: 'sample',
     order_id: SAMPLE_NUMBERS.sale,
-    customer: { name: t('receiptTemplates.sample.customer') },
+    customer: {
+      name: t('receiptTemplates.sample.customer'),
+      address: t('receiptTemplates.sample.address'),
+    },
     line_items: [
       {
         name: t('receiptTemplates.sample.itemCoffee'),

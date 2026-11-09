@@ -28,7 +28,8 @@
   ],
   "meta": {
     "fields": [
-      "time"
+      "time",
+      "customer"
     ],
     "labels": {}
   },

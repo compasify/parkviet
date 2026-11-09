@@ -13,5 +13,7 @@
   "cashier",
   "document.number",
   "document.time",
-  "customer.name"
+  "customer.name",
+  "customer.phone",
+  "customer.address"
 ]

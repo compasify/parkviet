@@ -18,13 +18,15 @@ module Spree
 
         escaped = ActiveRecord::Base.sanitize_sql_like(term)
         phone = CustomerProfile.normalize_phone(term)
+        # A seller in an apartment block often knows the customer by their
+        # unit ("1205") rather than by name.
         scope = CustomerProfile.for_store(store).where(
-          'name ILIKE :term OR phone ILIKE :term OR normalized_phone = :phone OR email ILIKE :term',
+          'name ILIKE :term OR phone ILIKE :term OR normalized_phone = :phone OR email ILIKE :term OR address ILIKE :term',
           term: "%#{escaped}%", phone: phone
         ).order(:name, :id)
         count = scope.count
         records = scope.offset((page - 1) * PAGE_LIMIT).limit(PAGE_LIMIT).to_a
-        duplicates = term.match?(/\A[+\d][\d\s().-]+\z/) ? records.size : 0
+        duplicates = term.match?(/\A[+\d][\d\s().-]+\z/) ? records.count { |row| row.normalized_phone == phone } : 0
         {
           data: records.map(&:to_pos),
           meta: { page: page, limit: PAGE_LIMIT, count: count, pages: (count + PAGE_LIMIT - 1) / PAGE_LIMIT,
@@ -34,7 +36,7 @@ module Spree
         raise Conflict, 'Customer search is invalid.'
       end
 
-      def self.create(store:, staff:, branch:, name:, phone:, email:)
+      def self.create(store:, staff:, branch:, name:, phone:, email:, address: nil)
         policy = AccessPolicy.new(store: store, staff: staff)
         raise CanCan::AccessDenied unless policy.allows?(branch, Capabilities::CUSTOMER)
 
@@ -42,9 +44,23 @@ module Spree
         customer = normalized_email && Spree.customer_class.find_by(email: normalized_email)
         profile = CustomerProfile.new(
           store: store, created_by: staff, customer: customer, name: name.to_s,
-          phone: phone.to_s.presence, email: normalized_email
+          phone: phone.to_s.presence, email: normalized_email, address: address.to_s
         )
         profile.save!
+        profile
+      end
+
+      # Corrects the name, phone or delivery address of a profile. The email
+      # stays: it ties the profile to a customer account.
+      def self.update(store:, staff:, branch:, profile_id:, attributes:)
+        policy = AccessPolicy.new(store: store, staff: staff)
+        raise CanCan::AccessDenied unless policy.allows?(branch, Capabilities::CUSTOMER)
+
+        profile = CustomerProfile.locate(CustomerProfile.for_store(store), profile_id)
+        raise ActiveRecord::RecordNotFound if profile.nil?
+
+        changes = attributes.to_h.stringify_keys.slice('name', 'phone', 'address').transform_values(&:to_s)
+        profile.update!(changes)
         profile
       end
 

@@ -61,6 +61,39 @@ RSpec.describe 'POS customers', type: :request do
     expect(response.parsed_body.fetch('data').size).to eq(2)
   end
 
+  it 'stores, edits and searches by the delivery address' do
+    _user, branch, _workspace, token = fixture([Spree::Pos::Capabilities::OPEN_SHIFT, Spree::Pos::Capabilities::CUSTOMER])
+    headers = { 'Authorization' => "Bearer #{token}" }
+    key = SecureRandom.uuid
+    post '/api/v3/admin/pos/customers', headers: headers.merge('Idempotency-Key' => key),
+      params: { branch_id: branch.prefixed_id, name: 'Chị Mai', phone: '0912000111', idempotency_key: key,
+                address: '  1205   S1.02, treo tay nắm cửa ' }, as: :json
+    expect(response).to have_http_status(:created)
+    data = response.parsed_body.fetch('data')
+    expect(data['address']).to eq('1205 S1.02, treo tay nắm cửa')
+
+    key2 = SecureRandom.uuid
+    post "/api/v3/admin/pos/customers/#{data['id']}/update", headers: headers.merge('Idempotency-Key' => key2),
+      params: { branch_id: branch.prefixed_id, address: '808 S1.03', idempotency_key: key2 }, as: :json
+    expect(response).to have_http_status(:ok)
+    expect(response.parsed_body.dig('data', 'address')).to eq('808 S1.03')
+    expect(response.parsed_body.dig('data', 'name')).to eq('Chị Mai')
+
+    get '/api/v3/admin/pos/customers', headers: headers, params: { branch_id: branch.prefixed_id, q: '808' }, as: :json
+    expect(response.parsed_body.fetch('data').map { |row| row['id'] }).to eq([data['id']])
+    expect(response.parsed_body.dig('meta', 'duplicate_candidates')).to eq(0)
+  end
+
+  it 'denies editing a customer without the customer capability' do
+    _user, branch, _workspace, token = fixture([Spree::Pos::Capabilities::OPEN_SHIFT])
+    profile = Spree::Pos::CustomerProfile.create!(store: store, created_by: create(:admin_user), name: 'A', phone: '0901')
+    post "/api/v3/admin/pos/customers/#{profile.prefixed_id}/update",
+      headers: { 'Authorization' => "Bearer #{token}", 'Idempotency-Key' => SecureRandom.uuid },
+      params: { branch_id: branch.prefixed_id, address: '1' }, as: :json
+    expect(response).to have_http_status(:forbidden)
+    expect(profile.reload.address).to be_nil
+  end
+
   it 'denies quick create without the customer capability' do
     _user, branch, _workspace, token = fixture([Spree::Pos::Capabilities::OPEN_SHIFT])
     post '/api/v3/admin/pos/customers', headers: { 'Authorization' => "Bearer #{token}", 'Idempotency-Key' => SecureRandom.uuid },

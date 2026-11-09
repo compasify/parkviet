@@ -22,6 +22,19 @@ const paths = {
   ),
   plus: <path d="M12 5v14 M5 12h14" />,
   minus: <path d="M5 12h14" />,
+  location: (
+    <>
+      <path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21Z" />
+      <circle cx="12" cy="9.5" r="2.5" />
+    </>
+  ),
+  truck: (
+    <>
+      <path d="M2 6h11v10H2Z M13 9h4l4 4v3h-8" />
+      <circle cx="6" cy="18" r="2" />
+      <circle cx="17" cy="18" r="2" />
+    </>
+  ),
   trash: (
     <>
       <path d="M3 6h18 M9 6V3h6v3 M5 6l1 15h12l1-15 M10 10v7 M14 10v7" />

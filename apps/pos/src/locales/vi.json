@@ -321,7 +321,7 @@
   "customerHasAccount": "Có tài khoản",
   "customerClear": "Bỏ khách",
   "customerNone": "Đơn khách lẻ — chưa gắn khách.",
-  "customerSearch": "Tìm theo tên, số điện thoại hoặc email",
+  "customerSearch": "Tìm theo tên, số điện thoại hoặc địa chỉ",
   "customerFind": "Tìm khách",
   "customerResults": "Kết quả tìm khách",
   "customerAssign": "Gắn vào đơn",
@@ -931,7 +931,9 @@
         "time": "Thời gian chứng từ"
       },
       "customer": {
-        "name": "Tên khách hàng"
+        "name": "Tên khách hàng",
+        "phone": "Số điện thoại khách",
+        "address": "Địa chỉ giao hàng"
       }
     },
     "preview": {
@@ -989,7 +991,8 @@
       "unitPack": "Gói",
       "unitCase": "Thùng",
       "conversion": "1 Thùng = 24 Hộp",
-      "reason": "Khách đổi ý"
+      "reason": "Khách đổi ý",
+      "address": "1205 tòa S1.02, treo tay nắm cửa"
     },
     "print": {
       "index": "STT",
@@ -2805,5 +2808,10 @@
         ]
       }
     ]
-  }
+  },
+  "customerEditAddress": "Sửa thông tin khách",
+  "customerSaveAddress": "Lưu và cập nhật đơn",
+  "receiptDeliveryAddress": "Giao đến",
+  "customerAddress": "Địa chỉ giao hàng",
+  "customerAddressHint": "VD: 1205 tòa S1.02, treo tay nắm cửa"
 }

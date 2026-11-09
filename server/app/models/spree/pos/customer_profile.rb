@@ -17,6 +17,8 @@ module Spree
       validates :name, presence: true, length: { maximum: 120 }
       validates :phone, length: { maximum: 32 }
       validates :email, length: { maximum: 254 }, format: { with: URI::MailTo::EMAIL_REGEXP }, allow_blank: true
+      # Free text, written the way the seller says it: "1205 S1.02, treo cửa".
+      validates :address, length: { maximum: 255 }
       validate :contact_present
       validate :email_matches_customer
 
@@ -32,6 +34,7 @@ module Spree
           name: name,
           phone: phone,
           email: email,
+          address: address,
           customer_id: customer&.prefixed_id,
           has_account: customer.present?
         }
@@ -44,6 +47,7 @@ module Spree
         self.phone = phone.to_s.strip.presence
         self.email = email.to_s.strip.downcase.presence
         self.normalized_phone = phone.present? ? self.class.normalize_phone(phone) : nil
+        self.address = address.to_s.squish.presence
       end
 
       def contact_present

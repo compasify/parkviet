@@ -84,7 +84,7 @@ const PAYMENTS_ALL: readonly PaymentField[] = [
 export const SECTION_RULES: Readonly<Record<DocumentType, SectionRules>> = {
   sale: { meta: META_ALL, lines: COLUMNS_ALL, totals: TOTALS_ALL, payments: PAYMENTS_ALL },
   prebill: {
-    meta: ['time', 'register', 'branch'],
+    meta: ['time', 'register', 'branch', 'customer'],
     lines: ['index', 'name', 'sku', 'unit', 'qty', 'price', 'amount'],
     totals: ['item_total', 'discount', 'total'],
     payments: ['paid_total'],

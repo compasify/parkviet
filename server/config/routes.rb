@@ -41,6 +41,7 @@ Rails.application.routes.draw do
               end
             end
             resources :customers, only: [:index, :create]
+            post 'customers/:id/update', to: 'customers#amend'
             resources :received_funds, only: [:index, :show, :create] do
               member do
                 post 'payouts', to: 'received_funds#request_payout'

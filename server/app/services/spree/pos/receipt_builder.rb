@@ -262,7 +262,7 @@ module Spree
       end
 
       def customer(profile)
-        profile && { 'name' => profile.name, 'phone' => profile.phone }
+        profile && { 'name' => profile.name, 'phone' => profile.phone, 'address' => profile.address }
       end
 
       def unit_names(store, codes)

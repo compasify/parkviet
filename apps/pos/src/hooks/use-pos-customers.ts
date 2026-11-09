@@ -45,6 +45,7 @@ export function useCreateCustomer(storeId: string | null) {
       name: string;
       phone?: string;
       email?: string;
+      address?: string;
     }): Promise<PosCustomerProfile> => {
       const content = customerSubmissionContent(input);
       // A retry of the same form content after a lost response must replay the
@@ -60,6 +61,52 @@ export function useCreateCustomer(storeId: string | null) {
               name: input.name,
               phone: input.phone || undefined,
               email: input.email || undefined,
+              address: input.address || undefined,
+              idempotency_key: key,
+            },
+            idempotencyKey: key,
+          },
+        );
+        keys.current.settle(content);
+        return result.data;
+      } catch (error) {
+        abandonIfNeeded(error);
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ['pos', 'customers', snapshot.generation, storeId],
+      });
+    },
+  });
+}
+
+export function useUpdateCustomer(storeId: string | null) {
+  const snapshot = useSession();
+  const queryClient = useQueryClient();
+  const keys = useRef(createSubmissionKey());
+  return useMutation({
+    mutationFn: async (input: {
+      branchId: string;
+      profileId: string;
+      name: string;
+      phone: string;
+      address: string;
+    }): Promise<PosCustomerProfile> => {
+      const content = JSON.stringify(input);
+      const key = keys.current.keyFor(content);
+      try {
+        const result = await session.request<{ data: PosCustomerProfile }>(
+          'POST',
+          `/pos/customers/${encodeURIComponent(input.profileId)}/update`,
+          {
+            body: {
+              branch_id: input.branchId,
+              name: input.name,
+              phone: input.phone,
+              // Blank clears the address.
+              address: input.address,
               idempotency_key: key,
             },
             idempotencyKey: key,

@@ -21,6 +21,8 @@ export const TEMPLATE_VARIABLES = [
   'document.number',
   'document.time',
   'customer.name',
+  'customer.phone',
+  'customer.address',
 ] as const;
 
 export type TemplateVariable = (typeof TEMPLATE_VARIABLES)[number];
@@ -50,6 +52,8 @@ export function variableValues(data: TemplateData): Record<TemplateVariable, str
     'document.number': data.number ?? '',
     'document.time': data.time,
     'customer.name': data.customerName ?? '',
+    'customer.phone': data.customerPhone ?? '',
+    'customer.address': data.customerAddress ?? '',
   };
 }
 
