@@ -455,6 +455,29 @@ export function useWorkspaces(
       return (await sendIntent(workspace.id, body, `/pos/workspaces/${workspace.id}/note`))
         .workspace;
     },
+    // Marks the draft as an order to deliver; the server adds the fee to the
+    // order total.
+    async setDelivery(workspace: PosWorkspace, input: { deliverer: string; fee: string }) {
+      const body = {
+        expected_revision: workspace.revision,
+        lease_generation: workspace.lease_generation,
+        editor_id: editorId,
+        deliverer: input.deliverer,
+        fee: input.fee,
+      };
+      return (await sendIntent(workspace.id, body, `/pos/workspaces/${workspace.id}/delivery`))
+        .workspace;
+    },
+    async clearDelivery(workspace: PosWorkspace) {
+      const body = {
+        expected_revision: workspace.revision,
+        lease_generation: workspace.lease_generation,
+        editor_id: editorId,
+      };
+      return (
+        await sendIntent(workspace.id, body, `/pos/workspaces/${workspace.id}/delivery/clear`)
+      ).workspace;
+    },
     async lineDiscount(
       workspace: PosWorkspace,
       saleLineId: string,

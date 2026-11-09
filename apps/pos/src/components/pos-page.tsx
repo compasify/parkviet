@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { canHandleDeliveries } from '../lib/deliveries';
 import { administrationAccess } from '../lib/pos-administration';
 import { canReadReceivables } from '../lib/receivables';
 import { canApprove, canProcessReturns } from '../lib/returns';
@@ -37,6 +38,12 @@ export function PosPage({
           <Link to="/orders" activeProps={{ className: 'is-active', 'aria-current': 'page' }}>
             <PosIcon name="list" />
             {t('ordersNav')}
+          </Link>
+        ) : null}
+        {context.data?.features?.delivery === true && canHandleDeliveries(capabilities) ? (
+          <Link to="/deliveries" activeProps={{ className: 'is-active', 'aria-current': 'page' }}>
+            <PosIcon name="box" />
+            {t('deliveriesNav')}
           </Link>
         ) : null}
         {canProcessReturns(capabilities) ? (

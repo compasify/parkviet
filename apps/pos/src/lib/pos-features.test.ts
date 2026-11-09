@@ -41,6 +41,7 @@ describe('branch feature flags', () => {
       vietqr: false,
       edit_lease: false,
       quick_credit: false,
+      delivery: false,
     });
     expect(featureEnabled(flags, 'credit')).toBe(true);
     expect(featureEnabled(flags, 'returns')).toBe(false);

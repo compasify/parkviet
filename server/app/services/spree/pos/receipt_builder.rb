@@ -123,10 +123,12 @@ module Spree
           'lines' => lines,
           'totals' => {
             'item_total' => money(order.item_total), 'discount_total' => money(order.discounts.sum(:amount)),
+            'fee_total' => money(order.fee_total),
             'included_tax_total' => money(order.included_tax_total), 'additional_tax_total' => money(order.additional_tax_total),
             'total' => money(order.total)
           },
-          'receipts' => receipts(workspace), 'credit' => credit(order, workspace.branch), 'note' => workspace.note.presence
+          'receipts' => receipts(workspace), 'credit' => credit(order, workspace.branch), 'note' => workspace.note.presence,
+          'delivery' => delivery(workspace)
         )
         paid = payload['receipts'].sum { |row| BigDecimal(row['amount']) }
         payload['paid_total'] = money(paid)
@@ -197,6 +199,12 @@ module Spree
         return nil if debit.nil?
 
         { 'debt' => money(debit.amount), 'due_on' => debit.due_on&.iso8601, 'pay_qr' => pay_qr(order, debit, branch) }.compact
+      end
+
+      # A sale to deliver prints who takes it and the delivery fee.
+      def delivery(workspace)
+        row = Delivery.find_by(workspace_id: workspace.id)
+        row && { 'deliverer' => row.deliverer, 'fee' => money(row.fee_amount) }
       end
 
       # A QR that cannot be built never costs the receipt itself.

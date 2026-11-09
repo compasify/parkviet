@@ -15,8 +15,10 @@ module Spree
       # cashier opening a draft takes its editing over automatically.
       # `quick_credit` refines `credit` and works only while `credit` is on
       # too: the cashier approves their own credit sale (one-person shops).
+      # `delivery` marks sales as orders to deliver (deliverer, delivery fee,
+      # pending until delivered).
       FEATURES = %w[credit returns refunds exchanges traceability customer_display cash_moves exports vietqr edit_lease
-                    quick_credit].freeze
+                    quick_credit delivery].freeze
 
       belongs_to :store, class_name: 'Spree::Store'
       belongs_to :branch, class_name: 'Spree::Pos::Branch', optional: true

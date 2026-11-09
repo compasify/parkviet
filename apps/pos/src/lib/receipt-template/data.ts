@@ -386,6 +386,48 @@ function customerRows(
   return result;
 }
 
+export type DeliveryPrint = { deliverer: string | null; fee: string | null };
+
+// A sale to deliver always says so, with who takes it, and prints its
+// delivery fee as a total row: both are part of what the customer is
+// charged, so a template cannot switch them off (`field: null`).
+export function deliveryMetaRows(
+  delivery: DeliveryPrint | null,
+  t: Translate,
+): DataRow<MetaField>[] {
+  if (!delivery) return [];
+  return [
+    {
+      field: null,
+      label: t('receiptDelivery'),
+      value: delivery.deliverer || t('receiptDeliveryYes'),
+      strong: true,
+    },
+  ];
+}
+
+// Placed just before the grand total.
+function withDeliveryFee(
+  totals: DataRow<TotalField>[],
+  delivery: DeliveryPrint | null,
+  currency: string,
+  t: Translate,
+): DataRow<TotalField>[] {
+  if (!delivery || !nonZero(delivery.fee)) return totals;
+  const row: DataRow<TotalField> = {
+    field: null,
+    label: t('receiptDeliveryFee'),
+    value: formatMoney(delivery.fee, currency),
+  };
+  const at = totals.findIndex((item) => item.field === 'total');
+  return at < 0 ? [...totals, row] : [...totals.slice(0, at), row, ...totals.slice(at)];
+}
+
+function workspaceDelivery(workspace: PosWorkspace): DeliveryPrint | null {
+  const delivery = workspace.delivery;
+  return delivery ? { deliverer: delivery.deliverer || null, fee: delivery.fee } : null;
+}
+
 function workspaceCustomer(workspace: PosWorkspace): CustomerPrint | null {
   const customer = workspace.customer;
   if (!customer) return null;
@@ -450,13 +492,20 @@ export function snapshotData(receipt: ReceiptSnapshot, t: Translate): TemplateDa
   let payQr: PrintPayQr | null = null;
   const notes: string[] = [];
   switch (receipt.source_type) {
-    case 'sale':
+    case 'sale': {
+      const deliveryDoc = obj(document.delivery);
+      const delivery = deliveryDoc && {
+        deliverer: str(deliveryDoc.deliverer),
+        fee: str(deliveryDoc.fee),
+      };
+      meta.push(...deliveryMetaRows(delivery, t));
       lines = rows(document.lines).map((line) => saleLine(line, currency, t));
-      totals = saleTotals(document, currency, t);
+      totals = withDeliveryFee(saleTotals(document, currency, t), delivery, currency, t);
       payments = salePayments(document, currency, t);
       payQr = payQrPrint(payLaterQr(obj(document.credit)?.pay_qr), t);
       if (str(document.note)) notes.push(str(document.note) ?? '');
       break;
+    }
     case 'return':
       lines = rows(document.lines).map((line) => ({
         ...emptyLine(str(line.name) ?? ''),
@@ -671,11 +720,12 @@ export function prebillData(
     meta: [
       { field: 'time', label: t('receiptTime'), value: time },
       ...customerRows(workspaceCustomer(workspace), t),
+      ...deliveryMetaRows(workspaceDelivery(workspace), t),
     ],
     lines,
     lineLabels: lineLabels(t),
     signatureLabels: signatureLabels(t),
-    totals: totalRows,
+    totals: withDeliveryFee(totalRows, workspaceDelivery(workspace), currency, t),
     payments,
     // The order note carries what the customer asked for in their message.
     notes: [workspace.note?.trim(), t('receiptPrebillNote')].filter((note): note is string =>
@@ -711,6 +761,7 @@ export function paymentTicketData(
   if (names.cashier)
     meta.push({ field: 'cashier', label: t('receiptCashier'), value: names.cashier });
   meta.push(...customerRows(workspaceCustomer(workspace), t, t('customerWalkIn')));
+  meta.push(...deliveryMetaRows(workspaceDelivery(workspace), t));
 
   const lines = (workspace.line_items ?? []).map((line): LineData => {
     const price = lineUnitPrice(line);
@@ -795,7 +846,7 @@ export function paymentTicketData(
     lines,
     lineLabels: lineLabels(t),
     signatureLabels: signatureLabels(t),
-    totals,
+    totals: withDeliveryFee(totals, workspaceDelivery(workspace), currency, t),
     payments,
     notes: [],
     disclaimer: null,

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_09_160000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_09_170100) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -2561,6 +2561,28 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_09_160000) do
     t.index ["store_id"], name: "index_spree_pos_customers_on_store_id"
   end
 
+  create_table "spree_pos_deliveries", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "branch_id", null: false
+    t.bigint "workspace_id", null: false
+    t.bigint "order_id", null: false
+    t.bigint "fee_id"
+    t.string "status", limit: 20, default: "pending", null: false
+    t.string "deliverer", limit: 80
+    t.decimal "fee_amount", precision: 10, scale: 2, default: "0.0", null: false
+    t.datetime "delivered_at"
+    t.bigint "delivered_by_id"
+    t.bigint "created_by_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["branch_id", "status", "delivered_at"], name: "idx_pos_deliveries_branch_status"
+    t.index ["order_id"], name: "index_spree_pos_deliveries_on_order_id", unique: true
+    t.index ["workspace_id"], name: "index_spree_pos_deliveries_on_workspace_id", unique: true
+    t.check_constraint "(status::text = 'delivered'::text) = (delivered_at IS NOT NULL)", name: "chk_pos_deliveries_delivered_at"
+    t.check_constraint "fee_amount >= 0::numeric", name: "chk_pos_deliveries_fee"
+    t.check_constraint "status::text = ANY (ARRAY['pending'::character varying, 'delivered'::character varying]::text[])", name: "chk_pos_deliveries_status"
+  end
+
   create_table "spree_pos_discount_allocations", force: :cascade do |t|
     t.bigint "discount_intent_id"
     t.bigint "discount_id", null: false
@@ -2674,7 +2696,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_09_160000) do
     t.index ["store_id", "feature"], name: "idx_pos_feature_flags_store_default", unique: true, where: "(branch_id IS NULL)"
     t.index ["store_id"], name: "index_spree_pos_feature_flags_on_store_id"
     t.check_constraint "char_length(reason::text) >= 1 AND char_length(reason::text) <= 200", name: "chk_pos_feature_flags_reason"
-    t.check_constraint "feature::text = ANY (ARRAY['credit'::character varying, 'returns'::character varying, 'refunds'::character varying, 'exchanges'::character varying, 'traceability'::character varying, 'customer_display'::character varying, 'cash_moves'::character varying, 'exports'::character varying, 'vietqr'::character varying, 'edit_lease'::character varying, 'quick_credit'::character varying]::text[])", name: "chk_pos_feature_flags_feature"
+    t.check_constraint "feature::text = ANY (ARRAY['credit'::character varying, 'returns'::character varying, 'refunds'::character varying, 'exchanges'::character varying, 'traceability'::character varying, 'customer_display'::character varying, 'cash_moves'::character varying, 'exports'::character varying, 'vietqr'::character varying, 'edit_lease'::character varying, 'quick_credit'::character varying, 'delivery'::character varying]::text[])", name: "chk_pos_feature_flags_feature"
   end
 
   create_table "spree_pos_funds_allocations", force: :cascade do |t|
@@ -5299,6 +5321,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_09_160000) do
   add_foreign_key "spree_pos_customers", "spree_admin_users", column: "created_by_id"
   add_foreign_key "spree_pos_customers", "spree_customers", column: "customer_id"
   add_foreign_key "spree_pos_customers", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_deliveries", "spree_admin_users", column: "created_by_id"
+  add_foreign_key "spree_pos_deliveries", "spree_admin_users", column: "delivered_by_id"
+  add_foreign_key "spree_pos_deliveries", "spree_fees", column: "fee_id", on_delete: :nullify
+  add_foreign_key "spree_pos_deliveries", "spree_orders", column: "order_id"
+  add_foreign_key "spree_pos_deliveries", "spree_pos_branches", column: "branch_id"
+  add_foreign_key "spree_pos_deliveries", "spree_pos_workspaces", column: "workspace_id"
+  add_foreign_key "spree_pos_deliveries", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_discount_allocations", "spree_discounts", column: "discount_id", on_delete: :cascade
   add_foreign_key "spree_pos_discount_allocations", "spree_pos_discount_intents", column: "discount_intent_id"
   add_foreign_key "spree_pos_discount_allocations", "spree_pos_line_discount_intents", column: "line_discount_intent_id", on_delete: :cascade

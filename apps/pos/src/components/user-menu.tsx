@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import { type ReactNode, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { canHandleDeliveries } from '../lib/deliveries';
 import { administrationAccess } from '../lib/pos-administration';
 import type { PosContext } from '../lib/pos-context';
 import { canReadReceivables } from '../lib/receivables';
@@ -81,6 +82,11 @@ export function UserMenu({
         <Link to="/orders" {...item}>
           {t('ordersNav')}
         </Link>
+        {data.features?.delivery === true && canHandleDeliveries(capabilities) ? (
+          <Link to="/deliveries" {...item}>
+            {t('deliveriesNav')}
+          </Link>
+        ) : null}
         {canProcessReturns(capabilities) ? (
           <Link to="/returns" {...item}>
             {t('returnsNav')}

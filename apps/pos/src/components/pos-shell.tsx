@@ -61,20 +61,22 @@ function ShellFrame() {
               ? t('creditApprovalsNav')
               : pathname.endsWith('/orders')
                 ? t('ordersNav')
-                : pathname.endsWith('/returns')
-                  ? t('returnsNav')
-                  : pathname.endsWith('/shifts')
-                    ? t('shiftsNav')
-                    : pathname.endsWith('/reports')
-                      ? t('reportsNav')
-                      : pathname.endsWith('/inventory')
-                        ? t('inventoryNav')
-                        : pathname.endsWith('/receipts')
-                          ? t('receiptsTitle')
-                          : t('sellingArea');
+                : pathname.endsWith('/deliveries')
+                  ? t('deliveriesNav')
+                  : pathname.endsWith('/returns')
+                    ? t('returnsNav')
+                    : pathname.endsWith('/shifts')
+                      ? t('shiftsNav')
+                      : pathname.endsWith('/reports')
+                        ? t('reportsNav')
+                        : pathname.endsWith('/inventory')
+                          ? t('inventoryNav')
+                          : pathname.endsWith('/receipts')
+                            ? t('receiptsTitle')
+                            : t('sellingArea');
   const pageTitle = onSetup ? t('setup.title') : sectionTitle;
   const isSale =
-    !/\/(settings|setup|funds|receivables|credit-accounts|credit-approvals|payment-attention|orders|returns|shifts|reports|inventory|receipts)(\/|$)/.test(
+    !/\/(settings|setup|funds|receivables|credit-accounts|credit-approvals|payment-attention|orders|deliveries|returns|shifts|reports|inventory|receipts)(\/|$)/.test(
       pathname,
     );
   // A store not set up yet, seen by someone who may set it up, goes to the

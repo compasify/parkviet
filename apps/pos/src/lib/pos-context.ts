@@ -115,8 +115,21 @@ export type PosTotals = {
   manual_discount_total: string;
   included_tax_total: string;
   additional_tax_total: string;
+  // Fees on the order (the delivery fee); missing from older servers.
+  fee_total?: string;
   total: string;
   currency: string;
+};
+
+// A sale to deliver: who takes it, the delivery fee (already in the order
+// total) and whether it was delivered.
+export type PosDelivery = {
+  id: string;
+  status: 'pending' | 'delivered';
+  deliverer: string | null;
+  fee: string;
+  delivered_at: string | null;
+  delivered_by: string | null;
 };
 
 export type PosLineDiscount = {
@@ -429,6 +442,8 @@ export type PosWorkspace = {
     amount: string;
   } | null;
   totals?: PosTotals;
+  // Set when the sale is an order to deliver.
+  delivery?: PosDelivery | null;
   financial?: PosFinancial | null;
   // Missing on payloads from servers without stock traceability.
   trace?: WorkspaceTrace | null;

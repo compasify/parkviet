@@ -689,6 +689,17 @@ kbd { padding: var(--pos-s1); border: 1px solid var(--pos-border); border-radius
 .collection-allocations .money-input { width: 100%; min-width: 7rem; }
 .pay-later-share { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--pos-s2); margin-left: var(--pos-s2); }
 .pay-later-share button { display: inline-flex; align-items: center; gap: 4px; }
+.delivery-filter, .delivery-names { border: 0; margin: 0; padding: 0; min-width: 0; }
+.delivery-filter { display: inline-flex; flex-wrap: wrap; gap: var(--pos-s1); }
+.delivery-filter button[aria-pressed='true'], .delivery-names button[aria-pressed='true'] { border-color: var(--pos-accent, currentColor); font-weight: 700; }
+.delivery-list > li { align-items: flex-start; }
+.delivery-row[data-status='pending'] { border-left: 3px solid var(--pos-warning); padding-left: var(--pos-s3); }
+.delivery-address { font-weight: 600; }
+.delivery-money { display: flex; flex-direction: column; align-items: flex-end; gap: var(--pos-s1); white-space: nowrap; }
+.delivery-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--pos-s2); }
+.delivery-actions .primary-button { min-height: 44px; }
+.delivery-names { display: flex; flex-wrap: wrap; gap: var(--pos-s1); }
+.delivery-form label { display: grid; gap: var(--pos-s1); }
 .receivable-list > li { align-items: flex-start; }
 .receivable-row[data-overdue='true'] { border-left: 3px solid var(--pos-warning); padding-left: var(--pos-s3); }
 .receivable-breakdown, .receivable-aging { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: var(--pos-s2) var(--pos-s4); margin: 0; flex: 1 1 100%; }

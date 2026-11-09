@@ -181,6 +181,14 @@ Rails.application.routes.draw do
                 post :pairing_code
               end
             end
+            # Delivery orders of a branch ("Đơn cần giao").
+            get 'deliveries/deliverers', to: 'deliveries#deliverers'
+            resources :deliveries, only: [:index] do
+              member do
+                post :deliver
+                post :reopen
+              end
+            end
             resources :approvals, only: [:index, :show, :create] do
               member do
                 post :revoke
@@ -215,6 +223,8 @@ Rails.application.routes.draw do
               post 'credit_approvals', to: 'workspaces/credit_approvals#create'
               post 'credit_requests', to: 'workspaces/credit_approvals#request_approval'
               post 'quick_credit', to: 'workspaces/credit_approvals#quick'
+              post 'delivery', to: 'workspaces/deliveries#assign'
+              post 'delivery/clear', to: 'workspaces/deliveries#clear'
               member do
                 post 'discount/clear', to: 'workspaces/discounts#clear'
                 post :park

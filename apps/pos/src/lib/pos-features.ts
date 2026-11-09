@@ -20,6 +20,9 @@ export const POS_FEATURES = [
   // Quick credit refines `credit` (both must be on): the cashier approves
   // their own credit sale, for one-person shops.
   'quick_credit',
+  // Delivery orders: a sale is marked for delivery (deliverer, delivery fee)
+  // and waits in "Đơn cần giao" until it is delivered.
+  'delivery',
 ] as const;
 
 export type PosFeature = (typeof POS_FEATURES)[number];

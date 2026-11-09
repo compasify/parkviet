@@ -30,6 +30,7 @@ import { readLayout } from '../lib/workspace-storage';
 import { CatalogSearch, type ScanNotice } from './catalog-search';
 import { CloseTabDialog } from './close-tab-dialog';
 import { CustomerPanel } from './customer-panel';
+import { DeliveryForm } from './delivery-form';
 import { DiscountForm } from './discount-form';
 import { DisplayPinControl } from './display-pin-control';
 import { NoteForm } from './note-form';
@@ -163,6 +164,7 @@ export function WorkspaceTabs() {
   const tablist = useRef<HTMLDivElement>(null);
   const discountDetailsRef = useRef<HTMLDetailsElement>(null);
   const noteDetailsRef = useRef<HTMLDetailsElement>(null);
+  const deliveryDetailsRef = useRef<HTMLDetailsElement>(null);
   const activeTabId = active?.id;
   useEffect(() => {
     if (!leaseWait || leaseWait.workspaceId !== activeTabId) {
@@ -1111,6 +1113,33 @@ export function WorkspaceTabs() {
                         />
                       </div>
                     </details>
+                    {/* Delivery orders (`delivery` switch); an order already
+                        marked keeps the entry so it can be undone. */}
+                    {data?.features?.delivery === true || active.delivery ? (
+                      <details className="checkout-optional" ref={deliveryDetailsRef}>
+                        <summary title={lockReason}>
+                          <PosIcon name="box" /> {t('deliveryTitle')}
+                        </summary>
+                        <div className="pos-popup-backdrop">
+                          <DeliveryForm
+                            key={`${active.id}:delivery:${active.revision}`}
+                            workspace={active}
+                            disabled={editDisabled}
+                            disabledReason={lockReason}
+                            onSave={(input) =>
+                              command(active, (current) => workspaces.setDelivery(current, input))
+                            }
+                            onClear={() =>
+                              command(active, (current) => workspaces.clearDelivery(current))
+                            }
+                            onClose={() => {
+                              if (deliveryDetailsRef.current)
+                                deliveryDetailsRef.current.open = false;
+                            }}
+                          />
+                        </div>
+                      </details>
+                    ) : null}
                   </div>
                 </div>
                 {active.totals ? (
@@ -1132,6 +1161,24 @@ export function WorkspaceTabs() {
                         {formatMoney(active.totals.discount_total, active.totals.currency)}
                       </strong>
                     </div>
+                    {active.delivery ? (
+                      <div className="checkout-line">
+                        <span>
+                          {t('deliveryFee')}{' '}
+                          <small className="item-discount-source">
+                            {active.delivery.deliverer
+                              ? t('deliveryBadgeNamed', { name: active.delivery.deliverer })
+                              : t('deliveryBadge')}
+                          </small>
+                        </span>
+                        <strong>
+                          {formatMoney(
+                            active.totals.fee_total ?? active.delivery.fee,
+                            active.totals.currency,
+                          )}
+                        </strong>
+                      </div>
+                    ) : null}
                     <div className="checkout-line checkout-total">
                       <span>{t('orderTotal')}</span>
                       <strong>{formatMoney(active.totals.total, active.totals.currency)}</strong>

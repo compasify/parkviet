@@ -130,8 +130,11 @@ module Spree
           coupon: coupon_code && {
             code: coupon_code.to_s.upcase, name: coupon_promo&.name, amount: money(coupon_amount)
           },
+          # An order to deliver: deliverer, fee and delivery status.
+          delivery: Spree::Pos::Delivery.find_by(workspace_id: id)&.to_pos,
           totals: {
             item_total: money(order.item_total), discount_total: money(discounts.sum(&:amount)),
+            fee_total: money(order.fee_total),
             manual_discount_total: money(manual_total), included_tax_total: money(order.included_tax_total),
             additional_tax_total: money(order.additional_tax_total), total: money(order.total),
             currency: order.currency

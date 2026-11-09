@@ -10,6 +10,7 @@ import { session } from './lib/app-session';
 import { CreditAccountsPage } from './pages/credit-accounts';
 import { CreditApprovalsPage } from './pages/credit-approvals';
 import { CustomerDisplayPage } from './pages/customer-display';
+import { DeliveriesPage } from './pages/deliveries';
 import { InventoryTraceabilityPage } from './pages/inventory-traceability';
 import { LoginPage } from './pages/login';
 import { OrdersPage } from './pages/orders';
@@ -150,6 +151,13 @@ const ordersRoute = createRoute({
   component: OrdersPage,
 });
 
+// Sales to deliver ("Đơn cần giao").
+const deliveriesRoute = createRoute({
+  getParentRoute: () => authedRoute,
+  path: '/deliveries',
+  component: DeliveriesPage,
+});
+
 const returnsRoute = createRoute({
   getParentRoute: () => authedRoute,
   path: '/returns',
@@ -232,6 +240,7 @@ export const router = createRouter({
       creditApprovalsRoute,
       attentionRoute,
       ordersRoute,
+      deliveriesRoute,
       returnsRoute,
       shiftsRoute,
       reportsRoute,
