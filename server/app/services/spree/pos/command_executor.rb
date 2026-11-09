@@ -71,12 +71,9 @@ module Spree
           end
         end
 
-        @authorize.call
-
-        existing = find_receipt
-        return replayed(existing) if existing&.digest == digest
-        raise Conflict, 'Idempotency key was reused with a different payload.' if existing
-
+        # Authorization and the receipt lookup run once, under the workspace
+        # lock, where the shift and lease state they read cannot change. A
+        # second pass before the lock repeated the same queries on every command.
         ApplicationRecord.transaction do
           workspace&.lock!
           @authorize.call

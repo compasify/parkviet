@@ -6,6 +6,7 @@ import {
 } from './financial-command';
 import {
   createMemoryFinancialStore,
+  financialRecoveryState,
   scopedFinancialRecords,
   setFinancialStore,
 } from './financial-recovery';
@@ -104,6 +105,35 @@ describe('a named intent keeps one key when the body is corrected', () => {
     const result = await runFinancialCommand(retry.request, collection('800000'), newKey);
     expect(result).toEqual({ data: { id: 'poscollect_1' }, recovered: true });
     expect(retry.calls.map((call) => call.method)).toEqual(['GET']);
+  });
+});
+
+describe('the shell warning while a payment is in flight', () => {
+  it('does not count a record whose request is still running', async () => {
+    let seenWhileSending: unknown;
+    const server = fakeServer([
+      async () => {
+        seenWhileSending = await financialRecoveryState('stf_1', 'store_1');
+        return { data: { id: 'ws_1' } };
+      },
+    ]);
+    await runFinancialCommand(server.request, confirmCommand('editor-a', 3), newKey);
+    expect(seenWhileSending).toEqual({ pending: 0, storageUnavailable: false });
+    expect(await financialRecoveryState('stf_1', 'store_1')).toEqual({
+      pending: 0,
+      storageUnavailable: false,
+    });
+  });
+
+  it('counts the record once the response was lost', async () => {
+    const server = fakeServer([fail(new TypeError('Failed to fetch'))]);
+    await expect(
+      runFinancialCommand(server.request, confirmCommand('editor-a', 3), newKey),
+    ).rejects.toThrow();
+    expect(await financialRecoveryState('stf_1', 'store_1')).toEqual({
+      pending: 1,
+      storageUnavailable: false,
+    });
   });
 });
 

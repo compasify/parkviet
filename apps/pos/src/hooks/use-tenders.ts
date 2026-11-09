@@ -7,9 +7,11 @@ import type {
   PosReceivedFunds,
   PosWorkspace,
 } from '../lib/pos-context';
+import { posWorkspacesKey } from '../lib/query-keys';
 import { posFailureKey } from '../lib/request-failure';
 import { SessionSuperseded } from '../lib/session-coordinator';
 import { VIETQR_POLL_MS, type VietqrEvidenceKind, type VietqrTenderSummary } from '../lib/vietqr';
+import { refreshWorkspaceLists, writeWorkspaceToCache } from '../lib/workspace-cache';
 import { useSession } from './use-session';
 import { workspaceEditorId } from './use-workspaces';
 
@@ -149,6 +151,18 @@ export function useTenders(staffId: string | null, storeId: string | null) {
     ]);
   }
 
+  // The command returned the canonical workspace: show it at once and reload
+  // the tab list and received funds in the background, instead of making the
+  // cashier wait for three GETs before the payment dialog or receipt opens.
+  async function accept(workspace: PosWorkspace) {
+    await queryClient.cancelQueries({ queryKey: posWorkspacesKey(snapshot.generation, storeId) });
+    writeWorkspaceToCache(queryClient, snapshot.generation, storeId, workspace);
+    void refreshWorkspaceLists(queryClient, snapshot.generation, storeId);
+    void queryClient.invalidateQueries({
+      queryKey: ['pos', 'received-funds', snapshot.generation],
+    });
+  }
+
   async function runFinancial(
     workspace: PosWorkspace,
     action: string,
@@ -164,7 +178,7 @@ export function useTenders(staffId: string | null, storeId: string | null) {
         path,
         body,
       });
-      await refresh();
+      await accept(result.data);
       return result.data;
     } catch (error) {
       abandonIfNeeded(error);

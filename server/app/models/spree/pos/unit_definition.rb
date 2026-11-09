@@ -76,8 +76,12 @@ module Spree
       end
       private_class_method :load_samples, :unit_row
 
+      # One query for the codes the store already has, then a write only for
+      # the missing ones. Selling calls this on every add, where every unit
+      # normally exists; eight find_or_create_by! round trips made each add slower.
       def self.create_missing!(store, rows)
-        rows.map do |code, name, dimension, base_code, factor, precision|
+        existing = where(store_id: store.id, code: rows.map(&:first)).pluck(:code).to_set
+        rows.reject { |row| existing.include?(row.first) }.map do |code, name, dimension, base_code, factor, precision|
           find_or_create_by!(store: store, code: code) do |unit|
             unit.name = name
             unit.dimension = dimension

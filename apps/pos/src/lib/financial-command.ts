@@ -1,5 +1,7 @@
 import { commandDigest } from './command-queue';
 import {
+  beginFinancialFlight,
+  endFinancialFlight,
   type FinancialRecoveryRecord,
   financialScope,
   forgetFinancialRecord,
@@ -111,6 +113,23 @@ export async function runFinancialCommand<T>(
   newKey: () => string = () => crypto.randomUUID(),
 ): Promise<{ data: T; recovered: boolean }> {
   const scope = financialIntentScope(command);
+  // Marked before the record exists, so the shell never sees it as uncertain
+  // while this request can still answer; cleared once the outcome is known
+  // or the request failed without one (the record then shows as uncertain).
+  beginFinancialFlight(scope);
+  try {
+    return await sendFinancialCommand<T>(request, command, scope, newKey);
+  } finally {
+    endFinancialFlight(scope);
+  }
+}
+
+async function sendFinancialCommand<T>(
+  request: FinancialRequest,
+  command: FinancialCommand,
+  scope: string,
+  newKey: () => string,
+): Promise<{ data: T; recovered: boolean }> {
   const existing = await existingRecord(command, scope);
   if (existing) {
     const receipt = await lookupReceipt<T>(request, existing.idempotencyKey);

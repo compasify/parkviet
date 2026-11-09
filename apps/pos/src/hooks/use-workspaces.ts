@@ -7,6 +7,7 @@ import { posWorkspacesKey } from '../lib/query-keys';
 import { leaseConflict, posFailureKey } from '../lib/request-failure';
 import { SessionSuperseded } from '../lib/session-coordinator';
 import { beginIntent, finishIntent, forgetIntent, hasIntent } from '../lib/uncertain-intents';
+import { writeWorkspaceToCache } from '../lib/workspace-cache';
 import { browserWorkspaceChannel, workspaceHint } from '../lib/workspace-channel';
 import { readLayout, writeLayout } from '../lib/workspace-storage';
 import { useSession } from './use-session';
@@ -132,18 +133,7 @@ export function useWorkspaces(
     // The mutation already returned the canonical full workspace. Cancel older
     // reads so they cannot replace it, then update the view without two GETs.
     await queryClient.cancelQueries({ queryKey: base });
-    queryClient.setQueriesData<Page | { data: PosWorkspace }>({ queryKey: base }, (current) => {
-      if (!current) return current;
-      const update = (previous: PosWorkspace) =>
-        previous.id === workspace.id &&
-        previous.revision <= workspace.revision &&
-        previous.lease_generation <= workspace.lease_generation
-          ? workspace
-          : previous;
-      return 'meta' in current
-        ? { ...current, data: current.data.map(update) }
-        : { ...current, data: update(current.data) };
-    });
+    writeWorkspaceToCache(queryClient, snapshot.generation, storeId, workspace);
     queryClient.setQueryData(
       [...base, 'selected', branchId, registerId, workspace.id],
       (current: { data: PosWorkspace } | undefined) =>

@@ -365,6 +365,10 @@ function ShellFrame() {
               {t('writesLocked')}
             </p>
           ) : null}
+        </div>
+        {/* Recovery notices float over the page: they come and go with the
+            outcome of a request and must not push the sale screen around. */}
+        <div className="pos-floating-alerts" aria-live="polite">
           {uncertain ? (
             <p className="error" role="status">
               {t('uncertainWarning')}
@@ -416,6 +420,8 @@ function ShellFrame() {
               ) : null}
             </div>
           ) : null}
+        </div>
+        <div className="pos-context-card pos-alerts">
           {logoutError && (
             <p className="error" role="alert">
               {logoutError}

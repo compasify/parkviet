@@ -155,6 +155,10 @@ export function WorkspaceTabs() {
     active && isEditor && !locked && active.operational_status === 'editing' && !active.payments,
   );
   const editDisabled = !editable || busy;
+  // Tapping a product does not wait for the previous add: the serializer
+  // queues it on the newest revision. Only a blocked scan or a draft still
+  // being created stops it.
+  const quickAddDisabled = !editable || creating || (active ? active.id in blockedScans : false);
   const lockReason = active?.payments ? t('editLockedPayments') : undefined;
   const tablist = useRef<HTMLDivElement>(null);
   const discountDetailsRef = useRef<HTMLDetailsElement>(null);
@@ -301,8 +305,8 @@ export function WorkspaceTabs() {
     if (autoClaimed.current === autoClaimTarget.id) return;
     autoClaimed.current = autoClaimTarget.id;
     const target = autoClaimTarget;
-    void run(() => command(target, (current) => workspaces.claim(current, true))).then(
-      (claimed) => setAutoClaimFailed(claimed ? null : target.id),
+    void run(() => command(target, (current) => workspaces.claim(current, true))).then((claimed) =>
+      setAutoClaimFailed(claimed ? null : target.id),
     );
   }, [autoClaimTarget?.id, autoClaimTarget?.lease_generation, focusTick]);
 
@@ -347,6 +351,29 @@ export function WorkspaceTabs() {
       // A tender was prepared meanwhile: reload so the basket shows as locked.
       if (snapshotLocked(error)) void workspaces.refresh();
       throw error;
+    });
+  }
+
+  // Taps on a product that wait behind another command are merged into one
+  // add with the summed quantity, so ten quick taps cost one request.
+  const quickAdds = useRef(new Map<string, { quantity: number }>());
+  function quickAdd(workspace: PosWorkspace, variantId: string) {
+    const key = `${workspace.id}:${variantId}`;
+    const queued = quickAdds.current.get(key);
+    if (queued) {
+      queued.quantity += 1;
+      return;
+    }
+    const entry = { quantity: 1 };
+    quickAdds.current.set(key, entry);
+    void run(() =>
+      command(workspace, (current) => {
+        // From here on a new tap starts a new add.
+        if (quickAdds.current.get(key) === entry) quickAdds.current.delete(key);
+        return workspaces.addItem(current, variantId, entry.quantity, { merge: true });
+      }),
+    ).finally(() => {
+      if (quickAdds.current.get(key) === entry) quickAdds.current.delete(key);
     });
   }
 
@@ -853,21 +880,12 @@ export function WorkspaceTabs() {
             storeId={storeId}
             branchId={selection.branchId}
             workspaceId={active?.id ?? null}
-            addDisabled={editDisabled}
+            addDisabled={quickAddDisabled}
             addDisabledReason={lockReason}
             scanNotice={scanNotice}
             onScan={editable ? (code) => enqueueScan.current(code) : undefined}
             scanTerminator={calibration.terminator}
-            onAdd={
-              active
-                ? (variantId) =>
-                    void run(() =>
-                      command(active, (current) =>
-                        workspaces.addItem(current, variantId, 1, { merge: true }),
-                      ),
-                    )
-                : undefined
-            }
+            onAdd={active ? (variantId) => quickAdd(active, variantId) : undefined}
             onAddForm={
               active
                 ? (variantId, quantity, extra) =>

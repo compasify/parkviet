@@ -80,7 +80,10 @@ module Spree
         order.reload
         discounts = order.discounts.to_a
         intent = Spree::Pos::DiscountIntent.find_by(workspace_id: id)
-        sale_lines = Spree::Pos::SaleLine.where(workspace_id: id).index_by(&:line_item_id)
+        sale_lines = Spree::Pos::SaleLine.where(workspace_id: id).includes(:line_discount_intent).index_by(&:line_item_id)
+        # Every line reads its variant, product, base price and discounts; load
+        # them in a few queries instead of five or six per line.
+        lines = order.line_items.includes(variant: %i[product prices], discounts: :promotion_action).to_a.sort_by(&:id)
         manual_total = discounts.select { |row| row.kind == 'manual' }.sum(&:amount)
         coupon_promo = order.promotions.detect { |promo| promo.coupon_code? || promo.code.present? }
         coupon_code = order.coupon_code.presence || coupon_promo&.code
@@ -94,7 +97,7 @@ module Spree
         summary.merge(
           trace: Spree::Pos::Inventory::AllocateTraceability.workspace_trace(self, traces),
           customer: customer_pos,
-          line_items: order.line_items.to_a.sort_by(&:id).map do |line|
+          line_items: lines.map do |line|
             core = {
               id: line.prefixed_id, variant_id: line.variant.prefixed_id, product_id: line.variant.product.prefixed_id,
               name: line.variant.product.name, sku: line.variant.sku, quantity: line.quantity,

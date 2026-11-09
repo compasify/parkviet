@@ -173,6 +173,11 @@ fieldset { border: 1px solid #d8e3dc; border-radius: 8px; display: grid; gap: 8p
 .recovery-check-result { flex-basis: 100%; padding: var(--pos-s2) var(--pos-s3); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); background: var(--pos-surface); }
 .pos-alerts .dialog { display: flex; flex-wrap: wrap; gap: var(--pos-s3); align-items: end; margin: 0; }
 .pos-alerts .dialog label { max-width: 220px; }
+/* Recovery notices float in a corner instead of pushing the sale screen down. */
+.pos-floating-alerts { position: fixed; z-index: var(--pos-overlay); left: var(--pos-s3); bottom: var(--pos-s3); display: flex; flex-direction: column; align-items: stretch; gap: var(--pos-s2); width: min(420px, calc(100vw - 2 * var(--pos-s3))); max-height: 50dvh; overflow-y: auto; }
+.pos-floating-alerts:empty { display: none; }
+.pos-floating-alerts > p, .pos-floating-alerts > .recovery-check-result { margin: 0; padding: var(--pos-s2) var(--pos-s3); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); background: var(--pos-surface); box-shadow: var(--pos-shadow); }
+.pos-floating-alerts > button { align-self: flex-start; box-shadow: var(--pos-shadow); }
 
 /* One compact strip: tabs carry order identity, state and available totals. */
 .draft-workspace { min-width: 0; }
