@@ -35,6 +35,7 @@ import { DiscountForm } from './discount-form';
 import { DisplayPinControl } from './display-pin-control';
 import { NoteForm } from './note-form';
 import { OrderLines } from './order-lines';
+import { OrderSourcePicker } from './order-source-picker';
 import { PaymentPanel } from './payment-panel';
 import { PosIcon } from './pos-icon';
 import { usePosSelection } from './pos-selection';
@@ -156,6 +157,9 @@ export function WorkspaceTabs() {
     active && isEditor && !locked && active.operational_status === 'editing' && !active.payments,
   );
   const editDisabled = !editable || busy;
+  // The order source moves no money: it stays open while a payment is taken.
+  const sourceDisabled =
+    !(active && isEditor && !locked && active.operational_status === 'editing') || busy;
   // Tapping a product does not wait for the previous add: the serializer
   // queues it on the newest revision. Only a blocked scan or a draft still
   // being created stops it.
@@ -1058,6 +1062,15 @@ export function WorkspaceTabs() {
                   command(active, (current) => workspaces.assignCustomer(current, profileId))
                 }
                 onClear={() => command(active, (current) => workspaces.clearCustomer(current))}
+              />
+              <OrderSourcePicker
+                value={active.order_source}
+                disabled={sourceDisabled}
+                onPick={(source) =>
+                  void run(() =>
+                    command(active, (current) => workspaces.setOrderSource(current, source)),
+                  )
+                }
               />
               <section className="checkout-totals" aria-label={t('orderDetails')}>
                 <div className="checkout-totals-header">

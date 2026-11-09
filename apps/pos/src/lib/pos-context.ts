@@ -1,3 +1,4 @@
+import type { OrderSource } from './order-source';
 import { normalizeFeatures, type PosFeatureFlags } from './pos-features';
 import {
   normalizeModules,
@@ -458,6 +459,8 @@ export type PosWorkspace = {
   operational_status: string;
   payments: boolean;
   note?: string | null;
+  // Where the sale came from; missing on older payloads (read as counter).
+  order_source?: OrderSource;
   customer?: PosCustomer | null;
   line_items?: PosLineItem[];
   discount?: PosDiscount | null;

@@ -12,6 +12,14 @@ import {
   useReport,
 } from '../hooks/use-reports';
 import { formatMoney } from '../lib/money';
+import {
+  matchingPreset,
+  ORDER_SOURCES,
+  orderSourceKey,
+  orderSourceRows,
+  RANGE_PRESETS,
+  rangePreset,
+} from '../lib/order-source';
 import { contextFeature } from '../lib/pos-features';
 import { failureStatus } from '../lib/request-failure';
 import {
@@ -30,6 +38,7 @@ const COLUMNS: Record<ReportType, string[]> = {
   sales: [
     'order_number',
     'sold_at',
+    'order_source',
     'register',
     'cashier',
     'item_total',
@@ -112,6 +121,7 @@ const CODES: Record<string, string> = {
   custody: 'reportCustody_',
   category: 'reportCategory_',
   aging: 'reportAging_',
+  order_source: 'orderSource_',
 };
 
 type ShiftLine = {
@@ -186,6 +196,39 @@ function Summary({
         </div>
       ))}
     </dl>
+  );
+}
+
+// Sales grouped by where the order came from ("Theo nguồn đơn"), as the
+// server summed them for the chosen days.
+function SourceSummary({ value, currency }: { value: unknown; currency: string }) {
+  const { t } = useTranslation();
+  if (!Array.isArray(value)) return null;
+  const rows = orderSourceRows(value);
+  return (
+    <div className="table-scroll">
+      <table className="report-table report-by-source">
+        <caption>{t('reportBySource')}</caption>
+        <thead>
+          <tr>
+            <th scope="col">{t('reportCol_order_source')}</th>
+            <th scope="col">{t('reportBySourceOrders')}</th>
+            <th scope="col">{t('reportBySourceSales')}</th>
+            <th scope="col">{t('reportBySourceOwed')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.order_source}>
+              <th scope="row">{t(orderSourceKey(row.order_source))}</th>
+              <td className="numeric">{row.orders}</td>
+              <td className="numeric">{formatMoney(row.sales_total, currency)}</td>
+              <td className="numeric">{formatMoney(row.owed, currency)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
@@ -403,6 +446,24 @@ function Reports() {
             aria-labelledby={`report-tab-${type}`}
           >
             <p className="muted">{t(`reportTabHint_${type}`)}</p>
+            {dated ? (
+              <fieldset className="report-range-presets">
+                <legend className="visually-hidden">{t('reportRangeQuick')}</legend>
+                {RANGE_PRESETS.map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    aria-pressed={matchingPreset({ from, to }, today) === preset}
+                    onClick={() => {
+                      setRange(preset === 'today' ? null : rangePreset(preset, today));
+                      setPage(1);
+                    }}
+                  >
+                    {t(`reportRange_${preset}`)}
+                  </button>
+                ))}
+              </fieldset>
+            ) : null}
             <form className="report-filters row" onSubmit={(event) => event.preventDefault()}>
               {dated ? (
                 <>
@@ -488,6 +549,22 @@ function Reports() {
                   >
                     <option value="">{t('reportSection_sales')}</option>
                     <option value="returns">{t('reportSection_returns')}</option>
+                  </select>
+                </label>
+              ) : null}
+              {type === 'sales' ? (
+                <label>
+                  {t('reportCol_order_source')}
+                  <select
+                    value={extra.order_source ?? ''}
+                    onChange={(event) => setFilter('order_source', event.target.value)}
+                  >
+                    <option value="">{t('reportAll')}</option>
+                    {ORDER_SOURCES.map((source) => (
+                      <option key={source} value={source}>
+                        {t(orderSourceKey(source))}
+                      </option>
+                    ))}
                   </select>
                 </label>
               ) : null}
@@ -577,6 +654,9 @@ function Reports() {
               </p>
             ) : null}
             {meta ? <Summary type={type} summary={meta.summary} currency={currency} /> : null}
+            {type === 'sales' && extra.section !== 'returns' && meta ? (
+              <SourceSummary value={meta.summary.by_source} currency={currency} />
+            ) : null}
             {type === 'cashbook' && meta ? (
               <ShiftSummary
                 lines={summaryShifts}

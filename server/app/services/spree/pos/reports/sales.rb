@@ -8,8 +8,9 @@ module Spree
       # counts in full here and its debt appears under receivables. Returns
       # never reduce the sale rows; the summary shows them separately.
       class Sales < Base
-        ENUMS = { 'section' => %w[sales returns] }.freeze
-        COLUMNS = %w[order_number sold_at register shift_id cashier item_total adjustment_total total currency].freeze
+        ENUMS = { 'section' => %w[sales returns], 'order_source' => Workspace::ORDER_SOURCES }.freeze
+        COLUMNS = %w[order_number sold_at order_source register shift_id cashier item_total adjustment_total total
+                     currency].freeze
         RETURN_COLUMNS = %w[return_id order_number returned_at sale_branch receiver entitlement_total credit_note_amount
                             refund_entitlement currency].freeze
 
@@ -33,13 +34,33 @@ module Spree
           sales_total = sales.sum('spree_orders.total')
           returns_total = returns.sum(:entitlement_total)
           { orders: sales.count, sales_total: money(sales_total), returns: returns.count,
-            returns_total: money(returns_total), net_sales: money(sales_total - returns_total) }
+            returns_total: money(returns_total), net_sales: money(sales_total - returns_total),
+            by_source: by_source }
+        end
+
+        # The same sales grouped by where the order came from: orders, gross
+        # sales (returns are not netted here) and what customers still owe
+        # on those orders today, from the receivable ledger. Every source is
+        # listed, in the fixed order, even with no sales.
+        def by_source
+          table = Workspace.table_name
+          joined = sales.joins("INNER JOIN #{table} ON #{table}.order_id = spree_orders.id").group("#{table}.order_source")
+          counts = joined.count
+          totals = joined.sum('spree_orders.total')
+          entries = ReceivableEntry.where(order_id: sales.select('spree_orders.id'))
+          entries = entries.joins("INNER JOIN #{table} ON #{table}.id = #{ReceivableEntry.table_name}.workspace_id")
+          owed = entries.group("#{table}.order_source").sum(Arel.sql(ReceivableEntry::SIGNED_SQL))
+          Workspace::ORDER_SOURCES.map do |source|
+            { order_source: source, orders: counts[source] || 0, sales_total: money(totals[source]),
+              owed: money([BigDecimal((owed[source] || 0).to_s), 0].max) }
+          end
         end
 
         private
 
         def sales
           workspaces = Workspace.where(branch_id: branch.id).where(shift_id: scope.shifts.select(:id))
+          workspaces = workspaces.where(order_source: filters['order_source']) if filters['order_source']
           workspaces = workspaces.where(register_id: filters.register.id) if filters.register
           workspaces = workspaces.where(shift_id: filters.shift.id) if filters.shift
           workspaces = workspaces.where(shift_id: Shift.where(owner_id: filters.cashier.id).select(:id)) if filters.cashier
@@ -51,10 +72,11 @@ module Spree
           scope_rows = scope_rows.where(receiver_id: scope.staff.id) unless scope.full?
           scope_rows = scope_rows.where(receiver_id: filters.cashier.id) if filters.cashier
           # Returns carry no drawer or shift; those filters select the sales they came from.
-          if filters.register || filters.shift
+          if filters.register || filters.shift || filters['order_source']
             origin = Workspace.all
             origin = origin.where(register_id: filters.register.id) if filters.register
             origin = origin.where(shift_id: filters.shift.id) if filters.shift
+            origin = origin.where(order_source: filters['order_source']) if filters['order_source']
             scope_rows = scope_rows.where(workspace_id: origin.select(:id))
           end
           within_range(scope_rows, 'spree_pos_return_operations.received_at')
@@ -64,7 +86,8 @@ module Spree
           workspaces = Workspace.where(order_id: orders.map(&:id)).includes(:register, shift: :owner).index_by(&:order_id)
           orders.map do |order|
             workspace = workspaces[order.id]
-            { order_number: order.number, sold_at: local(order.completed_at), register: workspace&.register&.code,
+            { order_number: order.number, sold_at: local(order.completed_at), order_source: workspace&.order_source,
+              register: workspace&.register&.code,
               shift_id: workspace&.shift&.prefixed_id, cashier: StaffName.call(workspace&.shift&.owner),
               item_total: money(order.item_total), adjustment_total: money(order.adjustment_total),
               total: money(order.total), currency: order.currency }

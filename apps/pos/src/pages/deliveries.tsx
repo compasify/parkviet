@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FeatureOffNote } from '../components/feature-off-note';
+import { OrderSourceTag } from '../components/order-source-picker';
 import { PageState, PosPage } from '../components/pos-page';
 import { usePosSelection } from '../components/pos-selection';
 import { ReceiptPrintButton } from '../components/receipt-print-dialog';
@@ -145,7 +146,8 @@ function DeliveryRow({
     <li className="delivery-row" data-status={row.status}>
       <span className="record-copy">
         <strong>
-          {row.order_number} · {formatInstant(row.placed_at, i18n.language)}
+          {row.order_number} · {formatInstant(row.placed_at, i18n.language)}{' '}
+          <OrderSourceTag value={row.order_source} />
         </strong>
         <span>
           {row.customer?.name || t('customerWalkIn')}

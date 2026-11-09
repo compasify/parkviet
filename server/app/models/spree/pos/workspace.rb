@@ -7,6 +7,8 @@ module Spree
       has_prefix_id :posworkspace
 
       LEASE_TTL = 120.seconds
+      # Where the sale came from; `counter` unless the cashier picks another.
+      ORDER_SOURCES = %w[counter facebook zalo other].freeze
 
       belongs_to :store, class_name: 'Spree::Store'
       belongs_to :branch, class_name: 'Spree::Pos::Branch'
@@ -18,6 +20,7 @@ module Spree
 
       validates :operational_status, inclusion: { in: %w[editing parked canceled completed] }
       validates :note, length: { maximum: 1000 }
+      validates :order_source, inclusion: { in: ORDER_SOURCES }
       validate :source_is_immutable
 
       scope :for_store, ->(store) { where(store_id: store.id) }
@@ -64,7 +67,8 @@ module Spree
           lease_generation: lease_generation,
           operational_status: operational_status,
           payments: operational_status == 'completed' || TenderAttempt.where(workspace_id: id).where.not(status: %w[canceled failed]).exists?,
-          note: note
+          note: note,
+          order_source: order_source
         }
       end
 

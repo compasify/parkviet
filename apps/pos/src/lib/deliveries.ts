@@ -14,6 +14,8 @@ export type PosDeliveryRow = {
   order_id: string;
   order_number: string;
   workspace_id: string;
+  // Missing on older servers (read as counter).
+  order_source?: string;
   placed_at: string | null;
   currency: string;
   total: string;

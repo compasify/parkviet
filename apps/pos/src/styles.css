@@ -702,6 +702,14 @@ kbd { padding: var(--pos-s1); border: 1px solid var(--pos-border); border-radius
 .delivery-money { display: flex; flex-direction: column; align-items: flex-end; gap: var(--pos-s1); white-space: nowrap; }
 .delivery-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--pos-s2); }
 .delivery-actions .primary-button { min-height: 44px; }
+/* Order source: one-tap picker on the sale screen, a small tag in lists. */
+.order-source-picker { display: flex; flex-wrap: wrap; gap: var(--pos-s1); border: 0; margin: var(--pos-s2) 0 0; padding: 0; min-width: 0; }
+.order-source-picker button { flex: 1 1 0; min-height: 36px; padding: 0 var(--pos-s2); font-size: var(--pos-small); }
+.order-source-picker button[aria-pressed='true'] { font-weight: 700; }
+.order-source-tag { display: inline-block; padding: 0 var(--pos-s2); border-radius: 999px; background: var(--pos-tint); border: 1px solid var(--pos-border); color: var(--pos-ink); font-size: var(--pos-small); font-weight: 600; vertical-align: middle; }
+.report-range-presets { display: flex; flex-wrap: wrap; gap: var(--pos-s1); border: 0; margin: var(--pos-s2) 0 0; padding: 0; min-width: 0; }
+.report-range-presets button[aria-pressed='true'] { font-weight: 700; }
+.report-by-source caption { text-align: left; font-weight: 700; }
 .delivery-names { display: flex; flex-wrap: wrap; gap: var(--pos-s1); }
 .delivery-form label { display: grid; gap: var(--pos-s1); }
 .receivable-list > li { align-items: flex-start; }

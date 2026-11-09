@@ -55,6 +55,7 @@ module Spree
           profile = delivery.workspace.pos_customer
           delivery.to_pos.merge(
             order_id: order.prefixed_id, order_number: order.number, workspace_id: delivery.workspace.prefixed_id,
+            order_source: delivery.workspace.order_source,
             placed_at: order.completed_at&.iso8601, currency: order.currency, total: money(order.total),
             paid: money(paid[order.id] || 0), owed: money([owed[order.id] || 0, 0].max),
             customer: profile && { name: profile.name, phone: profile.phone, address: profile.address }

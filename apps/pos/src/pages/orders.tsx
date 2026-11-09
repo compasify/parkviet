@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FeatureOffNote } from '../components/feature-off-note';
+import { OrderSourceTag } from '../components/order-source-picker';
 import { PageState, PosPage } from '../components/pos-page';
 import { usePosSelection } from '../components/pos-selection';
 import { ReceiptPrintButton } from '../components/receipt-print-dialog';
@@ -183,7 +184,9 @@ function Orders() {
                     onClick={() => setOpenId(openId === order.id ? null : order.id)}
                   >
                     <span className="record-copy">
-                      <strong>{order.number}</strong>
+                      <strong>
+                        {order.number} <OrderSourceTag value={order.order_source} />
+                      </strong>
                       <small>
                         {formatInstant(order.placed_at, i18n.language)} · {order.register ?? '—'} ·{' '}
                         {order.cashier}

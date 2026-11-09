@@ -2907,5 +2907,19 @@
   "debtReminderMore": "- and {{count}} more orders",
   "debtReminderMore_one": "- and {{count}} more order",
   "debtReminderMore_other": "- and {{count}} more orders",
-  "debtReminderThanks": "Please transfer when convenient. Thank you so much!"
+  "debtReminderThanks": "Please transfer when convenient. Thank you so much!",
+  "orderSourceTitle": "Order source",
+  "orderSource_counter": "Counter",
+  "orderSource_facebook": "Facebook",
+  "orderSource_zalo": "Zalo",
+  "orderSource_other": "Other",
+  "reportCol_order_source": "Source",
+  "reportBySource": "By order source",
+  "reportBySourceOrders": "Orders",
+  "reportBySourceSales": "Sales",
+  "reportBySourceOwed": "Still owed",
+  "reportRangeQuick": "Quick dates",
+  "reportRange_today": "Today",
+  "reportRange_last7": "7 days",
+  "reportRange_month": "This month"
 }

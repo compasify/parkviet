@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { session } from '../lib/app-session';
 import { commandDigest, commandQueue } from '../lib/command-queue';
+import type { OrderSource } from '../lib/order-source';
 import type { PosWorkspace } from '../lib/pos-context';
 import { posWorkspacesKey } from '../lib/query-keys';
 import { leaseConflict, posFailureKey } from '../lib/request-failure';
@@ -466,6 +467,17 @@ export function useWorkspaces(
         fee: input.fee,
       };
       return (await sendIntent(workspace.id, body, `/pos/workspaces/${workspace.id}/delivery`))
+        .workspace;
+    },
+    // Where the sale came from (counter, facebook, zalo, other).
+    async setOrderSource(workspace: PosWorkspace, orderSource: OrderSource) {
+      const body = {
+        expected_revision: workspace.revision,
+        lease_generation: workspace.lease_generation,
+        editor_id: editorId,
+        order_source: orderSource,
+      };
+      return (await sendIntent(workspace.id, body, `/pos/workspaces/${workspace.id}/order_source`))
         .workspace;
     },
     async clearDelivery(workspace: PosWorkspace) {

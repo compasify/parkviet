@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_09_180000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_09_190000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -3533,6 +3533,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_09_180000) do
     t.string "lease_editor_digest"
     t.bigint "pos_customer_id"
     t.text "note"
+    t.string "order_source", limit: 20, default: "counter", null: false
     t.index ["branch_id"], name: "index_spree_pos_workspaces_on_branch_id"
     t.index ["lease_holder_id"], name: "index_spree_pos_workspaces_on_lease_holder_id"
     t.index ["order_id"], name: "index_spree_pos_workspaces_on_order_id", unique: true
@@ -3542,6 +3543,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_09_180000) do
     t.index ["store_id"], name: "index_spree_pos_workspaces_on_store_id"
     t.check_constraint "note IS NULL OR char_length(note) <= 1000", name: "chk_pos_workspace_note_length"
     t.check_constraint "operational_status::text = ANY (ARRAY['editing'::character varying, 'parked'::character varying, 'canceled'::character varying, 'completed'::character varying]::text[])", name: "chk_spree_pos_workspaces_status"
+    t.check_constraint "order_source::text = ANY (ARRAY['counter'::character varying, 'facebook'::character varying, 'zalo'::character varying, 'other'::character varying]::text[])", name: "chk_pos_workspace_order_source"
   end
 
   create_table "spree_price_adjustment_tiers", force: :cascade do |t|

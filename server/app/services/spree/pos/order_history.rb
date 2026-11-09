@@ -51,6 +51,7 @@ module Spree
         debt = lookups[:debt][order.id]
         {
           id: order.prefixed_id, number: order.number, workspace_id: workspace.prefixed_id,
+          order_source: workspace.order_source,
           placed_at: order.completed_at&.iso8601, register: workspace.register&.name,
           cashier: staff_name(workspace.shift.owner), cashier_id: workspace.shift.owner.prefixed_id,
           customer: customer(workspace, mask),

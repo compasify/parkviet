@@ -85,7 +85,8 @@ RSpec.describe 'POS delivery orders API', type: :request do
     rows = list(cashier)['data']
     expect(response).to have_http_status(:ok)
     expect(rows.sole).to include('order_number' => order.number, 'status' => 'pending', 'deliverer' => 'Bố',
-                                 'total' => '120000.0', 'paid' => '120000.0', 'owed' => '0.0')
+                                 'total' => '120000.0', 'paid' => '120000.0', 'owed' => '0.0',
+                                 'order_source' => 'counter')
     expect(rows.sole['customer']).to include('name' => profile.name, 'phone' => profile.phone)
   end
 

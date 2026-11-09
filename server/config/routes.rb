@@ -226,6 +226,7 @@ Rails.application.routes.draw do
               post 'quick_credit', to: 'workspaces/credit_approvals#quick'
               post 'delivery', to: 'workspaces/deliveries#assign'
               post 'delivery/clear', to: 'workspaces/deliveries#clear'
+              post 'order_source', to: 'workspaces/order_sources#assign'
               member do
                 post 'discount/clear', to: 'workspaces/discounts#clear'
                 post :park
