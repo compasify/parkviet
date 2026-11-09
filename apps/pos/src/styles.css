@@ -188,7 +188,9 @@ fieldset { border: 1px solid #d8e3dc; border-radius: 8px; display: grid; gap: 8p
 .pos-layout .tablist button[aria-selected='true'] { border-color: var(--pos-border); border-bottom: 3px solid var(--pos-blue); background: var(--pos-surface); color: var(--pos-blue); }
 .tablist small { font-size: var(--pos-small); font-weight: 400; }
 .workspace-tab { position: relative; display: flex; flex: 0 0 auto; }
-.pos-layout .tablist .workspace-tab > button[role='tab'] { padding-right: calc(var(--pos-s1) + 28px); }
+/* A phase badge ("Đang thanh toán") makes the tab wider than the generic 200px cap; centred
+   overflow would push the title into the left border, so let the tab grow (the list scrolls). */
+.pos-layout .tablist .workspace-tab > button[role='tab'] { max-width: none; justify-content: flex-start; padding-right: calc(var(--pos-s1) + 28px); }
 .pos-layout .tablist .workspace-tab-close { position: absolute; top: 50%; right: var(--pos-s1); transform: translateY(-50%); min-width: 28px; max-width: none; min-height: 28px; width: 28px; height: 28px; padding: 0; justify-content: center; border: 0; border-radius: 50%; background: transparent; color: var(--pos-muted); opacity: 0; pointer-events: none; }
 .workspace-tab-close .pos-icon { width: 14px; height: 14px; }
 .workspace-tab > button[role='tab'] { gap: 6px; }
@@ -429,6 +431,10 @@ kbd { padding: var(--pos-s1); border: 1px solid var(--pos-border); border-radius
 .payment-popup-actions { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: var(--pos-s2); align-items: center; }
 .pos-layout .payment-popup-actions button { min-height: 44px; padding: var(--pos-s2); }
 /* Tender evidence: every action on one row; buttons share the width. */
+/* Dialog ghi nợ: hai nút trên cùng hàng; nút chính giữ trên một dòng, nút Đóng thu hẹp theo chữ */
+.pos-popup-card.credit-approval .payment-popup-actions { display: flex; }
+.pos-popup-card.credit-approval .payment-popup-actions > button { flex: 0 0 auto; }
+.pos-popup-card.credit-approval .payment-popup-actions .checkout-submit { flex: 1 1 auto; white-space: nowrap; }
 .payment-popup-actions.payment-popup-row { display: flex; flex-wrap: wrap; }
 .payment-popup-actions.payment-popup-row > button { flex: 1 1 0; min-width: max-content; white-space: nowrap; }
 .payment-popup-secondary { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--pos-s2); }
