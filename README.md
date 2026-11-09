@@ -26,6 +26,41 @@ Với một cửa hàng POD, đơn mua áo in thiết kế riêng có thể đư
 
 ParkViet sẽ tận dụng những khả năng mở rộng mà Spree hỗ trợ để bổ sung ứng dụng, kết nối dịch vụ và phát triển thêm tính năng khi nhu cầu kinh doanh thay đổi. Hiểu đơn giản: **Spree cung cấp nền tảng thương mại, còn ParkViet tập trung làm cho nền tảng đó phù hợp và dễ sử dụng hơn tại Việt Nam.**
 
+## Câu chuyện sử dụng: bán đồ ăn nhà làm trong chung cư
+
+> Tình huống minh họa, không phải khách hàng thật.
+
+Một gia đình nấu đồ ăn nhà làm bán cho hàng xóm trong khu chung cư. Khách nhắn đặt món qua Facebook và Zalo, người nhà mang đến tận cửa, và phần lớn khách trả sau bằng chuyển khoản.
+
+**Trước đây, khó ở đâu?**
+
+- Đơn nằm rải rác trong nhiều cuộc trò chuyện Facebook, Zalo; dễ sót hoặc nhầm món.
+- Ai nợ bao nhiêu ghi trong một cuốn sổ tay, cộng trừ bằng tay.
+- Bận nấu nên quên nhắc nợ, ngại nhắc vì không nhớ chính xác đơn nào chưa trả.
+- Tiền chuyển khoản về phải dò từng tin báo ngân hàng để biết của ai, trả cho đơn nào.
+- Không biết kênh nào bán được nhiều, nên không biết nên tập trung vào đâu.
+
+**Một ngày với ParkViet**
+
+1. **Nhận đơn:** khách nhắn trên Zalo. Người bán mở POS, chọn khách (tìm theo tên, số điện thoại hoặc địa chỉ), thêm món và gắn **nguồn đơn** là Zalo. Khách mới thì nhập luôn địa chỉ, ví dụ "Tòa B, phòng 1203", ngay trên màn hình bán.
+2. **Đánh dấu giao hàng:** bật **đơn giao hàng**, gõ tên người nhà sẽ đi giao, thêm phí giao nếu có.
+3. **Ghi nợ nhanh:** khách hẹn trả sau, người bán ghi toàn bộ hoặc phần còn lại vào nợ chỉ trong một bước. Khách lần đầu nợ thì tài khoản nợ được mở tự động, hạn mức vẫn được kiểm tra.
+4. **In phiếu:** phiếu in tên khách, số điện thoại, địa chỉ, người giao, phí giao và **mã VietQR trả sau** cho đúng số tiền còn nợ. Có thể bấm **Gửi Zalo** để gửi ảnh mã QR cho khách.
+5. **Đi giao:** người giao mở trang **Đơn cần giao**, bấm số điện thoại để gọi khi đến nơi, xem số tiền khách còn nợ, giao xong bấm **Đã giao**.
+6. **Tiền về:** khách quét mã chuyển khoản. Webhook SePay nhận giao dịch có nội dung `TN<số đơn>` và tự ghi nhận khoản thu, không cần dò tin báo ngân hàng.
+7. **Cuối tuần nhắc nợ:** mở **Khách đang nợ**, xem ai nợ bao lâu, lần nhắc gần nhất là khi nào. Bấm **Nhắc nợ qua Zalo** để có sẵn tin nhắn lịch sự liệt kê các đơn chưa trả, kèm một mã QR cho cả số nợ.
+8. **Xem kênh nào bán tốt:** báo cáo doanh số **Theo nguồn đơn** cho biết số đơn, doanh số và số còn nợ của Facebook, Zalo và bán trực tiếp.
+
+**Bật gì để dùng được như trên?** (mặc định đều tắt, bật theo chi nhánh)
+
+- [ ] `credit`: bán chịu.
+- [ ] `quick_credit`: ghi nợ nhanh không cần người duyệt thứ hai.
+- [ ] `vietqr`: chuyển khoản VietQR, để in mã trả sau.
+- [ ] `delivery`: đơn giao hàng và trang Đơn cần giao.
+- [ ] Kết nối webhook SePay với tài khoản nhận tiền ở **Settings → VietQR** để khoản thu được ghi tự động.
+
+Đọc thêm: [Bán đồ ăn trong chung cư với ParkViet](https://parkviet.com/blog/ban-do-an-chung-cu-voi-parkviet).
+
 ## Tiến độ phát triển
 
 Cập nhật 08/11/2026. Nhánh phát triển chính là `v2`.
@@ -44,16 +79,23 @@ Cập nhật 08/11/2026. Nhánh phát triển chính là `v2`.
 POS phục vụ nhiều chi nhánh, nhiều quầy, và cho mở nhiều đơn cùng lúc trên một quầy. Mỗi nhóm chức năng có mô tả chi tiết trong README của POS:
 
 - [Bán hàng](apps/pos/README.md#bán-hàng): tìm hoặc quét mã vạch, hàng cân bằng tem EAN-13, đơn vị quy đổi, hàng theo serial/lô, khách hàng, giảm giá, nhiều đơn song song.
+  - **Địa chỉ giao hàng của khách:** mỗi khách một địa chỉ dạng chữ tự do, tìm kiếm được, sửa ngay trên màn hình bán; in dưới tên khách trên biên nhận, phiếu tạm tính và phiếu thanh toán; mẫu in có biến `{customer.phone}`, `{customer.address}`.
+  - **Đơn giao hàng** (công tắc `delivery`): đánh dấu đơn cần giao, nhập tên người giao và phí giao (nếu có, cộng vào tổng tiền và công nợ). Đơn đã xong vẫn ở trạng thái "Chờ giao" cho đến khi bấm "Đã giao" ở trang **Đơn cần giao** (bấm số điện thoại để gọi, có địa chỉ, số còn nợ/đã trả). Biên nhận in người giao và phí giao.
+  - **Nguồn đơn:** mỗi đơn gắn nguồn Tại quầy / Facebook / Zalo / Khác.
 - [Thanh toán](apps/pos/README.md#thanh-toán): tiền mặt, chuyển khoản xác nhận tay, VietQR tự đối soát qua webhook SePay/PayOS, chia nhiều phương thức, sổ tiền chưa phân bổ.
+  - **VietQR trả sau:** đơn ghi nợ in kèm mã VietQR không hết hạn cho đúng số tiền còn nợ, nội dung chuyển khoản `TN<số đơn>`. Webhook SePay tự ghi nhận khoản thu (trả một phần thì giảm nợ, trả dư thì trừ vào nợ cũ hơn, mỗi giao dịch ngân hàng chỉ ghi một lần, có nhật ký). Tài khoản chỉ dùng PayOS vẫn in được mã nhưng phải ghi nhận thu nợ bằng tay. Nút **Gửi Zalo** mở bảng chia sẻ kèm ảnh QR, máy không hỗ trợ thì chép vào bộ nhớ tạm.
 - [Bán chịu và thu nợ](apps/pos/README.md#bán-chịu-và-thu-nợ): hạn mức, duyệt ghi nợ, tuổi nợ, thu nợ cho nhiều đơn.
+  - **Ghi nợ nhanh** (công tắc `quick_credit`, cần bật `credit`): thu ngân có quyền bán chịu ghi phần chưa trả vào nợ trong một bước, không cần người thứ hai duyệt. Lần đầu dùng, hệ thống tự mở tài khoản nợ cho khách (hạn mức mặc định 2.000.000 ₫, 30 ngày); vẫn chặn khi vượt hạn mức.
+  - **Nhắc nợ:** danh sách **Khách đang nợ** hiện số điện thoại, địa chỉ, số ngày nợ/quá hạn và lần nhắc gần nhất. Nút **Nhắc nợ qua Zalo** soạn sẵn tin nhắn lịch sự liệt kê các đơn chưa trả, kèm một mã VietQR cho toàn bộ số nợ (webhook trừ vào đơn cũ nhất trước). Mỗi lần nhắc đều được ghi lại.
 - [Trả hàng, hoàn tiền, đổi hàng](apps/pos/README.md#trả-hàng-hoàn-tiền-đổi-hàng).
 - [Tồn kho truy xuất](apps/pos/README.md#tồn-kho-truy-xuất-serial--lô--hạn-dùng): serial, lô, hạn dùng (FEFO), nhập, chuyển, kiểm kê, thu hồi.
 - [Ca và sổ quỹ](apps/pos/README.md#ca-và-sổ-quỹ): mở/đóng ca, đếm mù, thu/chi két có người xác nhận.
 - [Báo cáo](apps/pos/README.md#báo-cáo): doanh số, thực thu, tiền mặt, công nợ, đóng ca, xuất CSV.
+  - Báo cáo doanh số có thêm mục **Theo nguồn đơn** (số đơn, doanh số gộp, số còn nợ), lọc và cột nguồn đơn, cột nguồn trong CSV, chọn nhanh khoảng ngày.
 - [Biên nhận và in](apps/pos/README.md#biên-nhận-và-in), [màn hình khách](apps/pos/README.md#màn-hình-khách), [máy quét](apps/pos/README.md#máy-quét).
 - [Quản trị](apps/pos/README.md#quản-trị) và [phân quyền](apps/pos/README.md#quyền) theo chi nhánh.
 
-Những gì POS chưa làm được (thẻ, driver máy in, thử với thiết bị thật…) nằm ở mục [Giới hạn hiện tại](apps/pos/README.md#giới-hạn-hiện-tại). Các tính năng rủi ro mặc định tắt và được bật theo từng chi nhánh.
+Những gì POS chưa làm được (thẻ, driver máy in, thử với thiết bị thật…) nằm ở mục [Giới hạn hiện tại](apps/pos/README.md#giới-hạn-hiện-tại). Các tính năng rủi ro mặc định tắt và được bật theo từng chi nhánh; các công tắc mới (`quick_credit`, `delivery`) cũng vậy.
 
 ### VietQR
 
