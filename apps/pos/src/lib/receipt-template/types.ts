@@ -106,7 +106,9 @@ export type PaymentField =
   | 'reference'
   | 'paid_total'
   | 'debt'
-  | 'due_on';
+  | 'due_on'
+  // The pay-later VietQR of a debt; its label is the caption under the code.
+  | 'pay_qr';
 
 export type FieldSection<F extends string> = {
   fields: F[];
@@ -200,7 +202,11 @@ export type PrintDocument = {
   lines: PrintLines;
   totals: PrintRow[];
   payments: PrintRow[];
+  // The bank QR for what is still owed, printed under the payments.
+  payQr: PrintPayQr | null;
   notes: string[];
   footer: PrintBlock[];
   disclaimer: string | null;
 };
+
+export type PrintPayQr = { value: string; caption: string; lines: string[] };

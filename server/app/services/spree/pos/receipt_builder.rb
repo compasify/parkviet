@@ -126,7 +126,7 @@ module Spree
             'included_tax_total' => money(order.included_tax_total), 'additional_tax_total' => money(order.additional_tax_total),
             'total' => money(order.total)
           },
-          'receipts' => receipts(workspace), 'credit' => credit(order), 'note' => workspace.note.presence
+          'receipts' => receipts(workspace), 'credit' => credit(order, workspace.branch), 'note' => workspace.note.presence
         )
         paid = payload['receipts'].sum { |row| BigDecimal(row['amount']) }
         payload['paid_total'] = money(paid)
@@ -190,9 +190,21 @@ module Spree
         end
       end
 
-      def credit(order)
+      # The debt of a credit sale and, when the branch takes VietQR, the
+      # pay-later QR for it (PayLater), copied in as it is at issue time.
+      def credit(order, branch)
         debit = ReceivableEntry.where(order_id: order.id, kind: 'debit').order(:id).first
-        debit && { 'debt' => money(debit.amount), 'due_on' => debit.due_on&.iso8601 }
+        return nil if debit.nil?
+
+        { 'debt' => money(debit.amount), 'due_on' => debit.due_on&.iso8601, 'pay_qr' => pay_qr(order, debit, branch) }.compact
+      end
+
+      # A QR that cannot be built never costs the receipt itself.
+      def pay_qr(order, debit, branch)
+        PayLater.details(order: order, amount: debit.amount, account: PayLater.receiving_account(branch.store, branch))
+      rescue StandardError => e
+        Rails.error.report(e, handled: true, context: { receipt_pay_qr_order_id: order.id })
+        nil
       end
 
       def return_slip

@@ -77,6 +77,7 @@ const PAYMENTS_ALL: readonly PaymentField[] = [
   'paid_total',
   'debt',
   'due_on',
+  'pay_qr',
 ];
 
 // Sections and fields each document type has data for; a section missing

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import type { CollectInput } from '../hooks/use-receivables';
 import { useModalFocus } from '../lib/dialog-focus';
 import { formatMoney, parseVndInput } from '../lib/money';
+import { payLaterQr } from '../lib/pay-later';
 import type { PosCollection, PosReceivable, PosReceivableAccount } from '../lib/pos-context';
 import {
   type AllocationDraft,
@@ -11,6 +12,7 @@ import {
   planAllocations,
   previewAllocations,
 } from '../lib/receivables';
+import { PayLaterShareButton } from './pay-later-share-button';
 import { PosIcon } from './pos-icon';
 
 type Kind = 'cash' | 'bank_manual';
@@ -257,9 +259,15 @@ export function CollectionDialog({
                     const invalid =
                       preview.invalid.includes(debt.order_id) ||
                       preview.overDebt.includes(debt.order_id);
+                    const payQr = payLaterQr(debt.pay_later);
                     return (
                       <tr key={debt.order_id}>
-                        <td>{debt.order_number}</td>
+                        <td>
+                          {debt.order_number}
+                          {payQr ? (
+                            <PayLaterShareButton qr={payQr} label={t('payLaterShareShort')} />
+                          ) : null}
+                        </td>
                         <td>{formatDueDate(debt.due_on)}</td>
                         <td>{formatMoney(debt.balance, debt.currency)}</td>
                         <td>

@@ -23,7 +23,7 @@ module Spree
               oldest_due_first = Arel.sql('MAX(spree_pos_receivable_entries.due_on) ASC, spree_pos_receivable_entries.order_id ASC')
               rows_scope = projection.order_rows(status: status_param).reorder(oldest_due_first)
               records, meta = page_rows(rows_scope)
-              render json: { data: serialize(projection, records, mask?(branch)), meta: meta }
+              render json: { data: serialize(projection, records, mask?(branch), branch), meta: meta }
             end
 
             # Per-customer balance, overdue and aging for the branch.
@@ -114,7 +114,9 @@ module Spree
               [records, { page: page, limit: limit, count: total, pages: pages }]
             end
 
-            def serialize(projection, rows, mask)
+            # Each open debt carries its pay-later QR for what is still owed,
+            # for staff to send the customer (nil without VietQR at the branch).
+            def serialize(projection, rows, mask, branch)
               orders = Spree::Order.where(id: rows.map(&:order_id)).index_by(&:id)
               accounts = Spree::Pos::CreditAccount.where(id: rows.map(&:credit_account_id)).includes(:customer_profile).index_by(&:id)
               workspaces = Spree::Pos::Workspace.where(id: rows.map(&:workspace_id)).index_by(&:id)
@@ -124,7 +126,11 @@ module Spree
                         where(payment_id: Spree::Pos::FundsAllocation.where(order_id: orders.keys).where.not(collection_id: nil).select(:payment_id)).
                         group('spree_payments.order_id').sum(:amount)
               lookups = { orders: orders, accounts: accounts, workspaces: workspaces, sale_receipts: sale_receipts, refunds: refunds }
-              rows.map { |row| projection.serialize(row, lookups, mask: mask) }
+              account = Spree::Pos::PayLater.receiving_account(current_store, branch)
+              rows.map do |row|
+                pay_later = Spree::Pos::PayLater.details(order: orders.fetch(row.order_id), amount: row.balance, account: account)
+                projection.serialize(row, lookups, mask: mask).merge(pay_later: pay_later)
+              end
             end
 
             def mask?(branch)

@@ -893,7 +893,8 @@
         "reference": "Transaction reference",
         "paid_total": "Paid",
         "debt": "Outstanding",
-        "due_on": "Due date"
+        "due_on": "Due date",
+        "pay_qr": "Pay-later QR code"
       }
     },
     "lines": {
@@ -2828,5 +2829,19 @@
   "featureDisabled_quick_credit": "Quick credit was just switched off at the branch; nothing was recorded. Collect the full amount or ask a manager to approve the credit.",
   "quickCreditConfirm": "Put {{amount}} on {{name}}'s tab and complete the order?",
   "quickCreditHint": "A customer without a credit account gets one with the default limit. Credit over the limit is refused.",
-  "quickCreditAction": "Put on tab & complete"
+  "quickCreditAction": "Put on tab & complete",
+  "receiptPayQrCaption": "Scan to pay by bank transfer",
+  "payLaterAmount": "Amount: {{amount}}",
+  "payLaterNote": "Transfer note: {{note}}",
+  "payLaterShareTitle": "Order payment",
+  "payLaterShareFrom": "Payment details from {{store}}:",
+  "payLaterShareOwed": "Order {{order}}: {{amount}} still owed.",
+  "payLaterShareBank": "Transfer to: {{bank}} - account {{account}} - {{name}}",
+  "payLaterShareNote": "Note: {{note}} (keep it so the shop records your payment automatically)",
+  "payLaterShareLink": "QR code: {{link}}",
+  "payLaterShareButton": "Send via Zalo",
+  "payLaterShareShort": "Zalo",
+  "payLaterShareHint": "Send the customer the transfer QR (note {{note}}) via Zalo",
+  "payLaterCopied": "Message copied; paste it into Zalo to send.",
+  "payLaterShareFailed": "Could not share or copy the message."
 }

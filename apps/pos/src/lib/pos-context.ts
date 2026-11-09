@@ -314,6 +314,9 @@ export type PosReceivable = {
   days_overdue: number;
   aging: 'current' | 'days_1_30' | 'days_31_60' | 'days_61_90' | 'days_over_90';
   placed_at: string | null;
+  // The pay-later VietQR for the open balance (lib/pay-later); null without
+  // VietQR at the branch or once nothing is owed.
+  pay_later?: unknown;
 };
 
 export type PosReceivableAccount = {

@@ -8,6 +8,7 @@ import {
 } from '../hooks/use-receipt-templates';
 import { abandonIfNeeded } from '../hooks/use-tenders';
 import { session } from '../lib/app-session';
+import { receiptPayLaterQr, receiptStoreName } from '../lib/pay-later';
 import {
   createBrowserPrintAdapter,
   isPaperSize,
@@ -29,6 +30,7 @@ import {
 import type { TemplateConfig } from '../lib/receipt-template/types';
 import { serverIssues } from '../lib/receipt-template/validate';
 import { describeFailure, failureStatus } from '../lib/request-failure';
+import { PayLaterShareButton } from './pay-later-share-button';
 import { PosIcon } from './pos-icon';
 import { ReceiptPrintPortal, ReceiptSheet } from './receipt-sheet';
 import { TemplatePicker } from './template-picker';
@@ -146,6 +148,9 @@ export function ReceiptPrintPanel({
   const printCount = (row: ReceiptSnapshot) => (row.printed ? row.copy_count + 1 : 0);
   const receipt = printed && printCount(printed) >= printCount(loaded) ? printed : loaded;
   const documentType = snapshotDocumentType(receipt);
+  // A credit sale's pay-later QR, to send the customer as well as print.
+  const payQr = useMemo(() => receiptPayLaterQr(receipt), [receipt]);
+  const storeName = receiptStoreName(receipt);
   const template = usePrintTemplate(documentType, {
     original: receipt.original_print ?? null,
     remember: true,
@@ -319,6 +324,7 @@ export function ReceiptPrintPanel({
               ? t('receiptCopyCount', { count: receipt.copy_count })
               : t('receiptNotPrinted')}
           </small>
+          {payQr ? <PayLaterShareButton qr={payQr} storeName={storeName} /> : null}
           <button
             type="button"
             className="primary-button"

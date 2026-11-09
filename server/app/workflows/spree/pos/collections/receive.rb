@@ -46,30 +46,41 @@ module Spree
                             else
                               []
                             end
-            account.lock!
-            funds = ReceivedFunds.create!(
-              store: store, branch: branch, register: shift.register, shift: shift, actor: staff, kind: kind.to_s,
-              status: 'received', handed_amount: money[:handed], applied_amount: kept, change_amount: money[:change],
-              received_net: kept, currency: account.currency, reference: reference.presence,
-              receiving_account: receiving_account.presence, custody: 'drawer', received_at: Time.current
-            )
-            if kind.to_s == 'cash'
-              CashMovement.create!(
-                store: store, branch: branch, register: shift.register, shift: shift, received_funds: funds, actor: staff,
-                kind: 'receipt', amount: kept, currency: funds.currency, source_type: funds.class.name, source_id: funds.id
-              )
-            end
-            collection = Collection.create!(store: store, credit_account: account, received_funds: funds, branch: branch,
-                                            actor: staff, note: note.to_s.presence)
-            ReceiptReferenceGuard.audit!(store: store, staff: staff, funds: funds, duplicate_ids: duplicate_ids)
-            Allocate.apply!(collection: collection, rows: rows, staff: staff) if rows.any?
-            AuditEntry.record!(store: store, actor: staff, action: 'collection.receive', subject: collection,
-                               metadata: { funds_id: funds.prefixed_id, amount: kept.to_s('F'), kind: kind.to_s,
-                                           change: money[:change].to_s('F'), allocations: rows })
-            OutboxEntry.record!(store: store, event_type: 'collection.received', aggregate: collection,
-                                payload: { 'collection_id' => collection.prefixed_id, 'funds_id' => funds.prefixed_id })
-            collection.reload.to_pos
+            book!(store: store, staff: staff, branch: branch, shift: shift, account: account, kind: kind.to_s, kept: kept,
+                  money: money, reference: reference, receiving_account: receiving_account, note: note, rows: rows,
+                  duplicate_ids: duplicate_ids)
           end
+        end
+
+        # Books one validated receipt: the parent funds on `shift`, the cash
+        # movement of cash, the collection, its allocations and the audit.
+        # Callers hold the shift barrier when the shift is open; the account
+        # lock is taken here. Shared with ReceiveTransfer (bank webhook).
+        def self.book!(store:, staff:, branch:, shift:, account:, kind:, kept:, money:, reference:, receiving_account:,
+                       note:, rows:, duplicate_ids: [], received_at: Time.current, audit: {})
+          account.lock!
+          funds = ReceivedFunds.create!(
+            store: store, branch: branch, register: shift.register, shift: shift, actor: staff, kind: kind,
+            status: 'received', handed_amount: money[:handed], applied_amount: kept, change_amount: money[:change],
+            received_net: kept, currency: account.currency, reference: reference.presence,
+            receiving_account: receiving_account.presence, custody: 'drawer', received_at: received_at
+          )
+          if kind == 'cash'
+            CashMovement.create!(
+              store: store, branch: branch, register: shift.register, shift: shift, received_funds: funds, actor: staff,
+              kind: 'receipt', amount: kept, currency: funds.currency, source_type: funds.class.name, source_id: funds.id
+            )
+          end
+          collection = Collection.create!(store: store, credit_account: account, received_funds: funds, branch: branch,
+                                          actor: staff, note: note.to_s.presence)
+          ReceiptReferenceGuard.audit!(store: store, staff: staff, funds: funds, duplicate_ids: duplicate_ids)
+          Allocate.apply!(collection: collection, rows: rows, staff: staff) if rows.any?
+          AuditEntry.record!(store: store, actor: staff, action: 'collection.receive', subject: collection,
+                             metadata: { funds_id: funds.prefixed_id, amount: kept.to_s('F'), kind: kind,
+                                         change: money[:change].to_s('F'), allocations: rows }.merge(audit))
+          OutboxEntry.record!(store: store, event_type: 'collection.received', aggregate: collection,
+                              payload: { 'collection_id' => collection.prefixed_id, 'funds_id' => funds.prefixed_id })
+          collection.reload.to_pos
         end
 
         def self.branch!(store, branch_id)

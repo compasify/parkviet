@@ -68,7 +68,8 @@
       "reference",
       "paid_total",
       "debt",
-      "due_on"
+      "due_on",
+      "pay_qr"
     ],
     "labels": {}
   },

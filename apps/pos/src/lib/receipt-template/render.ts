@@ -12,6 +12,7 @@ import type {
   PrintBlock,
   PrintDocument,
   PrintLines,
+  PrintPayQr,
   PrintRow,
   PrintTableColumn,
   QrBlock,
@@ -356,6 +357,17 @@ function lines(data: TemplateData, section: LinesSection | undefined): PrintLine
   };
 }
 
+// The pay-later QR prints while the template has `pay_qr` on (a template
+// without a payments section prints everything); its label is the caption.
+function payQr(data: TemplateData, section: TemplateConfig['payments']): PrintPayQr | null {
+  const qr = data.payQr;
+  if (!qr) return null;
+  if (Array.isArray(section?.fields) && !section.fields.includes('pay_qr')) return null;
+  const labels = (section?.labels ?? {}) as Partial<Record<string, unknown>>;
+  const caption = clip(textOf(labels.pay_qr), MAX_LABEL_LENGTH) || qr.caption;
+  return { value: qr.value, caption, lines: qr.lines };
+}
+
 export function renderDocument(
   config: TemplateConfig,
   data: TemplateData,
@@ -378,6 +390,7 @@ export function renderDocument(
     totals: fieldRows(data.totals, config?.totals, ['total']),
     // Each payment method row is labelled by its method.
     payments: fieldRows(data.payments, config?.payments, [], ['methods']),
+    payQr: payQr(data, config?.payments),
     notes: data.notes,
     footer: blocks(config?.footer, data, 'footer'),
     disclaimer: data.disclaimer,

@@ -276,6 +276,19 @@ export function PrintSheet({
       <Lines lines={document.lines} paper={paper} />
       <Rows rows={document.totals} className="receipt-totals" />
       <Rows rows={document.payments} className="receipt-payments" />
+      {document.payQr ? (
+        <section className="receipt-pay-qr" data-testid="receipt-pay-qr">
+          <QrCodeBlock
+            value={document.payQr.value}
+            caption={document.payQr.caption}
+            align="center"
+          />
+          {document.payQr.lines.map((line, index) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: print documents are immutable, positional output
+            <p key={index}>{line}</p>
+          ))}
+        </section>
+      ) : null}
       {document.notes.map((note, index) => (
         // biome-ignore lint/suspicious/noArrayIndexKey: print documents are immutable, positional output
         <p key={index} className="receipt-note">

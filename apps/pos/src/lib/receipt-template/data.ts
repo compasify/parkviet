@@ -1,4 +1,5 @@
 import { formatMoney } from '../money';
+import { type PayLaterQr, payLaterDetails, payLaterQr } from '../pay-later';
 import type {
   PosFinancialAttempt,
   PosLineItem,
@@ -6,7 +7,14 @@ import type {
   PosWorkspace,
 } from '../pos-context';
 import type { ReceiptSnapshot } from '../print-adapter';
-import type { DocumentType, MetaField, PaymentField, SignatureParty, TotalField } from './types';
+import type {
+  DocumentType,
+  MetaField,
+  PaymentField,
+  PrintPayQr,
+  SignatureParty,
+  TotalField,
+} from './types';
 
 // Every printable document reduced to one shape, from a posted receipt
 // snapshot, an open order (pre-bill) or an order being paid (payment
@@ -84,6 +92,9 @@ export type TemplateData = {
   signatureLabels: Record<SignatureParty, string>;
   totals: DataRow<TotalField>[];
   payments: DataRow<PaymentField>[];
+  // A credit sale's pay-later VietQR, as its receipt snapshot carries it,
+  // with the default caption.
+  payQr?: PrintPayQr | null;
   notes: string[];
   disclaimer: string | null;
 };
@@ -342,6 +353,11 @@ function salePayments(document: Doc, currency: string, t: Translate): DataRow<Pa
   return result;
 }
 
+function payQrPrint(qr: PayLaterQr | null, t: Translate): PrintPayQr | null {
+  if (!qr) return null;
+  return { value: qr.payload, caption: t('receiptPayQrCaption'), lines: payLaterDetails(qr, t) };
+}
+
 export type CustomerPrint = {
   name: string | null;
   phone: string | null;
@@ -431,12 +447,14 @@ export function snapshotData(receipt: ReceiptSnapshot, t: Translate): TemplateDa
   let lines: LineData[] = [];
   let totals: DataRow<TotalField>[] = [];
   let payments: DataRow<PaymentField>[] = [];
+  let payQr: PrintPayQr | null = null;
   const notes: string[] = [];
   switch (receipt.source_type) {
     case 'sale':
       lines = rows(document.lines).map((line) => saleLine(line, currency, t));
       totals = saleTotals(document, currency, t);
       payments = salePayments(document, currency, t);
+      payQr = payQrPrint(payLaterQr(obj(document.credit)?.pay_qr), t);
       if (str(document.note)) notes.push(str(document.note) ?? '');
       break;
     case 'return':
@@ -556,6 +574,7 @@ export function snapshotData(receipt: ReceiptSnapshot, t: Translate): TemplateDa
     signatureLabels: signatureLabels(t),
     totals,
     payments,
+    payQr,
     notes,
     disclaimer: receipt.disclaimer,
   };

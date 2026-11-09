@@ -63,7 +63,8 @@ module Spree
       META_ALL = %w[time cashier register branch order_number return_number customer].freeze
       COLUMNS_ALL = %w[index name sku unit qty price discount amount].freeze
       TOTALS_ALL = %w[item_total discount tax included_tax total].freeze
-      PAYMENTS_ALL = %w[methods handed change reference paid_total debt due_on].freeze
+      # `pay_qr`: the pay-later VietQR of a debt (its label is the caption).
+      PAYMENTS_ALL = %w[methods handed change reference paid_total debt due_on pay_qr].freeze
 
       # Sections and fields each document type has data for; a section that
       # is absent here does not exist on that document.

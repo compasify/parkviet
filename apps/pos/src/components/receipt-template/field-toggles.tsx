@@ -30,6 +30,7 @@ const DEFAULT_LABEL_KEYS: Record<FieldSectionName, Record<string, string>> = {
     paid_total: 'receiptPaidTotal',
     debt: 'receiptDebt',
     due_on: 'receiptDueOn',
+    pay_qr: 'receiptPayQrCaption',
   },
 };
 

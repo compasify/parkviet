@@ -340,6 +340,18 @@
   font-style: italic;
 }
 
+/* The pay-later VietQR of a credit sale, under the payments. */
+.receipt-pay-qr {
+  break-inside: avoid;
+  margin-top: 4px;
+}
+
+.receipt-pay-qr p {
+  font-size: 0.9em;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
 .receipt-disclaimer {
   border-top: 1px dashed #000;
   margin-top: 6px !important;

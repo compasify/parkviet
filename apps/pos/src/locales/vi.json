@@ -892,7 +892,8 @@
         "reference": "Mã giao dịch",
         "paid_total": "Đã thanh toán",
         "debt": "Còn nợ",
-        "due_on": "Hạn thanh toán"
+        "due_on": "Hạn thanh toán",
+        "pay_qr": "Mã QR trả nợ"
       }
     },
     "lines": {
@@ -2819,5 +2820,19 @@
   "featureDisabled_quick_credit": "Ghi nợ nhanh vừa bị tắt ở chi nhánh; máy chủ không ghi nhận. Hãy thu đủ tiền hoặc nhờ quản lý duyệt ghi nợ.",
   "quickCreditConfirm": "Ghi nợ {{amount}} cho {{name}} và hoàn tất đơn?",
   "quickCreditHint": "Khách chưa có sổ nợ sẽ được mở với hạn mức mặc định. Không thể ghi nợ vượt hạn mức.",
-  "quickCreditAction": "Ghi nợ & hoàn tất"
+  "quickCreditAction": "Ghi nợ & hoàn tất",
+  "receiptPayQrCaption": "Quét mã để chuyển khoản trả nợ",
+  "payLaterAmount": "Số tiền: {{amount}}",
+  "payLaterNote": "Nội dung CK: {{note}}",
+  "payLaterShareTitle": "Thanh toán đơn hàng",
+  "payLaterShareFrom": "{{store}} gửi thông tin thanh toán:",
+  "payLaterShareOwed": "Đơn {{order}} còn {{amount}}.",
+  "payLaterShareBank": "Chuyển khoản: {{bank}} - STK {{account}} - {{name}}",
+  "payLaterShareNote": "Nội dung: {{note}} (giữ nguyên để cửa hàng tự trừ nợ)",
+  "payLaterShareLink": "Mã QR: {{link}}",
+  "payLaterShareButton": "Gửi Zalo",
+  "payLaterShareShort": "Zalo",
+  "payLaterShareHint": "Gửi mã QR chuyển khoản (nội dung {{note}}) cho khách qua Zalo",
+  "payLaterCopied": "Đã chép tin nhắn, dán vào Zalo để gửi khách.",
+  "payLaterShareFailed": "Không gửi hoặc chép được tin nhắn."
 }

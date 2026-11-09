@@ -35,7 +35,16 @@ export const DEFAULT_TEMPLATES: Readonly<Record<DocumentType, TemplateConfig>> =
     },
     totals: { fields: ['item_total', 'discount', 'tax', 'included_tax', 'total'], labels: {} },
     payments: {
-      fields: ['methods', 'handed', 'change', 'reference', 'paid_total', 'debt', 'due_on'],
+      fields: [
+        'methods',
+        'handed',
+        'change',
+        'reference',
+        'paid_total',
+        'debt',
+        'due_on',
+        'pay_qr',
+      ],
       labels: {},
     },
     footer: [],
