@@ -1,12 +1,12 @@
-# ParkViet POS administration
+# Quản trị ParkViet POS
 
-Standalone React administration application using Spree dashboard-core/UI **6.0.3**.
-It runs separately from the cashier app (5175) and Spree dashboard (5173).
+Ứng dụng quản trị React độc lập, sử dụng Spree dashboard-core/UI **6.0.3**. Ứng dụng
+chạy riêng với ứng dụng thu ngân (5175) và Spree Dashboard (5173).
 
-## Local development
+## Phát triển cục bộ
 
-Start the API from the repository root using `pnpm spree dev --no-open` (or use the
-developer's existing stack), then:
+Khởi động API từ thư mục gốc của repository bằng `pnpm spree dev --no-open` (hoặc
+sử dụng stack đang chạy), sau đó:
 
 ```sh
 cd apps/pos-dashboard
@@ -14,11 +14,13 @@ pnpm install
 pnpm dev
 ```
 
-Open **http://localhost:5176** and sign in with a staff/admin account. The first
-accessible store is selected; the sidebar's store switcher supports other stores.
-Session restoration uses Spree's HTTP-only refresh cookie. POS configuration
-access requires `read_pos_topology` or `write_pos_topology`; a branch manager with
-`pos.topology.manage` can access only that branch's features and business model.
+Truy cập **http://localhost:5176** và đăng nhập bằng tài khoản nhân viên/quản trị
+viên. Cửa hàng đầu tiên mà tài khoản có quyền truy cập sẽ được chọn; dùng bộ chọn
+cửa hàng trên thanh bên để chuyển sang cửa hàng khác. Phiên đăng nhập được khôi
+phục bằng cookie làm mới HTTP-only của Spree. Để truy cập cấu hình POS, tài khoản
+cần có quyền `read_pos_topology` hoặc `write_pos_topology`; quản lý chi nhánh có
+quyền `pos.topology.manage` chỉ có thể truy cập phần tính năng và mô hình kinh
+doanh của chi nhánh đó.
 
 ```sh
 pnpm typecheck
@@ -28,73 +30,79 @@ pnpm build
 pnpm test:e2e --project desktop
 ```
 
-E2E tests are in `e2e/`; Playwright starts its own strict-port 5176 server and runs
-one worker. Do not leave a separate dev server occupying that port when running
-the suite. Desktop, tablet and mobile projects are configured.
+Các bài kiểm thử E2E nằm trong `e2e/`; Playwright tự khởi động máy chủ trên cổng
+cố định 5176 và chạy với một worker. Không để máy chủ phát triển khác chiếm cổng
+này khi chạy bộ kiểm thử. Các dự án desktop, tablet và mobile đều đã được cấu hình.
 
-The cashier app (`apps/pos`) no longer has settings or setup pages; its user menu,
-sign-in screen and setup notice open this app in a new tab.
+Ứng dụng thu ngân (`apps/pos`) không còn các trang cài đặt hoặc thiết lập; menu
+người dùng, màn hình đăng nhập và thông báo thiết lập của ứng dụng thu ngân sẽ mở
+ứng dụng quản trị này trong thẻ mới.
 
-## Public build-time environment
+## Biến môi trường công khai khi build
 
-| Variable | Default | Purpose |
+| Biến | Mặc định | Mục đích |
 |---|---|---|
-| `VITE_SPREE_API_URL` | empty | Public API origin; empty uses same-origin `/api` |
-| `VITE_API_PROXY_TARGET` | `http://localhost:3000` | Vite development proxy target for `/api` and `/rails` |
-| `VITE_BASE_PATH` | `/` | Public mount path, e.g. `/pos-admin/`; rebuild when changed |
+| `VITE_SPREE_API_URL` | Để trống | Origin công khai của API; để trống để dùng `/api` cùng origin |
+| `VITE_API_PROXY_TARGET` | `http://localhost:3000` | Đích proxy của Vite cho `/api` và `/rails` khi phát triển |
+| `VITE_BASE_PATH` | `/` | Đường dẫn gốc công khai, ví dụ `/pos-admin/`; cần build lại khi thay đổi |
 
-All `VITE_*` values are embedded in browser assets. **Never put API secrets,
-database credentials, staff tokens or private keys in VITE variables.**
+Mọi giá trị `VITE_*` đều được nhúng vào các tệp gửi đến trình duyệt. **Không bao
+giờ đặt API secret, thông tin đăng nhập cơ sở dữ liệu, token nhân viên hoặc khóa
+riêng tư trong các biến VITE.**
 
-Branch selection uses `?branch=...&register=...`; branch-resource routes also carry
-`$branchId`. Query caches include store identity, and staff permissions refetch on
-store switches. No server schema or capability model is changed by this app.
+Chi nhánh được chọn qua `?branch=...&register=...`; các route tài nguyên chi nhánh
+cũng chứa `$branchId`. Khóa cache truy vấn có chứa định danh cửa hàng, và quyền
+nhân viên được tải lại khi chuyển cửa hàng. Ứng dụng này không thay đổi schema máy
+chủ hay mô hình quyền hạn.
 
-## Separate static production deployment
+## Triển khai production dưới dạng trang tĩnh riêng
 
-Build with `pnpm build` and deploy `dist/` as a separate static site, the same way
-the cashier app is deployed on its own port. `pnpm preview` serves the build on
-the fixed port **5176** with the same `/api` and `/rails` proxy as `pnpm dev`, which
-is enough to check a build locally. Mapping a domain to the port is infrastructure
-work; no domain appears in the source.
+Build bằng `pnpm build` và triển khai `dist/` thành một trang tĩnh riêng, tương tự
+cách ứng dụng thu ngân được triển khai trên cổng riêng. `pnpm preview` phục vụ bản
+build tại cổng cố định **5176**, với cùng proxy `/api` và `/rails` như `pnpm dev`,
+đủ để kiểm tra bản build cục bộ. Việc trỏ tên miền tới cổng là công việc hạ tầng;
+không có tên miền nào được khai báo trong mã nguồn.
 
-1. Configure public `VITE_SPREE_API_URL` and `VITE_BASE_PATH` **before** the build.
-   For the recommended same-origin topology leave the API URL empty and reverse
-   proxy `/api/*` and `/rails/*` to Rails. The Vite proxy is development-only.
-2. Serve existing assets normally and rewrite application routes to `index.html`
-   (SPA fallback), including `/<store>/settings/receipt-templates/<id>`. Under a
-   subpath, serve assets and apply the fallback beneath that same base path.
-3. Use HTTPS in production. Cross-origin API deployments need correct CORS with
-   credentialed requests, and the dashboard's exact origin must be registered in
-   Spree Allowed Origins for `StaffSessionOriginGuard`. Production refresh-cookie
-   `SameSite=None; Secure` behavior requires HTTPS; do not bypass the origin guard
-   or move refresh tokens into browser storage.
-4. Verify login, reload/refresh, logout, store switching and permissions against
-   the production proxy/origin configuration. Check `/rails` image URLs too.
-5. Set the cashier build's public `VITE_POS_DASHBOARD_URL` to this site's URL
-   (including the base path) and **rebuild/redeploy the cashier**. Changing host
-   environment alone does not update an already-built Vite bundle; without the
-   variable a production cashier build hides its administration links.
+1. Cấu hình `VITE_SPREE_API_URL` và `VITE_BASE_PATH` công khai **trước khi build**.
+   Với cấu hình cùng origin được khuyến nghị, để trống URL API và dùng reverse proxy
+   chuyển `/api/*` và `/rails/*` tới Rails. Proxy của Vite chỉ dùng khi phát triển.
+2. Phục vụ các tệp tĩnh hiện có như bình thường và chuyển các route ứng dụng về
+   `index.html` (SPA fallback), bao gồm `/<store>/settings/receipt-templates/<id>`.
+   Nếu triển khai dưới một đường dẫn con, hãy phục vụ tệp tĩnh và áp dụng fallback
+   bên dưới cùng đường dẫn gốc đó.
+3. Sử dụng HTTPS trong production. Nếu API khác origin, cần cấu hình CORS đúng cho
+   các yêu cầu có thông tin xác thực và đăng ký chính xác origin của dashboard
+   trong Allowed Origins của Spree để `StaffSessionOriginGuard` hoạt động. Cookie
+   làm mới trong production dùng `SameSite=None; Secure` nên cần HTTPS; không bỏ
+   qua origin guard hoặc chuyển token làm mới vào bộ nhớ trình duyệt.
+4. Kiểm tra đăng nhập, tải lại/làm mới trang, đăng xuất, chuyển cửa hàng và quyền
+   truy cập với cấu hình proxy/origin production. Kiểm tra cả URL hình ảnh `/rails`.
+5. Đặt biến công khai `VITE_POS_DASHBOARD_URL` của bản build ứng dụng thu ngân thành
+   URL của trang này (bao gồm đường dẫn gốc), rồi **build và triển khai lại ứng dụng
+   thu ngân**. Chỉ thay đổi môi trường trên máy chủ không cập nhật bundle Vite đã
+   build; nếu thiếu biến này, bản production của ứng dụng thu ngân sẽ ẩn các liên
+   kết đến trang quản trị.
 
-### Infrastructure checklist for a new domain
+### Danh sách kiểm tra hạ tầng cho tên miền mới
 
-- Point the domain at the static site (port 5176 or the hosting of `dist/`), with
-  HTTPS and the SPA fallback above.
-- Add the exact origin to the store's **Allowed Origins** in Spree. Without it,
-  refresh and logout are rejected by `StaffSessionOriginGuard`
-  (`server/config/initializers/staff_session_origin.rb`) and users are signed out
-  on every reload.
-- Set `VITE_POS_DASHBOARD_URL` for the cashier build and redeploy it.
+- Trỏ tên miền tới trang tĩnh (cổng 5176 hoặc nơi lưu trữ `dist/`), bật HTTPS và
+  cấu hình SPA fallback như trên.
+- Thêm chính xác origin vào **Allowed Origins** của cửa hàng trong Spree. Nếu không,
+  `StaffSessionOriginGuard` (`server/config/initializers/staff_session_origin.rb`)
+  sẽ từ chối yêu cầu làm mới phiên và đăng xuất, khiến người dùng bị đăng xuất mỗi
+  khi tải lại trang.
+- Đặt `VITE_POS_DASHBOARD_URL` cho bản build ứng dụng thu ngân và triển khai lại.
 
-### After deploying
+### Sau khi triển khai
 
-1. Sign in, reload the page and confirm you are still signed in.
-2. Open a deep link such as `/<store>/settings/receipt-templates` directly; it must
-   load, not 404.
-3. Sign out and confirm protected URLs return to the sign-in page.
-4. From the cashier, open the user menu → Cấu hình: the dashboard opens in a new
-   tab on the same store and branch.
-5. Sign in as a branch manager: only Features and Business model are visible.
+1. Đăng nhập, tải lại trang và xác nhận phiên đăng nhập vẫn còn.
+2. Truy cập trực tiếp một liên kết sâu như `/<store>/settings/receipt-templates`;
+   trang phải tải được, không trả về lỗi 404.
+3. Đăng xuất và xác nhận các URL được bảo vệ chuyển về trang đăng nhập.
+4. Từ ứng dụng thu ngân, mở menu người dùng → Cấu hình: dashboard mở trong thẻ mới
+   với cùng cửa hàng và chi nhánh.
+5. Đăng nhập bằng tài khoản quản lý chi nhánh: chỉ hiển thị phần Tính năng và Mô
+   hình kinh doanh.
 
-Keep deploy domains in environment configuration, not application source. See
-`AGENTS.md` for extension and API-hook conventions.
+Đặt tên miền triển khai trong cấu hình môi trường, không đặt trong mã nguồn ứng
+dụng. Xem `AGENTS.md` để biết quy ước về mở rộng và API hook.
