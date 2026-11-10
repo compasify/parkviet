@@ -3,8 +3,8 @@
 `CLAUDE.md` imports this file. This standalone Vite + React app administers POS
 configuration and hosts the back-office operations: orders, deliveries, funds,
 shift management, receivables, reports and inventory traceability. Counter work
-(selling, returns/exchanges, receipt printing, a cashier's own shift) stays in
-`apps/pos`; do not add it here.
+(selling, returns/exchanges, receipt printing, collecting debts into a drawer, a
+cashier's own shift) stays in `apps/pos`; do not add it here.
 
 ## Run and verify
 

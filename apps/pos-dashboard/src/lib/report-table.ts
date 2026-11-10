@@ -1,0 +1,241 @@
+import { type ReportPage, type ReportType, validReportRange } from '@parkviet/pos-shared/reports'
+import type { PaginationMeta } from '@spree/dashboard-ui'
+
+// Columns, filters and paging of the server reports. The server allowlists and
+// scopes every filter; this module only decides what the screen sends and shows.
+
+export type ReportFilters = Record<string, string>
+
+export const REPORT_LIMIT = 50
+
+export const REPORT_COLUMNS: Record<ReportType, string[]> = {
+  sales: [
+    'order_number',
+    'sold_at',
+    'business_date',
+    'order_source',
+    'register',
+    'cashier',
+    'item_total',
+    'adjustment_total',
+    'total',
+  ],
+  receipts: [
+    'received_at',
+    'booked_at',
+    'kind',
+    'source',
+    'custody',
+    'received_net',
+    'order_number',
+    'cashier',
+  ],
+  cashbook: ['at', 'register', 'cashier', 'category', 'amount', 'running_expected', 'reason'],
+  receivables: [
+    'order_number',
+    'placed_at',
+    'customer',
+    'debt',
+    'credit_notes',
+    'collected',
+    'balance',
+    'due_on',
+    'aging',
+  ],
+  closures: [
+    'closed_at',
+    'register',
+    'cashier',
+    'expected',
+    'counted',
+    'variance',
+    'reason',
+    'approver',
+    'reconciled',
+  ],
+}
+
+export const RETURN_COLUMNS = [
+  'return_id',
+  'order_number',
+  'returned_at',
+  'receiver',
+  'entitlement_total',
+  'credit_note_amount',
+  'refund_entitlement',
+]
+
+export const MONEY_COLUMNS = new Set([
+  'item_total',
+  'adjustment_total',
+  'total',
+  'received_net',
+  'amount',
+  'running_expected',
+  'debt',
+  'credit_notes',
+  'collected',
+  'balance',
+  'expected',
+  'counted',
+  'reconciled',
+  'entitlement_total',
+  'credit_note_amount',
+  'refund_entitlement',
+])
+
+export const TIME_COLUMNS = new Set([
+  'sold_at',
+  'received_at',
+  'booked_at',
+  'at',
+  'placed_at',
+  'closed_at',
+  'returned_at',
+])
+
+// Code columns translated through a key prefix; unknown codes show as sent.
+export const CODE_COLUMNS: Record<string, string> = {
+  kind: 'reportKind_',
+  source: 'reportSource_',
+  custody: 'reportCustody_',
+  category: 'reportCategory_',
+  aging: 'reportAging_',
+  order_source: 'orderSource_',
+}
+
+export function reportColumns(type: ReportType, section?: string): string[] {
+  return type === 'sales' && section === 'returns' ? RETURN_COLUMNS : REPORT_COLUMNS[type]
+}
+
+// Rows kept from a previous query are shown only for the same report view.
+export const reportView = (type: ReportType, filters: ReportFilters) =>
+  `${type}:${filters.section ?? ''}`
+
+export type ReportSearchFilters = {
+  from?: string
+  to?: string
+  registerId?: string
+  shiftId?: string
+  mine?: boolean
+  section?: string
+  orderSource?: string
+  kind?: string
+  source?: string
+  status?: string
+  shiftPage?: number
+}
+
+// Receivables are a balance as of now; every other report covers a day range,
+// today (in the branch's days) unless another range is chosen.
+export function reportRequest(
+  type: ReportType,
+  search: ReportSearchFilters,
+  today: string,
+  staffId: string | undefined,
+) {
+  const dated = type !== 'receivables'
+  const from = search.from ?? today
+  const to = search.to ?? today
+  const extra: ReportFilters = {
+    ...(type === 'sales' && search.section ? { section: search.section } : {}),
+    ...(type === 'sales' && search.orderSource ? { order_source: search.orderSource } : {}),
+    ...(type === 'receipts' && search.kind ? { kind: search.kind } : {}),
+    ...(type === 'receipts' && search.source ? { source: search.source } : {}),
+    ...(type === 'receivables' && search.status ? { status: search.status } : {}),
+  }
+  const filters: ReportFilters = {
+    ...(dated ? { from, to } : {}),
+    ...(search.registerId ? { register_id: search.registerId } : {}),
+    ...(search.shiftId ? { shift_id: search.shiftId } : {}),
+    ...(search.mine && staffId ? { cashier_id: staffId } : {}),
+    ...(type === 'cashbook' && search.shiftPage && search.shiftPage > 1
+      ? { shift_page: String(search.shiftPage) }
+      : {}),
+    ...extra,
+  }
+  return { dated, from, to, rangeValid: !dated || validReportRange(from, to), filters }
+}
+
+// An export covers the whole filtered report, not the shift summary page on screen.
+export function exportFilters(filters: ReportFilters): ReportFilters {
+  const { shift_page: _page, ...rest } = filters
+  return rest
+}
+
+// The report meta carries page, pages, count and limit; the shared pagination
+// also wants the visible range and the neighbouring pages.
+export function reportPagination(
+  meta: Pick<ReportPage['meta'], 'page' | 'pages' | 'count' | 'limit'>,
+  rows: number,
+): PaginationMeta {
+  const page = Math.max(1, meta.page)
+  const pages = Math.max(0, meta.pages)
+  const start = (page - 1) * meta.limit
+  return {
+    page,
+    limit: meta.limit,
+    count: meta.count,
+    pages,
+    from: rows ? start + 1 : 0,
+    to: start + rows,
+    previous: page > 1 ? page - 1 : null,
+    next: page < pages ? page + 1 : null,
+  }
+}
+
+// Plain figures of the summary; nested lists (shifts, by source) and the shift
+// paging have their own tables.
+export function summaryEntries(summary: Record<string, unknown>): [string, string | number][] {
+  return Object.entries(summary).filter(
+    (entry): entry is [string, string | number] =>
+      (typeof entry[1] === 'string' || typeof entry[1] === 'number') &&
+      !entry[0].startsWith('shift_page'),
+  )
+}
+
+export const isDecimalText = (value: unknown): value is string =>
+  typeof value === 'string' && /^-?\d+\.\d+$/.test(value)
+
+// YYYY-MM-DD as DD/MM/YYYY, as the counter shows business dates.
+export function dayText(value: string): string {
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  return match ? `${match[3]}/${match[2]}/${match[1]}` : value
+}
+
+export type ShiftLine = {
+  shift_id: string
+  register: string | null
+  cashier: string
+  status: string
+  opened_at: string | null
+  opening_float: string
+  expected: string
+  counted: string | null
+  variance: string | null
+}
+
+export function shiftLines(summary: Record<string, unknown> | undefined): ShiftLine[] {
+  const value = summary?.shifts
+  return Array.isArray(value) ? (value as ShiftLine[]) : []
+}
+
+// Shifts seen on any cashbook page of the branch, once each, in the order seen.
+export function knownShifts(pages: (Record<string, unknown> | undefined)[]): ShiftLine[] {
+  const seen = new Map<string, ShiftLine>()
+  for (const summary of pages)
+    for (const line of shiftLines(summary))
+      if (!seen.has(line.shift_id)) seen.set(line.shift_id, line)
+  return [...seen.values()]
+}
+
+// Narrows a loaded page by any text cell; the reports have no server search.
+export function matchesTerm(row: Record<string, unknown>, term: string): boolean {
+  const needle = term.trim().toLocaleLowerCase()
+  if (!needle) return true
+  return Object.values(row).some(
+    (value) =>
+      (typeof value === 'string' || typeof value === 'number') &&
+      String(value).toLocaleLowerCase().includes(needle),
+  )
+}

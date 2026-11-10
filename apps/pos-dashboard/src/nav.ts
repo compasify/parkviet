@@ -1,5 +1,14 @@
 import { type NavEntry, nav, settingsNav, usePermissions } from '@spree/dashboard-core'
-import { ListChecks, Settings, Settings2, ShoppingCart, Wallet } from 'lucide-react'
+import {
+  ChartColumn,
+  HandCoins,
+  ListChecks,
+  Package,
+  Settings,
+  Settings2,
+  ShoppingCart,
+  Wallet,
+} from 'lucide-react'
 import { useLayoutEffect } from 'react'
 import { usePosSession } from './hooks/use-pos-session'
 import { type PosAccess, type PosPage, visibleNav } from './lib/pos-access'
@@ -26,6 +35,28 @@ const groups: { key: string; labelKey: string; icon: NavEntry['icon']; children:
       { key: 'funds', labelKey: 'fundsNav', path: '/funds' },
       { key: 'shifts', labelKey: 'shiftsNav', path: '/shifts' },
     ],
+  },
+  {
+    key: 'debts',
+    labelKey: 'navDebts',
+    icon: HandCoins,
+    children: [
+      { key: 'receivables', labelKey: 'receivablesTitle', path: '/receivables' },
+      { key: 'credit-accounts', labelKey: 'creditAccountsNav', path: '/credit-accounts' },
+      { key: 'credit-approvals', labelKey: 'creditApprovalsNav', path: '/credit-approvals' },
+    ],
+  },
+  {
+    key: 'stock',
+    labelKey: 'navStock',
+    icon: Package,
+    children: [{ key: 'inventory', labelKey: 'inventoryTitle', path: '/inventory' }],
+  },
+  {
+    key: 'reporting',
+    labelKey: 'navReports',
+    icon: ChartColumn,
+    children: [{ key: 'reports', labelKey: 'reportsNav', path: '/reports' }],
   },
   {
     key: 'configuration',

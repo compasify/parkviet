@@ -1,6 +1,12 @@
 import type { PosContext } from '@parkviet/pos-shared/types/pos-context'
 import { describe, expect, it } from 'vitest'
-import { canAdminister, canManageBranch, routeAllowed, visibleNav } from './pos-access'
+import {
+  canAdminister,
+  canManageBranch,
+  canSendReminders,
+  routeAllowed,
+  visibleNav,
+} from './pos-access'
 
 describe('POS permission gates', () => {
   it('allows a store owner to administer and manage any branch', () => {
@@ -109,5 +115,58 @@ describe('POS permission gates', () => {
     expect(routeAllowed('labels', access)).toBe(true)
     expect(visibleNav('labels', access)).toBe(false)
     expect(routeAllowed('setup', { permissionKeys: [] })).toBe(false)
+  })
+  it('opens receivables to branch members and credit screens to credit staff', () => {
+    const staff = (capabilities: string[]) => ({
+      permissionKeys: ['write_pos_topology'],
+      context: { selection: { branch_id: 'b', register_id: null }, capabilities } as PosContext,
+    })
+    expect(visibleNav('receivables', staff(['pos.shift.open']))).toBe(true)
+    expect(visibleNav('receivables', staff(['pos.topology.manage']))).toBe(false)
+    expect(visibleNav('receivables', { permissionKeys: ['write_pos_topology'] })).toBe(false)
+    expect(visibleNav('credit-accounts', staff(['pos.credit.manage']))).toBe(true)
+    expect(visibleNav('credit-accounts', staff(['pos.shift.open']))).toBe(false)
+    expect(visibleNav('credit-approvals', staff(['pos.approval.grant']))).toBe(true)
+    expect(visibleNav('credit-approvals', staff(['pos.approval.grant', 'pos.credit.manage']))).toBe(
+      true,
+    )
+    expect(routeAllowed('credit-approvals', staff(['pos.shift.open']))).toBe(false)
+  })
+  it('sends reminders only while credit sales are on', () => {
+    const access = (credit: boolean) => ({
+      permissionKeys: [],
+      context: {
+        selection: { branch_id: 'b', register_id: null },
+        capabilities: ['pos.payment.collect'],
+        features: { credit },
+      } as unknown as PosContext,
+    })
+    expect(canSendReminders(access(true))).toBe(true)
+    expect(canSendReminders(access(false))).toBe(false)
+  })
+  it('lists traceable stock with the module or its data, and opens it by URL to its staff', () => {
+    const staff = (capabilities: string[], on: boolean, inUse = false) => ({
+      permissionKeys: [],
+      context: {
+        selection: { branch_id: 'b', register_id: null },
+        capabilities,
+        modules: { 'retail.traceability': on },
+        module_usage: { 'retail.traceability': inUse },
+      } as unknown as PosContext,
+    })
+    expect(visibleNav('inventory', staff(['pos.inventory.trace'], true))).toBe(true)
+    expect(visibleNav('inventory', staff(['pos.approval.grant'], true))).toBe(true)
+    expect(visibleNav('inventory', staff(['pos.inventory.manage'], false))).toBe(false)
+    expect(visibleNav('inventory', staff(['pos.inventory.manage'], false, true))).toBe(true)
+    expect(routeAllowed('inventory', staff(['pos.inventory.manage'], false))).toBe(true)
+    expect(routeAllowed('inventory', staff(['pos.shift.open'], true))).toBe(false)
+  })
+  it('opens reports to any branch member', () => {
+    const staff = (capabilities: string[]) => ({
+      permissionKeys: [],
+      context: { selection: { branch_id: 'b', register_id: null }, capabilities } as PosContext,
+    })
+    expect(visibleNav('reports', staff(['pos.shift.open']))).toBe(true)
+    expect(visibleNav('reports', staff([]))).toBe(false)
   })
 })

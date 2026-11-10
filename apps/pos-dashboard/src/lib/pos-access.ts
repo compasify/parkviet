@@ -1,6 +1,10 @@
+import { canRemindDebt } from '@parkviet/pos-shared/debt-reminder'
 import { canHandleDeliveries } from '@parkviet/pos-shared/deliveries'
-import { branchSettingVisible } from '@parkviet/pos-shared/module-registry'
+import { branchSettingVisible, navVisible } from '@parkviet/pos-shared/module-registry'
+import { contextFeature } from '@parkviet/pos-shared/pos-features'
+import { canReadReceivables } from '@parkviet/pos-shared/receivables'
 import { canMoveCash, canReconcileCash } from '@parkviet/pos-shared/shifts'
+import { canOpenInventory } from '@parkviet/pos-shared/traceability'
 import type { PosContext } from '@parkviet/pos-shared/types/pos-context'
 
 export type PosAccess = { permissionKeys: readonly string[]; context?: PosContext }
@@ -11,6 +15,11 @@ export type PosPage =
   | 'funds-attention'
   | 'shifts'
   | 'late-cash'
+  | 'receivables'
+  | 'credit-accounts'
+  | 'credit-approvals'
+  | 'inventory'
+  | 'reports'
   | 'branches'
   | 'registers'
   | 'staff'
@@ -58,7 +67,30 @@ export const canConfirmCash = (access: PosAccess) =>
 export const canApproveCloses = (access: PosAccess) => hasCapability(access, 'pos.approval.grant')
 export const canManageShifts = (access: PosAccess) =>
   canRecoverShifts(access) || canConfirmCash(access) || canApproveCloses(access)
+// Receivables are read by branch members; credit managers among them set
+// credit terms, and approvers decide credit sales, returns and refunds.
+export const canReadDebts = (access: PosAccess) => canReadReceivables(access.context?.capabilities)
+export const canManageCredit = (access: PosAccess) =>
+  canReadDebts(access) && hasCapability(access, 'pos.credit.manage')
+// Reminders belong to credit sales: hidden while `credit` is off. Staff who
+// see contacts unmasked may send them, as the server checks.
+export const canSendReminders = (access: PosAccess) =>
+  Boolean(access.context && contextFeature(access.context, 'credit')) &&
+  canRemindDebt(access.context?.capabilities)
+export const canApproveSales = (access: PosAccess) =>
+  hasCapability(access, 'pos.approval.grant') &&
+  (!hasCapability(access, 'pos.credit.manage') || canReadDebts(access))
+// Traceable stock belongs to the traceability module; its entry stays while
+// the store still has tracked SKUs. Approvers open it to decide adjustments.
+export const canOpenStock = (access: PosAccess) => canOpenInventory(access.context?.capabilities)
+// Any branch member reads reports (their own shifts unless they hold report access).
+export const canReadReports = canReadOrders
 export function visibleNav(page: PosPage, access: PosAccess) {
+  if (page === 'receivables') return canReadDebts(access)
+  if (page === 'credit-accounts') return canManageCredit(access)
+  if (page === 'credit-approvals') return canApproveSales(access)
+  if (page === 'inventory') return navVisible(access.context, 'inventory')
+  if (page === 'reports') return canReadReports(access)
   if (page === 'orders') return canReadOrders(access)
   if (page === 'funds') return canReadFunds(access)
   if (page === 'funds-attention') return hasCapability(access, 'pos.payment.resolve')
@@ -90,9 +122,11 @@ export function visibleNav(page: PosPage, access: PosAccess) {
 // Direct URLs. Setup is reachable by readers: the page shows ask-admin
 // guidance instead of a wizard, while nav keeps it write-only. Label formats
 // stay reachable with the measured-goods module off so existing formats can
-// be seen, and deliveries with the delivery feature off.
+// be seen, deliveries with the delivery feature off, and traceable stock
+// with the traceability module off.
 export function routeAllowed(page: PosPage, access: PosAccess) {
   if (page === 'setup' || page === 'labels') return canAdminister(access)
   if (page === 'deliveries') return canHandleDeliveries(access.context?.capabilities)
+  if (page === 'inventory') return canOpenStock(access)
   return visibleNav(page, access)
 }

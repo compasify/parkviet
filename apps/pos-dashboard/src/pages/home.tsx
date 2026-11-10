@@ -69,6 +69,7 @@ export function HomePage() {
       hintKey: 'attention.creditHint',
       visible: credit,
       query: useCreditRequestsAttention(branchId, credit),
+      to: '/credit-approvals',
     },
     {
       key: 'cash',
