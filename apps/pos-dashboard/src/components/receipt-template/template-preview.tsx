@@ -2,6 +2,7 @@ import receiptCss from '@parkviet/pos-shared/receipt.css?inline'
 import { snapshotData, type TemplateData } from '@parkviet/pos-shared/receipt-template/data'
 import { renderDocument } from '@parkviet/pos-shared/receipt-template/render'
 import { sampleData, withLogo } from '@parkviet/pos-shared/receipt-template/sample-data'
+import { renderSheetHtml } from '@parkviet/pos-shared/receipt-template/sheet-html'
 import type {
   DocumentType,
   PaperSize,
@@ -10,11 +11,9 @@ import type {
 } from '@parkviet/pos-shared/receipt-template/types'
 import type { PosBranch, PosContext, PosRegister } from '@parkviet/pos-shared/types/pos-context'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { useLatestReceipt } from '../../hooks/use-receipt-templates'
 import { Choice } from './controls'
-import { PrintSheet } from './print-sheet'
 
 export type PreviewSource = 'sample' | 'latest'
 const RECEIPT_SOURCES = {
@@ -165,8 +164,10 @@ const PAPER_WIDTH: Record<PaperSize, string> = {
   a6: '105mm',
 }
 
-// React portals keep text escaped. No template HTML or scripts are interpolated
-// into srcDoc, and neither dashboard CSS nor receipt CSS crosses the frame.
+// The frame shows the sheet markup the POS prints, from the shared sheet
+// renderer, which escapes every template text and attribute value. srcDoc
+// stays a fixed empty page, the sandbox runs no scripts, and neither
+// dashboard CSS nor receipt CSS crosses the frame.
 export function ReceiptFrame({
   document: printDocument,
   paper,
@@ -185,6 +186,15 @@ export function ReceiptFrame({
   const ref = useRef<HTMLIFrameElement>(null)
   const [body, setBody] = useState<HTMLElement | null>(null)
   const [height, setHeight] = useState(400)
+  const html = useMemo(
+    () =>
+      `<div class="receipt-print-root">${renderSheetHtml(printDocument, { paper, markOverflow, testId })}</div>`,
+    [printDocument, paper, markOverflow, testId],
+  )
+  // Before the effects below, so they measure and wait on the sheet itself.
+  useEffect(() => {
+    if (body) body.innerHTML = html
+  }, [body, html])
   useEffect(() => {
     if (!body) return
     const measure = () => setHeight(Math.max(200, body.scrollHeight + 24))
@@ -244,19 +254,6 @@ export function ReceiptFrame({
           setBody(doc.body)
         }}
       />
-      {body
-        ? createPortal(
-            <div className="receipt-print-root">
-              <PrintSheet
-                document={printDocument}
-                paper={paper}
-                testId={testId}
-                markOverflow={markOverflow}
-              />
-            </div>,
-            body,
-          )
-        : null}
     </div>
   )
 }

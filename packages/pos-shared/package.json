@@ -8,6 +8,7 @@
     "./types/*": "./src/types/*.ts",
     "./test-support/*": null,
     "./receipt.css": "./src/receipt.css",
+    "./locales/*": "./src/locales/*.json",
     "./*": "./src/*.ts"
   },
   "scripts": {
@@ -21,5 +22,8 @@
     "i18next": "^26.5.3",
     "typescript": "~7.0.2",
     "vitest": "^4.0.0"
+  },
+  "dependencies": {
+    "uqr": "0.1.3"
   }
 }
