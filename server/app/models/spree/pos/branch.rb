@@ -41,6 +41,7 @@ module Spree
       validates :display_freshness_ttl_seconds, numericality: { only_integer: true, in: 5..120 }, allow_nil: true
       validates :timezone, format: { with: /\A[A-Za-z0-9_+\-\/]{1,64}\z/ }
       validates :business_day_cutoff, presence: true
+      validates :staff_session_idle_minutes, numericality: { only_integer: true, in: 5..240 }
       validate :locations_belong_to_store
       validate :stock_location_fixed_for_open_drafts, on: :update
 
@@ -70,7 +71,8 @@ module Spree
           display_freshness_ttl_seconds: display_freshness_ttl_seconds,
           lot_selection: lot_selection, adjustment_approval_threshold: adjustment_approval_threshold,
           profile_key: profile_key, profile_version: profile_version,
-          business_day_cutoff: cutoff_label
+          business_day_cutoff: cutoff_label,
+          staff_session_idle_minutes: staff_session_idle_minutes
         }
       end
 

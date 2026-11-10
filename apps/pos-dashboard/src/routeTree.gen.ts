@@ -20,6 +20,7 @@ import { Route as AuthenticatedStoreIdBusinessModelRouteImport } from './routes/
 import { Route as AuthenticatedStoreIdCreditAccountsRouteImport } from './routes/_authenticated/$storeId/credit-accounts'
 import { Route as AuthenticatedStoreIdCreditApprovalsRouteImport } from './routes/_authenticated/$storeId/credit-approvals'
 import { Route as AuthenticatedStoreIdDeliveriesRouteImport } from './routes/_authenticated/$storeId/deliveries'
+import { Route as AuthenticatedStoreIdDevicesRouteImport } from './routes/_authenticated/$storeId/devices'
 import { Route as AuthenticatedStoreIdFeaturesRouteImport } from './routes/_authenticated/$storeId/features'
 import { Route as AuthenticatedStoreIdFundsRouteImport } from './routes/_authenticated/$storeId/funds'
 import { Route as AuthenticatedStoreIdInventoryRouteImport } from './routes/_authenticated/$storeId/inventory'
@@ -129,6 +130,12 @@ const AuthenticatedStoreIdDeliveriesRoute =
   AuthenticatedStoreIdDeliveriesRouteImport.update({
     id: '/deliveries',
     path: '/deliveries',
+    getParentRoute: () => AuthenticatedStoreIdRoute,
+  } as any)
+const AuthenticatedStoreIdDevicesRoute =
+  AuthenticatedStoreIdDevicesRouteImport.update({
+    id: '/devices',
+    path: '/devices',
     getParentRoute: () => AuthenticatedStoreIdRoute,
   } as any)
 const AuthenticatedStoreIdFeaturesRoute =
@@ -442,6 +449,7 @@ export interface FileRoutesByFullPath {
   '/$storeId/credit-accounts': typeof AuthenticatedStoreIdCreditAccountsRoute
   '/$storeId/credit-approvals': typeof AuthenticatedStoreIdCreditApprovalsRoute
   '/$storeId/deliveries': typeof AuthenticatedStoreIdDeliveriesRoute
+  '/$storeId/devices': typeof AuthenticatedStoreIdDevicesRoute
   '/$storeId/features': typeof AuthenticatedStoreIdFeaturesRoute
   '/$storeId/funds': typeof AuthenticatedStoreIdFundsRouteWithChildren
   '/$storeId/inventory': typeof AuthenticatedStoreIdInventoryRouteWithChildren
@@ -502,6 +510,7 @@ export interface FileRoutesByTo {
   '/$storeId/credit-accounts': typeof AuthenticatedStoreIdCreditAccountsRoute
   '/$storeId/credit-approvals': typeof AuthenticatedStoreIdCreditApprovalsRoute
   '/$storeId/deliveries': typeof AuthenticatedStoreIdDeliveriesRoute
+  '/$storeId/devices': typeof AuthenticatedStoreIdDevicesRoute
   '/$storeId/features': typeof AuthenticatedStoreIdFeaturesRoute
   '/$storeId/label-formats': typeof AuthenticatedStoreIdLabelFormatsRoute
   '/$storeId/payment-methods': typeof AuthenticatedStoreIdPaymentMethodsRoute
@@ -557,6 +566,7 @@ export interface FileRoutesById {
   '/_authenticated/$storeId/credit-accounts': typeof AuthenticatedStoreIdCreditAccountsRoute
   '/_authenticated/$storeId/credit-approvals': typeof AuthenticatedStoreIdCreditApprovalsRoute
   '/_authenticated/$storeId/deliveries': typeof AuthenticatedStoreIdDeliveriesRoute
+  '/_authenticated/$storeId/devices': typeof AuthenticatedStoreIdDevicesRoute
   '/_authenticated/$storeId/features': typeof AuthenticatedStoreIdFeaturesRoute
   '/_authenticated/$storeId/funds': typeof AuthenticatedStoreIdFundsRouteWithChildren
   '/_authenticated/$storeId/inventory': typeof AuthenticatedStoreIdInventoryRouteWithChildren
@@ -621,6 +631,7 @@ export interface FileRouteTypes {
     | '/$storeId/credit-accounts'
     | '/$storeId/credit-approvals'
     | '/$storeId/deliveries'
+    | '/$storeId/devices'
     | '/$storeId/features'
     | '/$storeId/funds'
     | '/$storeId/inventory'
@@ -681,6 +692,7 @@ export interface FileRouteTypes {
     | '/$storeId/credit-accounts'
     | '/$storeId/credit-approvals'
     | '/$storeId/deliveries'
+    | '/$storeId/devices'
     | '/$storeId/features'
     | '/$storeId/label-formats'
     | '/$storeId/payment-methods'
@@ -735,6 +747,7 @@ export interface FileRouteTypes {
     | '/_authenticated/$storeId/credit-accounts'
     | '/_authenticated/$storeId/credit-approvals'
     | '/_authenticated/$storeId/deliveries'
+    | '/_authenticated/$storeId/devices'
     | '/_authenticated/$storeId/features'
     | '/_authenticated/$storeId/funds'
     | '/_authenticated/$storeId/inventory'
@@ -871,6 +884,13 @@ declare module '@tanstack/react-router' {
       path: '/deliveries'
       fullPath: '/$storeId/deliveries'
       preLoaderRoute: typeof AuthenticatedStoreIdDeliveriesRouteImport
+      parentRoute: typeof AuthenticatedStoreIdRoute
+    }
+    '/_authenticated/$storeId/devices': {
+      id: '/_authenticated/$storeId/devices'
+      path: '/devices'
+      fullPath: '/$storeId/devices'
+      preLoaderRoute: typeof AuthenticatedStoreIdDevicesRouteImport
       parentRoute: typeof AuthenticatedStoreIdRoute
     }
     '/_authenticated/$storeId/features': {
@@ -1448,6 +1468,7 @@ interface AuthenticatedStoreIdRouteChildren {
   AuthenticatedStoreIdCreditAccountsRoute: typeof AuthenticatedStoreIdCreditAccountsRoute
   AuthenticatedStoreIdCreditApprovalsRoute: typeof AuthenticatedStoreIdCreditApprovalsRoute
   AuthenticatedStoreIdDeliveriesRoute: typeof AuthenticatedStoreIdDeliveriesRoute
+  AuthenticatedStoreIdDevicesRoute: typeof AuthenticatedStoreIdDevicesRoute
   AuthenticatedStoreIdFeaturesRoute: typeof AuthenticatedStoreIdFeaturesRoute
   AuthenticatedStoreIdFundsRoute: typeof AuthenticatedStoreIdFundsRouteWithChildren
   AuthenticatedStoreIdInventoryRoute: typeof AuthenticatedStoreIdInventoryRouteWithChildren
@@ -1478,6 +1499,7 @@ const AuthenticatedStoreIdRouteChildren: AuthenticatedStoreIdRouteChildren = {
   AuthenticatedStoreIdCreditApprovalsRoute:
     AuthenticatedStoreIdCreditApprovalsRoute,
   AuthenticatedStoreIdDeliveriesRoute: AuthenticatedStoreIdDeliveriesRoute,
+  AuthenticatedStoreIdDevicesRoute: AuthenticatedStoreIdDevicesRoute,
   AuthenticatedStoreIdFeaturesRoute: AuthenticatedStoreIdFeaturesRoute,
   AuthenticatedStoreIdFundsRoute: AuthenticatedStoreIdFundsRouteWithChildren,
   AuthenticatedStoreIdInventoryRoute:

@@ -208,6 +208,16 @@ Rails.application.routes.draw do
                 post :reopen
               end
             end
+            resources :devices, only: [:index, :update] do
+              collection do
+                post :pairing, to: 'devices#create_pairing'
+              end
+              member do
+                post :revoke
+              end
+            end
+            put 'staff_pins', to: 'staff_pins#update'
+            delete 'staff_pins', to: 'staff_pins#destroy'
             resources :approvals, only: [:index, :show, :create] do
               member do
                 post :revoke
@@ -246,7 +256,6 @@ Rails.application.routes.draw do
               post 'delivery/clear', to: 'workspaces/deliveries#clear'
               post 'order_source', to: 'workspaces/order_sources#assign'
               patch 'service_mode', to: 'workspaces/service_modes#update'
-              patch 'service_mode', to: 'workspaces/service_modes#update'
               member do
                 post 'discount/clear', to: 'workspaces/discounts#clear'
                 post :park
@@ -271,6 +280,12 @@ Rails.application.routes.draw do
   get 'api/v3/pos_display/state', to: 'spree/pos/display_views#show', defaults: { format: 'json' }
   post 'api/v3/pos_display/ack', to: 'spree/pos/display_views#ack', defaults: { format: 'json' }
   post 'api/v3/pos_display/pair', to: 'spree/pos/display_views#pair', defaults: { format: 'json' }
+
+  post 'api/v3/pos_device/pair', to: 'spree/pos/device_api/pairings#create', defaults: { format: 'json' }
+  get 'api/v3/pos_device/me', to: 'spree/pos/device_api/me#show', defaults: { format: 'json' }
+  get 'api/v3/pos_device/staff', to: 'spree/pos/device_api/staff_sessions#index', defaults: { format: 'json' }
+  post 'api/v3/pos_device/staff_sessions', to: 'spree/pos/device_api/staff_sessions#create', defaults: { format: 'json' }
+  delete 'api/v3/pos_device/staff_sessions', to: 'spree/pos/device_api/staff_sessions#destroy', defaults: { format: 'json' }
 
   root to: redirect(status: 302) { Spree::Stores::DashboardUrl.call.presence || '/dashboard' }
 

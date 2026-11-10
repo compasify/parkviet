@@ -30,6 +30,7 @@ export type TopologyDraft = {
   code?: string
   timezone?: string
   business_day_cutoff?: string | null
+  staff_session_idle_minutes?: number | null
   stock_location_id?: string
   receiving_stock_location_id?: string | null
   receiving_note?: string | null
@@ -78,6 +79,7 @@ type Values = {
   code: string
   timezone: string
   business_day_cutoff: string
+  staff_session_idle_minutes: string
   stock_location_id: string
   receiving_stock_location_id: string
   receiving_note: string
@@ -113,6 +115,7 @@ export function TopologyEditor({
       code: record.code ?? '',
       timezone: record.timezone ?? 'Asia/Ho_Chi_Minh',
       business_day_cutoff: (record.business_day_cutoff ?? '04:00').slice(0, 5),
+      staff_session_idle_minutes: String(record.staff_session_idle_minutes ?? 30),
       stock_location_id: record.stock_location_id ?? '',
       receiving_stock_location_id: record.receiving_stock_location_id ?? '',
       receiving_note: record.receiving_note ?? '',
@@ -324,6 +327,7 @@ export function TopologyEditor({
                 ])}
                 {text('timezone', 'timezone', undefined, 64)}
                 {text('business_day_cutoff', 'businessDayCutoff', 'businessDayCutoffHint', 5)}
+                {text('staff_session_idle_minutes', 'devices.idle', 'devices.idleHint', 3)}
                 {text('return_window_days', 'adminReturnWindow', 'adminReturnWindowHint', 4)}
                 {!hideLotSelection &&
                   select(

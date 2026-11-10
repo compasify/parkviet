@@ -89,6 +89,43 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/Approval'
+  /api/v3/pos_device/pair:
+    post:
+      operationId: posDevicePair
+      responses:
+        '201':
+          description: Device token, shown once
+  /api/v3/pos_device/me:
+    get:
+      operationId: posDeviceMe
+      responses:
+        '200':
+          description: Paired device
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/DeviceSession'
+  /api/v3/pos_device/staff:
+    get:
+      operationId: posDeviceStaff
+      responses:
+        '200':
+          description: Names at the branch
+  /api/v3/pos_device/staff_sessions:
+    post:
+      operationId: posDeviceStaffSignIn
+      responses:
+        '201':
+          description: Staff session token, shown once
+    delete:
+      operationId: posDeviceStaffSignOut
+      responses:
+        '204':
+          description: Signed out
 components:
   schemas:
     Context:
@@ -204,4 +241,60 @@ components:
         status:
           type: string
         expires_at:
+          type: string
+    Device:
+      type: object
+      additionalProperties: true
+      required: [id, name, mode, status, branch_id]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        mode:
+          type: string
+          enum: [waiter, kds, expo, kiosk, print_station, owner, bridge]
+        status:
+          type: string
+          enum: [active, revoked]
+        branch_id:
+          type: string
+        platform:
+          type: string
+        last_seen_at:
+          type: [string, 'null']
+    DevicePairing:
+      type: object
+      additionalProperties: true
+      required: [id, code, expires_at, mode, qr]
+      properties:
+        id:
+          type: string
+        code:
+          type: string
+        expires_at:
+          type: string
+        mode:
+          type: string
+        qr:
+          type: object
+          additionalProperties: true
+          required: [v, kind, url, code]
+          properties:
+            v:
+              type: integer
+            kind:
+              type: string
+            url:
+              type: string
+            code:
+              type: string
+    DeviceSession:
+      type: object
+      additionalProperties: true
+      required: [device, branch, server_time]
+      properties:
+        device:
+          $ref: '#/components/schemas/Device'
+        server_time:
           type: string

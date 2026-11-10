@@ -143,9 +143,9 @@ Migration: `create_pos_devices`, `create_pos_device_pairings`, `create_pos_devic
 
 ## Tiêu chí xong
 
-- [ ] Quản lý tạo QR ghép; QR chứa `url` server và mã một lần.
-- [ ] Thiết bị đổi mã lấy token; server chỉ lưu digest; thu hồi có hiệu lực ngay.
-- [ ] Nhân viên đặt PIN trên web và đăng nhập bằng PIN trên thiết bị; khóa sau 5 lần sai.
-- [ ] Request từ thiết bị + session nhân viên đi qua đúng kiểm tra quyền hiện có.
-- [ ] Trang Thiết bị trên web chạy được; OpenAPI có đủ endpoint.
+- [x] Quản lý tạo QR ghép; QR chứa `url` server và mã một lần.
+- [x] Thiết bị đổi mã lấy token; server chỉ lưu digest; thu hồi có hiệu lực ngay.
+- [x] Nhân viên đặt PIN trên web và đăng nhập bằng PIN trên thiết bị; khóa sau 5 lần sai.
+- [x] Request từ thiết bị + session nhân viên đi qua đúng kiểm tra quyền hiện có.
+- [x] Trang Thiết bị trên web chạy được; OpenAPI có đủ endpoint.
 - [ ] Spec POS và e2e web xanh.

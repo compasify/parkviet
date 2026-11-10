@@ -24,6 +24,29 @@ module Spree
 
             before_action :require_pos_staff!
 
+            # A paired device with a staff session is that staff member for
+            # every existing permission, capability and lease check. A device
+            # token alone never enters this API.
+            def authenticate_admin!
+              return super unless Spree::Pos::DeviceAuthenticator.device_request?(request)
+
+              device, staff = Spree::Pos::DeviceAuthenticator.authenticate(request)
+              if device.nil?
+                render_error(code: 'device_unauthorized', message: 'The device is not connected.', status: :unauthorized)
+                return false
+              end
+              if staff.nil?
+                render_error(code: Spree::Api::V3::ErrorHandler::ERROR_CODES[:access_denied],
+                             message: 'This device needs a staff session.', status: :forbidden,
+                             details: { reason: 'device_staff_required' })
+                return false
+              end
+
+              @current_user = staff
+              @pos_device = device
+              true
+            end
+
             rescue_from Spree::Pos::Conflict, with: :render_pos_conflict
             rescue_from Spree::Pos::ReceiptTemplateSchema::Invalid, with: :render_template_invalid
 

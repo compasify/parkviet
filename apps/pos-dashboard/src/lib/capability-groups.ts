@@ -24,6 +24,7 @@ const GROUPS: { key: string; capabilities: Capability[] }[] = [
       'pos.topology.manage',
       'pos.topology.recover',
       'pos.credit.manage',
+      'pos.device.manage',
     ],
   },
   { key: 'reports', capabilities: ['pos.report.read', 'pos.report.export'] },

@@ -6,7 +6,14 @@ import type { LotSelection, SaleLineTrace, WorkspaceTrace } from '../traceabilit
 export const ORDER_SOURCES = ['counter', 'facebook', 'zalo', 'other'] as const;
 export type OrderSource = (typeof ORDER_SOURCES)[number];
 
-export const SERVICE_MODES = ['counter', 'dine_in', 'takeaway', 'delivery', 'tab', 'timed'] as const;
+export const SERVICE_MODES = [
+  'counter',
+  'dine_in',
+  'takeaway',
+  'delivery',
+  'tab',
+  'timed',
+] as const;
 export type ServiceMode = (typeof SERVICE_MODES)[number];
 
 export type PosBranch = {
@@ -31,6 +38,7 @@ export type PosBranch = {
   profile_version?: number;
   // Wall-clock time the business day rolls, HH:MM. Missing means 04:00.
   business_day_cutoff?: string;
+  staff_session_idle_minutes?: number;
 };
 
 export type PosRegister = {

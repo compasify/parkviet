@@ -36,6 +36,7 @@ export type PosPage =
   | 'receipt-templates'
   | 'setup'
   | 'store-model'
+  | 'devices'
 export function canAdminister(access: PosAccess, write = false) {
   return (
     access.permissionKeys.includes('write_pos_topology') ||
@@ -116,6 +117,8 @@ export function visibleNav(page: PosPage, access: PosAccess) {
   if (page === 'features' || page === 'business-model')
     return canAdminister(access) || canManageBranch(access)
   if (page === 'setup' || page === 'store-model') return canAdminister(access, true)
+  if (page === 'devices')
+    return canAdminister(access) || hasCapability(access, 'pos.device.manage') || canReadOrders(access)
   return canAdminister(access)
 }
 // Direct URLs. Setup is reachable by readers: the page shows ask-admin

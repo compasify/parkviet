@@ -17,6 +17,11 @@ export const branchSchema = z.object({
     .string()
     .trim()
     .regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'businessDayCutoffInvalid'),
+  staff_session_idle_minutes: z
+    .string()
+    .trim()
+    .regex(/^([5-9]|[1-9]\d|[1-2]\d\d)$/, 'devices.idleInvalid')
+    .refine((value) => Number(value) <= 240, 'devices.idleInvalid'),
   stock_location_id: z.string().min(1, 'adminChooseWarehouse'),
   receiving_stock_location_id: z.string(),
   receiving_note: z.string().trim().max(200, 'invalid'),

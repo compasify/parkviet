@@ -17,6 +17,7 @@ export const posCapabilities = [
   ['pos.report.export', 'capabilityReportExport'],
   ['pos.inventory.manage', 'capabilityInventoryManage'],
   ['pos.inventory.trace', 'capabilityInventoryTrace'],
+  ['pos.device.manage', 'capabilityDeviceManage'],
 ] as const;
 
 export const sensitiveCapabilities = [
@@ -35,4 +36,5 @@ export const sensitiveCapabilities = [
   'pos.report.export',
   'pos.inventory.manage',
   'pos.inventory.trace',
+  'pos.device.manage',
 ];

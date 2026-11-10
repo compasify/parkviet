@@ -80,6 +80,7 @@ const groups: { key: string; labelKey: string; icon: NavEntry['icon']; children:
       { key: 'units', labelKey: 'units.title', path: '/units' },
       { key: 'staff-roles', labelKey: 'staffRoles.title', path: '/staff-roles' },
       { key: 'labels', labelKey: 'labelFormatsTitle', path: '/scale-labels' },
+      { key: 'devices', labelKey: 'devices.title', path: '/devices' },
     ],
   },
 ]

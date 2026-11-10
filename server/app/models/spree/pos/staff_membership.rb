@@ -49,8 +49,28 @@ module Spree
           # The membership's own list, used again once the role is removed.
           custom_capabilities: capabilities,
           staff_role: staff_role && { id: staff_role.prefixed_id, name: staff_role.name },
-          status: status
+          status: status,
+          pin_set: pin_digest.present?
         }
+      end
+
+      # A shared-device PIN. The digest never leaves the server.
+      def set_pin!(pin)
+        raise Conflict.new('PIN must be 4 to 6 digits.', reason: 'pin_invalid') unless pin.to_s.match?(/\A\d{4,6}\z/)
+
+        update!(pin_digest: BCrypt::Password.create(pin.to_s), pin_set_at: Time.current)
+      end
+
+      def pin_matches?(pin)
+        return false if pin_digest.blank?
+
+        BCrypt::Password.new(pin_digest).is_password?(pin.to_s)
+      rescue BCrypt::Errors::InvalidHash
+        false
+      end
+
+      def clear_pin!
+        update!(pin_digest: nil, pin_set_at: nil)
       end
 
       private

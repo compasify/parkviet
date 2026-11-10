@@ -26,13 +26,13 @@ module Spree
 
             attrs[:business_day_cutoff] = value.length == 5 ? "#{value}:00" : value
           end
-          if params.key?(:business_day_cutoff)
-            value = params[:business_day_cutoff].to_s.strip
-            unless value.match?(/\A([01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?\z/)
-              raise Conflict, 'Business day cutoff is invalid.'
+          if params.key?(:staff_session_idle_minutes)
+            minutes = Integer(params[:staff_session_idle_minutes], exception: false)
+            unless minutes && minutes.between?(5, 240)
+              raise Conflict, 'Staff session idle time is invalid.'
             end
 
-            attrs[:business_day_cutoff] = value.length == 5 ? "#{value}:00" : value
+            attrs[:staff_session_idle_minutes] = minutes
           end
           attrs[:stock_location] = location!(store, params[:stock_location_id]) if params.key?(:stock_location_id) || record.nil?
           if params.key?(:receiving_stock_location_id)
