@@ -34,7 +34,18 @@ module Spree
               scope = scope.where(document_type: document_type!(params[:document_type], '/document_type')) if params[:document_type].present?
               templates = scope.order(:document_type, is_default: :desc, name: :asc, id: :asc).to_a
               versions = Template.current_versions(templates)
-              render json: { data: templates.map { |template| template.to_pos(versions.fetch(template.id)) } }
+              data = templates.map { |template| template.to_pos(versions.fetch(template.id)) }
+              # With `branch_id`, `branch_default` marks the template that
+              # branch prints each document type with.
+              if params[:branch_id].present?
+                overrides = Template.branch_overrides(branch!(params[:branch_id]))
+                data.each_with_index do |entry, index|
+                  template = templates[index]
+                  chosen = overrides[template.document_type]
+                  entry[:branch_default] = chosen ? chosen.id == template.id : template.is_default && template.status == 'active'
+                end
+              end
+              render json: { data: data }
             end
 
             # `?version=N` serves that saved version, disabled templates included.

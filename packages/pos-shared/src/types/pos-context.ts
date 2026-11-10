@@ -498,6 +498,10 @@ export type PosMembership = {
   id: string;
   branch_id: string;
   staff_id: string;
+  // What the membership grants: its role's capabilities when it has a role.
   capabilities: string[];
+  // The membership's own list, used when it has no role.
+  custom_capabilities?: string[];
+  staff_role?: { id: string; name: string } | null;
   status: string;
 };

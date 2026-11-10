@@ -2,9 +2,10 @@
 
 module Spree
   module Pos
-    # A store's print template for one document type. Branches and registers
-    # have none of their own; their details reach the print through template
-    # variables. Every save adds an immutable version, and a template is
+    # A store's print template for one document type. A branch may choose
+    # one of them per document type instead of the store default
+    # (BranchReceiptTemplate); branch and register details reach the print
+    # through template variables. Every save adds an immutable version, and a template is
     # disabled, never deleted, because recorded prints point at it. Each
     # document type keeps exactly one active default.
     class ReceiptTemplate < Record
@@ -68,6 +69,23 @@ module Spree
           # Another request gave this type its default first.
           next
         end
+      end
+
+      # The template a branch prints `document_type` with: the branch's
+      # chosen template while it is active, otherwise the store default.
+      def self.effective_for(store, document_type, branch:)
+        ensure_defaults!(store)
+        assigned = branch && BranchReceiptTemplate.find_by(branch_id: branch.id, document_type: document_type)&.receipt_template
+        return assigned if assigned && !assigned.disabled? && assigned.store_id == store.id
+
+        for_store(store).active.find_by!(document_type: document_type, is_default: true)
+      end
+
+      # { document_type => template } for every type the branch prints with
+      # its own active template.
+      def self.branch_overrides(branch)
+        BranchReceiptTemplate.where(branch_id: branch.id).includes(:receipt_template).
+          reject { |row| row.receipt_template.disabled? }.to_h { |row| [row.document_type, row.receipt_template] }
       end
 
       def self.create_with_version!(store:, document_type:, name:, paper:, config:, actor:, default: false)

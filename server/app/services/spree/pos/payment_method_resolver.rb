@@ -18,43 +18,78 @@ module Spree
         @store = store
       end
 
+      # Every active configured row, plus a built-in cash or bank row for a
+      # kind the store has never configured (a disabled row of that kind
+      # turns the built-in one off too). With a branch, only the methods
+      # it offers (see #offered_at?).
       def available(branch: nil)
-        rows = PosPaymentMethod.for_store(store).active_now.to_a
-        result = []
-        cash = rows.find { |row| row.kind == 'cash' } || default_cash
-        result << cash if cash
-        mapped_bank = rows.find { |row| row.kind == 'bank_manual' }
-        result << mapped_bank if mapped_bank
-        if mapped_bank.nil?
+        rows = PosPaymentMethod.for_store(store).order(:position, :id).to_a
+        kinds = rows.map(&:kind).uniq
+        result = rows.select { |row| row.status == 'active' && %w[cash bank_manual].include?(row.kind) }
+        result << default_cash unless kinds.include?('cash')
+        unless kinds.include?('bank_manual')
           core = core_bank_method
           result << (core ? transient_bank(core) : default_bank)
         end
-        vietqr = vietqr_row(rows, branch)
-        result << vietqr if vietqr
+        result.concat(vietqr_rows(rows, branch))
+        result = result.select { |row| offered_at?(row, branch) } if branch
         result.sort_by { |row| [row.position, row.id || 0] }
       end
 
       # Returns [PosPaymentMethod row (persisted or transient), core method].
-      def resolve!(prefixed_id)
+      # With a branch, a method the branch does not offer is refused.
+      def resolve!(prefixed_id, branch: nil)
         if prefixed_id.to_s.start_with?('posmethod-')
           kind = prefixed_id.to_s.delete_prefix('posmethod-')
           candidate = available.find { |row| row.kind == kind }
           raise ActiveRecord::RecordNotFound if candidate.nil?
 
-          return [candidate, core_for(candidate)]
+          return [offered!(candidate, branch), core_for(candidate)]
         end
         row = PosPaymentMethod.locate(PosPaymentMethod.for_store(store), prefixed_id) if prefixed_id.present?
         if row
           raise Conflict, 'Payment method is disabled.' unless row.status == 'active'
 
-          return [row, core_for(row)]
+          return [offered!(row, branch), core_for(row)]
         end
         available.each do |candidate|
           next unless candidate.prefixed_id == prefixed_id.to_s
 
-          return [candidate, core_for(candidate)]
+          return [offered!(candidate, branch), core_for(candidate)]
         end
         raise ActiveRecord::RecordNotFound
+      end
+
+      # A branch without a selection offers every method; one with a
+      # selection offers only the selected rows.
+      def offered_at?(row, branch)
+        selected = selected_ids(branch)
+        selected.empty? || (row.id.present? && selected.include?(row.id))
+      end
+
+      # Saves the built-in rows the store currently gets, so they can be
+      # renamed, ordered, disabled and chosen per branch. Returns every row.
+      def materialize!
+        available.each do |row|
+          next if row.persisted?
+
+          PosPaymentMethod.create!(store: store, code: row.code, name: row.name, kind: row.kind, status: 'active',
+                                   position: row.position, payment_method_id: row.payment_method_id,
+                                   payment_method_type: row.payment_method_type)
+        rescue ActiveRecord::RecordNotUnique
+          next
+        end
+        PosPaymentMethod.for_store(store).order(:position, :id).to_a
+      end
+
+      # The core method a row may settle on: a manual one for cash and bank
+      # transfers, a VietQR one with a receiving account for VietQR.
+      def core_choice(kind, prefixed_id)
+        method = Spree::PaymentMethod.find_by_prefix_id(prefixed_id.to_s)
+        return nil if method.nil?
+
+        scope = kind == 'vietqr' ? vietqr_methods : manual_methods
+        scope.find_by(id: method.id)
       end
 
       # POS money is attested by staff, so the core Payment must sit on a manual
@@ -98,15 +133,30 @@ module Spree
           where(id: SpreeVietqr::ReceivingAccount.active.select(:payment_method_id)).order(:position, :id)
       end
 
-      def vietqr_row(rows, branch)
-        return nil if branch && !FeaturePolicy.enabled?(branch, :vietqr)
+      def vietqr_rows(rows, branch)
+        return [] if branch && !FeaturePolicy.enabled?(branch, :vietqr)
 
-        mapped = rows.find { |row| row.kind == 'vietqr' }
-        core = mapped ? vietqr_for(mapped) : vietqr_methods.first
-        return nil if core.nil?
+        mapped = rows.select { |row| row.kind == 'vietqr' }
+        return mapped.select { |row| row.status == 'active' && vietqr_for(row) } if mapped.any?
 
-        mapped || PosPaymentMethod.new(store: store, code: VIETQR_CODE, name: core.name.presence || 'VietQR', kind: 'vietqr',
-                                       status: 'active', position: 2, payment_method_id: core.id, payment_method_type: core.type)
+        core = vietqr_methods.first
+        return [] if core.nil?
+
+        [PosPaymentMethod.new(store: store, code: VIETQR_CODE, name: core.name.presence || 'VietQR', kind: 'vietqr',
+                              status: 'active', position: 2, payment_method_id: core.id, payment_method_type: core.type)]
+      end
+
+      def selected_ids(branch)
+        return [] if branch.nil?
+
+        @selected_ids ||= {}
+        @selected_ids[branch.id] ||= BranchPaymentMethod.where(branch_id: branch.id).pluck(:pos_payment_method_id)
+      end
+
+      def offered!(row, branch)
+        return row if branch.nil? || offered_at?(row, branch)
+
+        raise Conflict.new('This branch does not offer this payment method.', reason: 'payment_method_not_offered')
       end
 
       def manual?(method)

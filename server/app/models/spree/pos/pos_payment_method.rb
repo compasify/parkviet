@@ -2,18 +2,33 @@
 
 module Spree
   module Pos
+    # A tender the POS offers (cash, manual bank transfer or VietQR), settled
+    # on a core payment method of the store. A row a tender attempt recorded
+    # is disabled, never deleted.
     class PosPaymentMethod < Record
       self.table_name = 'spree_pos_payment_methods'
       has_prefix_id :pospaymethod
 
+      KINDS = %w[cash bank_manual vietqr].freeze
+      CODE_FORMAT = /\A[a-z0-9][a-z0-9_]{0,31}\z/
+
       belongs_to :store, class_name: 'Spree::Store'
+      has_many :branch_payment_methods, class_name: 'Spree::Pos::BranchPaymentMethod', dependent: :delete_all
+      has_many :tender_attempts, class_name: 'Spree::Pos::TenderAttempt', dependent: :restrict_with_error
 
       validates :code, :name, presence: true
-      validates :kind, inclusion: { in: %w[cash bank_manual vietqr] }
+      validates :code, format: { with: CODE_FORMAT }, uniqueness: { scope: :store_id }
+      validates :name, length: { maximum: 120 }
+      validates :kind, inclusion: { in: KINDS }
       validates :status, inclusion: { in: %w[active disabled] }
+      validates :position, numericality: { only_integer: true, greater_than_or_equal_to: 0, less_than_or_equal_to: 10_000 }
 
       scope :for_store, ->(store) { where(store_id: store.id) }
       scope :active_now, -> { where(status: 'active').order(:position, :id) }
+
+      def active?
+        status == 'active'
+      end
 
       def to_pos
         {

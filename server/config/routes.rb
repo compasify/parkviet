@@ -14,6 +14,19 @@ Rails.application.routes.draw do
             get 'units', to: 'units#index'
             get 'units/variant', to: 'units#variant_units'
             put 'units/variant', to: 'units#update_variant_unit'
+            post 'units', to: 'units#create'
+            constraints(id: /posunit_[^\/]+/) do
+              match 'units/:id', to: 'units#update', via: %i[patch put]
+              post 'units/:id/disable', to: 'units#disable'
+              post 'units/:id/enable', to: 'units#enable'
+            end
+            resources :payment_methods, only: [:index, :create, :update, :destroy]
+            resources :staff_roles, only: [:index, :show, :create, :update, :destroy]
+            resources :label_formats, only: [:index, :create, :update] do
+              member do
+                post :disable
+              end
+            end
             post 'measurement_barcodes/parse', to: 'measurement_barcodes#parse'
             get 'traceability', to: 'traceability#show'
             namespace :inventory do
@@ -96,6 +109,11 @@ Rails.application.routes.draw do
                   post :disable
                 end
               end
+              put 'label_formats', to: 'label_formats#assign'
+              get 'payment_methods', to: 'branch_payment_methods#show'
+              put 'payment_methods', to: 'branch_payment_methods#update'
+              get 'receipt_templates', to: 'branch_receipt_templates#show'
+              put 'receipt_templates', to: 'branch_receipt_templates#update'
             end
             resources :receipt_templates, only: [:index, :show, :create, :update] do
               member do

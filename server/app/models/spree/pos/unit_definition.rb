@@ -21,9 +21,29 @@ module Spree
       CODE_FORMAT = /\A[a-z][a-z0-9_]{0,15}\z/
       SAMPLES_PATH = 'config/pos/sample_units.yml'
 
+      # Selling falls back to `item` for SKUs without a unit configuration.
+      FALLBACK_CODE = 'item'
+      # Fields that define what a quantity means; fixed once the unit exists.
+      STRUCTURAL = %w[code dimension base_code factor_to_base].freeze
+
       belongs_to :store, class_name: 'Spree::Store'
 
       scope :for_store, ->(store) { where(store_id: store.id) }
+      scope :active, -> { where(status: 'active') }
+
+      before_validation do
+        self.code = code.to_s.strip.downcase
+        self.base_code = base_code.to_s.strip.downcase.presence || code
+        self.name = name.to_s.strip
+      end
+
+      validates :code, format: { with: CODE_FORMAT }, uniqueness: { scope: :store_id }
+      validates :name, presence: true, length: { maximum: 64 }
+      validates :dimension, inclusion: { in: DIMENSIONS }
+      validates :status, inclusion: { in: %w[active disabled] }
+      validates :factor_to_base, numericality: { only_integer: true, greater_than: 0, less_than_or_equal_to: 1_000_000 }
+      validates :sale_precision, numericality: { only_integer: true, greater_than_or_equal_to: 0, less_than_or_equal_to: 3 }
+      validate :converts_to_a_canonical_unit, on: :create
 
       def self.ensure_defaults!(store)
         create_missing!(store, DEFAULTS)
@@ -94,8 +114,46 @@ module Spree
       end
       private_class_method :create_missing!
 
+      def disabled?
+        status == 'disabled'
+      end
+
+      # Why the unit cannot be disabled, or nil when it can.
+      def disable_blocker
+        return 'The fallback unit cannot be disabled.' if code == FALLBACK_CODE
+
+        configured = VariantUnit.where(store_id: store_id, status: 'active').
+                     where('sale_unit_id = :id OR base_unit_id = :id OR price_unit_id = :id', id: id)
+        return 'This unit is used by SKU unit configurations.' if configured.exists?
+
+        derived = self.class.where(store_id: store_id, status: 'active', base_code: code).where.not(id: id)
+        return 'Other units convert to this unit.' if derived.exists?
+
+        labels = LabelFormat.where(store_id: store_id, status: 'active', value_unit_code: code)
+        return 'Active scale label formats use this unit.' if labels.exists?
+
+        nil
+      end
+
       def to_pos
-        { id: prefixed_id, code: code, name: name, dimension: dimension, base_code: base_code, factor_to_base: factor_to_base, sale_precision: sale_precision, version: version }
+        { id: prefixed_id, code: code, name: name, dimension: dimension, base_code: base_code, factor_to_base: factor_to_base,
+          sale_precision: sale_precision, version: version, status: status }
+      end
+
+      private
+
+      # Factors are relative to the canonical unit of the dimension: either
+      # the unit itself (factor 1) or a canonical unit of the store.
+      def converts_to_a_canonical_unit
+        return if code.blank? || base_code.blank?
+
+        if base_code == code
+          errors.add(:factor_to_base, :invalid) unless factor_to_base == 1
+          return
+        end
+        base = store && self.class.find_by(store_id: store.id, code: base_code)
+        valid = base && base.base_code == base.code && base.dimension == dimension
+        errors.add(:base_code, :invalid) unless valid
       end
     end
   end

@@ -73,7 +73,7 @@ module Spree
       private
 
       def matching_format
-        LabelFormat.active.where(branch_id: @branch.id).to_a.
+        LabelFormat.active.assigned_to(@branch).to_a.
           select { |format| @barcode.start_with?(format.prefix) }.
           max_by { |format| format.prefix.length }
       end

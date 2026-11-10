@@ -23,7 +23,7 @@ module Spree
       def memberships
         return StaffMembership.none unless active_staff?
 
-        StaffMembership.for_store(store).where(staff_id: staff.id)
+        StaffMembership.for_store(store).where(staff_id: staff.id).includes(:staff_role)
       end
 
       def membership_for(branch)

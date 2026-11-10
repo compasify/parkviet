@@ -60,7 +60,7 @@ module Spree
             measured = UnitDefinition.for_store(branch.store).where(dimension: %w[mass volume]).select(:id)
             { measured_variants: units.where(sale_unit_id: measured).count,
               labelled_variants: units.where.not(label_code: nil).count,
-              label_formats: LabelFormat.for_store(branch.store).where(branch_id: branch.id, status: 'active').count }
+              label_formats: LabelFormat.for_store(branch.store).active.assigned_to(branch).count }
           when 'retail.units'
             { converted_variants: units.where('spree_pos_variant_units.sale_unit_id <> spree_pos_variant_units.base_unit_id OR ' \
                                               'spree_pos_variant_units.ratio_numerator <> spree_pos_variant_units.ratio_denominator').count }

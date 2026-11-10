@@ -34,7 +34,7 @@ module Spree
             end
 
             resolver = PaymentMethodResolver.new(store: workspace.store)
-            row, core_method = resolver.resolve!(payment_method_id)
+            row, core_method = resolver.resolve!(payment_method_id, branch: workspace.branch)
             raise Conflict, 'Payment method is not available for this store.' if core_method.nil?
 
             if row.kind == 'vietqr'

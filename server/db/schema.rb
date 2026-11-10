@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_10_140400) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_10_160300) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -2296,6 +2296,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_10_140400) do
     t.index ["subject_type", "subject_id"], name: "index_spree_pos_audit_entries_on_subject_type_and_subject_id"
   end
 
+  create_table "spree_pos_branch_label_formats", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "branch_id", null: false
+    t.bigint "label_format_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["branch_id", "label_format_id"], name: "idx_pos_branch_label_formats_unique", unique: true
+    t.index ["label_format_id"], name: "index_spree_pos_branch_label_formats_on_label_format_id"
+    t.index ["store_id"], name: "index_spree_pos_branch_label_formats_on_store_id"
+  end
+
   create_table "spree_pos_branch_modules", force: :cascade do |t|
     t.bigint "store_id", null: false
     t.bigint "branch_id", null: false
@@ -2309,6 +2320,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_10_140400) do
     t.index ["store_id"], name: "index_spree_pos_branch_modules_on_store_id"
   end
 
+  create_table "spree_pos_branch_payment_methods", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "branch_id", null: false
+    t.bigint "pos_payment_method_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["branch_id", "pos_payment_method_id"], name: "idx_pos_branch_payment_methods_unique", unique: true
+    t.index ["pos_payment_method_id"], name: "idx_on_pos_payment_method_id_1142b3933e"
+    t.index ["store_id"], name: "index_spree_pos_branch_payment_methods_on_store_id"
+  end
+
   create_table "spree_pos_branch_products", force: :cascade do |t|
     t.bigint "branch_id", null: false
     t.bigint "product_id", null: false
@@ -2317,6 +2339,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_10_140400) do
     t.index ["branch_id", "product_id"], name: "idx_pos_branch_product_unique", unique: true
     t.index ["branch_id"], name: "index_spree_pos_branch_products_on_branch_id"
     t.index ["product_id"], name: "index_spree_pos_branch_products_on_product_id"
+  end
+
+  create_table "spree_pos_branch_receipt_templates", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "branch_id", null: false
+    t.string "document_type", null: false
+    t.bigint "receipt_template_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["branch_id", "document_type"], name: "idx_pos_branch_receipt_templates_type", unique: true
+    t.index ["receipt_template_id"], name: "idx_on_receipt_template_id_663f736c87"
+    t.index ["store_id"], name: "index_spree_pos_branch_receipt_templates_on_store_id"
   end
 
   create_table "spree_pos_branches", force: :cascade do |t|
@@ -2781,7 +2815,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_10_140400) do
 
   create_table "spree_pos_label_formats", force: :cascade do |t|
     t.bigint "store_id", null: false
-    t.bigint "branch_id", null: false
+    t.bigint "branch_id"
     t.string "name", null: false
     t.string "prefix", null: false
     t.string "kind", null: false
@@ -2794,7 +2828,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_10_140400) do
     t.string "status", default: "active", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["branch_id", "prefix"], name: "idx_pos_label_formats_active_prefix", unique: true, where: "((status)::text = 'active'::text)"
     t.index ["branch_id"], name: "index_spree_pos_label_formats_on_branch_id"
     t.index ["store_id"], name: "index_spree_pos_label_formats_on_store_id"
     t.check_constraint "(char_length(prefix::text) + item_code_length + value_length) = 12 AND item_code_length > 0 AND value_length > 0", name: "chk_pos_label_formats_layout"
@@ -3322,11 +3355,25 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_10_140400) do
     t.datetime "disabled_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "staff_role_id"
     t.index ["branch_id"], name: "index_spree_pos_staff_memberships_on_branch_id"
     t.index ["staff_id"], name: "index_spree_pos_staff_memberships_on_staff_id"
+    t.index ["staff_role_id"], name: "index_spree_pos_staff_memberships_on_staff_role_id"
     t.index ["store_id", "branch_id", "staff_id"], name: "idx_spree_pos_memberships_staff_branch", unique: true
     t.index ["store_id"], name: "index_spree_pos_staff_memberships_on_store_id"
     t.check_constraint "status::text = ANY (ARRAY['active'::character varying, 'disabled'::character varying]::text[])", name: "chk_spree_pos_memberships_status"
+  end
+
+  create_table "spree_pos_staff_roles", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.string "name", limit: 80, null: false
+    t.jsonb "capabilities", default: [], null: false
+    t.string "status", default: "active", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index "store_id, lower((name)::text)", name: "idx_pos_staff_roles_store_name", unique: true
+    t.index ["store_id"], name: "index_spree_pos_staff_roles_on_store_id"
+    t.check_constraint "status::text = ANY (ARRAY['active'::character varying, 'disabled'::character varying]::text[])", name: "chk_pos_staff_roles_status"
   end
 
   create_table "spree_pos_stock_discrepancies", force: :cascade do |t|
@@ -5301,11 +5348,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_10_140400) do
   add_foreign_key "spree_pos_approvals", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_audit_entries", "spree_admin_users", column: "actor_id"
   add_foreign_key "spree_pos_audit_entries", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_branch_label_formats", "spree_pos_branches", column: "branch_id"
+  add_foreign_key "spree_pos_branch_label_formats", "spree_pos_label_formats", column: "label_format_id"
+  add_foreign_key "spree_pos_branch_label_formats", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_branch_modules", "spree_admin_users", column: "changed_by_id"
   add_foreign_key "spree_pos_branch_modules", "spree_pos_branches", column: "branch_id"
   add_foreign_key "spree_pos_branch_modules", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_branch_payment_methods", "spree_pos_branches", column: "branch_id"
+  add_foreign_key "spree_pos_branch_payment_methods", "spree_pos_payment_methods", column: "pos_payment_method_id"
+  add_foreign_key "spree_pos_branch_payment_methods", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_branch_products", "spree_pos_branches", column: "branch_id"
   add_foreign_key "spree_pos_branch_products", "spree_products", column: "product_id"
+  add_foreign_key "spree_pos_branch_receipt_templates", "spree_pos_branches", column: "branch_id"
+  add_foreign_key "spree_pos_branch_receipt_templates", "spree_pos_receipt_templates", column: "receipt_template_id"
+  add_foreign_key "spree_pos_branch_receipt_templates", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_branches", "spree_stock_locations", column: "receiving_stock_location_id"
   add_foreign_key "spree_pos_branches", "spree_stock_locations", column: "stock_location_id"
   add_foreign_key "spree_pos_branches", "spree_stores", column: "store_id"
@@ -5459,7 +5515,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_10_140400) do
   add_foreign_key "spree_pos_shifts", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_staff_memberships", "spree_admin_users", column: "staff_id"
   add_foreign_key "spree_pos_staff_memberships", "spree_pos_branches", column: "branch_id"
+  add_foreign_key "spree_pos_staff_memberships", "spree_pos_staff_roles", column: "staff_role_id"
   add_foreign_key "spree_pos_staff_memberships", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_staff_roles", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_stock_discrepancies", "spree_admin_users", column: "actor_id"
   add_foreign_key "spree_pos_stock_discrepancies", "spree_fulfillments", column: "fulfillment_id"
   add_foreign_key "spree_pos_stock_discrepancies", "spree_orders", column: "order_id"

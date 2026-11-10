@@ -7,18 +7,87 @@ module Spree
         module Pos
           class UnitsController < BaseController
             scoped_resource :pos_orders
-            pos_permissions index: %w[read_pos_orders read_pos_topology],
+            pos_permissions index: %w[read_pos_orders read_pos_topology write_pos_topology],
                             variant_units: %w[read_pos_orders read_pos_topology],
-                            update_variant_unit: %w[write_pos_topology]
+                            update_variant_unit: %w[write_pos_topology],
+                            create: %w[write_pos_topology], update: %w[write_pos_topology],
+                            disable: %w[write_pos_topology], enable: %w[write_pos_topology]
 
+            Unit = Spree::Pos::UnitDefinition
+
+            # With `branch_id`, the units an active member of that branch sells
+            # with; without one, the store's units for topology readers.
+            # `include_disabled=true` adds disabled units.
             def index
               return if channel_rejected?
 
-              branch = branch!(params[:branch_id])
-              raise ActiveRecord::RecordNotFound unless policy.membership_for(branch) && !policy.membership_for(branch).disabled?
+              if params[:branch_id].present?
+                branch = branch!(params[:branch_id])
+                raise ActiveRecord::RecordNotFound unless policy.membership_for(branch) && !policy.membership_for(branch).disabled?
+              elsif !topology_reader?
+                raise CanCan::AccessDenied
+              end
 
-              Spree::Pos::UnitDefinition.ensure_defaults!(current_store)
-              render json: { data: Spree::Pos::UnitDefinition.for_store(current_store).where(status: 'active').order(:code).map(&:to_pos) }
+              Unit.ensure_defaults!(current_store)
+              scope = Unit.for_store(current_store)
+              scope = scope.active unless ActiveModel::Type::Boolean.new.cast(params[:include_disabled]) == true
+              render json: { data: scope.order(:code).map(&:to_pos) }
+            end
+
+            def create
+              return if channel_rejected?
+
+              Unit.ensure_defaults!(current_store)
+              unit = Unit.create!(store: current_store, status: 'active', version: 1, **unit_params(Unit::STRUCTURAL + %w[name sale_precision]))
+              audit!('unit.create', unit, unit.to_pos)
+              render json: { data: unit.to_pos }, status: :created
+            rescue ActiveRecord::RecordNotUnique
+              raise Spree::Pos::Conflict, 'Another unit uses this code.'
+            end
+
+            # Only the name and the sale precision change; what a quantity
+            # means (code, dimension, conversion) is fixed.
+            def update
+              return if channel_rejected?
+
+              unit = store_unit!(params[:id])
+              changed = Unit::STRUCTURAL.select { |key| params.key?(key) && params[key].to_s != unit.public_send(key).to_s }
+              raise Spree::Pos::Conflict, 'Unit code, dimension and conversion cannot change.' if changed.any?
+
+              unit.with_lock do
+                unit.assign_attributes(unit_params(%w[name sale_precision]))
+                if unit.changed?
+                  unit.version += 1
+                  unit.save!
+                  audit!('unit.update', unit, unit.to_pos)
+                end
+              end
+              render json: { data: unit.to_pos }
+            end
+
+            def disable
+              unit = store_unit!(params[:id])
+              unit.with_lock do
+                unless unit.disabled?
+                  blocker = unit.disable_blocker
+                  raise Spree::Pos::Conflict.new(blocker, reason: 'unit_in_use') if blocker
+
+                  unit.update!(status: 'disabled')
+                  audit!('unit.disable', unit, unit.to_pos)
+                end
+              end
+              render json: { data: unit.to_pos }
+            end
+
+            def enable
+              unit = store_unit!(params[:id])
+              unit.with_lock do
+                if unit.disabled?
+                  unit.update!(status: 'active')
+                  audit!('unit.enable', unit, unit.to_pos)
+                end
+              end
+              render json: { data: unit.to_pos }
             end
 
             def variant_units
@@ -146,8 +215,24 @@ module Spree
             def unit!(code)
               unit = Spree::Pos::UnitDefinition.find_by(store: current_store, code: code.to_s)
               raise ActiveRecord::RecordNotFound if unit.nil?
+              raise Spree::Pos::Conflict, 'Unit is disabled.' if unit.disabled?
 
               unit
+            end
+
+            def store_unit!(prefixed)
+              unit = Unit.locate(Unit.for_store(current_store), prefixed)
+              raise ActiveRecord::RecordNotFound if unit.nil?
+
+              unit
+            end
+
+            def unit_params(keys)
+              keys.select { |key| params.key?(key) }.to_h { |key| [key.to_sym, params[key]] }
+            end
+
+            def topology_reader?
+              policy.permission?('read_pos_topology') || policy.permission?('write_pos_topology')
             end
 
             def ratio_value(value, fallback)

@@ -22,7 +22,8 @@ module Spree
 
       # The template, version and paper for printing `snapshot`, from the
       # `receipt_template_id`, `template_version` and `paper` asked for.
-      # Nothing asked: the original print's, or the current default when the
+      # Nothing asked: the original print's, or the branch's current template
+      # (its own choice, else the store default; see ReceiptTemplate.effective_for) when the
       # original is missing or predates templates. A template must be of the
       # document's type; a disabled one only when it is the original's. The
       # original's template without a version or paper keeps the original's;
@@ -39,8 +40,7 @@ module Spree
           return { receipt_template: original.receipt_template, template_version: original.template_version, paper: original.paper }
         end
 
-        ReceiptTemplate.ensure_defaults!(snapshot.store)
-        template = ReceiptTemplate.for_store(snapshot.store).active.find_by!(document_type: document_type, is_default: true)
+        template = ReceiptTemplate.effective_for(snapshot.store, document_type, branch: snapshot.branch)
         { receipt_template: template, template_version: template.current_version, paper: template.paper }
       end
 
