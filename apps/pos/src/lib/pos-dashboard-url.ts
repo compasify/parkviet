@@ -57,3 +57,11 @@ export function posDashboardUrl(
   if (branchId) url.searchParams.set('branch', branchId);
   return url.toString();
 }
+
+// Adds page parameters (a record to open, for example) to a dashboard URL.
+export function withSearch(url: string | null, search: Record<string, string>): string | null {
+  if (!url) return null;
+  const next = new URL(url);
+  for (const [key, value] of Object.entries(search)) next.searchParams.set(key, value);
+  return next.toString();
+}

@@ -7,16 +7,17 @@ export * from '@parkviet/pos-shared/reports';
 export * from '@parkviet/pos-shared/shifts';
 
 // Where a checklist item sends the cashier: the sale screen with that draft
-// as the active tab, the received-funds item, the return, or this page.
+// as the active tab, the received-funds item (in the POS dashboard), the
+// return, or this page.
 export type ChecklistTarget =
   | { to: '/'; workspaceId: string }
-  | { to: '/funds'; search: { fundsId: string } }
+  | { to: 'dashboard'; path: 'funds'; search: { fundsId: string } }
   | { to: '/returns'; search: { returnId: string } }
   | { to: '/shifts' };
 
 export function checklistTarget(item: ChecklistItem): ChecklistTarget | null {
   if (item.type === 'liability_payout' && item.funds_id)
-    return { to: '/funds', search: { fundsId: item.funds_id } };
+    return { to: 'dashboard', path: 'funds', search: { fundsId: item.funds_id } };
   if (item.type === 'refund_request' && item.return_id)
     return { to: '/returns', search: { returnId: item.return_id } };
   if (item.type === 'cash_movement_request') return { to: '/shifts' };
@@ -51,16 +52,4 @@ export function activateWorkspaceTab(
     workspacePage: 1,
     tabNumbers: sameContext ? current.tabNumbers : undefined,
   });
-}
-
-// Starts a browser download of a signed export link; the file streams from
-// the server and is never held in page memory.
-export function startDownload(url: string, filename: string) {
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  link.rel = 'noopener';
-  document.body.append(link);
-  link.click();
-  link.remove();
 }

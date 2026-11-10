@@ -1,12 +1,10 @@
-import { canOpenInventory } from '@parkviet/pos-shared/traceability';
 import { Link } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { canHandleDeliveries } from '../lib/deliveries';
 import { administrationAccess } from '../lib/pos-administration';
 import { posDashboardUrl } from '../lib/pos-dashboard-url';
 import { canReadReceivables } from '../lib/receivables';
-import { canApprove, canProcessReturns } from '../lib/returns';
+import { canProcessReturns } from '../lib/returns';
 import { PosIcon } from './pos-icon';
 import { usePosSelection } from './pos-selection';
 
@@ -39,80 +37,28 @@ export function PosPage({
             {t('settingsNav')}
           </a>
         ) : null}
-        {context.data ? (
-          <Link to="/orders" activeProps={{ className: 'is-active', 'aria-current': 'page' }}>
-            <PosIcon name="list" />
-            {t('ordersNav')}
-          </Link>
-        ) : null}
-        {context.data?.features?.delivery === true && canHandleDeliveries(capabilities) ? (
-          <Link to="/deliveries" activeProps={{ className: 'is-active', 'aria-current': 'page' }}>
-            <PosIcon name="box" />
-            {t('deliveriesNav')}
-          </Link>
-        ) : null}
         {canProcessReturns(capabilities) ? (
           <Link to="/returns" activeProps={{ className: 'is-active', 'aria-current': 'page' }}>
             <PosIcon name="back" />
             {t('returnsNav')}
           </Link>
         ) : null}
-        {capabilities.includes('pos.payment.collect') ||
-        capabilities.includes('pos.payment.resolve') ? (
-          <Link to="/funds" activeProps={{ className: 'is-active', 'aria-current': 'page' }}>
-            <PosIcon name="cash" />
-            {t('fundsNav')}
-          </Link>
-        ) : null}
-        {canReadReceivables(capabilities) ? (
-          <Link to="/receivables" activeProps={{ className: 'is-active', 'aria-current': 'page' }}>
-            <PosIcon name="list" />
-            {t('receivablesNav')}
-          </Link>
-        ) : null}
-        {capabilities.includes('pos.credit.manage') ? (
-          <Link
-            to="/credit-accounts"
-            activeProps={{ className: 'is-active', 'aria-current': 'page' }}
-          >
-            <PosIcon name="user" />
-            {t('creditAccountsNav')}
-          </Link>
-        ) : null}
-        {canApprove(capabilities) ? (
-          <Link
-            to="/credit-approvals"
-            activeProps={{ className: 'is-active', 'aria-current': 'page' }}
-          >
-            <PosIcon name="check" />
-            {t('creditApprovalsNav')}
-          </Link>
-        ) : null}
         {capabilities.length > 0 ? (
           <>
+            <Link to="/receipts" activeProps={{ className: 'is-active', 'aria-current': 'page' }}>
+              <PosIcon name="list" />
+              {t('receiptsTitle')}
+            </Link>
             <Link to="/shifts" activeProps={{ className: 'is-active', 'aria-current': 'page' }}>
               <PosIcon name="cash" />
-              {t('shiftsNav')}
-            </Link>
-            <Link to="/reports" activeProps={{ className: 'is-active', 'aria-current': 'page' }}>
-              <PosIcon name="list" />
-              {t('reportsNav')}
+              {t('myShiftNav')}
             </Link>
           </>
         ) : null}
-        {canOpenInventory(capabilities) ? (
-          <Link to="/inventory" activeProps={{ className: 'is-active', 'aria-current': 'page' }}>
-            <PosIcon name="box" />
-            {t('inventoryNav')}
-          </Link>
-        ) : null}
-        {capabilities.includes('pos.payment.resolve') ? (
-          <Link
-            to="/payment-attention"
-            activeProps={{ className: 'is-active', 'aria-current': 'page' }}
-          >
-            <PosIcon name="alert" />
-            {t('attentionNav')}
+        {canReadReceivables(capabilities) && capabilities.includes('pos.payment.collect') ? (
+          <Link to="/collect" activeProps={{ className: 'is-active', 'aria-current': 'page' }}>
+            <PosIcon name="cash" />
+            {t('collectNav')}
           </Link>
         ) : null}
       </nav>

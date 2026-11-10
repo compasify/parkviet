@@ -1,5 +1,5 @@
 import { expect, type Page, test } from '@playwright/test';
-import { goToMenuPage, openUserMenu } from './support/menu';
+import { openUserMenu } from './support/menu';
 import {
   addSheet,
   completeAndHandOver,
@@ -18,7 +18,6 @@ import {
 
 const TRACE_OFF = { 'retail.units': true, 'retail.measured': true, 'retail.traceability': false };
 const KEEPER = [...FULL_CASHIER, 'pos.inventory.manage'];
-const TRACE_NOTE = 'Chi nhánh chưa bật chức năng Serial, lô, hạn dùng';
 
 async function addSerials(page: Page, search: string, serials: string[]) {
   await page.getByRole('searchbox', { name: 'Tìm hàng hoặc quét mã' }).fill(search);
@@ -29,14 +28,14 @@ async function addSerials(page: Page, search: string, serials: string[]) {
   await form.getByRole('button', { name: 'Thêm vào đơn' }).click();
 }
 
-test('traceability off hides the stock page and tracking setup, and a tracked SKU still sells by serial', async ({ page }) => {
+test('traceability off hides the stock link, and a tracked SKU still sells by serial', async ({ page }) => {
   const world = newWorld({ capabilities: KEEPER, modules: TRACE_OFF, moduleUsage: { 'retail.traceability': false } });
   addSheet(world, 'ws_1');
   await installRetailApi(page, world);
   await login(page);
 
   const menu = await openUserMenu(page);
-  await expect(menu.getByRole('link', { name: 'Ca & két', exact: true })).toBeVisible();
+  await expect(menu.getByRole('link', { name: 'Ca của tôi', exact: true })).toBeVisible();
   await expect(menu.getByRole('link', { name: 'Truy xuất tồn kho', exact: true })).toHaveCount(0);
   await page.keyboard.press('Escape');
 
@@ -47,37 +46,30 @@ test('traceability off hides the stock page and tracking setup, and a tracked SK
   await payCash(page, '2.500.000');
   await completeAndHandOver(page);
   expect(world.serialStock.has('SN-1')).toBe(false);
-
-  // The page itself still opens by URL and says why setup is missing.
-  await page.goto('/inventory');
-  await expect(page.getByRole('heading', { name: 'Truy xuất tồn kho', level: 1 })).toBeVisible();
-  await expect(page.getByRole('note').filter({ hasText: TRACE_NOTE })).toBeVisible();
-  await expect(page.getByRole('table', { name: 'Mặt hàng theo dõi' })).toContainText('Điện thoại A');
-  await expect(page.getByRole('button', { name: /^Khai báo tồn đầu kỳ/ })).toHaveCount(0);
-  await expect(page.getByRole('tab', { name: 'Nhập hàng', exact: true })).toHaveCount(0);
 });
 
-test('traceability off keeps receiving reachable while the store still tracks SKUs, without opening balances', async ({ page }) => {
+// The stock page lives in the POS dashboard; the menu links there.
+const INVENTORY_LINK = /^https?:\/\/[^/]+(\/[^?#]*)?\/store_1\/inventory\?branch=br_1$/;
+
+test('traceability off keeps the stock link while the store still tracks SKUs', async ({ page }) => {
   const world = newWorld({ capabilities: KEEPER, modules: TRACE_OFF, moduleUsage: { 'retail.traceability': true } });
   await installRetailApi(page, world);
   await login(page);
-  await goToMenuPage(page, 'Truy xuất tồn kho');
-  await expect(page.getByRole('heading', { name: 'Truy xuất tồn kho', level: 1 })).toBeVisible();
-  await expect(page.getByRole('note').filter({ hasText: TRACE_NOTE })).toBeVisible();
-  await expect(page.getByRole('tab', { name: 'Nhập hàng', exact: true })).toBeVisible();
-  await expect(page.getByRole('tab', { name: 'Chuyển kho', exact: true })).toBeVisible();
-  await expect(page.getByRole('table', { name: 'Mặt hàng theo dõi' })).toContainText('Điện thoại A');
-  await expect(page.getByRole('button', { name: /^Khai báo tồn đầu kỳ/ })).toHaveCount(0);
+  const menu = await openUserMenu(page);
+  const link = menu.getByRole('link', { name: 'Truy xuất tồn kho', exact: true });
+  await expect(link).toHaveAttribute('href', INVENTORY_LINK);
+  await expect(link).toHaveAttribute('target', '_blank');
 });
 
-test('a server without modules hides nothing: stock page, receiving and opening balances stay', async ({ page }) => {
+test('a server without modules hides nothing: the stock link stays', async ({ page }) => {
   const world = newWorld({ capabilities: KEEPER });
   await installRetailApi(page, world);
   await login(page);
-  await goToMenuPage(page, 'Truy xuất tồn kho');
-  await expect(page.getByRole('tab', { name: 'Nhập hàng', exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Khai báo tồn đầu kỳ Điện thoại A', exact: true })).toBeVisible();
-  await expect(page.getByRole('note').filter({ hasText: 'Chi nhánh chưa bật chức năng' })).toHaveCount(0);
+  const menu = await openUserMenu(page);
+  await expect(menu.getByRole('link', { name: 'Truy xuất tồn kho', exact: true })).toHaveAttribute(
+    'href',
+    INVENTORY_LINK,
+  );
 });
 
 for (const [profile, view, other] of [

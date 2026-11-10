@@ -8,7 +8,6 @@ import {
   installRetailApi,
   login,
   newWorld,
-  openMenuLink,
   openTab,
   type World,
 } from './support/retail-api';
@@ -62,23 +61,6 @@ test('every recovery path finishes with every feature switched off', async ({ pa
   const shown = addSheet(world, 'ws_shown');
   addLine(world, shown, 'v_water', 1);
   world.display = displaySession({ generation: 3, pinned_workspace_id: 'ws_shown', pinned_order_number: shown.number });
-  world.exports.push({
-    id: 'posexport_old', branch_id: 'br_1', report_type: 'sales', filters: { from: '2026-11-06', to: '2026-11-06' },
-    status: 'ready', row_count: 1, error_message: null, expires_at: '2099-01-01T00:00:00Z',
-    completed_at: '2026-11-06T10:00:01Z', created_at: '2026-11-06T10:00:00Z',
-  });
-  world.cashRequests.push({
-    id: 'poscashreq_7', branch_id: 'br_1', shift_id: 'sh_7', kind: 'safe_drop', status: 'requested', amount: '200000.0',
-    currency: 'VND', reason: 'Nộp két giữa ca', evidence_reference: 'TUI-9', requester_id: 'stf_3', requester_name: 'Mai',
-    confirmer_id: null, confirmer_name: null, cash_movement_id: null, resolution_note: null,
-    created_at: '2026-11-07T03:00:00Z', resolved_at: null,
-  });
-  world.creditRequests.push({
-    id: 'poscreditreq_1', branch_id: 'br_1', workspace_id: 'ws_9', order_number: 'R900',
-    customer: { id: 'poscustomer_1', name: 'Chị Lan' }, requester: { id: 'stf_3', name: 'Thu ngân Mai' },
-    amount: '250000.0', currency: 'VND', workspace_revision: 4, status: 'pending', reason: null,
-    created_at: '2026-11-07T03:00:00Z', decided_at: null, approval_id: null, approval_active: false,
-  });
   await installRetailApi(page, world);
   await login(page);
 
@@ -125,24 +107,6 @@ test('every recovery path finishes with every feature switched off', async ({ pa
   await display.getByRole('button', { name: 'Ngắt kết nối' }).click();
   await expect.poll(() => world.display).toBeNull();
 
-  // A colleague's safe drop is confirmed; an existing export is downloaded.
-  await openMenuLink(page, 'Ca & két');
-  const requests = page.getByRole('region', { name: 'Thu/chi két chờ xác nhận' });
-  await requests.getByRole('button', { name: 'Xác nhận' }).click();
-  await expect.poll(() => world.cashRequests[0].status).toBe('confirmed');
-  await openMenuLink(page, 'Báo cáo');
-  await expect(page.getByRole('button', { name: 'Xuất CSV' })).toBeDisabled();
-  await page.getByRole('list', { name: 'File xuất của bạn' }).getByRole('button', { name: 'Tải về' }).click();
-  await expect.poll(() => world.downloads).toEqual(['posexport_old']);
-
-  // Credit requests can still be declined, but not approved.
-  await openMenuLink(page, 'Duyệt');
-  const credit = page.getByRole('list', { name: 'Duyệt ghi nợ' }).getByRole('listitem').filter({ hasText: 'R900' });
-  const approve = credit.getByRole('button', { name: 'Duyệt ghi nợ' });
-  await expect(approve).toBeDisabled();
-  await expect(approve).toHaveAccessibleDescription(/Bán ghi nợ chưa được bật cho chi nhánh này/);
-  await expect(credit.getByRole('button', { name: 'Từ chối' })).toBeEnabled();
-
   for (const [family, count] of [
     ['return.receive', 1],
     ['return.cancel', 1],
@@ -150,7 +114,6 @@ test('every recovery path finishes with every feature switched off', async ({ pa
     ['refund.resolve', 2],
     ['display.clear', 1],
     ['display.revoke', 1],
-    ['cash.request', 1],
   ] as const)
     expect(effects(world, family), family).toBe(count);
   expect(world.restocks).toHaveLength(1);
@@ -210,30 +173,4 @@ test('a command recorded before the switch-off answers from its receipt afterwar
   // And a command without any key is not accepted at all.
   const keyless = await page.evaluate(async () => (await fetch('/api/v3/admin/pos/returns', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })).status);
   expect(keyless).toBe(422);
-});
-
-test('an opening balance whose answer was lost can be checked again after traceability is switched off', async ({ page }) => {
-  const world = newWorld({ capabilities: [...FULL_CASHIER, 'pos.inventory.manage', 'pos.inventory.trace'] });
-  world.flags = { store: { traceability: true }, branch: {}, writes: [] };
-  await installRetailApi(page, world);
-  await login(page);
-  await openMenuLink(page, 'Truy xuất tồn kho');
-  await page.getByRole('button', { name: 'Khai báo tồn đầu kỳ Điện thoại A' }).click();
-  const dialog = page.getByRole('dialog');
-  await dialog.getByRole('textbox', { name: /Danh sách serial/ }).fill('SN-1\nSN-2\nSN-3\nSN-4\n');
-  world.faults.set('inventory.opening', { lose: 3 });
-  await dialog.getByRole('button', { name: 'Lưu tồn đầu kỳ' }).click();
-  await expect(dialog.getByRole('status')).toBeVisible({ timeout: 15_000 });
-  expect(effects(world, 'inventory.opening')).toBe(1);
-  await dialog.getByRole('button', { name: 'Không', exact: true }).click();
-
-  // Traceability goes off; the opening button disappears, the check stays.
-  world.flags.branch.traceability = false;
-  await page.reload();
-  await expect(page.getByText('chưa được bật cho chi nhánh này', { exact: false }).first()).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Khai báo tồn đầu kỳ Điện thoại A' })).toHaveCount(0);
-  await page.getByRole('button', { name: 'Kiểm tra lại lần khai báo tồn đầu kỳ của Điện thoại A' }).click();
-  await expect(page.getByText('Đã khai báo tồn đầu kỳ', { exact: false })).toBeVisible();
-  expect(effects(world, 'inventory.opening')).toBe(1);
-  await expect(page.getByRole('button', { name: /Kiểm tra lại lần khai báo/ })).toHaveCount(0);
 });

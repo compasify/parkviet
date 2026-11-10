@@ -3,8 +3,6 @@ import {
   absoluteAmount,
   addsDrawerCash,
   blockedChecklist,
-  businessDate,
-  canExportReports,
   canMoveCash,
   canReconcileCash,
   checklistTarget,
@@ -13,8 +11,6 @@ import {
   outcomeNeedsReference,
   outcomeTakesShift,
   reconcileAmountError,
-  todayIn,
-  validReportRange,
   varianceKind,
   wholeAmount,
 } from './shifts';
@@ -61,7 +57,7 @@ describe('shift close helpers', () => {
     ).toEqual({ to: '/', workspaceId: 'ws_2' });
     expect(
       checklistTarget({ type: 'liability_payout', status: 'unknown', funds_id: 'posfunds_1' }),
-    ).toEqual({ to: '/funds', search: { fundsId: 'posfunds_1' } });
+    ).toEqual({ to: 'dashboard', path: 'funds', search: { fundsId: 'posfunds_1' } });
     expect(
       checklistTarget({ type: 'refund_request', status: 'unknown', return_id: 'posreturn_1' }),
     ).toEqual({ to: '/returns', search: { returnId: 'posreturn_1' } });
@@ -96,37 +92,10 @@ describe('shift close helpers', () => {
     expect(isOutflow('safe_drop')).toBe(true);
   });
 
-  it('gates drawer, reconciliation and export actions by capability', () => {
+  it('gates drawer and reconciliation actions by capability', () => {
     expect(canMoveCash(['pos.cash.move'])).toBe(true);
     expect(canMoveCash(['pos.shift.open'])).toBe(false);
     expect(canReconcileCash(['pos.approval.grant'])).toBe(false);
     expect(canReconcileCash(['pos.approval.grant', 'pos.payment.resolve'])).toBe(true);
-    expect(canExportReports(['pos.report.read'])).toBe(false);
-    expect(canExportReports(['pos.report.export'])).toBe(true);
-  });
-});
-
-describe('report dates', () => {
-  it('accepts branch days at most 366 days apart', () => {
-    expect(validReportRange('2026-11-01', '2026-11-07')).toBe(true);
-    expect(validReportRange('2026-11-07', '2026-11-07')).toBe(true);
-    expect(validReportRange('2026-11-07', '2026-11-01')).toBe(false);
-    expect(validReportRange('2025-11-01', '2026-11-07')).toBe(false);
-    expect(validReportRange('07/11/2026', '2026-11-07')).toBe(false);
-  });
-
-  it('takes today in the branch timezone, not the device timezone', () => {
-    // 2026-11-06T18:30Z is already 7 November in Ho Chi Minh City.
-    const instant = new Date('2026-11-06T18:30:00Z');
-    expect(todayIn('Asia/Ho_Chi_Minh', instant)).toBe('2026-11-07');
-    expect(todayIn('UTC', instant)).toBe('2026-11-06');
-  });
-
-  it('rolls the business date at the cutoff', () => {
-    const zone = 'Asia/Ho_Chi_Minh';
-    expect(businessDate(zone, '04:00', new Date('2026-11-05T16:59:00Z'))).toBe('2026-11-05');
-    expect(businessDate(zone, '04:00', new Date('2026-11-05T17:00:00Z'))).toBe('2026-11-05');
-    expect(businessDate(zone, '04:00', new Date('2026-11-05T20:59:00Z'))).toBe('2026-11-05');
-    expect(businessDate(zone, '04:00', new Date('2026-11-05T21:00:00Z'))).toBe('2026-11-06');
   });
 });

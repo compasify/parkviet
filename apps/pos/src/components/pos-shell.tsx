@@ -1,4 +1,4 @@
-import { Link, Outlet, useLocation, useNavigate } from '@tanstack/react-router';
+import { Outlet, useLocation, useNavigate } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useReceiptTemplates } from '../hooks/use-receipt-templates';
@@ -45,37 +45,18 @@ function ShellFrame() {
   const snapshot = useSession();
   const { context, selection, registerMode } = usePosSelection();
   // Print templates load with the POS, so the first print never waits for them.
-  useReceiptTemplates(true);
+  useReceiptTemplates(true, selection.branchId);
   const pathname = useLocation({ select: (location) => location.pathname.replace(/\/+$/, '') });
-  const pageTitle = pathname.endsWith('/payment-attention')
-    ? t('attentionNav')
-    : pathname.endsWith('/funds')
-      ? t('fundsNav')
-      : pathname.endsWith('/receivables')
-        ? t('receivablesNav')
-        : pathname.endsWith('/credit-accounts')
-          ? t('creditAccountsNav')
-          : pathname.endsWith('/credit-approvals')
-            ? t('creditApprovalsNav')
-            : pathname.endsWith('/orders')
-              ? t('ordersNav')
-              : pathname.endsWith('/deliveries')
-                ? t('deliveriesNav')
-                : pathname.endsWith('/returns')
-                  ? t('returnsNav')
-                  : pathname.endsWith('/shifts')
-                    ? t('shiftsNav')
-                    : pathname.endsWith('/reports')
-                      ? t('reportsNav')
-                      : pathname.endsWith('/inventory')
-                        ? t('inventoryNav')
-                        : pathname.endsWith('/receipts')
-                          ? t('receiptsTitle')
-                          : t('sellingArea');
-  const isSale =
-    !/\/(funds|receivables|credit-accounts|credit-approvals|payment-attention|orders|deliveries|returns|shifts|reports|inventory|receipts)(\/|$)/.test(
-      pathname,
-    );
+  const pageTitle = pathname.endsWith('/returns')
+    ? t('returnsNav')
+    : pathname.endsWith('/shifts')
+      ? t('myShiftNav')
+      : pathname.endsWith('/collect')
+        ? t('collectNav')
+        : pathname.endsWith('/receipts')
+          ? t('receiptsTitle')
+          : t('sellingArea');
+  const isSale = !/\/(returns|shifts|collect|receipts)(\/|$)/.test(pathname);
   // A store not set up yet, seen by someone who may set it up, is pointed at
   // the setup wizard of the POS dashboard instead of the branch picker dialog.
   // Without that permission the picker asks for an administrator
@@ -267,9 +248,8 @@ function ShellFrame() {
   void intentsVersion;
   const uncertain =
     context.data && hasUncertainIntents(context.data.staff.id, context.data.store.id);
-  // From the sale screen, other pages open in a new tab so the open invoices
-  // keep their edit lease (see UserMenu).
-  const newTab = isSale ? ({ target: '_blank', rel: 'noopener' } as const) : {};
+  // Payment attention lives in the POS dashboard (new tab, see UserMenu).
+  const attentionUrl = posDashboardUrl(store?.id, 'funds/attention', selection.branchId);
   const offline = !online || failure === 'offline';
   const connection = offline
     ? t('connectionOffline')
@@ -394,17 +374,21 @@ function ShellFrame() {
           {financialState.storageUnavailable ? (
             <p className="error" role="status">
               {t('financialStorageWarning')}{' '}
-              <Link to="/payment-attention" {...newTab}>
-                {t('fundsAttentionTitle')}
-              </Link>
+              {attentionUrl ? (
+                <a href={attentionUrl} target="_blank" rel="noopener">
+                  {t('fundsAttentionTitle')}
+                </a>
+              ) : null}
             </p>
           ) : null}
           {financialUncertain ? (
             <p className="error" role="status">
               {t('financialUncertainWarning')}{' '}
-              <Link to="/payment-attention" {...newTab}>
-                {t('fundsAttentionTitle')}
-              </Link>
+              {attentionUrl ? (
+                <a href={attentionUrl} target="_blank" rel="noopener">
+                  {t('fundsAttentionTitle')}
+                </a>
+              ) : null}
             </p>
           ) : null}
           {(uncertain || financialUncertain) && context.data ? (

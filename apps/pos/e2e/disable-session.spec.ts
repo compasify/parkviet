@@ -210,7 +210,7 @@ async function openSession(page: Page) {
 // fixture flips the status the way that change reaches the API, and the sale
 // screen reads it back on its next context load.
 async function reloadSaleScreen(page: Page) {
-  await goToMenuPage(page, 'Đơn hàng');
+  await goToMenuPage(page, 'Hóa đơn');
   await page.getByRole('link', { name: 'Về quầy' }).click();
   await expect(page.locator('.header-user')).toHaveText('Lan');
 }

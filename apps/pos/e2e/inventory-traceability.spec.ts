@@ -1,5 +1,4 @@
 import { expect, type Page, type Route, test } from '@playwright/test';
-import { goToMenuPage } from './support/menu';
 
 // Serial and lot stock against an in-memory POS API: the inventory page, a
 // sale whose traced stock must be held before payment, and a return that
@@ -491,90 +490,6 @@ async function login(page: Page) {
   await expect(page.getByRole('tab').first()).toBeVisible();
 }
 
-async function openMenuLink(page: Page, name: string) {
-  await goToMenuPage(page, name);
-}
-
-const STOCK_KEEPER = ['pos.shift.open', 'pos.inventory.manage', 'pos.inventory.trace', 'pos.approval.grant'];
-
-test('inventory page: opening balance mismatch, lots with expiry, quarantine, receive, adjustment approval and recall', async ({ page }) => {
-  const api = await mockPos(page, STOCK_KEEPER);
-  await login(page);
-  await openMenuLink(page, 'Truy xuất tồn kho');
-  await expect(page.getByRole('heading', { name: 'Truy xuất tồn kho', level: 1 })).toBeVisible();
-
-  const panel = page.getByRole('tabpanel');
-  await expect(panel.getByRole('row', { name: /Điện thoại A/ })).toContainText('Chưa khai báo tồn đầu kỳ');
-  await panel.getByRole('button', { name: 'Khai báo tồn đầu kỳ Điện thoại A' }).click();
-  const opening = page.getByRole('dialog', { name: 'Tồn đầu kỳ · Điện thoại A' });
-  await opening.getByLabel('Danh sách serial (mỗi dòng một mã)').fill('SN-1');
-  await opening.getByRole('button', { name: 'Lưu tồn đầu kỳ' }).click();
-  await expect(opening.getByRole('alert')).toHaveText('Tồn đầu kỳ không khớp: đã khai báo 1, tồn kho đang ghi 3.');
-  expect(api.writes.at(-1)).toMatchObject({
-    path: '/pos/inventory/opening_balances',
-    body: { branch_id: 'br_1', variant_id: 'v_phone', serials: ['SN-1'] },
-  });
-  await page.keyboard.press('Escape');
-  await expect(opening).toHaveCount(0);
-
-  await page.getByRole('tab', { name: 'Lô hàng' }).click();
-  const lotList = page.getByRole('table', { name: 'Danh sách lô' });
-  await expect(lotList.getByRole('row', { name: /L-01/ })).toContainText(`${printed(NEAR)} Sắp hết hạn`);
-  await expect(lotList.getByRole('row', { name: /L-00/ })).toContainText('Đã hết hạn');
-  await lotList.getByRole('button', { name: 'Cách ly L-01' }).click();
-  const quarantine = page.getByRole('dialog', { name: 'Cách ly L-01' });
-  await quarantine.getByLabel('Lý do').fill('Bao bì phồng');
-  await quarantine.getByRole('button', { name: 'Cách ly', exact: true }).click();
-  await expect(page.getByText('Đã cách ly L-01.')).toBeVisible();
-  expect(api.writes.at(-1)).toMatchObject({ path: '/pos/lots/lot_1/quarantine', body: { reason: 'Bao bì phồng' } });
-  expect(api.writes.at(-1)?.key).toBeTruthy();
-  await expect(lotList.getByRole('row', { name: /L-01/ })).toContainText('Đang cách ly');
-
-  await page.getByRole('tab', { name: 'Nhập hàng' }).click();
-  const receive = page.getByRole('form', { name: 'Nhập hàng' });
-  await receive.getByLabel('Mặt hàng').selectOption('v_yogurt');
-  await receive.getByLabel('Mã lô dòng 1').fill('L-05');
-  await receive.getByLabel('Hạn dùng dòng 1').fill(LATER);
-  await receive.getByLabel('Số lượng dòng 1').fill('12');
-  await receive.getByRole('button', { name: 'Nhập hàng', exact: true }).click();
-  await expect(receive.getByRole('status')).toContainText('tồn kho 18 hộp, theo lô/serial 18 hộp');
-  expect(api.writes.at(-1)).toMatchObject({
-    path: '/pos/inventory/receipts',
-    body: { branch_id: 'br_1', variant_id: 'v_yogurt', lots: [{ lot_code: 'L-05', expiry_on: LATER, quantity: 12 }] },
-  });
-
-  await page.getByRole('tab', { name: 'Kiểm kê / điều chỉnh' }).click();
-  const adjust = page.getByRole('form', { name: 'Kiểm kê / điều chỉnh' });
-  await adjust.getByLabel('Mặt hàng').selectOption('v_yogurt');
-  await adjust.getByLabel(/Đếm được lô L-01/).fill('3');
-  await adjust.getByLabel(/Đang cách ly lô L-01/).fill('1');
-  await adjust.getByLabel('Lý do').fill('Đếm lại');
-  await adjust.getByRole('button', { name: 'Ghi điều chỉnh' }).click();
-  await expect(adjust.getByRole('status')).toHaveText('Điều chỉnh Sữa chua (-3 hộp) đang chờ duyệt.');
-  expect(api.writes.at(-1)).toMatchObject({
-    path: '/pos/inventory/adjustments',
-    body: { branch_id: 'br_1', variant_id: 'v_yogurt', reason: 'Đếm lại', lots: [{ lot_id: 'lot_1', counted: 3, counted_quarantined: 1 }] },
-  });
-  const queue = page.getByRole('list', { name: 'Điều chỉnh chờ duyệt' });
-  await expect(queue.getByRole('listitem')).toHaveCount(2);
-  await expect(queue).toContainText('L-01: 6 hộp → 3 hộp');
-  // The requester cannot approve their own count; a colleague's can be approved.
-  const mine = queue.getByRole('listitem').filter({ hasText: 'Lan' });
-  await expect(mine.getByRole('button', { name: 'Duyệt' })).toHaveCount(0);
-  await expect(mine.getByRole('button', { name: 'Hủy điều chỉnh' })).toBeVisible();
-  await queue.getByRole('listitem').filter({ hasText: 'Minh' }).getByRole('button', { name: 'Duyệt' }).click();
-  await expect(page.getByText('Đã duyệt điều chỉnh Sữa chua.')).toBeVisible();
-  expect(api.writes.at(-1)?.path).toBe('/pos/inventory/adjustments/adj_other/approve');
-
-  await page.getByRole('tab', { name: 'Thu hồi' }).click();
-  await page.getByLabel('Mã cần tìm').fill('L-01');
-  await page.getByRole('button', { name: 'Tìm', exact: true }).click();
-  const sales = page.getByRole('table', { name: 'Đơn đã bán' });
-  await expect(sales.getByRole('row', { name: /R100/ })).toContainText('Chị Lan · •••••••567');
-  await expect(sales).toContainText(`L-01 · HSD ${printed(NEAR)}`);
-  expect(api.reads.find((read) => read.path === '/pos/inventory/recall')?.params).toEqual({ lot_code: 'L-01', page: '1', limit: '50' });
-});
-
 test('sale: serial entry with refusals, lot preview, payment blocked until traced stock is held', async ({ page }) => {
   const api = await mockPos(page, ['pos.shift.open', 'pos.payment.collect']);
   await login(page);
@@ -620,9 +535,7 @@ test('sale: serial entry with refusals, lot preview, payment blocked until trace
 test('return wizard: shows sold serials and lots, sends the ticked serial and the chosen lot', async ({ page }) => {
   const api = await mockPos(page, ['pos.shift.open', 'pos.payment.collect', 'pos.return.process']);
   await login(page);
-  await openMenuLink(page, 'Đơn hàng');
-  await page.getByRole('list', { name: 'Danh sách đơn hàng' }).getByRole('button', { name: /R100/ }).click();
-  await page.getByRole('region', { name: 'Chi tiết đơn' }).getByRole('link', { name: 'Trả / đổi hàng' }).click();
+  await page.goto('/returns?orderId=or_100');
   await expect(page.getByRole('heading', { name: 'Trả hàng đơn R100' })).toBeVisible();
 
   const table = page.getByRole('form', { name: 'Chọn hàng trả' }).getByRole('table').first();
@@ -663,79 +576,4 @@ test('return wizard: shows sold serials and lots, sends the ticked serial and th
       { sale_line_id: 'sl_lot', quantity: 1, condition: 'resellable', lot_code: 'L-01' },
     ],
   });
-});
-
-test('approvers without stock rights see only the adjustment queue', async ({ page }) => {
-  const api = await mockPos(page, ['pos.shift.open', 'pos.approval.grant']);
-  await login(page);
-  await openMenuLink(page, 'Truy xuất tồn kho');
-  await expect(page.getByRole('tab')).toHaveText(['Kiểm kê / điều chỉnh']);
-  await expect(page.getByRole('form', { name: 'Kiểm kê / điều chỉnh' })).toHaveCount(0);
-  const queue = page.getByRole('list', { name: 'Điều chỉnh chờ duyệt' });
-  await expect(queue.getByRole('listitem')).toHaveCount(1);
-  await queue.getByRole('button', { name: 'Duyệt' }).click();
-  await expect(page.getByText('Đã duyệt điều chỉnh Sữa chua.')).toBeVisible();
-  expect(api.writes.at(-1)?.path).toBe('/pos/inventory/adjustments/adj_other/approve');
-  expect(api.reads.some((read) => read.path === '/pos/inventory/variants')).toBe(false);
-  await page.getByRole('button', { name: 'Tải lại' }).click();
-  await expect(queue.getByRole('listitem')).toContainText('Đã duyệt');
-});
-
-test('a lot receipt whose response was lost is checked by its key and never received twice', async ({ page }) => {
-  const api = await mockPos(page, STOCK_KEEPER);
-  api.loseNext.set('/pos/inventory/receipts', 3);
-  await login(page);
-  await openMenuLink(page, 'Truy xuất tồn kho');
-  await page.getByRole('tab', { name: 'Nhập hàng' }).click();
-  const receive = page.getByRole('form', { name: 'Nhập hàng' });
-  await receive.getByLabel('Mặt hàng').selectOption('v_yogurt');
-  await receive.getByLabel('Mã lô dòng 1').fill('L-07');
-  await receive.getByLabel('Số lượng dòng 1').fill('5');
-  await receive.getByRole('button', { name: 'Nhập hàng', exact: true }).click();
-  await expect(receive.getByText(/Đang kiểm tra kết quả/)).toBeVisible();
-  await expect(receive.getByLabel('Mã lô dòng 1')).toBeDisabled();
-  await expect(receive.getByRole('button', { name: 'Nhập hàng', exact: true })).toBeDisabled();
-  const sent = api.writes.filter((write) => write.path === '/pos/inventory/receipts');
-  expect(new Set(sent.map((write) => write.key)).size).toBe(1);
-
-  await receive.getByRole('button', { name: 'Kiểm tra lại' }).click();
-  await expect(receive.getByRole('status')).toContainText('tồn kho 18 hộp');
-  await expect(receive.getByText(/Đang kiểm tra kết quả/)).toHaveCount(0);
-  // The receipt answered: nothing was sent again.
-  expect(api.writes.filter((write) => write.path === '/pos/inventory/receipts')).toHaveLength(sent.length);
-  expect(api.reads.filter((read) => read.path === '/pos/command_receipts').at(-1)?.params).toEqual({
-    idempotency_key: sent[0].key,
-  });
-});
-
-test('a transfer whose response was lost is resent under the same key after a reload', async ({ page }) => {
-  const api = await mockPos(page, STOCK_KEEPER);
-  api.loseNext.set('/pos/inventory/transfers', 3);
-  await login(page);
-  await openMenuLink(page, 'Truy xuất tồn kho');
-  await page.getByRole('tab', { name: 'Chuyển kho' }).click();
-  const transfer = page.getByRole('form', { name: 'Chuyển kho' });
-  await transfer.getByLabel('Mặt hàng').selectOption('v_yogurt');
-  await transfer.getByLabel('Chi nhánh nhận').selectOption('br_2');
-  await transfer.getByLabel(/Lô L-01/).fill('2');
-  await transfer.getByRole('button', { name: 'Chuyển kho', exact: true }).click();
-  await expect(transfer.getByText(/Đang kiểm tra kết quả/)).toBeVisible();
-  const first = api.writes.filter((write) => write.path === '/pos/inventory/transfers');
-  expect(first[0].body).toMatchObject({
-    from_branch_id: 'br_1',
-    to_branch_id: 'br_2',
-    variant_id: 'v_yogurt',
-    lots: [{ lot_id: 'lot_1', quantity: 2 }],
-  });
-
-  // The same transfer submitted again after a reload reuses the stored key.
-  await page.reload();
-  await page.getByRole('tab', { name: 'Chuyển kho' }).click();
-  await transfer.getByLabel('Mặt hàng').selectOption('v_yogurt');
-  await transfer.getByLabel('Chi nhánh nhận').selectOption('br_2');
-  await transfer.getByLabel(/Lô L-01/).fill('2');
-  await transfer.getByRole('button', { name: 'Chuyển kho', exact: true }).click();
-  await expect(transfer.getByRole('status').first()).toContainText('tồn kho 4 hộp');
-  const all = api.writes.filter((write) => write.path === '/pos/inventory/transfers');
-  expect(new Set(all.map((write) => write.key)).size).toBe(1);
 });

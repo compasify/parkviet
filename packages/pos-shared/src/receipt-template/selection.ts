@@ -5,7 +5,7 @@ import type { DocumentType, PaperSize } from './types';
 // version and paper of its original print unless the cashier picks another
 // template, which then prints with its current version and paper. Before the
 // first print this device's last used template of the document type comes
-// first, then the store default.
+// first, then the branch's default, then the store default.
 
 export type ListedTemplate = {
   id: string;
@@ -14,6 +14,9 @@ export type ListedTemplate = {
   paper: PaperSize;
   status: 'active' | 'disabled';
   is_default: boolean;
+  // Read with a branch: the template that branch prints the document type
+  // with (its own choice, else the store default).
+  branch_default?: boolean;
   current_version: number;
 };
 
@@ -39,6 +42,10 @@ export const DEFAULT_PAPER: PaperSize = '80mm';
 
 const paperOf = (value: unknown): PaperSize | null => (isPaperSize(value) ? value : null);
 
+// The branch's default before the store default.
+const defaultRank = (template: ListedTemplate) =>
+  template.branch_default === true ? 2 : template.is_default ? 1 : 0;
+
 // The original's template and version, when the print recorded them.
 export function originalLayout(
   layout: PrintLayout | null | undefined,
@@ -50,7 +57,7 @@ export function originalLayout(
 }
 
 // The original first (labelled as such), then every other active template
-// of the document type, default first.
+// of the document type, default (the branch's, else the store's) first.
 export function printChoices(
   templates: readonly ListedTemplate[],
   documentType: DocumentType,
@@ -58,7 +65,7 @@ export function printChoices(
 ): PrintChoice[] {
   const listed = templates
     .filter((template) => template.document_type === documentType && template.status === 'active')
-    .sort((a, b) => Number(b.is_default) - Number(a.is_default));
+    .sort((a, b) => defaultRank(b) - defaultRank(a));
   const source = originalLayout(original);
   const choices: PrintChoice[] = [];
   if (source) {
@@ -87,7 +94,8 @@ export function printChoices(
 }
 
 // The choice a print starts from: the original, else the remembered
-// template if it is still offered, else the default, else the first.
+// template if it is still offered, else the branch's default, else the
+// store default, else the first.
 export function initialChoice(
   choices: readonly PrintChoice[],
   templates: readonly ListedTemplate[],
@@ -97,8 +105,11 @@ export function initialChoice(
   const original = choices.find((choice) => choice.original);
   if (original) return original.key;
   if (remembered && choices.some((choice) => choice.key === remembered)) return remembered;
-  const preferred = templates.find(
-    (template) => template.is_default && choices.some((choice) => choice.key === template.id),
-  );
+  const preferred = templates
+    .filter(
+      (template) =>
+        defaultRank(template) > 0 && choices.some((choice) => choice.key === template.id),
+    )
+    .sort((a, b) => defaultRank(b) - defaultRank(a))[0];
   return preferred?.id ?? choices[0].key;
 }

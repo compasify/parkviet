@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next';
 import { CashMovementDialog } from '../components/cash-movement-dialog';
 import { CashRequestList } from '../components/cash-request-list';
 import { FeatureOffNote } from '../components/feature-off-note';
-import { LateCashWizard } from '../components/late-cash-wizard';
 import { PageState, PosPage } from '../components/pos-page';
 import { usePosSelection } from '../components/pos-selection';
 import { ReceiptPrintButton } from '../components/receipt-print-dialog';
@@ -13,12 +12,11 @@ import { ShiftCloseDialog, VarianceText } from '../components/shift-close-dialog
 import {
   useCashMovementRequests,
   useCashMovements,
-  useOpenShifts,
   useShiftCloseState,
 } from '../hooks/use-shift-close';
 import { writesLocked } from '../lib/pos-context';
 import { posFailureKey } from '../lib/request-failure';
-import { canMoveCash, canReconcileCash, formatInZone } from '../lib/shifts';
+import { canMoveCash, formatInZone } from '../lib/shifts';
 
 export function ShiftsPage() {
   const { context, selection } = usePosSelection();
@@ -37,8 +35,9 @@ function Shifts() {
   const capabilities = data?.capabilities ?? [];
   const branch = data?.branches.find((row) => row.id === selection.branchId);
   const timeZone = branch?.timezone ?? data?.store.timezone ?? 'Asia/Ho_Chi_Minh';
-  const recover = capabilities.includes('pos.topology.recover');
   const cashMovesOn = contextFeature(data, 'cash_moves');
+  // Only the cashier's own shift is handled here; other people's open shifts
+  // are closed from the POS dashboard.
   // Kept while the dialog is open: closing removes the shift from the context.
   const [closingId, setClosingId] = useState<string | null>(null);
   const [moving, setMoving] = useState(false);
@@ -52,20 +51,10 @@ function Shifts() {
     { shiftId: own ? (shift?.id ?? null) : null },
     own,
   );
-  const openShifts = useOpenShifts(selection.branchId, recover);
-  const confirmer = canMoveCash(capabilities) || capabilities.includes('pos.approval.grant');
-  const toConfirm = useCashMovementRequests(selection.branchId, { pendingOnly: true }, confirmer);
-  const colleagues = (toConfirm.data?.data ?? []).filter(
-    (row) => row.requester_id !== actor.staffId,
-  );
-  // Once shown, the section stays so the confirmation notice is not lost.
-  const [confirming, setConfirming] = useState(false);
-  if (colleagues.length > 0 && !confirming) setConfirming(true);
   const time = (value: string | null | undefined) => formatInZone(value, i18n.language, timeZone);
-  const others = (openShifts.data?.data ?? []).filter((row) => row.id !== shift?.id);
 
   return (
-    <PosPage title={t('shiftsTitle')} description={t('shiftsHint')}>
+    <PosPage title={t('myShiftTitle')} description={t('myShiftHint')}>
       {context.isPending ? (
         <PageState kind="loading" title={t('contextWaiting')} />
       ) : !selection.branchId ? (
@@ -108,7 +97,7 @@ function Shifts() {
                       {t('cashMovementOpen')}
                     </button>
                   ) : null}
-                  {state.data?.can_close ? (
+                  {own && state.data?.can_close ? (
                     <button
                       type="button"
                       className="checkout-submit"
@@ -129,7 +118,6 @@ function Shifts() {
                           actor={actor}
                           locked={locked}
                           timeZone={timeZone}
-                          mode="own"
                         />
                       </>
                     ) : null}
@@ -160,43 +148,6 @@ function Shifts() {
               </>
             )}
           </section>
-          {confirming ? (
-            <section className="page-card" aria-labelledby="cash-confirm-title">
-              <h2 id="cash-confirm-title">{t('cashRequestsTitle')}</h2>
-              <p className="muted">{t('cashRequestsHint')}</p>
-              <CashRequestList
-                requests={colleagues}
-                actor={actor}
-                locked={locked}
-                timeZone={timeZone}
-                mode="confirm"
-              />
-            </section>
-          ) : null}
-          {recover && others.length > 0 ? (
-            <section className="page-card" aria-labelledby="open-shifts-title">
-              <h2 id="open-shifts-title">{t('shiftOthersTitle')}</h2>
-              <p className="muted">{t('shiftOthersHint')}</p>
-              <ul className="record-list" aria-label={t('shiftOthersTitle')}>
-                {others.map((row) => (
-                  <li key={row.id}>
-                    <div className="record-copy">
-                      <strong>
-                        {row.owner_name} · {row.register ?? t('shiftNoRegister')}
-                      </strong>
-                      <small>
-                        {t('shiftOpenedAt')}: {time(row.opened_at)} ·{' '}
-                        {formatMoney(row.opening_float, row.currency)}
-                      </small>
-                    </div>
-                    <button type="button" disabled={locked} onClick={() => setClosingId(row.id)}>
-                      {t('shiftCloseFor', { name: row.owner_name })}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ) : null}
           {closed.data?.closure ? (
             <section className="page-card" aria-labelledby="closed-shift-title">
               <h2 id="closed-shift-title">{t('shiftJustClosed')}</h2>
@@ -218,14 +169,6 @@ function Shifts() {
                 label={t('receiptOpenClosure')}
               />
             </section>
-          ) : null}
-          {canReconcileCash(capabilities) && selection.branchId ? (
-            <LateCashWizard
-              branchId={selection.branchId}
-              actor={actor}
-              locked={locked}
-              timeZone={timeZone}
-            />
           ) : null}
         </>
       )}

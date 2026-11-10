@@ -152,7 +152,7 @@ test('lost responses on return, refund, exchange, collection and shift close nev
   await expect(page.getByText('Đã giao hàng tại quầy.')).toBeVisible();
 
   loseNext(world, 'collection');
-  await openMenuLink(page, 'Công nợ khách hàng');
+  await openMenuLink(page, 'Thu nợ');
   await page.getByRole('button', { name: /Chị Lan/ }).click();
   await page.getByRole('button', { name: 'Thu nợ' }).click();
   await dialog.getByLabel('Số tiền thu').fill('50.000');
@@ -204,7 +204,7 @@ test('lost responses on return, refund, exchange, collection and shift close nev
 
   // Cash: 200k sale + 50k collection - 50k refund.
   expect(world.drawer).toBe(200000);
-  await openMenuLink(page, 'Ca & két');
+  await openMenuLink(page, 'Ca của tôi');
   await page.getByRole('button', { name: 'Đóng ca', exact: true }).click();
   const close = page.getByRole('dialog', { name: 'Đóng ca' });
   await close.getByRole('button', { name: 'Tiếp tục: đếm két' }).click();

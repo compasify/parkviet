@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { posDashboardHomeUrl, posDashboardUrl } from './pos-dashboard-url';
+import { posDashboardHomeUrl, posDashboardUrl, withSearch } from './pos-dashboard-url';
 
 describe('POS dashboard links', () => {
   it('uses the development port only in development', () => {
@@ -45,5 +45,13 @@ describe('POS dashboard links', () => {
     for (const baseUrl of ['invalid', 'javascript:alert(1)', 'https://user:pass@example.test']) {
       expect(posDashboardHomeUrl({ baseUrl })).toBeNull();
     }
+  });
+
+  it('adds page parameters to a dashboard link and keeps a missing link missing', () => {
+    const url = posDashboardUrl('store_1', 'funds', 'branch_1', { development: true });
+    expect(withSearch(url, { fundsId: 'posfunds_1' })).toBe(
+      'http://localhost:5176/store_1/funds?branch=branch_1&fundsId=posfunds_1',
+    );
+    expect(withSearch(null, { fundsId: 'posfunds_1' })).toBeNull();
   });
 });

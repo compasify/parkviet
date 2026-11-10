@@ -38,7 +38,6 @@ const workspace = {
   },
 };
 
-
 type Options = { capabilities: string[]; blocked?: boolean; loseFirstCount?: boolean };
 
 async function mockPos(page: Page, options: Options) {
@@ -382,7 +381,7 @@ test('cashier requests a safe drop and closes the shift with a blind count and a
     blocked: true,
   });
   await login(page);
-  await openPage(page, 'Ca & két');
+  await openPage(page, 'Ca của tôi');
   await expect(page.getByRole('heading', { name: 'Ca hiện tại' })).toBeVisible();
 
   await page.getByRole('button', { name: 'Thu/chi tiền mặt' }).click();
@@ -399,11 +398,8 @@ test('cashier requests a safe drop and closes the shift with a blind count and a
   expect(api.writes.find((write) => write.path.endsWith('/cash_movements'))?.body).toMatchObject({
     kind: 'safe_drop', amount: '30000', reason: 'Nộp két giữa ca', evidence_reference: 'TUI-7',
   });
-  // Another person's pending request can be confirmed here; one's own cannot.
-  const confirmList = page.getByRole('region', { name: 'Thu/chi két chờ xác nhận' });
-  await expect(confirmList).toContainText('Mai');
-  await confirmList.getByRole('button', { name: 'Xác nhận' }).click();
-  await expect(page.getByText('Đã xác nhận Nộp két sắt 200.000 ₫.')).toBeVisible();
+  // Someone else confirms requests from the POS dashboard, not here.
+  await expect(page.getByRole('region', { name: 'Thu/chi két chờ xác nhận' })).toHaveCount(0);
 
   const trigger = page.getByRole('button', { name: 'Đóng ca', exact: true });
   await trigger.click();
@@ -450,7 +446,7 @@ test('cashier requests a safe drop and closes the shift with a blind count and a
 test('a count whose response was lost is rechecked by its key and never sent twice', async ({ page }) => {
   const api = await mockPos(page, { capabilities: ['pos.shift.open'], loseFirstCount: true });
   await login(page);
-  await openPage(page, 'Ca & két');
+  await openPage(page, 'Ca của tôi');
   await page.getByRole('button', { name: 'Đóng ca', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Đóng ca' });
   await dialog.getByRole('button', { name: 'Tiếp tục: đếm két' }).click();
@@ -472,119 +468,11 @@ test('a count whose response was lost is rechecked by its key and never sent twi
 test('Escape closes the close wizard and returns focus', async ({ page }) => {
   await mockPos(page, { capabilities: ['pos.shift.open'] });
   await login(page);
-  await openPage(page, 'Ca & két');
+  await openPage(page, 'Ca của tôi');
   const trigger = page.getByRole('button', { name: 'Đóng ca', exact: true });
   await trigger.click();
   await expect(page.getByRole('dialog', { name: 'Đóng ca' })).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(trigger).toBeFocused();
-});
-
-test('a manager reconciles late cash already in the next opening float without adding it to the drawer', async ({ page }) => {
-  const api = await mockPos(page, {
-    capabilities: ['pos.shift.open', 'pos.payment.resolve', 'pos.approval.grant'],
-  });
-  await login(page);
-  await openPage(page, 'Ca & két');
-  const wizard = page.getByRole('region', { name: 'Đối soát tiền mặt đến muộn' });
-  await wizard.getByLabel('Ca đã đóng có tiền thừa').selectOption('posclosure_s1');
-  await expect(wizard).toContainText('Lúc đóng ca: đếm 100.000 ₫, cần có 0 ₫');
-  await wizard.getByLabel('Khoản tiền mặt đang giữ').selectOption('posfunds_held');
-  await expect(wizard).toContainText('Tiền này được ghi cho ca của Mai');
-  await expect(wizard).toContainText('Số tiền đối soát: 100.000 ₫');
-  await wizard.getByLabel(/Đã nằm trong tiền đầu ca sau/).check();
-  await expect(wizard).toContainText('Lựa chọn này không cộng tiền vào két hiện tại.');
-  await wizard.getByLabel(/Ca có tiền đầu ca chứa khoản này/).selectOption('sh_s2');
-  await wizard.getByLabel('Lý do', { exact: true }).fill('Tiền thừa ca trước đã để lại làm tiền đầu ca');
-  await wizard.getByRole('button', { name: 'Ghi đối soát' }).click();
-  await expect(page.getByText('Đã đối soát 100.000 ₫; không cộng vào két hiện tại.')).toBeVisible();
-  expect(api.writes.find((write) => write.path === '/pos/cash_reconciliations')?.body).toMatchObject({
-    branch_id: 'br_1', outcome: 'in_opening_float', closure_id: 'posclosure_s1', funds_id: 'posfunds_held', target_shift_id: 'sh_s2',
-  });
-});
-
-test('a closure-only reconciliation sends an amount capped at the unexplained overage', async ({ page }) => {
-  const api = await mockPos(page, {
-    capabilities: ['pos.shift.open', 'pos.payment.resolve', 'pos.approval.grant'],
-  });
-  await login(page);
-  await openPage(page, 'Ca & két');
-  const wizard = page.getByRole('region', { name: 'Đối soát tiền mặt đến muộn' });
-  await wizard.getByLabel('Ca đã đóng có tiền thừa').selectOption('posclosure_s1');
-  const amount = wizard.getByLabel(/Số tiền đối soát \(tối đa 100.000 ₫\)/);
-  await amount.fill('150.000');
-  await expect(wizard).toContainText('vượt phần thừa chưa giải thích');
-  await amount.fill('60.000');
-  await wizard.getByLabel(/Đã nộp két sắt/).check();
-  await wizard.getByLabel('Số chứng từ lưu giữ').fill('KET-2');
-  await wizard.getByLabel('Lý do', { exact: true }).fill('Một phần tiền thừa đã nộp két');
-  await wizard.getByRole('button', { name: 'Ghi đối soát' }).click();
-  await expect(page.getByText('Đã đối soát 60.000 ₫; không cộng vào két hiện tại.')).toBeVisible();
-  expect(api.writes.find((write) => write.path === '/pos/cash_reconciliations')?.body).toMatchObject({
-    outcome: 'safe', closure_id: 'posclosure_s1', amount: '60000', custody_reference: 'KET-2',
-  });
-});
-
-test('an approver approves a closing variance and waits for a missing reason', async ({ page }) => {
-  const api = await mockPos(page, { capabilities: ['pos.shift.open', 'pos.approval.grant'] });
-  await login(page);
-  await openPage(page, 'Duyệt');
-  const list = page.getByRole('list', { name: 'Ca chờ duyệt chênh lệch' });
-  await expect(list).toContainText('Mai · Q1');
-  await expect(list).toContainText('Thiếu 10.000 ₫');
-  await expect(list.getByRole('listitem').filter({ hasText: 'Tú' }).getByRole('button', { name: 'Chờ thu ngân nhập lý do' })).toBeDisabled();
-  await list.getByRole('button', { name: 'Duyệt chênh lệch' }).click();
-  await expect(page.getByText('Đã duyệt chênh lệch đóng ca của Mai.')).toBeVisible();
-  expect(api.writes.find((write) => write.path.endsWith('/close_approval'))?.body).toMatchObject({ revision: 4 });
-});
-
-test('reports keep sales, receipts and drawer cash apart, use keyboard tabs and export a CSV', async ({ page }) => {
-  const api = await mockPos(page, {
-    capabilities: ['pos.shift.open', 'pos.report.read', 'pos.report.export'],
-  });
-  await login(page);
-  await openPage(page, 'Báo cáo');
-  const panel = page.getByRole('tabpanel');
-  await expect(panel.getByRole('table')).toContainText('R100');
-  await expect(panel).toContainText('Cả chi nhánh');
-  await expect(panel.getByLabel('Tổng hợp')).toContainText('250.000 ₫');
-
-  await page.getByRole('tab', { name: 'Doanh số' }).focus();
-  await page.keyboard.press('ArrowRight');
-  await expect(page.getByRole('tab', { name: 'Thực thu' })).toHaveAttribute('aria-selected', 'true');
-  await expect(page.getByRole('tab', { name: 'Thực thu' })).toBeFocused();
-  // While the receipts report loads, the sales rows are not shown under its columns.
-  await expect(panel).not.toContainText('R100');
-  await expect(panel.getByRole('table')).toContainText('Ngoài luồng');
-  await expect(panel.getByRole('table')).toContainText('Chuyển khoản');
-  await page.keyboard.press('End');
-  await expect(page.getByRole('tab', { name: 'Đóng ca' })).toBeFocused();
-  await page.keyboard.press('Home');
-  await expect(page.getByRole('tab', { name: 'Doanh số' })).toBeFocused();
-
-  await page.getByRole('tab', { name: 'Tiền mặt trong két' }).click();
-  await expect(panel.getByRole('table', { name: 'Tóm tắt theo ca' })).toContainText('Lan');
-  await expect(panel.getByRole('table', { name: 'Tóm tắt theo ca' })).toContainText('Chưa đếm');
-  await panel.getByRole('navigation', { name: 'Trang tóm tắt ca' }).getByRole('button', { name: 'Trang sau' }).click();
-  await expect(panel.getByRole('table', { name: 'Tóm tắt theo ca' })).toContainText('Thừa 100.000 ₫');
-  await expect(panel).toContainText('Nộp két sắt');
-
-  await page.getByRole('tab', { name: 'Đóng ca' }).click();
-  await expect(panel.getByRole('table')).toContainText('Thừa 100.000 ₫');
-
-  await page.getByRole('tab', { name: 'Doanh số' }).click();
-  await panel.getByRole('button', { name: 'Xuất CSV' }).click();
-  await expect(page.getByText('Đã nhận yêu cầu xuất')).toBeVisible();
-  const exports = page.getByRole('list', { name: 'File xuất của bạn' });
-  await expect(exports.getByRole('listitem')).toHaveCount(3);
-  await expect(exports.getByRole('listitem').filter({ hasText: 'Đã hết hạn' }).getByRole('button')).toHaveCount(0);
-  const download = page.waitForEvent('download');
-  await exports.getByRole('listitem').filter({ hasText: 'Doanh số' }).getByRole('button', { name: 'Tải về' }).click();
-  expect((await download).suggestedFilename()).toBe('sales-q1.csv');
-  await exports.getByRole('listitem').filter({ hasText: 'Đóng ca' }).getByRole('button', { name: 'Tải về' }).click();
-  await expect(page.getByText('Bản xuất đã hết hạn, hãy tạo lại')).toBeVisible();
-  const exported = api.writes.find((write) => write.path === '/pos/exports')?.body;
-  expect(exported).toMatchObject({ branch_id: 'br_1', report_type: 'sales' });
-  expect(Object.keys(exported?.filters as Record<string, string>).sort()).toEqual(['from', 'to']);
 });

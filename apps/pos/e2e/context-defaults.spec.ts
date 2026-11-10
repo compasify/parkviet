@@ -51,7 +51,7 @@ async function install(page: Page, branchCount: number, registerCounts: number[]
 }
 
 for (const status of ['missing', 'inactive'] as const) {
-  test(`POS channel ${status} blocks new drafts without blocking shift and history access`, async ({ page }) => {
+  test(`POS channel ${status} blocks new drafts without blocking shift and receipt access`, async ({ page }) => {
     const state = await install(page, 1, [0], false, status);
     const guidance = page.getByRole('status').filter({ hasText: status === 'missing' ? 'Chưa có kênh POS' : 'Kênh POS đã ngừng hoạt động' });
     await expect(guidance).toContainText('Kênh bán hàng');
@@ -59,8 +59,8 @@ for (const status of ['missing', 'inactive'] as const) {
     await page.getByRole('button', { name: 'Mở ca', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Đơn nháp mới' })).toBeDisabled();
     expect(state.writes.filter((write) => write.path.endsWith('/workspaces'))).toEqual([]);
-    await page.goto('/orders');
-    await expect(page).toHaveURL(/orders$/);
+    await page.goto('/receipts');
+    await expect(page).toHaveURL(/receipts$/);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   });
 }

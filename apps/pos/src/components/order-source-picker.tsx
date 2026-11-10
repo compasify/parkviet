@@ -38,15 +38,3 @@ export function OrderSourcePicker({
     </fieldset>
   );
 }
-
-// A small tag of a non-counter source for lists; counter sales show nothing.
-export function OrderSourceTag({ value }: { value: unknown }) {
-  const { t } = useTranslation();
-  const source = orderSourceOf(value);
-  if (source === 'counter') return null;
-  return (
-    <span className="order-source-tag" data-source={source}>
-      {t(orderSourceKey(source))}
-    </span>
-  );
-}

@@ -487,34 +487,12 @@ async function openMenuLink(page: Page, name: string) {
   await goToMenuPage(page, name);
 }
 
-test('order history filters on the server and shows the order timeline', async ({ page }) => {
-  const api = await mockPos(page, { capabilities: CASHIER });
-  await login(page);
-  await openMenuLink(page, 'Đơn hàng');
-  await expect(page.getByRole('heading', { name: 'Đơn hàng', level: 1 })).toBeVisible();
-  const list = page.getByRole('list', { name: 'Danh sách đơn hàng' });
-  await expect(list.getByRole('listitem')).toHaveCount(1);
-
-  await page.getByLabel('Số đơn').fill('R1');
-  await page.getByLabel('Trạng thái').selectOption('returned');
-  await page.getByRole('button', { name: 'Tìm', exact: true }).click();
-  await expect.poll(() => api.orderQueries.at(-1)).toMatchObject({ branch_id: 'br_1', number: 'R1', status: 'returned' });
-
-  await list.getByRole('button', { name: /R100/ }).click();
-  const detail = page.getByRole('region', { name: 'Chi tiết đơn' });
-  await expect(detail).toContainText('Đơn R100');
-  await expect(detail).toContainText('300.000 ₫');
-  await expect(detail.getByRole('list').last()).toContainText('Giao hàng');
-  await expect(detail.locator('.order-timeline')).toContainText('Hoàn tất đơn');
-  await expect(detail.getByRole('link', { name: 'Trả / đổi hàng' })).toBeVisible();
-});
-
 test('return wizard: preview, approval wait, receive, refund with evidence and exchange', async ({ page }) => {
   const api = await mockPos(page, { capabilities: CASHIER });
   await login(page);
-  await openMenuLink(page, 'Đơn hàng');
-  await page.getByRole('list', { name: 'Danh sách đơn hàng' }).getByRole('button', { name: /R100/ }).click();
-  await page.getByRole('region', { name: 'Chi tiết đơn' }).getByRole('link', { name: 'Trả / đổi hàng' }).click();
+  await openMenuLink(page, 'Trả / đổi hàng');
+  await page.getByLabel('Số đơn gốc').fill('r100');
+  await page.getByRole('button', { name: 'Tìm đơn' }).click();
   await expect(page.getByRole('heading', { name: 'Trả hàng đơn R100' })).toBeVisible();
 
   const quantity = page.getByLabel('Gạo ST25', { exact: true });
@@ -599,24 +577,6 @@ test('return wizard: preview, approval wait, receive, refund with evidence and e
   expect(JSON.parse(layout ?? '{}')).toMatchObject({ activeWorkspaceId: 'ws_2' });
 });
 
-test('an approver approves pending returns and refunds on the Duyệt page', async ({ page }) => {
-  const api = await mockPos(page, {
-    capabilities: ['pos.shift.open', 'pos.approval.grant', 'pos.return.process'],
-    staffId: 'stf_9',
-  });
-  api.state.quantity = 1;
-  api.state.condition = 'damaged';
-  api.state.status = 'pending_approval';
-  await login(page);
-  await openMenuLink(page, 'Duyệt');
-  const list = page.getByRole('list', { name: 'Trả hàng và hoàn tiền chờ duyệt' });
-  await expect(list).toContainText('RET100 · R100');
-  await expect(list).toContainText('hàng hư hỏng');
-  await list.getByRole('button', { name: 'Duyệt', exact: true }).click();
-  await expect(page.getByText('Đã duyệt phiếu trả RET100.')).toBeVisible();
-  expect(api.approvals).toEqual(['return']);
-});
-
 test('returns stay hidden without the return capability', async ({ page }) => {
   await mockPos(page, { capabilities: ['pos.shift.open', 'pos.payment.collect'] });
   await login(page);
@@ -698,4 +658,3 @@ test('a reserved refund is canceled with a reason; a resolver records an unknown
   await expect(refund.locator('.status-tag')).toHaveText('Không thực hiện');
   expect(api.resolutions[1]).toMatchObject({ outcome: 'failed_no_effect', reference: 'Sao kê 07/11 không có lệnh' });
 });
-

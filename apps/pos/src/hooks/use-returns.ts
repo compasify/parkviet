@@ -12,10 +12,8 @@ import { conflictReason, failureStatus } from '../lib/request-failure';
 import {
   type PosExchange,
   type PosOrderDetail,
-  type PosOrderRow,
   type PosRefundRequest,
   type PosReturn,
-  type PosReturnRow,
   prepareIntent,
   type ReturnCondition,
   type ReturnPreview,
@@ -24,18 +22,6 @@ import {
 import { useSession } from './use-session';
 import { abandonIfNeeded, financialRequest } from './use-tenders';
 import { workspaceEditorId } from './use-workspaces';
-
-type Page<T> = { data: T[]; meta: { page: number; pages: number; count: number } };
-
-export type OrderFilters = {
-  number: string;
-  from: string;
-  to: string;
-  registerId: string;
-  cashierId: string;
-  status: 'all' | 'debt' | 'returned' | 'refund_pending';
-  page: number;
-};
 
 export type ReturnLineInput = {
   sale_line_id: string;
@@ -87,26 +73,6 @@ function useInvalidate() {
     );
 }
 
-export function useOrders(branchId: string | null, filters: OrderFilters, enabled: boolean) {
-  const snapshot = useSession();
-  return useQuery({
-    queryKey: ['pos', 'orders', snapshot.generation, branchId, filters],
-    enabled: enabled && snapshot.status === 'authenticated' && Boolean(branchId),
-    queryFn: () =>
-      read<Page<PosOrderRow>>('/pos/orders', {
-        branch_id: branchId ?? undefined,
-        number: filters.number.trim() || undefined,
-        from: filters.from || undefined,
-        to: filters.to || undefined,
-        register_id: filters.registerId || undefined,
-        cashier_id: filters.cashierId || undefined,
-        status: filters.status,
-        page: String(filters.page),
-        limit: '25',
-      }),
-  });
-}
-
 // One order's timeline. A sale of another branch is read through the exact
 // number lookup, which the server allows to return staff of `branchId`.
 export function useOrder(
@@ -132,23 +98,6 @@ export function useOrder(
           { branch_id: branchId ?? undefined, number: ref?.orderId ? undefined : ref?.number },
         )
       ).data,
-  });
-}
-
-// A resolver finishes a short handover once the shelf was corrected.
-export function useReconcileHandover() {
-  const invalidate = useInvalidate();
-  return useMutation({
-    mutationFn: async (orderId: string) => {
-      try {
-        return await write<{ stock_discrepancies: unknown[] }>(
-          `/pos/orders/${orderId}/reconcile_handover`,
-          {},
-        );
-      } finally {
-        await invalidate();
-      }
-    },
   });
 }
 
@@ -270,36 +219,6 @@ export function useReturnCommands(staffId: string | null, storeId: string | null
         ),
     }),
   };
-}
-
-export function useBranchReturns(branchId: string | null, enabled: boolean) {
-  const snapshot = useSession();
-  return useQuery({
-    queryKey: ['pos', 'returns', snapshot.generation, 'branch', branchId],
-    enabled: enabled && snapshot.status === 'authenticated' && Boolean(branchId),
-    refetchInterval: 5000,
-    queryFn: () =>
-      read<Page<PosReturnRow>>('/pos/returns', {
-        branch_id: branchId ?? undefined,
-        status: 'pending_approval',
-        limit: '100',
-      }),
-  });
-}
-
-export function useRefundRequests(branchId: string | null, enabled: boolean) {
-  const snapshot = useSession();
-  return useQuery({
-    queryKey: ['pos', 'refund-requests', snapshot.generation, branchId],
-    enabled: enabled && snapshot.status === 'authenticated' && Boolean(branchId),
-    refetchInterval: 5000,
-    queryFn: () =>
-      read<Page<PosRefundRequest>>('/pos/refund_requests', {
-        branch_id: branchId ?? undefined,
-        status: 'reserved,unknown',
-        limit: '100',
-      }),
-  });
 }
 
 // Money commands: every refund request, confirmation and resolution runs

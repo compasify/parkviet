@@ -1,22 +1,19 @@
 import { formatMoney } from '@parkviet/pos-shared/money';
-import { contextFeature } from '@parkviet/pos-shared/pos-features';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CollectionDialog } from '../components/collection-dialog';
-import { DebtReminderActions } from '../components/debt-reminder-actions';
 import { LocalFinancialRecords } from '../components/local-financial-records';
 import { PosIcon } from '../components/pos-icon';
 import { PageState, PosPage } from '../components/pos-page';
 import { usePosSelection } from '../components/pos-selection';
 import {
-  type ReceivableStatus,
   useCollections,
   usePendingCollections,
   useReceivableAccounts,
   useReceivables,
   useRecheckCollection,
 } from '../hooks/use-receivables';
-import { canRemindDebt, matchesDebtor, shortDate } from '../lib/debt-reminder';
+import { matchesDebtor, shortDate } from '../lib/debt-reminder';
 import type { PosCollection, PosReceivable, PosReceivableAccount } from '../lib/pos-context';
 import { writesLocked } from '../lib/pos-context';
 import {
@@ -27,9 +24,6 @@ import {
   formatInstant,
 } from '../lib/receivables';
 import { posFailureKey } from '../lib/request-failure';
-
-const AGING = ['current', 'days_1_30', 'days_31_60', 'days_61_90', 'days_over_90'] as const;
-const STATUSES: ReceivableStatus[] = ['open', 'overdue', 'all'];
 
 function DebtRow({ debt }: { debt: PosReceivable }) {
   const { t } = useTranslation();
@@ -142,22 +136,28 @@ function AccountRow({
   );
 }
 
-export function ReceivablesPage() {
+// Debt collection at the counter: the cashier finds the customer, sees what
+// they still owe and takes the payment into their open shift. The debt ledger,
+// aging and reminders live in the POS dashboard.
+export function CollectPage() {
   const { context, selection } = usePosSelection();
   // A new staff, store or branch must not keep the previous scope's debts on screen.
   const scope = `${context.data?.staff.id}:${context.data?.store.id}:${selection.branchId}`;
-  return <ReceivablesLedger key={scope} />;
+  return <Collect key={scope} />;
 }
 
-function ReceivablesLedger() {
+function Collect() {
   const { t } = useTranslation();
   const { context, selection } = usePosSelection();
   const data = context.data;
   const branchId = selection.branchId;
   const staffId = data?.staff.id ?? null;
   const storeId = data?.store.id ?? null;
-  const canRead = Boolean(branchId && canReadReceivables(data?.capabilities));
-  const canCollect = Boolean(data?.capabilities.includes('pos.payment.collect'));
+  const canCollect = Boolean(
+    branchId &&
+      canReadReceivables(data?.capabilities) &&
+      data?.capabilities.includes('pos.payment.collect'),
+  );
   // The server books a collection on any open shift the collector owns at the
   // branch (maybe at another register than the selected one) and refuses
   // with `shift_required` otherwise; this page only sees the selected
@@ -165,7 +165,6 @@ function ReceivablesLedger() {
   const ownShift = Boolean(
     data?.shift && data.shift.owner_id === staffId && data.shift.branch_id === branchId,
   );
-  const [status, setStatus] = useState<ReceivableStatus>('open');
   const [accountId, setAccountId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   // The dialog keeps its own copy: a fully paid customer drops off the list.
@@ -174,17 +173,13 @@ function ReceivablesLedger() {
   const [collectError, setCollectError] = useState('');
   const [notice, setNotice] = useState('');
   const [search, setSearch] = useState('');
-  // Reminders belong to credit sales: hidden while `credit` is off.
-  const canRemind = Boolean(
-    data && contextFeature(data, 'credit') && canRemindDebt(data.capabilities),
-  );
-  const accounts = useReceivableAccounts(branchId, canRead);
+  const accounts = useReceivableAccounts(branchId, canCollect);
   const debtors = (accounts.data?.data ?? []).filter((row) => matchesDebtor(row, search));
   const selected = accounts.data?.data.find((row) => row.credit_account_id === accountId) ?? null;
   const debts = useReceivables(
     branchId,
-    { status, customerId: selected?.customer.id ?? null, page },
-    canRead,
+    { status: 'open', customerId: selected?.customer.id ?? null, page },
+    canCollect,
   );
   const collections = useCollections(staffId, storeId);
   const recheck = useRecheckCollection(staffId, storeId);
@@ -196,8 +191,6 @@ function ReceivablesLedger() {
           row.credit_account_id === collecting.credit_account_id && amountSign(row.balance) > 0,
       )
     : [];
-  const totals = accounts.data?.meta.totals;
-  const currency = data?.store.currency ?? 'VND';
   const selectedPending = Boolean(
     selected && pending.accounts.includes(selected.credit_account_id),
   );
@@ -218,39 +211,17 @@ function ReceivablesLedger() {
   }
 
   return (
-    <PosPage title={t('receivablesTitle')} description={t('receivablesHint')}>
+    <PosPage title={t('collectTitle')} description={t('collectHint')}>
       {staffId && storeId ? <LocalFinancialRecords staffId={staffId} storeId={storeId} /> : null}
       {context.isPending ? (
         <PageState kind="loading" title={t('contextWaiting')} />
       ) : !branchId ? (
         <PageState title={t('chooseBranch')} description={t('pageChooseBranchHint')} />
-      ) : !canRead ? (
+      ) : !canCollect ? (
         <PageState title={t('forbidden')} />
       ) : (
         <>
           <div className="page-toolbar">
-            <label>
-              {t('receivablesStatus')}
-              <select
-                value={status}
-                onChange={(event) => {
-                  setStatus(event.target.value as ReceivableStatus);
-                  setPage(1);
-                }}
-              >
-                {STATUSES.map((value) => (
-                  <option key={value} value={value}>
-                    {t(`receivablesStatus_${value}`)}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {totals ? (
-              <span>
-                {t('receivablesTotal')}: <strong>{formatMoney(totals.balance, currency)}</strong> ·{' '}
-                {t('receivablesOverdue')}: <strong>{formatMoney(totals.overdue, currency)}</strong>
-              </span>
-            ) : null}
             <button
               type="button"
               disabled={accounts.isFetching || debts.isFetching}
@@ -259,16 +230,6 @@ function ReceivablesLedger() {
               {t('refresh')}
             </button>
           </div>
-          {totals ? (
-            <dl className="receivable-aging" aria-label={t('receivablesAging')}>
-              {AGING.map((bucket) => (
-                <div key={bucket}>
-                  <dt>{t(`aging_${bucket}`)}</dt>
-                  <dd>{formatMoney(totals[bucket], currency)}</dd>
-                </div>
-              ))}
-            </dl>
-          ) : null}
           {notice ? (
             <p className="muted" role="status">
               {notice}
@@ -327,7 +288,7 @@ function ReceivablesLedger() {
             <section className="page-card fund-detail" aria-label={t('receivablesOrders')}>
               <div className="fund-detail-heading">
                 <h2>{selected ? selected.customer.name : t('receivablesOrders')}</h2>
-                {selected && canCollect && !selectedPending ? (
+                {selected && !selectedPending ? (
                   <button
                     type="button"
                     className="checkout-submit"
@@ -349,18 +310,10 @@ function ReceivablesLedger() {
                     {t('collectionAction')}
                   </button>
                 ) : null}
-                {selected && canCollect && !selectedPending && !ownShift ? (
+                {selected && !selectedPending && !ownShift ? (
                   <small className="muted" id="collection-needs-shift">
                     {t('collectionShiftHint')}
                   </small>
-                ) : null}
-                {selected && canRemind && branchId ? (
-                  <DebtReminderActions
-                    key={selected.credit_account_id}
-                    account={selected}
-                    branchId={branchId}
-                    storeName={data?.store.name}
-                  />
                 ) : null}
               </div>
               {selected && selectedPending ? (

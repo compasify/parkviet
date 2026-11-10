@@ -16,16 +16,16 @@ test('the header menu opens pages in a new tab from the sale screen, so the invo
 
   const menu = await openUserMenu(page);
   await expect(menu.getByRole('button', { name: 'Đăng xuất' })).toBeVisible();
-  const orders = menu.getByRole('link', { name: 'Đơn hàng', exact: true });
-  await expect(orders).toHaveAttribute('target', '_blank');
+  const shift = menu.getByRole('link', { name: 'Ca của tôi', exact: true });
+  await expect(shift).toHaveAttribute('target', '_blank');
 
   const popup = context.waitForEvent('page');
-  await orders.click();
+  await shift.click();
   const second = await popup;
-  await expect(second.getByRole('heading', { name: 'Đơn hàng', level: 1 })).toBeVisible();
+  await expect(second.getByRole('heading', { name: 'Ca của tôi', level: 1 })).toBeVisible();
   // Off the sale screen the menu navigates in place.
   await expect(
-    (await openUserMenu(second)).getByRole('link', { name: 'Báo cáo', exact: true }),
+    (await openUserMenu(second)).getByRole('link', { name: 'Hóa đơn', exact: true }),
   ).not.toHaveAttribute('target', '_blank');
 
   // The sale tab never left the invoice.
@@ -50,7 +50,7 @@ test('administration entry points open the POS dashboard for the current store a
   await expect(menu.getByRole('link', { name: 'Chức năng chi nhánh', exact: true })).toHaveCount(0);
 
   // Pages off the sale screen offer the same link in their navigation.
-  await page.goto('/orders');
+  await page.goto('/shifts');
   const nav = page.getByRole('navigation', { name: 'Điều hướng POS' });
   await expect(nav.getByRole('link', { name: 'Cấu hình', exact: true })).toHaveAttribute('target', '_blank');
 });
@@ -74,6 +74,33 @@ test('a cashier sees no administration link', async ({ page }) => {
   await installRetailApi(page, cashier);
   await login(page);
   const menu = await openUserMenu(page);
-  await expect(menu.getByRole('link', { name: 'Đơn hàng', exact: true })).toBeVisible();
+  await expect(menu.getByRole('link', { name: 'Ca của tôi', exact: true })).toBeVisible();
   await expect(menu.getByRole('link', { name: /Cấu hình|Chức năng chi nhánh/ })).toHaveCount(0);
+});
+
+// Back office lives in the POS dashboard: the counter keeps only selling,
+// returns, receipts, its own shift and debt collection.
+test('back-office pages open in the POS dashboard from the "Quản trị" group', async ({ page }) => {
+  const cashier = newWorld();
+  addSheet(cashier, 'ws_1');
+  await installRetailApi(page, cashier);
+  await login(page);
+  const menu = await openUserMenu(page);
+  const group = menu.locator('.user-menu-group').filter({ hasText: 'Quản trị' });
+  for (const [name, path] of [
+    ['Đơn hàng', 'orders'],
+    ['Sổ tiền đã nhận / nghĩa vụ', 'funds'],
+    ['Khoản thu cần chú ý', 'funds/attention'],
+    ['Công nợ khách hàng', 'receivables'],
+    ['Báo cáo', 'reports'],
+  ] as const) {
+    const link = group.getByRole('link', { name, exact: true });
+    await expect(link).toHaveAttribute(
+      'href',
+      new RegExp(`^https?://[^/]+(/[^?#]*)?/store_1/${path}\\?branch=br_1$`),
+    );
+    await expect(link).toHaveAttribute('target', '_blank');
+  }
+  for (const name of ['Trả / đổi hàng', 'Hóa đơn', 'Ca của tôi', 'Thu nợ'])
+    await expect(menu.getByRole('link', { name, exact: true })).not.toHaveAttribute('href', /store_1/);
 });

@@ -103,4 +103,15 @@ describe('print choices', () => {
     expect(initialChoice(reprint, [k80, a4], 'postpl_a')).toBe(ORIGINAL_CHOICE);
     expect(initialChoice([], [])).toBeNull();
   });
+
+  it("prefers the branch's default over the store default, after a remembered template", () => {
+    const branchA4 = { ...a4, branch_default: true };
+    const storeK80 = { ...k80, branch_default: false };
+    const choices = printChoices([storeK80, branchA4], 'sale');
+    expect(choices.map((choice) => choice.key)).toEqual(['postpl_b', 'postpl_a']);
+    expect(initialChoice(choices, [storeK80, branchA4])).toBe('postpl_b');
+    expect(initialChoice(choices, [storeK80, branchA4], 'postpl_a')).toBe('postpl_a');
+    // Read without a branch: the store default.
+    expect(initialChoice(printChoices([k80, a4], 'sale'), [k80, a4])).toBe('postpl_a');
+  });
 });

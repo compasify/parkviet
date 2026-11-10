@@ -1,16 +1,15 @@
-import { navVisible } from '@parkviet/pos-shared/module-registry';
 import { Link } from '@tanstack/react-router';
 import { type ReactNode, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { canHandleDeliveries } from '../lib/deliveries';
-import { administrationAccess } from '../lib/pos-administration';
+import { dashboardPages } from '../lib/dashboard-pages';
 import type { PosContext } from '../lib/pos-context';
 import { posDashboardUrl } from '../lib/pos-dashboard-url';
 import { canReadReceivables } from '../lib/receivables';
 import { canProcessReturns } from '../lib/returns';
 import { PosIcon } from './pos-icon';
 
-// The header account menu: every POS page, devices and sign out.
+// The header account menu: the counter pages, the POS dashboard pages,
+// devices and sign out.
 //
 // From the sale screen the pages open in a new browser tab. Leaving the sale
 // page unmounts the open invoice tabs and gives up their edit lease, so coming
@@ -68,26 +67,13 @@ export function UserMenu({
   const has = (capability: string) => capabilities.includes(capability);
   const newTab = isSale ? ({ target: '_blank', rel: 'noopener' } as const) : {};
   const item = { className: 'user-menu-item', onClick: close, ...newTab };
-  const canAccessFunds = has('pos.payment.resolve') || has('pos.payment.collect');
-  const creditManage = has('pos.credit.manage');
-  const approve = has('pos.approval.grant');
   const staffed = Boolean(data && capabilities.length > 0);
-  // Stock tracking belongs to `retail.traceability`; it stays reachable with
-  // the module off while the store still has tracked SKUs to receive.
-  const inventory = navVisible(data, 'inventory');
+  const collect = canReadReceivables(capabilities) && has('pos.payment.collect');
 
   const groups: ReactNode[] = [];
   if (data) {
     groups.push(
-      <MenuGroup key="sales" label={t('sellingArea')}>
-        <Link to="/orders" {...item}>
-          {t('ordersNav')}
-        </Link>
-        {data.features?.delivery === true && canHandleDeliveries(capabilities) ? (
-          <Link to="/deliveries" {...item}>
-            {t('deliveriesNav')}
-          </Link>
-        ) : null}
+      <MenuGroup key="counter" label={t('sellingArea')}>
         {canProcessReturns(capabilities) ? (
           <Link to="/returns" {...item}>
             {t('returnsNav')}
@@ -98,103 +84,57 @@ export function UserMenu({
             {t('receiptsTitle')}
           </Link>
         ) : null}
-      </MenuGroup>,
-    );
-  }
-  if (canAccessFunds || canReadReceivables(capabilities) || approve) {
-    groups.push(
-      <MenuGroup key="money" label={t('menuMoney')}>
-        {canAccessFunds ? (
-          <>
-            <Link to="/funds" {...item}>
-              {t('fundsTitle')}
-            </Link>
-            <Link to="/payment-attention" {...item}>
-              {t('fundsAttentionTitle')}
-            </Link>
-          </>
-        ) : null}
-        {canReadReceivables(capabilities) ? (
-          <Link to="/receivables" {...item}>
-            {t('receivablesTitle')}
-          </Link>
-        ) : null}
-        {canReadReceivables(capabilities) && creditManage ? (
-          <Link to="/credit-accounts" {...item}>
-            {t('creditAccountsNav')}
-          </Link>
-        ) : null}
-        {approve && (!creditManage || canReadReceivables(capabilities)) ? (
-          <Link to="/credit-approvals" {...item}>
-            {t('creditApprovalsNav')}
-          </Link>
-        ) : null}
-      </MenuGroup>,
-    );
-  }
-  if (staffed || inventory) {
-    groups.push(
-      <MenuGroup key="operations" label={t('menuOperations')}>
         {staffed ? (
-          <>
-            <Link to="/shifts" {...item}>
-              {t('shiftsNav')}
-            </Link>
-            <Link to="/reports" {...item}>
-              {t('reportsNav')}
-            </Link>
-          </>
+          <Link to="/shifts" {...item}>
+            {t('myShiftNav')}
+          </Link>
         ) : null}
-        {inventory ? (
-          <Link to="/inventory" {...item}>
-            {t('inventoryNav')}
+        {collect ? (
+          <Link to="/collect" {...item}>
+            {t('collectNav')}
           </Link>
         ) : null}
       </MenuGroup>,
     );
   }
-  // Administration lives in the POS dashboard app. It opens in a new tab
+  // Back office lives in the POS dashboard app. Its pages open in a new tab
   // from every page so the open invoices and this session stay as they are.
   const storeId = data?.store.id;
-  const administrationUrl = administrationAccess(data).read
-    ? posDashboardUrl(storeId, '', branchId)
-    : null;
-  const branchFeaturesUrl =
-    !administrationAccess(data).read && branchId && has('pos.topology.manage')
-      ? posDashboardUrl(storeId, 'features', branchId)
-      : null;
-  const dashboardLink = {
-    className: 'user-menu-item header-settings',
-    onClick: close,
-    target: '_blank',
-    rel: 'noopener',
-  } as const;
-  if (administrationUrl || branchFeaturesUrl || (staffed && registerId)) {
+  const dashboard = dashboardPages(data, branchId).flatMap((page) => {
+    const url = posDashboardUrl(storeId, page.path, branchId);
+    return url ? [{ ...page, url }] : [];
+  });
+  if (dashboard.length > 0) {
+    groups.push(
+      <MenuGroup key="dashboard" label={t('menuDashboard')}>
+        {dashboard.map((page) => (
+          <a
+            key={page.key}
+            href={page.url}
+            className="user-menu-item"
+            onClick={close}
+            target="_blank"
+            rel="noopener"
+          >
+            {t(page.labelKey)}
+          </a>
+        ))}
+      </MenuGroup>,
+    );
+  }
+  if (staffed && registerId) {
     groups.push(
       <MenuGroup key="setup" label={t('menuSetup')}>
-        {administrationUrl ? (
-          <a href={administrationUrl} {...dashboardLink}>
-            <PosIcon name="cog" />
-            {t('settings')}
-          </a>
-        ) : branchFeaturesUrl ? (
-          <a href={branchFeaturesUrl} {...dashboardLink}>
-            <PosIcon name="cog" />
-            {t('branchFeaturesTitle')}
-          </a>
-        ) : null}
-        {staffed && registerId ? (
-          <button
-            type="button"
-            className="user-menu-item"
-            onClick={() => {
-              close();
-              onCalibrate();
-            }}
-          >
-            {t('scannerCalibrationOpen')}
-          </button>
-        ) : null}
+        <button
+          type="button"
+          className="user-menu-item"
+          onClick={() => {
+            close();
+            onCalibrate();
+          }}
+        >
+          {t('scannerCalibrationOpen')}
+        </button>
       </MenuGroup>,
     );
   }

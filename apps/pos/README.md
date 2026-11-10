@@ -8,6 +8,7 @@
 - Hàng được giao ngay tại quầy, không có giao sau.
 - **Cần mạng để bán.** POS không có chế độ bán offline. Khi mất mạng, màn hình khóa các thao tác ghi; khi có mạng lại, POS kiểm tra kết quả các thao tác còn dở.
 - Phiếu in ra là **"Phiếu bán hàng POS — không phải hóa đơn điện tử"**.
+- **POS chỉ còn việc tại quầy**: bán hàng, trả / đổi hàng, hóa đơn, màn hình khách, **Ca của tôi** và **Thu nợ**. Đơn hàng, giao hàng, sổ tiền, quản lý ca & két, công nợ, tài khoản nợ, duyệt, tồn kho, báo cáo và cấu hình nằm trong POS Dashboard (nhóm **Quản trị** trong menu tài khoản mở chúng ở tab mới). Các mục bên dưới mô tả nghiệp vụ chung của cả hai ứng dụng.
 - **Trạng thái hiện tại: sẵn sàng vận hành.** Nên tự thử máy in, máy quét, máy cân và màn hình khách tại cửa hàng trước khi bán đại trà.
 
 ## Khái niệm chính

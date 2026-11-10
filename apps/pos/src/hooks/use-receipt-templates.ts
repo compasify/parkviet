@@ -13,6 +13,7 @@ import type {
 } from '@parkviet/pos-shared/receipt-template/types';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
+import { usePosSelection } from '../components/pos-selection';
 import { session } from '../lib/app-session';
 import { queryClient } from '../lib/query-client';
 import { rememberedTemplate } from '../lib/receipt-preferences';
@@ -31,6 +32,8 @@ export type ReceiptTemplate = {
   paper: PaperSize;
   status: 'active' | 'disabled';
   is_default: boolean;
+  // Read for a branch: the template that branch prints the document type with.
+  branch_default?: boolean;
   current_version: number;
   // The version `config` belongs to.
   version: number;
@@ -93,19 +96,27 @@ const readVersion = async (id: string, version: number) =>
 
 // Every template of the store; disabled ones only for administrators. The
 // active list is what the counter prints with: loaded when the POS opens,
-// kept for a while and refreshed when the window regains focus. Each
-// entry also fills the cache of its current version.
-export function useReceiptTemplates(enabled: boolean, includeDisabled = false) {
+// kept for a while and refreshed when the window regains focus. Read for
+// the selected branch, it marks the branch's default of each document type.
+// Each entry also fills the cache of its current version.
+export function useReceiptTemplates(
+  enabled: boolean,
+  branchId: string | null,
+  includeDisabled = false,
+) {
   const snapshot = useSession();
   const generation = snapshot.generation;
   return useQuery({
-    queryKey: [...RECEIPT_TEMPLATES_KEY, 'list', generation, includeDisabled],
+    queryKey: [...RECEIPT_TEMPLATES_KEY, 'list', generation, branchId, includeDisabled],
     enabled: enabled && snapshot.status === 'authenticated',
     staleTime: includeDisabled ? 0 : 5 * 60_000,
     refetchOnWindowFocus: !includeDisabled,
     queryFn: async () => {
       const read = request<{ data: ReceiptTemplate[] }>('GET', '/pos/receipt_templates', {
-        params: { include_disabled: includeDisabled ? '1' : undefined },
+        params: {
+          include_disabled: includeDisabled ? '1' : undefined,
+          branch_id: branchId ?? undefined,
+        },
       });
       const templates = (
         includeDisabled ? await read : await withTimeout(read, PRINT_READ_TIMEOUT_MS)
@@ -161,7 +172,8 @@ export function usePrintTemplate(
   options: { original?: PrintLayout | null; remember?: boolean } = {},
 ): PrintTemplate {
   const { original = null, remember = false } = options;
-  const list = useReceiptTemplates(true);
+  const { selection } = usePosSelection();
+  const list = useReceiptTemplates(true, selection.branchId);
   const [picked, setPicked] = useState<string | null>(null);
   const remembered = useMemo(
     () => (remember ? rememberedTemplate(documentType) : null),

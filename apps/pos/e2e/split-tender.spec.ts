@@ -331,7 +331,7 @@ test('the URL and page title follow the selected invoice tab, and a link opens i
   await expect(page).toHaveURL(/[?&]order=R25[01]\b/);
 
   // Other pages keep the plain app title.
-  await page.goto('/orders');
+  await page.goto('/receipts');
   await expect(page).toHaveTitle('ParkViet POS');
 });
 

@@ -10,6 +10,7 @@ import {
   login,
   newWorld,
   openMenuLink,
+  openReturnFor,
   openTab,
   payCash,
   scan,
@@ -106,7 +107,7 @@ test('a full day: credit sale, collection, return with cash refund, exchange, th
   expect(world.drawer).toBe(600000);
 
   // The customer brings 150k against the debt.
-  await openMenuLink(page, 'Công nợ khách hàng');
+  await openMenuLink(page, 'Thu nợ');
   await page.getByRole('button', { name: /Chị Lan/ }).click();
   await page.getByRole('button', { name: 'Thu nợ' }).click();
   await dialog.getByLabel('Số tiền thu').fill('150.000');
@@ -117,9 +118,7 @@ test('a full day: credit sale, collection, return with cash refund, exchange, th
   expect(world.debts.map((row) => [row.number, row.debt, row.collected])).toEqual([[credit.number, 200000, 150000]]);
 
   // One bag comes back: return, cash refund, then an exchange order.
-  await openMenuLink(page, 'Đơn hàng');
-  await page.getByRole('list', { name: 'Danh sách đơn hàng' }).getByRole('button', { name: new RegExp(cash.number) }).click();
-  await page.getByRole('region', { name: 'Chi tiết đơn' }).getByRole('link', { name: 'Trả / đổi hàng' }).click();
+  await openReturnFor(page, cash.number);
   await page.getByLabel('Gạo ST25', { exact: true }).fill('1');
   await page.getByRole('button', { name: 'Xem trước' }).click();
   await expect(page.getByRole('region', { name: 'Xem trước giá trị trả' })).toContainText('100.000 ₫');
@@ -152,7 +151,7 @@ test('a full day: credit sale, collection, return with cash refund, exchange, th
   await completeAndHandOver(page);
 
   // Blind count of exactly the cash the day's effects put in the drawer.
-  await openMenuLink(page, 'Ca & két');
+  await openMenuLink(page, 'Ca của tôi');
   await page.getByRole('button', { name: 'Đóng ca', exact: true }).click();
   const close = page.getByRole('dialog', { name: 'Đóng ca' });
   await close.getByRole('button', { name: 'Tiếp tục: đếm két' }).click();
@@ -273,12 +272,7 @@ test.describe('real API', () => {
     const sold = orders.find((row) => row.workspace_id === draft.id);
     liveExpect(sold, 'the sale is in the branch order history').toBeTruthy();
     liveExpect(Number(sold?.paid)).toBe(2 * rice.price);
-    await openMenuLink(page, 'Đơn hàng');
-    await page
-      .getByRole('list', { name: 'Danh sách đơn hàng' })
-      .getByRole('button', { name: new RegExp(sold?.number ?? 'missing') })
-      .click();
-    await page.getByRole('region', { name: 'Chi tiết đơn' }).getByRole('link', { name: 'Trả / đổi hàng' }).click();
+    await openReturnFor(page, sold?.number ?? 'missing');
     await page.getByLabel(rice.name, { exact: true }).fill('1');
     await page.getByRole('button', { name: 'Xem trước' }).click();
     await page.getByLabel('Lý do trả').fill('Kiểm thử e2e thật');
@@ -308,7 +302,7 @@ test.describe('real API', () => {
     // Blind count. A fresh fixture holds one bag's price; a fixture reused by
     // earlier live runs holds more, so the count is redone with the expected
     // cash the server reveals after the first count (every count is audited).
-    await openMenuLink(page, 'Ca & két');
+    await openMenuLink(page, 'Ca của tôi');
     await page.getByRole('button', { name: 'Đóng ca', exact: true }).click();
     const close = page.getByRole('dialog', { name: 'Đóng ca' });
     await close.getByRole('button', { name: 'Tiếp tục: đếm két' }).click();

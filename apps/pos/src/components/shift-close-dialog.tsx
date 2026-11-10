@@ -1,6 +1,6 @@
 import { formatMoney, parseVndInput } from '@parkviet/pos-shared/money';
 import { Link, useNavigate } from '@tanstack/react-router';
-import { useId, useRef, useState } from 'react';
+import { type ReactNode, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   useCloseShift,
@@ -9,6 +9,7 @@ import {
   useShiftCloseState,
 } from '../hooks/use-shift-close';
 import { useModalFocus } from '../lib/dialog-focus';
+import { posDashboardUrl, withSearch } from '../lib/pos-dashboard-url';
 import { definitiveRejection } from '../lib/request-failure';
 import {
   absoluteAmount,
@@ -98,10 +99,10 @@ function ChecklistList({
               >
                 {t(`shiftCheckAction_${item.type}`)}
               </button>
-            ) : target?.to === '/funds' ? (
-              <Link className="button-link" to="/funds" search={target.search}>
+            ) : target?.to === 'dashboard' ? (
+              <DashboardLink path={target.path} search={target.search}>
                 {t(`shiftCheckAction_${item.type}`)}
-              </Link>
+              </DashboardLink>
             ) : target?.to === '/returns' ? (
               <Link className="button-link" to="/returns" search={target.search}>
                 {t(`shiftCheckAction_${item.type}`)}
@@ -111,6 +112,27 @@ function ChecklistList({
         );
       })}
     </ul>
+  );
+}
+
+// A checklist item handled in the POS dashboard opens there in a new tab, so
+// this close stays where it is.
+function DashboardLink({
+  path,
+  search,
+  children,
+}: {
+  path: string;
+  search: Record<string, string>;
+  children: ReactNode;
+}) {
+  const { context, selection } = usePosSelection();
+  const url = withSearch(posDashboardUrl(context.data?.store.id, path, selection.branchId), search);
+  if (!url) return null;
+  return (
+    <a className="button-link" href={url} target="_blank" rel="noopener">
+      {children}
+    </a>
   );
 }
 

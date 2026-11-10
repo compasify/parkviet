@@ -1,12 +1,7 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { session } from '../lib/app-session';
 import { type FinancialRequest, runFinancialCommand } from '../lib/financial-command';
-import type {
-  PosLiabilityPayout,
-  PosPaymentMethod,
-  PosReceivedFunds,
-  PosWorkspace,
-} from '../lib/pos-context';
+import type { PosPaymentMethod, PosReceivedFunds, PosWorkspace } from '../lib/pos-context';
 import { posWorkspacesKey } from '../lib/query-keys';
 import { posFailureKey } from '../lib/request-failure';
 import { SessionSuperseded } from '../lib/session-coordinator';
@@ -271,85 +266,4 @@ export function useTenders(staffId: string | null, storeId: string | null) {
       );
     },
   };
-}
-
-export function useLiabilityPayouts(staffId: string | null, storeId: string | null) {
-  const snapshot = useSession();
-  const queryClient = useQueryClient();
-
-  async function run(
-    funds: PosReceivedFunds,
-    action: string,
-    path: string,
-    body: Record<string, unknown>,
-  ): Promise<PosLiabilityPayout> {
-    try {
-      const result = await runFinancialCommand<PosLiabilityPayout>(financialRequest, {
-        staffId,
-        storeId,
-        scopeId: funds.id,
-        action,
-        path,
-        body,
-      });
-      await queryClient.invalidateQueries({
-        queryKey: ['pos', 'received-funds', snapshot.generation],
-      });
-      return result.data;
-    } catch (error) {
-      abandonIfNeeded(error);
-      throw error;
-    }
-  }
-
-  return useMutation({
-    mutationFn: async (input: {
-      funds: PosReceivedFunds;
-      action: 'request' | 'confirm' | 'resolve';
-      payoutId?: string;
-      amount?: string;
-      beneficiaryName?: string;
-      beneficiaryReference?: string;
-      reason?: string;
-      approvalId?: string;
-      evidenceKind?: string;
-      reference?: string;
-      paidFrom?: 'custody';
-      outcome?: string;
-    }) => {
-      if (input.action === 'request') {
-        return run(
-          input.funds,
-          'liability_payout.request',
-          `/pos/received_funds/${input.funds.id}/payouts`,
-          {
-            amount: input.amount,
-            beneficiary_name: input.beneficiaryName,
-            beneficiary_reference: input.beneficiaryReference || undefined,
-            reason: input.reason,
-            approval_id: input.approvalId || undefined,
-          },
-        );
-      }
-      if (!input.payoutId) throw new Error('payout-required');
-      if (input.action === 'confirm') {
-        return run(
-          input.funds,
-          'liability_payout.confirm',
-          `/pos/received_funds/${input.funds.id}/payouts/${input.payoutId}/confirm`,
-          {
-            evidence_kind: input.evidenceKind,
-            reference: input.reference || undefined,
-            paid_from: input.paidFrom,
-          },
-        );
-      }
-      return run(
-        input.funds,
-        'liability_payout.resolve',
-        `/pos/received_funds/${input.funds.id}/payouts/${input.payoutId}/resolve`,
-        { outcome: input.outcome, reference: input.reference || undefined },
-      );
-    },
-  });
 }

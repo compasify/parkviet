@@ -7,17 +7,10 @@ import {
 } from '@tanstack/react-router';
 import { PosShell } from './components/pos-shell';
 import { session } from './lib/app-session';
-import { CreditAccountsPage } from './pages/credit-accounts';
-import { CreditApprovalsPage } from './pages/credit-approvals';
+import { CollectPage } from './pages/collect';
 import { CustomerDisplayPage } from './pages/customer-display';
-import { DeliveriesPage } from './pages/deliveries';
-import { InventoryTraceabilityPage } from './pages/inventory-traceability';
 import { LoginPage } from './pages/login';
-import { OrdersPage } from './pages/orders';
 import { ReceiptPage } from './pages/receipt';
-import { ReceivablesPage } from './pages/receivables';
-import { PaymentAttentionPage, ReceivedFundsPage } from './pages/received-funds';
-import { ReportsPage } from './pages/reports';
 import { ReturnExchangePage } from './pages/return-exchange';
 import { SalePage } from './pages/sale';
 import { ShiftsPage } from './pages/shifts';
@@ -57,53 +50,11 @@ const saleRoute = createRoute({
   component: SalePage,
 });
 
-const fundsRoute = createRoute({
-  getParentRoute: () => authedRoute,
-  path: '/funds',
-  // The received funds to open, when a shift close checklist links to it.
-  validateSearch: (search: Record<string, unknown>): { fundsId?: string } =>
-    typeof search.fundsId === 'string' && /^[\w-]{1,64}$/.test(search.fundsId)
-      ? { fundsId: search.fundsId }
-      : {},
-  component: ReceivedFundsPage,
-});
-
-const receivablesRoute = createRoute({
-  getParentRoute: () => authedRoute,
-  path: '/receivables',
-  component: ReceivablesPage,
-});
-
-const creditAccountsRoute = createRoute({
-  getParentRoute: () => authedRoute,
-  path: '/credit-accounts',
-  component: CreditAccountsPage,
-});
-
-const creditApprovalsRoute = createRoute({
-  getParentRoute: () => authedRoute,
-  path: '/credit-approvals',
-  component: CreditApprovalsPage,
-});
-
-const ordersRoute = createRoute({
-  getParentRoute: () => authedRoute,
-  path: '/orders',
-  component: OrdersPage,
-});
-
-// Sales to deliver ("Đơn cần giao").
-const deliveriesRoute = createRoute({
-  getParentRoute: () => authedRoute,
-  path: '/deliveries',
-  component: DeliveriesPage,
-});
-
 const returnsRoute = createRoute({
   getParentRoute: () => authedRoute,
   path: '/returns',
-  // The order to return from (wizard opened from order history), or the
-  // return to reopen (after a reload, from an order or from approvals).
+  // The order to return from, or the return to reopen (after a reload or from
+  // the shift close checklist).
   validateSearch: (search: Record<string, unknown>): { orderId?: string; returnId?: string } => {
     const id = (value: unknown) =>
       typeof value === 'string' && /^[\w-]{1,64}$/.test(value) ? value : undefined;
@@ -114,30 +65,18 @@ const returnsRoute = createRoute({
   component: ReturnExchangePage,
 });
 
-const attentionRoute = createRoute({
-  getParentRoute: () => authedRoute,
-  path: '/payment-attention',
-  component: PaymentAttentionPage,
-});
-
-// Shift close, drawer cash and reports.
+// The cashier's own shift: open, cash in/out requests and the blind close.
 const shiftsRoute = createRoute({
   getParentRoute: () => authedRoute,
   path: '/shifts',
   component: ShiftsPage,
 });
 
-const reportsRoute = createRoute({
+// Debt collection into the cashier's open shift.
+const collectRoute = createRoute({
   getParentRoute: () => authedRoute,
-  path: '/reports',
-  component: ReportsPage,
-});
-
-// Serial and lot stock: receipts, transfers, counts, quarantine and recall.
-const inventoryRoute = createRoute({
-  getParentRoute: () => authedRoute,
-  path: '/inventory',
-  component: InventoryTraceabilityPage,
+  path: '/collect',
+  component: CollectPage,
 });
 
 // Receipts (authed) and the customer display, which has no staff session:
@@ -165,21 +104,7 @@ export const router = createRouter({
   routeTree: rootRoute.addChildren([
     loginRoute,
     customerDisplayRoute,
-    authedRoute.addChildren([
-      saleRoute,
-      fundsRoute,
-      receivablesRoute,
-      creditAccountsRoute,
-      creditApprovalsRoute,
-      attentionRoute,
-      ordersRoute,
-      deliveriesRoute,
-      returnsRoute,
-      shiftsRoute,
-      reportsRoute,
-      receiptsRoute,
-      inventoryRoute,
-    ]),
+    authedRoute.addChildren([saleRoute, returnsRoute, shiftsRoute, collectRoute, receiptsRoute]),
   ]),
   basepath: import.meta.env.BASE_URL.replace(/\/$/, '') || '/',
 });

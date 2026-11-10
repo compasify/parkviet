@@ -12,12 +12,7 @@ import { failureStatus } from '../lib/request-failure';
 import type {
   CashMovementKind,
   CashMovementRequest,
-  CashReconciliation,
-  CustodyOutcome,
-  OpenShiftRow,
-  PendingClose,
   PosCashMovement,
-  ReconcileCandidates,
   ShiftCloseState,
   ShiftClosure,
   ShiftCount,
@@ -227,110 +222,6 @@ export function useCloseShift(actor: Actor) {
         `/pos/shifts/${input.shiftId}/close`,
         { reason: input.reason || undefined },
         `close:${input.revision}`,
-      ),
-    onSettled: refresh,
-  });
-}
-
-export function useApproveClose(actor: Actor) {
-  const refresh = useRefreshShift();
-  return useMutation({
-    mutationFn: (input: { shiftId: string; revision: number }) =>
-      command<ShiftCount>(
-        actor,
-        input.shiftId,
-        'shift_approve_close',
-        `/pos/shifts/${input.shiftId}/close_approval`,
-        { revision: input.revision },
-        `approve:${input.revision}`,
-      ),
-    onSettled: refresh,
-  });
-}
-
-export function usePendingCloses(branchId: string | null, enabled: boolean) {
-  const snapshot = useSession();
-  return useQuery({
-    queryKey: ['pos', 'pending-closes', snapshot.generation, branchId],
-    enabled: enabled && snapshot.status === 'authenticated' && Boolean(branchId),
-    refetchInterval: 15000,
-    queryFn: () =>
-      read<{ data: PendingClose[] }>('/pos/shift_closures/pending', {
-        branch_id: branchId ?? undefined,
-      }),
-  });
-}
-
-// Open shifts a manager with recovery rights may close for an absent cashier.
-export function useOpenShifts(branchId: string | null, enabled: boolean) {
-  const snapshot = useSession();
-  return useQuery({
-    queryKey: ['pos', 'shift-close', snapshot.generation, 'open', branchId],
-    enabled: enabled && snapshot.status === 'authenticated' && Boolean(branchId),
-    queryFn: () =>
-      read<{ data: OpenShiftRow[] }>('/pos/shift_closures/open', {
-        branch_id: branchId ?? undefined,
-      }),
-  });
-}
-
-export function useReconcileCandidates(branchId: string | null, enabled: boolean) {
-  const snapshot = useSession();
-  return useQuery({
-    queryKey: ['pos', 'cash-reconcile', snapshot.generation, branchId, 'candidates'],
-    enabled: enabled && snapshot.status === 'authenticated' && Boolean(branchId),
-    queryFn: async () =>
-      (
-        await read<{ data: ReconcileCandidates }>('/pos/cash_reconciliations/candidates', {
-          branch_id: branchId ?? undefined,
-        })
-      ).data,
-  });
-}
-
-export function useReconciliations(branchId: string | null, enabled: boolean) {
-  const snapshot = useSession();
-  return useQuery({
-    queryKey: ['pos', 'cash-reconcile', snapshot.generation, branchId, 'list'],
-    enabled: enabled && snapshot.status === 'authenticated' && Boolean(branchId),
-    queryFn: () =>
-      read<{ data: CashReconciliation[] }>('/pos/cash_reconciliations', {
-        branch_id: branchId ?? undefined,
-        limit: '20',
-      }),
-  });
-}
-
-export function useReconcileLateCash(actor: Actor) {
-  const refresh = useRefreshShift();
-  return useMutation({
-    mutationFn: (input: {
-      branchId: string;
-      intent: string;
-      outcome: CustodyOutcome;
-      reason: string;
-      amount?: string;
-      closureId?: string;
-      fundsId?: string;
-      targetShiftId?: string;
-      custodyReference?: string;
-    }) =>
-      command<CashReconciliation>(
-        actor,
-        input.branchId,
-        'cash_reconcile',
-        '/pos/cash_reconciliations',
-        {
-          branch_id: input.branchId,
-          outcome: input.outcome,
-          reason: input.reason,
-          amount: input.amount || undefined,
-          closure_id: input.closureId || undefined,
-          funds_id: input.fundsId || undefined,
-          target_shift_id: input.targetShiftId || undefined,
-          custody_reference: input.custodyReference || undefined,
-        },
-        `reconcile:${input.intent}`,
       ),
     onSettled: refresh,
   });

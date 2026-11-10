@@ -1692,6 +1692,13 @@ export async function openMenuLink(page: Page, name: string) {
   await goToMenuPage(page, name);
 }
 
+// Opens the return wizard for an order looked up by its number.
+export async function openReturnFor(page: Page, number: string) {
+  await goToMenuPage(page, 'Trả / đổi hàng');
+  await page.getByLabel('Số đơn gốc').fill(number);
+  await page.getByRole('button', { name: 'Tìm đơn' }).click();
+}
+
 // `timeout` is raised by the real-API runs, which answer slower than the mocks.
 export async function payCash(page: Page, handed: string, timeout = 5_000) {
   const panel = page.locator('.payment-panel');

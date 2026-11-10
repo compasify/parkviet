@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { goToMenuPage } from './support/menu';
+import { goToMenuPage, openUserMenu } from './support/menu';
 import {
   addLine,
   addSheet,
@@ -38,15 +38,18 @@ test('switched-off features disable their entry points with a reason; recovery p
   await expect(page.getByText('Trả hàng chưa được bật cho chi nhánh này', { exact: false })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Tìm đơn' })).toHaveCount(0);
 
-  await openMenuLink(page, 'Ca & két');
+  await openMenuLink(page, 'Ca của tôi');
   const move = page.getByRole('button', { name: 'Thu/chi tiền mặt' });
   await expect(move).toBeDisabled();
   await expect(move).toHaveAccessibleDescription(/Thu\/chi tiền mặt trong két chưa được bật/);
   await expect(page.getByRole('button', { name: 'Đóng ca', exact: true })).toBeEnabled();
 
   // Work that is already started stays reachable whatever the switches say.
-  await goToMenuPage(page, 'Khoản thu cần chú ý');
-  await expect(page.locator('.header-title')).toHaveText('Cần chú ý');
+  const menu = await openUserMenu(page);
+  await expect(menu.getByRole('link', { name: 'Khoản thu cần chú ý', exact: true })).toHaveAttribute(
+    'href',
+    /\/store_1\/funds\/attention\?branch=br_1$/,
+  );
   await goToMenuPage(page, 'Hóa đơn');
   await expect(page.locator('.header-title')).toHaveText('Hóa đơn');
 });
@@ -114,7 +117,7 @@ test('money is not taken on an order whose shift is not open; cash refunds and c
 
   // Debt collections are booked on the collector's own open shift too.
   world.debts.push({ orderId: 'or_ws_sold', number: sold.number, workspaceId: sold.id, debt: 50000, collected: 0 });
-  await openMenuLink(page, 'Công nợ khách hàng');
+  await openMenuLink(page, 'Thu nợ');
   await page.getByRole('button', { name: /Chị Lan/ }).click();
   const collect = page.getByRole('button', { name: 'Thu nợ' });
   await expect(collect).toBeEnabled();

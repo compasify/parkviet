@@ -628,8 +628,8 @@ test('collection: one cash receipt split oldest debt first, with change and a bo
 }) => {
   const api = await mockPos(page, { id: 'ws_1', order_id: 'R500', total: 500000, customer: null });
   await login(page);
-  await goToMenuPage(page, 'Công nợ khách hàng');
-  await expect(page.getByRole('heading', { name: 'Công nợ khách hàng' })).toBeVisible();
+  await goToMenuPage(page, 'Thu nợ');
+  await expect(page.getByRole('heading', { name: 'Thu nợ', level: 1 })).toBeVisible();
   await expect(page.getByText('Quá hạn 8 ngày')).toBeVisible();
 
   await page.getByRole('button', { name: /Chị Lan/ }).click();
@@ -668,9 +668,9 @@ test('collection: one cash receipt split oldest debt first, with change and a bo
   ]);
 });
 
-async function openReceivables(page: Page) {
-  await goToMenuPage(page, 'Công nợ khách hàng');
-  await expect(page.getByRole('heading', { name: 'Công nợ khách hàng' })).toBeVisible();
+async function openCollect(page: Page) {
+  await goToMenuPage(page, 'Thu nợ');
+  await expect(page.getByRole('heading', { name: 'Thu nợ', level: 1 })).toBeVisible();
 }
 
 test('a collection whose response was lost is resent under the same key even after editing', async ({
@@ -682,7 +682,7 @@ test('a collection whose response was lost is resent under the same key even aft
     { abortFirstCollection: true },
   );
   await login(page);
-  await openReceivables(page);
+  await openCollect(page);
   await page.getByRole('button', { name: /Chị Lan/ }).click();
   await page.getByRole('button', { name: 'Thu nợ' }).click();
   const dialog = page.getByRole('dialog');
@@ -703,102 +703,4 @@ test('a collection whose response was lost is resent under the same key even aft
   expect(api.receiptLookups).toEqual([api.collectionKeys[0]]);
   expect(api.collections.at(-1)?.handed_amount).toBe('300000');
   expect(api.collections[0].handed_amount).toBe('500000');
-});
-
-test('a credit manager opens, edits and suspends customer credit accounts', async ({ page }) => {
-  const api = await mockPos(
-    page,
-    { id: 'ws_1', order_id: 'R500', total: 500000, customer: null },
-    { capabilities: ['pos.shift.open', 'pos.payment.collect', 'pos.credit.manage'] },
-  );
-  await login(page);
-  await goToMenuPage(page, 'Tài khoản nợ');
-  const list = page.getByRole('list', { name: 'Tài khoản công nợ của chi nhánh' });
-  await expect(list).toContainText('Chị Lan');
-  await expect(list).toContainText('1.000.000 ₫');
-
-  await page.getByLabel('Tìm khách theo tên hoặc số điện thoại').fill('Bình');
-  await page.getByRole('button', { name: /Anh Bình/ }).click();
-  await page.getByLabel('Hạn mức').first().fill('5.000.000');
-  await page.getByLabel('Số ngày nợ').first().fill('4000');
-  const create = page.getByRole('button', { name: 'Mở tài khoản công nợ' });
-  await expect(create).toBeDisabled();
-  await page.getByLabel('Số ngày nợ').first().fill('45');
-  await create.click();
-  await expect(page.getByText('Đã lưu công nợ cho Anh Bình.')).toBeVisible();
-
-  const row = list.getByRole('listitem').filter({ hasText: 'Chị Lan' });
-  await row.getByRole('button', { name: 'Sửa hạn mức' }).click();
-  await row.getByRole('textbox', { name: 'Hạn mức', exact: true }).fill('3.000.000');
-  await row.getByRole('button', { name: 'Lưu hạn mức' }).click();
-  await row.getByRole('button', { name: 'Tạm khóa' }).click();
-  await expect(row).toContainText('Tạm khóa');
-
-  expect(api.accountWrites.map(({ method, body }) => [method, body])).toEqual([
-    ['POST', expect.objectContaining({ branch_id: 'br_1', customer_id: 'poscustomer_2', credit_limit: '5000000', due_days: 45 })],
-    ['PATCH', expect.objectContaining({ credit_limit: '3000000', due_days: 30 })],
-    ['PATCH', expect.objectContaining({ status: 'suspended' })],
-  ]);
-});
-
-test('an approver approves, declines with a reason and revokes credit requests', async ({ page }) => {
-  const api = await mockPos(
-    page,
-    { id: 'ws_1', order_id: 'R500', total: 500000, customer: null },
-    { capabilities: ['pos.shift.open', 'pos.approval.grant', 'pos.credit.manage'] },
-  );
-  await login(page);
-  await goToMenuPage(page, 'Duyệt');
-  const list = page.getByRole('list', { name: 'Duyệt ghi nợ' });
-  await expect(list.getByRole('listitem')).toHaveCount(3);
-  await expect(list).toContainText('Thu ngân Mai');
-
-  await list.getByRole('listitem').filter({ hasText: 'R700' }).getByRole('button', { name: 'Duyệt ghi nợ' }).click();
-  await expect(page.getByText('Đã duyệt ghi nợ cho đơn R700.')).toBeVisible();
-
-  const second = list.getByRole('listitem').filter({ hasText: 'R800' });
-  await second.getByRole('button', { name: 'Từ chối' }).click();
-  await second.getByLabel('Lý do từ chối').fill('Khách đang nợ quá hạn');
-  await second.getByRole('button', { name: 'Từ chối' }).click();
-  await expect(page.getByText('Đã từ chối ghi nợ cho đơn R800.')).toBeVisible();
-
-  await list.getByRole('listitem').filter({ hasText: 'R900' }).getByRole('button', { name: 'Thu hồi duyệt' }).click();
-  await expect(page.getByText('Đã thu hồi duyệt cho đơn R900.')).toBeVisible();
-
-  expect(api.decisions.map(({ id, decision }) => [id, decision])).toEqual([
-    ['poscreditreq_1', 'approve'],
-    ['poscreditreq_2', 'reject'],
-    ['poscreditreq_3', 'revoke'],
-  ]);
-  expect(api.decisions[1].body).toMatchObject({ reason: 'Khách đang nợ quá hạn' });
-});
-
-test('with credit switched off an approver cannot approve, but still declines and revokes', async ({ page }) => {
-  const api = await mockPos(
-    page,
-    { id: 'ws_1', order_id: 'R500', total: 500000, customer: null },
-    { capabilities: ['pos.shift.open', 'pos.approval.grant', 'pos.credit.manage'], creditOff: true },
-  );
-  await login(page);
-  await goToMenuPage(page, 'Duyệt');
-  const list = page.getByRole('list', { name: 'Duyệt ghi nợ' });
-  await expect(list.getByRole('listitem')).toHaveCount(3);
-
-  const first = list.getByRole('listitem').filter({ hasText: 'R700' });
-  const approve = first.getByRole('button', { name: 'Duyệt ghi nợ' });
-  await expect(approve).toBeDisabled();
-  await expect(approve).toHaveAccessibleDescription(/Bán ghi nợ chưa được bật cho chi nhánh này/);
-
-  const second = list.getByRole('listitem').filter({ hasText: 'R800' });
-  await second.getByRole('button', { name: 'Từ chối' }).click();
-  await second.getByLabel('Lý do từ chối').fill('Tạm dừng bán ghi nợ');
-  await second.getByRole('button', { name: 'Từ chối' }).click();
-  await expect(page.getByText('Đã từ chối ghi nợ cho đơn R800.')).toBeVisible();
-  await list.getByRole('listitem').filter({ hasText: 'R900' }).getByRole('button', { name: 'Thu hồi duyệt' }).click();
-  await expect(page.getByText('Đã thu hồi duyệt cho đơn R900.')).toBeVisible();
-
-  expect(api.decisions.map(({ id, decision }) => [id, decision])).toEqual([
-    ['poscreditreq_2', 'reject'],
-    ['poscreditreq_3', 'revoke'],
-  ]);
 });

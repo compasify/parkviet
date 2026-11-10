@@ -5,7 +5,6 @@ import { runFinancialCommand } from '../lib/financial-command';
 import { FINANCIAL_RECOVERY_CHANGED, scopedFinancialRecords } from '../lib/financial-recovery';
 import type {
   PosCollection,
-  PosCreditAccount,
   PosCreditRequest,
   PosCreditReservation,
   PosReceivable,
@@ -77,29 +76,6 @@ export function useReceivableAccounts(branchId: string | null, enabled: boolean)
         data: PosReceivableAccount[];
         meta: { count: number; totals: Record<string, string> };
       }>('/pos/receivables/customers', { branch_id: branchId ?? undefined }),
-  });
-}
-
-// Notes that a debt reminder was shared or copied ("Nhắc lần cuối").
-export function useRemindDebt() {
-  const snapshot = useSession();
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (input: {
-      branchId: string;
-      creditAccountId: string;
-      via: 'share' | 'copy';
-    }) => {
-      const result = await write<{ credit_account_id: string; last_reminded_at: string }>(
-        'POST',
-        `/pos/receivables/customers/${input.creditAccountId}/remind`,
-        { branch_id: input.branchId, via: input.via },
-      );
-      await queryClient.invalidateQueries({
-        queryKey: ['pos', 'receivables', snapshot.generation, input.branchId, 'accounts'],
-      });
-      return result.data;
-    },
   });
 }
 
@@ -302,85 +278,4 @@ export function usePendingCollections(staffId: string | null, storeId: string | 
     ...state,
     refresh: () => setVersion((value) => value + 1),
   };
-}
-
-export function useCreditAccounts(branchId: string | null, enabled: boolean) {
-  const snapshot = useSession();
-  return useQuery({
-    queryKey: ['pos', 'credit-accounts', snapshot.generation, branchId],
-    enabled: enabled && snapshot.status === 'authenticated' && Boolean(branchId),
-    queryFn: () =>
-      read<Page<PosCreditAccount>>('/pos/credit_accounts', {
-        branch_id: branchId ?? undefined,
-        limit: '100',
-      }),
-  });
-}
-
-export type CreditTermsInput = {
-  branchId: string;
-  accountId?: string;
-  customerId?: string;
-  creditLimit?: string;
-  dueDays?: number;
-  status?: 'active' | 'suspended';
-};
-
-export function useConfigureCredit() {
-  const snapshot = useSession();
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (input: CreditTermsInput) => {
-      const body = {
-        branch_id: input.branchId,
-        customer_id: input.accountId ? undefined : input.customerId,
-        credit_limit: input.creditLimit,
-        due_days: input.dueDays,
-        status: input.status,
-      };
-      const result = input.accountId
-        ? await write<PosCreditAccount>('PATCH', `/pos/credit_accounts/${input.accountId}`, body)
-        : await write<PosCreditAccount>('POST', '/pos/credit_accounts', body);
-      await queryClient.invalidateQueries({
-        queryKey: ['pos', 'credit-accounts', snapshot.generation],
-      });
-      return result.data;
-    },
-  });
-}
-
-export function useCreditRequests(branchId: string | null, enabled: boolean) {
-  const snapshot = useSession();
-  return useQuery({
-    queryKey: ['pos', 'credit-requests', snapshot.generation, branchId],
-    enabled: enabled && snapshot.status === 'authenticated' && Boolean(branchId),
-    refetchInterval: 5000,
-    queryFn: () =>
-      read<Page<PosCreditRequest>>('/pos/credit_requests', {
-        branch_id: branchId ?? undefined,
-        limit: '100',
-      }),
-  });
-}
-
-export function useDecideCredit() {
-  const snapshot = useSession();
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (input: {
-      requestId: string;
-      decision: 'approve' | 'reject' | 'revoke';
-      reason?: string;
-    }) => {
-      const result = await write<PosCreditRequest>(
-        'POST',
-        `/pos/credit_requests/${input.requestId}/${input.decision}`,
-        input.decision === 'reject' ? { reason: input.reason } : {},
-      );
-      await queryClient.invalidateQueries({
-        queryKey: ['pos', 'credit-requests', snapshot.generation],
-      });
-      return result.data;
-    },
-  });
 }
