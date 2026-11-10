@@ -1,8 +1,9 @@
-import { parseMoneyInput } from '@parkviet/pos-shared/money'
+import type { PosReceivedFunds } from '@parkviet/pos-shared/types/pos-context'
 import { useQuery } from '@tanstack/react-query'
 import { posRequest as request } from '../lib/pos-request'
 import { posKey } from '../lib/query-keys'
 import type { Page } from '../lib/table-params'
+import { needsAttention } from './use-funds'
 import { useSession } from './use-session'
 
 // A count read from at most one page of rows; `more` means the page was full
@@ -35,10 +36,10 @@ function useAttentionQuery(
 export function useFundsAttention(branchId: string | null, enabled: boolean) {
   return useAttentionQuery('received-funds', branchId, enabled, async (branch) =>
     counted(
-      await request<Page<{ status: string; available: string }>>('GET', '/pos/received_funds', {
+      await request<Page<PosReceivedFunds>>('GET', '/pos/received_funds', {
         params: { branch_id: branch, limit: '100' },
       }),
-      (fund) => fund.status === 'attention' || parseMoneyInput(fund.available) !== '0',
+      needsAttention,
     ),
   )
 }

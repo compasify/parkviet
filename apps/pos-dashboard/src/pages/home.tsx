@@ -61,6 +61,7 @@ export function HomePage() {
       hintKey: 'attention.fundsHint',
       visible: funds,
       query: useFundsAttention(branchId, funds),
+      to: '/funds/attention',
     },
     {
       key: 'credit',
@@ -75,6 +76,7 @@ export function HomePage() {
       hintKey: 'attention.cashHint',
       visible: cash,
       query: useCashRequestsAttention(branchId, data?.staff.id ?? null, cash),
+      to: '/shifts',
     },
     {
       key: 'shifts',
@@ -82,6 +84,7 @@ export function HomePage() {
       hintKey: 'attention.openShiftsHint',
       visible: shifts,
       query: useOpenShiftsAttention(branchId, data?.shift?.id ?? null, shifts),
+      to: '/shifts',
     },
     {
       key: 'deliveries',

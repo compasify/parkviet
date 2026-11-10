@@ -65,6 +65,31 @@ describe('POS permission gates', () => {
     expect(visibleNav('deliveries', staff(['pos.payment.collect'], true))).toBe(true)
     expect(visibleNav('deliveries', staff(['pos.report.read'], true))).toBe(false)
   })
+  it('opens funds to collectors and the attention view only to resolvers', () => {
+    const staff = (capabilities: string[]) => ({
+      permissionKeys: ['write_pos_topology'],
+      context: { selection: { branch_id: 'b', register_id: null }, capabilities } as PosContext,
+    })
+    expect(visibleNav('funds', staff(['pos.payment.collect']))).toBe(true)
+    expect(visibleNav('funds-attention', staff(['pos.payment.collect']))).toBe(false)
+    expect(routeAllowed('funds-attention', staff(['pos.payment.resolve']))).toBe(true)
+    expect(visibleNav('funds', staff(['pos.shift.open']))).toBe(false)
+    expect(visibleNav('funds', { permissionKeys: ['write_pos_topology'] })).toBe(false)
+  })
+  it('opens shift management to recoverers, cash confirmers and approvers', () => {
+    const staff = (capabilities: string[]) => ({
+      permissionKeys: [],
+      context: { selection: { branch_id: 'b', register_id: null }, capabilities } as PosContext,
+    })
+    expect(visibleNav('shifts', staff(['pos.topology.recover']))).toBe(true)
+    expect(visibleNav('shifts', staff(['pos.cash.move']))).toBe(true)
+    expect(visibleNav('shifts', staff(['pos.approval.grant']))).toBe(true)
+    expect(visibleNav('shifts', staff(['pos.shift.open', 'pos.payment.collect']))).toBe(false)
+    expect(visibleNav('late-cash', staff(['pos.approval.grant']))).toBe(false)
+    expect(routeAllowed('late-cash', staff(['pos.approval.grant', 'pos.payment.resolve']))).toBe(
+      true,
+    )
+  })
   it('keeps deliveries reachable by URL when the delivery feature is off', () => {
     const context = {
       selection: { branch_id: 'b', register_id: null },

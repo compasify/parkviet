@@ -1,5 +1,5 @@
 import { type NavEntry, nav, settingsNav, usePermissions } from '@spree/dashboard-core'
-import { ListChecks, Settings, Settings2, ShoppingCart } from 'lucide-react'
+import { ListChecks, Settings, Settings2, ShoppingCart, Wallet } from 'lucide-react'
 import { useLayoutEffect } from 'react'
 import { usePosSession } from './hooks/use-pos-session'
 import { type PosAccess, type PosPage, visibleNav } from './lib/pos-access'
@@ -16,6 +16,15 @@ const groups: { key: string; labelKey: string; icon: NavEntry['icon']; children:
     children: [
       { key: 'orders', labelKey: 'ordersTitle', path: '/orders' },
       { key: 'deliveries', labelKey: 'deliveriesTitle', path: '/deliveries' },
+    ],
+  },
+  {
+    key: 'money',
+    labelKey: 'navMoney',
+    icon: Wallet,
+    children: [
+      { key: 'funds', labelKey: 'fundsNav', path: '/funds' },
+      { key: 'shifts', labelKey: 'shiftsNav', path: '/shifts' },
     ],
   },
   {

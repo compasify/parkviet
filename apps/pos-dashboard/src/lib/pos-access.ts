@@ -1,11 +1,16 @@
 import { canHandleDeliveries } from '@parkviet/pos-shared/deliveries'
 import { branchSettingVisible } from '@parkviet/pos-shared/module-registry'
+import { canMoveCash, canReconcileCash } from '@parkviet/pos-shared/shifts'
 import type { PosContext } from '@parkviet/pos-shared/types/pos-context'
 
 export type PosAccess = { permissionKeys: readonly string[]; context?: PosContext }
 export type PosPage =
   | 'orders'
   | 'deliveries'
+  | 'funds'
+  | 'funds-attention'
+  | 'shifts'
+  | 'late-cash'
   | 'branches'
   | 'registers'
   | 'staff'
@@ -40,8 +45,25 @@ export const hasCapability = (access: PosAccess, capability: string) =>
   Boolean(access.context?.capabilities.includes(capability))
 // Order history is read by any staff member of the branch.
 export const canReadOrders = (access: PosAccess) => (access.context?.capabilities.length ?? 0) > 0
+// The received-funds ledger is read by collectors and resolvers; only
+// resolvers see the attention view and act on payouts.
+export const canReadFunds = (access: PosAccess) =>
+  hasCapability(access, 'pos.payment.resolve') || hasCapability(access, 'pos.payment.collect')
+// Shift management: closing shifts left open needs recovery rights, drawer
+// requests are confirmed by another cash mover or an approver, and approvers
+// grant variance approvals.
+export const canRecoverShifts = (access: PosAccess) => hasCapability(access, 'pos.topology.recover')
+export const canConfirmCash = (access: PosAccess) =>
+  canMoveCash(access.context?.capabilities) || hasCapability(access, 'pos.approval.grant')
+export const canApproveCloses = (access: PosAccess) => hasCapability(access, 'pos.approval.grant')
+export const canManageShifts = (access: PosAccess) =>
+  canRecoverShifts(access) || canConfirmCash(access) || canApproveCloses(access)
 export function visibleNav(page: PosPage, access: PosAccess) {
   if (page === 'orders') return canReadOrders(access)
+  if (page === 'funds') return canReadFunds(access)
+  if (page === 'funds-attention') return hasCapability(access, 'pos.payment.resolve')
+  if (page === 'shifts') return canManageShifts(access)
+  if (page === 'late-cash') return canReconcileCash(access.context?.capabilities)
   // The list stays reachable with delivery switched off, so orders already
   // marked for delivery can still be handed over; only the entry is hidden.
   if (page === 'deliveries')

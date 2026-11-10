@@ -42,7 +42,9 @@ test('a branch manager sees every attention item with its count and links', asyn
   await expect(card(page, 'Ca đang mở').getByTestId('attention-count')).toHaveText('2');
   await expect(card(page, 'Đơn chờ giao').getByTestId('attention-count')).toHaveText('4');
   await expect(card(page, 'Hoàn tiền chưa xong').getByTestId('attention-count')).toHaveText('1');
-  await expect(card(page, 'Khoản thu cần chú ý').getByRole('link')).toHaveCount(0);
+  await expect(card(page, 'Khoản thu cần chú ý').getByRole('link', { name: 'Xem' })).toHaveAttribute('href', '/store_1/funds/attention');
+  await expect(card(page, 'Thu/chi két chờ xác nhận').getByRole('link', { name: 'Xem' })).toHaveAttribute('href', '/store_1/shifts');
+  await expect(card(page, 'Ca đang mở').getByRole('link', { name: 'Xem' })).toHaveAttribute('href', '/store_1/shifts');
   expect(requests.find((r) => r.path === '/pos/cash_movement_requests')?.params).toMatchObject({ branch_id: 'branch_main', status: 'requested' });
   expect(requests.find((r) => r.path === '/pos/deliveries')?.params).toMatchObject({ branch_id: 'branch_main', status: 'pending' });
   expect(requests.find((r) => r.path === '/pos/orders')?.params).toMatchObject({ status: 'refund_pending' });
@@ -52,6 +54,7 @@ test('a branch manager sees every attention item with its count and links', asyn
     const sidebar = page.locator('[data-sidebar="sidebar"]').first();
     await expect(sidebar.getByRole('link', { name: 'Việc cần xử lý' })).toBeVisible();
     await expect(sidebar.getByRole('link', { name: 'Bán hàng' })).toHaveAttribute('href', '/store_1/orders');
+    await expect(sidebar.getByRole('link', { name: 'Tiền', exact: true })).toHaveAttribute('href', '/store_1/funds');
     await expect(sidebar.getByRole('link', { name: 'Thiết lập' })).toHaveCount(0);
   }
   await card(page, 'Đơn chờ giao').getByRole('link', { name: 'Xem' }).click();
