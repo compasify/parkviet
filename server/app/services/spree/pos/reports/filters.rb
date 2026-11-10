@@ -56,7 +56,11 @@ module Spree
         end
 
         def parse_dates
-          today = Time.now.in_time_zone(branch.timezone).to_date
+          today = if report.respond_to?(:business_dated?) && report.business_dated?
+                    BusinessDay.for(branch, Workspace.business_now)
+                  else
+                    Time.now.in_time_zone(branch.timezone).to_date
+                  end
           @from = date(@values['from']) || today
           @to = date(@values['to']) || @from
           raise Invalid, 'The end date is before the start date.' if @to < @from

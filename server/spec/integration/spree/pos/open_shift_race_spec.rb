@@ -96,7 +96,8 @@ RSpec.describe 'POS open shift race', type: :integration do
     attributes = lambda do |member|
       {
         store_id: store.id, branch_id: @branch.id, register_id: @register.id, owner_id: member.id,
-        opening_float: 0, currency: store.default_currency, status: 'open', opened_at: Time.current
+        opening_float: 0, currency: store.default_currency, status: 'open', opened_at: Time.current,
+        business_date: Date.current
       }
     end
     first_inserted = Queue.new

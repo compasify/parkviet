@@ -116,7 +116,7 @@ export function useWorkspaces(
     key: string,
     body: Record<string, unknown>,
     path: string,
-    method: 'POST' | 'DELETE' = 'POST',
+    method: 'POST' | 'DELETE' | 'PATCH' = 'POST',
   ) {
     const result = await commandQueue.enqueue(workspaceId, key, commandDigest(body), () =>
       session.request<{ data: PosWorkspace }>(method, path, {
@@ -163,7 +163,7 @@ export function useWorkspaces(
     workspaceId: string,
     body: Record<string, unknown>,
     path: string,
-    method: 'POST' | 'DELETE' = 'POST',
+    method: 'POST' | 'DELETE' | 'PATCH' = 'POST',
   ) {
     const { editor_id: _editor, ...stableBody } = body;
     const target = method === 'POST' ? path : `${path}:${method.toLowerCase()}`;
@@ -469,7 +469,22 @@ export function useWorkspaces(
       return (await sendIntent(workspace.id, body, `/pos/workspaces/${workspace.id}/delivery`))
         .workspace;
     },
-    // Where the sale came from (counter, facebook, zalo, other).
+    async setServiceMode(workspace: PosWorkspace, serviceMode: string) {
+      const body = {
+        expected_revision: workspace.revision,
+        lease_generation: workspace.lease_generation,
+        editor_id: editorId,
+        service_mode: serviceMode,
+      };
+      return (
+        await sendIntent(
+          workspace.id,
+          body,
+          `/pos/workspaces/${workspace.id}/service_mode`,
+          'PATCH',
+        )
+      ).workspace;
+    },
     async setOrderSource(workspace: PosWorkspace, orderSource: OrderSource) {
       const body = {
         expected_revision: workspace.revision,

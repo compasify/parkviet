@@ -13,6 +13,7 @@ module Spree
       has_one :line_discount_intent, class_name: 'Spree::Pos::LineDiscountIntent', dependent: :destroy
 
       validates :merge_key, presence: true
+      validate :kind_is_registered
 
       def self.build_merge_key(variant_id:, kind:, unit_price:, sale_unit_code:, lot_code: nil, serial_codes: [],
                                tracked_mode: 'none', expiry_on: nil)
@@ -40,6 +41,12 @@ module Spree
             amount: line_discount_intent.allocations.joins(:discount).sum('spree_discounts.amount').to_s('F')
           }
         }
+      end
+
+      private
+
+      def kind_is_registered
+        errors.add(:kind, :inclusion) unless SaleLineKinds.known?(kind)
       end
     end
   end

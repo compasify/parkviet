@@ -30,6 +30,7 @@ import {
   type ReportRow,
   type ReportType,
   startDownload,
+  businessDate,
   todayIn,
   validReportRange,
 } from '../lib/shifts';
@@ -38,6 +39,7 @@ const COLUMNS: Record<ReportType, string[]> = {
   sales: [
     'order_number',
     'sold_at',
+    'business_date',
     'order_source',
     'register',
     'cashier',
@@ -160,6 +162,10 @@ function Cell({
   if (column === 'variance') return <VarianceText variance={String(value)} currency={money} />;
   if (MONEY.has(column)) return <>{formatMoney(String(value), money)}</>;
   if (TIMES.has(column)) return <>{formatInZone(String(value), i18n.language, timezone)}</>;
+  if (column === 'business_date') {
+    const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})/);
+    return <>{match ? `${match[3]}/${match[2]}/${match[1]}` : String(value)}</>;
+  }
   if (CODES[column]) return <>{t(`${CODES[column]}${value}`, { defaultValue: String(value) })}</>;
   return <>{String(value)}</>;
 }
@@ -311,9 +317,10 @@ function Reports() {
   const branch = data?.branches.find((row) => row.id === selection.branchId);
   const branchZone = branch?.timezone ?? data?.store.timezone ?? 'Asia/Ho_Chi_Minh';
   const currency = data?.store.currency ?? 'VND';
-  // Follows the branch day until the reader picks dates.
-  const today = todayIn(branchZone);
   const [type, setType] = useState<ReportType>('sales');
+  const cutoff = branch?.business_day_cutoff ?? '04:00';
+  // Sales follow the business date. Other reports follow the calendar day.
+  const today = type === 'sales' ? businessDate(branchZone, cutoff) : todayIn(branchZone);
   const [range, setRange] = useState<{ from: string; to: string } | null>(null);
   const from = range?.from ?? today;
   const to = range?.to ?? today;
@@ -446,6 +453,9 @@ function Reports() {
             aria-labelledby={`report-tab-${type}`}
           >
             <p className="muted">{t(`reportTabHint_${type}`)}</p>
+            {type === 'sales' ? (
+              <p className="muted">{t('businessDay.reportHint', { cutoff: cutoff.slice(0, 5) })}</p>
+            ) : null}
             {dated ? (
               <fieldset className="report-range-presets">
                 <legend className="visually-hidden">{t('reportRangeQuick')}</legend>

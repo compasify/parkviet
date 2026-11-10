@@ -9,6 +9,8 @@ module Spree
       LEASE_TTL = 120.seconds
       # Where the sale came from; `counter` unless the cashier picks another.
       ORDER_SOURCES = %w[counter facebook zalo other].freeze
+      # How the sale is served. Retail stays `counter`; F&B modules read the value.
+      SERVICE_MODES = %w[counter dine_in takeaway delivery tab timed].freeze
 
       belongs_to :store, class_name: 'Spree::Store'
       belongs_to :branch, class_name: 'Spree::Pos::Branch'
@@ -21,12 +23,25 @@ module Spree
       validates :operational_status, inclusion: { in: %w[editing parked canceled completed] }
       validates :note, length: { maximum: 1000 }
       validates :order_source, inclusion: { in: ORDER_SOURCES }
+      validates :service_mode, inclusion: { in: SERVICE_MODES }
+      validates :business_date, presence: true
       validate :source_is_immutable
+      validate :business_date_is_fixed
+      before_validation :assign_business_date, on: :create
 
       scope :for_store, ->(store) { where(store_id: store.id) }
 
       def self.database_now
         connection.select_value('SELECT clock_timestamp()').to_time
+      end
+
+      # Clock for a business date. Tests freeze Ruby time and not Postgres, so
+      # a frozen clock wins; otherwise the database clock is the one that
+      # matches leases.
+      def self.business_now
+        ruby = Time.current
+        database = database_now
+        (ruby - database).abs > 5 ? ruby : database
       end
 
       def self.editor_digest(editor_id)
@@ -68,7 +83,9 @@ module Spree
           operational_status: operational_status,
           payments: operational_status == 'completed' || TenderAttempt.where(workspace_id: id).where.not(status: %w[canceled failed]).exists?,
           note: note,
-          order_source: order_source
+          order_source: order_source,
+          service_mode: service_mode,
+          business_date: business_date&.iso8601
         }
       end
 
@@ -145,7 +162,8 @@ module Spree
             fee_total: money(order.fee_total),
             manual_discount_total: money(manual_total), included_tax_total: money(order.included_tax_total),
             additional_tax_total: money(order.additional_tax_total), total: money(order.total),
-            currency: order.currency
+            currency: order.currency,
+            taxes: TaxBreakdown.for(order)
           },
           financial: financial_pos
         )
@@ -198,6 +216,18 @@ module Spree
       end
 
       private
+
+      def assign_business_date
+        return if business_date.present? || branch.nil?
+
+        self.business_date = BusinessDay.for(branch, self.class.business_now)
+      end
+
+      def business_date_is_fixed
+        return if new_record?
+
+        errors.add(:business_date, :invalid) if will_save_change_to_business_date?
+      end
 
       def source_is_immutable
         return if new_record?

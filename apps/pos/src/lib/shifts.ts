@@ -437,6 +437,29 @@ export function validReportRange(from: string, to: string, maxDays = 366): boole
 }
 
 // Today's date in a timezone, as YYYY-MM-DD.
+// Business date in a timezone: a wall-clock time before the cutoff (04:00
+// unless the branch says otherwise) belongs to the previous date.
+export function businessDate(timeZone: string, cutoff = '04:00', now = new Date()): string {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).formatToParts(now);
+  const part = (type: string) => parts.find((item) => item.type === type)?.value ?? '';
+  const date = `${part('year')}-${part('month')}-${part('day')}`;
+  const [hour, minute] = cutoff.split(':');
+  const cutoffMinutes = (Number(hour) || 0) * 60 + (Number(minute) || 0);
+  const minutes = (Number(part('hour')) || 0) * 60 + (Number(part('minute')) || 0);
+  if (minutes >= cutoffMinutes) return date;
+  const previous = new Date(`${date}T00:00:00Z`);
+  previous.setUTCDate(previous.getUTCDate() - 1);
+  return previous.toISOString().slice(0, 10);
+}
+
 export function todayIn(timeZone: string, now = new Date()): string {
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone,

@@ -1977,5 +1977,20 @@
   "reportRangeQuick": "Chọn nhanh ngày",
   "reportRange_today": "Hôm nay",
   "reportRange_last7": "7 ngày",
-  "reportRange_month": "Tháng này"
+  "reportRange_month": "Tháng này",
+  "reportCol_business_date": "Ngày kinh doanh",
+  "serviceMode": {
+    "label": "Hình thức phục vụ",
+    "counter": "Tại quầy",
+    "dine_in": "Tại bàn",
+    "takeaway": "Mang đi",
+    "delivery": "Giao hàng",
+    "tab": "Ghi sổ",
+    "timed": "Tính giờ"
+  },
+  "businessDay": {
+    "cutoff": "Giờ chốt ngày kinh doanh",
+    "cutoffHint": "Giờ trước mốc này thuộc ngày kinh doanh hôm trước. Mặc định 04:00.",
+    "reportHint": "Doanh số theo ngày kinh doanh, chốt lúc {{cutoff}}."
+  }
 }

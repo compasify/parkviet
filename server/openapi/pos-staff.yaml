@@ -1,0 +1,207 @@
+openapi: 3.1.0
+info:
+  title: Parkviet POS staff API
+  version: '1'
+  description: >
+    Staff contract for context, catalog, workspaces and approvals. Device
+    paths are the shape a register client calls. The current admin routes
+    return the same component schemas.
+paths:
+  /api/v3/pos_device/context:
+    get:
+      operationId: posContext
+      responses:
+        '200':
+          description: Staff context
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Context'
+  /api/v3/pos_device/catalog:
+    get:
+      operationId: posCatalog
+      responses:
+        '200':
+          description: Products the branch may sell
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CatalogItem'
+  /api/v3/pos_device/workspaces:
+    post:
+      operationId: posWorkspaceCreate
+      responses:
+        '201':
+          description: Draft workspace
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Workspace'
+  /api/v3/pos_device/workspaces/{id}:
+    get:
+      operationId: posWorkspaceShow
+      responses:
+        '200':
+          description: Workspace
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Workspace'
+  /api/v3/pos_device/workspaces/{id}/items:
+    post:
+      operationId: posWorkspaceAddItem
+      responses:
+        '200':
+          description: Workspace after the line change
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Workspace'
+  /api/v3/pos_device/approvals:
+    post:
+      operationId: posApprovalCreate
+      responses:
+        '201':
+          description: Approval
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Approval'
+components:
+  schemas:
+    Context:
+      type: object
+      additionalProperties: true
+      required: [staff, store, administration]
+      properties:
+        staff:
+          type: object
+          additionalProperties: true
+          required: [id, email]
+          properties:
+            id:
+              type: string
+            email:
+              type: string
+        store:
+          type: object
+          additionalProperties: true
+          required: [id, currency]
+          properties:
+            id:
+              type: string
+            currency:
+              type: string
+        administration:
+          type: object
+          additionalProperties: true
+          required: [read, write]
+          properties:
+            read:
+              type: boolean
+            write:
+              type: boolean
+    CatalogItem:
+      type: object
+      additionalProperties: true
+      required: [product_id, price, stock_on_hand]
+      properties:
+        product_id:
+          type: string
+        price:
+          type: string
+        stock_on_hand:
+          type: number
+    TaxRow:
+      type: object
+      additionalProperties: true
+      required: [rate, label, amount]
+      properties:
+        rate:
+          type: string
+        label:
+          type: string
+        amount:
+          type: string
+    Workspace:
+      type: object
+      additionalProperties: true
+      required: [id, revision, operational_status, service_mode, business_date, totals]
+      properties:
+        id:
+          type: string
+        revision:
+          type: integer
+        operational_status:
+          type: string
+        service_mode:
+          type: string
+          enum: [counter, dine_in, takeaway, delivery, tab, timed]
+        business_date:
+          type: string
+          format: date
+        totals:
+          type: object
+          additionalProperties: true
+          required: [taxes]
+          properties:
+            taxes:
+              type: array
+              items:
+                type: object
+                additionalProperties: true
+                required: [rate, label, amount]
+                properties:
+                  rate:
+                    type: string
+                  label:
+                    type: string
+                  amount:
+                    type: string
+    Approval:
+      type: object
+      additionalProperties: true
+      required: [id, branch_id, approver_id, requester_id, action, currency, revision, status, expires_at]
+      properties:
+        id:
+          type: string
+        branch_id:
+          type: string
+        approver_id:
+          type: string
+        requester_id:
+          type: string
+        action:
+          type: string
+        amount:
+          type: [string, 'null']
+        currency:
+          type: string
+        revision:
+          type: [string, integer]
+        status:
+          type: string
+        expires_at:
+          type: string

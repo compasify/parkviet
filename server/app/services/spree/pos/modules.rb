@@ -11,7 +11,7 @@ module Spree
     # Filled once per code load by `config/initializers/pos_modules.rb`
     # (`define!` validates the dependency graph and freezes the registry).
     module Modules
-      Definition = Data.define(:key, :group, :depends_on, :status) do
+      Definition = Data.define(:key, :group, :depends_on, :status, :entrypoints) do
         def available?
           status == AVAILABLE
         end
@@ -37,12 +37,12 @@ module Spree
           @definitions = {}
         end
 
-        def register(key:, group:, depends_on: [], status: AVAILABLE)
+        def register(key:, group:, depends_on: [], status: AVAILABLE, entrypoints: [])
           key = key.to_s
           raise Invalid, "Module #{key.inspect} is registered twice." if definitions.key?(key)
 
           definitions[key] = Definition.new(key: key, group: group.to_s, depends_on: Array(depends_on).map(&:to_s).freeze,
-                                            status: status.to_s)
+                                            status: status.to_s, entrypoints: Array(entrypoints).map(&:to_s).freeze)
         end
 
         def planned(*keys, group:)
@@ -75,6 +75,17 @@ module Spree
               if definition.available? && !target.available?
                 raise Invalid, "Module #{definition.key.inspect} depends on planned module #{dependency.inspect}."
               end
+            end
+            next unless definition.available?
+
+            if definition.entrypoints.empty?
+              raise Invalid, "Module #{definition.key.inspect} is available but declares no route or workflow."
+            end
+
+            definition.entrypoints.each do |entrypoint|
+              entrypoint.constantize
+            rescue NameError
+              raise Invalid, "Module #{definition.key.inspect} entrypoint #{entrypoint.inspect} is not defined."
             end
           end
           definitions.each_key { |key| visit(definitions, key, []) }

@@ -4,9 +4,14 @@ module Spree
   module Pos
     module Workspaces
       class Create
-        def self.call(store:, staff:, key:, editor_id:, register_id: nil, branch_id: nil)
+        def self.call(store:, staff:, key:, editor_id:, register_id: nil, branch_id: nil, service_mode: nil)
+          mode = service_mode.presence&.to_s || 'counter'
+          unless Workspace::SERVICE_MODES.include?(mode)
+            raise Conflict.new('Service mode is invalid.', reason: 'service_mode_invalid')
+          end
+
           editor_digest = Workspace.editor_digest(editor_id)
-          payload = { 'command' => 'create', 'register_id' => register_id.to_s, 'editor_digest' => editor_digest }
+          payload = { 'command' => 'create', 'register_id' => register_id.to_s, 'editor_digest' => editor_digest, 'service_mode' => mode }
           payload['branch_id'] = branch_id.to_s if register_id.blank?
           selection_shift = lambda do
             if register_id.present?
@@ -52,7 +57,9 @@ module Spree
               lease_holder: staff,
               lease_editor_digest: editor_digest,
               lease_expires_at: Workspace.database_now + Workspace::LEASE_TTL,
-              operational_status: 'editing'
+              operational_status: 'editing',
+              service_mode: mode,
+              business_date: BusinessDay.for(shift.branch, Workspace.business_now)
             )
             AuditEntry.record!(store: store, actor: staff, action: 'workspace.create', subject: workspace)
             workspace.to_pos

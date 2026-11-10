@@ -36,6 +36,7 @@ import { DisplayPinControl } from './display-pin-control';
 import { NoteForm } from './note-form';
 import { OrderLines } from './order-lines';
 import { OrderSourcePicker } from './order-source-picker';
+import { ServiceModeControl } from './service-mode-control';
 import { PaymentPanel } from './payment-panel';
 import { PosIcon } from './pos-icon';
 import { usePosSelection } from './pos-selection';
@@ -1071,6 +1072,16 @@ export function WorkspaceTabs() {
                 }
                 onClear={() => command(active, (current) => workspaces.clearCustomer(current))}
               />
+              <ServiceModeControl
+                value={active.service_mode}
+                enabled={data?.modules?.['fnb.menu'] === true}
+                disabled={sourceDisabled}
+                onPick={(mode) =>
+                  void run(() =>
+                    command(active, (current) => workspaces.setServiceMode(current, mode)),
+                  )
+                }
+              />
               <OrderSourcePicker
                 value={active.order_source}
                 disabled={sourceDisabled}
@@ -1200,6 +1211,14 @@ export function WorkspaceTabs() {
                         </strong>
                       </div>
                     ) : null}
+                    {(active.totals.taxes ?? []).map((tax) => (
+                      <div className="checkout-line" key={`${tax.rate}:${tax.label}`}>
+                        <span>
+                          {tax.label} ({tax.rate})
+                        </span>
+                        <strong>{formatMoney(tax.amount, active.totals?.currency ?? 'VND')}</strong>
+                      </div>
+                    ))}
                     <div className="checkout-line checkout-total">
                       <span>{t('orderTotal')}</span>
                       <strong>{formatMoney(active.totals.total, active.totals.currency)}</strong>

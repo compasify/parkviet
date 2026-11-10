@@ -162,7 +162,9 @@ RSpec.describe 'POS order sources API', type: :request do
       Spree::Pos::Workspaces::Complete.call(**editing_args(other))
 
       first = source_rows(report(reader, from: '2026-11-05', to: '2026-11-05'))
-      expect(first['zalo']).to include('orders' => 1, 'sales_total' => '30000.0')
+      expect(first['zalo']).to include('orders' => 2, 'sales_total' => '50000.0')
+      sixth = source_rows(report(reader, from: '2026-11-06', to: '2026-11-06'))
+      expect(sixth['zalo']).to include('orders' => 0, 'sales_total' => '0.0')
       both = source_rows(report(reader, from: '2026-11-05', to: '2026-11-06'))
       expect(both['zalo']).to include('orders' => 2, 'sales_total' => '50000.0')
       today = Time.now.in_time_zone(branch.timezone).to_date.iso8601

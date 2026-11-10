@@ -19,7 +19,8 @@ module Spree
       validates :closing_reason, length: { maximum: 200 }
 
       validates :opening_float, numericality: { greater_than_or_equal_to: 0 }
-      validates :currency, :status, presence: true
+      validates :currency, :status, :business_date, presence: true
+      before_validation :assign_business_date, on: :create
       validates :status, inclusion: { in: %w[open closed] }
       validate :same_store_drawer
       validate :one_open_shift, on: :create
@@ -38,6 +39,7 @@ module Spree
           owner_id: owner.prefixed_id,
           opened_at: opened_at&.iso8601,
           closed_at: closed_at&.iso8601,
+          business_date: business_date&.iso8601,
           revision: revision,
           counted: !closing_counted.nil?,
           reports: false
@@ -49,6 +51,12 @@ module Spree
       end
 
       private
+
+      def assign_business_date
+        return if business_date.present? || branch.nil?
+
+        self.business_date = BusinessDay.for(branch, Workspace.business_now)
+      end
 
       def closed_is_final
         raise ActiveRecord::ReadOnlyRecord, 'A closed shift cannot change.' if status_in_database == 'closed'

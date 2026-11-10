@@ -40,7 +40,8 @@ module Spree
               opening_float: amount,
               currency: store.default_currency,
               status: 'open',
-              opened_at: Time.current
+              opened_at: Time.current,
+              business_date: BusinessDay.for(branch, Workspace.business_now)
             )
             AuditEntry.record!(
               store: store,

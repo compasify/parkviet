@@ -13,6 +13,8 @@
   "cashier",
   "document.number",
   "document.time",
+  "document.business_date",
+  "document.taxes",
   "customer.name",
   "customer.phone",
   "customer.address"

@@ -49,7 +49,8 @@ module Spree
                 register_id: params[:register_id],
                 branch_id: params[:branch_id],
                 key: key,
-                editor_id: params[:editor_id]
+                editor_id: params[:editor_id],
+                service_mode: params[:service_mode]
               )
               render json: { data: result }, status: :created
             end

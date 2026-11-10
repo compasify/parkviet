@@ -40,6 +40,7 @@ module Spree
       # Must be accepted in device UAT before a branch relies on the display.
       validates :display_freshness_ttl_seconds, numericality: { only_integer: true, in: 5..120 }, allow_nil: true
       validates :timezone, format: { with: /\A[A-Za-z0-9_+\-\/]{1,64}\z/ }
+      validates :business_day_cutoff, presence: true
       validate :locations_belong_to_store
       validate :stock_location_fixed_for_open_drafts, on: :update
 
@@ -68,11 +69,20 @@ module Spree
           variance_threshold: variance_threshold&.to_s('F'),
           display_freshness_ttl_seconds: display_freshness_ttl_seconds,
           lot_selection: lot_selection, adjustment_approval_threshold: adjustment_approval_threshold,
-          profile_key: profile_key, profile_version: profile_version
+          profile_key: profile_key, profile_version: profile_version,
+          business_day_cutoff: cutoff_label
         }
       end
 
       private
+
+      def cutoff_label
+        value = business_day_cutoff
+        return '04:00' if value.blank?
+        return value.strftime('%H:%M') if value.respond_to?(:strftime)
+
+        value.to_s[/\d{2}:\d{2}/] || '04:00'
+      end
 
       def keep_receiving_note
         source = receiving_config.is_a?(Hash) ? receiving_config : {}

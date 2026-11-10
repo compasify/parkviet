@@ -37,6 +37,7 @@ RSpec.describe 'POS topology', type: :request do
 
     get '/api/v3/admin/pos/context', headers: headers, as: :json
     expect(response).to have_http_status(:ok)
+    expect_pos_schema!(response, 'Context')
     expect(response.parsed_body['administration']).to eq('read' => true, 'write' => true)
     expect(response.parsed_body['capabilities']).not_to include('pos.discount.apply', 'pos.price.override')
 
@@ -232,6 +233,7 @@ RSpec.describe 'POS topology', type: :request do
       expires_at: 1.hour.from_now.iso8601
     }, as: :json
     expect(response).to have_http_status(:created)
+    expect_pos_schema!(response, 'Approval')
     approval = Spree::Pos::Approval.find_by_prefix_id!(response.parsed_body.dig('data', 'id'))
     second_result = Spree::Pos::Workspaces::Create.call(store: store, staff: requester, register_id: register.prefixed_id, key: 'approval-other', editor_id: SecureRandom.uuid)
     other_workspace = Spree::Pos::Workspace.find_by_prefix_id!(second_result['id'])

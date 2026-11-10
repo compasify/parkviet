@@ -121,6 +121,8 @@ module Spree
           'currency' => order.currency, 'cashier' => StaffName.call(workspace.shift.owner),
           'customer' => customer(workspace.pos_customer),
           'lines' => lines,
+          'business_date' => workspace.business_date&.iso8601,
+          'taxes' => TaxBreakdown.for(order).map { |row| row.transform_keys(&:to_s) },
           'totals' => {
             'item_total' => money(order.item_total), 'discount_total' => money(order.discounts.sum(:amount)),
             'fee_total' => money(order.fee_total),

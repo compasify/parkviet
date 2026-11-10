@@ -1977,5 +1977,20 @@
   "reportRangeQuick": "Quick dates",
   "reportRange_today": "Today",
   "reportRange_last7": "7 days",
-  "reportRange_month": "This month"
+  "reportRange_month": "This month",
+  "reportCol_business_date": "Business date",
+  "serviceMode": {
+    "label": "Service",
+    "counter": "Counter",
+    "dine_in": "Dine in",
+    "takeaway": "Takeaway",
+    "delivery": "Delivery",
+    "tab": "Tab",
+    "timed": "Timed"
+  },
+  "businessDay": {
+    "cutoff": "Business day cutoff",
+    "cutoffHint": "A time before this cutoff belongs to the previous business day. Default 04:00.",
+    "reportHint": "Sales use the business date, which rolls at {{cutoff}}."
+  }
 }

@@ -9,3 +9,5 @@
 #   end
 
 Spree::Core::Engine.load_seed if defined?(Spree::Core)
+load Rails.root.join('db/seeds/pos_tax_categories.rb')
+load Rails.root.join('db/seeds/pos_tax_categories.rb')

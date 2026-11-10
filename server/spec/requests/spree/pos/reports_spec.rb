@@ -44,6 +44,10 @@ RSpec.describe 'POS reports API', type: :request do
     Time.now.in_time_zone(branch.timezone).to_date.iso8601
   end
 
+  def business_today
+    Spree::Pos::BusinessDay.for(branch, Spree::Pos::Workspace.business_now).iso8601
+  end
+
   describe 'scope' do
     before do
       paid_sale(store, branch, cashier: cashier, price: 40_000)
@@ -51,13 +55,13 @@ RSpec.describe 'POS reports API', type: :request do
     end
 
     it 'shows a cashier only their own shifts and a report reader the whole branch' do
-      own = report(cashier, :sales, from: today, to: today)
+      own = report(cashier, :sales, from: business_today, to: business_today)
       expect(response).to have_http_status(:ok)
       expect(own['data'].map { |row| row['total'] }).to eq(['40000.0'])
       expect(own['meta']).to include('scope' => 'own', 'timezone' => 'Asia/Ho_Chi_Minh')
       expect(own.dig('meta', 'summary')).to include('orders' => 1, 'sales_total' => '40000.0')
 
-      all = report(reader, :sales, from: today, to: today)
+      all = report(reader, :sales, from: business_today, to: business_today)
       expect(all['data'].map { |row| row['total'] }).to contain_exactly('40000.0', '60000.0')
       expect(all.dig('meta', 'summary')).to include('sales_total' => '100000.0')
       receipts = report(reader, :receipts, from: today, to: today, kind: 'cash')
@@ -113,10 +117,12 @@ RSpec.describe 'POS reports API', type: :request do
       close_shift(shift, cashier)
       travel_back
 
-      # 23:30 and 00:30 local are the same UTC day; the branch days differ.
-      expect(report(reader, :sales, from: '2026-11-05', to: '2026-11-05')['data'].map { |row| row['total'] }).to eq(['30000.0'])
-      expect(report(reader, :sales, from: '2026-11-06', to: '2026-11-06')['data'].map { |row| row['total'] }).to eq(['20000.0'])
-      sold_at = report(reader, :sales, from: '2026-11-06', to: '2026-11-06')['data'].first['sold_at']
+      # 00:30 is before the 04:00 cutoff, so both sales belong to 5 November.
+      fifth = report(reader, :sales, from: '2026-11-05', to: '2026-11-05')['data']
+      expect(fifth.map { |row| row['total'] }).to contain_exactly('30000.0', '20000.0')
+      expect(fifth.map { |row| row['business_date'] }.uniq).to eq(['2026-11-05'])
+      expect(report(reader, :sales, from: '2026-11-06', to: '2026-11-06')['data']).to be_empty
+      sold_at = fifth.find { |row| row['total'] == '20000.0' }['sold_at']
       expect(sold_at).to start_with('2026-11-06T00:30:00').and end_with('+07:00')
 
       %w[2026-11-05 2026-11-06].each do |day|

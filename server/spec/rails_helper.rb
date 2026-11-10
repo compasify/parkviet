@@ -95,3 +95,8 @@ require_relative 'support/pos_feature_helpers'
 require_relative 'support/pos_module_helpers'
 # Existing selling fixtures explicitly have a POS channel/publication by default.
 require_relative 'support/pos_channel_helpers'
+require_relative 'support/pos_schema_helpers'
+
+RSpec.configure do |config|
+  config.include PosSchemaHelpers, type: :request
+end

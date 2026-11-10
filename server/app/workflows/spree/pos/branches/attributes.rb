@@ -18,6 +18,22 @@ module Spree
           attrs[:name] = params[:name] if params.key?(:name) || record.nil?
           attrs[:code] = params[:code] if params.key?(:code) || record.nil?
           attrs[:timezone] = params[:timezone] if params.key?(:timezone) || record.nil?
+          if params.key?(:business_day_cutoff)
+            value = params[:business_day_cutoff].to_s.strip
+            unless value.match?(/\A([01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?\z/)
+              raise Conflict, 'Business day cutoff is invalid.'
+            end
+
+            attrs[:business_day_cutoff] = value.length == 5 ? "#{value}:00" : value
+          end
+          if params.key?(:business_day_cutoff)
+            value = params[:business_day_cutoff].to_s.strip
+            unless value.match?(/\A([01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?\z/)
+              raise Conflict, 'Business day cutoff is invalid.'
+            end
+
+            attrs[:business_day_cutoff] = value.length == 5 ? "#{value}:00" : value
+          end
           attrs[:stock_location] = location!(store, params[:stock_location_id]) if params.key?(:stock_location_id) || record.nil?
           if params.key?(:receiving_stock_location_id)
             prefixed = params[:receiving_stock_location_id]

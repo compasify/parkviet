@@ -6,6 +6,9 @@ import type { LotSelection, SaleLineTrace, WorkspaceTrace } from '../traceabilit
 export const ORDER_SOURCES = ['counter', 'facebook', 'zalo', 'other'] as const;
 export type OrderSource = (typeof ORDER_SOURCES)[number];
 
+export const SERVICE_MODES = ['counter', 'dine_in', 'takeaway', 'delivery', 'tab', 'timed'] as const;
+export type ServiceMode = (typeof SERVICE_MODES)[number];
+
 export type PosBranch = {
   id: string;
   name: string;
@@ -26,6 +29,8 @@ export type PosBranch = {
   // Industry profile of the branch; absent on servers without profiles.
   profile_key?: string;
   profile_version?: number;
+  // Wall-clock time the business day rolls, HH:MM. Missing means 04:00.
+  business_day_cutoff?: string;
 };
 
 export type PosRegister = {
@@ -45,6 +50,7 @@ export type PosShift = {
   currency: string;
   owner_id: string;
   opened_at: string | null;
+  business_date?: string;
   reports: false;
 };
 
@@ -120,6 +126,13 @@ export type PosTotals = {
   fee_total?: string;
   total: string;
   currency: string;
+  taxes?: PosTaxRow[];
+};
+
+export type PosTaxRow = {
+  rate: string;
+  label: string;
+  amount: string;
 };
 
 // A sale to deliver: who takes it, the delivery fee (already in the order
@@ -461,6 +474,10 @@ export type PosWorkspace = {
   note?: string | null;
   // Where the sale came from; missing on older payloads (read as counter).
   order_source?: OrderSource;
+  // How the sale is served. Missing on older payloads (read as counter).
+  service_mode?: ServiceMode;
+  // Stamped once when the draft is created. Missing on older payloads.
+  business_date?: string;
   customer?: PosCustomer | null;
   line_items?: PosLineItem[];
   discount?: PosDiscount | null;

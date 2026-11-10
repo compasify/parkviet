@@ -13,6 +13,10 @@ export const branchSchema = z.object({
     .trim()
     .regex(/^[a-z0-9][a-z0-9_-]{0,31}$/, 'adminCodeHint'),
   timezone: z.string().trim().min(1, 'invalid').max(64, 'invalid'),
+  business_day_cutoff: z
+    .string()
+    .trim()
+    .regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'businessDayCutoffInvalid'),
   stock_location_id: z.string().min(1, 'adminChooseWarehouse'),
   receiving_stock_location_id: z.string(),
   receiving_note: z.string().trim().max(200, 'invalid'),

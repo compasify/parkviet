@@ -37,6 +37,7 @@ RSpec.describe 'POS workspace items', type: :request do
     post "/api/v3/admin/pos/workspaces/#{workspace.prefixed_id}/items", headers: headers.merge('Idempotency-Key' => key),
       params: base.merge(variant_id: product.default_variant.prefixed_id, quantity: 1, idempotency_key: key), as: :json
     expect(response).to have_http_status(:ok)
+    expect_pos_schema!(response, 'Workspace')
     line_id = response.parsed_body.dig('data', 'line_items', 0, 'id')
     expect(response.parsed_body.dig('data', 'totals', 'total')).to eq('100.0')
 

@@ -95,7 +95,7 @@ RSpec.describe 'POS staff context', type: :request do
     body = response.parsed_body
     expect(body.keys).to contain_exactly(
         'staff', 'store', 'capabilities', 'features', 'modules', 'module_usage', 'profile', 'onboarding', 'branches', 'registers', 'shift',
-        'selection', 'administration'
+        'selection', 'administration', 'sales_channel'
     )
     expect(body['staff']).to eq(
       'id' => user.prefixed_id,

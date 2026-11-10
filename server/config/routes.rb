@@ -227,6 +227,8 @@ Rails.application.routes.draw do
               post 'delivery', to: 'workspaces/deliveries#assign'
               post 'delivery/clear', to: 'workspaces/deliveries#clear'
               post 'order_source', to: 'workspaces/order_sources#assign'
+              patch 'service_mode', to: 'workspaces/service_modes#update'
+              patch 'service_mode', to: 'workspaces/service_modes#update'
               member do
                 post 'discount/clear', to: 'workspaces/discounts#clear'
                 post :park

@@ -3,6 +3,7 @@ import {
   absoluteAmount,
   addsDrawerCash,
   blockedChecklist,
+  businessDate,
   canExportReports,
   canMoveCash,
   canReconcileCash,
@@ -119,5 +120,13 @@ describe('report dates', () => {
     const instant = new Date('2026-11-06T18:30:00Z');
     expect(todayIn('Asia/Ho_Chi_Minh', instant)).toBe('2026-11-07');
     expect(todayIn('UTC', instant)).toBe('2026-11-06');
+  });
+
+  it('rolls the business date at the cutoff', () => {
+    const zone = 'Asia/Ho_Chi_Minh';
+    expect(businessDate(zone, '04:00', new Date('2026-11-05T16:59:00Z'))).toBe('2026-11-05');
+    expect(businessDate(zone, '04:00', new Date('2026-11-05T17:00:00Z'))).toBe('2026-11-05');
+    expect(businessDate(zone, '04:00', new Date('2026-11-05T20:59:00Z'))).toBe('2026-11-05');
+    expect(businessDate(zone, '04:00', new Date('2026-11-05T21:00:00Z'))).toBe('2026-11-06');
   });
 });

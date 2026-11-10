@@ -75,6 +75,8 @@ export type TemplateData = {
   register: string | null;
   cashier: string | null;
   time: string;
+  businessDate: string;
+  taxesText: string;
   customerName: string | null;
   customerPhone?: string | null;
   // Where to deliver, one printable line.
@@ -278,6 +280,41 @@ function saleLine(line: Doc, currency: string, t: Translate): LineData {
   };
 }
 
+function rateLabel(rate: string): string {
+  const value = Number(rate);
+  if (!Number.isFinite(value)) return rate;
+  const percent = Math.abs(value) <= 1 ? value * 100 : value;
+  const rounded = Math.round(percent * 100) / 100;
+  return `${Number.isInteger(rounded) ? rounded.toFixed(0) : String(rounded)}%`;
+}
+
+export function formatBusinessDate(value: string | null): string {
+  const match = value?.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return match ? `${match[3]}/${match[2]}/${match[1]}` : '';
+}
+
+function taxTableRows(taxes: unknown, currency: string, t: Translate): DataRow<TotalField>[] {
+  return rows(taxes).flatMap((row) => {
+    const amount = str(row.amount);
+    if (!amount || !nonZero(amount)) return [];
+    const label = str(row.label) ?? t('receiptTax');
+    const rate = str(row.rate);
+    return [
+      {
+        field: null,
+        label: rate ? `${label} (${rateLabel(rate)})` : label,
+        value: formatMoney(amount, currency),
+      },
+    ];
+  });
+}
+
+export function taxesSummary(taxes: unknown, currency: string, t: Translate): string {
+  return taxTableRows(taxes, currency, t)
+    .map((row) => `${row.label}: ${row.value}`)
+    .join('; ');
+}
+
 function saleTotals(document: Doc, currency: string, t: Translate): DataRow<TotalField>[] {
   const totals = obj(document.totals) ?? {};
   const money = (value: unknown) => formatMoney(str(value), currency);
@@ -290,18 +327,22 @@ function saleTotals(document: Doc, currency: string, t: Translate): DataRow<Tota
       label: t('receiptDiscount'),
       value: money(totals.discount_total),
     });
-  if (nonZero(str(totals.additional_tax_total)))
-    result.push({
-      field: 'tax',
-      label: t('receiptTax'),
-      value: money(totals.additional_tax_total),
-    });
-  if (nonZero(str(totals.included_tax_total)))
-    result.push({
-      field: 'included_tax',
-      label: t('receiptIncludedTax'),
-      value: money(totals.included_tax_total),
-    });
+  const breakdown = taxTableRows(document.taxes, currency, t);
+  if (breakdown.length > 0) result.push(...breakdown);
+  else {
+    if (nonZero(str(totals.additional_tax_total)))
+      result.push({
+        field: 'tax',
+        label: t('receiptTax'),
+        value: money(totals.additional_tax_total),
+      });
+    if (nonZero(str(totals.included_tax_total)))
+      result.push({
+        field: 'included_tax',
+        label: t('receiptIncludedTax'),
+        value: money(totals.included_tax_total),
+      });
+  }
   result.push({
     field: 'total',
     label: t('receiptTotal'),
@@ -459,8 +500,12 @@ export function snapshotData(receipt: ReceiptSnapshot, t: Translate): TemplateDa
   const zone = str(document.timezone) ?? 'Asia/Ho_Chi_Minh';
   const money = (value: unknown) => formatMoney(str(value), currency);
   const time = formatDocumentTime(str(document.at) ?? receipt.issued_at, zone);
+  const businessDate = formatBusinessDate(str(document.business_date));
+  const taxesText = taxesSummary(document.taxes, currency, t);
   const cashier = str(document.cashier);
   const meta: DataRow<MetaField>[] = [{ field: 'time', label: t('receiptTime'), value: time }];
+  if (businessDate)
+    meta.push({ field: null, label: t('receiptBusinessDate'), value: businessDate });
   if (cashier) meta.push({ field: 'cashier', label: t('receiptCashier'), value: cashier });
   if (str(document.order_number))
     meta.push({
@@ -614,6 +659,8 @@ export function snapshotData(receipt: ReceiptSnapshot, t: Translate): TemplateDa
     register: str(document.register),
     cashier,
     time,
+    businessDate,
+    taxesText,
     customerName: str(customer?.name),
     customerPhone: str(customer?.phone),
     customerAddress: str(customer?.address),
@@ -684,6 +731,7 @@ export function prebillData(
         label: t('receiptDiscount'),
         value: money(totals.discount_total),
       });
+    totalRows.push(...taxTableRows(totals.taxes, currency, t));
     totalRows.push({
       field: 'total',
       label: t('receiptTotal'),
@@ -714,6 +762,8 @@ export function prebillData(
     ...placeData(place),
     cashier: null,
     time,
+    businessDate: formatBusinessDate(workspace.business_date ?? null),
+    taxesText: taxesSummary(workspace.totals?.taxes, currency, t),
     customerName: workspace.customer?.name || null,
     customerPhone: workspace.customer?.phone || null,
     customerAddress: workspace.customer?.address || null,
@@ -795,7 +845,9 @@ export function paymentTicketData(
         labelSuffix: workspace.coupon ? ` (${workspace.coupon.code})` : undefined,
         value: money(workspace.totals.discount_total),
       });
-    if (nonZero(workspace.totals.additional_tax_total))
+    const breakdown = taxTableRows(workspace.totals.taxes, currency, t);
+    if (breakdown.length > 0) totals.push(...breakdown);
+    else if (nonZero(workspace.totals.additional_tax_total))
       totals.push({
         field: 'tax',
         label: t('receiptTax'),
@@ -839,6 +891,8 @@ export function paymentTicketData(
     ...placeData(names),
     cashier: names.cashier || null,
     time,
+    businessDate: formatBusinessDate(workspace.business_date ?? null),
+    taxesText: taxesSummary(workspace.totals?.taxes, currency, t),
     customerName: workspace.customer?.name || null,
     customerPhone: workspace.customer?.phone || null,
     customerAddress: workspace.customer?.address || null,

@@ -9,8 +9,14 @@ module Spree
       # never reduce the sale rows; the summary shows them separately.
       class Sales < Base
         ENUMS = { 'section' => %w[sales returns], 'order_source' => Workspace::ORDER_SOURCES }.freeze
-        COLUMNS = %w[order_number sold_at order_source register shift_id cashier item_total adjustment_total total
-                     currency].freeze
+        COLUMNS = %w[order_number sold_at business_date order_source register shift_id cashier item_total adjustment_total
+                     total currency].freeze
+
+        # Sales belong to the business date stamped on the workspace, not the
+        # calendar day of completed_at. Returns stay on the time they were received.
+        def self.business_dated?
+          true
+        end
         RETURN_COLUMNS = %w[return_id order_number returned_at sale_branch receiver entitlement_total credit_note_amount
                             refund_entitlement currency].freeze
 
@@ -64,7 +70,10 @@ module Spree
           workspaces = workspaces.where(register_id: filters.register.id) if filters.register
           workspaces = workspaces.where(shift_id: filters.shift.id) if filters.shift
           workspaces = workspaces.where(shift_id: Shift.where(owner_id: filters.cashier.id).select(:id)) if filters.cashier
-          within_range(Spree::Order.complete.where(id: workspaces.select(:order_id)), 'spree_orders.completed_at')
+          orders = Spree::Order.complete.where(id: workspaces.select(:order_id))
+          return orders if filters.from.nil?
+
+          orders.where(id: workspaces.where(business_date: filters.from..filters.to).select(:order_id))
         end
 
         def returns
@@ -86,7 +95,8 @@ module Spree
           workspaces = Workspace.where(order_id: orders.map(&:id)).includes(:register, shift: :owner).index_by(&:order_id)
           orders.map do |order|
             workspace = workspaces[order.id]
-            { order_number: order.number, sold_at: local(order.completed_at), order_source: workspace&.order_source,
+            { order_number: order.number, sold_at: local(order.completed_at),
+              business_date: workspace&.business_date&.iso8601, order_source: workspace&.order_source,
               register: workspace&.register&.code,
               shift_id: workspace&.shift&.prefixed_id, cashier: StaffName.call(workspace&.shift&.owner),
               item_total: money(order.item_total), adjustment_total: money(order.adjustment_total),

@@ -36,6 +36,7 @@ Hồ sơ ngành và module bán lẻ theo chi nhánh (wizard Thiết lập cửa
 ### Ranh giới, không hứa thay mọi hệ thống bán lẻ
 
 - Không thêm F&B, ERP/kế toán tổng hợp, loyalty engine mới, marketplace seller settlement, SaaS đa merchant, offline-finalize, acquiring/thẻ tích hợp trực tiếp trong đợt này.
+  Ghi chú (10/11/2026): câu trên là ranh giới của đợt bán lẻ. Phạm vi F&B và giải trí nằm ở [ADR 0001](../../../docs/adr/0001-pos-fnb-scope.md).
 - Hóa đơn điện tử có giá trị pháp lý cần adapter/đối tác và quy trình riêng; **bill POS không phải hóa đơn điện tử**. UI có thể lưu yêu cầu xuất hóa đơn/thông tin khách cho bước tích hợp sau, không báo đã phát hành.
 - Catalog, nhập hàng, stock transfers và cấu hình khuyến mãi đầy đủ tận dụng dashboard hiện có; POS có tồn kho tra cứu và thao tác bán/đổi trả, không viết lại back office.
 - API core hiện dùng số lượng nguyên nhưng **hàng cân/quy đổi/serial/lô không được bỏ khỏi release đầy đủ**. Thiết kế representation ở mục 14 và integration qualification phase1 là blocking gate; không ép `1.25` vào integer API hoặc chỉ lưu traceability bằng metadata.

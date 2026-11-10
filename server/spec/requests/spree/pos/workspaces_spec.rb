@@ -56,7 +56,10 @@ RSpec.describe 'POS workspaces', type: :request do
 
     post '/api/v3/admin/pos/workspaces', headers: headers, params: { register_id: register.prefixed_id, editor_id: editor_id }, as: :json
     expect(response).to have_http_status(:created)
+    expect_pos_schema!(response, 'Workspace')
     body = response.parsed_body.fetch('data')
+    expect(body['service_mode']).to eq('counter')
+    expect(body['business_date']).to match(/\A\d{4}-\d{2}-\d{2}\z/)
     expect(body['payments']).to be(false)
     expect(body['register_id']).to eq(register.prefixed_id)
     workspace = Spree::Pos::Workspace.find_by_prefix_id!(body['id'])

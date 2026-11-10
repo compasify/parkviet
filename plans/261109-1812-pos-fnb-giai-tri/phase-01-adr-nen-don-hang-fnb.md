@@ -125,10 +125,10 @@ Migration: `add_service_mode_and_business_date_to_pos_workspaces`, `add_business
 
 ## Tiêu chí xong
 
-- [ ] ADR đã merge, spec cũ có dòng trỏ sang ADR.
-- [ ] Workspace và Shift có `business_date` đúng theo cutoff; báo cáo nhóm theo trường này.
-- [ ] `service_mode` tạo và đổi được, có audit; bán lẻ luôn là `counter`.
-- [ ] Registry `SaleLineKinds` có 6 kind; DB nhận `menu`, `timed`, `cover`.
-- [ ] Một đơn có hai thuế suất in ra đúng bảng thuế; đổi rate bằng dữ liệu, không sửa code.
-- [ ] `pos-staff.yaml` có các endpoint lõi; request spec của các endpoint đó kiểm schema.
+- [x] ADR đã merge, spec cũ có dòng trỏ sang ADR.
+- [x] Workspace và Shift có `business_date` đúng theo cutoff; báo cáo nhóm theo trường này.
+- [x] `service_mode` tạo và đổi được, có audit; bán lẻ luôn là `counter`.
+- [x] Registry `SaleLineKinds` có 6 kind; DB nhận `menu`, `timed`, `cover`.
+- [x] Một đơn có hai thuế suất in ra đúng bảng thuế; đổi rate bằng dữ liệu, không sửa code.
+- [x] `pos-staff.yaml` có các endpoint lõi; request spec của các endpoint đó kiểm schema.
 - [ ] Toàn bộ spec POS và e2e web xanh.

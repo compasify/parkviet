@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_09_190000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_10_140400) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -2338,6 +2338,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_09_190000) do
     t.integer "display_freshness_ttl_seconds"
     t.string "profile_key", limit: 40, default: "khac", null: false
     t.integer "profile_version", default: 1, null: false
+    t.time "business_day_cutoff", default: "2000-01-01 04:00:00", null: false
     t.index ["stock_location_id"], name: "index_spree_pos_branches_on_stock_location_id"
     t.index ["store_id", "code"], name: "index_spree_pos_branches_on_store_id_and_code", unique: true
     t.index ["store_id"], name: "index_spree_pos_branches_on_store_id"
@@ -3226,7 +3227,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_09_190000) do
     t.index ["workspace_id", "merge_key"], name: "idx_pos_sale_lines_merge"
     t.index ["workspace_id"], name: "index_spree_pos_sale_lines_on_workspace_id"
     t.check_constraint "base_quantity > 0 AND sale_quantity > 0::numeric", name: "chk_pos_sale_lines_qty"
-    t.check_constraint "kind::text = ANY (ARRAY['ordinary'::character varying, 'measured'::character varying, 'tracked'::character varying]::text[])", name: "chk_pos_sale_lines_kind"
+    t.check_constraint "kind::text = ANY (ARRAY['ordinary'::character varying, 'measured'::character varying, 'tracked'::character varying, 'menu'::character varying, 'timed'::character varying, 'cover'::character varying]::text[])", name: "chk_pos_sale_lines_kind"
     t.check_constraint "tracked_mode::text = ANY (ARRAY['none'::character varying, 'serial'::character varying, 'lot'::character varying]::text[])", name: "chk_pos_sale_lines_tracked"
   end
 
@@ -3299,6 +3300,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_09_190000) do
     t.datetime "closing_counted_at"
     t.datetime "closed_at"
     t.bigint "closing_cutoff_movement_id"
+    t.date "business_date", null: false
+    t.index ["branch_id", "business_date"], name: "idx_pos_shifts_branch_business_date"
     t.index ["branch_id"], name: "index_spree_pos_shifts_on_branch_id"
     t.index ["owner_id"], name: "index_spree_pos_shifts_on_owner_id"
     t.index ["register_id"], name: "idx_spree_pos_shifts_one_open_register", unique: true, where: "((status)::text = 'open'::text)"
@@ -3367,6 +3370,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_09_190000) do
     t.datetime "updated_at", null: false
     t.index ["store_id"], name: "index_spree_pos_store_profiles_on_store_id", unique: true
     t.check_constraint "profile_version >= 1", name: "chk_pos_store_profiles_version"
+  end
+
+  create_table "spree_pos_tax_rate_schedules", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "tax_rate_id", null: false
+    t.decimal "amount", precision: 8, scale: 5, null: false
+    t.date "effective_on", null: false
+    t.datetime "applied_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["store_id"], name: "index_spree_pos_tax_rate_schedules_on_store_id"
+    t.index ["tax_rate_id", "effective_on"], name: "idx_pos_tax_rate_schedules_rate_day", unique: true
+    t.index ["tax_rate_id"], name: "index_spree_pos_tax_rate_schedules_on_tax_rate_id"
   end
 
   create_table "spree_pos_tender_attempts", force: :cascade do |t|
@@ -3534,6 +3550,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_09_190000) do
     t.bigint "pos_customer_id"
     t.text "note"
     t.string "order_source", limit: 20, default: "counter", null: false
+    t.string "service_mode", default: "counter", null: false
+    t.date "business_date", null: false
+    t.index ["branch_id", "business_date"], name: "idx_pos_workspaces_branch_business_date"
     t.index ["branch_id"], name: "index_spree_pos_workspaces_on_branch_id"
     t.index ["lease_holder_id"], name: "index_spree_pos_workspaces_on_lease_holder_id"
     t.index ["order_id"], name: "index_spree_pos_workspaces_on_order_id", unique: true
@@ -3544,6 +3563,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_09_190000) do
     t.check_constraint "note IS NULL OR char_length(note) <= 1000", name: "chk_pos_workspace_note_length"
     t.check_constraint "operational_status::text = ANY (ARRAY['editing'::character varying, 'parked'::character varying, 'canceled'::character varying, 'completed'::character varying]::text[])", name: "chk_spree_pos_workspaces_status"
     t.check_constraint "order_source::text = ANY (ARRAY['counter'::character varying, 'facebook'::character varying, 'zalo'::character varying, 'other'::character varying]::text[])", name: "chk_pos_workspace_order_source"
+    t.check_constraint "service_mode::text = ANY (ARRAY['counter'::character varying, 'dine_in'::character varying, 'takeaway'::character varying, 'delivery'::character varying, 'tab'::character varying, 'timed'::character varying]::text[])", name: "chk_pos_workspace_service_mode"
   end
 
   create_table "spree_price_adjustment_tiers", force: :cascade do |t|
@@ -5450,6 +5470,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_09_190000) do
   add_foreign_key "spree_pos_stock_discrepancies", "spree_variants", column: "variant_id"
   add_foreign_key "spree_pos_store_profiles", "spree_admin_users", column: "changed_by_id"
   add_foreign_key "spree_pos_store_profiles", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_tax_rate_schedules", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_tax_rate_schedules", "spree_tax_rates", column: "tax_rate_id"
   add_foreign_key "spree_pos_tender_attempts", "spree_admin_users", column: "actor_id"
   add_foreign_key "spree_pos_tender_attempts", "spree_pos_branches", column: "branch_id"
   add_foreign_key "spree_pos_tender_attempts", "spree_pos_payment_methods", column: "pos_payment_method_id"

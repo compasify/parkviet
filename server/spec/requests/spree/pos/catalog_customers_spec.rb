@@ -46,6 +46,7 @@ RSpec.describe 'POS catalog', type: :request do
     catalog(headers)
     expect(response.parsed_body.fetch('data').find { |item| item['product_id'] == product.prefixed_id }['stock_on_hand']).to eq(3)
     expect(response.parsed_body.fetch('data').find { |item| item['product_id'] == product.prefixed_id }['price']).to eq('100.0')
+    expect_pos_schema!(response, 'CatalogItem')
     expect(response.parsed_body.to_json).not_to include('cost_price', 'metadata', 'stock_location')
     membership.update!(status: 'disabled')
     catalog(headers)
