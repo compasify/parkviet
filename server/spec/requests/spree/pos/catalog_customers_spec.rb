@@ -64,6 +64,7 @@ RSpec.describe 'POS catalog', type: :request do
     foreign = create(:product, store: create(:store), status: 'active')
     post path, headers: manager_headers, params: { product_id: foreign.prefixed_id }, as: :json
     expect(response).to have_http_status(:not_found)
+    Spree::ProductPublication.create!(product: product, channel: PosChannelHelpers.channel_for(store))
     post path, headers: manager_headers, params: { product_id: product.prefixed_id }, as: :json
     expect(response).to have_http_status(:created)
     expect(Spree::Pos::BranchProduct.where(branch: branch, product: product)).to exist

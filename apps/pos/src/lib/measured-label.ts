@@ -1,4 +1,4 @@
-import { posFailureKey, serverFailureDetail } from './request-failure';
+import { conflictReason, posFailureKey, serverFailureDetail } from './request-failure';
 import { resolveScanCode, type ScanCatalogPage, type ScanLookup } from './scan-lookup';
 
 // Server preview of a scale label. Display only: adding the line makes the
@@ -83,6 +83,9 @@ export async function resolveScan(
   try {
     parsed = readMeasurementParse(await parse(trimmed));
   } catch (error) {
+    // Setup refusals are not malformed scale labels. Keep their structured
+    // reason so the caller can show the translated channel guidance.
+    if (conflictReason(error)?.startsWith('pos_')) throw error;
     if (posFailureKey(error) === 'conflict')
       return { kind: 'label_invalid', message: serverFailureDetail(error) };
     throw error;

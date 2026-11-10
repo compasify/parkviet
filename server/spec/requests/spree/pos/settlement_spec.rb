@@ -186,6 +186,67 @@ RSpec.describe 'POS split tender and settlement', type: :request, modules_off_re
     expect(Spree::Pos::ReceivedFunds.where(workspace: ctx.workspace).count).to eq(2)
   end
 
+  it 'recovers prepared split payments after channel shutdown without repricing or relabeling the quote' do
+    ctx = setup_workspace(price: 250)
+    add_item(ctx, 0)
+    prepare(ctx, 1, 'bank_manual', 100)
+    expect(response).to have_http_status(:ok)
+    attempt_id = last_attempt(ctx)['id']
+    channel = ctx.workspace.order.channel
+    channel.update!(active: false)
+    Spree::ProductPublication.where(channel: channel, product: ctx.product).destroy_all
+    ctx.product.default_variant.set_price('VND', 999)
+    confirm(ctx, 2, attempt_id, **bank_evidence('CHANNEL-OFF'))
+    expect(response).to have_http_status(:ok)
+    prepare(ctx, 3, 'cash', 150)
+    expect(response).to have_http_status(:ok)
+    confirm(ctx, 4, last_attempt(ctx)['id'], evidence_kind: 'cash_count', handed_amount: '150')
+    expect(response).to have_http_status(:ok)
+    complete(ctx, 5)
+    expect(response).to have_http_status(:ok)
+    expect(ctx.workspace.reload).to have_attributes(operational_status: 'completed')
+    expect(ctx.workspace.order.reload).to have_attributes(channel_id: channel.id, total: BigDecimal('250'))
+    expect(ctx.workspace.to_pos[:line_items].sole[:list_price]).to eq('250.0')
+  end
+
+  it 'rechecks channel readiness after the only prepared tender is canceled' do
+    ctx = setup_workspace(price: 100)
+    add_item(ctx, 0)
+    prepare(ctx, 1, 'cash', 100)
+    expect(response).to have_http_status(:ok)
+    attempt_id = last_attempt(ctx)['id']
+    ctx.workspace.order.channel.update!(active: false)
+    workspace_command(ctx, "tender_attempts/#{attempt_id}/cancel", 2)
+    expect(response).to have_http_status(:ok)
+    expect(ctx.workspace.reload.snapshot_locked?).to be(false)
+    prepare(ctx, 3, 'cash', 100)
+    expect(response).to have_http_status(:conflict)
+    expect(response.parsed_body.dig('error', 'details', 'reason')).to eq('pos_channel_inactive')
+    expect(Spree::Pos::ReceivedFunds.where(workspace: ctx.workspace)).to be_empty
+  end
+
+  it 'rejects unrelated money on a new sale while allowing late money for its original sale after shutdown' do
+    ctx = setup_workspace(price: 100)
+    add_item(ctx, 0)
+    base = { branch_id: ctx.branch.prefixed_id, shift_id: ctx.workspace.shift.prefixed_id,
+             kind: 'bank_manual', handed_amount: '100', receiving_account: 'VCB-123' }
+    unrelated = record_funds(ctx.token, **base, reference: 'CHANNEL-UNRELATED')
+    expect(response).to have_http_status(:created)
+    late = record_funds(ctx.token, **base, workspace_id: ctx.workspace.prefixed_id, reference: 'CHANNEL-LATE')
+    expect(response).to have_http_status(:created)
+    ctx.workspace.order.channel.update!(active: false)
+    workspace_command(ctx, 'funds/allocate', 1, funds_id: unrelated['id'], amount: '100')
+    expect(response).to have_http_status(:conflict)
+    expect(response.parsed_body.dig('error', 'details', 'reason')).to eq('pos_channel_inactive')
+    expect(ctx.workspace.order.reload.payments).to be_empty
+    workspace_command(ctx, 'funds/allocate', 1, funds_id: late['id'], amount: '100')
+    expect(response).to have_http_status(:ok)
+    complete(ctx, 2)
+    expect(response).to have_http_status(:ok)
+    expect(ctx.workspace.reload.operational_status).to eq('completed')
+    expect(funds_state(ctx.token, unrelated['id'])['available']).to eq('100.0')
+  end
+
   it 'refuses short, fractional and malformed cash without recording money' do
     ctx = setup_workspace(price: 250)
     add_item(ctx, 0)

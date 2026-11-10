@@ -311,9 +311,51 @@ RSpec.describe 'POS scale labels and branch assortment', type: :request, modules
     expect(Spree::Pos::LabelFormat.for_store(store).count).to eq(1)
   end
 
+  it 'uses the POS channel price to decode price labels and charge measured additions' do
+    create_format(kind: 'price', value_unit_code: nil)
+    configure(pork)
+    channel = PosChannelHelpers.channel_for(store)
+    list = Spree::PriceList.create!(store: store, name: 'Scale POS prices', status: 'active', match_policy: 'all')
+    Spree::PriceRules::ChannelRule.create!(price_list: list, preferred_channel_ids: [channel.id])
+    Spree::Price.create!(variant: pork.default_variant, price_list: list, currency: 'VND', amount: 80_000)
+    label = ean('211234540000')
+    parse(label)
+    expect(response).to have_http_status(:ok)
+    expect(response.parsed_body['data']).to include('base_quantity' => 500, 'unit_price' => '80000.0', 'line_amount' => '40000.0')
+    workspace = open_draft
+    add_label(workspace, label, revision: 0)
+    expect(response).to have_http_status(:ok)
+    expect(response.parsed_body.dig('data', 'totals', 'total')).to eq('40000.0')
+    expect(response.parsed_body.dig('data', 'line_items', 0, 'list_price')).to eq('80000.0')
+
+    # The quoted display price is per kg, not the core line's price per gram.
+    create(:payment, order: workspace.order, payment_method: create(:check_payment_method, store: store),
+      amount: 40_000, status: 'pending')
+    channel.update!(active: false)
+    Spree::ProductPublication.where(channel: channel, product: pork).destroy_all
+    pork.default_variant.set_price('VND', 999_000)
+    expect(workspace.to_pos[:line_items].sole).to include(list_price: '80000.0', unit_price: '80000.0', price: '80.0')
+  end
+
+  it 'rechecks POS publication for scale-label previews and direct label additions' do
+    create_format
+    configure(pork)
+    workspace = open_draft
+    label = ean('211234501250')
+    channel = PosChannelHelpers.channel_for(store)
+    Spree::ProductPublication.where(channel: channel, product: pork).destroy_all
+    parse(label)
+    expect(response).to have_http_status(:not_found)
+    add_label(workspace, label, revision: 0)
+    expect(response).to have_http_status(:not_found)
+    expect(workspace.order.line_items).to be_empty
+  end
+
   it 'lists store products with their assignment for managing the branch assortment' do
     pork
-    create(:product, store: store, status: 'active', name: 'Rau muong').default_variant.update!(sku: 'RAU-01')
+    vegetable = create(:product, store: store, status: 'active', name: 'Rau muong')
+    vegetable.default_variant.update!(sku: 'RAU-01')
+    Spree::ProductPublication.create!(product: vegetable, channel: PosChannelHelpers.channel_for(store))
     get "/api/v3/admin/pos/branches/#{branch.prefixed_id}/products", headers: auth, params: { q: 'rau-0' }, as: :json
     expect(response).to have_http_status(:ok)
     row = response.parsed_body['data'].sole

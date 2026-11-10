@@ -5,6 +5,7 @@ async function installContext(
   page: Page,
   role: 'owner' | 'reader' | 'manager' | 'none',
   authenticated = true,
+  channelStatus: 'active' | 'missing' | 'inactive' = 'active',
 ) {
   const requests: { path: string; store: string | undefined }[] = [];
   await page.route('**/api/v3/admin/pos/**', async (route) => {
@@ -16,6 +17,7 @@ async function installContext(
     if (url.pathname.endsWith('/context')) {
       return route.fulfill({
         json: {
+          sales_channel: { id: channelStatus === 'missing' ? null : 'ch_pos', code: 'pos', name: 'POS', status: channelStatus },
           staff: { id: 'staff_admin', email: 'admin@example.test', full_name: 'Quản trị Hiền' },
           store: { id: 'store_1', name: 'Siêu thị Hiền', currency: 'VND', timezone: 'Asia/Ho_Chi_Minh' },
           administration: { read: role === 'owner' || role === 'reader', write: role === 'owner' },
@@ -43,6 +45,16 @@ async function installContext(
     write: role === 'owner',
   });
   return requests;
+}
+
+for (const status of ['missing', 'inactive'] as const) {
+  test(`channel ${status} shows setup guidance without blocking administration`, async ({ page }) => {
+    await installContext(page, 'owner', true, status);
+    await page.goto('/store_1/branches');
+    await expect(page.getByRole('heading', { name: 'Chi nhánh', exact: true })).toBeVisible();
+    await expect(page.getByRole('status').filter({ hasText: status === 'missing' ? 'Chưa có kênh POS' : 'Kênh POS đã ngừng hoạt động' })).toBeVisible();
+    await expect(page.getByRole('status').filter({ hasText: 'Kênh bán hàng' })).toContainText('mã pos');
+  });
 }
 
 test('protected URLs require a dashboard session', async ({ page }) => {

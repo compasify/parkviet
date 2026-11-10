@@ -13,6 +13,7 @@ module Spree
         raise ArgumentError, 'an authorized product relation is required' unless products.is_a?(ActiveRecord::Relation) && products.klass == Spree::Product
         raise ArgumentError, 'stock location must belong to the store' if stock_location && stock_location.store_id != store.id
 
+        @store = store
         @products = products.where(spree_products: { store_id: store.id })
         @stock_location = stock_location
         @currency = currency || store.default_currency
@@ -56,7 +57,7 @@ module Spree
                  end
         {
           data: variants.map { |variant|
-            price = variant.price_in(@currency)
+            price = SalesChannel.price(variant, store: @store, currency: @currency)
             {
               id: variant.prefixed_id,
               product_id: variant.product.prefixed_id,

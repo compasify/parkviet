@@ -21,6 +21,7 @@ module Spree
           CommandExecutor.call(store: workspace.store, actor: staff, key: key, payload: payload, workspace: workspace, authorize: authorize) do
             Guard.validate_editor!(workspace, staff, revision, lease_generation, editor_id)
             Guard.validate_open_shift!(workspace)
+            SalesChannel.validate_uncommitted_order!(workspace)
             Guard.tracked_guard!(workspace)
             raise Conflict, 'Amount is invalid.' if parsed.nil? || parsed <= 0
 

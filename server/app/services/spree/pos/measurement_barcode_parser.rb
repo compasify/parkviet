@@ -8,9 +8,9 @@ module Spree
     # the encoded weight must convert exactly, and an encoded price is accepted
     # only when the server's own price reproduces it within the format tolerance.
     class MeasurementBarcodeParser
-      Result = Struct.new(:format, :variant, :variant_unit, :sale_quantity, :base_quantity, :label_amount, :barcode, keyword_init: true) do
+      Result = Struct.new(:format, :variant, :variant_unit, :sale_quantity, :base_quantity, :label_amount, :barcode, :unit_price, keyword_init: true) do
         def to_pos(currency)
-          price = variant.price_in(currency)&.amount
+          price = unit_price
           line_price = price && UnitNormalizer.unit_price_per_base(price: price, variant_unit: variant_unit)
           {
             kind: 'measured_label', barcode: barcode, capability: 'measured_labels',
@@ -23,8 +23,8 @@ module Spree
         end
       end
 
-      def self.call(branch:, barcode:, currency: nil)
-        new(branch, barcode, currency || branch.store.default_currency).call
+      def self.call(branch:, barcode:, currency: nil, order: nil)
+        new(branch, barcode, currency || branch.store.default_currency, order).call
       end
 
       def self.ean13_valid?(digits)
@@ -34,7 +34,8 @@ module Spree
         (10 - (sum % 10)) % 10 == digits[12].to_i
       end
 
-      def initialize(branch, barcode, currency)
+      def initialize(branch, barcode, currency, order = nil)
+        @order = order
         @branch = branch
         @store = branch.store
         @currency = currency
@@ -56,6 +57,7 @@ module Spree
         raise Conflict, 'Label item is not configured.' if variant_unit.nil?
 
         variant = Workspaces::ManageLineItem.sellable_variant!(branch: @branch, variant: variant_unit.variant)
+        @unit_price = SalesChannel.price(variant, store: @store, currency: @currency, order: @order)&.amount
         value = Rational(raw_value, 10**format.value_decimals)
         base, label_amount = if format.kind == 'weight'
                                [weight_base(format, variant_unit, value), nil]
@@ -65,7 +67,7 @@ module Spree
         raise Conflict, 'Label quantity is too large.' if base > UnitNormalizer::MAX_BASE_QUANTITY
 
         Result.new(format: format, variant: variant, variant_unit: variant_unit, sale_quantity: sale_quantity(variant_unit, base),
-                   base_quantity: base, label_amount: label_amount && BigDecimal(label_amount, 19), barcode: @barcode)
+                   base_quantity: base, label_amount: label_amount && BigDecimal(label_amount, 19), barcode: @barcode, unit_price: @unit_price)
       end
 
       private
@@ -89,7 +91,7 @@ module Spree
       # The label states what the scale charged. The server derives the quantity
       # from its own per-base price and refuses labels it cannot reproduce.
       def price_base(format, variant, variant_unit, amount)
-        price = variant.price_in(@currency)&.amount
+        price = @unit_price
         raise Conflict, 'Variant has no price in the order currency.' if price.nil? || price.zero?
 
         per_base = UnitNormalizer.unit_price_per_base(price: price, variant_unit: variant_unit)

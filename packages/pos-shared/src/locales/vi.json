@@ -1,4 +1,8 @@
 {
+  "pos_channel_missing": "Chưa có kênh POS. Quản trị viên cần vào Spree → Cài đặt → Kênh bán hàng, tạo kênh có mã pos và xuất bản sản phẩm lên kênh này. Không thể bắt đầu bán mới; giao dịch đã bắt đầu thanh toán vẫn có thể xử lý tiếp.",
+  "pos_channel_inactive": "Kênh POS đã ngừng hoạt động. Quản trị viên cần bật lại kênh có mã pos trong Spree → Cài đặt → Kênh bán hàng. Không thể bắt đầu bán mới; giao dịch đã bắt đầu thanh toán vẫn có thể xử lý tiếp.",
+  "pos_channel_mismatch": "Đơn nháp này không thuộc kênh POS. Hãy tạo đơn POS mới; không thay đổi nguồn của đơn cũ.",
+  "pos_product_unavailable": "Có sản phẩm không còn được xuất bản trên kênh POS hoặc được cấp cho chi nhánh. Hãy gỡ sản phẩm đó trước khi thanh toán.",
   "receiptPrebillBanner": "TẠM TÍNH – CHƯA THANH TOÁN",
   "receiptPrebillTitle": "PHIẾU TẠM TÍNH",
   "receiptPrebillNote": "Phiếu tạm tính không phải biên nhận thanh toán.",

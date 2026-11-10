@@ -138,6 +138,17 @@ export function describeFailure(
   const lease = leaseConflict(error);
   if (lease) return translate(lease.reason === 'lease_busy' ? 'leaseBusy' : 'leaseStale');
   if (snapshotLocked(error)) return translate('editLockedPayments');
+  const channelReason = conflictReason(error);
+  if (
+    channelReason &&
+    [
+      'pos_channel_missing',
+      'pos_channel_inactive',
+      'pos_channel_mismatch',
+      'pos_product_unavailable',
+    ].includes(channelReason)
+  )
+    return translate(channelReason);
   const disabled = featureDisabledText(error, translate) ?? moduleDisabledText(error, translate);
   if (disabled) return disabled;
   return serverFailureDetail(error) ?? translate(fallbackKey ?? posFailureKey(error));

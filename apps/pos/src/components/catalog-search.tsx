@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCatalog } from '../hooks/use-catalog';
 import type { PosWorkspace } from '../lib/pos-context';
-import { posFailureKey } from '../lib/request-failure';
+import { describeFailure } from '../lib/request-failure';
 import { AddItemForm } from './add-item-form';
 import { PosIcon } from './pos-icon';
 import { usePosSelection } from './pos-selection';
@@ -167,7 +167,7 @@ export function CatalogSearch({
           {notice}
         </p>
       ) : null}
-      {result.isError ? <p role="alert">{t(posFailureKey(result.error))}</p> : null}
+      {result.isError ? <p role="alert">{describeFailure(result.error, t)}</p> : null}
       {result.isSuccess && result.data.data.length === 0 ? (
         <div className="catalog-empty">
           {t('catalogEmpty')}

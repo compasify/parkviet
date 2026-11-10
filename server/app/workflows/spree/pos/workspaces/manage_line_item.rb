@@ -21,6 +21,7 @@ module Spree
             payload = command_payload('add_line_item', revision, lease_generation, editor_id, input)
             execute(workspace:, staff:, key:, payload:) do
               validate_command!(workspace, staff, revision, lease_generation, editor_id)
+              SalesChannel.validate_order!(workspace)
               expiry_on = parse_expiry!(expiry_on)
               label = read_label!(workspace, label_barcode, variant_id) if label_barcode.present?
               if label
@@ -85,7 +86,7 @@ module Spree
               audit = { variant_id: variant.prefixed_id, sale_line_id: sale_line.prefixed_id, line_item_id: line.prefixed_id, quantity: base_quantity }
               audit.merge!(label_barcode: label.barcode, label_format_version: label.format.version, label_amount: label.label_amount&.to_s('F')) if label
               if price_override.present?
-                list_price = variant.price_in(workspace.order.currency).amount
+                list_price = SalesChannel.price(variant, store: workspace.store, currency: workspace.order.currency, order: workspace.order).amount
                 audit.merge!(price_override: { before: list_price.to_s('F'), after: unit_price.to_s('F') })
               end
               finish!(workspace, staff, 'workspace.item.add', audit)
@@ -106,6 +107,10 @@ module Spree
                 raise Conflict, 'Unit configuration changed; remove and re-add this line.'
               end
               sale_qty, base_quantity, _kind = resolve_quantities(variant_unit, quantity, sale_quantity, sale_line.lot_code, sale_line.serial_codes)
+              if base_quantity > sale_line.base_quantity
+                SalesChannel.validate_order!(workspace)
+                sellable_variant!(branch: workspace.branch, variant: sale_line.variant)
+              end
               sale_line.line_item.update!(quantity: base_quantity)
               changed = sale_line.base_quantity != base_quantity
               sale_line.update!(sale_quantity: sale_qty, base_quantity: base_quantity)
@@ -233,7 +238,7 @@ module Spree
           end
 
           def resolve_price!(workspace, staff, variant, variant_unit, price_override)
-            list_price = variant.price_in(workspace.order.currency)&.amount
+            list_price = SalesChannel.price(variant, store: workspace.store, currency: workspace.order.currency, order: workspace.order)&.amount
             raise Conflict, 'Variant has no price in the order currency.' if list_price.nil?
 
             return list_price if price_override.blank?
@@ -308,7 +313,7 @@ module Spree
           end
 
           def read_label!(workspace, barcode, variant_id)
-            label = MeasurementBarcodeParser.call(branch: workspace.branch, barcode: barcode, currency: workspace.order.currency)
+            label = MeasurementBarcodeParser.call(branch: workspace.branch, barcode: barcode, currency: workspace.order.currency, order: workspace.order)
             raise Conflict, 'Barcode is not a scale label of this branch.' if label.nil?
             raise Conflict, 'Scale label does not match the selected item.' if variant_id.present? && variant_id.to_s != label.variant.prefixed_id
 
@@ -327,6 +332,7 @@ module Spree
             now = Time.current
             raise ActiveRecord::RecordNotFound if variant.nil? || product.nil? || product.store_id != branch.store_id ||
               product.status != 'active' || !BranchProduct.exists?(branch_id: branch.id, product_id: variant.product_id) ||
+              !SalesChannel.sellable_products(branch.store).exists?(id: product.id) ||
               (variant.is_master? && Spree::Variant.where(product_id: product.id, is_master: false).exists?) ||
               (product.available_on.present? && product.available_on > now) ||
               (product.discontinue_on.present? && product.discontinue_on <= now) ||

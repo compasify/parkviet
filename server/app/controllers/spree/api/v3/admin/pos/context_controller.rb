@@ -20,6 +20,7 @@ module Spree
                 register_id: params[:register_id]
               )
               render json: {
+                sales_channel: Spree::Pos::SalesChannel.status(store),
                 administration: {
                   read: policy.permission?('read_pos_topology') || policy.permission?('write_pos_topology'),
                   write: policy.permission?('write_pos_topology')

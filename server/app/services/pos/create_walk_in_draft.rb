@@ -10,10 +10,11 @@ module Pos
 
     def call(store:, staff:)
       staff = authorize!(store, staff)
+      channel = Spree::Pos::SalesChannel.resolve!(store)
 
       result = nil
       ApplicationRecord.transaction do
-        result = Spree.order_create_service.call(store: store, created_by: staff, params: {})
+        result = Spree.order_create_service.call(store: store, created_by: staff, params: { channel_id: channel.prefixed_id })
         raise ActiveRecord::Rollback unless result.success?
 
         Pos::WalkInOrder.create!(order: result.value)

@@ -6,6 +6,8 @@ RSpec.describe Spree::Pos::CatalogReader do
   let(:variant) { product.default_variant }
   let(:reader) { described_class.new(store: store, products: Spree::Product.where(id: product.id)) }
 
+  before { PosChannelHelpers.channel_for(store) }
+
   it 'searches an explicitly scoped product by name, SKU or barcode without exposing internal fields' do
     variant.update!(sku: 'SHIRT-01', barcode: '012345', cost_price: 123)
     variant.set_price(store.default_currency, 100)

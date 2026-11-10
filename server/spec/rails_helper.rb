@@ -93,3 +93,5 @@ end
 require_relative 'support/pos_feature_helpers'
 # POS modules: branches created in specs start with their profile's modules on.
 require_relative 'support/pos_module_helpers'
+# Existing selling fixtures explicitly have a POS channel/publication by default.
+require_relative 'support/pos_channel_helpers'

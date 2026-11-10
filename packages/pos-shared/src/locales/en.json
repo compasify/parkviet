@@ -1,4 +1,8 @@
 {
+  "pos_channel_missing": "The POS channel is missing. Ask an administrator to create a sales channel with code pos in Spree → Settings → Sales channels and publish products to it. New sales are unavailable; payments already started can still be resolved.",
+  "pos_channel_inactive": "The POS channel is inactive. Ask an administrator to activate the channel with code pos in Spree → Settings → Sales channels. New sales are unavailable; payments already started can still be resolved.",
+  "pos_channel_mismatch": "This draft does not belong to the POS channel. Create a new POS draft; the original order source is preserved.",
+  "pos_product_unavailable": "An item is no longer published on the POS channel or assigned to this branch. Remove it before starting payment.",
   "receiptPrebillBanner": "PRE-BILL – NOT PAID",
   "receiptPrebillTitle": "PRE-BILL",
   "receiptPrebillNote": "A pre-bill is not a payment receipt.",

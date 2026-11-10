@@ -19,6 +19,7 @@ module Spree
               membership = policy.membership_for(branch)
               raise ActiveRecord::RecordNotFound unless membership && !membership.disabled?
 
+              Spree::Pos::SalesChannel.resolve!(current_store)
               label = Spree::Pos::MeasurementBarcodeParser.call(branch: branch, barcode: params[:barcode])
               data = label ? label.to_pos(current_store.default_currency) : { kind: 'ordinary', barcode: params[:barcode].to_s, measurement: nil, capability: 'measured_labels' }
               render json: { data: data }

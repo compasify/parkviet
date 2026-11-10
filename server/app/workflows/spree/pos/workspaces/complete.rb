@@ -26,6 +26,7 @@ module Spree
           CommandExecutor.call(store: workspace.store, actor: staff, key: key, payload: payload, workspace: workspace, authorize: authorize) do
             Tenders::Guard.validate_editor!(workspace, staff, revision, lease_generation, editor_id)
             Tenders::Guard.validate_open_shift!(workspace)
+            SalesChannel.validate_uncommitted_order!(workspace)
             Tenders::Guard.tracked_guard!(workspace)
             order = workspace.order
             raise Conflict, 'Order has no items.' if order.line_items.empty?

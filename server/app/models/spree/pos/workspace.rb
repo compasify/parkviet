@@ -88,6 +88,7 @@ module Spree
         # Every line reads its variant, product, base price and discounts; load
         # them in a few queries instead of five or six per line.
         lines = order.line_items.includes(variant: %i[product prices], discounts: :promotion_action).to_a.sort_by(&:id)
+        snapshot_locked = snapshot_locked?
         manual_total = discounts.select { |row| row.kind == 'manual' }.sum(&:amount)
         coupon_promo = order.promotions.detect { |promo| promo.coupon_code? || promo.code.present? }
         coupon_code = order.coupon_code.presence || coupon_promo&.code
@@ -102,16 +103,19 @@ module Spree
           trace: Spree::Pos::Inventory::AllocateTraceability.workspace_trace(self, traces),
           customer: customer_pos,
           line_items: lines.map do |line|
+            sale = sale_lines[line.id]
+            quoted_price = sale&.unit_price || line.price
             core = {
               id: line.prefixed_id, variant_id: line.variant.prefixed_id, product_id: line.variant.product.prefixed_id,
               name: line.variant.product.name, sku: line.variant.sku, quantity: line.quantity,
-              price: money(line.price), list_price: money(line.variant.price_in(order.currency)&.amount || line.price), amount: money(line.amount),
+              price: money(line.price),
+              list_price: money(snapshot_locked ? quoted_price : (SalesChannel.price(line.variant, store: store, currency: order.currency, order: order)&.amount || quoted_price)),
+              amount: money(line.amount),
               net_amount: money(line.amount + line.discounts.to_a.sum(&:amount)),
               discounts: line.discounts.to_a.map { |row|
                 { id: row.prefixed_id, kind: row.kind, label: row.label, amount: money(row.amount) }
               }
             }
-            sale = sale_lines[line.id]
             item_promotions = line.discounts.to_a.select { |row| row.promotion? && row.promotion_action&.discount_scope == :line_item }
             line_intent = sale&.line_discount_intent
             manual_amount = line_intent ? line_intent.allocations.joins(:discount).sum('spree_discounts.amount') : BigDecimal('0')

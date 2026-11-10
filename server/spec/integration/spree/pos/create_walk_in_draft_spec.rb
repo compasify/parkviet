@@ -4,6 +4,8 @@ RSpec.describe Pos::CreateWalkInDraft do
   let(:store) { Spree::Store.default }
   let(:staff) { create(:admin_user, :without_admin_role) }
 
+  before { PosChannelHelpers.channel_for(store) }
+
   def grant_pos_access(user, target_store)
     role = create(:role, resource: target_store, permissions: %w[write_pos_orders])
     create(:role_user, user: user, role: role)
@@ -19,6 +21,7 @@ RSpec.describe Pos::CreateWalkInDraft do
     order = result.value
     expect(order).to be_draft
     expect(order.store).to eq(store)
+    expect(order.channel.code).to eq('pos')
     expect(order.created_by).to eq(staff)
     expect(order.email).to be_nil
     expect(Pos::WalkInOrder.exists?(order: order)).to be(true)

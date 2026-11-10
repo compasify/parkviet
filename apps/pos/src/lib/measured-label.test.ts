@@ -59,6 +59,18 @@ describe('scan resolution with scale labels', () => {
     expect(fetchPage).not.toHaveBeenCalled();
   });
 
+  it.each(['pos_channel_missing', 'pos_channel_inactive', 'pos_product_unavailable'])(
+    'preserves %s for translated scanner guidance',
+    async (reason) => {
+      const error = { status: 409, message: 'Setup required', details: { reason } };
+      const fetchPage = vi.fn();
+      await expect(resolveScan('893', vi.fn().mockRejectedValue(error), fetchPage)).rejects.toBe(
+        error,
+      );
+      expect(fetchPage).not.toHaveBeenCalled();
+    },
+  );
+
   it('lets network failures through so the scan stays pending', async () => {
     const offline = new TypeError('Failed to fetch');
     await expect(resolveScan('21', vi.fn().mockRejectedValue(offline), vi.fn())).rejects.toBe(

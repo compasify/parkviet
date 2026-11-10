@@ -1,7 +1,7 @@
 import { expect, type Page, test } from '@playwright/test';
 import { picker, pickOption } from './support/searchable-select';
 
-async function install(page: Page, branchCount: number, registerCounts: number[], optionsError = false) {
+async function install(page: Page, branchCount: number, registerCounts: number[], optionsError = false, channelStatus: 'active' | 'missing' | 'inactive' = 'active') {
   const branches = Array.from({ length: branchCount }, (_, i) => ({ id: `br_${i + 1}`, name: `Chi nhánh ${i + 1}`, status: 'active' }));
   const registers = (branchId: string | null) => Array.from({ length: branchId ? registerCounts[Number(branchId.split('_')[1]) - 1] : 0 }, (_, i) => ({ id: `${branchId}_reg_${i + 1}`, branch_id: branchId, name: `Quầy ${i + 1}`, status: 'active' }));
   const state = { writes: [] as { path: string; body: Record<string, unknown> }[], shift: null as Record<string, unknown> | null, workspaces: [] as Record<string, unknown>[], next: 0 };
@@ -16,6 +16,7 @@ async function install(page: Page, branchCount: number, registerCounts: number[]
       const branchId = url.searchParams.get('branch_id');
       const registerId = url.searchParams.get('register_id');
       return route.fulfill({ json: { staff: { id: 'staff_1', email: 'staff@example.test', full_name: 'Thu ngân' }, store: { id: 'store_1', currency: 'VND' },
+        sales_channel: { id: channelStatus === 'missing' ? null : 'ch_pos', code: 'pos', name: 'POS', status: channelStatus },
         branches, registers: registers(branchId), capabilities: ['pos.shift.open'],
         selection: { branch_id: branchId, register_id: registerId }, shift: state.shift,
       } });
@@ -47,6 +48,21 @@ async function install(page: Page, branchCount: number, registerCounts: number[]
   await page.getByLabel('Mật khẩu', { exact: true }).fill('fixture-only');
   await page.getByRole('button', { name: 'Đăng nhập bán hàng', exact: true }).click();
   return state;
+}
+
+for (const status of ['missing', 'inactive'] as const) {
+  test(`POS channel ${status} blocks new drafts without blocking shift and history access`, async ({ page }) => {
+    const state = await install(page, 1, [0], false, status);
+    const guidance = page.getByRole('status').filter({ hasText: status === 'missing' ? 'Chưa có kênh POS' : 'Kênh POS đã ngừng hoạt động' });
+    await expect(guidance).toContainText('Kênh bán hàng');
+    await expect(guidance).toContainText('mã pos');
+    await page.getByRole('button', { name: 'Mở ca', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Đơn nháp mới' })).toBeDisabled();
+    expect(state.writes.filter((write) => write.path.endsWith('/workspaces'))).toEqual([]);
+    await page.goto('/orders');
+    await expect(page).toHaveURL(/orders$/);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  });
 }
 
 test('sole branch and sole register are selected without any popup or write', async ({ page }) => {

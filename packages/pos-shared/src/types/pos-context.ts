@@ -66,6 +66,12 @@ export type PosStoreProfile = {
 };
 
 export type PosContext = {
+  sales_channel?: {
+    id: string | null;
+    code: string;
+    name: string | null;
+    status: 'active' | 'missing' | 'inactive';
+  };
   administration?: { read: boolean; write: boolean };
   // Feature flags of the selected branch; absent on servers without them.
   features?: PosFeatureFlags | null;

@@ -358,6 +358,15 @@ function ShellFrame() {
       <ContextSetupDialog enabled={isSale && !setupNeeded} />
       <section className="shell" aria-labelledby={isSale ? 'title' : 'pos-page-title'}>
         <div className="pos-context-card pos-alerts">
+          {context.data?.sales_channel && context.data.sales_channel.status !== 'active' ? (
+            <p className="error" role="status">
+              {t(
+                context.data.sales_channel.status === 'missing'
+                  ? 'pos_channel_missing'
+                  : 'pos_channel_inactive',
+              )}
+            </p>
+          ) : null}
           {setupNeeded ? (
             <p role="status">
               {t('setup.requiredInDashboard')}{' '}

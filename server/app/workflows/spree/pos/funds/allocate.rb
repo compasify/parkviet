@@ -26,6 +26,9 @@ module Spree
 
             funds = ReceivedFunds.locate(ReceivedFunds.for_store(workspace.store), funds_id)
             raise ActiveRecord::RecordNotFound if funds.nil? || funds.branch_id != workspace.branch_id
+            # Late money for this very sale remains recoverable; allocating
+            # unrelated money must not open a new sale on an unavailable channel.
+            SalesChannel.validate_uncommitted_order!(workspace) unless funds.workspace_id == workspace.id
             # `received` = tender-confirmed; `attention` = unsolicited fact that
             # a resolver may now allocate. Both are real money on the parent.
             raise Conflict, 'Funds are not in a received state.' unless %w[received attention].include?(funds.status)

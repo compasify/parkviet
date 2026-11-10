@@ -17,7 +17,7 @@ module Spree
 
               branch = branch!(params[:branch_id])
               assigned_ids = Spree::Pos::BranchProduct.where(branch_id: branch.id).select(:product_id)
-              scope = Spree::Product.where(store_id: current_store.id)
+              scope = Spree::Pos::SalesChannel.products(current_store)
               case params[:assigned].to_s
               when 'true' then scope = scope.where(id: assigned_ids)
               when 'false' then scope = scope.where.not(id: assigned_ids)
@@ -44,7 +44,7 @@ module Spree
               return if channel_rejected?
 
               branch = branch!(params[:branch_id])
-              product = Spree::Product.find_by_prefix_id(params[:product_id].to_s)
+              product = Spree::Pos::SalesChannel.products(current_store).find_by_prefix_id(params[:product_id].to_s)
               raise ActiveRecord::RecordNotFound unless product && product.store_id == current_store.id
 
               Spree::Pos::BranchProduct.transaction do

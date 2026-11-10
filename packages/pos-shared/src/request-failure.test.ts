@@ -89,6 +89,22 @@ describe('server failure detail', () => {
   });
 });
 
+describe('POS channel setup failures', () => {
+  it.each([
+    'pos_channel_missing',
+    'pos_channel_inactive',
+    'pos_channel_mismatch',
+    'pos_product_unavailable',
+  ])('translates %s rather than exposing the English server message', (reason) => {
+    expect(
+      describeFailure(
+        { status: 409, message: 'Server message', details: { reason } },
+        (key) => `t:${key}`,
+      ),
+    ).toBe(`t:${reason}`);
+  });
+});
+
 describe('frozen basket', () => {
   it('recognizes a basket locked by a tender and words it like the local lock', () => {
     const error = {

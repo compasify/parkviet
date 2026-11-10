@@ -65,6 +65,7 @@ export function WorkspaceTabs() {
     activeId,
   );
   const locked = writesLocked(data, selection);
+  const channelUnavailable = Boolean(data?.sales_channel && data.sales_channel.status !== 'active');
   const [query, setQuery] = useState('');
   const [message, setMessage] = useState('');
   const [creating, setCreating] = useState(false);
@@ -163,7 +164,8 @@ export function WorkspaceTabs() {
   // Tapping a product does not wait for the previous add: the serializer
   // queues it on the newest revision. Only a blocked scan or a draft still
   // being created stops it.
-  const quickAddDisabled = !editable || creating || (active ? active.id in blockedScans : false);
+  const quickAddDisabled =
+    channelUnavailable || !editable || creating || (active ? active.id in blockedScans : false);
   const lockReason = active?.payments ? t('editLockedPayments') : undefined;
   const tablist = useRef<HTMLDivElement>(null);
   const discountDetailsRef = useRef<HTMLDetailsElement>(null);
@@ -435,11 +437,15 @@ export function WorkspaceTabs() {
   }
 
   const canCreate = Boolean(
-    !locked && selectionComplete && data?.shift && data.shift.owner_id === data.staff.id,
+    !channelUnavailable &&
+      !locked &&
+      selectionComplete &&
+      data?.shift &&
+      data.shift.owner_id === data.staff.id,
   );
 
   function createDraft() {
-    if (!selectionComplete || creating) return;
+    if (!canCreate || creating) return;
     const started = scopeRef.current;
     const selectedAtStart = activeIdRef.current;
     setCreating(true);
@@ -586,11 +592,11 @@ export function WorkspaceTabs() {
   const [prebillOpen, setPrebillOpen] = useState(false);
   const enqueueScan = useRef<(code: string) => void>(() => undefined);
   enqueueScan.current = (code) => {
-    if (!active || !editable) return;
+    if (!active || !editable || channelUnavailable) return;
     serializer.observe(active);
     scanner.enqueue(active.id, code);
   };
-  const scanTarget = editable ? (active?.id ?? null) : null;
+  const scanTarget = editable && !channelUnavailable ? (active?.id ?? null) : null;
   useEffect(() => {
     keyBuffer.reset();
     if (!scanTarget) return;
@@ -889,7 +895,9 @@ export function WorkspaceTabs() {
             addDisabled={quickAddDisabled}
             addDisabledReason={lockReason}
             scanNotice={scanNotice}
-            onScan={editable ? (code) => enqueueScan.current(code) : undefined}
+            onScan={
+              editable && !channelUnavailable ? (code) => enqueueScan.current(code) : undefined
+            }
             scanTerminator={calibration.terminator}
             onAdd={active ? (variantId) => quickAdd(active, variantId) : undefined}
             onAddForm={
