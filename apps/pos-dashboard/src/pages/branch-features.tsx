@@ -6,6 +6,7 @@ import { useMutation } from '@tanstack/react-query'
 import { useParams } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { BranchPicker } from '../components/branch-picker'
 import {
   type FeatureChange,
   FeatureSwitchRow,
@@ -34,6 +35,7 @@ export function BranchFeaturesPage() {
     <ModelPage
       title={branch ? `${t('branchFeaturesTitle')} · ${branch.name}` : t('branchFeaturesTitle')}
       description={t('branchFeaturesIntro')}
+      actions={<BranchPicker />}
     >
       {context.isPending ? (
         <ModelState title={t('contextWaiting')} />

@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next'
 import { useBranchModules } from '../hooks/use-branch-modules'
 import { usePosSession } from '../hooks/use-pos-session'
 import { useBranches } from '../hooks/use-topology'
+import { BranchPicker } from './branch-picker'
 
 export type BranchSettingsScope = {
   branch: PosBranch
@@ -39,6 +40,7 @@ export function BranchSettingsFrame({
       <PageHeader
         title={branch ? `${title} · ${branch.name}` : title}
         description={t(section === 'products' ? 'branchProductsIntro' : 'labelFormatsIntro')}
+        actions={<BranchPicker />}
       />
       {context.isPending ? (
         <p role="status">{t('contextWaiting')}</p>

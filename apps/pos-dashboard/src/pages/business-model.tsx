@@ -20,6 +20,7 @@ import { useMutation } from '@tanstack/react-query'
 import { useParams } from '@tanstack/react-router'
 import { type FormEvent, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { BranchPicker } from '../components/branch-picker'
 import { ProfileDiff } from '../components/profile-diff'
 import {
   ModelCard,
@@ -95,6 +96,7 @@ export function BusinessModelPage() {
     <ModelPage
       title={branch ? `${t('businessModel.title')} · ${branch.name}` : t('businessModel.title')}
       description={t('businessModel.intro')}
+      actions={<BranchPicker />}
     >
       {context.isPending ? (
         <ModelState title={t('contextWaiting')} />

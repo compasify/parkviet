@@ -5,14 +5,6 @@ import {
   PermissionProvider,
   StoreProvider,
 } from '@spree/dashboard-core'
-import {
-  Label,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@spree/dashboard-ui'
 import { createFileRoute, Outlet, retainSearchParams, useRouterState } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { PosSessionContext, useCreatePosSession } from '../../hooks/use-pos-session'
@@ -47,7 +39,6 @@ function PosShell() {
   const { t } = useTranslation()
   const value = useCreatePosSession()
   const path = useRouterState({ select: (state) => state.location.pathname })
-  const branches = value.context.data?.branches ?? []
   return (
     <PosSessionContext.Provider value={value}>
       <PosNavigation />
@@ -69,26 +60,6 @@ function PosShell() {
                 )}
               </p>
             )}
-          {branches.length > 0 && (
-            <div className="flex max-w-sm flex-col gap-2 px-4 pt-4">
-              <Label htmlFor="pos-shell-branch">{t('posDashboard.branch')}</Label>
-              <Select
-                value={value.selection.branchId ?? ''}
-                onValueChange={(branchId) => value.setSelection({ branchId, registerId: null })}
-              >
-                <SelectTrigger id="pos-shell-branch">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {branches.map((branch) => (
-                    <SelectItem key={branch.id} value={branch.id}>
-                      {branch.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
           <Outlet />
         </AppShell>
       </AppShellProvider>
