@@ -235,6 +235,30 @@ Ngoài ra, giảm giá hoặc đổi giá vượt giới hạn cần **Mã duy�
 
 ## Dành cho developer
 
+### App quản trị POS riêng
+
+`apps/pos-dashboard` là app quản trị độc lập, chạy ở cổng **5176**. Khung app
+dùng `@spree/dashboard-core` và `@spree/dashboard-ui`; logic thuần dùng chung
+(bao gồm bộ dựng phiếu in) nằm trong `packages/pos-shared`. Thao tác in qua
+trình duyệt, lựa chọn máy in, ca bán hàng, kho, công nợ, máy quét và màn khách
+vẫn thuộc POS. Xem [hướng dẫn app quản trị](../pos-dashboard/README.md).
+
+Đặt `VITE_POS_DASHBOARD_URL` trong cấu hình build của POS để các link quản trị
+mở đúng app và đúng cửa hàng. Giá trị có thể bao gồm đường dẫn con nếu app quản
+trị không chạy ở gốc domain. Trong dev, mặc định là `http://localhost:5176`.
+Production không có giá trị mặc định localhost: phải đặt URL công khai và build
+lại POS. Không thêm token hay thông tin đăng nhập vào URL hoặc biến `VITE_*`.
+
+Khi gắn origin mới, thêm origin đó vào **Allowed Origins** của cửa hàng để
+`StaffSessionOriginGuard` cho phép refresh/logout. App quản trị đăng nhập bằng
+phiên admin riêng; không chuyển JWT của màn bán hàng qua link. Hạ tầng static
+phải trả `index.html` cho URL app khi tải lại trang và phục vụ API/cookie qua
+HTTPS phù hợp.
+
+**Ghi chú cắt chuyển:** các trang cài đặt và thiết lập cũ chỉ bị xóa khỏi POS
+sau khi các journey E2E tương đương của app quản trị mới chạy xanh. Không dùng
+sự tồn tại của app mới như bằng chứng bước cắt chuyển đã hoàn tất.
+
 Chạy trong thư mục `apps/pos`:
 
 - `pnpm dev`: chạy Vite ở cổng `5175`, phục vụ ở gốc `/`. Chỉ khi cần gắn POS dưới một đường dẫn con mới đặt `VITE_BASE_PATH` (ví dụ `VITE_BASE_PATH=/pos/`). `spree dev` ở thư mục gốc đã tự chạy lệnh này, không cần chạy thêm. Proxy `/api` mặc định trỏ tới `http://localhost:3000`; có thể đổi bằng `VITE_API_PROXY_TARGET` trong `.env.local`. API chạy qua Spree CLI ở thư mục gốc.
