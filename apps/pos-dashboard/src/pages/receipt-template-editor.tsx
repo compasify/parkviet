@@ -27,7 +27,7 @@ import {
   describeFailure,
   posFailureKey,
 } from '@parkviet/pos-shared/request-failure'
-import { useStore } from '@spree/dashboard-core'
+import { useAuth, useStore } from '@spree/dashboard-core'
 import {
   Accordion,
   AccordionContent,
@@ -44,7 +44,7 @@ import {
 } from '@spree/dashboard-ui'
 import { Link, useBlocker, useParams } from '@tanstack/react-router'
 import { ArrowLeft, Check as CheckIcon, History, Printer } from 'lucide-react'
-import { type ReactNode, useCallback, useMemo, useState } from 'react'
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { BlockProblems } from '../components/receipt-template/block-editor'
 import { BlockList, type KeyedBlock, keyBlocks } from '../components/receipt-template/block-list'
@@ -69,6 +69,13 @@ import {
   useReceiptTemplate,
 } from '../hooks/use-receipt-templates'
 import { useBranches, useMemberships, useRegisters } from '../hooks/use-topology'
+import {
+  clearEditorDraft,
+  editorDraftKey,
+  readEditorDraft,
+  sessionDraftStorage,
+  writeEditorDraft,
+} from '../lib/editor-draft'
 import { templateFailure } from './receipt-templates'
 
 type Draft = {
@@ -104,16 +111,36 @@ const SECTION_OF: Record<IssueArea, SectionId> = {
   payments: 'totals',
   footer: 'footer',
 }
-function draftOf(template: ReceiptTemplate): Draft {
-  const config = editableConfig(template.config, template.document_type)
-  return {
-    name: template.name,
-    paper: template.paper,
-    config,
-    header: keyBlocks(config.header),
-    footer: keyBlocks(config.footer),
-  }
+function buildDraft(
+  name: string,
+  paper: PaperSize,
+  source: TemplateConfig,
+  type: DocumentType,
+): Draft {
+  const config = editableConfig(source, type)
+  return { name, paper, config, header: keyBlocks(config.header), footer: keyBlocks(config.footer) }
 }
+function draftOf(template: ReceiptTemplate): Draft {
+  return buildDraft(template.name, template.paper, template.config, template.document_type)
+}
+// What survives a forced sign-out: the editable fields only, re-keyed and
+// re-normalized on restore exactly like server data.
+type StoredDraft = { name: string; paper: PaperSize; config: TemplateConfig }
+const storedDraftOf = (draft: Draft): StoredDraft => ({
+  name: draft.name,
+  paper: draft.paper,
+  config: configOf(draft),
+})
+const parseStoredDraft =
+  (type: DocumentType) =>
+  (value: unknown): Draft | null => {
+    if (value === null || typeof value !== 'object') return null
+    const { name, paper, config } = value as Partial<Record<keyof StoredDraft, unknown>>
+    if (typeof name !== 'string' || typeof paper !== 'string') return null
+    if (config === null || typeof config !== 'object' || Array.isArray(config)) return null
+    // An unknown paper size is kept and reported by validateTemplate.
+    return buildDraft(name, paper as PaperSize, config as TemplateConfig, type)
+  }
 function configOf(draft: Draft): TemplateConfig {
   return {
     ...draft.config,
@@ -226,12 +253,29 @@ function TemplateEditor({
   const registers = useRegisters(true)
   const memberships = useMemberships(true)
   const { selection } = useBranchSelection(branches.data?.data ?? [])
+  const { storeId } = useStore()
+  const { user } = useAuth()
+  const draftKey = editorDraftKey('receipt-template', String(user?.id ?? ''), storeId, loaded.id)
+  // A draft left by an expired session is restored only when it was based on
+  // the version the server still has; otherwise it is discarded.
+  const [restored] = useState(() =>
+    canWrite && loaded.status === 'active'
+      ? readEditorDraft(
+          sessionDraftStorage(),
+          draftKey,
+          loaded.current_version,
+          parseStoredDraft(loaded.document_type),
+        )
+      : null,
+  )
   const [base, setBase] = useState(loaded)
-  const [draft, setDraft] = useState(() => draftOf(loaded))
+  const [draft, setDraft] = useState(() => restored ?? draftOf(loaded))
   const [savedPrint, setSavedPrint] = useState(() => fingerprint(draftOf(loaded)))
   const [serverProblems, setServerProblems] = useState<TemplateIssue[]>([])
   const [conflict, setConflict] = useState<Conflict | null>(null)
-  const [notice, setNotice] = useState<{ text: string; failed: boolean } | null>(null)
+  const [notice, setNotice] = useState<{ text: string; failed: boolean } | null>(() =>
+    restored ? { text: t('receiptTemplates.draftRestored'), failed: false } : null,
+  )
   const [busy, setBusy] = useState(false)
   const [open, setOpen] = useState<string[]>(['page'])
   const [pane, setPane] = useState<'edit' | 'preview'>('edit')
@@ -316,8 +360,23 @@ function TemplateEditor({
       })
       return found ? message(found.issue) : null
     }
+  // Keep unsaved work across a forced sign-out. Unmounting never clears it:
+  // session expiry unmounts the editor without a navigation to block. Saving,
+  // reloading or restoring makes the draft clean, which clears it.
+  useEffect(() => {
+    const storage = sessionDraftStorage()
+    if (dirty && !readOnly)
+      writeEditorDraft(storage, draftKey, base.current_version, storedDraftOf(draft))
+    else clearEditorDraft(storage, draftKey)
+  }, [dirty, readOnly, draft, draftKey, base.current_version])
   useBlocker({
-    shouldBlockFn: () => dirty && !window.confirm(t('receiptTemplates.leaveUnsaved')),
+    shouldBlockFn: () => {
+      if (!dirty) return false
+      if (!window.confirm(t('receiptTemplates.leaveUnsaved'))) return true
+      // Leaving was confirmed: the edits are knowingly discarded.
+      clearEditorDraft(sessionDraftStorage(), draftKey)
+      return false
+    },
     enableBeforeUnload: () => dirty,
   })
   const edit = (change: (current: Draft) => Draft) => {

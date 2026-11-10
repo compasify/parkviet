@@ -1,26 +1,34 @@
 import { adminClient, useAuth } from '@spree/dashboard-core'
 import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label } from '@spree/dashboard-ui'
-import { Link, Navigate, useNavigate } from '@tanstack/react-router'
-import { type FormEvent, useState } from 'react'
+import { Link, useRouter, useSearch } from '@tanstack/react-router'
+import { type FormEvent, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { safeRedirect } from '../lib/safe-redirect'
 
 export function LoginPage() {
   const { t } = useTranslation()
   const auth = useAuth()
-  const navigate = useNavigate()
+  const router = useRouter()
+  // Validated again here: the route already sanitizes it, but this is the
+  // last step before the target becomes a navigation.
+  const target = safeRedirect(useSearch({ from: '/login' }).redirect) ?? '/'
   const [error, setError] = useState(false)
+  // One path for both cases: an already signed-in visit and a fresh sign-in.
+  // `href` keeps the remembered search string intact.
+  useEffect(() => {
+    if (auth.isAuthenticated) void router.navigate({ href: target, replace: true })
+  }, [auth.isAuthenticated, router, target])
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const form = new FormData(event.currentTarget)
     setError(false)
     try {
       await auth.login(String(form.get('email')), String(form.get('password')))
-      await navigate({ to: '/' })
     } catch {
       setError(true)
     }
   }
-  if (auth.isAuthenticated) return <Navigate to="/" replace />
+  if (auth.isAuthenticated) return null
   return (
     <main className="flex min-h-screen items-center justify-center p-6">
       <Card className="w-full max-w-sm">
