@@ -248,7 +248,7 @@ lần đầu nằm trong app quản trị, cùng E2E của chúng (`apps/pos-das
 
 Chạy trong thư mục `apps/pos`:
 
-- `pnpm dev`: chạy Vite ở cổng `5175`, phục vụ ở gốc `/`. Chỉ khi cần gắn POS dưới một đường dẫn con mới đặt `VITE_BASE_PATH` (ví dụ `VITE_BASE_PATH=/pos/`). `spree dev` ở thư mục gốc đã tự chạy lệnh này, không cần chạy thêm. Proxy `/api` mặc định trỏ tới `http://localhost:3000`; có thể đổi bằng `VITE_API_PROXY_TARGET` trong `.env.local`. API chạy qua Spree CLI ở thư mục gốc.
+- `pnpm dev`: chạy Vite ở cổng `5175`, phục vụ ở gốc `/`. Chỉ khi cần gắn POS dưới một đường dẫn con mới đặt `VITE_BASE_PATH` (ví dụ `VITE_BASE_PATH=/pos/`). `spree dev` ở thư mục gốc đã tự chạy lệnh này và app quản trị POS (cổng 5176), không cần chạy thêm. Tắt cả hai bằng `SPREE_POS_DEV=0`. Proxy `/api` mặc định trỏ tới `http://localhost:3000`; có thể đổi bằng `VITE_API_PROXY_TARGET` trong `.env.local`. API chạy qua Spree CLI ở thư mục gốc.
 - `pnpm lint`, `pnpm typecheck`, `pnpm test` (Vitest), `pnpm build`.
 - `pnpm test:e2e`: chạy Playwright trên ba viewport desktop, tablet, mobile với API giả lập. Cổng mặc định là `5174`, có thể đổi bằng `POS_TEST_PORT` (ví dụ `POS_TEST_PORT=5177` khi 5174 bận).
 - Test với API thật (nhóm `real API` trong `e2e/full-retail.spec.ts`, `e2e/concurrency-chaos.spec.ts`, `e2e/advanced-goods.spec.ts`) bị bỏ qua mặc định. Cần stack dev đang chạy, database đã migrate và một fixture tổng hợp mới:

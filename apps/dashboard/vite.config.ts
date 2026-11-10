@@ -6,72 +6,102 @@ import react from '@vitejs/plugin-react'
 import { defineConfig, loadEnv, type Plugin } from 'vite'
 
 // `spree dev` only starts this app's dev server, so this server starts the POS
-// dev server (apps/pos, http://localhost:5175) next to it and stops it on
-// exit. POS stays its own app with its own origin, the same shape as a
-// pos.example.com deploy. Set SPREE_POS_DEV=0 to skip it.
-function posDevServer(): Plugin {
-  const posDir = resolve(import.meta.dirname, '../pos')
-  let child: ChildProcess | null = null
+// selling app (apps/pos, http://localhost:5175) and the POS admin app
+// (apps/pos-dashboard, http://localhost:5176) next to it and stops them on
+// exit. Each stays its own app with its own origin. Set SPREE_POS_DEV=0 to
+// skip both.
+function posDevServers(): Plugin {
+  const apps = [
+    {
+      dir: resolve(import.meta.dirname, '../pos'),
+      folder: 'apps/pos',
+      prefix: 'pos',
+      label: 'POS',
+      missing: 'apps/pos has no node_modules — run `pnpm install` there to start it with the dashboard.',
+    },
+    {
+      dir: resolve(import.meta.dirname, '../pos-dashboard'),
+      folder: 'apps/pos-dashboard',
+      prefix: 'pos-admin',
+      label: 'POS admin',
+      missing:
+        'apps/pos-dashboard has no node_modules — run `pnpm install` there to start it with the dashboard.',
+    },
+  ]
+  const children = new Set<ChildProcess>()
 
   const stop = () => {
-    if (!child?.pid || child.exitCode !== null) return
-    if (process.platform === 'win32') {
-      // The shell wrapper does not forward signals; kill the whole tree.
-      spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore' })
-    } else {
-      try {
-        process.kill(-child.pid, 'SIGTERM')
-      } catch {
-        child.kill('SIGTERM')
+    for (const child of children) {
+      children.delete(child)
+      if (!child.pid || child.exitCode !== null) continue
+      if (process.platform === 'win32') {
+        // The shell wrapper does not forward signals; kill the whole tree.
+        spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore' })
+      } else {
+        try {
+          process.kill(-child.pid, 'SIGTERM')
+        } catch {
+          child.kill('SIGTERM')
+        }
       }
     }
-    child = null
   }
 
   return {
-    name: 'parkviet:pos-dev-server',
+    name: 'parkviet:pos-dev-servers',
     apply: 'serve',
     configureServer(server) {
       if (process.env.SPREE_POS_DEV === '0' || process.env.VITEST) return
-      if (!existsSync(resolve(posDir, 'node_modules'))) {
-        server.config.logger.warn(
-          'pos | apps/pos has no node_modules — run `pnpm install` there to start it with the dashboard.',
-        )
-        return
-      }
-      const proc = spawn('pnpm run dev', {
-        cwd: posDir,
-        stdio: ['ignore', 'pipe', 'pipe'],
-        detached: process.platform !== 'win32',
-        shell: true,
-      })
-      child = proc
       // `spree dev` takes the first "Local: http://…" line (colours stripped)
-      // as the dashboard URL, so the POS line is relabelled to keep it from
-      // matching. Vite colours the word, hence the optional escape codes.
+      // as the dashboard URL, so companion lines are relabelled to keep them
+      // from matching. Vite colours the word, hence the optional escape codes.
       const localLabel = new RegExp(`Local((?:${String.fromCharCode(27)}\\[[0-9;]*m)*):`)
-      const forward = (stream: NodeJS.ReadableStream | null, out: NodeJS.WriteStream) => {
-        let buffer = ''
-        stream?.on('data', (chunk) => {
-          buffer += chunk.toString()
-          const lines = buffer.split('\n')
-          buffer = lines.pop() ?? ''
-          for (const line of lines) out.write(`pos | ${line.replace(localLabel, 'POS$1:')}\n`)
+      const startApp = (app: (typeof apps)[number], attempt: number) => {
+        const proc = spawn('pnpm run dev', {
+          cwd: app.dir,
+          stdio: ['ignore', 'pipe', 'pipe'],
+          detached: process.platform !== 'win32',
+          shell: true,
+        })
+        const startedAt = Date.now()
+        children.add(proc)
+        const forward = (stream: NodeJS.ReadableStream | null, out: NodeJS.WriteStream) => {
+          let buffer = ''
+          stream?.on('data', (chunk) => {
+            buffer += chunk.toString()
+            const lines = buffer.split('\n')
+            buffer = lines.pop() ?? ''
+            for (const line of lines) {
+              out.write(`${app.prefix} | ${line.replace(localLabel, `${app.label}$1:`)}\n`)
+            }
+          })
+        }
+        forward(proc.stdout, process.stdout)
+        forward(proc.stderr, process.stderr)
+        proc.on('exit', (code) => {
+          // stop() removes the process first, so a deliberate stop stays quiet.
+          if (!children.delete(proc)) return
+          // The previous dev server can still hold the port for a moment when
+          // this config reloads. One retry covers that; a later failure is real.
+          if (code && code !== 130 && code !== 143 && attempt < 1 && Date.now() - startedAt < 5000) {
+            setTimeout(() => startApp(app, attempt + 1), 750)
+            return
+          }
+          if (code && code !== 130 && code !== 143) {
+            server.config.logger.warn(
+              `${app.prefix} | dev server exited (code ${code}); run \`pnpm dev\` in ${app.folder} to see why.`,
+            )
+          }
         })
       }
-      forward(proc.stdout, process.stdout)
-      forward(proc.stderr, process.stderr)
-      proc.on('exit', (code) => {
-        // stop() clears `child` first, so a deliberate stop stays quiet.
-        if (child !== proc) return
-        child = null
-        // 130 and 143 are Ctrl+C / SIGTERM reaching the POS process directly.
-        if (code && code !== 130 && code !== 143) {
-          server.config.logger.warn(
-            `pos | POS dev server exited (code ${code}); run \`pnpm dev\` in apps/pos to see why.`,
-          )
+      for (const app of apps) {
+        if (!existsSync(resolve(app.dir, 'node_modules'))) {
+          server.config.logger.warn(`${app.prefix} | ${app.missing}`)
+          continue
         }
-      })
+        startApp(app, 0)
+      }
+      if (children.size === 0) return
       server.httpServer?.on('close', stop)
       process.once('exit', stop)
       for (const signal of ['SIGINT', 'SIGTERM'] as const) {
@@ -102,7 +132,7 @@ export default defineConfig(({ mode }) => {
     // src/main.tsx imports to activate them, and composes the shell's and
     // every plugin's file routes into src/routeTree.gen.ts on each dev
     // start/build — commit that file; its diff shows what an upgrade added.
-    plugins: [spreeDashboardPlugin(), react(), posDevServer()],
+    plugins: [spreeDashboardPlugin(), react(), posDevServers()],
     // Proxy /api to the Rails server so the SPA is same-origin with the API
     // in dev — keeps the refresh-token cookie working under SameSite=Lax
     // without HTTPS. /rails covers Active Storage's presigned URLs. Proxy

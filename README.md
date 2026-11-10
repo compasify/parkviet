@@ -155,6 +155,7 @@ Lần chạy đầu tiên tự hoàn tất thiết lập — kéo image Spree m�
 - **Bảng quản trị:** http://localhost:5173 — tự động khởi động bởi `spree dev`
   - Lần chạy đầu tiên mở liên kết thiết lập để tạo tài khoản quản trị
 - **POS (bán tại quầy):** http://localhost:5175 — tự khởi động cùng bảng quản trị khi chạy `spree dev` (tắt bằng `SPREE_POS_DEV=0`)
+- **Quản trị POS:** http://localhost:5176 — tự khởi động cùng POS khi chạy `spree dev` (cùng tắt bằng `SPREE_POS_DEV=0`)
 - **Bảng người bán (sàn):** http://localhost:5174 — chạy bằng `cd apps/seller-dashboard && pnpm run dev`
 - **API cửa hàng:** http://localhost:3000/api/v3/store
 

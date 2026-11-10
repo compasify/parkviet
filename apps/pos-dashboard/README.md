@@ -5,8 +5,8 @@ chạy riêng với ứng dụng thu ngân (5175) và Spree Dashboard (5173).
 
 ## Phát triển cục bộ
 
-Khởi động API từ thư mục gốc của repository bằng `pnpm spree dev --no-open` (hoặc
-sử dụng stack đang chạy), sau đó:
+`pnpm spree dev` ở thư mục gốc khởi động app này cùng bảng quản trị và POS, ở
+cổng **5176**. Tắt cả POS và app này bằng `SPREE_POS_DEV=0`. Chạy riêng khi cần:
 
 ```sh
 cd apps/pos-dashboard
