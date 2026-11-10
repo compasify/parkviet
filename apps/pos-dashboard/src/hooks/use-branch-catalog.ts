@@ -55,22 +55,15 @@ export const assignBranchProduct = (branchId: string, productId: string) =>
   request('POST', `/pos/branches/${branchId}/products`, { body: { product_id: productId } })
 export const removeBranchProduct = (branchId: string, productId: string) =>
   request('DELETE', `/pos/branches/${branchId}/products/${productId}`)
-export const saveLabelFormat = (
-  branchId: string,
-  formatId: string | undefined,
-  body: Record<string, unknown>,
-) =>
+// Scale label formats are store-wide and picked per branch.
+export const saveLabelFormat = (formatId: string | undefined, body: Record<string, unknown>) =>
   request<{ data: LabelFormat }>(
     formatId ? 'PATCH' : 'POST',
-    `/pos/branches/${branchId}/label_formats${formatId ? `/${formatId}` : ''}`,
+    `/pos/label_formats${formatId ? `/${formatId}` : ''}`,
     { body },
   )
-export const disableLabelFormat = (branchId: string, formatId: string) =>
-  request<{ data: LabelFormat }>(
-    'POST',
-    `/pos/branches/${branchId}/label_formats/${formatId}/disable`,
-    { body: {} },
-  )
+export const disableLabelFormat = (formatId: string) =>
+  request<{ data: LabelFormat }>('POST', `/pos/label_formats/${formatId}/disable`, { body: {} })
 export function useUnitDefinitions(branchId: string | null, enabled: boolean) {
   const { storeId, status } = useSession()
   return useQuery({

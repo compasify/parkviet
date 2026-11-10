@@ -1,12 +1,5 @@
-import { resourceSearchSchema } from '@spree/dashboard-core'
 import { createFileRoute } from '@tanstack/react-router'
-import { PosRouteGuard } from '../../../lib/route-access'
-import { LabelFormatsPage } from '../../../pages/label-formats'
+import { BranchTabRedirect } from '../../../lib/route-access'
 export const Route = createFileRoute('/_authenticated/$storeId/label-formats')({
-  validateSearch: resourceSearchSchema,
-  component: () => (
-    <PosRouteGuard page="labels">
-      <LabelFormatsPage />
-    </PosRouteGuard>
-  ),
+  component: () => <BranchTabRedirect tab="features" />,
 })

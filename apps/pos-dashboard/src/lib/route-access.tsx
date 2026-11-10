@@ -1,9 +1,9 @@
-import { PageHeader, usePermissions } from '@spree/dashboard-core'
-import { useParams } from '@tanstack/react-router'
+import { PageHeader, usePermissions, useStore } from '@spree/dashboard-core'
+import { Navigate, useParams } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { usePosSession } from '../hooks/use-pos-session'
-import { type PosPage, routeAllowed } from './pos-access'
+import { BRANCH_TABS, type BranchTab, type PosPage, routeAllowed } from './pos-access'
 
 export function PosRouteGuard({ page, children }: { page: PosPage; children: ReactNode }) {
   const { t } = useTranslation()
@@ -20,4 +20,22 @@ export function PosRouteGuard({ page, children }: { page: PosPage; children: Rea
       </div>
     )
   return children
+}
+
+// Earlier store-level URLs of branch settings open that tab of the selected
+// branch's page, or the branch list when the store has no branch yet.
+export function BranchTabRedirect({ tab }: { tab: BranchTab }) {
+  const { t } = useTranslation()
+  const { storeId } = useStore()
+  const { context, selection } = usePosSession()
+  if (context.isPending) return <p role="status">{t('contextWaiting')}</p>
+  const branchId = selection.branchId
+  const path = BRANCH_TABS.find((entry) => entry.key === tab)?.path ?? ''
+  return (
+    <Navigate
+      // The tab paths are concrete strings; the router's typed templates cannot express them.
+      to={(branchId ? `/${storeId}/branches/${branchId}${path}` : `/${storeId}/branches`) as string}
+      replace
+    />
+  )
 }

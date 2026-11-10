@@ -18,7 +18,7 @@ for (const enabled of [false, true]) test(`branch module settings render server 
     return route.fulfill({ json: { data: [], meta: { next: null } } });
   });
   await installDashboardShell(page, { authenticated: true, write: false });
-  await page.goto('/store_1/branches/branch_main/business-model');
+  await page.goto('/store_1/branches/branch_main');
   const list = page.getByRole('list', { name: 'Danh sách chức năng của chi nhánh' });
   await expect(list.locator('li[data-module]')).toHaveCount(4);
   await expect(list.locator('[data-module="retail.traceability"]')).toContainText(enabled ? 'Đang bật' : 'Đang tắt');

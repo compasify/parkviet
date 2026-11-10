@@ -1,10 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { PosRouteGuard } from '../../../lib/route-access'
-import { BusinessModelPage } from '../../../pages/business-model'
+import { BranchTabRedirect } from '../../../lib/route-access'
 export const Route = createFileRoute('/_authenticated/$storeId/business-model')({
-  component: () => (
-    <PosRouteGuard page="business-model">
-      <BusinessModelPage />
-    </PosRouteGuard>
-  ),
+  component: () => <BranchTabRedirect tab="overview" />,
 })

@@ -1,6 +1,6 @@
 import { canRemindDebt } from '@parkviet/pos-shared/debt-reminder'
 import { canHandleDeliveries } from '@parkviet/pos-shared/deliveries'
-import { branchSettingVisible, navVisible } from '@parkviet/pos-shared/module-registry'
+import { navVisible } from '@parkviet/pos-shared/module-registry'
 import { contextFeature } from '@parkviet/pos-shared/pos-features'
 import { canReadReceivables } from '@parkviet/pos-shared/receivables'
 import { canMoveCash, canReconcileCash } from '@parkviet/pos-shared/shifts'
@@ -21,14 +21,21 @@ export type PosPage =
   | 'inventory'
   | 'reports'
   | 'branches'
+  | 'branch'
   | 'registers'
   | 'staff'
   | 'products'
   | 'labels'
   | 'features'
   | 'business-model'
+  | 'branch-payments'
+  | 'branch-printing'
+  | 'payment-methods'
+  | 'units'
+  | 'staff-roles'
   | 'receipt-templates'
   | 'setup'
+  | 'store-model'
 export function canAdminister(access: PosAccess, write = false) {
   return (
     access.permissionKeys.includes('write_pos_topology') ||
@@ -103,30 +110,37 @@ export function visibleNav(page: PosPage, access: PosAccess) {
       canHandleDeliveries(access.context?.capabilities) &&
       access.context?.features?.delivery === true
     )
-  if (page === 'labels')
-    return (
-      canAdminister(access) &&
-      branchSettingVisible(
-        access.context && {
-          ...access.context,
-          administration: { read: canAdminister(access), write: canAdminister(access, true) },
-        },
-        'label-formats',
-      )
-    )
+  // Administrators reach a branch from the branch list; a branch manager
+  // without store administration gets a direct entry to their own branch.
+  if (page === 'branch') return !canAdminister(access) && canManageBranch(access)
   if (page === 'features' || page === 'business-model')
     return canAdminister(access) || canManageBranch(access)
-  if (page === 'setup') return canAdminister(access, true)
+  if (page === 'setup' || page === 'store-model') return canAdminister(access, true)
   return canAdminister(access)
 }
 // Direct URLs. Setup is reachable by readers: the page shows ask-admin
-// guidance instead of a wizard, while nav keeps it write-only. Label formats
-// stay reachable with the measured-goods module off so existing formats can
-// be seen, deliveries with the delivery feature off, and traceable stock
-// with the traceability module off.
+// guidance instead of a wizard, while nav keeps it write-only. Deliveries
+// stay reachable with the delivery feature off, and traceable stock with the
+// traceability module off.
 export function routeAllowed(page: PosPage, access: PosAccess) {
-  if (page === 'setup' || page === 'labels') return canAdminister(access)
+  if (page === 'setup') return canAdminister(access)
+  if (page === 'branch') return canAdminister(access) || canManageBranch(access)
   if (page === 'deliveries') return canHandleDeliveries(access.context?.capabilities)
   if (page === 'inventory') return canOpenStock(access)
   return visibleNav(page, access)
 }
+
+// Tabs of one branch's page, in display order, with the page each one gates on.
+export const BRANCH_TABS = [
+  { key: 'overview', page: 'branch', path: '' },
+  { key: 'registers', page: 'registers', path: '/registers' },
+  { key: 'staff', page: 'staff', path: '/staff' },
+  { key: 'products', page: 'products', path: '/products' },
+  { key: 'features', page: 'features', path: '/features' },
+  { key: 'payments', page: 'branch-payments', path: '/payments' },
+  { key: 'printing', page: 'branch-printing', path: '/printing' },
+] as const satisfies readonly { key: string; page: PosPage; path: string }[]
+export type BranchTab = (typeof BRANCH_TABS)[number]['key']
+// The tabs open to this reader at the selected branch.
+export const branchTabs = (access: PosAccess) =>
+  BRANCH_TABS.filter((tab) => routeAllowed(tab.page, access))

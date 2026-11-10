@@ -37,6 +37,10 @@ pnpm test:e2e        # API fixtures, desktop/tablet/mobile; sequential workers
   are parent entries holding only the visible children; empty groups are not registered.
 - Operational pages act on the selected branch (`context.data.selection.branch_id`),
   show `BranchPicker` in the page header and gate on that branch's capabilities.
+- A branch's settings are the tabs of `/branches/$branchId` (`BRANCH_TABS` in
+  `pos-access.ts`, `useBranchScope()`); the selection follows that URL. Store
+  master data (print templates, payment methods, units, staff roles, scale label
+  formats) are store-level pages; old store-level setting URLs redirect to tabs.
 - `src/i18n.ts`, `locales/{vi,en}.json`: every visible string is translated.
   POS keys are registered in both `translation` and `pos`; shell keys live under
   `posDashboard`. Core i18next initialization must not be replaced.

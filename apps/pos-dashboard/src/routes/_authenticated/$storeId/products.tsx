@@ -1,12 +1,5 @@
-import { resourceSearchSchema } from '@spree/dashboard-core'
 import { createFileRoute } from '@tanstack/react-router'
-import { PosRouteGuard } from '../../../lib/route-access'
-import { BranchProductsPage } from '../../../pages/branch-products'
+import { BranchTabRedirect } from '../../../lib/route-access'
 export const Route = createFileRoute('/_authenticated/$storeId/products')({
-  validateSearch: resourceSearchSchema,
-  component: () => (
-    <PosRouteGuard page="products">
-      <BranchProductsPage />
-    </PosRouteGuard>
-  ),
+  component: () => <BranchTabRedirect tab="products" />,
 })

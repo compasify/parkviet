@@ -7,13 +7,15 @@ import {
   Settings,
   Settings2,
   ShoppingCart,
+  Store,
   Wallet,
 } from 'lucide-react'
 import { useLayoutEffect } from 'react'
 import { usePosSession } from './hooks/use-pos-session'
 import { type PosAccess, type PosPage, visibleNav } from './lib/pos-access'
 
-type Leaf = { key: PosPage; labelKey: string; path: string }
+// A path may depend on the access snapshot (a manager's own branch).
+type Leaf = { key: PosPage; labelKey: string; path: string | ((access: PosAccess) => string) }
 // 6.0.3 renders no group headings, so each sidebar group is a parent entry
 // whose children are the group's screens; a parent without its own subject
 // opens its first visible child and disappears when none is visible.
@@ -64,22 +66,31 @@ const groups: { key: string; labelKey: string; icon: NavEntry['icon']; children:
     icon: Settings2,
     children: [
       { key: 'branches', labelKey: 'adminResource_branches', path: '/branches' },
-      { key: 'registers', labelKey: 'adminResource_registers', path: '/registers' },
-      { key: 'staff', labelKey: 'adminResource_memberships', path: '/staff' },
-      { key: 'products', labelKey: 'branchProductsTitle', path: '/products' },
-      { key: 'labels', labelKey: 'labelFormatsTitle', path: '/label-formats' },
-      { key: 'features', labelKey: 'branchFeaturesTitle', path: '/features' },
-      { key: 'business-model', labelKey: 'businessModel.title', path: '/business-model' },
+      {
+        key: 'branch',
+        labelKey: 'adminResource_branches',
+        path: (access) => `/branches/${access.context?.selection.branch_id ?? ''}`,
+      },
       {
         key: 'receipt-templates',
         labelKey: 'receiptTemplates.title',
         path: '/settings/receipt-templates',
       },
+      { key: 'payment-methods', labelKey: 'paymentMethods.title', path: '/payment-methods' },
+      { key: 'units', labelKey: 'units.title', path: '/units' },
+      { key: 'staff-roles', labelKey: 'staffRoles.title', path: '/staff-roles' },
+      { key: 'labels', labelKey: 'labelFormatsTitle', path: '/scale-labels' },
     ],
   },
 ]
 const settings = [
   { key: 'setup', labelKey: 'setup.title', path: '/setup', icon: Settings },
+  {
+    key: 'store-model',
+    labelKey: 'businessModel.storeTitle',
+    path: '/settings/business-model',
+    icon: Store,
+  },
 ] satisfies { key: PosPage; labelKey: string; path: string; icon: typeof Settings }[]
 settingsNav.addGroup({ key: 'pos', labelKey: 'posDashboard.title' })
 const keys = ['home', ...groups.map((group) => group.key), 'pos-settings']
@@ -102,7 +113,13 @@ export function PosNavigation() {
       position: 100,
     })
     groups.forEach((group, index) => {
-      const children = group.children.filter((child) => visibleNav(child.key, access))
+      const children = group.children
+        .filter((child) => visibleNav(child.key, access))
+        .map((child, order) => ({
+          ...child,
+          path: typeof child.path === 'function' ? child.path(access) : child.path,
+          position: order,
+        }))
       if (children.length === 0) return
       nav.add({
         key: group.key,
@@ -110,7 +127,7 @@ export function PosNavigation() {
         icon: group.icon,
         path: children[0].path,
         position: 200 + index * 100,
-        children: children.map((child, order) => ({ ...child, position: order })),
+        children,
       })
     })
     for (const entry of settings) {
@@ -119,7 +136,7 @@ export function PosNavigation() {
     }
     nav.add({
       key: 'pos-settings',
-      labelKey: 'posDashboard.settings',
+      labelKey: 'storeSettings',
       path: '/settings',
       icon: Settings,
       section: 'bottom',

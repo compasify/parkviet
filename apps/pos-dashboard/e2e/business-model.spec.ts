@@ -13,7 +13,7 @@ function world() {
     previews: [] as string[], moved: '', read: true, write: true, manager: false,
   };
 }
-async function install(page: Page, state: ReturnType<typeof world>) {
+async function install(page: Page, state: ReturnType<typeof world>, target = '/store_1/branches/branch_main') {
   await page.route('**/api/v3/admin/**', async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -55,7 +55,7 @@ async function install(page: Page, state: ReturnType<typeof world>) {
     return ok([]);
   });
   await installDashboardShell(page, { authenticated: true, read: state.read, write: state.write });
-  await page.goto('/store_1/branches/branch_main/business-model');
+  await page.goto(target);
 }
 async function choose(page: Page, label: string, option: string) {
   await page.getByRole('combobox', { name: label, exact: true }).click();
@@ -118,7 +118,7 @@ test('module dependency is blocked, disable needs reason, enable confirms depend
 });
 
 test('store main profile stores wholesale and coming-soon interests without changing existing branch', async ({ page }) => {
-  const state = world(); await install(page, state);
+  const state = world(); await install(page, state, '/store_1/settings/business-model');
   const section = page.getByRole('region', { name: 'Hồ sơ chính của cửa hàng' });
   await choose(page, 'Ngành mặc định cho chi nhánh mới', 'Nhà thuốc');
   await section.getByRole('checkbox', { name: /Có bán sỉ/ }).check();

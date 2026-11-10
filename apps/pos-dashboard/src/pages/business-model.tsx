@@ -17,10 +17,8 @@ import type { PosBranch } from '@parkviet/pos-shared/types/pos-context'
 import { useStore } from '@spree/dashboard-core'
 import { Button, Input, Label } from '@spree/dashboard-ui'
 import { useMutation } from '@tanstack/react-query'
-import { useParams } from '@tanstack/react-router'
 import { type FormEvent, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { BranchPicker } from '../components/branch-picker'
 import { ProfileDiff } from '../components/profile-diff'
 import {
   ModelCard,
@@ -40,7 +38,6 @@ import {
   setBranchModule,
   useBranchModuleDetail,
 } from '../hooks/use-branch-modules'
-import { useBranchSelection } from '../hooks/use-branch-selection'
 import { useBusinessProfiles } from '../hooks/use-business-profiles'
 import {
   refreshBusinessModel,
@@ -79,26 +76,15 @@ function modelFailure(error: unknown, t: Translate) {
   return describeFailure(error, t)
 }
 
-export function BusinessModelPage() {
+// The store's default business model, which new branches start from.
+export function StoreBusinessModelPage() {
   const { t } = useTranslation()
-  const storeContext = usePosContext()
-  const { selection } = useBranchSelection(storeContext.data?.branches)
-  const context = usePosContext(selection)
-  const { branchId } = useParams({ strict: false })
-  const branch = context.data?.branches.find((row) => row.id === (branchId ?? selection.branchId))
-  const access = context.data?.administration
-  const manager = Boolean(
-    branch &&
-      branch.id === selection.branchId &&
-      context.data?.capabilities.includes('pos.topology.manage'),
-  )
+  const context = usePosContext()
+  const storeId = context.data?.store.id ?? null
+  const write = context.data?.administration?.write === true
+  const catalogue = useBusinessProfiles(storeId, write)
   return (
-    <ModelPage
-      title={branch ? `${t('businessModel.title')} · ${branch.name}` : t('businessModel.title')}
-      description={t('businessModel.intro')}
-      actions={<BranchPicker />}
-      section="business-model"
-    >
+    <ModelPage title={t('businessModel.storeTitle')} description={t('businessModel.storeIntro')}>
       {context.isPending ? (
         <ModelState title={t('contextWaiting')} />
       ) : context.isError ? (
@@ -107,24 +93,27 @@ export function BusinessModelPage() {
           title={t(posFailureKey(context.error))}
           retry={() => void context.refetch()}
         />
-      ) : !access?.read && !manager ? (
+      ) : !write ? (
         <ModelState error title={t('adminAccessDenied')} />
-      ) : !branch ? (
-        <ModelState title={t('branchesEmpty')} />
-      ) : (
-        <BusinessModel
-          key={branch.id}
-          branch={{ ...branch, profile_key: branch.profile_key ?? context.data?.profile?.key }}
-          storeId={context.data?.store.id ?? null}
-          storeWrite={access?.write === true}
-          branchWrite={access?.write === true || manager}
+      ) : catalogue.isPending ? (
+        <ModelState title={t('waiting')} />
+      ) : catalogue.isError ? (
+        <ModelState
+          error
+          title={t(posFailureKey(catalogue.error))}
+          retry={() => void catalogue.refetch()}
         />
+      ) : (
+        <StoreProfileSection storeId={storeId} profiles={catalogue.data?.profiles ?? []} />
       )}
     </ModelPage>
   )
 }
 
-function BusinessModel({
+// The branch's business model: its profile (changed through a preview of
+// what moves) and its module switches. Store writers change the profile;
+// branch writers (store writers and the branch's managers) switch modules.
+export function BranchBusinessModel({
   branch,
   storeId,
   storeWrite,
@@ -173,9 +162,6 @@ function BusinessModel({
         detail={detail}
         write={branchWrite}
       />
-      {storeWrite && catalogue.data ? (
-        <StoreProfileSection storeId={storeId} profiles={profiles} />
-      ) : null}
     </>
   )
 }

@@ -1,14 +1,15 @@
 import type { LabelFormat } from '@parkviet/pos-shared/label-format'
-import { moduleEnabled } from '@parkviet/pos-shared/pos-modules'
 import { describeFailure } from '@parkviet/pos-shared/request-failure'
 import {
   defineTable,
+  PageHeader,
   ResourceTable,
   resourceSearchSchema,
   useResourceMutation,
 } from '@spree/dashboard-core'
 import {
   ActiveBadge,
+  Badge,
   Button,
   ResourceNameCell,
   RowActions,
@@ -20,37 +21,36 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useSearch } from '@tanstack/react-router'
 import { useCallback, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { BranchSettingsFrame, type BranchSettingsScope } from '../components/branch-settings-frame'
 import { LabelFormatEditor } from '../components/label-format-editor'
+import { MasterNotice, MasterState } from '../components/master-page'
 import { disableLabelFormat } from '../hooks/use-branch-catalog'
-import { allPages } from '../hooks/use-topology'
+import { readStoreLabelFormats, type StoreLabelFormat } from '../hooks/use-master-data'
+import { usePosSession } from '../hooks/use-pos-session'
+import { useSession } from '../hooks/use-session'
+import { posKey } from '../lib/query-keys'
 import { hiddenTimestamps } from '../tables/columns'
 import { localList } from '../tables/local-list'
 
 const ROW_ATTRIBUTE = 'data-pos-label-format-id' as const
 
+// The store's scale label formats. Branches pick the ones they read on their
+// Features tab; a format is disabled, never deleted, and every change bumps
+// the version sale lines record.
 export function LabelFormatsPage() {
-  return (
-    <BranchSettingsFrame section="labels">
-      {(scope) => <LabelFormats key={scope.branch.id} {...scope} />}
-    </BranchSettingsFrame>
-  )
-}
-export function LabelFormats({ branch, access, modules, storeId }: BranchSettingsScope) {
   const { t } = useTranslation()
   const confirm = useConfirm()
   const client = useQueryClient()
+  const { storeId } = useSession()
+  const { context } = usePosSession()
   const searchParams = resourceSearchSchema.parse(useSearch({ strict: false }))
-  const measuredOn = moduleEnabled(modules, 'retail.measured')
-  const canSetUp = access.write && measuredOn
+  const access = context.data?.administration ?? { read: false, write: false }
+  const branchName = (id: string) =>
+    context.data?.branches.find((branch) => branch.id === id)?.name ?? t('adminUnavailable')
   const [editor, setEditor] = useState<{ format?: LabelFormat } | null>(null)
   const [notice, setNotice] = useState<{ text: string; failed: boolean } | null>(null)
-  const refresh = () => client.invalidateQueries({ queryKey: ['pos', storeId, 'label-formats'] })
+  const refresh = () => client.invalidateQueries({ queryKey: ['pos', storeId] })
   const mutation = useResourceMutation({
-    mutationFn: async (format: LabelFormat) => {
-      if (!access.write) throw Object.assign(new Error('Access denied'), { status: 403 })
-      return disableLabelFormat(branch.id, format.id)
-    },
+    mutationFn: (format: LabelFormat) => disableLabelFormat(format.id),
     successMessage: false,
     errorMessage: false,
   })
@@ -80,9 +80,9 @@ export function LabelFormats({ branch, access, modules, storeId }: BranchSetting
     setNotice(null)
     setEditor({ format })
   }
-  const editable = (format: LabelFormat) => canSetUp && format.status === 'active'
+  const editable = (format: LabelFormat) => access.write && format.status === 'active'
   // The bridge listens on the document once; the ref hands it the current rows.
-  const rows = useRef<LabelFormat[]>([])
+  const rows = useRef<StoreLabelFormat[]>([])
   const openFormat = useRef<(id: string) => void>(() => {})
   openFormat.current = (id) => {
     const format = rows.current.find((row) => row.id === id)
@@ -100,11 +100,11 @@ export function LabelFormats({ branch, access, modules, storeId }: BranchSetting
       t('labelFormatVersion', { version: format.version }),
     ].join(' · ')
   const tableKey = 'pos-label-formats'
-  defineTable<LabelFormat>(tableKey, {
+  defineTable<StoreLabelFormat>(tableKey, {
     searchParam: 'search',
     searchPlaceholder: t('adminSearchName'),
     defaultSort: { field: 'name', direction: 'asc' },
-    emptyMessage: `${t('labelFormatsEmpty')}. ${t('labelFormatsEmptyHint')}`,
+    emptyMessage: t('labelFormatsEmpty'),
     columns: [
       {
         key: 'name',
@@ -144,6 +144,24 @@ export function LabelFormats({ branch, access, modules, storeId }: BranchSetting
         ),
       },
       {
+        key: 'branch_ids',
+        label: t('labelFormatBranches'),
+        default: true,
+        className: 'whitespace-normal',
+        render: (format) =>
+          format.branch_ids.length ? (
+            <div className="flex flex-wrap gap-1">
+              {format.branch_ids.map((id) => (
+                <Badge key={id} variant="outline">
+                  {branchName(id)}
+                </Badge>
+              ))}
+            </div>
+          ) : (
+            <span className="text-muted-foreground">{t('labelFormatNoBranches')}</span>
+          ),
+      },
+      {
         key: 'status',
         label: t('adminStatus'),
         sortable: true,
@@ -163,68 +181,68 @@ export function LabelFormats({ branch, access, modules, storeId }: BranchSetting
           />
         ),
       },
-      ...hiddenTimestamps<LabelFormat>(),
+      ...hiddenTimestamps<StoreLabelFormat>(),
     ],
   })
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground">{t('labelFormatsHint')}</p>
-        {canSetUp && (
-          <Button disabled={mutation.isPending} onClick={() => edit()}>
-            {t('labelFormatCreate')}
-          </Button>
-        )}
-      </div>
-      {!measuredOn && <p role="note">{t('posModules.retail_measured.off')}</p>}
-      {!access.write && <p>{t('adminReadAccess')}</p>}
-      {notice && (
-        <p
-          role={notice.failed ? 'alert' : 'status'}
-          className={notice.failed ? 'text-destructive' : 'text-muted-foreground'}
-        >
-          {notice.text}
-        </p>
-      )}
-      <ResourceTable<LabelFormat>
-        tableKey={tableKey}
-        hideHeader
-        queryKey={['pos', 'label-formats', branch.id, 'table']}
-        queryFn={async (params: Record<string, unknown>) => {
-          const all = await allPages<LabelFormat>(`/pos/branches/${branch.id}/label_formats`)
-          rows.current = all.data
-          return localList(all.data, params, {
-            searchParam: 'search',
-            text: (format) => `${format.name} ${format.prefix}`,
-          })
-        }}
-        searchParams={searchParams}
-        rowActions={(format) => (
-          <RowActions
-            actions={[
-              {
-                key: 'edit',
-                label: t('adminEdit'),
-                visible: editable(format),
-                disabled: mutation.isPending,
-                onSelect: () => edit(format),
-              },
-              {
-                key: 'disable',
-                label: t('adminDisable'),
-                icon: <BanIcon className="size-4" />,
-                visible: access.write && format.status === 'active',
-                destructive: true,
-                disabled: mutation.isPending,
-                onSelect: () => void disable(format),
-              },
-            ]}
-          />
-        )}
+    <div className="space-y-6">
+      <PageHeader
+        title={t('labelFormatsTitle')}
+        description={t('labelFormatsIntro')}
+        actions={
+          access.write ? (
+            <Button disabled={mutation.isPending} onClick={() => edit()}>
+              {t('labelFormatCreate')}
+            </Button>
+          ) : access.read ? (
+            <Badge variant="outline">{t('adminReadAccess')}</Badge>
+          ) : undefined
+        }
       />
-      {editor && canSetUp && (
+      <MasterState>
+        <MasterNotice notice={notice} />
+        <ResourceTable<StoreLabelFormat>
+          tableKey={tableKey}
+          hideHeader
+          queryKey={['pos', 'label-formats', 'table']}
+          queryFn={async (params: Record<string, unknown>) => {
+            const all = await client.fetchQuery({
+              queryKey: posKey(storeId, 'label-formats'),
+              queryFn: readStoreLabelFormats,
+            })
+            rows.current = all
+            return localList(all, params, {
+              searchParam: 'search',
+              text: (format) => `${format.name} ${format.prefix}`,
+            })
+          }}
+          searchParams={searchParams}
+          rowActions={(format) => (
+            <RowActions
+              actions={[
+                {
+                  key: 'edit',
+                  label: t('adminEdit'),
+                  visible: editable(format),
+                  disabled: mutation.isPending,
+                  onSelect: () => edit(format),
+                },
+                {
+                  key: 'disable',
+                  label: t('adminDisable'),
+                  icon: <BanIcon className="size-4" />,
+                  visible: editable(format),
+                  destructive: true,
+                  disabled: mutation.isPending,
+                  onSelect: () => void disable(format),
+                },
+              ]}
+            />
+          )}
+        />
+      </MasterState>
+      {editor && access.write && (
         <LabelFormatEditor
-          branchId={branch.id}
           format={editor.format}
           onSaved={async (saved) => {
             setNotice({ text: t('labelFormatSaved', { name: saved.name }), failed: false })

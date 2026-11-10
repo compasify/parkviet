@@ -1,10 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { PosRouteGuard } from '../../../../../lib/route-access'
-import { BranchFeaturesPage } from '../../../../../pages/branch-features'
+import { BranchFeaturesTab } from '../../../../../pages/branch-features'
 export const Route = createFileRoute('/_authenticated/$storeId/branches/$branchId/features')({
   component: () => (
     <PosRouteGuard page="features">
-      <BranchFeaturesPage />
+      <BranchFeaturesTab />
     </PosRouteGuard>
   ),
 })

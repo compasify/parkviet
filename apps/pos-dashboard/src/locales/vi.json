@@ -1637,5 +1637,104 @@
   "businessDay": {
     "reportHint": "Doanh số theo ngày kinh doanh, chốt lúc {{cutoff}}."
   },
-  "reportSearch": "Tìm trong trang này"
+  "reportSearch": "Tìm trong trang này",
+  "storeSettings": "Cài đặt cửa hàng",
+  "branchEditInfo": "Sửa thông tin",
+  "branchOverviewInfo": "Thông tin chi nhánh",
+  "branchLabelFormatsIntro": "Chọn các mẫu tem cân chi nhánh đọc khi bán hàng cân. Mẫu tem được tạo ở Thiết lập → Mẫu tem cân; hai mẫu đang dùng tại một chi nhánh không được trùng tiền tố.",
+  "labelFormatBranches": "Chi nhánh dùng",
+  "labelFormatNoBranches": "Chưa gán chi nhánh nào",
+  "branchTabs": {
+    "overview": "Tổng quan",
+    "registers": "Quầy",
+    "staff": "Nhân viên & quyền",
+    "products": "Hàng bán",
+    "features": "Chức năng",
+    "payments": "Thanh toán",
+    "printing": "In ấn"
+  },
+  "capabilityGroups": {
+    "selling": "Bán hàng",
+    "money": "Tiền",
+    "management": "Duyệt & quản lý",
+    "reports": "Báo cáo",
+    "stock": "Kho"
+  },
+  "masterData": {
+    "failure_last_cash_method": "Cửa hàng cần ít nhất một phương thức tiền mặt đang dùng.",
+    "failure_payment_method_in_use": "Phương thức này đã được dùng để thanh toán; hãy ngừng hoạt động thay vì xóa.",
+    "failure_unit_in_use": "Đơn vị đang được hàng hóa hoặc mẫu tem dùng nên chưa thể ngừng.",
+    "failure_staff_role_in_use": "Nhóm quyền đang được gán cho nhân viên nên chưa thể ngừng hoặc xóa."
+  },
+  "paymentMethods": {
+    "title": "Phương thức thanh toán",
+    "intro": "Các cách khách trả tiền tại quầy. Chi nhánh dùng tất cả phương thức đang bật, trừ khi chọn riêng ở tab Thanh toán của chi nhánh.",
+    "create": "Thêm phương thức",
+    "createTitle": "Thêm phương thức thanh toán",
+    "editTitle": "Sửa phương thức thanh toán",
+    "kind": "Loại",
+    "kindHint": "Loại quyết định cách thu tiền và không đổi được sau khi tạo.",
+    "kind_cash": "Tiền mặt",
+    "kind_bank_manual": "Chuyển khoản",
+    "kind_vietqr": "VietQR",
+    "position": "Thứ tự",
+    "positionHint": "Số nhỏ hiện trước. Để trống để xếp cuối.",
+    "positionInvalid": "Thứ tự là số từ 0 đến 10000.",
+    "codeHint": "Chữ thường, số và gạch dưới, tối đa 32 ký tự. Để trống để tự tạo.",
+    "delete": "Xóa",
+    "confirmDelete": "Xóa phương thức “{{name}}”? Phương thức đã dùng để thanh toán chỉ có thể ngừng hoạt động."
+  },
+  "units": {
+    "title": "Đơn vị tính",
+    "intro": "Đơn vị bán và quy đổi của cửa hàng. Mã, loại và quy đổi cố định sau khi tạo; chỉ tên và số lẻ khi bán đổi được.",
+    "create": "Thêm đơn vị",
+    "createTitle": "Thêm đơn vị tính",
+    "editTitle": "Sửa đơn vị tính",
+    "dimension": "Loại đại lượng",
+    "dimension_count": "Đếm",
+    "dimension_mass": "Khối lượng",
+    "dimension_volume": "Thể tích",
+    "conversion": "Quy đổi",
+    "conversionValue": "1 {{code}} = {{factor}} {{base}}",
+    "canonical": "Đơn vị gốc",
+    "base": "Quy đổi về",
+    "baseHint": "Chọn đơn vị gốc cùng loại, hoặc để đây là đơn vị gốc.",
+    "factor": "Hệ số quy đổi",
+    "factorHint": "Số đơn vị gốc trong một đơn vị này.",
+    "factorInvalid": "Hệ số là số nguyên từ 1 đến 1.000.000.",
+    "canonicalFactor": "Đơn vị gốc có hệ số 1.",
+    "precision": "Số lẻ khi bán",
+    "precisionHint": "Số chữ số thập phân được nhập khi bán (0–3).",
+    "codeHint": "Bắt đầu bằng chữ thường; chữ thường, số và gạch dưới, tối đa 16 ký tự."
+  },
+  "staffRoles": {
+    "title": "Nhóm quyền",
+    "intro": "Bộ quyền đặt tên sẵn để gán cho nhân viên. Sửa nhóm thì mọi nhân viên trong nhóm nhận thay đổi ngay.",
+    "create": "Thêm nhóm quyền",
+    "createTitle": "Thêm nhóm quyền",
+    "editTitle": "Sửa nhóm quyền",
+    "empty": "Chưa có nhóm quyền",
+    "members": "Nhân viên",
+    "membersNote_other": "{{count}} nhân viên đang dùng nhóm này nhận thay đổi ngay.",
+    "capabilityCount_other": "{{count}} quyền",
+    "delete": "Xóa",
+    "confirmDelete": "Xóa nhóm quyền “{{name}}”?",
+    "custom": "Quyền riêng",
+    "field": "Nhóm quyền",
+    "fieldHint": "Chọn nhóm để dùng quyền của nhóm, hoặc Quyền riêng để chọn từng quyền.",
+    "fromRole": "Quyền theo nhóm “{{name}}”. Sửa nhóm ở Thiết lập → Nhóm quyền."
+  },
+  "branchPayments": {
+    "title": "Phương thức thanh toán tại chi nhánh",
+    "intro": "Chọn các phương thức quầy của chi nhánh nhận. Phương thức được thêm hoặc tắt ở Thiết lập → Phương thức thanh toán.",
+    "all": "Dùng tất cả phương thức đang bật",
+    "allHint": "Chi nhánh nhận mọi phương thức đang bật, kể cả phương thức thêm sau này.",
+    "empty": "Chi nhánh cần ít nhất một phương thức thanh toán."
+  },
+  "branchPrinting": {
+    "title": "Mẫu in tại chi nhánh",
+    "intro": "Chọn mẫu in cho từng loại chứng từ. Loại để mặc định in theo mẫu mặc định của cửa hàng.",
+    "storeDefault": "Mặc định cửa hàng ({{name}})",
+    "disabledChoice": "Mẫu đã chọn “{{name}}” đã ngừng; chi nhánh đang in theo mặc định cửa hàng."
+  }
 }

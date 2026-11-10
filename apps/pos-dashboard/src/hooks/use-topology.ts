@@ -7,12 +7,12 @@ import { useSession } from './use-session'
 
 export type StaffOption = { id: string; email: string; full_name: string | null }
 export type LocationOption = { id: string; name: string; active: boolean }
-export async function allPages<T>(path: string) {
+export async function allPages<T>(path: string, params: Record<string, string | undefined> = {}) {
   const data: T[] = []
   let page: number | null = 1
   while (page !== null) {
     const result: { data: T[]; meta?: { next: number | null } } = await posRequest('GET', path, {
-      params: { limit: '100', page: String(page) },
+      params: { ...params, limit: '100', page: String(page) },
     })
     data.push(...result.data)
     page = result.meta?.next ?? null

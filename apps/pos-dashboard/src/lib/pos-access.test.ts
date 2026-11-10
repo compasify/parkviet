@@ -1,6 +1,7 @@
 import type { PosContext } from '@parkviet/pos-shared/types/pos-context'
 import { describe, expect, it } from 'vitest'
 import {
+  branchTabs,
   canAdminister,
   canManageBranch,
   canSendReminders,
@@ -42,18 +43,46 @@ describe('POS permission gates', () => {
     expect(visibleNav('features', { permissionKeys: [] })).toBe(false)
     expect(visibleNav('branches', { permissionKeys: [] })).toBe(false)
   })
-  it('hides label-format nav and direct routes when measured retail is off', () => {
+  it('lists store master data for administrators whatever the selected branch runs', () => {
     const context = { modules: { 'retail.measured': false } } as unknown as PosContext
-    const access = { permissionKeys: ['read_pos_topology'], context }
-    expect(visibleNav('labels', access)).toBe(false)
-    expect(
-      visibleNav('labels', {
-        ...access,
-        context: { ...context, modules: { 'retail.measured': true } },
-      }),
-    ).toBe(true)
-    expect(visibleNav('labels', { ...access, context: { ...context, modules: null } })).toBe(true)
-    expect(visibleNav('labels', { ...access, permissionKeys: [] })).toBe(false)
+    const reader = { permissionKeys: ['read_pos_topology'], context }
+    for (const page of ['labels', 'payment-methods', 'units', 'staff-roles'] as const) {
+      expect(visibleNav(page, reader)).toBe(true)
+      expect(visibleNav(page, { ...reader, permissionKeys: [] })).toBe(false)
+    }
+    expect(visibleNav('store-model', reader)).toBe(false)
+    expect(visibleNav('store-model', { permissionKeys: ['write_pos_topology'] })).toBe(true)
+  })
+  it('opens every branch tab to administrators and only overview and features to a manager', () => {
+    const tabs = (access: Parameters<typeof branchTabs>[0]) =>
+      branchTabs(access).map((tab) => tab.key)
+    expect(tabs({ permissionKeys: ['read_pos_topology'] })).toEqual([
+      'overview',
+      'registers',
+      'staff',
+      'products',
+      'features',
+      'payments',
+      'printing',
+    ])
+    const manager = {
+      permissionKeys: [],
+      context: {
+        selection: { branch_id: 'b', register_id: null },
+        capabilities: ['pos.topology.manage'],
+      } as PosContext,
+    }
+    expect(tabs(manager)).toEqual(['overview', 'features'])
+    expect(routeAllowed('branch', manager)).toBe(true)
+    expect(visibleNav('branch', manager)).toBe(true)
+    expect(visibleNav('branch', { permissionKeys: ['read_pos_topology'] })).toBe(false)
+    expect(routeAllowed('branch-payments', manager)).toBe(false)
+    const cashier = {
+      ...manager,
+      context: { ...manager.context, capabilities: ['pos.shift.open'] },
+    }
+    expect(tabs(cashier)).toEqual([])
+    expect(routeAllowed('branch', cashier)).toBe(false)
   })
   it('opens orders to branch staff and deliveries to sellers or collectors', () => {
     const staff = (capabilities: string[], delivery?: boolean) => ({
@@ -106,14 +135,10 @@ describe('POS permission gates', () => {
     expect(routeAllowed('deliveries', { permissionKeys: [], context })).toBe(true)
     expect(routeAllowed('deliveries', { permissionKeys: ['write_pos_topology'] })).toBe(false)
   })
-  it('lets readers reach setup and label formats by URL only', () => {
-    const access = {
-      permissionKeys: ['read_pos_topology'],
-      context: { modules: { 'retail.measured': false } } as unknown as PosContext,
-    }
+  it('lets readers reach setup by URL only', () => {
+    const access = { permissionKeys: ['read_pos_topology'] }
     expect(routeAllowed('setup', access)).toBe(true)
-    expect(routeAllowed('labels', access)).toBe(true)
-    expect(visibleNav('labels', access)).toBe(false)
+    expect(visibleNav('setup', access)).toBe(false)
     expect(routeAllowed('setup', { permissionKeys: [] })).toBe(false)
   })
   it('opens receivables to branch members and credit screens to credit staff', () => {

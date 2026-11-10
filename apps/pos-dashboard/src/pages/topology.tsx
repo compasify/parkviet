@@ -1,5 +1,4 @@
 import { branchSettingVisible } from '@parkviet/pos-shared/module-registry'
-import { posCapabilities } from '@parkviet/pos-shared/pos-capabilities'
 import { describeFailure } from '@parkviet/pos-shared/request-failure'
 import {
   type ColumnDef,
@@ -23,14 +22,7 @@ import {
   useConfirm,
   useRowClickBridge,
 } from '@spree/dashboard-ui'
-import {
-  BanIcon,
-  PackageIcon,
-  RotateCcwIcon,
-  SlidersHorizontalIcon,
-  StoreIcon,
-  TagIcon,
-} from '@spree/dashboard-ui/icons'
+import { BanIcon, RotateCcwIcon } from '@spree/dashboard-ui/icons'
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useCallback, useRef, useState } from 'react'
@@ -42,6 +34,7 @@ import {
 } from '../components/topology-editor'
 import { useBranchModules } from '../hooks/use-branch-modules'
 import { useBusinessProfiles } from '../hooks/use-business-profiles'
+import { useStaffRoles } from '../hooks/use-master-data'
 import { useStoreProfile } from '../hooks/use-onboarding'
 import { usePosSession } from '../hooks/use-pos-session'
 import { useSession } from '../hooks/use-session'
@@ -53,6 +46,7 @@ import {
   useRegisters,
   useStaffOptions,
 } from '../hooks/use-topology'
+import { capabilityLabel } from '../lib/capability-groups'
 import { posRequest } from '../lib/pos-request'
 import { posKey } from '../lib/query-keys'
 import { hiddenTimestamps } from '../tables/columns'
@@ -64,57 +58,23 @@ type TopologyRow = TopologyDraft & {
   branch_id?: string
   staff_id?: string
   staff?: { id: string; email: string; full_name: string | null }
+  custom_capabilities?: string[]
+  staff_role?: { id: string; name: string } | null
 }
 
-// Branch pages reached from the row menu. Label formats only exist for branches
-// whose modules include them, which is a per-branch lookup.
-function BranchRowActions({ row, actions }: { row: TopologyRow; actions: RowAction[] }) {
+// The store's branches, or (with `branchId`) the registers or staff of one
+// branch embedded in that branch's page, where the branch is fixed.
+export function TopologyPage({
+  kind = 'branches',
+  branchId,
+}: {
+  kind?: TopologyKind
+  branchId?: string
+}) {
   const { t } = useTranslation()
+  const { context } = usePosSession()
+  const { storeId } = useSession()
   const navigate = useNavigate()
-  const { storeId } = useSession()
-  const { context } = usePosSession()
-  const modules = useBranchModules(row.id)
-  const open = (path: string) => () =>
-    void navigate({ to: `/${storeId}/branches/${row.id}/${path}` as string })
-  return (
-    <RowActions
-      actions={[
-        ...actions.slice(0, 1),
-        {
-          key: 'products',
-          label: t('branchProductsTitle'),
-          icon: <PackageIcon className="size-4" />,
-          onSelect: open('products'),
-        },
-        {
-          key: 'label-formats',
-          label: t('labelFormatsTitle'),
-          icon: <TagIcon className="size-4" />,
-          visible: branchSettingVisible({ ...context.data, modules }, 'label-formats'),
-          onSelect: open('label-formats'),
-        },
-        {
-          key: 'features',
-          label: t('branchFeaturesTitle'),
-          icon: <SlidersHorizontalIcon className="size-4" />,
-          onSelect: open('features'),
-        },
-        {
-          key: 'business-model',
-          label: t('businessModel.title'),
-          icon: <StoreIcon className="size-4" />,
-          onSelect: open('business-model'),
-        },
-        ...actions.slice(1),
-      ]}
-    />
-  )
-}
-
-export function TopologyPage({ kind = 'branches' }: { kind?: TopologyKind }) {
-  const { t } = useTranslation()
-  const { context } = usePosSession()
-  const { storeId } = useSession()
   const queryClient = useQueryClient()
   const confirm = useConfirm()
   const searchParams = resourceSearchSchema.parse(useSearch({ strict: false }))
@@ -127,10 +87,18 @@ export function TopologyPage({ kind = 'branches' }: { kind?: TopologyKind }) {
   const locations = useLocationOptions(access.read)
   const profiles = useBusinessProfiles(context.data?.store.id ?? null, access.write)
   const storeProfile = useStoreProfile(context.data?.store.id ?? null, access.write)
+  const roles = useStaffRoles(access.read && kind === 'memberships')
   const [editor, setEditor] = useState<TopologyDraft | null>(null)
   const [notice, setNotice] = useState<{ text: string; failed: boolean } | null>(null)
   const editedModules = useBranchModules(kind === 'branches' ? (editor?.id ?? null) : null)
-  const dependencies = [branches, registers, memberships, staff, locations]
+  const dependencies = [
+    branches,
+    registers,
+    memberships,
+    staff,
+    locations,
+    ...(kind === 'memberships' ? [roles] : []),
+  ]
   const ready = dependencies.every((query) => query.isSuccess)
   const loadError = dependencies.find((query) => query.isError)?.error
   const branchRows = branches.data?.data ?? []
@@ -215,6 +183,18 @@ export function TopologyPage({ kind = 'branches' }: { kind?: TopologyKind }) {
     setNotice(null)
     setEditor(record)
   }
+  // A membership opens with its own capability list and its role; the role's
+  // grants show read-only while it has one.
+  const draftOf = (record: TopologyRow): TopologyDraft =>
+    kind === 'memberships'
+      ? {
+          ...record,
+          capabilities: record.custom_capabilities ?? record.capabilities,
+          effective_capabilities: record.capabilities,
+          staff_role_id: record.staff_role?.id ?? null,
+          staff_role_name: record.staff_role?.name ?? null,
+        }
+      : record
   // Re-enabling needs the recovery capability at the record's branch.
   const recoverable = (record: TopologyRow) =>
     record.status === 'active' ||
@@ -232,7 +212,7 @@ export function TopologyPage({ kind = 'branches' }: { kind?: TopologyKind }) {
         label: t('adminEdit'),
         visible: access.write,
         disabled: !canEdit || mutation.isPending,
-        onSelect: () => edit(record),
+        onSelect: () => edit(draftOf(record)),
       },
       {
         key: active ? 'disable' : 'enable',
@@ -248,7 +228,7 @@ export function TopologyPage({ kind = 'branches' }: { kind?: TopologyKind }) {
     ]
   }
 
-  const tableKey = `pos-${kind}`
+  const tableKey = `pos-${kind}${branchId ? '-branch' : ''}`
   const rowAttribute = `data-pos-${kind}-id` as const
   const records = (): TopologyRow[] =>
     ((kind === 'branches'
@@ -256,18 +236,30 @@ export function TopologyPage({ kind = 'branches' }: { kind?: TopologyKind }) {
       : kind === 'registers'
         ? registers.data?.data
         : membershipRows) ?? []) as TopologyRow[]
-  // The bridge listens on the document once; the ref hands it the current rows.
+  // A branch row opens the branch's page; other rows open their editor.
   const openRecord = useRef<(id: string) => void>(() => {})
   openRecord.current = (id) => {
+    if (kind === 'branches') {
+      void navigate({
+        to: '/$storeId/branches/$branchId',
+        params: { storeId, branchId: id },
+        search: (previous: Record<string, unknown>) => ({
+          ...previous,
+          branch: id,
+          register: undefined,
+        }),
+      })
+      return
+    }
     const record = records().find((row) => row.id === id)
-    if (record && canEdit) edit(record)
+    if (record && canEdit) edit(draftOf(record))
   }
   const openRow = useCallback((id: string) => openRecord.current(id), [])
   useRowClickBridge(rowAttribute, openRow)
   const nameCell = (row: TopologyRow, name: string, secondary?: string) => (
     <ResourceNameCell
       id={row.id}
-      dataAttr={canEdit ? rowAttribute : undefined}
+      dataAttr={kind === 'branches' || canEdit ? rowAttribute : undefined}
       name={name}
       secondary={secondary}
     />
@@ -346,7 +338,7 @@ export function TopologyPage({ kind = 'branches' }: { kind?: TopologyKind }) {
               default: true,
               render: (row) => nameCell(row, row.name ?? '', row.code),
             },
-            branchColumn,
+            ...(branchId ? [] : [branchColumn]),
             statusColumn,
           ]
         : [
@@ -366,7 +358,13 @@ export function TopologyPage({ kind = 'branches' }: { kind?: TopologyKind }) {
                   : t('adminUnavailable')
               },
             },
-            branchColumn,
+            ...(branchId ? [] : [branchColumn]),
+            {
+              key: 'staff_role',
+              label: t('staffRoles.field'),
+              default: true,
+              render: (row) => row.staff_role?.name ?? t('staffRoles.custom'),
+            },
             {
               key: 'capabilities',
               label: t('membership'),
@@ -376,10 +374,7 @@ export function TopologyPage({ kind = 'branches' }: { kind?: TopologyKind }) {
                 <div className="flex flex-wrap gap-1">
                   {(row.capabilities ?? []).map((capability) => (
                     <Badge key={capability} variant="outline">
-                      {t(
-                        posCapabilities.find(([value]) => value === capability)?.[1] ??
-                          'adminUnknownPermission',
-                      )}
+                      {t(capabilityLabel(capability))}
                     </Badge>
                   ))}
                 </div>
@@ -395,27 +390,37 @@ export function TopologyPage({ kind = 'branches' }: { kind?: TopologyKind }) {
     columns: [...columns, ...hiddenTimestamps<TopologyRow>()],
   })
 
+  const headerActions =
+    access.read && access.write ? (
+      <Button
+        disabled={!ready || mutation.isPending}
+        onClick={() => edit(branchId ? { branch_id: branchId } : {})}
+      >
+        {t(
+          kind === 'branches'
+            ? 'createBranch'
+            : kind === 'registers'
+              ? 'createRegister'
+              : 'assignMembership',
+        )}
+      </Button>
+    ) : access.read ? (
+      <Badge variant="outline">{t('adminReadAccess')}</Badge>
+    ) : undefined
   return (
     <div className="space-y-6">
-      <PageHeader
-        title={t(`adminResource_${kind}`)}
-        description={t(`adminHint_${kind}`)}
-        actions={
-          access.read && access.write ? (
-            <Button disabled={!ready || mutation.isPending} onClick={() => edit({})}>
-              {t(
-                kind === 'branches'
-                  ? 'createBranch'
-                  : kind === 'registers'
-                    ? 'createRegister'
-                    : 'assignMembership',
-              )}
-            </Button>
-          ) : access.read ? (
-            <Badge variant="outline">{t('adminReadAccess')}</Badge>
-          ) : undefined
-        }
-      />
+      {branchId ? (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-muted-foreground">{t(`adminHint_${kind}`)}</p>
+          {headerActions}
+        </div>
+      ) : (
+        <PageHeader
+          title={t(`adminResource_${kind}`)}
+          description={t(`adminHint_${kind}`)}
+          actions={headerActions}
+        />
+      )}
       {context.isPending ? (
         <p role="status">{t('contextWaiting')}</p>
       ) : context.isError ? (
@@ -453,13 +458,16 @@ export function TopologyPage({ kind = 'branches' }: { kind?: TopologyKind }) {
             key={kind}
             tableKey={tableKey}
             hideHeader
-            queryKey={['pos', 'topology-table', kind]}
+            queryKey={['pos', 'topology-table', kind, branchId ?? 'all']}
             queryFn={async (params: Record<string, unknown>) => {
               const all = await queryClient.fetchQuery({
                 queryKey: posKey(storeId, 'topology', kind),
                 queryFn: () => allPages<TopologyRow>(`/pos/${kind}`),
               })
-              return localList(all.data, params, {
+              const rows = branchId
+                ? all.data.filter((row) => row.branch_id === branchId)
+                : all.data
+              return localList(rows, params, {
                 searchParam: 'search',
                 text: (row) =>
                   kind === 'branches'
@@ -478,13 +486,7 @@ export function TopologyPage({ kind = 'branches' }: { kind?: TopologyKind }) {
               })
             }}
             searchParams={searchParams}
-            rowActions={(row) =>
-              kind === 'branches' ? (
-                <BranchRowActions row={row} actions={rowActions(row)} />
-              ) : (
-                <RowActions actions={rowActions(row)} />
-              )
-            }
+            rowActions={(row) => <RowActions actions={rowActions(row)} />}
           />
         </>
       )}
@@ -496,6 +498,8 @@ export function TopologyPage({ kind = 'branches' }: { kind?: TopologyKind }) {
           staff={staffRows}
           memberships={membershipRows}
           locations={locationRows}
+          lockBranch={Boolean(branchId)}
+          roles={(roles.data ?? []).filter((role) => role.status === 'active')}
           profiles={(profiles.data?.profiles ?? []).filter(
             (profile) => profile.status === 'available',
           )}

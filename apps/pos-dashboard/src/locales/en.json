@@ -1646,5 +1646,106 @@
   "businessDay": {
     "reportHint": "Sales use the business date, which rolls at {{cutoff}}."
   },
-  "reportSearch": "Search this page"
+  "reportSearch": "Search this page",
+  "storeSettings": "Store settings",
+  "branchEditInfo": "Edit details",
+  "branchOverviewInfo": "Branch details",
+  "branchLabelFormatsIntro": "Pick the scale label formats this branch reads when selling weighed goods. Formats are made under Configuration → Scale label formats; two formats in use at one branch cannot share a prefix.",
+  "labelFormatBranches": "Branches",
+  "labelFormatNoBranches": "Not assigned to a branch",
+  "branchTabs": {
+    "overview": "Overview",
+    "registers": "Registers",
+    "staff": "Staff & permissions",
+    "products": "Products",
+    "features": "Features",
+    "payments": "Payments",
+    "printing": "Printing"
+  },
+  "capabilityGroups": {
+    "selling": "Selling",
+    "money": "Money",
+    "management": "Approvals & management",
+    "reports": "Reports",
+    "stock": "Stock"
+  },
+  "masterData": {
+    "failure_last_cash_method": "The store needs at least one active cash method.",
+    "failure_payment_method_in_use": "This method has taken payments; disable it instead of deleting it.",
+    "failure_unit_in_use": "Products or label formats use this unit, so it cannot be disabled yet.",
+    "failure_staff_role_in_use": "Staff are assigned this role, so it cannot be disabled or deleted yet."
+  },
+  "paymentMethods": {
+    "title": "Payment methods",
+    "intro": "How customers pay at the counter. Branches offer every active method unless their Payments tab picks some.",
+    "create": "Add method",
+    "createTitle": "Add payment method",
+    "editTitle": "Edit payment method",
+    "kind": "Kind",
+    "kindHint": "The kind decides how money is taken and cannot change once created.",
+    "kind_cash": "Cash",
+    "kind_bank_manual": "Bank transfer",
+    "kind_vietqr": "VietQR",
+    "position": "Order",
+    "positionHint": "Lower numbers show first. Leave blank to add it last.",
+    "positionInvalid": "The order is a number from 0 to 10000.",
+    "codeHint": "Lowercase letters, digits and underscores, up to 32. Leave blank to generate one.",
+    "delete": "Delete",
+    "confirmDelete": "Delete the method “{{name}}”? A method that has taken payments can only be disabled."
+  },
+  "units": {
+    "title": "Units",
+    "intro": "Selling units and conversions of the store. Code, dimension and conversion are fixed once created; only the name and sale precision change.",
+    "create": "Add unit",
+    "createTitle": "Add unit",
+    "editTitle": "Edit unit",
+    "dimension": "Dimension",
+    "dimension_count": "Count",
+    "dimension_mass": "Mass",
+    "dimension_volume": "Volume",
+    "conversion": "Conversion",
+    "conversionValue": "1 {{code}} = {{factor}} {{base}}",
+    "canonical": "Base unit",
+    "base": "Converts to",
+    "baseHint": "Pick a base unit of the same dimension, or keep this one as a base unit.",
+    "factor": "Conversion factor",
+    "factorHint": "How many base units make one of this unit.",
+    "factorInvalid": "The factor is a whole number from 1 to 1,000,000.",
+    "canonicalFactor": "A base unit has factor 1.",
+    "precision": "Sale decimals",
+    "precisionHint": "Decimal places a quantity can have when sold (0–3).",
+    "codeHint": "Starts with a lowercase letter; lowercase letters, digits and underscores, up to 16."
+  },
+  "staffRoles": {
+    "title": "Staff roles",
+    "intro": "Named permission sets to assign to staff. Changing a role reaches all of its staff at once.",
+    "create": "Add role",
+    "createTitle": "Add staff role",
+    "editTitle": "Edit staff role",
+    "empty": "No staff roles yet",
+    "members": "Staff",
+    "membersNote_one": "{{count}} staff member with this role gets the change at once.",
+    "membersNote_other": "{{count}} staff members with this role get the change at once.",
+    "capabilityCount_one": "{{count}} permission",
+    "capabilityCount_other": "{{count}} permissions",
+    "delete": "Delete",
+    "confirmDelete": "Delete the staff role “{{name}}”?",
+    "custom": "Custom permissions",
+    "field": "Staff role",
+    "fieldHint": "Pick a role to use its permissions, or Custom permissions to choose each one.",
+    "fromRole": "Permissions of the role “{{name}}”. Edit the role under Configuration → Staff roles."
+  },
+  "branchPayments": {
+    "title": "Payment methods at this branch",
+    "intro": "Pick the methods this branch takes at the counter. Methods are added or disabled under Configuration → Payment methods.",
+    "all": "Use every active method",
+    "allHint": "The branch takes every active method, including ones added later.",
+    "empty": "A branch needs at least one payment method."
+  },
+  "branchPrinting": {
+    "title": "Print templates at this branch",
+    "intro": "Pick the template for each document. A document left on the default prints with the store default.",
+    "storeDefault": "Store default ({{name}})",
+    "disabledChoice": "The chosen template “{{name}}” was disabled; the branch prints with the store default."
+  }
 }

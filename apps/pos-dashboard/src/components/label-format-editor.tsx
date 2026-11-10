@@ -20,12 +20,10 @@ import { TopologyDialog } from './topology-dialog'
 import { Input, TopologyField, TopologySelect } from './topology-fields'
 
 export function LabelFormatEditor({
-  branchId,
   format,
   onSaved,
   onClose,
 }: {
-  branchId: string
   format?: LabelFormat
   onSaved: (saved: LabelFormat) => Promise<void> | void
   onClose: () => void
@@ -36,7 +34,7 @@ export function LabelFormatEditor({
   const [error, setError] = useState('')
   const dirty = form.formState.isDirty
   const mutation = useResourceMutation({
-    mutationFn: (body: Record<string, unknown>) => saveLabelFormat(branchId, format?.id, body),
+    mutationFn: (body: Record<string, unknown>) => saveLabelFormat(format?.id, body),
     successMessage: false,
     errorMessage: false,
   })

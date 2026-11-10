@@ -1,10 +1,7 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { PosRouteGuard } from '../../../../../lib/route-access'
-import { BusinessModelPage } from '../../../../../pages/business-model'
+import { createFileRoute, redirect } from '@tanstack/react-router'
+// Earlier URL of this branch setting; it now lives on another tab.
 export const Route = createFileRoute('/_authenticated/$storeId/branches/$branchId/business-model')({
-  component: () => (
-    <PosRouteGuard page="business-model">
-      <BusinessModelPage />
-    </PosRouteGuard>
-  ),
+  beforeLoad: ({ params }) => {
+    throw redirect({ to: '/$storeId/branches/$branchId', params, replace: true })
+  },
 })

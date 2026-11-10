@@ -11,7 +11,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useSearch } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { BranchSettingsFrame, type BranchSettingsScope } from '../components/branch-settings-frame'
+import { type BranchScope, useBranchScope } from '../components/branch-detail'
 import { VariantUnitEditor } from '../components/variant-unit-editor'
 import {
   assignBranchProduct,
@@ -21,14 +21,11 @@ import {
 } from '../hooks/use-branch-catalog'
 import { hiddenTimestamps } from '../tables/columns'
 
-export function BranchProductsPage() {
-  return (
-    <BranchSettingsFrame section="products">
-      {(scope) => <BranchProducts key={scope.branch.id} {...scope} />}
-    </BranchSettingsFrame>
-  )
+export function BranchProductsTab() {
+  const scope = useBranchScope()
+  return <BranchProducts key={scope.branch.id} {...scope} />
 }
-export function BranchProducts({ branch, access, storeId }: BranchSettingsScope) {
+function BranchProducts({ branch, access, storeId }: BranchScope) {
   const { t } = useTranslation()
   const confirm = useConfirm()
   const client = useQueryClient()

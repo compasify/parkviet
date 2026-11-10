@@ -9,7 +9,7 @@ function Settings() {
   const { all } = useSettingsNav()
   return (
     <div className="p-6">
-      <PageHeader title={t('posDashboard.settings')} />
+      <PageHeader title={t('storeSettings')} />
       <div className="flex flex-col items-start gap-3">
         {all.map((entry) => (
           <Button key={entry.key} variant="outline" asChild>
@@ -17,7 +17,9 @@ function Settings() {
               to={
                 entry.key === 'setup'
                   ? '/$storeId/settings/setup'
-                  : '/$storeId/settings/receipt-templates'
+                  : entry.key === 'store-model'
+                    ? '/$storeId/settings/business-model'
+                    : '/$storeId/settings/receipt-templates'
               }
               params={{ storeId }}
             >

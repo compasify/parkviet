@@ -1,4 +1,3 @@
-import { posCapabilities, sensitiveCapabilities } from '@parkviet/pos-shared/pos-capabilities'
 import { type BusinessProfile, profileLabelKey } from '@parkviet/pos-shared/pos-modules'
 import { describeFailure } from '@parkviet/pos-shared/request-failure'
 import { defaultsFromProfile } from '@parkviet/pos-shared/setup-wizard'
@@ -15,9 +14,12 @@ import {
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
+import type { StaffRole } from '../hooks/use-master-data'
+import { changesSensitive } from '../lib/capability-groups'
 import { branchBody, branchSchema } from '../schemas/branch'
 import { membershipSchema } from '../schemas/membership'
 import { registerSchema } from '../schemas/register'
+import { CapabilityChecklist } from './capability-checklist'
 import { TopologyDialog } from './topology-dialog'
 import { Input, TopologyField, TopologySelect } from './topology-fields'
 
@@ -39,6 +41,11 @@ export type TopologyDraft = {
   branch_id?: string
   staff_id?: string
   capabilities?: string[]
+  // Memberships: the assigned staff role, and what the membership grants now
+  // (the role's capabilities while it has one).
+  staff_role_id?: string | null
+  staff_role_name?: string | null
+  effective_capabilities?: string[]
 }
 export type BranchOption = { id: string; name: string; status: string }
 export type StaffOption = { id: string; email: string; full_name: string | null }
@@ -58,6 +65,9 @@ export type TopologyEditorProps = {
   locations: { id: string; name: string; active: boolean }[]
   memberships: MembershipOption[]
   hideLotSelection?: boolean
+  // The branch is fixed by the page (a branch's own registers or staff).
+  lockBranch?: boolean
+  roles?: StaffRole[]
   profiles?: BusinessProfile[]
   defaultProfileKey?: string
   onSave: (body: Record<string, unknown>) => Promise<void>
@@ -79,6 +89,7 @@ type Values = {
   branch_id: string
   staff_id: string
   capabilities: string[]
+  staff_role_id: string
 }
 export function TopologyEditor({
   kind,
@@ -90,6 +101,8 @@ export function TopologyEditor({
   profiles = [],
   defaultProfileKey,
   hideLotSelection = false,
+  lockBranch = false,
+  roles = [],
   onSave,
   onClose,
 }: TopologyEditorProps) {
@@ -111,6 +124,7 @@ export function TopologyEditor({
       branch_id: record.branch_id ?? '',
       staff_id: record.staff_id ?? '',
       capabilities: record.capabilities ?? ['pos.shift.open'],
+      staff_role_id: record.staff_role_id ?? '',
     },
   })
   const draft = form.watch()
@@ -120,13 +134,20 @@ export function TopologyEditor({
   const busy = form.formState.isSubmitting
   const dirty = form.formState.isDirty
   const offersProfile = kind === 'branches' && !record.id && profiles.length > 0
-  const sensitive =
-    kind === 'memberships' &&
-    sensitiveCapabilities.some(
-      (capability) =>
-        draft.capabilities.includes(capability) !==
-        (record.capabilities ?? ['pos.shift.open']).includes(capability),
-    )
+  // A role the list no longer offers (disabled since) keeps its grants unknown here.
+  const role = roles.find((item) => item.id === draft.staff_role_id)
+  const granted = record.effective_capabilities ?? record.capabilities ?? ['pos.shift.open']
+  const effective = draft.staff_role_id
+    ? (role?.capabilities ?? (draft.staff_role_id === record.staff_role_id ? granted : []))
+    : draft.capabilities
+  const sensitive = kind === 'memberships' && changesSensitive(granted, effective)
+  const roleOptions = [
+    { value: '', label: t('staffRoles.custom') },
+    ...roles.map((item) => ({ value: item.id, label: item.name })),
+    ...(record.staff_role_id && !roles.some((item) => item.id === record.staff_role_id)
+      ? [{ value: record.staff_role_id, label: record.staff_role_name ?? record.staff_role_id }]
+      : []),
+  ]
   useEffect(() => {
     if (!offersProfile || dirty) return
     const profile =
@@ -163,7 +184,7 @@ export function TopologyEditor({
         : kind === 'registers'
           ? registerSchema.parse(values)
           : record.id
-            ? { capabilities: values.capabilities }
+            ? { capabilities: values.capabilities, staff_role_id: values.staff_role_id || null }
             : membershipSchema.parse(values)
     setError('')
     try {
@@ -256,7 +277,7 @@ export function TopologyEditor({
                       label: `${b.name}${b.status === 'disabled' ? ` · ${t('statusDisabled')}` : ''}`,
                     })),
                 ],
-                Boolean(record.id),
+                Boolean(record.id) || lockBranch,
               )}
             {kind === 'branches' && (
               <>
@@ -386,27 +407,29 @@ export function TopologyEditor({
                   !record.id ? 'adminExistingMembershipHint' : undefined,
                 )}
                 <FieldDescription>{t('adminPermissionBoundary')}</FieldDescription>
-                <fieldset aria-label={t('membership')} className="space-y-4">
-                  {posCapabilities.map(([value, label]) => (
-                    <Field key={value} orientation="horizontal">
-                      <Checkbox
-                        id={`cap-${value}`}
-                        checked={draft.capabilities.includes(value)}
-                        onCheckedChange={(checked) =>
-                          set(
-                            'capabilities',
-                            checked === true
-                              ? [...draft.capabilities, value]
-                              : draft.capabilities.filter((item) => item !== value),
-                          )
-                        }
-                      />
-                      <div>
-                        <FieldLabel htmlFor={`cap-${value}`}>{t(label)}</FieldLabel>
-                        <FieldDescription>{t(`${label}Hint`)}</FieldDescription>
-                      </div>
-                    </Field>
-                  ))}
+                {select(
+                  'staff_role_id',
+                  'staffRoles.field',
+                  roleOptions,
+                  false,
+                  'staffRoles.fieldHint',
+                )}
+                <fieldset aria-label={t('membership')}>
+                  {draft.staff_role_id ? (
+                    <>
+                      <FieldDescription className="mb-4">
+                        {t('staffRoles.fromRole', {
+                          name: roleOptions.find((o) => o.value === draft.staff_role_id)?.label,
+                        })}
+                      </FieldDescription>
+                      <CapabilityChecklist value={effective} disabled />
+                    </>
+                  ) : (
+                    <CapabilityChecklist
+                      value={draft.capabilities}
+                      onChange={(next) => set('capabilities', next)}
+                    />
+                  )}
                 </fieldset>
                 {sensitive && (
                   <Field orientation="horizontal">

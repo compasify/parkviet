@@ -1,64 +1,40 @@
+import { branchSettingVisible } from '@parkviet/pos-shared/module-registry'
 import { POS_FEATURES } from '@parkviet/pos-shared/pos-features'
 import { describeFailure, failureStatus, posFailureKey } from '@parkviet/pos-shared/request-failure'
 import type { PosBranch } from '@parkviet/pos-shared/types/pos-context'
 import { useStore } from '@spree/dashboard-core'
 import { useMutation } from '@tanstack/react-query'
-import { useParams } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { BranchPicker } from '../components/branch-picker'
+import { useBranchScope } from '../components/branch-detail'
+import { BranchLabelFormats } from '../components/branch-label-formats'
 import {
   type FeatureChange,
   FeatureSwitchRow,
   featureChangeText,
 } from '../components/feature-switch-row'
-import { ModelCard, ModelNotice, ModelPage, ModelState } from '../components/setup/model-ui'
+import { ModelCard, ModelNotice, ModelState } from '../components/setup/model-ui'
 import { setFeature, useBranchFeatures } from '../hooks/use-branch-features'
-import { useBranchSelection } from '../hooks/use-branch-selection'
 import { refreshBusinessModel } from '../hooks/use-onboarding'
-import { usePosContext } from '../hooks/use-pos-context'
+import { usePosSession } from '../hooks/use-pos-session'
 
-export function BranchFeaturesPage() {
-  const { t } = useTranslation()
-  const storeContext = usePosContext()
-  const { selection } = useBranchSelection(storeContext.data?.branches)
-  const context = usePosContext(selection)
-  const { branchId } = useParams({ strict: false })
-  const branch = context.data?.branches.find((row) => row.id === (branchId ?? selection.branchId))
-  const access = context.data?.administration
-  const manager = Boolean(
-    branch &&
-      branch.id === selection.branchId &&
-      context.data?.capabilities.includes('pos.topology.manage'),
-  )
+// The branch's feature switches, and the shared scale label formats it reads
+// while measured goods are on there.
+export function BranchFeaturesTab() {
+  const { context } = usePosSession()
+  const { branch, access, branchWrite, modules } = useBranchScope()
   return (
-    <ModelPage
-      title={branch ? `${t('branchFeaturesTitle')} · ${branch.name}` : t('branchFeaturesTitle')}
-      description={t('branchFeaturesIntro')}
-      actions={<BranchPicker />}
-      section="features"
-    >
-      {context.isPending ? (
-        <ModelState title={t('contextWaiting')} />
-      ) : context.isError ? (
-        <ModelState
-          error
-          title={t(posFailureKey(context.error))}
-          retry={() => void context.refetch()}
-        />
-      ) : !access?.read && !manager ? (
-        <ModelState error title={t('adminAccessDenied')} />
-      ) : !branch ? (
-        <ModelState title={t('branchesEmpty')} />
-      ) : (
-        <BranchFeatures
-          key={branch.id}
-          branch={branch}
-          storeWrite={access?.write === true}
-          branchWrite={access?.write === true || manager}
-        />
+    <div className="space-y-6">
+      <BranchFeatures
+        key={branch.id}
+        branch={branch}
+        storeWrite={access.write}
+        branchWrite={branchWrite}
+      />
+      {branchSettingVisible({ ...context.data, modules }, 'label-formats') && (
+        <BranchLabelFormats key={`labels-${branch.id}`} branchId={branch.id} write={access.write} />
       )}
-    </ModelPage>
+    </div>
   )
 }
 
