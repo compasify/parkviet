@@ -1,32 +1,52 @@
 import { branchSettingVisible } from '@parkviet/pos-shared/module-registry'
 import { posCapabilities } from '@parkviet/pos-shared/pos-capabilities'
 import { describeFailure } from '@parkviet/pos-shared/request-failure'
-import type { PosBranch } from '@parkviet/pos-shared/types/pos-context'
-import { PageHeader, useResourceMutation, useStore } from '@spree/dashboard-core'
 import {
+  type ColumnDef,
+  defineTable,
+  PageHeader,
+  ResourceTable,
+  resourceSearchSchema,
+  useResourceMutation,
+} from '@spree/dashboard-core'
+import {
+  ActiveBadge,
   Badge,
   Button,
   Card,
   CardContent,
   CardHeader,
   CardTitle,
+  ResourceNameCell,
+  type RowAction,
+  RowActions,
   useConfirm,
+  useRowClickBridge,
 } from '@spree/dashboard-ui'
+import {
+  BanIcon,
+  PackageIcon,
+  RotateCcwIcon,
+  SlidersHorizontalIcon,
+  StoreIcon,
+  TagIcon,
+} from '@spree/dashboard-ui/icons'
 import { useQueryClient } from '@tanstack/react-query'
-import { Link } from '@tanstack/react-router'
-import { type ReactNode, useState } from 'react'
+import { useNavigate, useSearch } from '@tanstack/react-router'
+import { useCallback, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   type TopologyDraft,
   TopologyEditor,
   type TopologyKind,
 } from '../components/topology-editor'
-import { Input, TopologyField, TopologySelect } from '../components/topology-fields'
 import { useBranchModules } from '../hooks/use-branch-modules'
 import { useBusinessProfiles } from '../hooks/use-business-profiles'
 import { useStoreProfile } from '../hooks/use-onboarding'
 import { usePosSession } from '../hooks/use-pos-session'
+import { useSession } from '../hooks/use-session'
 import {
+  allPages,
   useBranches,
   useLocationOptions,
   useMemberships,
@@ -34,42 +54,79 @@ import {
   useStaffOptions,
 } from '../hooks/use-topology'
 import { posRequest } from '../lib/pos-request'
-import { TopologyTable } from '../tables/topology'
+import { posKey } from '../lib/query-keys'
+import { localList } from '../tables/local-list'
 
-function BranchLinks({ branch }: { branch: PosBranch }) {
+type TopologyRow = TopologyDraft & {
+  id: string
+  status: string
+  branch_id?: string
+  staff_id?: string
+  staff?: { id: string; email: string; full_name: string | null }
+}
+
+// The POS records carry no timestamps, so the columns ResourceTable adds for
+// them would only ever show dashes and filter nothing.
+const NO_TIMESTAMPS: ColumnDef<TopologyRow>[] = ['created_at', 'updated_at'].map((key) => ({
+  key,
+  label: '',
+  displayable: false,
+  filterable: false,
+  sortable: false,
+}))
+
+// Branch pages reached from the row menu. Label formats only exist for branches
+// whose modules include them, which is a per-branch lookup.
+function BranchRowActions({ row, actions }: { row: TopologyRow; actions: RowAction[] }) {
   const { t } = useTranslation()
-  const { storeId } = useStore()
+  const navigate = useNavigate()
+  const { storeId } = useSession()
   const { context } = usePosSession()
-  const modules = useBranchModules(branch.id)
+  const modules = useBranchModules(row.id)
+  const open = (path: string) => () =>
+    void navigate({ to: `/${storeId}/branches/${row.id}/${path}` as string })
   return (
-    <div className="flex flex-wrap gap-2">
-      {[
-        ['products', 'branchProductsTitle', 'branchProductsFor'],
-        ...(branchSettingVisible({ ...context.data, modules }, 'label-formats')
-          ? [['label-formats', 'labelFormatsTitle', 'labelFormatsFor']]
-          : []),
-        ['features', 'branchFeaturesTitle', 'branchFeaturesFor'],
-        ['business-model', 'businessModel.title', 'businessModel.titleFor'],
-      ].map(([path, label, aria]) => (
-        <Button key={path} variant="outline" size="sm" asChild>
-          <Link
-            to={`/${storeId}/branches/${branch.id}/${path}` as string}
-            aria-label={t(aria, { name: branch.name })}
-          >
-            {t(label)}
-          </Link>
-        </Button>
-      ))}
-    </div>
+    <RowActions
+      actions={[
+        ...actions.slice(0, 1),
+        {
+          key: 'products',
+          label: t('branchProductsTitle'),
+          icon: <PackageIcon className="size-4" />,
+          onSelect: open('products'),
+        },
+        {
+          key: 'label-formats',
+          label: t('labelFormatsTitle'),
+          icon: <TagIcon className="size-4" />,
+          visible: branchSettingVisible({ ...context.data, modules }, 'label-formats'),
+          onSelect: open('label-formats'),
+        },
+        {
+          key: 'features',
+          label: t('branchFeaturesTitle'),
+          icon: <SlidersHorizontalIcon className="size-4" />,
+          onSelect: open('features'),
+        },
+        {
+          key: 'business-model',
+          label: t('businessModel.title'),
+          icon: <StoreIcon className="size-4" />,
+          onSelect: open('business-model'),
+        },
+        ...actions.slice(1),
+      ]}
+    />
   )
 }
 
 export function TopologyPage({ kind = 'branches' }: { kind?: TopologyKind }) {
   const { t } = useTranslation()
   const { context } = usePosSession()
-  const { storeId } = useStore()
+  const { storeId } = useSession()
   const queryClient = useQueryClient()
   const confirm = useConfirm()
+  const searchParams = resourceSearchSchema.parse(useSearch({ strict: false }))
   // Selling-membership capabilities never authorize store administration.
   const access = context.data?.administration ?? { read: false, write: false }
   const branches = useBranches(access.read)
@@ -80,9 +137,6 @@ export function TopologyPage({ kind = 'branches' }: { kind?: TopologyKind }) {
   const profiles = useBusinessProfiles(context.data?.store.id ?? null, access.write)
   const storeProfile = useStoreProfile(context.data?.store.id ?? null, access.write)
   const [editor, setEditor] = useState<TopologyDraft | null>(null)
-  const [search, setSearch] = useState('')
-  const [status, setStatus] = useState('all')
-  const [branchFilter, setBranchFilter] = useState('')
   const [notice, setNotice] = useState<{ text: string; failed: boolean } | null>(null)
   const editedModules = useBranchModules(kind === 'branches' ? (editor?.id ?? null) : null)
   const dependencies = [branches, registers, memberships, staff, locations]
@@ -90,18 +144,25 @@ export function TopologyPage({ kind = 'branches' }: { kind?: TopologyKind }) {
   const loadError = dependencies.find((query) => query.isError)?.error
   const branchRows = branches.data?.data ?? []
   const membershipRows = memberships.data?.data ?? []
+  const locationRows = locations.data?.data ?? []
   const staffRows = [
     ...(staff.data?.data ?? []),
     ...membershipRows.flatMap((m) => (m.staff ? [m.staff] : [])),
   ].filter((user, index, all) => all.findIndex((other) => other.id === user.id) === index)
   const branchName = (id?: string) =>
     branchRows.find((branch) => branch.id === id)?.name ?? t('adminUnavailable')
-  const staffName = (id: string) => {
-    const user = staffRows.find((item) => item.id === id)
+  const locationName = (id?: string | null) =>
+    locationRows.find((item) => item.id === id)?.name ?? t('adminUnavailable')
+  const staffUser = (row: TopologyRow) =>
+    row.staff ?? staffRows.find((item) => item.id === row.staff_id)
+  const staffName = (row: TopologyRow) => {
+    const user = staffUser(row)
     return user
       ? `${user.full_name ? `${user.full_name} · ` : ''}${user.email}`
       : t('adminUnavailable')
   }
+  const rowName = (row: TopologyRow) => (kind === 'memberships' ? staffName(row) : (row.name ?? ''))
+  const canEdit = access.write && ready
   async function refresh() {
     await queryClient.invalidateQueries({
       predicate: (query) => query.queryKey[0] === 'pos' && query.queryKey[1] === storeId,
@@ -133,11 +194,9 @@ export function TopologyPage({ kind = 'branches' }: { kind?: TopologyKind }) {
     setNotice({ text: t('saved'), failed: false })
     await refresh()
   }
-  async function changeStatus(
-    record: TopologyDraft & { id: string; status: string },
-    name: string,
-  ) {
+  async function changeStatus(record: TopologyRow) {
     if (mutation.isPending || !access.write) return
+    const name = rowName(record)
     const disabling = record.status === 'active'
     if (
       !(await confirm({
@@ -161,144 +220,170 @@ export function TopologyPage({ kind = 'branches' }: { kind?: TopologyKind }) {
       setNotice({ text: describeFailure(failure, t), failed: true })
     }
   }
-  const actions = (
-    record: TopologyDraft & { id: string; status: string },
-    name: string,
-    branchId: string,
-  ) => (
-    <div className="flex flex-wrap gap-2">
-      <Button
-        size="sm"
-        variant="outline"
-        disabled={!access.write || !ready || mutation.isPending}
-        aria-label={t('adminEditName', { name })}
-        onClick={() => {
-          setNotice(null)
-          setEditor(record)
-        }}
-      >
-        {t('adminEdit')}
-      </Button>
-      {record.status === 'active' ||
-      membershipRows.some(
-        (m) =>
-          m.branch_id === branchId &&
-          m.staff_id === context.data?.staff.id &&
-          m.capabilities.includes('pos.topology.recover'),
-      ) ? (
-        <Button
-          size="sm"
-          variant={record.status === 'active' ? 'destructive' : 'outline'}
-          disabled={!access.write || mutation.isPending}
-          onClick={() => void changeStatus(record, name)}
-        >
-          {t(record.status === 'active' ? 'adminDisable' : 'adminEnable')}
-        </Button>
-      ) : (
-        <span className="text-sm text-muted-foreground">{t('adminRecoveryRequired')}</span>
-      )}
-    </div>
-  )
-  function visible(record: { status: string; branch_id?: string }, name: string) {
-    return (
-      (status === 'all' || status === record.status) &&
-      (!branchFilter || kind === 'branches' || record.branch_id === branchFilter) &&
-      name.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())
-    )
+  function edit(record: TopologyDraft) {
+    setNotice(null)
+    setEditor(record)
   }
-  let table: ReactNode
-  let count = 0
-  if (kind === 'branches') {
-    const rows = branchRows.filter((item) => visible(item, `${item.name} ${item.code}`))
-    count = rows.length
-    table = (
-      <TopologyTable
-        label={t('branchList')}
-        rows={rows}
-        columns={[
-          {
-            label: t('adminName'),
-            cell: (branch) => (
-              <div className="space-y-1">
-                <strong>{branch.name}</strong>
-                <p>
-                  {branch.code} · {branch.timezone}
-                </p>
-                <p>
-                  {locations.data?.data.find((item) => item.id === branch.stock_location_id)
-                    ?.name ?? t('adminUnavailable')}
-                </p>
-                {branch.receiving_note && <p>{branch.receiving_note}</p>}
-              </div>
-            ),
-          },
-          {
-            label: t('adminStatus'),
-            cell: (branch) => (
-              <Badge variant="outline">
-                {t(branch.status === 'active' ? 'statusActive' : 'statusDisabled')}
-              </Badge>
-            ),
-          },
-          {
-            label: t('adminEdit'),
-            cell: (branch) => (
-              <div className="space-y-3">
-                {actions(branch, branch.name, branch.id)}
-                <BranchLinks branch={branch} />
-              </div>
-            ),
-          },
-        ]}
+  // Re-enabling needs the recovery capability at the record's branch.
+  const recoverable = (record: TopologyRow) =>
+    record.status === 'active' ||
+    membershipRows.some(
+      (m) =>
+        m.branch_id === (kind === 'branches' ? record.id : record.branch_id) &&
+        m.staff_id === context.data?.staff.id &&
+        m.capabilities.includes('pos.topology.recover'),
+    )
+  function rowActions(record: TopologyRow): RowAction[] {
+    const active = record.status === 'active'
+    return [
+      {
+        key: 'edit',
+        label: t('adminEdit'),
+        visible: access.write,
+        disabled: !canEdit || mutation.isPending,
+        onSelect: () => edit(record),
+      },
+      {
+        key: active ? 'disable' : 'enable',
+        label: t(
+          active ? 'adminDisable' : recoverable(record) ? 'adminEnable' : 'adminRecoveryRequired',
+        ),
+        icon: active ? <BanIcon className="size-4" /> : <RotateCcwIcon className="size-4" />,
+        visible: access.write,
+        destructive: active,
+        disabled: mutation.isPending || !recoverable(record),
+        onSelect: () => void changeStatus(record),
+      },
+    ]
+  }
+
+  const tableKey = `pos-${kind}`
+  const rowAttribute = `data-pos-${kind}-id` as const
+  const records = (): TopologyRow[] =>
+    ((kind === 'branches'
+      ? branchRows
+      : kind === 'registers'
+        ? registers.data?.data
+        : membershipRows) ?? []) as TopologyRow[]
+  // The bridge listens on the document once; the ref hands it the current rows.
+  const openRecord = useRef<(id: string) => void>(() => {})
+  openRecord.current = (id) => {
+    const record = records().find((row) => row.id === id)
+    if (record && canEdit) edit(record)
+  }
+  const openRow = useCallback((id: string) => openRecord.current(id), [])
+  useRowClickBridge(rowAttribute, openRow)
+  const nameCell = (row: TopologyRow, name: string, secondary?: string) => (
+    <ResourceNameCell
+      id={row.id}
+      dataAttr={canEdit ? rowAttribute : undefined}
+      name={name}
+      secondary={secondary}
+    />
+  )
+  const statusColumn: ColumnDef<TopologyRow> = {
+    key: 'status',
+    label: t('adminStatus'),
+    sortable: true,
+    filterable: true,
+    default: true,
+    filterType: 'enum',
+    quickFilter: true,
+    filterOptions: ['active', 'disabled'].map((value) => ({
+      value,
+      label: t(value === 'active' ? 'statusActive' : 'statusDisabled'),
+    })),
+    render: (row) => (
+      <ActiveBadge
+        active={row.status === 'active'}
+        activeLabel={t('statusActive')}
+        inactiveLabel={t('statusDisabled')}
       />
-    )
-  } else if (kind === 'registers') {
-    const rows = (registers.data?.data ?? []).filter((item) =>
-      visible(item, `${item.name} ${item.code} ${branchName(item.branch_id)}`),
-    )
-    count = rows.length
-    table = (
-      <TopologyTable
-        label={t('adminRegisterList')}
-        rows={rows}
-        columns={[
+    ),
+  }
+  const branchColumn: ColumnDef<TopologyRow> = {
+    key: 'branch_id',
+    label: t('branch'),
+    sortable: true,
+    filterable: true,
+    default: true,
+    filterType: 'enum',
+    quickFilter: true,
+    filterOptions: branchRows.map((branch) => ({ value: branch.id, label: branch.name })),
+    render: (row) => branchName(row.branch_id),
+  }
+  const columns: ColumnDef<TopologyRow>[] =
+    kind === 'branches'
+      ? [
           {
+            key: 'name',
             label: t('adminName'),
-            cell: (row) => (
-              <div>
-                <strong>{row.name}</strong>
-                <p>
-                  {row.code} · {branchName(row.branch_id)}
-                </p>
-              </div>
-            ),
+            sortable: true,
+            default: true,
+            render: (row) => nameCell(row, row.name ?? '', row.code),
           },
           {
-            label: t('adminStatus'),
-            cell: (row) => t(row.status === 'active' ? 'statusActive' : 'statusDisabled'),
+            key: 'stock_location_id',
+            label: t('stockLocation'),
+            sortable: true,
+            filterable: true,
+            default: true,
+            filterType: 'enum',
+            filterOptions: locationRows.map((item) => ({ value: item.id, label: item.name })),
+            render: (row) => locationName(row.stock_location_id),
           },
-          { label: t('adminEdit'), cell: (row) => actions(row, row.name, row.branch_id) },
-        ]}
-      />
-    )
-  } else {
-    const rows = membershipRows.filter((item) =>
-      visible(item, `${staffName(item.staff_id)} ${branchName(item.branch_id)}`),
-    )
-    count = rows.length
-    table = (
-      <TopologyTable
-        label={t('staffList')}
-        rows={rows}
-        columns={[
           {
-            label: t('adminStaff'),
-            cell: (row) => (
-              <div>
-                <strong>{staffName(row.staff_id)}</strong>
-                <p>{branchName(row.branch_id)}</p>
+            key: 'timezone',
+            label: t('timezone'),
+            sortable: true,
+            default: true,
+            className: 'whitespace-nowrap text-muted-foreground',
+          },
+          {
+            key: 'receiving_note',
+            label: t('adminReceivingNote'),
+            render: (row) => row.receiving_note || '—',
+          },
+          statusColumn,
+        ]
+      : kind === 'registers'
+        ? [
+            {
+              key: 'name',
+              label: t('adminName'),
+              sortable: true,
+              default: true,
+              render: (row) => nameCell(row, row.name ?? '', row.code),
+            },
+            branchColumn,
+            statusColumn,
+          ]
+        : [
+            {
+              key: 'staff_id',
+              label: t('adminStaff'),
+              sortable: true,
+              default: true,
+              render: (row) => {
+                const user = staffUser(row)
+                return user
+                  ? nameCell(
+                      row,
+                      user.full_name || user.email,
+                      user.full_name ? user.email : undefined,
+                    )
+                  : t('adminUnavailable')
+              },
+            },
+            branchColumn,
+            {
+              key: 'capabilities',
+              label: t('membership'),
+              default: true,
+              className: 'whitespace-normal',
+              render: (row) => (
                 <div className="flex flex-wrap gap-1">
-                  {row.capabilities.map((capability) => (
+                  {(row.capabilities ?? []).map((capability) => (
                     <Badge key={capability} variant="outline">
                       {t(
                         posCapabilities.find(([value]) => value === capability)?.[1] ??
@@ -307,21 +392,18 @@ export function TopologyPage({ kind = 'branches' }: { kind?: TopologyKind }) {
                     </Badge>
                   ))}
                 </div>
-              </div>
-            ),
-          },
-          {
-            label: t('adminStatus'),
-            cell: (row) => t(row.status === 'active' ? 'statusActive' : 'statusDisabled'),
-          },
-          {
-            label: t('adminEdit'),
-            cell: (row) => actions(row, staffName(row.staff_id), row.branch_id),
-          },
-        ]}
-      />
-    )
-  }
+              ),
+            },
+            statusColumn,
+          ]
+  defineTable<TopologyRow>(tableKey, {
+    searchParam: 'search',
+    searchPlaceholder: t(kind === 'memberships' ? 'adminSearchStaff' : 'adminSearchName'),
+    defaultSort: { field: kind === 'memberships' ? 'staff_id' : 'name', direction: 'asc' },
+    emptyMessage: t('adminNoResults'),
+    columns: [...columns, ...NO_TIMESTAMPS],
+  })
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -329,13 +411,7 @@ export function TopologyPage({ kind = 'branches' }: { kind?: TopologyKind }) {
         description={t(`adminHint_${kind}`)}
         actions={
           access.read && access.write ? (
-            <Button
-              disabled={!ready || mutation.isPending}
-              onClick={() => {
-                setNotice(null)
-                setEditor({})
-              }}
-            >
+            <Button disabled={!ready || mutation.isPending} onClick={() => edit({})}>
               {t(
                 kind === 'branches'
                   ? 'createBranch'
@@ -344,6 +420,8 @@ export function TopologyPage({ kind = 'branches' }: { kind?: TopologyKind }) {
                     : 'assignMembership',
               )}
             </Button>
+          ) : access.read ? (
+            <Badge variant="outline">{t('adminReadAccess')}</Badge>
           ) : undefined
         }
       />
@@ -363,9 +441,6 @@ export function TopologyPage({ kind = 'branches' }: { kind?: TopologyKind }) {
         </Card>
       ) : (
         <>
-          <Badge variant="outline">
-            {t(access.write ? 'adminWriteAccess' : 'adminReadAccess')}
-          </Badge>
           {notice && (
             <p
               role={notice.failed ? 'alert' : 'status'}
@@ -383,68 +458,43 @@ export function TopologyPage({ kind = 'branches' }: { kind?: TopologyKind }) {
               </Button>
             </div>
           )}
-          <Card>
-            <CardContent className="space-y-4 pt-6">
-              <div className="grid gap-4 sm:grid-cols-3">
-                <TopologyField label={t('adminSearch')}>
-                  {(id) => (
-                    <Input
-                      id={id}
-                      type="search"
-                      value={search}
-                      placeholder={t(
-                        kind === 'memberships' ? 'adminSearchStaff' : 'adminSearchName',
-                      )}
-                      onChange={(e) => setSearch(e.target.value)}
-                    />
-                  )}
-                </TopologyField>
-                {kind !== 'branches' && (
-                  <TopologyField label={t('branch')}>
-                    {(id) => (
-                      <TopologySelect
-                        id={id}
-                        value={branchFilter}
-                        onChange={setBranchFilter}
-                        options={[
-                          { value: '', label: t('adminAllBranches') },
-                          ...branchRows.map((b) => ({ value: b.id, label: b.name })),
-                        ]}
-                      />
-                    )}
-                  </TopologyField>
-                )}
-                <TopologyField label={t('adminStatus')}>
-                  {(id) => (
-                    <TopologySelect
-                      id={id}
-                      value={status}
-                      onChange={setStatus}
-                      options={['all', 'active', 'disabled'].map((value) => ({
-                        value,
-                        label: t(
-                          value === 'all'
-                            ? 'adminAllStatuses'
-                            : value === 'active'
-                              ? 'statusActive'
-                              : 'statusDisabled',
-                        ),
-                      }))}
-                    />
-                  )}
-                </TopologyField>
-              </div>
-              {!ready && !loadError && <p role="status">{t('waiting')}</p>}
-              {ready && count === 0 && (
-                <div>
-                  <p>{t('adminNoResults')}</p>
-                  <p>{t('adminEmptyHint')}</p>
-                </div>
-              )}
-              {table}
-              <p>{t('adminResultCount', { count })}</p>
-            </CardContent>
-          </Card>
+          <ResourceTable<TopologyRow>
+            key={kind}
+            tableKey={tableKey}
+            hideHeader
+            queryKey={['pos', 'topology-table', kind]}
+            queryFn={async (params: Record<string, unknown>) => {
+              const all = await queryClient.fetchQuery({
+                queryKey: posKey(storeId, 'topology', kind),
+                queryFn: () => allPages<TopologyRow>(`/pos/${kind}`),
+              })
+              return localList(all.data, params, {
+                searchParam: 'search',
+                text: (row) =>
+                  kind === 'branches'
+                    ? `${row.name} ${row.code}`
+                    : kind === 'registers'
+                      ? `${row.name} ${row.code} ${branchName(row.branch_id)}`
+                      : `${staffName(row)} ${branchName(row.branch_id)}`,
+                sortValue: (row, field) =>
+                  field === 'branch_id'
+                    ? branchName(row.branch_id)
+                    : field === 'stock_location_id'
+                      ? locationName(row.stock_location_id)
+                      : field === 'staff_id'
+                        ? staffName(row)
+                        : undefined,
+              })
+            }}
+            searchParams={searchParams}
+            rowActions={(row) =>
+              kind === 'branches' ? (
+                <BranchRowActions row={row} actions={rowActions(row)} />
+              ) : (
+                <RowActions actions={rowActions(row)} />
+              )
+            }
+          />
         </>
       )}
       {editor && access.write && ready && (
@@ -454,7 +504,7 @@ export function TopologyPage({ kind = 'branches' }: { kind?: TopologyKind }) {
           branches={branchRows}
           staff={staffRows}
           memberships={membershipRows}
-          locations={locations.data?.data ?? []}
+          locations={locationRows}
           profiles={(profiles.data?.profiles ?? []).filter(
             (profile) => profile.status === 'available',
           )}

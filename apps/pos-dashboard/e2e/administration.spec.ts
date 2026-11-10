@@ -43,11 +43,18 @@ async function install(page: Page, access = { read: true, write: true }) {
 }
 async function open(page: Page, path = 'branches') { await page.goto(`/store_1/${path}`); }
 async function select(page: Page, label: string, option: string) { await page.getByRole('dialog').getByLabel(label, { exact: true }).click(); await page.getByRole('option', { name: option, exact: true }).click(); }
+// Spree's own strings are English under the dev server, which pre-bundles the
+// framework without its locale files; the production build carries both.
+const MENU = /^(Open actions|Mở menu thao tác)$/;
+async function act(page: Page, row: string, item: string) { await page.getByRole('row').filter({ hasText: row }).getByRole('button', { name: MENU }).click(); await page.getByRole('menuitem', { name: item, exact: true }).click(); }
 async function confirm(page: Page, action: string) { await page.getByRole('dialog').last().getByRole('button', { name: action, exact: true }).click(); }
 
 test('store authority without a selling membership lists warehouses and every staff page', async ({ page }, testInfo) => {
   const { state } = await install(page); await open(page);
-  await expect(page.getByRole('table', { name: 'Danh sách chi nhánh' })).toContainText('Kho hàng trung tâm');
+  await expect(page.getByRole('table')).toContainText('Kho hàng trung tâm');
+  await page.getByRole('row').filter({ hasText: 'Siêu thị Hiền' }).getByRole('button', { name: MENU }).click();
+  await expect(page.getByRole('menuitem')).toHaveText(['Chỉnh sửa', 'Hàng bán tại chi nhánh', 'Mẫu tem cân', 'Chức năng chi nhánh', 'Mô hình kinh doanh', 'Ngừng hoạt động']);
+  await page.keyboard.press('Escape');
   await expect(page.getByRole('button', { name: 'Thêm chi nhánh', exact: true })).toBeEnabled();
   expect(state.staffPages).toEqual(expect.arrayContaining([1, 2])); expect(state.writes).toEqual([]);
   await page.screenshot({ path: testInfo.outputPath('administration-branches.png'), fullPage: true });
@@ -55,28 +62,28 @@ test('store authority without a selling membership lists warehouses and every st
 });
 test('branch and register creation, editing, disabling and recovery preserve payloads', async ({ page }) => {
   const { state } = await install(page); await open(page);
-  await page.getByRole('button', { name: 'Chỉnh sửa Siêu thị Hiền', exact: true }).click();
+  await page.getByRole('table').getByRole('button', { name: /^Siêu thị Hiền/ }).click();
   const dialog = page.getByRole('dialog');
   await dialog.getByLabel('Tên hiển thị').fill('Siêu thị Hiền · Trung tâm'); await select(page, 'Kho nhận hàng', 'Kho tiếp nhận hàng');
   await dialog.getByLabel('Ghi chú nhận hàng').fill('Gọi trước khi nhận hàng'); await dialog.getByRole('button', { name: 'Lưu', exact: true }).click(); await expect(dialog).toHaveCount(0);
   expect(state.writes[0]).toMatchObject({ method: 'PATCH', path: '/pos/branches/branch_main', body: { receiving_stock_location_id: 'stock_returns', receiving_note: 'Gọi trước khi nhận hàng' } });
   await page.getByRole('button', { name: 'Thêm chi nhánh', exact: true }).click(); await dialog.getByLabel('Tên hiển thị').fill('Chi nhánh Quận 3'); await dialog.getByLabel('Mã', { exact: true }).fill('q3'); await select(page, 'Kho bán hàng', 'Kho hàng trung tâm'); await dialog.getByRole('button', { name: 'Lưu', exact: true }).click();
-  await expect(page.getByRole('table', { name: 'Danh sách chi nhánh' })).toContainText('Chi nhánh Quận 3');
-  await open(page, 'registers'); const table = page.getByRole('table', { name: 'Danh sách quầy bán hàng' });
+  await expect(page.getByRole('table')).toContainText('Chi nhánh Quận 3');
+  await open(page, 'registers'); const table = page.getByRole('table');
   await page.getByRole('button', { name: 'Thêm quầy', exact: true }).click(); await dialog.getByLabel('Tên hiển thị').fill('Quầy tầng hai'); await dialog.getByLabel('Mã', { exact: true }).fill('q2'); await select(page, 'Chi nhánh', 'Siêu thị Hiền · Trung tâm'); await dialog.getByRole('button', { name: 'Lưu', exact: true }).click(); await expect(table).toContainText('Quầy tầng hai');
-  await page.getByRole('button', { name: 'Chỉnh sửa Quầy tầng một', exact: true }).click(); await dialog.getByLabel('Tên hiển thị').fill('Quầy ưu tiên'); await expect(dialog.getByLabel('Chi nhánh', { exact: true })).toBeDisabled(); await dialog.getByRole('button', { name: 'Lưu', exact: true }).click();
-  const row = table.getByRole('row').filter({ hasText: 'Quầy ưu tiên' }); await row.getByRole('button', { name: 'Ngừng hoạt động', exact: true }).click(); await confirm(page, 'Ngừng hoạt động'); await expect(row).toContainText('đã ngừng');
-  await row.getByRole('button', { name: 'Kích hoạt lại', exact: true }).click(); await confirm(page, 'Kích hoạt lại'); await expect(row).toContainText('đang dùng');
+  await act(page, 'Quầy tầng một', 'Chỉnh sửa'); await dialog.getByLabel('Tên hiển thị').fill('Quầy ưu tiên'); await expect(dialog.getByLabel('Chi nhánh', { exact: true })).toBeDisabled(); await dialog.getByRole('button', { name: 'Lưu', exact: true }).click();
+  const row = table.getByRole('row').filter({ hasText: 'Quầy ưu tiên' }); await act(page, 'Quầy ưu tiên', 'Ngừng hoạt động'); await confirm(page, 'Ngừng hoạt động'); await expect(row).toContainText('đã ngừng');
+  await act(page, 'Quầy ưu tiên', 'Kích hoạt lại'); await confirm(page, 'Kích hoạt lại'); await expect(row).toContainText('đang dùng');
 });
 test('staff permissions expose 18 capabilities, confirm sensitive changes and exclude existing memberships', async ({ page }) => {
   const { state, memberships } = await install(page); await open(page, 'staff');
-  await page.getByRole('button', { name: 'Chỉnh sửa Nguyễn Thị Lan · lan@example.test', exact: true }).click(); const dialog = page.getByRole('dialog');
+  await act(page, 'Nguyễn Thị Lan', 'Chỉnh sửa'); const dialog = page.getByRole('dialog');
   await expect(dialog.getByRole('group', { name: 'Quyền tại chi nhánh', exact: true }).getByRole('checkbox')).toHaveCount(18);
   await dialog.getByRole('checkbox', { name: 'Áp dụng giảm giá', exact: true }).check(); await dialog.getByRole('checkbox', { name: 'Đổi giá bán', exact: true }).check(); await expect(dialog.getByRole('button', { name: 'Lưu', exact: true })).toBeDisabled();
   await dialog.getByRole('checkbox', { name: 'Tôi xác nhận', exact: false }).check(); await expect(dialog).toContainText('lan@example.test'); expect(await dialog.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
   await dialog.getByRole('button', { name: 'Lưu', exact: true }).click(); await expect(dialog).toHaveCount(0);
   expect(state.writes[0]).toEqual({ method: 'PATCH', path: '/pos/memberships/membership_lan', body: { capabilities: ['pos.shift.open', 'pos.payment.collect', 'pos.discount.apply', 'pos.price.override'] } }); expect(memberships).toHaveLength(2);
-  await page.getByLabel('Tìm kiếm', { exact: true }).fill('lan@example.test'); await expect(page.getByRole('table', { name: 'Danh sách nhân viên' }).getByRole('row')).toHaveCount(2);
+  await open(page, 'staff?search=lan%40example.test'); await expect(page.getByRole('table').getByRole('row')).toHaveCount(2);
   await page.getByRole('button', { name: 'Cấp quyền nhân viên', exact: true }).click(); await select(page, 'Chi nhánh', 'Siêu thị Hiền'); await dialog.getByLabel('Nhân viên', { exact: true }).click();
   await expect(page.getByRole('option')).toHaveText(['Chọn nhân viên', 'Trần Văn An · an@example.test']); await page.getByRole('option', { name: 'Trần Văn An · an@example.test', exact: true }).click(); await dialog.getByRole('button', { name: 'Lưu', exact: true }).click(); await expect(dialog).toHaveCount(0);
   expect(state.writes[1]).toMatchObject({ method: 'POST', path: '/pos/memberships', body: { branch_id: 'branch_main', staff_id: 'staff_an', capabilities: ['pos.shift.open'] } });
@@ -86,10 +93,10 @@ test('cashiers cannot enter administration and issue no topology requests', asyn
   await expect(page.getByText('Tài khoản chưa có quyền xem hoặc quản trị', { exact: false })).toBeVisible(); await expect(page.getByRole('button', { name: 'Thêm chi nhánh', exact: true })).toHaveCount(0); expect(state.staffPages).toEqual([]); expect(state.writes).toEqual([]);
 });
 test('read-only administration cannot write', async ({ page }) => {
-  const { state } = await install(page, { read: true, write: false }); await open(page); await expect(page.getByText('Chỉ xem', { exact: true })).toBeVisible(); await expect(page.getByRole('button', { name: 'Chỉnh sửa Siêu thị Hiền', exact: true })).toBeDisabled(); expect(state.writes).toEqual([]);
+  const { state } = await install(page, { read: true, write: false }); await open(page); await expect(page.getByText('Chỉ xem', { exact: true })).toBeVisible(); await page.getByRole('button', { name: MENU }).click(); await expect(page.getByRole('menuitem', { name: 'Hàng bán tại chi nhánh', exact: true })).toBeVisible(); await expect(page.getByRole('menuitem', { name: 'Chỉnh sửa', exact: true })).toHaveCount(0); await expect(page.getByRole('table').getByRole('button', { name: /^Siêu thị Hiền/ })).toHaveCount(0); expect(state.writes).toEqual([]);
 });
 test('422 retains draft and field errors; failed option loads block editing', async ({ page }) => {
-  const { state } = await install(page); await open(page); await page.getByRole('button', { name: 'Chỉnh sửa Siêu thị Hiền', exact: true }).click(); const dialog = page.getByRole('dialog');
+  const { state } = await install(page); await open(page); await act(page, 'Siêu thị Hiền', 'Chỉnh sửa'); const dialog = page.getByRole('dialog');
   await dialog.getByLabel('Tên hiển thị').fill('Tên chưa lưu'); state.failSave = true; await dialog.getByRole('button', { name: 'Lưu', exact: true }).click(); await expect(dialog.getByRole('alert').last()).toContainText('Code has already been taken'); await expect(dialog.getByLabel('Tên hiển thị')).toHaveValue('Tên chưa lưu'); await expect(dialog.getByLabel('Mã', { exact: true })).toHaveAttribute('aria-invalid', 'true');
   await dialog.getByRole('button', { name: 'Hủy', exact: true }).click(); await confirm(page, 'Đóng'); state.failOptions = true; await page.reload(); await expect(page.getByText('Không tải được đầy đủ dữ liệu cấu hình.', { exact: false })).toBeVisible(); await expect(page.getByRole('button', { name: 'Thêm chi nhánh', exact: true })).toBeDisabled();
 });
