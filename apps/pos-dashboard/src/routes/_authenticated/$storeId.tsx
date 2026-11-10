@@ -39,12 +39,14 @@ function PosShell() {
   const { t } = useTranslation()
   const value = useCreatePosSession()
   const path = useRouterState({ select: (state) => state.location.pathname })
+  // Receipt templates keep their settings URL but belong to the main sidebar.
+  const inSettings = path.includes('/settings') && !path.includes('/settings/receipt-templates')
   return (
     <PosSessionContext.Provider value={value}>
       <PosNavigation />
       <AppShellProvider>
         <AppShell
-          inSettings={path.includes('/settings')}
+          inSettings={inSettings}
           uiLocales={[
             { code: 'vi', name: 'Tiếng Việt' },
             { code: 'en', name: 'English' },

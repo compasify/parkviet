@@ -1,7 +1,10 @@
 # POS administration
 
 `CLAUDE.md` imports this file. This standalone Vite + React app administers POS
-configuration; it does not run selling, shifts, printing or inventory workflows.
+configuration and hosts the back-office operations: orders, deliveries, funds,
+shift management, receivables, reports and inventory traceability. Counter work
+(selling, returns/exchanges, receipt printing, a cashier's own shift) stays in
+`apps/pos`; do not add it here.
 
 ## Run and verify
 
@@ -30,7 +33,10 @@ pnpm test:e2e        # API fixtures, desktop/tablet/mobile; sequential workers
 - `src/lib/pos-access.ts`: store permission keys + selected-branch capability gates.
   Each protected route must use `PosRouteGuard`; hiding nav is not authorization.
 - `src/nav.ts`: registrations only, synchronized from the same access predicates.
-  6.0.3 `settingsNav` has no `if`; unavailable entries are not registered.
+  6.0.3 has no sidebar headings and no `if` on children or `settingsNav`, so groups
+  are parent entries holding only the visible children; empty groups are not registered.
+- Operational pages act on the selected branch (`context.data.selection.branch_id`),
+  show `BranchPicker` in the page header and gate on that branch's capabilities.
 - `src/i18n.ts`, `locales/{vi,en}.json`: every visible string is translated.
   POS keys are registered in both `translation` and `pos`; shell keys live under
   `posDashboard`. Core i18next initialization must not be replaced.

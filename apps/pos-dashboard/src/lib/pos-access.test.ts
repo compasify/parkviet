@@ -1,6 +1,6 @@
 import type { PosContext } from '@parkviet/pos-shared/types/pos-context'
 import { describe, expect, it } from 'vitest'
-import { canAdminister, canManageBranch, visibleNav } from './pos-access'
+import { canAdminister, canManageBranch, routeAllowed, visibleNav } from './pos-access'
 
 describe('POS permission gates', () => {
   it('allows a store owner to administer and manage any branch', () => {
@@ -48,5 +48,41 @@ describe('POS permission gates', () => {
     ).toBe(true)
     expect(visibleNav('labels', { ...access, context: { ...context, modules: null } })).toBe(true)
     expect(visibleNav('labels', { ...access, permissionKeys: [] })).toBe(false)
+  })
+  it('opens orders to branch staff and deliveries to sellers or collectors', () => {
+    const staff = (capabilities: string[], delivery?: boolean) => ({
+      permissionKeys: [],
+      context: {
+        selection: { branch_id: 'b', register_id: null },
+        capabilities,
+        features: delivery === undefined ? null : { delivery },
+      } as unknown as PosContext,
+    })
+    expect(visibleNav('orders', staff(['pos.report.read']))).toBe(true)
+    expect(visibleNav('orders', staff([]))).toBe(false)
+    expect(visibleNav('orders', { permissionKeys: ['write_pos_topology'] })).toBe(false)
+    expect(visibleNav('deliveries', staff(['pos.shift.open'], true))).toBe(true)
+    expect(visibleNav('deliveries', staff(['pos.payment.collect'], true))).toBe(true)
+    expect(visibleNav('deliveries', staff(['pos.report.read'], true))).toBe(false)
+  })
+  it('keeps deliveries reachable by URL when the delivery feature is off', () => {
+    const context = {
+      selection: { branch_id: 'b', register_id: null },
+      capabilities: ['pos.shift.open'],
+      features: { delivery: false },
+    } as unknown as PosContext
+    expect(visibleNav('deliveries', { permissionKeys: [], context })).toBe(false)
+    expect(routeAllowed('deliveries', { permissionKeys: [], context })).toBe(true)
+    expect(routeAllowed('deliveries', { permissionKeys: ['write_pos_topology'] })).toBe(false)
+  })
+  it('lets readers reach setup and label formats by URL only', () => {
+    const access = {
+      permissionKeys: ['read_pos_topology'],
+      context: { modules: { 'retail.measured': false } } as unknown as PosContext,
+    }
+    expect(routeAllowed('setup', access)).toBe(true)
+    expect(routeAllowed('labels', access)).toBe(true)
+    expect(visibleNav('labels', access)).toBe(false)
+    expect(routeAllowed('setup', { permissionKeys: [] })).toBe(false)
   })
 })
