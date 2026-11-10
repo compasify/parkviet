@@ -1,7 +1,7 @@
 ---
 phase: 8
 title: "Deploy và tài liệu"
-status: pending
+status: done
 priority: P2
 effort: "0.5d"
 dependencies: [7]

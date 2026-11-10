@@ -1,7 +1,7 @@
 ---
 title: "Tách cài đặt POS thành app riêng apps/pos-dashboard"
 description: "Dựng app quản trị POS riêng trên @spree/dashboard-core và @spree/dashboard-ui, chuyển toàn bộ trang cài đặt khỏi apps/pos, tách logic thuần dùng chung vào packages/pos-shared, không sửa apps/dashboard."
-status: in-progress
+status: done
 priority: P2
 effort: "~12 ngày công"
 branch: "v2"
@@ -53,7 +53,7 @@ Plan này dựng một app quản trị riêng là `apps/pos-dashboard`, chạy 
 | 5 | [Tính năng, mô hình kinh doanh, thiết lập lần đầu](phase-05-tinh-nang-mo-hinh.md) | 1, 3 | 1.5d | done |
 | 6 | [Mẫu in hóa đơn: danh sách và trình sửa](phase-06-mau-in-hoa-don.md) | 1, 3 | 2d | done |
 | 7 | [Cắt chuyển trong `apps/pos`](phase-07-cat-chuyen-pos.md) | 4, 5, 6 | 1d | done |
-| 8 | [Deploy và tài liệu](phase-08-deploy-tai-lieu.md) | 7 | 0.5d | pending |
+| 8 | [Deploy và tài liệu](phase-08-deploy-tai-lieu.md) | 7 | 0.5d | done |
 
 Phase 1 và phase 2 chạy song song được, vì không đụng file của nhau. Phase 4, 5 và 6 cũng song song được sau khi xong phase 1 và 3.
 
@@ -91,6 +91,8 @@ Phase 1 và phase 2 chạy song song được, vì không đụng file của nha
 Phase 7: `paper-picker.tsx` cũng bị xóa, vì `template-picker.tsx` chỉ dùng class CSS `.paper-picker*` (vẫn giữ). Link quản trị trong POS mở tab mới để không ảnh hưởng lease của hóa đơn đang mở.
 
 E2E POS có 4 test fail từ trước khi refactor, đã kiểm tra trên `0b38ba1`: `inventory-traceability:711`, `layout-recovery:4`, `pages-polish:88`, `ui-polish:5`.
+
+Phase 8: bản build chạy bằng `pnpm preview` ở cổng 5176 (proxy `/api` như dev); e2e desktop chạy trên bản build: 43 qua, 2 bỏ qua (cần API thật). Deep link trả 200, `/api` qua proxy tới API dev. Chưa thử đăng nhập bằng tài khoản thật.
 
 ## Câu hỏi còn mở
 

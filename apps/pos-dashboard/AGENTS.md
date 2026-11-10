@@ -56,5 +56,5 @@ details so shared failure helpers and `mapSpreeErrorsToForm` still work. Destruc
 click actions need `useConfirm({variant:'destructive', ...})`. Invalidate the current
 store's POS keys after writes. Never embed SDK entity types inside form-value types.
 
-Do not edit `apps/dashboard`. Do not remove old POS configuration routes until
-the new equivalents pass E2E and the cutover phase is explicitly authorized.
+Do not edit `apps/dashboard`. POS administration lives only here: do not add
+settings or setup screens back to `apps/pos`.

@@ -30,8 +30,10 @@ pnpm test:e2e --project desktop
 
 E2E tests are in `e2e/`; Playwright starts its own strict-port 5176 server and runs
 one worker. Do not leave a separate dev server occupying that port when running
-the suite. Desktop, tablet and mobile projects are configured. Do not remove the
-cashier's old settings pages until all migrated screens pass the cutover gate.
+the suite. Desktop, tablet and mobile projects are configured.
+
+The cashier app (`apps/pos`) no longer has settings or setup pages; its user menu,
+sign-in screen and setup notice open this app in a new tab.
 
 ## Public build-time environment
 
@@ -50,8 +52,11 @@ store switches. No server schema or capability model is changed by this app.
 
 ## Separate static production deployment
 
-Build with `pnpm build` and deploy `dist/` as a separate static site. No deployment
-is performed by the local implementation/verification workflow.
+Build with `pnpm build` and deploy `dist/` as a separate static site, the same way
+the cashier app is deployed on its own port. `pnpm preview` serves the build on
+the fixed port **5176** with the same `/api` and `/rails` proxy as `pnpm dev`, which
+is enough to check a build locally. Mapping a domain to the port is infrastructure
+work; no domain appears in the source.
 
 1. Configure public `VITE_SPREE_API_URL` and `VITE_BASE_PATH` **before** the build.
    For the recommended same-origin topology leave the API URL empty and reverse
@@ -66,9 +71,30 @@ is performed by the local implementation/verification workflow.
    or move refresh tokens into browser storage.
 4. Verify login, reload/refresh, logout, store switching and permissions against
    the production proxy/origin configuration. Check `/rails` image URLs too.
-5. At the separately gated POS cutover, set the cashier build's public
-   `VITE_POS_DASHBOARD_URL` to this site's URL and **rebuild/redeploy the cashier**.
-   Changing host environment alone does not update an already-built Vite bundle.
+5. Set the cashier build's public `VITE_POS_DASHBOARD_URL` to this site's URL
+   (including the base path) and **rebuild/redeploy the cashier**. Changing host
+   environment alone does not update an already-built Vite bundle; without the
+   variable a production cashier build hides its administration links.
+
+### Infrastructure checklist for a new domain
+
+- Point the domain at the static site (port 5176 or the hosting of `dist/`), with
+  HTTPS and the SPA fallback above.
+- Add the exact origin to the store's **Allowed Origins** in Spree. Without it,
+  refresh and logout are rejected by `StaffSessionOriginGuard`
+  (`server/config/initializers/staff_session_origin.rb`) and users are signed out
+  on every reload.
+- Set `VITE_POS_DASHBOARD_URL` for the cashier build and redeploy it.
+
+### After deploying
+
+1. Sign in, reload the page and confirm you are still signed in.
+2. Open a deep link such as `/<store>/settings/receipt-templates` directly; it must
+   load, not 404.
+3. Sign out and confirm protected URLs return to the sign-in page.
+4. From the cashier, open the user menu → Cấu hình: the dashboard opens in a new
+   tab on the same store and branch.
+5. Sign in as a branch manager: only Features and Business model are visible.
 
 Keep deploy domains in environment configuration, not application source. See
 `AGENTS.md` for extension and API-hook conventions.

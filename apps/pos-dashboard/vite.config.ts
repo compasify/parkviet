@@ -6,6 +6,10 @@ import { defineConfig, loadEnv } from 'vite'
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), 'VITE_')
   const target = env.VITE_API_PROXY_TARGET || 'http://localhost:3000'
+  const proxy = {
+    '/api': { target, changeOrigin: true },
+    '/rails': { target, changeOrigin: true },
+  }
   return {
     base: env.VITE_BASE_PATH || '/',
     plugins: [tanstackRouter({ target: 'react', autoCodeSplitting: true }), tailwindcss(), react()],
@@ -19,10 +23,8 @@ export default defineConfig(({ mode }) => {
         '@tanstack/react-router',
       ],
     },
-    server: {
-      port: 5176,
-      strictPort: true,
-      proxy: { '/api': { target, changeOrigin: true }, '/rails': { target, changeOrigin: true } },
-    },
+    server: { port: 5176, strictPort: true, proxy },
+    // `pnpm preview` serves the production build on the same fixed port.
+    preview: { port: 5176, strictPort: true, proxy },
   }
 })
