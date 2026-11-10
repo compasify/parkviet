@@ -1,3 +1,4 @@
+import { formatMoney } from '@parkviet/pos-shared/money';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -7,7 +8,6 @@ import {
   useDisplaySession,
 } from '../hooks/use-display';
 import { pinDecision } from '../lib/display-generation';
-import { formatMoney } from '../lib/money';
 import type { PosWorkspace } from '../lib/pos-context';
 import { conflictReason, describeFailure } from '../lib/request-failure';
 import { FeatureOffNote } from './feature-off-note';

@@ -1,4 +1,4 @@
-import { parseVndInput } from './money';
+import { parseVndInput } from '@parkviet/pos-shared/money';
 
 // Amounts typed into the rows of a split payment, keyed by method kind.
 export type RowAmounts = Partial<Record<string, string>>;

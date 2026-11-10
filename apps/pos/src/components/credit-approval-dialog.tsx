@@ -1,8 +1,8 @@
+import { formatMoney, parseVndAmount } from '@parkviet/pos-shared/money';
 import { useEffect, useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRequestCredit, useWorkspaceCredit } from '../hooks/use-receivables';
 import { useModalFocus } from '../lib/dialog-focus';
-import { formatMoney, parseVndAmount } from '../lib/money';
 import type { PosWorkspace, PosWorkspaceCredit } from '../lib/pos-context';
 import {
   approvalExpired,

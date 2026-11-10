@@ -1,8 +1,8 @@
+import { formatMoney, parseVndInput } from '@parkviet/pos-shared/money';
 import { useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePostCashMovement } from '../hooks/use-shift-close';
 import { useModalFocus } from '../lib/dialog-focus';
-import { formatMoney, parseVndInput } from '../lib/money';
 import { definitiveRejection } from '../lib/request-failure';
 import { type CashMovementKind, describeShiftFailure, isOutflow } from '../lib/shifts';
 import { PosIcon } from './pos-icon';

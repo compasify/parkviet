@@ -1,6 +1,6 @@
+import { formatMoney } from '@parkviet/pos-shared/money';
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { formatMoney } from '../lib/money';
 import type { PosWorkspace } from '../lib/pos-context';
 
 // Asks before closing an invoice tab that already holds lines, a customer,

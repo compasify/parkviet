@@ -1,13 +1,13 @@
-import type { Dispatch } from 'react';
-import { useTranslation } from 'react-i18next';
-import { type BusinessProfile, moduleTextKey } from '../../lib/pos-modules';
+import { type BusinessProfile, moduleTextKey } from '@parkviet/pos-shared/pos-modules';
 import {
   editableDefaults,
   recommendedFeatures,
   type SetupAction,
   type SetupProblem,
   type SetupState,
-} from '../../lib/setup-wizard';
+} from '@parkviet/pos-shared/setup-wizard';
+import type { Dispatch } from 'react';
+import { useTranslation } from 'react-i18next';
 
 // A module this client has no label for shows its key (D3: never dropped).
 export function ModuleName({ moduleKey }: { moduleKey: string }) {

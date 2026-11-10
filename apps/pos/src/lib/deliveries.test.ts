@@ -1,3 +1,8 @@
+import {
+  paymentTicketData,
+  prebillData,
+  snapshotData,
+} from '@parkviet/pos-shared/receipt-template/data';
 import { describe, expect, it } from 'vitest';
 import {
   canHandleDeliveries,
@@ -9,7 +14,6 @@ import {
 } from './deliveries';
 import type { PosWorkspace } from './pos-context';
 import type { ReceiptSnapshot } from './print-adapter';
-import { paymentTicketData, prebillData, snapshotData } from './receipt-template/data';
 
 const t = (key: string, options?: Record<string, unknown>) =>
   options ? `${key}:${JSON.stringify(options)}` : key;

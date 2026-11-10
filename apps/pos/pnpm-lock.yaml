@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@parkviet/pos-shared':
+        specifier: link:../../packages/pos-shared
+        version: link:../../packages/pos-shared
       '@spree/admin-sdk':
         specifier: ^6.0.3
         version: 6.0.3(typescript@7.0.2)

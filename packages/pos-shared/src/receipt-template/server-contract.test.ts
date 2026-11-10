@@ -8,7 +8,7 @@ import { TEMPLATE_VARIABLES } from './variables';
 // falls back to, and validates template text against the same variables.
 // Both copies must stay identical.
 
-const serverConfig = new URL('../../../../../server/config/pos/', import.meta.url);
+const serverConfig = new URL('../../../../server/config/pos/', import.meta.url);
 const readJson = (path: string): unknown =>
   JSON.parse(readFileSync(new URL(path, serverConfig), 'utf8'));
 

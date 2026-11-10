@@ -1,6 +1,6 @@
+import type { PosFeature } from '@parkviet/pos-shared/pos-features';
+import { moduleTextKey } from '@parkviet/pos-shared/pos-modules';
 import { useTranslation } from 'react-i18next';
-import type { PosFeature } from '../lib/pos-features';
-import { moduleTextKey } from '../lib/pos-modules';
 
 // Why an entry point is missing or disabled: the branch switched the feature
 // off, or has not turned the module on. The id lets a disabled control point

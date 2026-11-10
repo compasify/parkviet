@@ -1,3 +1,27 @@
+import { contextFeature } from '@parkviet/pos-shared/pos-features';
+import { contextModule, moduleInUse } from '@parkviet/pos-shared/pos-modules';
+import {
+  adjustmentActions,
+  canManageInventory,
+  canOpenInventory,
+  canTraceInventory,
+  describeInventoryFailure,
+  expiryState,
+  formatExpiry,
+  type InventoryTab,
+  inventoryTabs,
+  type LotRowDraft,
+  type PosAdjustment,
+  type PosLot,
+  type PosSerialUnit,
+  type PosTraceStatus,
+  type PosTransferResult,
+  parseSerials,
+  parseWholeQuantity,
+  serialListAfterTab,
+  stockEntryPayload,
+  type TrackedMode,
+} from '@parkviet/pos-shared/traceability';
 import { type KeyboardEvent, type ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FeatureOffNote } from '../components/feature-off-note';
@@ -20,32 +44,8 @@ import {
   type FinancialRecoveryRecord,
   scopedFinancialRecords,
 } from '../lib/financial-recovery';
-import { contextFeature } from '../lib/pos-features';
-import { contextModule, moduleInUse } from '../lib/pos-modules';
 import { posFailureKey } from '../lib/request-failure';
 import { formatInZone, todayIn } from '../lib/shifts';
-import {
-  adjustmentActions,
-  canManageInventory,
-  canOpenInventory,
-  canTraceInventory,
-  describeInventoryFailure,
-  expiryState,
-  formatExpiry,
-  type InventoryTab,
-  inventoryTabs,
-  type LotRowDraft,
-  type PosAdjustment,
-  type PosLot,
-  type PosSerialUnit,
-  type PosTraceStatus,
-  type PosTransferResult,
-  parseSerials,
-  parseWholeQuantity,
-  serialListAfterTab,
-  stockEntryPayload,
-  type TrackedMode,
-} from '../lib/traceability';
 
 const EMPTY_LOT_ROW: LotRowDraft = { lot_code: '', expiry_on: '', quantity: '' };
 const OPENING_PATH = '/pos/inventory/opening_balances';

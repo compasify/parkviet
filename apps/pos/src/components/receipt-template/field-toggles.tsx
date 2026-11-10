@@ -1,8 +1,8 @@
+import { MAX_LABEL_LENGTH } from '@parkviet/pos-shared/receipt-template/render';
+import type { DocumentType, FieldSection } from '@parkviet/pos-shared/receipt-template/types';
+import { FIXED_LABELS } from '@parkviet/pos-shared/receipt-template/validate';
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MAX_LABEL_LENGTH } from '../../lib/receipt-template/render';
-import type { DocumentType, FieldSection } from '../../lib/receipt-template/types';
-import { FIXED_LABELS } from '../../lib/receipt-template/validate';
 
 export type FieldSectionName = 'meta' | 'totals' | 'payments';
 

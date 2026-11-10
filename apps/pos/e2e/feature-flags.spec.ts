@@ -81,7 +81,7 @@ test('a store administrator switches the store default; a branch switch only tur
   await installRetailApi(page, world);
   await login(page);
   await page.goto('/settings/branches/br_1/features');
-  const row = page.getByRole('list', { name: 'Danh sách chức năng' }).getByRole('listitem').filter({ hasText: 'Bán ghi nợ' });
+  const row = page.getByRole('list', { name: 'Danh sách chức năng' }).locator('[data-feature="credit"]');
   await expect(row).toContainText('Tắt (cửa hàng chưa bật)');
 
   await row.getByRole('button', { name: 'Bật Bán ghi nợ cho cả cửa hàng' }).click();

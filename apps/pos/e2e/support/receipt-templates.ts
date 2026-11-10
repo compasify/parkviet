@@ -1,6 +1,6 @@
 import type { Route } from '@playwright/test';
-import { DEFAULT_TEMPLATES } from '../../src/lib/receipt-template/defaults';
-import type { DocumentType, PaperSize, TemplateConfig } from '../../src/lib/receipt-template/types';
+import { DEFAULT_TEMPLATES } from '@parkviet/pos-shared/receipt-template/defaults';
+import type { DocumentType, PaperSize, TemplateConfig } from '@parkviet/pos-shared/receipt-template/types';
 
 // In-memory print templates of the store for mocked POS runs, answering the
 // reads the counter makes (`GET /pos/receipt_templates`, one template at a

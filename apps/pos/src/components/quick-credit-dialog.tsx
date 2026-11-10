@@ -1,7 +1,7 @@
+import { formatMoney } from '@parkviet/pos-shared/money';
 import { useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useModalFocus } from '../lib/dialog-focus';
-import { formatMoney } from '../lib/money';
 import type { PosWorkspace } from '../lib/pos-context';
 import { PosIcon } from './pos-icon';
 

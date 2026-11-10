@@ -1,6 +1,6 @@
 import { expect, type Page, test } from '@playwright/test';
-import { DEFAULT_TEMPLATES } from '../src/lib/receipt-template/defaults';
-import type { DocumentType, TemplateConfig } from '../src/lib/receipt-template/types';
+import { DEFAULT_TEMPLATES } from '@parkviet/pos-shared/receipt-template/defaults';
+import type { DocumentType, TemplateConfig } from '@parkviet/pos-shared/receipt-template/types';
 
 // Settings → Print templates against a mocked Admin API: the store's
 // templates with immutable versions, a stale edit refused with 409 and a

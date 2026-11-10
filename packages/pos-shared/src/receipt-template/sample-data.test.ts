@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import i18n from '../../i18n';
-import en from '../../locales/en.json';
-import vi from '../../locales/vi.json';
+import en from '../../../../apps/pos/src/locales/en.json';
+import vi from '../../../../apps/pos/src/locales/vi.json';
+import i18n from '../test-support/i18n';
 import { DEFAULT_TEMPLATES, TEST_PRINT_BANNER } from './defaults';
 import { renderDocument } from './render';
 import { sampleData, withLogo } from './sample-data';

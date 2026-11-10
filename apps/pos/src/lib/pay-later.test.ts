@@ -1,3 +1,6 @@
+import { snapshotData } from '@parkviet/pos-shared/receipt-template/data';
+import { defaultTemplate } from '@parkviet/pos-shared/receipt-template/defaults';
+import { renderDocument } from '@parkviet/pos-shared/receipt-template/render';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
@@ -12,9 +15,6 @@ import {
   sharePayLater,
 } from './pay-later';
 import type { ReceiptSnapshot } from './print-adapter';
-import { snapshotData } from './receipt-template/data';
-import { defaultTemplate } from './receipt-template/defaults';
-import { renderDocument } from './receipt-template/render';
 
 const t = (key: string, options?: Record<string, unknown>) => i18n.t(key, options ?? {}) as string;
 

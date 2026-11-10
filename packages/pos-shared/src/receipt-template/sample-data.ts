@@ -1,5 +1,5 @@
-import type { PosFinancialAttempt, PosWorkspace } from '../pos-context';
-import type { ReceiptSnapshot } from '../print-adapter';
+import type { PosFinancialAttempt, PosWorkspace } from '../types/pos-context';
+import type { ReceiptSnapshot } from '../types/print-adapter';
 import {
   type PrintPlace,
   paymentTicketData,

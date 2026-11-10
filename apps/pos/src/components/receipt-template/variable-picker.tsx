@@ -1,6 +1,9 @@
+import {
+  TEMPLATE_VARIABLES,
+  type TemplateVariable,
+} from '@parkviet/pos-shared/receipt-template/variables';
 import { type KeyboardEvent, useId, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { TEMPLATE_VARIABLES, type TemplateVariable } from '../../lib/receipt-template/variables';
 
 // A template text with its "Insert information" picker. The picker opens
 // from its button (keyboard: arrows, Enter, Escape) or by typing `{`, which

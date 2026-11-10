@@ -1,5 +1,5 @@
-import { parseVndAmount } from './money';
-import { posCapabilities } from './pos-capabilities';
+import { parseVndAmount } from '@parkviet/pos-shared/money';
+import { posCapabilities } from '@parkviet/pos-shared/pos-capabilities';
 import { conflictReason, describeFailure } from './request-failure';
 
 // Receivables are readable by members of the branch. Topology management and

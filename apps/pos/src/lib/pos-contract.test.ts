@@ -1,9 +1,9 @@
+import { navVisible } from '@parkviet/pos-shared/module-registry';
+import { catalogViewOf, contextModule } from '@parkviet/pos-shared/pos-modules';
 import { describe, expect, it } from 'vitest';
 import en from '../locales/en.json';
 import vi from '../locales/vi.json';
-import { navVisible } from '../modules/registry';
 import { emptySelection, normalizeContext, type PosContext, writesLocked } from './pos-context';
-import { catalogViewOf, contextModule } from './pos-modules';
 import { posContextKey } from './query-keys';
 import { posFailureKey } from './request-failure';
 

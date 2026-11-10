@@ -1,6 +1,6 @@
+import type { LabelFormat } from '@parkviet/pos-shared/label-format';
 import { useQuery } from '@tanstack/react-query';
 import { session } from '../lib/app-session';
-import type { LabelFormat } from '../lib/label-format';
 import { posFailureKey } from '../lib/request-failure';
 import { SessionSuperseded } from '../lib/session-coordinator';
 import { useSession } from './use-session';

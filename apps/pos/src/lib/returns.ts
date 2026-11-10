@@ -1,4 +1,3 @@
-import { conflictReason } from './request-failure';
 import {
   describeTraceFailure,
   lotChoiceRequired,
@@ -6,7 +5,8 @@ import {
   type ReturnLineTraceRow,
   type ReturnPreviewTrace,
   returnableLots,
-} from './traceability';
+} from '@parkviet/pos-shared/traceability';
+import { conflictReason } from './request-failure';
 
 // Domain refusals the server names; each has its own Vietnamese sentence.
 const RETURN_REASONS = new Set([

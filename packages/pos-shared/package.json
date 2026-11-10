@@ -1,0 +1,25 @@
+{
+  "name": "@parkviet/pos-shared",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    "./receipt-template/*": "./src/receipt-template/*.ts",
+    "./types/*": "./src/types/*.ts",
+    "./test-support/*": null,
+    "./receipt.css": "./src/receipt.css",
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check ."
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.14",
+    "@types/node": "^22.0.0",
+    "i18next": "^26.5.3",
+    "typescript": "~7.0.2",
+    "vitest": "^4.0.0"
+  }
+}

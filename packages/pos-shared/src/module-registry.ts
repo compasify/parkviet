@@ -5,13 +5,8 @@
 //
 // Module keys match the server's (`GET /pos/business_profiles`). A key the
 // server sends that no entry declares changes nothing on screen.
-import {
-  moduleEnabled,
-  moduleInUse,
-  type PosModules,
-  type PosModuleUsage,
-} from '../lib/pos-modules';
-import { canOpenInventory } from '../lib/traceability';
+import { moduleEnabled, moduleInUse, type PosModules, type PosModuleUsage } from './pos-modules';
+import { canOpenInventory } from './traceability';
 
 // What a module scope needs: the context of the selected branch, or the same
 // shape with the modules of another branch (settings of a branch by URL).

@@ -1,3 +1,5 @@
+import type { LabelFormat } from '@parkviet/pos-shared/label-format';
+import { moduleEnabled } from '@parkviet/pos-shared/pos-modules';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FeatureOffNote } from '../../components/feature-off-note';
@@ -5,8 +7,6 @@ import { LabelFormatEditor } from '../../components/label-format-editor';
 import { PosIcon } from '../../components/pos-icon';
 import { PageState } from '../../components/pos-page';
 import { disableLabelFormat, useLabelFormats } from '../../hooks/use-branch-catalog';
-import type { LabelFormat } from '../../lib/label-format';
-import { moduleEnabled } from '../../lib/pos-modules';
 import { queryClient } from '../../lib/query-client';
 import { describeFailure, posFailureKey } from '../../lib/request-failure';
 import { BranchSettingsFrame, type BranchSettingsScope } from './branch-settings';

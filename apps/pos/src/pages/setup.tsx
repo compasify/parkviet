@@ -1,3 +1,15 @@
+import { profileLabelKey } from '@parkviet/pos-shared/pos-modules';
+import {
+  initialSetup,
+  onboardingPayload,
+  onboardingSelection,
+  SETUP_STEPS,
+  type SetupProblem,
+  type SetupState,
+  type SetupStep,
+  setupReducer,
+  stepProblems,
+} from '@parkviet/pos-shared/setup-wizard';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { type ReactNode, useEffect, useReducer, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -10,19 +22,7 @@ import { ModuleName, SetupPreviewStep, unitLabel } from '../components/setup/set
 import { useBusinessProfiles } from '../hooks/use-business-profiles';
 import { refreshBusinessModel, useOnboarding } from '../hooks/use-onboarding';
 import { useLocationOptions } from '../hooks/use-topology';
-import { profileLabelKey } from '../lib/pos-modules';
 import { conflictReason, describeFailure, posFailureKey } from '../lib/request-failure';
-import {
-  initialSetup,
-  onboardingPayload,
-  onboardingSelection,
-  SETUP_STEPS,
-  type SetupProblem,
-  type SetupState,
-  type SetupStep,
-  setupReducer,
-  stepProblems,
-} from '../lib/setup-wizard';
 import '../styles/setup.css';
 
 const STEP_TITLE: Record<SetupStep, string> = {

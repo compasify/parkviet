@@ -1,14 +1,18 @@
-import { type KeyboardEvent, type PointerEvent, useEffect, useId, useRef, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import type { TemplateData } from '../../lib/receipt-template/data';
-import { MAX_BLOCKS } from '../../lib/receipt-template/render';
+import type { TemplateData } from '@parkviet/pos-shared/receipt-template/data';
+import { MAX_BLOCKS } from '@parkviet/pos-shared/receipt-template/render';
 import type {
   DocumentType,
   PaperSize,
   TemplateBlock,
   TextSize,
-} from '../../lib/receipt-template/types';
-import { BLOCK_TYPES, type BlockType, WIDE_PAPERS } from '../../lib/receipt-template/validate';
+} from '@parkviet/pos-shared/receipt-template/types';
+import {
+  BLOCK_TYPES,
+  type BlockType,
+  WIDE_PAPERS,
+} from '@parkviet/pos-shared/receipt-template/validate';
+import { type KeyboardEvent, type PointerEvent, useEffect, useId, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { PosIcon } from '../pos-icon';
 import { BlockEditor, type BlockProblems } from './block-editor';
 

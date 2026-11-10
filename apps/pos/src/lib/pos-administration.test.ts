@@ -1,6 +1,6 @@
+import { posCapabilities, sensitiveCapabilities } from '@parkviet/pos-shared/pos-capabilities';
 import { describe, expect, it } from 'vitest';
 import { administrationAccess } from './pos-administration';
-import { posCapabilities, sensitiveCapabilities } from './pos-capabilities';
 import type { PosContext } from './pos-context';
 
 describe('POS administration authorization', () => {

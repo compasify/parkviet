@@ -1,3 +1,4 @@
+import { formatMoney } from '@parkviet/pos-shared/money';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -10,7 +11,6 @@ import {
   postDisplayAck,
 } from '../hooks/use-display';
 import { createDisplayFreshness, type DisplayState } from '../lib/display-generation';
-import { formatMoney } from '../lib/money';
 import { formatQuantity } from '../lib/print-adapter';
 
 // The customer-facing screen. It holds no staff session: only the read-only

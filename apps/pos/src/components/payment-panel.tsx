@@ -1,3 +1,9 @@
+import { formatMoney, parseVndAmount, parseVndInput } from '@parkviet/pos-shared/money';
+import {
+  describeTraceFailure,
+  paymentBlock,
+  traceReasonKey,
+} from '@parkviet/pos-shared/traceability';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { quickApproveCredit } from '../hooks/use-receivables';
@@ -7,13 +13,11 @@ import {
   useReceivedFunds,
   useTenders,
 } from '../hooks/use-tenders';
-import { formatMoney, parseVndAmount, parseVndInput } from '../lib/money';
 import { type RowAmounts, rebalanceRows, splitRowValues } from '../lib/payment-split';
 import type { PosPaymentMethod, PosWorkspace } from '../lib/pos-context';
-import { autoPrintEnabled } from '../lib/receipt-template/selection';
+import { autoPrintEnabled } from '../lib/receipt-preferences';
 import { creditConflictKey } from '../lib/receivables';
 import { conflictReason, posFailureKey } from '../lib/request-failure';
-import { describeTraceFailure, paymentBlock, traceReasonKey } from '../lib/traceability';
 import { vietqrConflictKey } from '../lib/vietqr';
 import { CreditApprovalDialog } from './credit-approval-dialog';
 import { FeatureOffNote } from './feature-off-note';

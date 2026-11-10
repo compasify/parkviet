@@ -1,7 +1,5 @@
-import { type ReactNode, useId } from 'react';
-import { useTranslation } from 'react-i18next';
-import { barcodeWidthMm } from '../../lib/receipt-template/code128';
-import type { TemplateData } from '../../lib/receipt-template/data';
+import { barcodeWidthMm } from '@parkviet/pos-shared/receipt-template/code128';
+import type { TemplateData } from '@parkviet/pos-shared/receipt-template/data';
 import {
   businessLines,
   MAX_CAPTION_LENGTH,
@@ -9,7 +7,7 @@ import {
   MAX_TEXT_LENGTH,
   MAX_TITLE_LENGTH,
   MAX_URL_LENGTH,
-} from '../../lib/receipt-template/render';
+} from '@parkviet/pos-shared/receipt-template/render';
 import type {
   Align,
   BusinessField,
@@ -19,7 +17,7 @@ import type {
   SocialField,
   TemplateBlock,
   TextSize,
-} from '../../lib/receipt-template/types';
+} from '@parkviet/pos-shared/receipt-template/types';
 import {
   BUSINESS_FIELDS,
   charsPerLine,
@@ -28,8 +26,10 @@ import {
   SIGNATURE_PARTIES,
   SOCIAL_FIELDS,
   WIDE_PAPERS,
-} from '../../lib/receipt-template/validate';
-import { resolveText, variableValues } from '../../lib/receipt-template/variables';
+} from '@parkviet/pos-shared/receipt-template/validate';
+import { resolveText, variableValues } from '@parkviet/pos-shared/receipt-template/variables';
+import { type ReactNode, useId } from 'react';
+import { useTranslation } from 'react-i18next';
 import { TemplateTextField } from './variable-picker';
 
 export type BlockProblems = Partial<Record<string, string>>;

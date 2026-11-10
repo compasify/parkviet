@@ -1,3 +1,5 @@
+import { formatMoney } from '@parkviet/pos-shared/money';
+import { contextFeature } from '@parkviet/pos-shared/pos-features';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CollectionDialog } from '../components/collection-dialog';
@@ -15,10 +17,8 @@ import {
   useRecheckCollection,
 } from '../hooks/use-receivables';
 import { canRemindDebt, matchesDebtor, shortDate } from '../lib/debt-reminder';
-import { formatMoney } from '../lib/money';
 import type { PosCollection, PosReceivable, PosReceivableAccount } from '../lib/pos-context';
 import { writesLocked } from '../lib/pos-context';
-import { contextFeature } from '../lib/pos-features';
 import {
   amountSign,
   canReadReceivables,

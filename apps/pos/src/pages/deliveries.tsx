@@ -1,3 +1,5 @@
+import { formatMoney } from '@parkviet/pos-shared/money';
+import { contextFeature } from '@parkviet/pos-shared/pos-features';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FeatureOffNote } from '../components/feature-off-note';
@@ -14,8 +16,6 @@ import {
   type PosDeliveryRow,
   telHref,
 } from '../lib/deliveries';
-import { formatMoney } from '../lib/money';
-import { contextFeature } from '../lib/pos-features';
 import { formatInstant } from '../lib/receivables';
 import { conflictReason, describeFailure, posFailureKey } from '../lib/request-failure';
 

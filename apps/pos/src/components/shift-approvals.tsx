@@ -1,3 +1,4 @@
+import { formatMoney } from '@parkviet/pos-shared/money';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -5,7 +6,6 @@ import {
   useCashMovementRequests,
   usePendingCloses,
 } from '../hooks/use-shift-close';
-import { formatMoney } from '../lib/money';
 import { posFailureKey } from '../lib/request-failure';
 import { describeShiftFailure, formatInZone } from '../lib/shifts';
 import { CashRequestList } from './cash-request-list';

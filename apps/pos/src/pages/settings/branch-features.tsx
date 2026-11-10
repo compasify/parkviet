@@ -1,3 +1,10 @@
+import {
+  branchOverride,
+  type BranchFeatures as Flags,
+  offReason,
+  POS_FEATURES,
+  type PosFeature,
+} from '@parkviet/pos-shared/pos-features';
 import { useParams } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -6,13 +13,6 @@ import { usePosSelection } from '../../components/pos-selection';
 import { setFeature, useBranchFeatures } from '../../hooks/use-branch-features';
 import { administrationAccess } from '../../lib/pos-administration';
 import type { PosBranch } from '../../lib/pos-context';
-import {
-  branchOverride,
-  type BranchFeatures as Flags,
-  offReason,
-  POS_FEATURES,
-  type PosFeature,
-} from '../../lib/pos-features';
 import { queryClient } from '../../lib/query-client';
 import { describeFailure, failureStatus, posFailureKey } from '../../lib/request-failure';
 import { formatInZone } from '../../lib/shifts';

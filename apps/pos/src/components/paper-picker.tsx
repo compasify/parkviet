@@ -1,7 +1,7 @@
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PAPER_SIZES, type PaperSize } from '../lib/print-adapter';
-import '../styles/receipt.css';
+import '@parkviet/pos-shared/receipt.css';
 
 const ROLLS: readonly PaperSize[] = ['58mm', '80mm'];
 

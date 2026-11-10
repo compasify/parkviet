@@ -1,6 +1,6 @@
+import { type BusinessProfiles, normalizeBusinessProfiles } from '@parkviet/pos-shared/pos-modules';
 import { useQuery } from '@tanstack/react-query';
 import { session } from '../lib/app-session';
-import { type BusinessProfiles, normalizeBusinessProfiles } from '../lib/pos-modules';
 import { posFailureKey } from '../lib/request-failure';
 import { SessionSuperseded } from '../lib/session-coordinator';
 import { useSession } from './use-session';

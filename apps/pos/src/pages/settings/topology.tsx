@@ -1,3 +1,5 @@
+import { branchSettingVisible } from '@parkviet/pos-shared/module-registry';
+import { posCapabilities } from '@parkviet/pos-shared/pos-capabilities';
 import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -21,11 +23,9 @@ import {
 } from '../../hooks/use-topology';
 import { session } from '../../lib/app-session';
 import { administrationAccess } from '../../lib/pos-administration';
-import { posCapabilities } from '../../lib/pos-capabilities';
 import type { PosBranch } from '../../lib/pos-context';
 import { queryClient } from '../../lib/query-client';
 import { posFailureKey } from '../../lib/request-failure';
-import { branchSettingVisible } from '../../modules/registry';
 
 // Scale label formats are a `retail.measured` page: a branch without the
 // module does not offer the link (the page itself still opens by URL).

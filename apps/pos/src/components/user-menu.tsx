@@ -1,3 +1,4 @@
+import { navVisible } from '@parkviet/pos-shared/module-registry';
 import { Link } from '@tanstack/react-router';
 import { type ReactNode, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -6,7 +7,6 @@ import { administrationAccess } from '../lib/pos-administration';
 import type { PosContext } from '../lib/pos-context';
 import { canReadReceivables } from '../lib/receivables';
 import { canProcessReturns } from '../lib/returns';
-import { navVisible } from '../modules/registry';
 import { PosIcon } from './pos-icon';
 
 // The header account menu: every POS page, devices and sign out.

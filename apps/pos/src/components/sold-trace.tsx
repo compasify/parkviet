@@ -1,5 +1,5 @@
+import { expiryState, formatExpiry, type OrderLineTrace } from '@parkviet/pos-shared/traceability';
 import { useTranslation } from 'react-i18next';
-import { expiryState, formatExpiry, type OrderLineTrace } from '../lib/traceability';
 
 export function lotLabel(
   t: (key: string, options?: Record<string, unknown>) => string,

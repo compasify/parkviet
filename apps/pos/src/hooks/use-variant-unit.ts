@@ -1,9 +1,9 @@
+import type { PosTraceStatus } from '@parkviet/pos-shared/traceability';
 import { useQuery } from '@tanstack/react-query';
 import { session } from '../lib/app-session';
 import type { PosVariantUnit } from '../lib/pos-context';
 import { posFailureKey } from '../lib/request-failure';
 import { SessionSuperseded } from '../lib/session-coordinator';
-import type { PosTraceStatus } from '../lib/traceability';
 import { useSession } from './use-session';
 
 export function useVariantUnit(

@@ -1,6 +1,6 @@
+import { formatMoney } from '@parkviet/pos-shared/money';
 import { type ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { formatMoney } from '../lib/money';
 import {
   canCancelRefund,
   canFailRefund,

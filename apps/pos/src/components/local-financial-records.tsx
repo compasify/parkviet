@@ -1,3 +1,4 @@
+import { formatMoney, parseVndAmount } from '@parkviet/pos-shared/money';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -6,7 +7,6 @@ import {
   forgetFinancialRecord,
   scopedFinancialRecords,
 } from '../lib/financial-recovery';
-import { formatMoney, parseVndAmount } from '../lib/money';
 
 function actionOf(record: FinancialRecoveryRecord): string {
   try {

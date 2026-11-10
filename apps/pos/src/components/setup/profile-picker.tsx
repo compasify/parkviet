@@ -1,16 +1,16 @@
-import type { Dispatch } from 'react';
-import { useTranslation } from 'react-i18next';
 import {
   type BusinessProfile,
   profileDescriptionKey,
   profileLabelKey,
-} from '../../lib/pos-modules';
+} from '@parkviet/pos-shared/pos-modules';
 import {
   isAvailable,
   isComingSoon,
   type SetupAction,
   type SetupState,
-} from '../../lib/setup-wizard';
+} from '@parkviet/pos-shared/setup-wizard';
+import type { Dispatch } from 'react';
+import { useTranslation } from 'react-i18next';
 
 // Step 1: one radio group of industry cards, in the server's order, in two
 // sections: retail (selectable) and food & entertainment ("coming soon").

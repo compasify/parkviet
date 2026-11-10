@@ -1,3 +1,13 @@
+import {
+  type BusinessModule,
+  type BusinessProfile,
+  modulesEnabledWith,
+  modulesRequiring,
+  moduleTextKey,
+  type PosModules,
+  profileDescriptionKey,
+  profileLabelKey,
+} from '@parkviet/pos-shared/pos-modules';
 import { useParams } from '@tanstack/react-router';
 import { type FormEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -21,16 +31,6 @@ import {
 } from '../../hooks/use-onboarding';
 import { administrationAccess } from '../../lib/pos-administration';
 import type { PosBranch } from '../../lib/pos-context';
-import {
-  type BusinessModule,
-  type BusinessProfile,
-  modulesEnabledWith,
-  modulesRequiring,
-  moduleTextKey,
-  type PosModules,
-  profileDescriptionKey,
-  profileLabelKey,
-} from '../../lib/pos-modules';
 import { conflictReason, describeFailure, posFailureKey } from '../../lib/request-failure';
 import { formatInZone } from '../../lib/shifts';
 import '../../styles/setup.css';

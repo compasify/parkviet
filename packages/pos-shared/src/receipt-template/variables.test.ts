@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import i18n from '../../i18n';
-import type { ReceiptSnapshot } from '../print-adapter';
+import i18n from '../test-support/i18n';
+import type { ReceiptSnapshot } from '../types/print-adapter';
 import { snapshotData, type TemplateData } from './data';
 import {
   interpolate,

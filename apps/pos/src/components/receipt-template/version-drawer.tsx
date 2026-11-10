@@ -1,11 +1,11 @@
+import type { TemplateData } from '@parkviet/pos-shared/receipt-template/data';
+import { formatDocumentTime } from '@parkviet/pos-shared/receipt-template/data';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   type ReceiptTemplate,
   useReceiptTemplateVersions,
 } from '../../hooks/use-receipt-templates';
-import type { TemplateData } from '../../lib/receipt-template/data';
-import { formatDocumentTime } from '../../lib/receipt-template/data';
 import { describeFailure } from '../../lib/request-failure';
 import { PosIcon } from '../pos-icon';
 import { TemplatePreview } from './template-preview';

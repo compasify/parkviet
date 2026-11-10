@@ -1,3 +1,13 @@
+import { formatDocumentTime } from '@parkviet/pos-shared/receipt-template/data';
+import {
+  DOCUMENT_TYPES,
+  type DocumentType,
+  type PaperSize,
+} from '@parkviet/pos-shared/receipt-template/types';
+import {
+  MAX_ACTIVE_TEMPLATES,
+  MAX_NAME_LENGTH,
+} from '@parkviet/pos-shared/receipt-template/validate';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { type FormEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -16,13 +26,6 @@ import {
   useReceiptTemplates,
 } from '../../hooks/use-receipt-templates';
 import { administrationAccess } from '../../lib/pos-administration';
-import { formatDocumentTime } from '../../lib/receipt-template/data';
-import {
-  DOCUMENT_TYPES,
-  type DocumentType,
-  type PaperSize,
-} from '../../lib/receipt-template/types';
-import { MAX_ACTIVE_TEMPLATES, MAX_NAME_LENGTH } from '../../lib/receipt-template/validate';
 import { conflictReason, describeFailure, posFailureKey } from '../../lib/request-failure';
 import '../../styles/receipt-templates.css';
 

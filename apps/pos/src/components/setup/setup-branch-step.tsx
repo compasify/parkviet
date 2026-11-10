@@ -1,8 +1,8 @@
+import type { SetupAction, SetupProblem, SetupState } from '@parkviet/pos-shared/setup-wizard';
 import type { Dispatch } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { LocationOption } from '../../hooks/use-topology';
 import { posFailureKey } from '../../lib/request-failure';
-import type { SetupAction, SetupProblem, SetupState } from '../../lib/setup-wizard';
 
 // Step 3: the first branch, its stock location and an optional register, and
 // whether the person setting up gets every permission there (ticked).

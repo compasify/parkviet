@@ -1,3 +1,28 @@
+import { DEFAULT_TEMPLATES } from '@parkviet/pos-shared/receipt-template/defaults';
+import { MAX_COPIES, renderDocument } from '@parkviet/pos-shared/receipt-template/render';
+import type {
+  DocumentType,
+  LineColumn,
+  PageSettings,
+  PaperSize,
+  TemplateConfig,
+  TextSize,
+} from '@parkviet/pos-shared/receipt-template/types';
+import {
+  COPIES_TYPES,
+  charsPerLine,
+  editableConfig,
+  type IssueArea,
+  issueTarget,
+  LOCKED_COLUMNS,
+  LOCKED_TOTALS,
+  MAX_NAME_LENGTH,
+  SECTION_RULES,
+  serverIssues,
+  type TemplateIssue,
+  UNPRINTED_META,
+  validateTemplate,
+} from '@parkviet/pos-shared/receipt-template/validate';
 import { Link, useBlocker, useParams } from '@tanstack/react-router';
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -30,31 +55,6 @@ import {
 import { useBranches, useMemberships, useRegisters } from '../../hooks/use-topology';
 import { administrationAccess } from '../../lib/pos-administration';
 import { createBrowserPrintAdapter } from '../../lib/print-adapter';
-import { DEFAULT_TEMPLATES } from '../../lib/receipt-template/defaults';
-import { MAX_COPIES, renderDocument } from '../../lib/receipt-template/render';
-import type {
-  DocumentType,
-  LineColumn,
-  PageSettings,
-  PaperSize,
-  TemplateConfig,
-  TextSize,
-} from '../../lib/receipt-template/types';
-import {
-  COPIES_TYPES,
-  charsPerLine,
-  editableConfig,
-  type IssueArea,
-  issueTarget,
-  LOCKED_COLUMNS,
-  LOCKED_TOTALS,
-  MAX_NAME_LENGTH,
-  SECTION_RULES,
-  serverIssues,
-  type TemplateIssue,
-  UNPRINTED_META,
-  validateTemplate,
-} from '../../lib/receipt-template/validate';
 import { conflictReason, describeFailure, posFailureKey } from '../../lib/request-failure';
 import { templateFailure } from './receipt-templates';
 import '../../styles/receipt-templates.css';

@@ -1,8 +1,3 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useRef, useState } from 'react';
-import { session } from '../lib/app-session';
-import { runFinancialCommand } from '../lib/financial-command';
-import { definitiveRejection, financialStorageFailure } from '../lib/request-failure';
 import type {
   AdjustmentStatus,
   PosAdjustment,
@@ -10,7 +5,12 @@ import type {
   PosSerialUnit,
   PosTraceStatus,
   RecallResult,
-} from '../lib/traceability';
+} from '@parkviet/pos-shared/traceability';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useRef, useState } from 'react';
+import { session } from '../lib/app-session';
+import { runFinancialCommand } from '../lib/financial-command';
+import { definitiveRejection, financialStorageFailure } from '../lib/request-failure';
 import { useSession } from './use-session';
 import { abandonIfNeeded, financialRequest } from './use-tenders';
 

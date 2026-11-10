@@ -1,5 +1,3 @@
-import { useQuery } from '@tanstack/react-query';
-import { session } from '../lib/app-session';
 import {
   type BranchFeatures,
   type FeatureSetting,
@@ -7,7 +5,9 @@ import {
   normalizeFeatures,
   POS_FEATURES,
   type PosFeature,
-} from '../lib/pos-features';
+} from '@parkviet/pos-shared/pos-features';
+import { useQuery } from '@tanstack/react-query';
+import { session } from '../lib/app-session';
 import { posFailureKey } from '../lib/request-failure';
 import { SessionSuperseded } from '../lib/session-coordinator';
 import { useSession } from './use-session';

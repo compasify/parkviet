@@ -1,7 +1,11 @@
+import {
+  barcodeWidthMm,
+  code128Bars,
+  QUIET_ZONE,
+} from '@parkviet/pos-shared/receipt-template/code128';
+import type { Align, PaperSize } from '@parkviet/pos-shared/receipt-template/types';
+import { PRINTABLE_WIDTH_MM } from '@parkviet/pos-shared/receipt-template/validate';
 import { useMemo } from 'react';
-import { barcodeWidthMm, code128Bars, QUIET_ZONE } from '../../lib/receipt-template/code128';
-import type { Align, PaperSize } from '../../lib/receipt-template/types';
-import { PRINTABLE_WIDTH_MM } from '../../lib/receipt-template/validate';
 
 // The document number as a Code 128 barcode with the number printed under
 // it. Left off when the paper is too narrow for bars a scanner can read.

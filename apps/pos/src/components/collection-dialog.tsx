@@ -1,8 +1,8 @@
+import { formatMoney, parseVndInput } from '@parkviet/pos-shared/money';
 import { useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { CollectInput } from '../hooks/use-receivables';
 import { useModalFocus } from '../lib/dialog-focus';
-import { formatMoney, parseVndInput } from '../lib/money';
 import { payLaterQr } from '../lib/pay-later';
 import type { PosCollection, PosReceivable, PosReceivableAccount } from '../lib/pos-context';
 import {

@@ -1,10 +1,10 @@
+import type { OnboardingPayload } from '@parkviet/pos-shared/setup-wizard';
 import { useQuery } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
 import { session } from '../lib/app-session';
 import { queryClient } from '../lib/query-client';
 import { definitiveRejection, posFailureKey } from '../lib/request-failure';
 import { SessionSuperseded } from '../lib/session-coordinator';
-import type { OnboardingPayload } from '../lib/setup-wizard';
 import { createSubmissionKey } from '../lib/submission-key';
 import { useSession } from './use-session';
 

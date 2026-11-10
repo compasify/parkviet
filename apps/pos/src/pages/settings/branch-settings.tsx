@@ -1,3 +1,5 @@
+import { branchSettingVisible } from '@parkviet/pos-shared/module-registry';
+import type { PosModules } from '@parkviet/pos-shared/pos-modules';
 import { Link, useParams } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -8,9 +10,7 @@ import { useBranchModules } from '../../hooks/use-branch-modules';
 import { useBranches } from '../../hooks/use-topology';
 import { administrationAccess } from '../../lib/pos-administration';
 import type { PosBranch } from '../../lib/pos-context';
-import type { PosModules } from '../../lib/pos-modules';
 import { posFailureKey } from '../../lib/request-failure';
-import { branchSettingVisible } from '../../modules/registry';
 
 export type BranchSettingsScope = {
   branch: PosBranch;

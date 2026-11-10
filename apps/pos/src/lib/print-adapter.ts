@@ -1,14 +1,18 @@
-import type { PosWorkspace } from './pos-context';
 import {
   type PrintPlace,
   prebillData,
   snapshotData,
   snapshotDocumentType,
-} from './receipt-template/data';
-import { defaultTemplate } from './receipt-template/defaults';
-import { renderDocument } from './receipt-template/render';
-import type { PrintLayout } from './receipt-template/selection';
-import type { PaperSize, PrintDocument, TemplateConfig } from './receipt-template/types';
+} from '@parkviet/pos-shared/receipt-template/data';
+import { defaultTemplate } from '@parkviet/pos-shared/receipt-template/defaults';
+import { renderDocument } from '@parkviet/pos-shared/receipt-template/render';
+import type {
+  PaperSize,
+  PrintDocument,
+  TemplateConfig,
+} from '@parkviet/pos-shared/receipt-template/types';
+import type { ReceiptPrint, ReceiptSnapshot } from '@parkviet/pos-shared/types/print-adapter';
+import type { PosWorkspace } from './pos-context';
 
 // Printing is two steps behind one interface: a template renderer turns a
 // server receipt snapshot (or a provisional pre-bill of an open order) into
@@ -17,43 +21,14 @@ import type { PaperSize, PrintDocument, TemplateConfig } from './receipt-templat
 // silent printing would be another adapter after merchant device approval.
 // A failed or blocked print is reported and never undoes or repeats a sale.
 
+export { isPaperSize, PAPER_SIZES } from '@parkviet/pos-shared/paper-size';
 export {
   formatDocumentDate,
   formatDocumentTime,
   formatQuantity,
-} from './receipt-template/data';
-export type { PaperSize } from './receipt-template/types';
-
-// Every size a posted receipt can print on: thermal rolls first, then sheets.
-export const PAPER_SIZES: readonly PaperSize[] = ['58mm', '80mm', 'a4', 'a5', 'a6'];
-
-export const isPaperSize = (value: unknown): value is PaperSize =>
-  typeof value === 'string' && (PAPER_SIZES as readonly string[]).includes(value);
-
-export type ReceiptSnapshot = {
-  id: string;
-  source_type: 'sale' | 'return' | 'refund' | 'shift_closure';
-  number: string;
-  branch_id: string;
-  issued_at: string;
-  issued_late: boolean;
-  disclaimer: string;
-  printed: boolean;
-  copy_count: number;
-  // The template, version and paper of the original print; null before the
-  // first print and for prints made before templates existed.
-  original_print?: PrintLayout | null;
-  document: Record<string, unknown>;
-};
-
-// One recorded print and the layout the server recorded it with.
-export type ReceiptPrint = {
-  id: string;
-  copy: boolean;
-  copy_number: number;
-  label: string | null;
-  printed_at: string;
-} & Partial<PrintLayout>;
+} from '@parkviet/pos-shared/receipt-template/data';
+export type { PaperSize } from '@parkviet/pos-shared/receipt-template/types';
+export type { ReceiptPrint, ReceiptSnapshot } from '@parkviet/pos-shared/types/print-adapter';
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
 

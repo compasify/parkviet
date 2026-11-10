@@ -1,15 +1,15 @@
+import {
+  describeTraceFailure,
+  formatExpiry,
+  parseSerials,
+  serialListAfterTab,
+} from '@parkviet/pos-shared/traceability';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTraceability, useVariantUnit } from '../hooks/use-variant-unit';
 import type { PosWorkspace } from '../lib/pos-context';
 import { parseCountQuantity, parseMeasuredQuantity } from '../lib/quantity';
-import {
-  describeTraceFailure,
-  formatExpiry,
-  parseSerials,
-  serialListAfterTab,
-} from '../lib/traceability';
 
 export type SaleLineAddExtra = Partial<{
   sale_quantity: string;

@@ -1,5 +1,5 @@
+import type { PrintDocument } from '@parkviet/pos-shared/receipt-template/types';
 import type { PaperSize } from '../lib/print-adapter';
-import type { PrintDocument } from '../lib/receipt-template/types';
 import { type PrintedSheet, PrintPortal, PrintSheet } from './print-sheet';
 
 // A posted receipt or a pre-bill, on an 80mm roll or a sheet.

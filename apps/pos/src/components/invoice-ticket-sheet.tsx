@@ -1,4 +1,4 @@
-import type { PaperSize, PrintDocument } from '../lib/receipt-template/types';
+import type { PaperSize, PrintDocument } from '@parkviet/pos-shared/receipt-template/types';
 import { PrintPortal, PrintSheet } from './print-sheet';
 
 // The payment invoice on the paper of its template: centred text header, one

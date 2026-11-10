@@ -7,7 +7,7 @@ import {
   skuEditorAreas,
   visibleBranchSettings,
   visibleNav,
-} from './registry';
+} from './module-registry';
 
 const ALL_ON = { 'retail.units': true, 'retail.measured': true, 'retail.traceability': true };
 const keeper = ['pos.inventory.manage'];

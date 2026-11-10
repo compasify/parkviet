@@ -1,9 +1,9 @@
+import { formatMoney } from '@parkviet/pos-shared/money';
+import { catalogViewOf, type PosCatalogView } from '@parkviet/pos-shared/pos-modules';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCatalog } from '../hooks/use-catalog';
-import { formatMoney } from '../lib/money';
 import type { PosWorkspace } from '../lib/pos-context';
-import { catalogViewOf, type PosCatalogView } from '../lib/pos-modules';
 import { posFailureKey } from '../lib/request-failure';
 import { AddItemForm } from './add-item-form';
 import { PosIcon } from './pos-icon';

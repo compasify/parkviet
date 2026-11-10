@@ -1,3 +1,9 @@
+import { snapshotDocumentType } from '@parkviet/pos-shared/receipt-template/data';
+import { defaultTemplate } from '@parkviet/pos-shared/receipt-template/defaults';
+import { printCopies } from '@parkviet/pos-shared/receipt-template/render';
+import type { PrintChoice } from '@parkviet/pos-shared/receipt-template/selection';
+import type { TemplateConfig } from '@parkviet/pos-shared/receipt-template/types';
+import { serverIssues } from '@parkviet/pos-shared/receipt-template/validate';
 import { type QueryClient, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -18,17 +24,7 @@ import {
   receiptPrintDocument,
   receiptPrintTitle,
 } from '../lib/print-adapter';
-import { snapshotDocumentType } from '../lib/receipt-template/data';
-import { defaultTemplate } from '../lib/receipt-template/defaults';
-import { printCopies } from '../lib/receipt-template/render';
-import {
-  autoPrintEnabled,
-  type PrintChoice,
-  rememberTemplate,
-  setAutoPrint,
-} from '../lib/receipt-template/selection';
-import type { TemplateConfig } from '../lib/receipt-template/types';
-import { serverIssues } from '../lib/receipt-template/validate';
+import { autoPrintEnabled, rememberTemplate, setAutoPrint } from '../lib/receipt-preferences';
 import { describeFailure, failureStatus } from '../lib/request-failure';
 import { PayLaterShareButton } from './pay-later-share-button';
 import { PosIcon } from './pos-icon';

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import vi from '../locales/vi.json';
+import vi from '../../../apps/pos/src/locales/vi.json';
 import {
   adjustmentActions,
   canOpenInventory,

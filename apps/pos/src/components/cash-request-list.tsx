@@ -1,7 +1,7 @@
+import { formatMoney } from '@parkviet/pos-shared/money';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDecideCashRequest } from '../hooks/use-shift-close';
-import { formatMoney } from '../lib/money';
 import { definitiveRejection } from '../lib/request-failure';
 import { type CashMovementRequest, describeShiftFailure, formatInZone } from '../lib/shifts';
 

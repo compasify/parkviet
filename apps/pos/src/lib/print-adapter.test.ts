@@ -1,3 +1,5 @@
+import { DEFAULT_TEMPLATES } from '@parkviet/pos-shared/receipt-template/defaults';
+import type { PrintDocument, TemplateConfig } from '@parkviet/pos-shared/receipt-template/types';
 import { describe, expect, it, vi } from 'vitest';
 import i18n from '../i18n';
 import type { PosWorkspace } from './pos-context';
@@ -19,8 +21,6 @@ import {
   SKIPPED_IMAGE_ATTRIBUTE,
   settleImages,
 } from './print-adapter';
-import { DEFAULT_TEMPLATES } from './receipt-template/defaults';
-import type { PrintDocument, TemplateConfig } from './receipt-template/types';
 
 const t = (key: string, options?: Record<string, unknown>) => i18n.t(key, options ?? {}) as string;
 

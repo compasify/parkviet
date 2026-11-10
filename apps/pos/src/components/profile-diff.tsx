@@ -1,8 +1,8 @@
+import { isPosFeature } from '@parkviet/pos-shared/pos-features';
+import { profileLabelKey } from '@parkviet/pos-shared/pos-modules';
 import { Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import type { ProfileDefaultChange, ProfilePreview } from '../hooks/use-branch-modules';
-import { isPosFeature } from '../lib/pos-features';
-import { profileLabelKey } from '../lib/pos-modules';
 import { ModuleName, unitLabel } from './setup/setup-preview-step';
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;

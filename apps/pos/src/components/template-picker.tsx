@@ -1,7 +1,7 @@
+import type { PrintChoice } from '@parkviet/pos-shared/receipt-template/selection';
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { PrintChoice } from '../lib/receipt-template/selection';
-import '../styles/receipt.css';
+import '@parkviet/pos-shared/receipt.css';
 
 // Print template picker: one chip per template the print may use, each with
 // its name and paper; the paper follows the template. Each chip is a real

@@ -1,3 +1,5 @@
+import { formatMoney } from '@parkviet/pos-shared/money';
+import { contextFeature } from '@parkviet/pos-shared/pos-features';
 import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -14,10 +16,8 @@ import {
   useRefundRequests,
   useReturnCommands,
 } from '../hooks/use-returns';
-import { formatMoney } from '../lib/money';
 import type { PosCreditRequest } from '../lib/pos-context';
 import { writesLocked } from '../lib/pos-context';
-import { contextFeature } from '../lib/pos-features';
 import { describeCreditFailure, formatInstant } from '../lib/receivables';
 import { definitiveRejection, posFailureKey } from '../lib/request-failure';
 import { canApprove, describeReturnFailure } from '../lib/returns';

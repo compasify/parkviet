@@ -1,8 +1,6 @@
-// Where a sale came from: at the counter (default), Facebook, Zalo or
-// elsewhere. A fixed list, kept in step with the server's ORDER_SOURCES.
+import { ORDER_SOURCES, type OrderSource } from '@parkviet/pos-shared/types/pos-context';
 
-export const ORDER_SOURCES = ['counter', 'facebook', 'zalo', 'other'] as const;
-export type OrderSource = (typeof ORDER_SOURCES)[number];
+export { ORDER_SOURCES, type OrderSource } from '@parkviet/pos-shared/types/pos-context';
 
 // What the server sent, or counter when it is missing (older payloads) or unknown.
 export function orderSourceOf(value: unknown): OrderSource {

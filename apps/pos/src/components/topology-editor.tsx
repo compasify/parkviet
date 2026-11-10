@@ -1,12 +1,12 @@
+import { parseVndInput } from '@parkviet/pos-shared/money';
+import { posCapabilities, sensitiveCapabilities } from '@parkviet/pos-shared/pos-capabilities';
+import { type BusinessProfile, profileLabelKey } from '@parkviet/pos-shared/pos-modules';
+import { defaultsFromProfile } from '@parkviet/pos-shared/setup-wizard';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { LocationOption, StaffOption } from '../hooks/use-topology';
-import { parseVndInput } from '../lib/money';
-import { posCapabilities, sensitiveCapabilities } from '../lib/pos-capabilities';
 import type { PosBranch, PosMembership } from '../lib/pos-context';
-import { type BusinessProfile, profileLabelKey } from '../lib/pos-modules';
 import { posFailureKey } from '../lib/request-failure';
-import { defaultsFromProfile } from '../lib/setup-wizard';
 import { PosIcon } from './pos-icon';
 
 // A new branch's form after picking an industry: the profile and the branch

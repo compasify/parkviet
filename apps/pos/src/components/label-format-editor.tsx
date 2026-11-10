@@ -1,6 +1,3 @@
-import { type FormEvent, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { saveLabelFormat } from '../hooks/use-branch-catalog';
 import {
   LABEL_BODY_LENGTH,
   LABEL_NAME_MAX,
@@ -11,7 +8,10 @@ import {
   labelFormatBody,
   labelFormatDraft,
   labelFormatProblems,
-} from '../lib/label-format';
+} from '@parkviet/pos-shared/label-format';
+import { type FormEvent, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { saveLabelFormat } from '../hooks/use-branch-catalog';
 import { describeFailure } from '../lib/request-failure';
 import { AdminDialog } from './admin-dialog';
 

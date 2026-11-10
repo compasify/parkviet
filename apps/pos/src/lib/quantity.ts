@@ -1,4 +1,4 @@
-import { parseMoneyInput, parseVndAmount } from './money';
+import { parseMoneyInput, parseVndAmount } from '@parkviet/pos-shared/money';
 
 // The server rejects more than this many units of an ordinary item per line.
 export const MAX_COUNT_QUANTITY = 10000;

@@ -1,6 +1,6 @@
+import type { Align } from '@parkviet/pos-shared/receipt-template/types';
 import { useMemo } from 'react';
 import { encode } from 'uqr';
-import type { Align } from '../../lib/receipt-template/types';
 
 // The dark modules of a QR code as one SVG path, a row run at a time.
 export function qrPath(value: string): { size: number; path: string } | null {

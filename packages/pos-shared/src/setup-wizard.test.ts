@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import en from '../locales/en.json';
-import vi from '../locales/vi.json';
+import en from '../../../apps/pos/src/locales/en.json';
+import vi from '../../../apps/pos/src/locales/vi.json';
 import {
   type BusinessModule,
   type BusinessProfile,

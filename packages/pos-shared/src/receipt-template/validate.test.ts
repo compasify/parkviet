@@ -34,7 +34,7 @@ describe('template validation mirrors the server', () => {
   it('offers exactly the sections and fields the server schema allows', () => {
     const schema = readFileSync(
       new URL(
-        '../../../../../server/app/services/spree/pos/receipt_template_schema.rb',
+        '../../../../server/app/services/spree/pos/receipt_template_schema.rb',
         import.meta.url,
       ),
       'utf8',
@@ -195,7 +195,7 @@ describe('QR, barcode and signature blocks and copies', () => {
   const serverSchema = () =>
     readFileSync(
       new URL(
-        '../../../../../server/app/services/spree/pos/receipt_template_schema.rb',
+        '../../../../server/app/services/spree/pos/receipt_template_schema.rb',
         import.meta.url,
       ),
       'utf8',

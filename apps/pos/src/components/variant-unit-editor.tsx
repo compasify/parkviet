@@ -1,3 +1,5 @@
+import { moduleUis, skuEditorAreas } from '@parkviet/pos-shared/module-registry';
+import { describeTraceFailure } from '@parkviet/pos-shared/traceability';
 import { useQuery } from '@tanstack/react-query';
 import { type FormEvent, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -10,8 +12,6 @@ import { saveVariantUnit, useVariantUnit } from '../hooks/use-variant-unit';
 import type { PosVariantUnit } from '../lib/pos-context';
 import { queryClient } from '../lib/query-client';
 import { describeFailure, posFailureKey } from '../lib/request-failure';
-import { describeTraceFailure } from '../lib/traceability';
-import { moduleUis, skuEditorAreas } from '../modules/registry';
 import { AdminDialog } from './admin-dialog';
 import { FeatureOffNote } from './feature-off-note';
 

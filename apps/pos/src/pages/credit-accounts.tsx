@@ -1,3 +1,4 @@
+import { formatMoney, parseVndAmount, parseVndInput } from '@parkviet/pos-shared/money';
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PageState, PosPage } from '../components/pos-page';
@@ -8,7 +9,6 @@ import {
   useConfigureCredit,
   useCreditAccounts,
 } from '../hooks/use-receivables';
-import { formatMoney, parseVndAmount, parseVndInput } from '../lib/money';
 import type { PosCreditAccount, PosCustomerProfile } from '../lib/pos-context';
 import { writesLocked } from '../lib/pos-context';
 import { describeCreditFailure } from '../lib/receivables';

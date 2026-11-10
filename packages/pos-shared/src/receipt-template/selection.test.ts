@@ -1,14 +1,10 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
   initialChoice,
-  LEGACY_PAPER_KEYS,
   type ListedTemplate,
   ORIGINAL_CHOICE,
   originalLayout,
   printChoices,
-  rememberedTemplate,
-  rememberedTemplateKey,
-  rememberTemplate,
 } from './selection';
 
 const template = (
@@ -106,28 +102,5 @@ describe('print choices', () => {
     });
     expect(initialChoice(reprint, [k80, a4], 'postpl_a')).toBe(ORIGINAL_CHOICE);
     expect(initialChoice([], [])).toBeNull();
-  });
-});
-
-describe('remembered template', () => {
-  beforeEach(() => {
-    const store = new Map<string, string>();
-    vi.stubGlobal('window', {
-      localStorage: {
-        getItem: (key: string) => store.get(key) ?? null,
-        setItem: (key: string, value: string) => store.set(key, value),
-        removeItem: (key: string) => store.delete(key),
-      },
-    });
-  });
-  afterEach(() => vi.unstubAllGlobals());
-
-  it('remembers the last template per document type and drops the old paper preferences', () => {
-    for (const key of LEGACY_PAPER_KEYS) window.localStorage.setItem(key, '58mm');
-    rememberTemplate('sale', 'postpl_b');
-    expect(window.localStorage.getItem(rememberedTemplateKey('sale'))).toBe('postpl_b');
-    expect(rememberedTemplate('sale')).toBe('postpl_b');
-    expect(rememberedTemplate('return')).toBeNull();
-    for (const key of LEGACY_PAPER_KEYS) expect(window.localStorage.getItem(key)).toBeNull();
   });
 });

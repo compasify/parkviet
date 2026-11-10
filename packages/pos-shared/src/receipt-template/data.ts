@@ -5,8 +5,8 @@ import type {
   PosLineItem,
   PosStoreProfile,
   PosWorkspace,
-} from '../pos-context';
-import type { ReceiptSnapshot } from '../print-adapter';
+} from '../types/pos-context';
+import type { ReceiptSnapshot } from '../types/print-adapter';
 import type {
   DocumentType,
   MetaField,

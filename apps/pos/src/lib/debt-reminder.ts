@@ -1,4 +1,4 @@
-import { formatMoney } from './money';
+import { formatMoney } from '@parkviet/pos-shared/money';
 import type { PayLaterQr } from './pay-later';
 import type { PosReceivableAccount } from './pos-context';
 import { STORE_TIMEZONE } from './receivables';

@@ -1,18 +1,22 @@
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { useMemo, useState } from 'react';
-import { session } from '../lib/app-session';
-import type { ReceiptSnapshot } from '../lib/print-adapter';
-import { queryClient } from '../lib/query-client';
-import { defaultTemplate } from '../lib/receipt-template/defaults';
+import { defaultTemplate } from '@parkviet/pos-shared/receipt-template/defaults';
 import {
   DEFAULT_PAPER,
   initialChoice,
   type PrintChoice,
   type PrintLayout,
   printChoices,
-  rememberedTemplate,
-} from '../lib/receipt-template/selection';
-import type { DocumentType, PaperSize, TemplateConfig } from '../lib/receipt-template/types';
+} from '@parkviet/pos-shared/receipt-template/selection';
+import type {
+  DocumentType,
+  PaperSize,
+  TemplateConfig,
+} from '@parkviet/pos-shared/receipt-template/types';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { useMemo, useState } from 'react';
+import { session } from '../lib/app-session';
+import type { ReceiptSnapshot } from '../lib/print-adapter';
+import { queryClient } from '../lib/query-client';
+import { rememberedTemplate } from '../lib/receipt-preferences';
 import { posFailureKey } from '../lib/request-failure';
 import { SessionSuperseded } from '../lib/session-coordinator';
 import { useSession } from './use-session';

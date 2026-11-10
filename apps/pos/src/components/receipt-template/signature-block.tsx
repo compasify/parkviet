@@ -1,4 +1,4 @@
-import type { SignatureParty } from '../../lib/receipt-template/types';
+import type { SignatureParty } from '@parkviet/pos-shared/receipt-template/types';
 
 // Signature boxes side by side, each with room to sign under its label.
 export function SignatureBlock({

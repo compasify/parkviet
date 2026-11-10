@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import i18n from '../../i18n';
-import type { PosFinancialAttempt, PosWorkspace } from '../pos-context';
-import type { ReceiptSnapshot } from '../print-adapter';
+import i18n from '../test-support/i18n';
+import type { PosFinancialAttempt, PosWorkspace } from '../types/pos-context';
+import type { ReceiptSnapshot } from '../types/print-adapter';
 import { paymentTicketData, prebillData, snapshotData } from './data';
 import { DEFAULT_TEMPLATES, defaultTemplate, TEST_PRINT_BANNER } from './defaults';
 import { isWebUrl, printCopies, renderDocument } from './render';

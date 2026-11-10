@@ -1,8 +1,8 @@
+import { formatMoney } from '@parkviet/pos-shared/money';
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRecentDeliverers } from '../hooks/use-deliveries';
 import { deliveryFailureKey, normalizeDeliverer, normalizeDeliveryFee } from '../lib/deliveries';
-import { formatMoney } from '../lib/money';
 import type { PosWorkspace } from '../lib/pos-context';
 import { conflictReason, describeFailure } from '../lib/request-failure';
 

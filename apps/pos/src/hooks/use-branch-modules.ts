@@ -1,7 +1,7 @@
+import { normalizeModules, type PosModules } from '@parkviet/pos-shared/pos-modules';
 import { useQuery } from '@tanstack/react-query';
 import { usePosSelection } from '../components/pos-selection';
 import { session } from '../lib/app-session';
-import { normalizeModules, type PosModules } from '../lib/pos-modules';
 import { posFailureKey } from '../lib/request-failure';
 import { SessionSuperseded } from '../lib/session-coordinator';
 import { useSession } from './use-session';

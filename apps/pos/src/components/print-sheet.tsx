@@ -1,5 +1,3 @@
-import type { CSSProperties } from 'react';
-import { createPortal } from 'react-dom';
 import type {
   PaperSize,
   PrintBlock,
@@ -7,12 +5,14 @@ import type {
   PrintLines,
   PrintRow,
   TextSize,
-} from '../lib/receipt-template/types';
-import { charsPerLine, WIDE_PAPERS } from '../lib/receipt-template/validate';
+} from '@parkviet/pos-shared/receipt-template/types';
+import { charsPerLine, WIDE_PAPERS } from '@parkviet/pos-shared/receipt-template/validate';
+import type { CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
 import { BarcodeBlock } from './receipt-template/barcode-block';
 import { QrCodeBlock } from './receipt-template/qr-block';
 import { SignatureBlock } from './receipt-template/signature-block';
-import '../styles/receipt.css';
+import '@parkviet/pos-shared/receipt.css';
 
 const DEFAULT_LINE_SPACING = 1.35;
 

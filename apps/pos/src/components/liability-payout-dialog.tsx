@@ -1,6 +1,6 @@
+import { formatMoney, parseVndInput } from '@parkviet/pos-shared/money';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { formatMoney, parseVndInput } from '../lib/money';
 import type { PosLiabilityPayout, PosReceivedFunds } from '../lib/pos-context';
 import { describeFailure } from '../lib/request-failure';
 

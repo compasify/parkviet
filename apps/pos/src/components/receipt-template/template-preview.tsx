@@ -1,12 +1,16 @@
+import { snapshotData, type TemplateData } from '@parkviet/pos-shared/receipt-template/data';
+import { renderDocument } from '@parkviet/pos-shared/receipt-template/render';
+import { sampleData, withLogo } from '@parkviet/pos-shared/receipt-template/sample-data';
+import type {
+  DocumentType,
+  PaperSize,
+  TemplateConfig,
+} from '@parkviet/pos-shared/receipt-template/types';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLatestReceipt } from '../../hooks/use-receipt-templates';
 import type { PosBranch, PosContext, PosRegister } from '../../lib/pos-context';
 import type { ReceiptSnapshot } from '../../lib/print-adapter';
-import { snapshotData, type TemplateData } from '../../lib/receipt-template/data';
-import { renderDocument } from '../../lib/receipt-template/render';
-import { sampleData, withLogo } from '../../lib/receipt-template/sample-data';
-import type { DocumentType, PaperSize, TemplateConfig } from '../../lib/receipt-template/types';
 import { PrintSheet } from '../print-sheet';
 
 export type PreviewSource = 'sample' | 'latest';

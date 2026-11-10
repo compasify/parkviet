@@ -1,10 +1,14 @@
+import { DEFAULT_TEMPLATES } from '@parkviet/pos-shared/receipt-template/defaults';
+import type {
+  PrintBlock,
+  PrintDocument,
+  TemplateConfig,
+} from '@parkviet/pos-shared/receipt-template/types';
 import { describe, expect, it } from 'vitest';
 import i18n from '../i18n';
 import { invoiceTicketPrintDocument } from './invoice-ticket';
 import type { PosFinancialAttempt, PosWorkspace } from './pos-context';
 import { pageRule } from './print-adapter';
-import { DEFAULT_TEMPLATES } from './receipt-template/defaults';
-import type { PrintBlock, PrintDocument, TemplateConfig } from './receipt-template/types';
 
 const t = (key: string, options?: Record<string, unknown>) => i18n.t(key, options ?? {}) as string;
 

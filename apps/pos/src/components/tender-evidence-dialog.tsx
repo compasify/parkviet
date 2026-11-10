@@ -1,9 +1,9 @@
+import { formatMoney, parseVndAmount, parseVndInput } from '@parkviet/pos-shared/money';
 import { type KeyboardEvent, useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePrintTemplate } from '../hooks/use-receipt-templates';
 import { useVietqrTender } from '../hooks/use-tenders';
 import { invoiceTicketPrintDocument, lineDiscount, lineUnitPrice } from '../lib/invoice-ticket';
-import { formatMoney, parseVndAmount, parseVndInput } from '../lib/money';
 import type { PosFinancialAttempt, PosWorkspace } from '../lib/pos-context';
 import { createBrowserPrintAdapter, printTitle } from '../lib/print-adapter';
 import {
