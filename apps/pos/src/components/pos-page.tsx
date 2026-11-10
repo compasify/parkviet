@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { canHandleDeliveries } from '../lib/deliveries';
 import { administrationAccess } from '../lib/pos-administration';
+import { posDashboardUrl } from '../lib/pos-dashboard-url';
 import { canReadReceivables } from '../lib/receivables';
 import { canApprove, canProcessReturns } from '../lib/returns';
 import { PosIcon } from './pos-icon';
@@ -19,8 +20,12 @@ export function PosPage({
   children: ReactNode;
 }) {
   const { t } = useTranslation();
-  const { context } = usePosSelection();
+  const { context, selection } = usePosSelection();
   const capabilities = context.data?.capabilities ?? [];
+  // Administration is a separate app; it opens in a new tab (see UserMenu).
+  const administrationUrl = administrationAccess(context.data).read
+    ? posDashboardUrl(context.data?.store.id, '', selection.branchId)
+    : null;
   return (
     <div className="pos-page">
       <nav className="pos-page-nav" aria-label={t('pageNavigation')}>
@@ -28,11 +33,11 @@ export function PosPage({
           <PosIcon name="grid" />
           {t('sellingArea')}
         </Link>
-        {administrationAccess(context.data).read ? (
-          <Link to="/settings" activeProps={{ className: 'is-active', 'aria-current': 'page' }}>
+        {administrationUrl ? (
+          <a href={administrationUrl} target="_blank" rel="noopener">
             <PosIcon name="settings" />
             {t('settingsNav')}
-          </Link>
+          </a>
         ) : null}
         {context.data ? (
           <Link to="/orders" activeProps={{ className: 'is-active', 'aria-current': 'page' }}>

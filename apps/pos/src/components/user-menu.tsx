@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { canHandleDeliveries } from '../lib/deliveries';
 import { administrationAccess } from '../lib/pos-administration';
 import type { PosContext } from '../lib/pos-context';
+import { posDashboardUrl } from '../lib/pos-dashboard-url';
 import { canReadReceivables } from '../lib/receivables';
 import { canProcessReturns } from '../lib/returns';
 import { PosIcon } from './pos-icon';
@@ -152,26 +153,35 @@ export function UserMenu({
       </MenuGroup>,
     );
   }
-  const canConfigure = administrationAccess(data).read;
-  const branchSettings = !canConfigure && branchId && has('pos.topology.manage');
-  if (canConfigure || branchSettings || (staffed && registerId)) {
+  // Administration lives in the POS dashboard app. It opens in a new tab
+  // from every page so the open invoices and this session stay as they are.
+  const storeId = data?.store.id;
+  const administrationUrl = administrationAccess(data).read
+    ? posDashboardUrl(storeId, '', branchId)
+    : null;
+  const branchFeaturesUrl =
+    !administrationAccess(data).read && branchId && has('pos.topology.manage')
+      ? posDashboardUrl(storeId, 'features', branchId)
+      : null;
+  const dashboardLink = {
+    className: 'user-menu-item header-settings',
+    onClick: close,
+    target: '_blank',
+    rel: 'noopener',
+  } as const;
+  if (administrationUrl || branchFeaturesUrl || (staffed && registerId)) {
     groups.push(
       <MenuGroup key="setup" label={t('menuSetup')}>
-        {canConfigure ? (
-          <Link to="/settings" {...item} className="user-menu-item header-settings">
+        {administrationUrl ? (
+          <a href={administrationUrl} {...dashboardLink}>
             <PosIcon name="cog" />
             {t('settings')}
-          </Link>
-        ) : branchSettings && branchId ? (
-          <Link
-            to="/settings/branches/$branchId/features"
-            params={{ branchId }}
-            {...item}
-            className="user-menu-item header-settings"
-          >
+          </a>
+        ) : branchFeaturesUrl ? (
+          <a href={branchFeaturesUrl} {...dashboardLink}>
             <PosIcon name="cog" />
             {t('branchFeaturesTitle')}
-          </Link>
+          </a>
         ) : null}
         {staffed && registerId ? (
           <button

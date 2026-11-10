@@ -73,62 +73,6 @@ test('a feature switched off while the page is open is refused in Vietnamese and
   expect(sheet.creditRequested).toBe(false);
 });
 
-test('a store administrator switches the store default; a branch switch only turns a feature off', async ({ page }) => {
-  const world = newWorld();
-  world.flags = allOff();
-  world.administration = { read: true, write: true };
-  addSheet(world, 'ws_1');
-  await installRetailApi(page, world);
-  await login(page);
-  await page.goto('/settings/branches/br_1/features');
-  const row = page.getByRole('list', { name: 'Danh sách chức năng' }).locator('[data-feature="credit"]');
-  await expect(row).toContainText('Tắt (cửa hàng chưa bật)');
-
-  await row.getByRole('button', { name: 'Bật Bán ghi nợ cho cả cửa hàng' }).click();
-  const save = row.getByRole('button', { name: 'Lưu thay đổi' });
-  await expect(save).toBeDisabled();
-  await expect(row.getByLabel('Lý do (bắt buộc)')).toBeFocused();
-  await row.getByLabel('Lý do (bắt buộc)').fill('Đã duyệt mở bán ghi nợ');
-  await save.click();
-  await expect(page.getByText('Đã bật Bán ghi nợ cho cửa hàng.')).toBeVisible();
-  await expect(row.locator('.status-tag')).toHaveText('Đang bật');
-
-  await row.getByRole('button', { name: 'Tắt tại chi nhánh này' }).click();
-  await row.getByLabel('Lý do (bắt buộc)').fill('Tạm dừng do kiểm kê');
-  await row.getByRole('button', { name: 'Lưu thay đổi' }).click();
-  await expect(row.locator('.status-tag')).toHaveText('Tắt tại chi nhánh');
-  await expect(row).toContainText('Chi nhánh: đã tắt riêng');
-  await row.getByRole('button', { name: 'Bỏ tắt tại chi nhánh' }).click();
-  await row.getByLabel('Lý do (bắt buộc)').fill('Kiểm kê xong');
-  await row.getByRole('button', { name: 'Lưu thay đổi' }).click();
-  await expect(row.locator('.status-tag')).toHaveText('Đang bật');
-
-  expect(world.flags.writes).toEqual([
-    { feature: 'credit', enabled: true, reason: 'Đã duyệt mở bán ghi nợ' },
-    { feature: 'credit', branch_id: 'br_1', enabled: false, reason: 'Tạm dừng do kiểm kê' },
-    { feature: 'credit', branch_id: 'br_1', enabled: null, reason: 'Kiểm kê xong' },
-  ]);
-});
-
-test('a branch manager without store rights can only switch features off at the selected branch, not back on', async ({ page }) => {
-  const world = newWorld({ capabilities: [...FULL_CASHIER, 'pos.topology.manage'] });
-  world.flags = allOn();
-  addSheet(world, 'ws_1');
-  await installRetailApi(page, world);
-  await login(page);
-  await openMenuLink(page, 'Chức năng chi nhánh');
-  await expect(page.getByText('Bạn có thể tắt chức năng tại chi nhánh này', { exact: false })).toBeVisible();
-  const row = page.getByRole('list', { name: 'Danh sách chức năng' }).getByRole('listitem').filter({ hasText: 'Xuất CSV báo cáo' });
-  await expect(row.getByRole('button', { name: /cho cả cửa hàng/ })).toHaveCount(0);
-  await row.getByRole('button', { name: 'Tắt tại chi nhánh này' }).click();
-  await row.getByLabel('Lý do (bắt buộc)').fill('Chưa duyệt xuất dữ liệu');
-  await row.getByRole('button', { name: 'Lưu thay đổi' }).click();
-  await expect(row.locator('.status-tag')).toHaveText('Tắt tại chi nhánh');
-  // Turning it back on is a store decision: no button for the branch manager.
-  await expect(row.getByRole('button')).toHaveCount(0);
-  expect(world.flags.writes.map((write) => [write.branch_id, write.enabled])).toEqual([['br_1', false]]);
-});
-
 test('money is not taken on an order whose shift is not open; cash refunds and collections hint and leave the refusal to the server', async ({ page }) => {
   const world = newWorld();
   const old = addSheet(world, 'ws_old', { shiftId: 'sh_closed' });

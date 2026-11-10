@@ -1,7 +1,7 @@
 ---
 phase: 7
 title: "Cắt chuyển trong apps/pos"
-status: pending
+status: done
 priority: P2
 effort: "1d"
 dependencies: [4, 5, 6]

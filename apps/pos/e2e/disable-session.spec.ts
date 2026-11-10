@@ -206,76 +206,41 @@ async function openSession(page: Page) {
   await expect(page.getByRole('button', { name: 'Đơn nháp mới' })).toBeEnabled();
 }
 
-test('an open session keeps history and locks writes when branch or staff is disabled', async ({
-  page,
-}) => {
-  const world: World = {
-    recover: false,
-    branchStatus: 'active',
-    membershipStatus: 'active',
-    hits: [],
-  };
-  await installApi(page, world);
-  page.on('dialog', (dialog) => dialog.accept());
-  await openSession(page);
-
-  await goToMenuPage(page, 'Cấu hình');
-  await page.getByRole('button', { name: 'Nhân viên & quyền' }).click();
-  const staffList = page.getByRole('list', { name: 'Danh sách nhân viên' });
-  await staffList.getByRole('button', { name: 'Ngừng hoạt động', exact: true }).click();
-  await expect(staffList.getByRole('listitem')).toContainText('lan@example.com');
-  await expect(staffList.getByRole('listitem')).toContainText('đã ngừng');
-  await expect(staffList.getByText('đã ngừng')).toBeVisible();
-  await expect(staffList.getByRole('button', { name: 'Kích hoạt lại', exact: true })).toHaveCount(0);
-
+// Administrators disable branches and staff in the POS dashboard. Here the
+// fixture flips the status the way that change reaches the API, and the sale
+// screen reads it back on its next context load.
+async function reloadSaleScreen(page: Page) {
+  await goToMenuPage(page, 'Đơn hàng');
   await page.getByRole('link', { name: 'Về quầy' }).click();
   await expect(page.locator('.header-user')).toHaveText('Lan');
+}
+
+async function expectLockedWithHistory(page: Page) {
   await expect(page.getByText('Ca đang mở', { exact: true })).toBeAttached();
   await expect(page.getByRole('tab', { name: 'Hóa đơn 1' })).toBeVisible();
   await expect(page.getByText('Ca và đơn đã có vẫn còn')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Đơn nháp mới' })).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Tạm giữ' })).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Mở ca' })).toHaveCount(0);
+}
 
-  await goToMenuPage(page, 'Cấu hình');
-  const branchList = page.getByRole('list', { name: 'Danh sách chi nhánh' });
-  await branchList.getByRole('button', { name: 'Ngừng hoạt động', exact: true }).click();
-  await expect.poll(() => world.hits.join('\n')).toContain(`/pos/branches/${branchId}/disable`);
-  await expect(branchList.getByRole('listitem')).toContainText('Quan 1');
-  await expect(branchList.getByRole('listitem')).toContainText('đã ngừng');
-  await expect(branchList.getByRole('button', { name: 'Kích hoạt lại', exact: true })).toHaveCount(0);
-});
+for (const disabled of ['membership', 'branch'] as const) {
+  test(`an open session keeps history and locks writes when its ${disabled} is disabled`, async ({
+    page,
+  }) => {
+    const world: World = {
+      recover: false,
+      branchStatus: 'active',
+      membershipStatus: 'active',
+      hits: [],
+    };
+    await installApi(page, world);
+    page.on('dialog', (dialog) => dialog.accept());
+    await openSession(page);
 
-test('only the recover capability can enable a disabled branch or staff member', async ({
-  page,
-}) => {
-  const world: World = {
-    recover: true,
-    branchStatus: 'active',
-    membershipStatus: 'active',
-    hits: [],
-  };
-  await installApi(page, world);
-  page.on('dialog', (dialog) => dialog.accept());
-  await openSession(page);
-  await goToMenuPage(page, 'Cấu hình');
-
-  const branchList = page.getByRole('list', { name: 'Danh sách chi nhánh' });
-  await branchList.getByRole('button', { name: 'Ngừng hoạt động', exact: true }).click();
-  await branchList.getByRole('button', { name: 'Kích hoạt lại', exact: true }).click();
-  await expect(branchList.getByRole('listitem')).toContainText('đang dùng');
-  await expect(branchList.getByRole('listitem')).toContainText('Quan 1');
-
-  await page.getByRole('button', { name: 'Nhân viên & quyền' }).click();
-  const staffList = page.getByRole('list', { name: 'Danh sách nhân viên' });
-  await staffList.getByRole('button', { name: 'Ngừng hoạt động', exact: true }).click();
-  await staffList.getByRole('button', { name: 'Kích hoạt lại', exact: true }).click();
-  await expect(staffList.getByRole('listitem')).toContainText('đang dùng');
-  await expect(staffList.getByRole('listitem')).toContainText('lan@example.com');
-
-  await page.getByRole('link', { name: 'Về quầy' }).click();
-  await expect(page.locator('.header-user')).toHaveText('Lan');
-  await expect(page.getByText('Ca đang mở', { exact: true })).toBeAttached();
-  await expect(page.getByRole('tab', { name: 'Hóa đơn 1' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Đơn nháp mới' })).toBeEnabled();
-});
+    if (disabled === 'membership') world.membershipStatus = 'disabled';
+    else world.branchStatus = 'disabled';
+    await reloadSaleScreen(page);
+    await expectLockedWithHistory(page);
+  });
+}

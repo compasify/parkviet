@@ -13,6 +13,7 @@ import {
   scopedFinancialRecords,
 } from '../lib/financial-recovery';
 import { writesLocked } from '../lib/pos-context';
+import { posDashboardUrl } from '../lib/pos-dashboard-url';
 import { queryClient } from '../lib/query-client';
 import { failureStatus, posFailureKey } from '../lib/request-failure';
 import {
@@ -46,48 +47,43 @@ function ShellFrame() {
   // Print templates load with the POS, so the first print never waits for them.
   useReceiptTemplates(true);
   const pathname = useLocation({ select: (location) => location.pathname.replace(/\/+$/, '') });
-  const onSetup = /\/setup$/.test(pathname);
-  const sectionTitle = /\/settings(\/|$)/.test(pathname)
-    ? t('settings')
-    : pathname.endsWith('/payment-attention')
-      ? t('attentionNav')
-      : pathname.endsWith('/funds')
-        ? t('fundsNav')
-        : pathname.endsWith('/receivables')
-          ? t('receivablesNav')
-          : pathname.endsWith('/credit-accounts')
-            ? t('creditAccountsNav')
-            : pathname.endsWith('/credit-approvals')
-              ? t('creditApprovalsNav')
-              : pathname.endsWith('/orders')
-                ? t('ordersNav')
-                : pathname.endsWith('/deliveries')
-                  ? t('deliveriesNav')
-                  : pathname.endsWith('/returns')
-                    ? t('returnsNav')
-                    : pathname.endsWith('/shifts')
-                      ? t('shiftsNav')
-                      : pathname.endsWith('/reports')
-                        ? t('reportsNav')
-                        : pathname.endsWith('/inventory')
-                          ? t('inventoryNav')
-                          : pathname.endsWith('/receipts')
-                            ? t('receiptsTitle')
-                            : t('sellingArea');
-  const pageTitle = onSetup ? t('setup.title') : sectionTitle;
+  const pageTitle = pathname.endsWith('/payment-attention')
+    ? t('attentionNav')
+    : pathname.endsWith('/funds')
+      ? t('fundsNav')
+      : pathname.endsWith('/receivables')
+        ? t('receivablesNav')
+        : pathname.endsWith('/credit-accounts')
+          ? t('creditAccountsNav')
+          : pathname.endsWith('/credit-approvals')
+            ? t('creditApprovalsNav')
+            : pathname.endsWith('/orders')
+              ? t('ordersNav')
+              : pathname.endsWith('/deliveries')
+                ? t('deliveriesNav')
+                : pathname.endsWith('/returns')
+                  ? t('returnsNav')
+                  : pathname.endsWith('/shifts')
+                    ? t('shiftsNav')
+                    : pathname.endsWith('/reports')
+                      ? t('reportsNav')
+                      : pathname.endsWith('/inventory')
+                        ? t('inventoryNav')
+                        : pathname.endsWith('/receipts')
+                          ? t('receiptsTitle')
+                          : t('sellingArea');
   const isSale =
-    !/\/(settings|setup|funds|receivables|credit-accounts|credit-approvals|payment-attention|orders|deliveries|returns|shifts|reports|inventory|receipts)(\/|$)/.test(
+    !/\/(funds|receivables|credit-accounts|credit-approvals|payment-attention|orders|deliveries|returns|shifts|reports|inventory|receipts)(\/|$)/.test(
       pathname,
     );
-  // A store not set up yet, seen by someone who may set it up, goes to the
-  // setup wizard instead of the branch picker. Without that permission the
-  // picker stays and asks for an administrator (context-selector.tsx).
+  // A store not set up yet, seen by someone who may set it up, is pointed at
+  // the setup wizard of the POS dashboard instead of the branch picker dialog.
+  // Without that permission the picker asks for an administrator
+  // (context-selector.tsx).
   const setupNeeded = Boolean(
     context.data?.onboarding?.required && context.data.onboarding.can_setup,
   );
-  useEffect(() => {
-    if (setupNeeded && !onSetup) void navigate({ to: '/setup' });
-  }, [navigate, onSetup, setupNeeded]);
+  const setupUrl = setupNeeded ? posDashboardUrl(context.data?.store.id, 'setup') : null;
   const contextPicker = useRef<HTMLDetailsElement>(null);
   // A header navigation must not leave the picker covering the destination page.
   // biome-ignore lint/correctness/useExhaustiveDependencies: the route change is the dismissal trigger
@@ -362,6 +358,16 @@ function ShellFrame() {
       <ContextSetupDialog enabled={isSale && !setupNeeded} />
       <section className="shell" aria-labelledby={isSale ? 'title' : 'pos-page-title'}>
         <div className="pos-context-card pos-alerts">
+          {setupNeeded ? (
+            <p role="status">
+              {t('setup.requiredInDashboard')}{' '}
+              {setupUrl ? (
+                <a href={setupUrl} target="_blank" rel="noopener">
+                  {t('setup.openDashboard')}
+                </a>
+              ) : null}
+            </p>
+          ) : null}
           {isSale && context.data && writesLocked(context.data, selection) ? (
             <p className="error" role="status">
               {t('writesLocked')}

@@ -60,20 +60,13 @@ async function noHorizontalScroll(page: Page) {
   return page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
 }
 
-test('every control on the sale screen, the payment dialog and the flag settings has a name', async ({ page }) => {
-  const world = await sale(page, true);
+test('every control on the sale screen and the payment dialog has a name', async ({ page }) => {
+  await sale(page, true);
   expect(await unnamedControls(page)).toEqual([]);
   await page.locator('.payment-panel').getByRole('button', { name: 'Thanh toán', exact: true }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
   expect(await unnamedControls(page, '[role="dialog"]')).toEqual([]);
   await page.keyboard.press('Escape');
-
-  world.administration = { read: true, write: true };
-  await page.goto('/settings/branches/br_1/features');
-  await expect(page.getByRole('list', { name: 'Danh sách chức năng' })).toBeVisible();
-  expect(await unnamedControls(page)).toEqual([]);
-  // Each switch names the feature it changes, not just "Bật"/"Tắt".
-  await expect(page.getByRole('button', { name: 'Tắt Bán ghi nợ cho cả cửa hàng' })).toBeVisible();
 });
 
 test('keyboard only: skip link to the search, payment dialog keeps focus inside and returns it', async ({ page }) => {
@@ -122,9 +115,9 @@ test('200% zoom (640px of layout): no sideways scroll and the payment controls s
   expect(await noHorizontalScroll(page)).toBe(true);
 });
 
-test('375px phone: sale, payment and the flag settings fit the width', async ({ page }) => {
+test('375px phone: sale and payment fit the width', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 667 });
-  const world = await sale(page, true);
+  await sale(page, true);
   expect(await noHorizontalScroll(page)).toBe(true);
   await page.locator('.payment-panel').getByRole('button', { name: 'Thanh toán', exact: true }).click();
   const dialog = page.getByRole('dialog');
@@ -132,9 +125,4 @@ test('375px phone: sale, payment and the flag settings fit the width', async ({ 
   const box = await dialog.boundingBox();
   expect(box && box.x >= 0 && box.x + box.width <= 376).toBe(true);
   await page.keyboard.press('Escape');
-
-  world.administration = { read: true, write: true };
-  await page.goto('/settings/branches/br_1/features');
-  await expect(page.getByRole('list', { name: 'Danh sách chức năng' })).toBeVisible();
-  expect(await noHorizontalScroll(page)).toBe(true);
 });

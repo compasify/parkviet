@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { posDashboardUrl } from './pos-dashboard-url';
+import { posDashboardHomeUrl, posDashboardUrl } from './pos-dashboard-url';
 
 describe('POS dashboard links', () => {
   it('uses the development port only in development', () => {
@@ -33,6 +33,17 @@ describe('POS dashboard links', () => {
     }
     for (const path of ['../login', '//other.test/login', 'https://other.test', 'features?x=1']) {
       expect(posDashboardUrl('store_1', path, null, { development: true })).toBeNull();
+    }
+  });
+
+  it('opens the dashboard entry without a store, keeping the deployment subpath', () => {
+    expect(posDashboardHomeUrl({ development: true })).toBe('http://localhost:5176/');
+    expect(posDashboardHomeUrl({ development: false })).toBeNull();
+    expect(
+      posDashboardHomeUrl({ baseUrl: 'https://admin.example.test/pos-admin/?old=1#old' }),
+    ).toBe('https://admin.example.test/pos-admin/');
+    for (const baseUrl of ['invalid', 'javascript:alert(1)', 'https://user:pass@example.test']) {
+      expect(posDashboardHomeUrl({ baseUrl })).toBeNull();
     }
   });
 });

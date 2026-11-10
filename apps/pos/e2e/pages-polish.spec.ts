@@ -95,9 +95,9 @@ test('login shares register styling, reveals password and handles pending / fail
   await expect(page.locator('.header')).toHaveCSS('background-color', 'rgb(7, 86, 154)');
   await expect(page.getByText('Phiên chỉ lưu trong bộ nhớ trình duyệt.')).toHaveCount(0);
   const saleButton = page.getByRole('button', { name: 'Đăng nhập bán hàng', exact: true });
-  const adminButton = page.getByRole('button', { name: 'Đăng nhập quản trị', exact: true });
+  const adminLink = page.getByRole('link', { name: 'Đăng nhập quản trị', exact: true });
   const saleBox = (await saleButton.boundingBox())!;
-  const adminBox = (await adminButton.boundingBox())!;
+  const adminBox = (await adminLink.boundingBox())!;
   expect(saleBox.y).toBeCloseTo(adminBox.y, 1);
   expect(adminBox.x).toBeGreaterThan(saleBox.x);
   await capture(page, testInfo, 'login');
@@ -113,31 +113,11 @@ test('login shares register styling, reveals password and handles pending / fail
   const waitingButton = page.getByRole('button', { name: 'Đang xử lý…', exact: true });
   await expect(waitingButton).toHaveCount(1);
   await expect(waitingButton).toBeDisabled();
-  await expect(adminButton).toBeDisabled();
   release();
   await expect(page.getByRole('alert')).toContainText('Không thể đăng nhập');
   await expect(password).toHaveValue('');
   await expect(page.getByLabel('Email nhân viên')).toHaveValue('staff@example.test');
   await capture(page, testInfo, 'login-error');
-});
-
-test('settings has shared navigation and independently scoped staff access form', async ({ page }, testInfo) => {
-  const state = await setup(page);
-  await page.goto('/settings');
-  await expect(page.getByRole('heading', { name: 'Cấu hình', exact: true })).toBeVisible();
-  await expect(page.locator('.pos-page-nav a[aria-current="page"]')).toHaveText('Cấu hình');
-  await expect(page.getByRole('list', { name: 'Danh sách chi nhánh' })).toContainText('Siêu thị Hiền');
-  await capture(page, testInfo, 'settings');
-  await page.getByRole('button', { name: 'Nhân viên & quyền', exact: false }).click();
-  await page.getByRole('button', { name: 'Cấp quyền nhân viên' }).click();
-  const membership = page.getByRole('dialog');
-  await expect(membership.getByRole('combobox', { name: 'Chi nhánh', exact: true })).toHaveValue('');
-  await membership.getByRole('combobox', { name: 'Chi nhánh', exact: true }).selectOption('br_2');
-  await membership.getByRole('combobox', { name: 'Nhân viên', exact: true }).selectOption('staff_2');
-  await membership.getByRole('button', { name: 'Lưu', exact: true }).click();
-  await expect(page.locator('.page-success')).toContainText('Đã lưu.');
-  expect(state.writes).toEqual([{ path: '/api/v3/admin/pos/memberships', body: { branch_id: 'br_2', staff_id: 'staff_2', capabilities: ['pos.shift.open'] } }]);
-  await capture(page, testInfo, 'settings-form');
 });
 
 test('funds and attention show scoped details, exact money and correct canonical zero filtering', async ({ page }, testInfo) => {
@@ -193,7 +173,7 @@ test('funds distinguish loading, error, detail failure and empty states without 
 
 test('direct secondary URLs preserve permission boundaries', async ({ page }, testInfo) => {
   const state = await setup(page, []);
-  for (const path of ['settings', 'funds', 'payment-attention']) {
+  for (const path of ['funds', 'payment-attention']) {
     await page.goto(`/${path}`);
     await expect(page.locator('.pos-page .page-state')).toContainText('Tài khoản này chưa được phép');
     await expect(page.locator('.pos-page form')).toHaveCount(0);

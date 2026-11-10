@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { LoginShowcase } from '../components/login-showcase';
 import { PosIcon } from '../components/pos-icon';
 import { session } from '../lib/app-session';
+import { posDashboardHomeUrl } from '../lib/pos-dashboard-url';
 import '../styles/login.css';
 
 export function LoginPage() {
@@ -11,27 +12,26 @@ export function LoginPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [busyTarget, setBusyTarget] = useState<'sale' | 'administration' | null>(null);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const busy = busyTarget !== null;
+  // Administration is a separate app with its own sign-in.
+  const administrationUrl = posDashboardHomeUrl();
 
   async function login(event: FormEvent) {
     event.preventDefault();
     if (busy) return;
-    const submitter = (event.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
-    const administration = submitter?.value === 'administration';
-    setBusyTarget(administration ? 'administration' : 'sale');
+    setBusy(true);
     setError('');
     try {
       await session.login(email, password);
       setPassword('');
-      await navigate({ to: administration ? '/settings' : '/' });
+      await navigate({ to: '/' });
     } catch {
       setPassword('');
       setError(t('failure'));
     } finally {
-      setBusyTarget(null);
+      setBusy(false);
     }
   }
 
@@ -98,18 +98,19 @@ export function LoginPage() {
               </div>
             </div>
             <div className="auth-actions">
-              <button className="checkout-submit" type="submit" value="sale" disabled={busy}>
-                <PosIcon name="cash" /> {busyTarget === 'sale' ? t('waiting') : t('loginSale')}
+              <button className="checkout-submit" type="submit" disabled={busy}>
+                <PosIcon name="cash" /> {busy ? t('waiting') : t('loginSale')}
               </button>
-              <button
-                className="auth-admin-submit"
-                type="submit"
-                value="administration"
-                disabled={busy}
-              >
-                <PosIcon name="cog" />{' '}
-                {busyTarget === 'administration' ? t('waiting') : t('loginAdministration')}
-              </button>
+              {administrationUrl ? (
+                <a
+                  className="button-link auth-admin-submit"
+                  href={administrationUrl}
+                  target="_blank"
+                  rel="noopener"
+                >
+                  <PosIcon name="cog" /> {t('loginAdministration')}
+                </a>
+              ) : null}
             </div>
           </form>
           <p className="auth-help">{t('loginHelp')}</p>

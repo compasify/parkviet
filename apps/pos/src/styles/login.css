@@ -22,7 +22,7 @@
 .login-split .auth-field input { border-radius: 10px; transition: border-color .15s, box-shadow .15s; }
 .login-split .auth-field input:focus { border-color: var(--pos-blue); box-shadow: 0 0 0 4px #07569a1f; outline: none; }
 .login-split .auth-actions { grid-template-columns: minmax(0, 1fr); margin-top: var(--pos-s2); }
-.login-split .auth-actions button { border-radius: 10px; }
+.login-split .auth-actions button, .login-split .auth-actions a { border-radius: 10px; }
 .login-split .checkout-submit { box-shadow: 0 8px 20px #07569a33; }
 .login-split .auth-help { max-width: none; margin-top: var(--pos-s6); padding-top: var(--pos-s5); border-top: 1px solid var(--pos-border); text-align: left; }
 
