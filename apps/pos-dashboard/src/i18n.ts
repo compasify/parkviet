@@ -1,3 +1,5 @@
+import sharedEn from '@parkviet/pos-shared/locales/en'
+import sharedVi from '@parkviet/pos-shared/locales/vi'
 import { i18n } from '@spree/dashboard-core'
 import en from './locales/en.json'
 import vi from './locales/vi.json'
@@ -46,9 +48,14 @@ const shell = {
     },
   },
 }
+const shared = { en: sharedEn, vi: sharedVi }
+// The texts of the shared POS logic (receipts, refusals, modules, profiles)
+// join the app's own in both namespaces; deep merge keeps sections both fill.
 for (const [code, bundle] of Object.entries({ en, vi })) {
-  i18n.addResourceBundle(code, 'translation', bundle, true, true)
-  i18n.addResourceBundle(code, 'pos', bundle, true, true)
+  for (const ns of ['translation', 'pos']) {
+    i18n.addResourceBundle(code, ns, shared[code as 'en' | 'vi'], true, true)
+    i18n.addResourceBundle(code, ns, bundle, true, true)
+  }
   i18n.addResourceBundle(code, 'translation', shell[code as 'en' | 'vi'], true, true)
 }
 

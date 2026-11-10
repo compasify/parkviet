@@ -1,4 +1,5 @@
 import { moduleUis, skuEditorAreas } from '@parkviet/pos-shared/module-registry'
+import { moduleTextKey } from '@parkviet/pos-shared/pos-modules'
 import { describeFailure, posFailureKey } from '@parkviet/pos-shared/request-failure'
 import { describeTraceFailure } from '@parkviet/pos-shared/traceability'
 import type { PosVariantUnit } from '@parkviet/pos-shared/types/pos-context'
@@ -340,7 +341,11 @@ export function VariantUnitEditor({
                 <FieldDescription>{t('variantUnitLockNote')}</FieldDescription>
                 {offModules.map((module) => (
                   <p role="note" key={module.key}>
-                    {t(`posModules.${module.key.split('.').pop()}.disabled`)}
+                    {t(
+                      moduleTextKey(module.key)
+                        ? `posModules.${moduleTextKey(module.key)}.off`
+                        : 'moduleOff',
+                    )}
                   </p>
                 ))}
               </>

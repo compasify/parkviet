@@ -75,7 +75,7 @@ export function LabelFormats({ branch, access, modules, storeId }: BranchSetting
             </Button>
           )}
         </div>
-        {!measuredOn && <p role="note">{t('posModules.measured.disabled')}</p>}
+        {!measuredOn && <p role="note">{t('posModules.retail_measured.off')}</p>}
         {!access.write && <p>{t('adminReadAccess')}</p>}
         {notice && (
           <p

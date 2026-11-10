@@ -1,8 +1,8 @@
 import { createInstance } from 'i18next';
-import en from '../../../../apps/pos/src/locales/en.json';
-import vi from '../../../../apps/pos/src/locales/vi.json';
+import en from '../locales/en.json';
+import vi from '../locales/vi.json';
 
-// Test the real locale contracts without loading POS's React i18n plugin.
+// Test the shared locale contracts without loading an app's React i18n plugin.
 const i18n = createInstance();
 void i18n.init({
   lng: 'vi',

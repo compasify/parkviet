@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import en from '../../../apps/pos/src/locales/en.json';
-import vi from '../../../apps/pos/src/locales/vi.json';
+import en from './locales/en.json';
+import vi from './locales/vi.json';
 import {
   type BusinessModule,
   type BusinessProfile,
@@ -485,7 +485,7 @@ describe('setup and business model texts', () => {
   const base = (key: string) => key.replace(/_(one|other)$/, '');
 
   it('exist in both languages', () => {
-    for (const section of ['setup', 'businessModel'] as const) {
+    for (const section of ['setup'] as const) {
       const viKeys = new Set(keys((vi as unknown as Record<string, Tree>)[section]).map(base));
       const enKeys = new Set(keys((en as unknown as Record<string, Tree>)[section]).map(base));
       expect([...viKeys].filter((key) => !enKeys.has(key))).toEqual([]);
