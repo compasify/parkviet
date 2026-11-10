@@ -10,6 +10,8 @@ Instructions for coding agents. `CLAUDE.md` only imports this file — edit this
 | `apps/dashboard/` | Admin Dashboard — React SPA | `apps/dashboard/AGENTS.md` |
 | `apps/seller-dashboard/` | Seller Panel — marketplace seller SPA | `apps/seller-dashboard/AGENTS.md` |
 | `apps/storefront/` | Next.js storefront | `apps/storefront/CLAUDE.md` |
+| `apps/pos-dashboard/` | POS administration — standalone React SPA | `apps/pos-dashboard/AGENTS.md` |
+| `packages/pos-shared/` | Pure TypeScript POS logic shared by selling and administration | No React, browser printing, session state or API calls |
 
 Read the instructions for the directory you are working in before changing anything there.
 
