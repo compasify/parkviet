@@ -829,7 +829,9 @@ function TemplateEditor({
               <Section {...sectionProps('totals')} title={t('receiptTemplates.section.totals')}>
                 {rules.totals && config.totals ? (
                   <>
-                    <h3 className="font-medium">{t('receiptTemplates.section.totalsOnly')}</h3>
+                    <h3 className="text-base font-medium">
+                      {t('receiptTemplates.section.totalsOnly')}
+                    </h3>
                     <FieldToggles
                       section="totals"
                       documentType={type}
@@ -844,7 +846,9 @@ function TemplateEditor({
                 ) : null}
                 {rules.payments && config.payments ? (
                   <>
-                    <h3 className="font-medium">{t('receiptTemplates.section.payments')}</h3>
+                    <h3 className="text-base font-medium">
+                      {t('receiptTemplates.section.payments')}
+                    </h3>
                     <FieldToggles
                       section="payments"
                       documentType={type}

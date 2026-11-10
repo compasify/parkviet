@@ -97,6 +97,7 @@ export function BusinessModelPage() {
       title={branch ? `${t('businessModel.title')} · ${branch.name}` : t('businessModel.title')}
       description={t('businessModel.intro')}
       actions={<BranchPicker />}
+      section="business-model"
     >
       {context.isPending ? (
         <ModelState title={t('contextWaiting')} />
@@ -246,7 +247,7 @@ function ChangeProfile({ branch, profiles }: { branch: PosBranch; profiles: Busi
   }
   return (
     <div className="space-y-4 border-t pt-4">
-      <h3 id="business-model-change" className="font-semibold">
+      <h3 id="business-model-change" className="text-base font-semibold">
         {t('businessModel.changeTitle')}
       </h3>
       <p className="text-sm text-muted-foreground">{t('businessModel.changeIntro')}</p>
@@ -433,7 +434,7 @@ function ModuleSwitches({
             return (
               <li key={key} data-module={key} className="flex flex-wrap items-start gap-4 py-5">
                 <div className="min-w-0 flex-1">
-                  <h3 className="font-medium">{name}</h3>
+                  <h3 className="text-base font-medium">{name}</h3>
                   <p className="text-sm text-muted-foreground">
                     <ModuleDescription moduleKey={key} />
                   </p>

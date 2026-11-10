@@ -36,6 +36,7 @@ export function BranchFeaturesPage() {
       title={branch ? `${t('branchFeaturesTitle')} · ${branch.name}` : t('branchFeaturesTitle')}
       description={t('branchFeaturesIntro')}
       actions={<BranchPicker />}
+      section="features"
     >
       {context.isPending ? (
         <ModelState title={t('contextWaiting')} />

@@ -88,6 +88,18 @@ const readVersion = async (id: string, version: number) =>
 // active list is what the counter prints with: loaded when the POS opens,
 // kept for a while and refreshed when the window regains focus. Each
 // entry also fills the cache of its current version.
+// Reads the store's templates, seeding each one's current version in the cache.
+export async function readReceiptTemplates(storeId: string, includeDisabled: boolean) {
+  const read = request<{ data: ReceiptTemplate[] }>('GET', '/pos/receipt_templates', {
+    params: { include_disabled: includeDisabled ? '1' : undefined },
+  })
+  const templates = (includeDisabled ? await read : await withTimeout(read, PRINT_READ_TIMEOUT_MS))
+    .data
+  for (const template of templates)
+    queryClient.setQueryData(versionKey(storeId, template.id, template.version), template)
+  return templates
+}
+
 export function useReceiptTemplates(enabled: boolean, includeDisabled = false) {
   const snapshot = useSession()
   const generation = snapshot.generation
@@ -96,17 +108,7 @@ export function useReceiptTemplates(enabled: boolean, includeDisabled = false) {
     enabled: enabled && snapshot.status === 'authenticated',
     staleTime: includeDisabled ? 0 : 5 * 60_000,
     refetchOnWindowFocus: !includeDisabled,
-    queryFn: async () => {
-      const read = request<{ data: ReceiptTemplate[] }>('GET', '/pos/receipt_templates', {
-        params: { include_disabled: includeDisabled ? '1' : undefined },
-      })
-      const templates = (
-        includeDisabled ? await read : await withTimeout(read, PRINT_READ_TIMEOUT_MS)
-      ).data
-      for (const template of templates)
-        queryClient.setQueryData(versionKey(generation, template.id, template.version), template)
-      return templates
-    },
+    queryFn: () => readReceiptTemplates(generation, includeDisabled),
   })
 }
 

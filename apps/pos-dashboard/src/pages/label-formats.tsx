@@ -1,15 +1,33 @@
 import type { LabelFormat } from '@parkviet/pos-shared/label-format'
 import { moduleEnabled } from '@parkviet/pos-shared/pos-modules'
 import { describeFailure } from '@parkviet/pos-shared/request-failure'
-import { useResourceMutation } from '@spree/dashboard-core'
-import { Badge, Button, Card, CardContent, useConfirm } from '@spree/dashboard-ui'
+import {
+  defineTable,
+  ResourceTable,
+  resourceSearchSchema,
+  useResourceMutation,
+} from '@spree/dashboard-core'
+import {
+  ActiveBadge,
+  Button,
+  ResourceNameCell,
+  RowActions,
+  useConfirm,
+  useRowClickBridge,
+} from '@spree/dashboard-ui'
+import { BanIcon } from '@spree/dashboard-ui/icons'
 import { useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useSearch } from '@tanstack/react-router'
+import { useCallback, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { BranchSettingsFrame, type BranchSettingsScope } from '../components/branch-settings-frame'
 import { LabelFormatEditor } from '../components/label-format-editor'
-import { disableLabelFormat, useLabelFormats } from '../hooks/use-branch-catalog'
-import { TopologyTable } from '../tables/topology'
+import { disableLabelFormat } from '../hooks/use-branch-catalog'
+import { allPages } from '../hooks/use-topology'
+import { hiddenTimestamps } from '../tables/columns'
+import { localList } from '../tables/local-list'
+
+const ROW_ATTRIBUTE = 'data-pos-label-format-id' as const
 
 export function LabelFormatsPage() {
   return (
@@ -22,9 +40,9 @@ export function LabelFormats({ branch, access, modules, storeId }: BranchSetting
   const { t } = useTranslation()
   const confirm = useConfirm()
   const client = useQueryClient()
+  const searchParams = resourceSearchSchema.parse(useSearch({ strict: false }))
   const measuredOn = moduleEnabled(modules, 'retail.measured')
   const canSetUp = access.write && measuredOn
-  const formats = useLabelFormats(branch.id, access.read)
   const [editor, setEditor] = useState<{ format?: LabelFormat } | null>(null)
   const [notice, setNotice] = useState<{ text: string; failed: boolean } | null>(null)
   const refresh = () => client.invalidateQueries({ queryKey: ['pos', storeId, 'label-formats'] })
@@ -58,130 +76,163 @@ export function LabelFormats({ branch, access, modules, storeId }: BranchSetting
       await refresh()
     }
   }
-  return (
-    <Card>
-      <CardContent className="space-y-4 pt-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p>{t('labelFormatsHint')}</p>
-          {canSetUp && (
-            <Button
-              disabled={mutation.isPending}
-              onClick={() => {
-                setNotice(null)
-                setEditor({})
-              }}
-            >
-              {t('labelFormatCreate')}
-            </Button>
-          )}
-        </div>
-        {!measuredOn && <p role="note">{t('posModules.retail_measured.off')}</p>}
-        {!access.write && <p>{t('adminReadAccess')}</p>}
-        {notice && (
-          <p
-            role={notice.failed ? 'alert' : 'status'}
-            className={notice.failed ? 'text-destructive' : 'text-muted-foreground'}
-          >
-            {notice.text}
-          </p>
-        )}
-        {formats.isPending && <p role="status">{t('waiting')}</p>}
-        {formats.isError && (
-          <div role="alert">
-            {describeFailure(formats.error, t)}
-            <Button onClick={() => void formats.refetch()}>{t('retry')}</Button>
-          </div>
-        )}
-        {formats.isSuccess && formats.data.length === 0 && (
+  function edit(format?: LabelFormat) {
+    setNotice(null)
+    setEditor({ format })
+  }
+  const editable = (format: LabelFormat) => canSetUp && format.status === 'active'
+  // The bridge listens on the document once; the ref hands it the current rows.
+  const rows = useRef<LabelFormat[]>([])
+  const openFormat = useRef<(id: string) => void>(() => {})
+  openFormat.current = (id) => {
+    const format = rows.current.find((row) => row.id === id)
+    if (format && editable(format)) edit(format)
+  }
+  const openRow = useCallback((id: string) => openFormat.current(id), [])
+  useRowClickBridge(ROW_ATTRIBUTE, openRow)
+  const summary = (format: LabelFormat) =>
+    [
+      t('labelFormatSummary', {
+        prefix: format.prefix,
+        item: format.item_code_length,
+        value: format.value_length,
+      }),
+      t('labelFormatVersion', { version: format.version }),
+    ].join(' · ')
+  const tableKey = 'pos-label-formats'
+  defineTable<LabelFormat>(tableKey, {
+    searchParam: 'search',
+    searchPlaceholder: t('adminSearchName'),
+    defaultSort: { field: 'name', direction: 'asc' },
+    emptyMessage: `${t('labelFormatsEmpty')}. ${t('labelFormatsEmptyHint')}`,
+    columns: [
+      {
+        key: 'name',
+        label: t('labelFormatName'),
+        sortable: true,
+        default: true,
+        render: (format) => (
+          <ResourceNameCell
+            id={format.id}
+            dataAttr={editable(format) ? ROW_ATTRIBUTE : undefined}
+            name={format.name}
+            secondary={summary(format)}
+          />
+        ),
+      },
+      {
+        key: 'kind',
+        label: t('labelFormatKind'),
+        sortable: true,
+        filterable: true,
+        default: true,
+        filterType: 'enum',
+        filterOptions: (['weight', 'price'] as const).map((value) => ({
+          value,
+          label: t(`labelFormatKind_${value}`),
+        })),
+        render: (format) => (
           <div>
-            <p>{t('labelFormatsEmpty')}</p>
-            <p>{t('labelFormatsEmptyHint')}</p>
+            <div>{t(`labelFormatKind_${format.kind}`)}</div>
+            <div className="text-xs text-muted-foreground">
+              {format.kind === 'weight' && format.value_unit_code
+                ? format.value_unit_code
+                : t('labelFormatToleranceShort', { tolerance: format.price_tolerance })}{' '}
+              · {t('labelFormatDecimalsShort', { decimals: format.value_decimals })}
+            </div>
           </div>
+        ),
+      },
+      {
+        key: 'status',
+        label: t('adminStatus'),
+        sortable: true,
+        filterable: true,
+        default: true,
+        filterType: 'enum',
+        quickFilter: true,
+        filterOptions: ['active', 'disabled'].map((value) => ({
+          value,
+          label: t(value === 'active' ? 'statusActive' : 'statusDisabled'),
+        })),
+        render: (format) => (
+          <ActiveBadge
+            active={format.status === 'active'}
+            activeLabel={t('statusActive')}
+            inactiveLabel={t('statusDisabled')}
+          />
+        ),
+      },
+      ...hiddenTimestamps<LabelFormat>(),
+    ],
+  })
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-muted-foreground">{t('labelFormatsHint')}</p>
+        {canSetUp && (
+          <Button disabled={mutation.isPending} onClick={() => edit()}>
+            {t('labelFormatCreate')}
+          </Button>
         )}
-        <TopologyTable
-          label={t('labelFormatList')}
-          rows={formats.data ?? []}
-          busy={formats.isFetching}
-          columns={[
-            {
-              label: t('labelFormatName'),
-              cell: (format) => (
-                <div>
-                  <strong>{format.name}</strong>
-                  <p>
-                    {t('labelFormatSummary', {
-                      prefix: format.prefix,
-                      item: format.item_code_length,
-                      value: format.value_length,
-                    })}
-                  </p>
-                  <p>
-                    {t(`labelFormatKind_${format.kind}`)} ·{' '}
-                    {format.kind === 'weight' && format.value_unit_code
-                      ? format.value_unit_code
-                      : t('labelFormatToleranceShort', { tolerance: format.price_tolerance })}{' '}
-                    · {t('labelFormatDecimalsShort', { decimals: format.value_decimals })} ·{' '}
-                    {t('labelFormatVersion', { version: format.version })}
-                  </p>
-                </div>
-              ),
-            },
-            {
-              label: t('adminStatus'),
-              cell: (format) => (
-                <Badge variant="outline">
-                  {t(format.status === 'active' ? 'statusActive' : 'statusDisabled')}
-                </Badge>
-              ),
-            },
-            {
-              label: t('adminEdit'),
-              cell: (format) =>
-                access.write &&
-                format.status === 'active' && (
-                  <div className="flex flex-wrap gap-2">
-                    {canSetUp && (
-                      <Button
-                        variant="outline"
-                        disabled={mutation.isPending}
-                        aria-label={t('adminEditName', { name: format.name })}
-                        onClick={() => {
-                          setNotice(null)
-                          setEditor({ format })
-                        }}
-                      >
-                        {t('adminEdit')}
-                      </Button>
-                    )}
-                    <Button
-                      variant="destructive"
-                      disabled={mutation.isPending}
-                      aria-label={t('labelFormatDisableFor', { name: format.name })}
-                      onClick={() => void disable(format)}
-                    >
-                      {t(
-                        mutation.isPending && mutation.variables?.id === format.id
-                          ? 'waiting'
-                          : 'adminDisable',
-                      )}
-                    </Button>
-                  </div>
-                ),
-            },
-          ]}
-        />
-        {editor && canSetUp && (
-          <LabelFormatEditor
-            branchId={branch.id}
-            format={editor.format}
-            onSaved={async (saved) => {
-              setNotice({ text: t('labelFormatSaved', { name: saved.name }), failed: false })
-              await refresh()
-            }}
-            onClose={() => setEditor(null)}
+      </div>
+      {!measuredOn && <p role="note">{t('posModules.retail_measured.off')}</p>}
+      {!access.write && <p>{t('adminReadAccess')}</p>}
+      {notice && (
+        <p
+          role={notice.failed ? 'alert' : 'status'}
+          className={notice.failed ? 'text-destructive' : 'text-muted-foreground'}
+        >
+          {notice.text}
+        </p>
+      )}
+      <ResourceTable<LabelFormat>
+        tableKey={tableKey}
+        hideHeader
+        queryKey={['pos', 'label-formats', branch.id, 'table']}
+        queryFn={async (params: Record<string, unknown>) => {
+          const all = await allPages<LabelFormat>(`/pos/branches/${branch.id}/label_formats`)
+          rows.current = all.data
+          return localList(all.data, params, {
+            searchParam: 'search',
+            text: (format) => `${format.name} ${format.prefix}`,
+          })
+        }}
+        searchParams={searchParams}
+        rowActions={(format) => (
+          <RowActions
+            actions={[
+              {
+                key: 'edit',
+                label: t('adminEdit'),
+                visible: editable(format),
+                disabled: mutation.isPending,
+                onSelect: () => edit(format),
+              },
+              {
+                key: 'disable',
+                label: t('adminDisable'),
+                icon: <BanIcon className="size-4" />,
+                visible: access.write && format.status === 'active',
+                destructive: true,
+                disabled: mutation.isPending,
+                onSelect: () => void disable(format),
+              },
+            ]}
           />
         )}
-      </CardContent>
-    </Card>
+      />
+      {editor && canSetUp && (
+        <LabelFormatEditor
+          branchId={branch.id}
+          format={editor.format}
+          onSaved={async (saved) => {
+            setNotice({ text: t('labelFormatSaved', { name: saved.name }), failed: false })
+            await refresh()
+          }}
+          onClose={() => setEditor(null)}
+        />
+      )}
+    </div>
   )
 }

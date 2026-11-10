@@ -13,15 +13,17 @@ import {
   describeFailure,
   posFailureKey,
 } from '@parkviet/pos-shared/request-failure'
-import { useStore } from '@spree/dashboard-core'
 import {
+  defineTable,
+  PageHeader,
+  ResourceTable,
+  resourceSearchSchema,
+  useStore,
+} from '@spree/dashboard-core'
+import {
+  ActiveBadge,
   Badge,
   Button,
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
   Dialog,
   DialogBody,
   DialogContent,
@@ -31,11 +33,16 @@ import {
   DialogTitle,
   Input,
   Label,
+  RelativeTime,
+  ResourceNameCell,
+  RowActions,
   useConfirm,
+  useRowClickBridge,
 } from '@spree/dashboard-ui'
-import { Link, useNavigate } from '@tanstack/react-router'
+import { BanIcon, CopyIcon, EyeIcon, StarIcon } from '@spree/dashboard-ui/icons'
+import { useNavigate, useSearch } from '@tanstack/react-router'
 import { Plus } from 'lucide-react'
-import { type FormEvent, useState } from 'react'
+import { type FormEvent, useCallback, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Choice, Notice, PageState } from '../components/receipt-template/controls'
 import { PaperPicker } from '../components/receipt-template/paper-picker'
@@ -46,9 +53,13 @@ import {
   duplicateReceiptTemplate,
   makeDefaultReceiptTemplate,
   type ReceiptTemplate,
+  readReceiptTemplates,
   refreshReceiptTemplates,
   useReceiptTemplates,
 } from '../hooks/use-receipt-templates'
+import { localList } from '../tables/local-list'
+
+const ROW_ATTRIBUTE = 'data-pos-receipt-template-id' as const
 
 export function templateFailure(error: unknown, t: (key: string) => string): string {
   switch (conflictReason(error)) {
@@ -80,6 +91,8 @@ export function ReceiptTemplatesPage() {
   const zone = context.data?.store.timezone ?? 'Asia/Ho_Chi_Minh'
   const activeCount = (type: DocumentType) =>
     rows.filter((row) => row.document_type === type && row.status === 'active').length
+  const fullTypes = DOCUMENT_TYPES.filter((type) => activeCount(type) >= MAX_ACTIVE_TEMPLATES)
+  const searchParams = resourceSearchSchema.parse(useSearch({ strict: false }))
   async function act(
     template: ReceiptTemplate,
     run: (id: string) => Promise<{ data: ReceiptTemplate }>,
@@ -111,12 +124,124 @@ export function ReceiptTemplatesPage() {
     )
       await act(template, disableReceiptTemplate, 'receiptTemplates.disabled')
   }
+  const editable = (template: ReceiptTemplate) => access.write && template.status === 'active'
+  const open = (template: ReceiptTemplate) =>
+    void navigate({
+      to: '/$storeId/settings/receipt-templates/$templateId',
+      params: { storeId, templateId: template.id },
+    })
+  // The bridge listens on the document once; the ref hands it the current rows.
+  const listed = useRef<ReceiptTemplate[]>([])
+  const openTemplate = useRef<(id: string) => void>(() => {})
+  openTemplate.current = (id) => {
+    const template = listed.current.find((row) => row.id === id)
+    if (template) open(template)
+  }
+  const openRow = useCallback((id: string) => openTemplate.current(id), [])
+  useRowClickBridge(ROW_ATTRIBUTE, openRow)
+  const tableKey = 'pos-receipt-templates'
+  defineTable<ReceiptTemplate>(tableKey, {
+    searchParam: 'search',
+    searchPlaceholder: t('adminSearchName'),
+    defaultSort: { field: 'document_type', direction: 'asc' },
+    emptyMessage: t('receiptTemplates.groupEmpty'),
+    columns: [
+      {
+        key: 'name',
+        label: t('receiptTemplates.name'),
+        sortable: true,
+        default: true,
+        render: (template) => (
+          <ResourceNameCell
+            id={template.id}
+            dataAttr={ROW_ATTRIBUTE}
+            name={template.name}
+            secondary={`${t(`receiptPaper_${template.paper}`)} · ${t(
+              'receiptTemplates.versionShort',
+              { version: template.current_version },
+            )}`}
+          />
+        ),
+      },
+      {
+        key: 'document_type',
+        label: t('receiptTemplates.documentType'),
+        sortable: true,
+        filterable: true,
+        default: true,
+        filterType: 'enum',
+        quickFilter: true,
+        filterOptions: DOCUMENT_TYPES.map((value) => ({
+          value,
+          label: t(`receiptTemplates.type.${value}`),
+        })),
+        render: (template) => t(`receiptTemplates.type.${template.document_type}`),
+      },
+      {
+        key: 'status',
+        label: t('adminStatus'),
+        sortable: true,
+        filterable: true,
+        default: true,
+        filterType: 'enum',
+        quickFilter: true,
+        filterOptions: ['active', 'disabled'].map((value) => ({
+          value,
+          label: t(value === 'active' ? 'statusActive' : 'statusDisabled'),
+        })),
+        render: (template) => (
+          <div className="flex flex-wrap items-center gap-2">
+            <ActiveBadge
+              active={template.status === 'active'}
+              activeLabel={t('statusActive')}
+              inactiveLabel={t('statusDisabled')}
+            />
+            {template.is_default ? (
+              <Badge variant="secondary">{t('receiptTemplates.default')}</Badge>
+            ) : null}
+          </div>
+        ),
+      },
+      {
+        key: 'updated_at',
+        label: '',
+        sortable: true,
+        filterable: false,
+        default: true,
+        render: (template) => (
+          <span
+            className="text-sm whitespace-nowrap text-muted-foreground"
+            title={formatDocumentTime(template.updated_at, zone)}
+          >
+            <RelativeTime iso={template.updated_at} />
+            {template.updated_by ? ` · ${template.updated_by.name}` : ''}
+          </span>
+        ),
+      },
+      { key: 'created_at', label: '', displayable: false, filterable: false, sortable: false },
+    ],
+  })
   return (
-    <div className="mx-auto grid w-full max-w-6xl gap-6 p-4 md:p-6">
-      <header className="grid gap-2">
-        <h1 className="text-2xl font-semibold">{t('receiptTemplates.title')}</h1>
-        <p className="text-muted-foreground">{t('receiptTemplates.intro')}</p>
-      </header>
+    <div className="space-y-6">
+      <PageHeader
+        title={t('receiptTemplates.title')}
+        description={t('receiptTemplates.intro')}
+        actions={
+          access.read && access.write ? (
+            <Button
+              type="button"
+              disabled={Boolean(pendingId) || !templates.isSuccess}
+              onClick={() => {
+                setNotice(null)
+                setCreating(true)
+              }}
+            >
+              <Plus />
+              {t('receiptTemplates.create')}
+            </Button>
+          ) : undefined
+        }
+      />
       {context.isPending ? (
         <PageState title={t('contextWaiting')} />
       ) : context.isError ? (
@@ -129,175 +254,86 @@ export function ReceiptTemplatesPage() {
       ) : !access.read ? (
         <PageState title={t('forbidden')} error={t('adminAccessDenied')} />
       ) : (
-        <Card>
-          <CardHeader className="flex flex-wrap items-start justify-between gap-3">
-            <div className="grid gap-1">
-              <CardTitle>{t('receiptTemplates.listTitle')}</CardTitle>
-              <CardDescription>{t('receiptTemplates.listHint')}</CardDescription>
-            </div>
-            {access.write ? (
-              <Button
-                type="button"
-                disabled={Boolean(pendingId) || !templates.isSuccess}
-                onClick={() => {
-                  setNotice(null)
-                  setCreating(true)
-                }}
-              >
-                <Plus />
-                {t('receiptTemplates.create')}
-              </Button>
-            ) : null}
-          </CardHeader>
-          <CardContent className="grid gap-6">
-            {notice ? <Notice {...notice} /> : null}
-            {templates.isPending ? <PageState title={t('waiting')} /> : null}
-            {templates.isError ? (
-              <PageState
-                title={t(posFailureKey(templates.error))}
-                error={describeFailure(templates.error, t)}
-                retry={() => void templates.refetch()}
-                retryLabel={t('retry')}
-              />
-            ) : null}
-            {templates.isSuccess
-              ? DOCUMENT_TYPES.map((type) => {
-                  const group = rows.filter((row) => row.document_type === type)
-                  const full = activeCount(type) >= MAX_ACTIVE_TEMPLATES
-                  const typeName = t(`receiptTemplates.type.${type}`)
-                  return (
-                    <section key={type} className="grid gap-3" aria-labelledby={`rt-group-${type}`}>
-                      <h2 id={`rt-group-${type}`} className="font-semibold">
-                        {typeName}
-                      </h2>
-                      {group.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">
-                          {t('receiptTemplates.groupEmpty')}
-                        </p>
-                      ) : null}
-                      <ul
-                        className="divide-y rounded-lg border"
-                        aria-label={t('receiptTemplates.groupList', { type: typeName })}
-                      >
-                        {group.map((template) => {
-                          const active = template.status === 'active'
-                          return (
-                            <li key={template.id} className="flex flex-wrap items-center gap-3 p-4">
-                              <div className="mr-auto grid min-w-0 gap-1">
-                                <strong className="break-words">{template.name}</strong>
-                                <small className="text-muted-foreground">
-                                  {t(`receiptPaper_${template.paper}`)}
-                                  {` · ${t('receiptTemplates.versionShort', { version: template.current_version })}`}
-                                </small>
-                                <small className="text-muted-foreground">
-                                  {template.updated_by
-                                    ? t('receiptTemplates.updatedBy', {
-                                        time: formatDocumentTime(template.updated_at, zone),
-                                        name: template.updated_by.name,
-                                      })
-                                    : t('receiptTemplates.updatedAt', {
-                                        time: formatDocumentTime(template.updated_at, zone),
-                                      })}
-                                </small>
-                              </div>
-                              {template.is_default ? (
-                                <Badge variant="secondary">{t('receiptTemplates.default')}</Badge>
-                              ) : null}
-                              {!active ? (
-                                <Badge variant="outline">{t('statusDisabled')}</Badge>
-                              ) : null}
-                              <div className="flex flex-wrap gap-2">
-                                <Button asChild variant="outline" size="sm">
-                                  <Link
-                                    to="/$storeId/settings/receipt-templates/$templateId"
-                                    params={{ storeId, templateId: template.id }}
-                                    aria-label={t(
-                                      access.write && active
-                                        ? 'receiptTemplates.editName'
-                                        : 'receiptTemplates.viewName',
-                                      { name: template.name },
-                                    )}
-                                  >
-                                    {t(
-                                      access.write && active
-                                        ? 'adminEdit'
-                                        : 'receiptTemplates.view',
-                                    )}
-                                  </Link>
-                                </Button>
-                                {access.write ? (
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    disabled={Boolean(pendingId) || full}
-                                    title={full ? t('receiptTemplates.limitReached') : undefined}
-                                    aria-label={t('receiptTemplates.duplicateName', {
-                                      name: template.name,
-                                    })}
-                                    onClick={() =>
-                                      void act(
-                                        template,
-                                        duplicateReceiptTemplate,
-                                        'receiptTemplates.duplicated',
-                                      )
-                                    }
-                                  >
-                                    {t('receiptTemplates.duplicate')}
-                                  </Button>
-                                ) : null}
-                                {access.write && active && !template.is_default ? (
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    disabled={Boolean(pendingId)}
-                                    aria-label={t('receiptTemplates.makeDefaultName', {
-                                      name: template.name,
-                                    })}
-                                    onClick={() =>
-                                      void act(
-                                        template,
-                                        makeDefaultReceiptTemplate,
-                                        'receiptTemplates.madeDefault',
-                                      )
-                                    }
-                                  >
-                                    {t('receiptTemplates.makeDefault')}
-                                  </Button>
-                                ) : null}
-                                {access.write && active ? (
-                                  <Button
-                                    type="button"
-                                    variant="destructive"
-                                    size="sm"
-                                    disabled={Boolean(pendingId)}
-                                    aria-label={t('receiptTemplates.disableName', {
-                                      name: template.name,
-                                    })}
-                                    onClick={() => void disable(template)}
-                                  >
-                                    {pendingId === template.id
-                                      ? t('waiting')
-                                      : t('receiptTemplates.disable')}
-                                  </Button>
-                                ) : null}
-                              </div>
-                            </li>
-                          )
-                        })}
-                      </ul>
-                      {full && access.write ? (
-                        <small className="text-muted-foreground">
-                          {t('receiptTemplates.limitNote', { count: MAX_ACTIVE_TEMPLATES })}
-                        </small>
-                      ) : null}
-                    </section>
-                  )
-                })
-              : null}
-          </CardContent>
-        </Card>
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">{t('receiptTemplates.listHint')}</p>
+          {notice ? <Notice {...notice} /> : null}
+          {access.write && fullTypes.length > 0 ? (
+            <p className="text-sm text-muted-foreground">
+              {fullTypes.map((type) => t(`receiptTemplates.type.${type}`)).join(', ')}:{' '}
+              {t('receiptTemplates.limitNote', { count: MAX_ACTIVE_TEMPLATES })}
+            </p>
+          ) : null}
+          <ResourceTable<ReceiptTemplate>
+            tableKey={tableKey}
+            hideHeader
+            queryKey={['pos', 'receipt-templates', 'table']}
+            queryFn={async (params: Record<string, unknown>) => {
+              const all = await readReceiptTemplates(storeId, true)
+              listed.current = all
+              return localList(all, params, {
+                searchParam: 'search',
+                text: (template) =>
+                  `${template.name} ${t(`receiptTemplates.type.${template.document_type}`)}`,
+                sortValue: (template, field) =>
+                  field === 'document_type'
+                    ? String(DOCUMENT_TYPES.indexOf(template.document_type)).padStart(2, '0')
+                    : undefined,
+              })
+            }}
+            searchParams={searchParams}
+            rowActions={(template) => {
+              const active = template.status === 'active'
+              const full = activeCount(template.document_type) >= MAX_ACTIVE_TEMPLATES
+              return (
+                <RowActions
+                  actions={[
+                    editable(template)
+                      ? { key: 'edit', label: t('adminEdit'), onSelect: () => open(template) }
+                      : {
+                          key: 'view',
+                          label: t('receiptTemplates.view'),
+                          icon: <EyeIcon className="size-4" />,
+                          onSelect: () => open(template),
+                        },
+                    {
+                      key: 'duplicate',
+                      label: full
+                        ? t('receiptTemplates.limitReached')
+                        : t('receiptTemplates.duplicate'),
+                      icon: <CopyIcon className="size-4" />,
+                      visible: access.write,
+                      disabled: Boolean(pendingId) || full,
+                      onSelect: () =>
+                        void act(template, duplicateReceiptTemplate, 'receiptTemplates.duplicated'),
+                    },
+                    {
+                      key: 'default',
+                      label: t('receiptTemplates.makeDefault'),
+                      icon: <StarIcon className="size-4" />,
+                      visible: access.write && active && !template.is_default,
+                      disabled: Boolean(pendingId),
+                      onSelect: () =>
+                        void act(
+                          template,
+                          makeDefaultReceiptTemplate,
+                          'receiptTemplates.madeDefault',
+                        ),
+                    },
+                    {
+                      key: 'disable',
+                      label: t('receiptTemplates.disable'),
+                      icon: <BanIcon className="size-4" />,
+                      visible: access.write && active,
+                      destructive: true,
+                      disabled: Boolean(pendingId),
+                      onSelect: () => void disable(template),
+                    },
+                  ]}
+                />
+              )
+            }}
+          />
+        </div>
       )}
       {creating ? (
         <CreateTemplateDialog

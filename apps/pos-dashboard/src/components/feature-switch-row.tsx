@@ -65,7 +65,7 @@ export function FeatureSwitchRow({
   return (
     <li data-feature={feature} className="flex flex-wrap items-start gap-4 py-5">
       <div className="min-w-0 flex-1 space-y-1">
-        <h3 className="font-medium">{name}</h3>
+        <h3 className="text-base font-medium">{name}</h3>
         <p className="text-sm text-muted-foreground">{t(`featureHint_${feature}`)}</p>
         <p className="text-sm text-muted-foreground">
           {t('featureStoreState', { state: t(storeOn ? 'featureStatusOn' : 'featureStatusOff') })}

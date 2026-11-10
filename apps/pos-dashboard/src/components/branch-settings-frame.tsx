@@ -1,16 +1,16 @@
-import { branchSettingVisible } from '@parkviet/pos-shared/module-registry'
 import type { PosModules } from '@parkviet/pos-shared/pos-modules'
 import { describeFailure } from '@parkviet/pos-shared/request-failure'
 import type { PosBranch } from '@parkviet/pos-shared/types/pos-context'
 import { PageHeader, useStore } from '@spree/dashboard-core'
 import { Button, Card, CardContent } from '@spree/dashboard-ui'
-import { Link, useParams } from '@tanstack/react-router'
+import { useParams } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useBranchModules } from '../hooks/use-branch-modules'
 import { usePosSession } from '../hooks/use-pos-session'
 import { useBranches } from '../hooks/use-topology'
 import { BranchPicker } from './branch-picker'
+import { BranchSectionTabs } from './branch-section-tabs'
 
 export type BranchSettingsScope = {
   branch: PosBranch
@@ -40,6 +40,7 @@ export function BranchSettingsFrame({
       <PageHeader
         title={branch ? `${title} · ${branch.name}` : title}
         description={t(section === 'products' ? 'branchProductsIntro' : 'labelFormatsIntro')}
+        backTo={params.branchId ? `/${storeId}/branches` : undefined}
         actions={<BranchPicker />}
       />
       {context.isPending ? (
@@ -58,28 +59,7 @@ export function BranchSettingsFrame({
         </Card>
       ) : (
         <>
-          <nav className="flex flex-wrap gap-2" aria-label={t('branchSettingsSections')}>
-            <Button asChild variant="outline">
-              <Link to={`/${storeId}/branches` as string}>{t('branchSettingsBack')}</Link>
-            </Button>
-            {branch && (
-              <>
-                <Button asChild variant="outline">
-                  <Link to={`/${storeId}/branches/${branch.id}/products` as string}>
-                    {t('branchProductsTitle')}
-                  </Link>
-                </Button>
-                {(section === 'labels' ||
-                  branchSettingVisible({ ...context.data, modules }, 'label-formats')) && (
-                  <Button asChild variant="outline">
-                    <Link to={`/${storeId}/branches/${branch.id}/label-formats` as string}>
-                      {t('labelFormatsTitle')}
-                    </Link>
-                  </Button>
-                )}
-              </>
-            )}
-          </nav>
+          <BranchSectionTabs current={section === 'products' ? 'products' : 'label-formats'} />
           {branches.isPending && <p role="status">{t('waiting')}</p>}
           {branches.isError && (
             <div role="alert">

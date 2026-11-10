@@ -55,6 +55,7 @@ import {
 } from '../hooks/use-topology'
 import { posRequest } from '../lib/pos-request'
 import { posKey } from '../lib/query-keys'
+import { hiddenTimestamps } from '../tables/columns'
 import { localList } from '../tables/local-list'
 
 type TopologyRow = TopologyDraft & {
@@ -64,16 +65,6 @@ type TopologyRow = TopologyDraft & {
   staff_id?: string
   staff?: { id: string; email: string; full_name: string | null }
 }
-
-// The POS records carry no timestamps, so the columns ResourceTable adds for
-// them would only ever show dashes and filter nothing.
-const NO_TIMESTAMPS: ColumnDef<TopologyRow>[] = ['created_at', 'updated_at'].map((key) => ({
-  key,
-  label: '',
-  displayable: false,
-  filterable: false,
-  sortable: false,
-}))
 
 // Branch pages reached from the row menu. Label formats only exist for branches
 // whose modules include them, which is a per-branch lookup.
@@ -401,7 +392,7 @@ export function TopologyPage({ kind = 'branches' }: { kind?: TopologyKind }) {
     searchPlaceholder: t(kind === 'memberships' ? 'adminSearchStaff' : 'adminSearchName'),
     defaultSort: { field: kind === 'memberships' ? 'staff_id' : 'name', direction: 'asc' },
     emptyMessage: t('adminNoResults'),
-    columns: [...columns, ...NO_TIMESTAMPS],
+    columns: [...columns, ...hiddenTimestamps<TopologyRow>()],
   })
 
   return (

@@ -1,3 +1,4 @@
+import { PageHeader, useStore } from '@spree/dashboard-core'
 import {
   Badge,
   Button,
@@ -11,8 +12,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@spree/dashboard-ui'
+import { useParams } from '@tanstack/react-router'
 import { type ReactNode, useId } from 'react'
 import { useTranslation } from 'react-i18next'
+import { BranchSectionTabs } from '../branch-section-tabs'
 
 export function modelDate(value: string | null | undefined, locale: string, timeZone: string) {
   if (!value) return '—'
@@ -33,28 +36,34 @@ export function modelDate(value: string | null | undefined, locale: string, time
   }
 }
 
+// Pages reached through /branches/$branchId get a back button to the branch
+// list and the branch's section tabs; store-level pages get neither.
 export function ModelPage({
   title,
   description,
   actions,
+  section,
   children,
 }: {
   title: string
   description?: string
   actions?: ReactNode
+  section?: string
   children: ReactNode
 }) {
+  const { storeId } = useStore()
+  const { branchId } = useParams({ strict: false }) as { branchId?: string }
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-col gap-6 p-4 md:p-8">
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold">{title}</h1>
-          {description ? <p className="mt-2 text-muted-foreground">{description}</p> : null}
-        </div>
-        {actions}
-      </header>
+    <div className="space-y-6">
+      <PageHeader
+        title={title}
+        description={description}
+        backTo={section && branchId ? `/${storeId}/branches` : undefined}
+        actions={actions}
+      />
+      {section ? <BranchSectionTabs current={section} /> : null}
       {children}
-    </main>
+    </div>
   )
 }
 

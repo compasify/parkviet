@@ -1,20 +1,25 @@
 import { describeFailure } from '@parkviet/pos-shared/request-failure'
-import { useResourceMutation } from '@spree/dashboard-core'
-import { Badge, Button, Card, CardContent, useConfirm } from '@spree/dashboard-ui'
+import {
+  defineTable,
+  ResourceTable,
+  resourceSearchSchema,
+  useResourceMutation,
+} from '@spree/dashboard-core'
+import { Badge, ResourceNameCell, RowActions, useConfirm } from '@spree/dashboard-ui'
+import { PackageCheckIcon, PackageXIcon, TagIcon } from '@spree/dashboard-ui/icons'
 import { useQueryClient } from '@tanstack/react-query'
-import { useEffect, useState } from 'react'
+import { useSearch } from '@tanstack/react-router'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { BranchSettingsFrame, type BranchSettingsScope } from '../components/branch-settings-frame'
-import { Input, TopologyField, TopologySelect } from '../components/topology-fields'
 import { VariantUnitEditor } from '../components/variant-unit-editor'
 import {
-  type AssignmentFilter,
   assignBranchProduct,
   type BranchProduct,
+  fetchBranchProducts,
   removeBranchProduct,
-  useBranchProducts,
 } from '../hooks/use-branch-catalog'
-import { BranchProductsTable } from '../tables/branch-products'
+import { hiddenTimestamps } from '../tables/columns'
 
 export function BranchProductsPage() {
   return (
@@ -27,13 +32,9 @@ export function BranchProducts({ branch, access, storeId }: BranchSettingsScope)
   const { t } = useTranslation()
   const confirm = useConfirm()
   const client = useQueryClient()
-  const [input, setInput] = useState('')
-  const [query, setQuery] = useState('')
-  const [assigned, setAssigned] = useState<AssignmentFilter>('all')
-  const [page, setPage] = useState(1)
+  const searchParams = resourceSearchSchema.parse(useSearch({ strict: false }))
   const [notice, setNotice] = useState<{ text: string; failed: boolean } | null>(null)
   const [unitProduct, setUnitProduct] = useState<BranchProduct | null>(null)
-  const products = useBranchProducts(branch.id, { q: query, assigned, page }, access.read)
   const mutation = useResourceMutation({
     mutationFn: async (product: BranchProduct) => {
       if (!access.write) throw Object.assign(new Error('Access denied'), { status: 403 })
@@ -43,21 +44,8 @@ export function BranchProducts({ branch, access, storeId }: BranchSettingsScope)
     successMessage: false,
     errorMessage: false,
   })
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setQuery(input.trim())
-      setPage(1)
-    }, 300)
-    return () => window.clearTimeout(timer)
-  }, [input])
-  const rows = products.data?.data ?? []
-  const pages = Math.max(1, products.data?.meta.pages ?? 1)
-  const lastPage = products.isSuccess && !products.isPlaceholderData ? pages : null
-  useEffect(() => {
-    if (lastPage !== null) setPage((current) => Math.min(current, lastPage))
-  }, [lastPage])
   async function toggle(product: BranchProduct) {
-    if (!access.write || mutation.isPending || products.isFetching) return
+    if (!access.write || mutation.isPending) return
     if (
       product.assigned &&
       !(await confirm({
@@ -90,172 +78,104 @@ export function BranchProducts({ branch, access, storeId }: BranchSettingsScope)
       )
     }
   }
+  const tableKey = 'pos-branch-products'
+  defineTable<BranchProduct>(tableKey, {
+    searchParam: 'search',
+    searchPlaceholder: t('branchProductsSearchPlaceholder'),
+    emptyMessage: t('branchProductsEmpty'),
+    columns: [
+      {
+        key: 'name',
+        label: t('adminName'),
+        default: true,
+        render: (product) => (
+          <ResourceNameCell
+            id={product.id}
+            name={product.name}
+            secondary={[
+              product.skus.length ? product.skus.join(', ') : t('branchProductNoSku'),
+              ...(product.status === 'active'
+                ? []
+                : [t('branchProductStatus', { status: product.status })]),
+            ].join(' · ')}
+          />
+        ),
+      },
+      {
+        key: 'assigned',
+        label: t('adminStatus'),
+        default: true,
+        filterable: true,
+        filterType: 'enum',
+        quickFilter: true,
+        filterOptions: [
+          { value: 'true', label: t('branchProductsFilterAssigned') },
+          { value: 'false', label: t('branchProductsFilterUnassigned') },
+        ],
+        render: (product) => (
+          <Badge variant={product.assigned ? 'default' : 'outline'}>
+            {t(product.assigned ? 'branchProductAssigned' : 'branchProductUnassigned')}
+          </Badge>
+        ),
+      },
+      ...hiddenTimestamps<BranchProduct>(),
+    ],
+  })
   return (
-    <Card>
-      <CardContent className="space-y-4 pt-6">
-        <p>{t(access.write ? 'branchProductsHint' : 'branchProductsReadOnly')}</p>
-        <form
-          className="grid gap-4 sm:grid-cols-2"
-          onSubmit={(event) => {
-            event.preventDefault()
-            setQuery(input.trim())
-            setPage(1)
-          }}
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">
+        {t(access.write ? 'branchProductsHint' : 'branchProductsReadOnly')}
+      </p>
+      {notice && (
+        <p
+          role={notice.failed ? 'alert' : 'status'}
+          className={notice.failed ? 'text-destructive' : 'text-muted-foreground'}
         >
-          <TopologyField label={t('branchProductsSearch')}>
-            {(id) => (
-              <Input
-                id={id}
-                type="search"
-                maxLength={100}
-                value={input}
-                placeholder={t('branchProductsSearchPlaceholder')}
-                onChange={(event) => setInput(event.target.value)}
-              />
-            )}
-          </TopologyField>
-          <TopologyField label={t('branchProductsFilter')}>
-            {(id) => (
-              <TopologySelect
-                id={id}
-                value={assigned}
-                onChange={(value) => {
-                  setAssigned(value as AssignmentFilter)
-                  setPage(1)
-                }}
-                options={(['all', 'assigned', 'unassigned'] as const).map((value) => ({
-                  value,
-                  label: t(
-                    value === 'all'
-                      ? 'branchProductsFilterAll'
-                      : value === 'assigned'
-                        ? 'branchProductsFilterAssigned'
-                        : 'branchProductsFilterUnassigned',
-                  ),
-                }))}
-              />
-            )}
-          </TopologyField>
-        </form>
-        {notice && (
-          <p
-            role={notice.failed ? 'alert' : 'status'}
-            className={notice.failed ? 'text-destructive' : 'text-muted-foreground'}
-          >
-            {notice.text}
-          </p>
-        )}
-        {products.isPending && <p role="status">{t('waiting')}</p>}
-        {products.isError && (
-          <div role="alert">
-            <p>{describeFailure(products.error, t)}</p>
-            <Button onClick={() => void products.refetch()}>{t('retry')}</Button>
-          </div>
-        )}
-        {products.isSuccess && rows.length === 0 && (
-          <div>
-            <p>{t('adminNoResults')}</p>
-            <p>{t('branchProductsEmpty')}</p>
-          </div>
-        )}
-        <BranchProductsTable
-          label={t('branchProductList')}
-          rows={rows}
-          busy={products.isFetching}
-          columns={[
-            {
-              label: t('adminName'),
-              cell: (product) => (
-                <div>
-                  <strong>{product.name}</strong>
-                  <p>
-                    {product.skus.length
-                      ? `${t('itemSkuColumn')}: ${product.skus.join(', ')}`
-                      : t('branchProductNoSku')}
-                  </p>
-                  {product.status !== 'active' && (
-                    <p>{t('branchProductStatus', { status: product.status })}</p>
-                  )}
-                </div>
-              ),
-            },
-            {
-              label: t('adminStatus'),
-              cell: (product) => (
-                <Badge variant="outline">
-                  {t(product.assigned ? 'branchProductAssigned' : 'branchProductUnassigned')}
-                </Badge>
-              ),
-            },
-            {
-              label: t('adminEdit'),
-              cell: (product) => (
-                <div className="flex flex-wrap gap-2">
-                  {product.assigned && (
-                    <Button
-                      variant="outline"
-                      aria-label={t('branchProductUnitsFor', { name: product.name })}
-                      onClick={() => setUnitProduct(product)}
-                    >
-                      {t('branchProductUnits')}
-                    </Button>
-                  )}
-                  {access.write && (
-                    <Button
-                      variant={product.assigned ? 'destructive' : 'default'}
-                      disabled={mutation.isPending || products.isFetching}
-                      aria-label={t(
-                        product.assigned ? 'branchProductRemoveFor' : 'branchProductAddFor',
-                        { name: product.name },
-                      )}
-                      onClick={() => void toggle(product)}
-                    >
-                      {t(
-                        mutation.isPending && mutation.variables?.id === product.id
-                          ? 'waiting'
-                          : product.assigned
-                            ? 'branchProductRemove'
-                            : 'branchProductAdd',
-                      )}
-                    </Button>
-                  )}
-                </div>
-              ),
-            },
-          ]}
-        />
-        <nav
-          className="flex flex-wrap items-center justify-between gap-3"
-          aria-label={t('branchProductsPages')}
-        >
-          <Button
-            variant="outline"
-            disabled={page <= 1 || products.isFetching}
-            onClick={() => setPage((current) => Math.max(1, current - 1))}
-          >
-            {t('previousPage')}
-          </Button>
-          <span aria-live="polite">
-            {t('branchProductsPageStatus', { page, pages, count: products.data?.meta.count ?? 0 })}
-          </span>
-          <Button
-            variant="outline"
-            disabled={page >= pages || products.isFetching}
-            onClick={() => setPage((current) => current + 1)}
-          >
-            {t('nextPage')}
-          </Button>
-        </nav>
-        {unitProduct && (
-          <VariantUnitEditor
-            branchId={branch.id}
-            storeId={storeId}
-            product={unitProduct}
-            canWrite={access.write}
-            onClose={() => setUnitProduct(null)}
+          {notice.text}
+        </p>
+      )}
+      <ResourceTable<BranchProduct>
+        tableKey={tableKey}
+        hideHeader
+        queryKey={['pos', 'branch-products', branch.id, 'table']}
+        queryFn={(params: Record<string, unknown>) => fetchBranchProducts(branch.id, params)}
+        searchParams={searchParams}
+        rowActions={(product) => (
+          <RowActions
+            actions={[
+              {
+                key: 'units',
+                label: t('branchProductUnits'),
+                icon: <TagIcon className="size-4" />,
+                visible: product.assigned,
+                onSelect: () => setUnitProduct(product),
+              },
+              {
+                key: product.assigned ? 'remove' : 'add',
+                label: t(product.assigned ? 'branchProductRemove' : 'branchProductAdd'),
+                icon: product.assigned ? (
+                  <PackageXIcon className="size-4" />
+                ) : (
+                  <PackageCheckIcon className="size-4" />
+                ),
+                visible: access.write,
+                destructive: product.assigned,
+                disabled: mutation.isPending,
+                onSelect: () => void toggle(product),
+              },
+            ]}
           />
         )}
-      </CardContent>
-    </Card>
+      />
+      {unitProduct && (
+        <VariantUnitEditor
+          branchId={branch.id}
+          storeId={storeId}
+          product={unitProduct}
+          canWrite={access.write}
+          onClose={() => setUnitProduct(null)}
+        />
+      )}
+    </div>
   )
 }
