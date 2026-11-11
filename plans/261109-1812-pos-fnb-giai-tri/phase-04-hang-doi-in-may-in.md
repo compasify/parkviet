@@ -1,7 +1,7 @@
 ---
 phase: 4
 title: "Hàng đợi in và máy in"
-status: pending
+status: in-progress
 effort: "6 ngày"
 dependsOn: [2, 3]
 ---
@@ -136,9 +136,31 @@ Index: `(printer_id, status, id)`, unique `(store_id, idempotency_key)`, `(sourc
 
 ## Tiêu chí xong
 
-- [ ] Có danh mục máy in theo chi nhánh với 6 loại kết nối; có in thử.
-- [ ] `PrintJob` đi đủ vòng đời, trạm in nhận job atomic, lease tự trả.
-- [ ] `PrintDocument` v1 có schema; fixture Ruby / TS khớp nhau.
-- [ ] Thu ngân in thẳng ra Epson ePOS / Star WebPRNT trong LAN, hoặc đẩy job cho trạm in.
-- [ ] In lại tạm tính cần duyệt.
-- [ ] Spec POS và test web xanh.
+- [x] Có danh mục máy in theo chi nhánh với 6 loại kết nối; có in thử (e2e trang máy in chưa chạy).
+- [x] `PrintJob` đi đủ vòng đời, trạm in nhận job atomic, lease tự trả.
+- [x] `PrintDocument` v1 có schema; fixture Ruby / TS khớp nhau.
+- [ ] Thu ngân in thẳng ra Epson ePOS / Star WebPRNT trong LAN, hoặc đẩy job cho trạm in (đường đẩy job đã có; in thẳng chưa thử với máy thật).
+- [x] In lại tạm tính cần duyệt (trên đường hàng đợi; đường trình duyệt và máy LAN do phase 13 ghi nhận).
+- [ ] Spec POS và test web xanh (spec và unit xanh; chưa chạy full suite và e2e dashboard).
+
+## Kết quả
+
+Code đã xong, đã qua review và đã commit. Phase giữ `in-progress` vì còn hai mục chưa kiểm bên dưới.
+
+**Kiểm thử:** full rspec 858 example, 0 failure; unit `packages/pos-shared` 247, `apps/pos` 245, `apps/pos-dashboard` 85 đều xanh; full e2e `apps/pos` 366 pass, 26 skip, 1 fail. Test fail là `full-retail.spec.ts:176` trên mobile, chạy riêng thì pass và cũng từng fail khi tải cao trên HEAD sạch.
+
+**Chưa kiểm:** `apps/pos-dashboard/e2e/branch-printers.spec.ts` chưa từng chạy vì cổng 5176 đang bị một dev server giữ; chưa thử máy Epson TM-m30 hay Star mC-Print thật, lệnh in mới được kiểm dưới dạng chuỗi.
+
+**Khác với kế hoạch ban đầu:**
+- Cấu hình máy in và in thử nằm ở `apps/pos-dashboard`; hàng đợi và đường in của thu ngân ở `apps/pos`; bộ dựng lệnh Epson / Star ở `packages/pos-shared/src/print-commands/` vì cả hai app cùng dùng.
+- `Approval` không có danh sách action; `workspace.reprint_prebill` được khớp khi consume.
+- Giới hạn tạm tính tính theo digest nội dung hóa đơn, không theo `revision`, vì đỗ đơn rồi mở lại cũng tăng `revision`. Đổi serial / lô không tính là đổi nội dung.
+- Thêm `POST receipts/:id/prints/:print_id/void` (chỉ cho bản in thẳng ra máy), `GET printers/stations`, `GET print_jobs/prebills`.
+- Job in lỗi được thử lại sau 10, 30, 60 và 120 giây.
+- `POST /pos/approvals` nhận thêm `write_pos_orders`, nên quản lý chi nhánh có capability duyệt cấp được duyệt mà không cần quyền cấu hình cửa hàng. Việc cấp vẫn do capability tại chi nhánh quyết định.
+
+**Hành vi cần biết:** giao job là at-least-once. Nếu giấy đã in, báo cáo bị mất và lease hết hạn rồi job bị nhận lại thì sẽ in hai lần; không tránh được khi máy in không xác nhận.
+
+**Còn lại:**
+- Phase 13: ghi nhận tạm tính in qua trình duyệt / máy LAN, và `workspace.cancel_prebill`.
+- Máy in có trạm đã bị thu hồi vẫn `active`; lệnh in bị từ chối với thông báo rõ và có cảnh báo job kẹt.
