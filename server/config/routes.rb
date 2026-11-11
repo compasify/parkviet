@@ -216,6 +216,7 @@ Rails.application.routes.draw do
                 post :revoke
               end
             end
+            get 'staff_pins', to: 'staff_pins#index'
             put 'staff_pins', to: 'staff_pins#update'
             delete 'staff_pins', to: 'staff_pins#destroy'
             resources :approvals, only: [:index, :show, :create] do

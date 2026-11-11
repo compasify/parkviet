@@ -35,6 +35,57 @@ RSpec.describe Spree::Pos::Devices::Pairing do
       to raise_error(Spree::Pos::Conflict) { |error| expect(error.reason).to eq('pairing_invalid') }
   end
 
+  def signed_in_device(mode: 'waiter')
+    issued = issue(mode: mode)
+    paired = Spree::Pos::Devices::Pair.call(code: issued['code'], platform: 'android', name: 'Phục vụ')
+    Spree::Pos::Device.authenticate(paired[:token])
+  end
+
+  def member_with_pin(pin = '1234')
+    staff = credit_staff(store, branch, PosCreditHelpers::CASHIER)
+    membership = Spree::Pos::StaffMembership.find_by!(staff: staff, branch: branch)
+    Spree::Pos::Devices::SetPin.call(store: store, staff: staff, key: SecureRandom.uuid, membership_id: membership.prefixed_id, pin: pin)
+    membership
+  end
+
+  def refusal(device, membership, pin)
+    Spree::Pos::Devices::StaffSignIn.call(device: device, membership_id: membership.prefixed_id, pin: pin)
+    nil
+  rescue Spree::Pos::Conflict => e
+    e.reason
+  end
+
+  it 'keeps the lock for fifteen minutes from the fifth wrong PIN' do
+    device = signed_in_device
+    membership = member_with_pin
+    start = Time.current
+    [14, 13, 12, 11, 0].each do |minutes_ago|
+      Spree::Pos::DevicePinFailure.create!(device: device, staff_membership: membership, failed_at: start - minutes_ago.minutes)
+    end
+
+    expect(Spree::Pos::DevicePinFailure.locked?(device, membership, start + 14.minutes)).to be(true)
+    expect(Spree::Pos::DevicePinFailure.locked?(device, membership, start + 16.minutes)).to be(false)
+  end
+
+  it 'caps wrong PINs per device across memberships' do
+    device = signed_in_device
+    other = member_with_pin
+    victim = member_with_pin
+    Spree::Pos::DevicePinFailure::DEVICE_LIMIT.times do
+      Spree::Pos::DevicePinFailure.create!(device: device, staff_membership: other, failed_at: 20.minutes.ago)
+    end
+    expect(refusal(device, victim, '0000')).to eq('pin_incorrect')
+    Spree::Pos::DevicePinFailure.where(device: device).update_all(failed_at: 1.minute.ago)
+    expect(refusal(device, victim, '1234')).to eq('pin_rate_limited')
+  end
+
+  it 'keeps no plain hash of the PIN in the command receipt' do
+    membership = member_with_pin('1234')
+    payload = { 'command' => 'staff.pin_set', 'membership_id' => membership.prefixed_id, 'pin_digest' => Digest::SHA256.hexdigest('1234') }
+    plain = Spree::Pos::CommandReceipt.digest_for('workspace_id' => nil, 'payload' => payload)
+    expect(Spree::Pos::CommandReceipt.where(actor_id: membership.staff_id).pluck(:digest)).not_to include(plain)
+  end
+
   it 'locks a membership on the fifth wrong PIN and accepts the right one after reset' do
     cashier = credit_staff(store, branch, PosCreditHelpers::CASHIER)
     membership = Spree::Pos::StaffMembership.find_by!(staff: cashier, branch: branch)

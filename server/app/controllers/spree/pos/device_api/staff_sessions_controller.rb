@@ -16,7 +16,7 @@ module Spree
           result = Devices::StaffSignIn.call(device: @device, membership_id: params[:membership_id], pin: params[:pin])
           render json: { data: result }, status: :created
         rescue Conflict => e
-          status = e.reason == 'pin_locked' ? :too_many_requests : :unauthorized
+          status = %w[pin_locked pin_rate_limited].include?(e.reason) ? :too_many_requests : :unauthorized
           render json: { error: { code: e.reason, message: e.message } }, status: status
         end
 

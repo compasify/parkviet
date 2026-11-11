@@ -8,6 +8,10 @@ module Spree
         before_action :no_store
         before_action :authenticate_device!
 
+        rescue_from ActiveRecord::RecordNotFound do
+          render json: { error: { code: 'record_not_found', message: 'Not found.' } }, status: :not_found
+        end
+
         private
 
         def no_store

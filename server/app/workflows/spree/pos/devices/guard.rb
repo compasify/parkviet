@@ -8,11 +8,13 @@ module Spree
       module Guard
         module_function
 
-        def manage!(store, staff, branch)
+        def manage?(store, staff, branch)
           policy = AccessPolicy.new(store: store, staff: staff)
-          return if policy.allows?(branch, Capabilities::DEVICE_MANAGE) || policy.permission?('write_pos_topology')
+          policy.allows?(branch, Capabilities::DEVICE_MANAGE) || policy.permission?('write_pos_topology')
+        end
 
-          raise CanCan::AccessDenied
+        def manage!(store, staff, branch)
+          raise CanCan::AccessDenied unless manage?(store, staff, branch)
         end
 
         def branch!(store, branch_id)

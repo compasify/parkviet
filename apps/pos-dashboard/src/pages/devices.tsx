@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { usePosSession } from '../hooks/use-pos-session'
 import { useSession } from '../hooks/use-session'
-import { useMemberships, useRegisters, useTopologyMutation } from '../hooks/use-topology'
+import { useRegisters, useTopologyMutation } from '../hooks/use-topology'
 import { hasCapability, canAdminister } from '../lib/pos-access'
 import { posRequest } from '../lib/pos-request'
 import { posKey } from '../lib/query-keys'
@@ -23,6 +23,7 @@ type DeviceRow = {
   last_seen_at: string | null
   register_id: string | null
 }
+type PinRow = PosMembership & { pin_set?: boolean; staff?: { full_name: string | null; email: string } }
 type Pairing = {
   id: string
   code: string
@@ -44,9 +45,16 @@ export function DevicesPage() {
     queryFn: () =>
       posRequest<{ data: DeviceRow[] }>('GET', '/pos/devices', { params: { branch_id: branchId ?? undefined } }),
   })
-  const memberships = useMemberships(Boolean(branchId))
+  // Own row for everyone, every row for a device manager. The memberships
+  // API needs topology access, which a cashier setting a PIN does not have.
+  const pins = useQuery({
+    queryKey: posKey(storeId, 'staff-pins', branchId ?? undefined),
+    enabled: Boolean(branchId),
+    queryFn: () =>
+      posRequest<{ data: PinRow[] }>('GET', '/pos/staff_pins', { params: { branch_id: branchId ?? undefined } }),
+  })
   const mine = context.data?.staff.id
-  const rows = (memberships.data?.data ?? []).filter((row) => row.branch_id === branchId)
+  const rows = pins.data?.data ?? []
   return (
     <div className="space-y-6">
       <PageHeader title={t('devices.title')} subtitle={t('devices.intro')} />
@@ -134,14 +142,20 @@ function DeviceList({
   async function revoke(device: DeviceRow) {
     if (!(await confirm({ message: t('devices.revokeConfirm', { name: device.name }), variant: 'destructive', confirmLabel: t('devices.revoke'), cancelLabel: t('adminCancel') })))
       return
-    const key = crypto.randomUUID()
-    await write.mutateAsync({ method: 'POST', path: `/pos/devices/${device.id}/revoke`, body: { idempotency_key: key } })
+    await send('POST', `/pos/devices/${device.id}/revoke`, {})
   }
   async function rename(device: DeviceRow) {
     const name = window.prompt(t('devices.rename'), device.name)
     if (!name || name === device.name) return
-    const key = crypto.randomUUID()
-    await write.mutateAsync({ method: 'PATCH', path: `/pos/devices/${device.id}`, body: { name, idempotency_key: key } })
+    await send('PATCH', `/pos/devices/${device.id}`, { name })
+  }
+  async function send(method: string, path: string, body: Record<string, unknown>) {
+    setNotice('')
+    try {
+      await write.mutateAsync({ method, path, body: { ...body, idempotency_key: crypto.randomUUID() } })
+    } catch (failure) {
+      setNotice(describeFailure(failure, t))
+    }
   }
   return (
     <section className="space-y-3">
@@ -201,7 +215,7 @@ function PinList({
   mine,
   manage,
 }: {
-  rows: Array<PosMembership & { pin_set?: boolean; staff?: { full_name: string | null; email: string } }>
+  rows: PinRow[]
   mine?: string
   manage: boolean
 }) {

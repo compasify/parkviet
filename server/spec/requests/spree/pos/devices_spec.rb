@@ -22,6 +22,28 @@ RSpec.describe 'POS devices API', type: :request do
     { 'Authorization' => "Bearer #{token_for(user)}", 'Idempotency-Key' => key }
   end
 
+  it 'lists only their own PIN row to a cashier and every row to a device manager' do
+    mine = Spree::Pos::StaffMembership.find_by!(staff: cashier, branch: branch)
+    manager
+
+    get '/api/v3/admin/pos/staff_pins', headers: auth(cashier), params: { branch_id: branch.prefixed_id }
+    expect(response).to have_http_status(:ok)
+    expect(response.parsed_body['data'].map { |row| row['id'] }).to eq([mine.prefixed_id])
+
+    get '/api/v3/admin/pos/staff_pins', headers: auth(manager), params: { branch_id: branch.prefixed_id }
+    expect(response.parsed_body['data'].length).to eq(2)
+  end
+
+  it 'publishes a contract whose every path has a route' do
+    document = YAML.safe_load_file(Rails.root.join('openapi/pos-staff.yaml'), aliases: true)
+    document.fetch('paths').each do |path, operations|
+      operations.each_key do |verb|
+        concrete = path.gsub(/\{\w+\}/, 'x')
+        expect { Rails.application.routes.recognize_path(concrete, method: verb.to_sym) }.not_to raise_error, "#{verb} #{path}"
+      end
+    end
+  end
+
   it 'issues a QR, lists the device, and refuses a cashier without the capability' do
     key = SecureRandom.uuid
     post '/api/v3/admin/pos/devices/pairing', headers: auth(manager, key), params: {

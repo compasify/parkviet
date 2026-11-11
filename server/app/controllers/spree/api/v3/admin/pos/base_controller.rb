@@ -31,7 +31,7 @@ module Spree
               return super unless Spree::Pos::DeviceAuthenticator.device_request?(request)
 
               device, staff = Spree::Pos::DeviceAuthenticator.authenticate(request)
-              if device.nil?
+              if device.nil? || device.store_id != current_store&.id
                 render_error(code: 'device_unauthorized', message: 'The device is not connected.', status: :unauthorized)
                 return false
               end
@@ -44,7 +44,7 @@ module Spree
 
               @current_user = staff
               @pos_device = device
-              true
+              require_store_membership!
             end
 
             rescue_from Spree::Pos::Conflict, with: :render_pos_conflict

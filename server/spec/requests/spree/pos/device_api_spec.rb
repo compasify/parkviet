@@ -38,6 +38,41 @@ RSpec.describe 'POS device API', type: :request do
     expect(response.parsed_body.dig('data', 'device', 'mode')).to eq('kds')
   end
 
+  def signed_in_session(staff)
+    membership = Spree::Pos::StaffMembership.find_by!(staff: staff, branch: branch)
+    membership.set_pin!('2468')
+    token = pair('waiter')
+    post '/api/v3/pos_device/staff_sessions', headers: { 'Authorization' => "Device #{token}" },
+                                              params: { membership_id: membership.prefixed_id, pin: '2468' }, as: :json
+    [token, response.parsed_body.dig('data', 'token')]
+  end
+
+  it 'answers an unknown membership with JSON 404' do
+    token = pair('waiter')
+    post '/api/v3/pos_device/staff_sessions', headers: { 'Authorization' => "Device #{token}" },
+                                              params: { membership_id: 'posmembership_missing', pin: '2468' }, as: :json
+    expect(response).to have_http_status(:not_found)
+    expect(response.parsed_body.dig('error', 'code')).to eq('record_not_found')
+  end
+
+  it 'refuses a device session once the person has no role in the store' do
+    token, session = signed_in_session(cashier)
+    headers = { 'Authorization' => "Device #{token}", 'X-Pos-Staff-Session' => session }
+    get '/api/v3/admin/pos/context', headers: headers
+    expect(response).to have_http_status(:ok)
+
+    Spree::RoleUser.where(user: cashier).destroy_all
+    get '/api/v3/admin/pos/context', headers: headers
+    expect(response).to have_http_status(:forbidden)
+  end
+
+  it 'refuses a device paired at another store' do
+    token, session = signed_in_session(cashier)
+    Spree::Pos::Device.last.update_columns(store_id: create(:store).id)
+    get '/api/v3/admin/pos/context', headers: { 'Authorization' => "Device #{token}", 'X-Pos-Staff-Session' => session }
+    expect(response).to have_http_status(:unauthorized)
+  end
+
   it 'signs a cashier in with a PIN and does not grant device management' do
     membership = Spree::Pos::StaffMembership.find_by!(staff: cashier, branch: branch)
     key = SecureRandom.uuid

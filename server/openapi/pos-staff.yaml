@@ -3,11 +3,11 @@ info:
   title: Parkviet POS staff API
   version: '1'
   description: >
-    Staff contract for context, catalog, workspaces and approvals. Device
-    paths are the shape a register client calls. The current admin routes
-    return the same component schemas.
+    Staff contract for context, catalog, workspaces and approvals, and the
+    device channel. A paired device reaches the /admin/pos paths with
+    `Authorization: Device <token>` and `X-Pos-Staff-Session`.
 paths:
-  /api/v3/pos_device/context:
+  /api/v3/admin/pos/context:
     get:
       operationId: posContext
       responses:
@@ -17,7 +17,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Context'
-  /api/v3/pos_device/catalog:
+  /api/v3/admin/pos/catalog:
     get:
       operationId: posCatalog
       responses:
@@ -33,7 +33,7 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/CatalogItem'
-  /api/v3/pos_device/workspaces:
+  /api/v3/admin/pos/workspaces:
     post:
       operationId: posWorkspaceCreate
       responses:
@@ -47,7 +47,7 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/Workspace'
-  /api/v3/pos_device/workspaces/{id}:
+  /api/v3/admin/pos/workspaces/{id}:
     get:
       operationId: posWorkspaceShow
       responses:
@@ -61,7 +61,7 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/Workspace'
-  /api/v3/pos_device/workspaces/{id}/items:
+  /api/v3/admin/pos/workspaces/{id}/items:
     post:
       operationId: posWorkspaceAddItem
       responses:
@@ -75,7 +75,7 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/Workspace'
-  /api/v3/pos_device/approvals:
+  /api/v3/admin/pos/approvals:
     post:
       operationId: posApprovalCreate
       responses:
