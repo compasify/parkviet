@@ -685,8 +685,111 @@ Kịch bản Flutter `apps/pos-staff/integration_test/wave2_waiter_kds_test.dart
 - [ ] `quan_an` (có bàn), `nha_hang`, `bar_pub_club` chọn được trong wizard và tạo được chi nhánh.
 - [ ] Kịch bản 6 bước xanh ở API, e2e web và integration Flutter.
 - [ ] Chạy thử trên phần cứng thật không lỗi chặn; các lỗi nhỏ ghi lại trong phase.
-- [ ] Tài liệu cho chủ quán đã có và liên kết đúng.
-- [ ] Chi nhánh bán lẻ và chi nhánh đợt 1 không đổi hành vi.
+- [x] Tài liệu cho chủ quán đã có và liên kết đúng.
+- [x] Chi nhánh bán lẻ và chi nhánh đợt 1 không đổi hành vi.
+
+### Kết quả
+
+**Đã làm**
+
+- Hồ sơ ngành (`server/config/pos/business_profiles.yml`, `version: 2`):
+  - `quan_an` có `optional_modules: [resources, fnb.tables, fnb.postpay, fnb.service_charge]`.
+  - `bar_pub_club` có `resources`, `fnb.tables`, `fnb.postpay`, `fnb.service_charge`, mặt bán `table_grid`.
+  - `nha_hang` có mặt bán `floor_plan` và `service_charge_rate: 5`.
+  - Cả ba có trạm `prep` + `bar` và gợi ý `vietqr`, `customer_display`; `quan_an` gợi ý thêm `credit`.
+  - Hai hồ sơ có bàn dùng `kitchen_send_trigger: manual`.
+  - `karaoke_bida` vẫn `coming_soon`. Hiện có 18 hồ sơ `available`, 1 `coming_soon`.
+- `Spree::Pos::BusinessProfiles`:
+  - Status tính từ nhóm mở và module của hồ sơ. Bỏ danh sách module bị giữ lại.
+  - `optional_modules` được validate: phải là danh sách, không trùng, đã đăng ký, không nằm trong `modules`, và đủ module phụ thuộc.
+  - `display.surface` nhận thêm `resource_board` và `tab_list`.
+  - `branch_defaults.service_charge_rate` phải trên 0 và tối đa 50.
+  - `Profile#modules_for(has_tables:)` và `tables_optional?`.
+- Onboarding (`Onboarding::Setup`, `POST /pos/onboarding`):
+  - Nhận `answers: { has_tables }`. Câu trả lời chỉ hợp lệ với hồ sơ có bàn, ngược lại trả 409 `answers_invalid`.
+  - Có bàn thì bật module tùy chọn qua `BranchModules::Set.write!`, có audit `branch_module.change` kèm `answer: has_tables`.
+  - Quầy tạo trong lệnh thành quầy ghi đơn bàn. Không có quầy thì trả 409 `table_register_missing`.
+  - Tạo sẵn trạm Bếp + Bar (khi chi nhánh chưa có trạm) và route nhóm bếp `do_uong` → Bar (`Kitchen::Defaults`), có audit.
+  - Kết quả trả thêm `table_service`. Mọi việc nằm trong cùng một lệnh idempotent.
+- Đổi hồ sơ (`Profiles::Preview` / `Apply`, `PUT /pos/branches/:id/profile`):
+  - Xem trước có thêm `tables` (`always`, `optional`, `optional_modules`, `register_needed`, `default_stations`).
+  - Áp dụng nhận `has_tables`, `table_register_id`, `apply_stations`. Bật bàn mà chi nhánh chưa có quầy ghi đơn bàn thì trả 409 `table_register_missing`.
+  - Audit `branch_profile.change` ghi thêm quầy và trạm đã tạo.
+- Ba chỗ hở nhỏ đã sửa:
+  1. Form phí phục vụ lấy loại thuế từ `GET /pos/table_settings` (`tax_categories` của cửa hàng), không gọi Admin `GET /tax_categories` nữa. Quản lý chi nhánh không có quyền cửa hàng vẫn chọn được. Audit `table_settings.update` không chép danh sách này.
+  2. Form trạm bếp ở dashboard có ô **Trạm ra món (expo)** (`expo_station_id`), liệt kê các trạm `expo` khác của chi nhánh.
+  3. Lý do hủy món đã gửi bếp:
+     - `PUT /pos/kitchen_settings` nhận `void_reasons` (lệnh `kitchen.void_reasons`, có audit before / after). `khac` và `platform_canceled` bị từ chối với `void_reasons_invalid`.
+     - Dashboard có thẻ **Lý do hủy món đã gửi bếp**: bốn lý do sẵn có và lý do riêng (chữ gõ được đổi thành mã `a-z0-9_`).
+     - Context thiết bị đã có `branches[].void_reasons`; hợp đồng có thêm `ContextBranch`.
+     - Hộp hủy món của app phục vụ đọc lý do của chi nhánh. Lỗi mạng thì giữ bốn lý do mặc định. "Khác" luôn ở cuối; mã riêng hiện thành chữ.
+- Thêm một sửa lỗi: kịch bản API cho thấy yêu cầu thanh toán của bàn vẫn `open` sau khi thu tiền. `Workspaces::Complete` giờ đóng yêu cầu (`done`, có người và giờ xử lý) trong cùng transaction.
+- Seed demo `server/db/seeds/pos_fnb_demo.rb` (`POS_FNB_DEMO=1 pnpm spree seed`, chỉ development; cửa hàng đã có chi nhánh `demo-nha-hang` thì bỏ qua). Seed tạo:
+  - chi nhánh `nha_hang` với quầy "Quầy 1" ghi đơn bàn;
+  - 2 khu, 12 bàn;
+  - 4 nhóm món, 30 món (đồ uống có nhóm bếp `do_uong`); hơn 20 món có nhóm tùy chọn Độ cay / Thêm / Đá;
+  - trạm Bếp + Bar và route đồ uống;
+  - máy in `escpos_lan` `127.0.0.1:9100` cho phiếu bếp, phiếu hủy, phiếu kiểm đồ.
+- OpenAPI `pos-staff.yaml`:
+  - thêm `TableTaxCategory`, `ContextBranch`;
+  - thêm `TableSettings.tax_categories`, `KitchenSettings.void_reasons`;
+  - body PUT kitchen settings chỉ bắt buộc `branch_id`.
+
+  Đã sinh lại `pos_api`, không có `InlineObject`.
+- `packages/pos-shared`:
+  - `BusinessProfile.optional_modules`, `profileModules`, `tablesOptional`, `TABLES_MODULE`.
+  - Wizard có `hasTables` (action `has-tables`), `tablesOn`, lỗi `table-register` (bật bàn mà tên quầy để trống), và payload `answers.has_tables` với hồ sơ hỏi bàn.
+- `apps/pos-dashboard`:
+  - Bước **Thiết lập quán** hỏi "Quán có bàn phục vụ không?" và nói đơn bàn ghi vào quầy nào.
+  - Tóm tắt có dòng **Phục vụ tại bàn** và module tùy chọn.
+  - Trang Mô hình kinh doanh có các lựa chọn bàn, quầy ghi đơn bàn, tạo trạm mặc định, kèm thông báo `table_register_missing` / `answers_invalid`.
+  - Fixture e2e `business-profiles.ts` theo `version: 2`. Test "coming soon" trong `setup.spec.ts` chỉ còn karaoke.
+- `apps/pos`:
+  - Nhãn "Sắp hỗ trợ" đi theo status của server, không có chỗ nào ghi cứng.
+  - Mới `e2e/fnb-wave2.spec.ts`:
+    - nhà hàng mở trên sơ đồ khu, bar mở trên ô bàn;
+    - quán ăn có bàn bán từ thực đơn và mở bàn bằng nút **Sơ đồ bàn**;
+    - quán ăn không bàn không đọc `resource_board`;
+    - bàn "Gọi thanh toán" hiện trên sơ đồ và trong bảng của bàn.
+- `apps/pos-staff`:
+  - `lib/pairing/device_checklist.dart`: màn đầu tiên sau khi ghép (`/checklist`). Màn bếp / ra món thấy trạm đã chọn và máy in của trạm. Máy phục vụ / chủ quán thấy số người có PIN. "Bắt đầu dùng" mở mode.
+  - `lib/modes/waiter/void_reasons.dart`.
+  - Các integration test cũ thêm bước bấm "Bắt đầu dùng". Mới `integration_test/wave2_waiter_kds_test.dart` (bước 2–4, chưa chạy).
+- Tài liệu: `docs/pos/fnb-ban-va-tra-sau.md`, có liên kết từ mục "Bán hàng F&B" của `README.md`; mục này cũng đã cập nhật danh sách ngành.
+
+**Lệch so với kế hoạch**
+
+- **Báo cáo phí phục vụ:** `Reports::Sales` không có cột phí phục vụ. Bước 6 của kịch bản API kiểm tra trên đơn: phí `service_charge` 7.000 trên 140.000 tiền món, thuế theo từng loại thuế của món, và `total = item_total + fee_total + additional_tax_total`.
+- **Route đồ uống** theo nhóm bếp `do_uong` (`StationRoute.kitchen_category`), vì món không có "danh mục" nào khác để route. Trạm và route mặc định chỉ tạo cho chi nhánh có bàn khi chi nhánh chưa có trạm; đổi hồ sơ thì chỉ tạo khi chọn `apply_stations`.
+- **Quầy ghi đơn bàn ở wizard** là quầy đầu tiên tạo cùng lệnh, không có ô chọn riêng: chi nhánh mới chỉ có quầy đó. Trang Mô hình kinh doanh mới có ô chọn quầy.
+- **`kitchen_send_trigger: manual`** cho `nha_hang` và `bar_pub_club`, vì đơn bàn báo bếp theo đợt.
+- **`tab_list`** là mặt bán hợp lệ khi có `fnb.postpay`, và **`resource_board`** khi có `resources`. Chưa hồ sơ nào dùng.
+- **Seed demo:** máy in LAN cần một trạm in, nên seed tạo một trạm in giữ chỗ chưa ai ghép (token không ai giữ). Ghép trạm in thật rồi chọn trạm đó cho máy in.
+- **Quán ăn có bàn vẫn mở trên lưới thực đơn**, bàn ở nút **Sơ đồ bàn** (Q3 nói chuyển sang `table_grid`). Bề mặt bàn của chi nhánh là `table_grid`, nhưng màn bán chỉ mở thẳng sơ đồ khi `display.surface` của hồ sơ là mặt bàn, như phần 8A đã làm. E2e web khẳng định hành vi này.
+- **E2e web không chạy cả 6 bước với S2 / S3 giả.** Mỗi bước S2 / S3 ở web đã có spec riêng (`tables`, `table-kitchen-send`); 6 bước liền mạch chạy ở kịch bản API. `fnb-wave2.spec.ts` kiểm tra phần mới của đợt này.
+- **Thư mục Flutter:** checklist nằm ở `lib/pairing/` theo quy ước sẵn có, thay cho `lib/features/setup/`.
+- **Checklist không có mục máy in cho trạm in / kiosk:** API thiết bị chưa có đường đọc máy in của trạm in. Tab **Phần cứng** của dashboard đã cho biết trạng thái này.
+
+**Lệnh và kết quả**
+
+- Server:
+  - `pnpm spree rspec spec/services/spree/pos/business_profiles_spec.rb spec/services/spree/pos/modules_spec.rb spec/services/spree/pos/module_policy_spec.rb spec/requests/spree/pos/onboarding_spec.rb spec/requests/spree/pos/branch_profiles_spec.rb spec/requests/spree/pos/business_profiles_spec.rb spec/requests/spree/pos/topology_spec.rb spec/requests/spree/pos/kitchen_stations_spec.rb spec/requests/spree/pos/table_settings_spec.rb spec/requests/spree/pos/branch_modules_spec.rb spec/integration/spree/pos/fnb_demo_seed_spec.rb spec/integration/spree/pos/fnb_wave2_scenario_spec.rb spec/workflows/spree/pos/tables/`: 107 example, 0 lỗi (lượt cuối, sau các sửa rubocop).
+  - `pnpm spree rspec spec/requests/spree/pos/authentication_spec.rb spec/requests/spree/pos/devices_spec.rb spec/requests/spree/pos/prebills_spec.rb spec/requests/spree/pos/table_kitchen_spec.rb spec/requests/spree/pos/tables_spec.rb spec/services/spree/pos/print_documents_spec.rb spec/workflows/spree/pos/workspaces/ spec/workflows/spree/pos/kitchen/ spec/workflows/spree/pos/service_charges/`: 100 example, 0 lỗi.
+  - `spec/workflows/spree/pos/onboarding/` mà phần Kiểm thử nêu không tồn tại; onboarding được kiểm ở `spec/requests/spree/pos/onboarding_spec.rb`.
+  - `pnpm spree exec bin/rubocop` trên file đã đổi: file mới sạch. File đã có thì số lỗi không cao hơn bản HEAD, trừ `onboarding_spec.rb` (+2 `Style/KeywordArgumentsMerging` ở helper `shop`, theo đúng mẫu helper `cafe` có sẵn).
+- `packages/pos-shared`: lint, typecheck qua; 274 test qua.
+- `apps/pos-dashboard`: typecheck, lint qua; 102 test qua. Không đổi route nên không chạy `build`.
+- `apps/pos`: lint, typecheck qua; 280 test qua. `playwright test e2e/fnb-wave2.spec.ts --project desktop`: 5/5 qua. `e2e/fnb-wave1.spec.ts e2e/tables.spec.ts e2e/table-kitchen-send.spec.ts --project desktop`: 9/9 qua.
+- `apps/pos-staff`: `tool/gen_api.sh` chạy lại; `flutter analyze` không có lỗi; `flutter test` qua 128 test.
+
+**Còn mở**
+
+- **Chạy thử trên phần cứng thật** (bước 6): Sunmi, tablet KDS, iPhone và Android làm S2, máy in ESC/POS LAN, server LAN. Chưa làm vì không có thiết bị.
+- **Integration Flutter** (`wave2_waiter_kds_test.dart` và các test cũ đã sửa thêm bước checklist): chưa chạy, vì không có máy ảo. `flutter build apk` / `ios --no-codesign` cũng chưa chạy.
+- **E2e dashboard** (`setup.spec.ts`, `business-model.spec.ts` với fixture mới): chưa chạy, vì cổng 5176 đang được dashboard của developer dùng. Vì vậy tiêu chí đầu chưa đánh dấu: luồng chọn ba ngành và tạo chi nhánh đã qua spec request và test của wizard, nhưng chưa qua trình duyệt.
+- **Full suite** rspec / e2e: không chạy local; GitHub Actions chạy trên mỗi lần push.
+- **Giới hạn chạy nền trên iOS:** đã ghi trong tài liệu, khuyến nghị Android. Chưa có thông báo cục bộ khi app chạy nền.
+- **Cảnh báo khi báo bếp tới trạm không có màn và không có máy in** (bảng Rủi ro): không thêm trong phần này; tab **Phần cứng** và checklist thiết bị báo trạm thiếu máy in.
 
 ## Tiêu chí xong của plan
 
