@@ -24,7 +24,7 @@ Mẫu có sẵn để làm theo: `DisplayPairing` (mã 8 ký tự, TTL 10 phút,
      { "v": 1, "kind": "parkviet.device", "url": "https://pos.quan-a.lan", "code": "K7M2Q9XA" }
      ```
 
-     `url` lấy từ cấu hình `POS_PUBLIC_BASE_URL` (phase 6). Nếu chưa cấu hình thì lấy từ `request.base_url`.
+     `url` lấy từ cấu hình `POS_PUBLIC_BASE_URL` (phần 5B). Nếu chưa cấu hình thì lấy từ `request.base_url`.
    - Thiết bị gọi `POST api/v3/pos_device/pair` kèm mã, platform và tên máy, rồi nhận **device token**. Token chỉ hiện một lần, server chỉ lưu digest.
 2. **Credential:**
    - Gửi qua header `Authorization: Device <token>`.
@@ -52,7 +52,7 @@ Mẫu có sẵn để làm theo: `DisplayPairing` (mã 8 ký tự, TTL 10 phút,
 
 | Bảng | Cột chính |
 |---|---|
-| `spree_pos_devices` | `store_id`, `branch_id`, `name`, `mode`, `platform` (`android|ios|web`), `app_version`, `kitchen_station_id` (nullable, FK thêm ở phase 9), `register_id` (nullable), `token_digest` unique, `generation`, `status` (`active|revoked`), `last_seen_at`, `paired_by_id`, `revoked_by_id`, `revoked_at`, `settings jsonb` |
+| `spree_pos_devices` | `store_id`, `branch_id`, `name`, `mode`, `platform` (`android|ios|web`), `app_version`, `kitchen_station_id` (nullable, FK thêm ở phần 7A), `register_id` (nullable), `token_digest` unique, `generation`, `status` (`active|revoked`), `last_seen_at`, `paired_by_id`, `revoked_by_id`, `revoked_at`, `settings jsonb` |
 | `spree_pos_device_pairings` | `store_id`, `branch_id`, `mode`, `code_digest` unique, `expires_at`, `consumed_at`, `device_id` (khi ghép lại máy cũ), `created_by_id`, `attrs jsonb` |
 | `spree_pos_device_staff_sessions` | `device_id`, `staff_id`, `token_digest` unique, `expires_at`, `last_active_at`, `ended_at`, `end_reason` |
 | `spree_pos_staff_memberships` | thêm `pin_digest`, `pin_set_at` |

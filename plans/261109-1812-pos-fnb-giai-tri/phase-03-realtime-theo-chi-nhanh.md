@@ -38,7 +38,7 @@ Hiện trạng đã kiểm:
 ## Dữ liệu
 
 - Không có bảng nghiệp vụ mới.
-- Solid Cable cần bảng `solid_cable_messages`. Theo cách cài của gem, có thể đặt trong DB chính hoặc một DB `cable` riêng; chọn **DB chính** để triển khai LAN đơn giản (phase 6). Sửa `config/cable.yml` production thêm `connects_to` nếu cần. Migration: `create_solid_cable_messages`, lấy theo installer của gem.
+- Solid Cable cần bảng `solid_cable_messages`. Theo cách cài của gem, có thể đặt trong DB chính hoặc một DB `cable` riêng; chọn **DB chính** để triển khai LAN đơn giản (phần 5B). Sửa `config/cable.yml` production thêm `connects_to` nếu cần. Migration: `create_solid_cable_messages`, lấy theo installer của gem.
 
 ## Server
 
@@ -97,7 +97,7 @@ Hiện trạng đã kiểm:
 
 | Rủi ro | Giảm thiểu |
 |---|---|
-| Token đặt trong query string bị ghi vào log | Lọc `token` trong `filter_parameters` và trong log của proxy (phase 6). |
+| Token đặt trong query string bị ghi vào log | Lọc `token` trong `filter_parameters` và trong log của proxy (phần 5B). |
 | Solid Cable trên Postgres chậm khi nhiều chi nhánh | Bài đo ở bước 5. Sự kiện mỏng giữ dung lượng nhỏ. Adapter là cấu hình, đổi được. |
 | Lỡ sự kiện khi rớt mạng | Mỗi lần kết nối lại thì refetch toàn bộ. Poll vẫn còn. |
 
@@ -125,5 +125,5 @@ Hiện trạng đã kiểm:
 **Còn lại:**
 - `approval.requested` phát khi quản lý cấp duyệt, và `apps/pos` chưa có màn hình dùng sự kiện này.
 - Các thay đổi không qua `CommandExecutor` chưa phát sự kiện: `Approvals::Revoke`, các job khôi phục, `AllocateTraceability.expire_stale!`, webhook VietQR, `ReceiveTransfer`.
-- Proxy production phải chuyển tiếp WebSocket của `/cable` (phase 6).
+- Proxy production phải chuyển tiếp WebSocket của `/cable` (phần 5B).
 - `apps/pos/e2e/support/pos-live-fixture.rb` chưa publish sản phẩm lên kênh POS, nên e2e thật có quét mã cần thêm `Spree::ProductPublication`.

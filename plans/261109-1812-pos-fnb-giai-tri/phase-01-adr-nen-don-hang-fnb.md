@@ -121,7 +121,7 @@ Migration: `add_service_mode_and_business_date_to_pos_workspaces`, `add_business
 |---|---|
 | Backfill `business_date` sai làm lệch báo cáo cũ | Spec trên dữ liệu mẫu qua 0h. So sánh tổng doanh thu theo ngày trước và sau migrate trên bản dump dev. |
 | Spree 6 không có rate theo thời gian | Bước 5 kiểm trước. Nếu không có, dùng bảng `spree_pos_tax_rate_schedules` và job `ApplyTaxRateScheduleJob` chạy lúc 00:05. |
-| Đổi `service_mode` sau khi đã báo bếp làm lệch định tuyến | Phase 9 chặn đổi khi đã có `KitchenTicket`. Phase này chặn khi snapshot đã khóa. |
+| Đổi `service_mode` sau khi đã báo bếp làm lệch định tuyến | Phần 7A chặn đổi khi đã có `KitchenTicket`. Phase này chặn khi snapshot đã khóa. |
 
 ## Tiêu chí xong
 

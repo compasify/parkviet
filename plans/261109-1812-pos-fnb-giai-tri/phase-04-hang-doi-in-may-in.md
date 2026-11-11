@@ -10,7 +10,7 @@ dependsOn: [2, 3]
 
 ## Overview
 
-F&B cần in ra máy in nhiệt theo trạm, mà không có hộp thoại trình duyệt, kể cả khi không có máy thu ngân nào đang mở (đơn từ app phục vụ, QR order, kiosk). Phase này thêm danh mục máy in, hàng đợi in ở server có trạng thái, và hai adapter trình duyệt: Epson ePOS-Print và Star WebPRNT. Máy in Sunmi và ESC/POS (LAN, Bluetooth) được in bởi app Flutter ở chế độ `print_station` (phase 5), theo D4.
+F&B cần in ra máy in nhiệt theo trạm, mà không có hộp thoại trình duyệt, kể cả khi không có máy thu ngân nào đang mở (đơn từ app phục vụ, QR order, kiosk). Phase này thêm danh mục máy in, hàng đợi in ở server có trạng thái, và hai adapter trình duyệt: Epson ePOS-Print và Star WebPRNT. Máy in Sunmi và ESC/POS (LAN, Bluetooth) được in bởi app Flutter ở chế độ `print_station` (phần 5A), theo D4.
 
 Hiện trạng đã kiểm:
 - `apps/pos/src/lib/print-adapter.ts` có `interface PrintAdapter { deliver(paper, options) }` và chỉ có `createBrowserPrintAdapter`.
@@ -22,13 +22,13 @@ Hiện trạng đã kiểm:
 1. **`PrintDocument` v1 là định dạng trung lập, có thêm phía server.**
    - Ruby `Spree::Pos::PrintDocuments` dựng đúng cấu trúc của kiểu TS hiện có, thêm trường `version: 1` và `kind`.
    - Biên lai và tạm tính đưa vào hàng đợi được dựng ở server từ `ReceiptSnapshot` cùng template hiện hành (`ReceiptPrint` chọn template / version / paper như đang làm).
-   - Phiếu bếp, phiếu hủy, tem ly và phiếu kiểm đồ là tài liệu chỉ có ở server, bố cục cố định, dựng từ dữ liệu của phase 9 / 10.
+   - Phiếu bếp, phiếu hủy, tem ly và phiếu kiểm đồ là tài liệu chỉ có ở server, bố cục cố định, dựng từ dữ liệu của phần 7A / 7B.
    - **Chống lệch giữa hai bộ render:** dùng fixture vàng chung ở `server/spec/fixtures/print_documents/*.json`. Spec Ruby sinh ra đúng các file này, vitest đọc chúng để so với bộ render TS. Mở rộng `receipt-template/server-contract.test.ts` đang có.
 2. **Máy in là bản ghi** `Printer`, thuộc chi nhánh.
    - `connection`: `escpos_lan`, `escpos_bluetooth`, `sunmi_builtin`, `epson_epos`, `star_webprnt`, `browser`.
    - Ba loại đầu bắt buộc gắn với một thiết bị `print_station` (`print_station_device_id`).
    - Hai loại `epson_epos` / `star_webprnt` có `address` (IP:port), và trình duyệt của thu ngân in thẳng vào đó.
-   - Có `paper` (`58mm|80mm`) và `roles` (danh sách loại phiếu mặc định máy này nhận). Định tuyến theo trạm bếp thêm ở phase 9 qua `KitchenStation.printer_id`.
+   - Có `paper` (`58mm|80mm`) và `roles` (danh sách loại phiếu mặc định máy này nhận). Định tuyến theo trạm bếp thêm ở phần 7A qua `KitchenStation.printer_id`.
 3. **Vòng đời `PrintJob`:**
 
    | Trạng thái | Ý nghĩa |
@@ -51,7 +51,7 @@ Hiện trạng đã kiểm:
    - `epson-epos.ts` dựng ePOS-Print XML và gửi bằng `fetch` tới `http(s)://<ip>/cgi-bin/epos/service.cgi`;
    - `star-webprnt.ts` dựng Star Markup và POST tới `/StarWebPRNT/SendMessage`.
 
-   Cả hai map `PrintDocument` sang lệnh in (text, căn lề, đậm, cỡ chữ, QR, cắt giấy). Lỗi CORS / mixed content được báo bằng `PrintOutcome` dễ hiểu (phase 6 hướng dẫn cấu hình HTTPS trên máy in hoặc dùng HTTP trên LAN). Hộp thoại trình duyệt vẫn là đường dự phòng.
+   Cả hai map `PrintDocument` sang lệnh in (text, căn lề, đậm, cỡ chữ, QR, cắt giấy). Lỗi CORS / mixed content được báo bằng `PrintOutcome` dễ hiểu (phần 5B hướng dẫn cấu hình HTTPS trên máy in hoặc dùng HTTP trên LAN). Hộp thoại trình duyệt vẫn là đường dự phòng.
 6. **Thu ngân chọn đường in theo máy in mặc định của quầy:**
    - `epson_epos` / `star_webprnt`: in thẳng từ trình duyệt;
    - ba loại gắn với trạm in: tạo `PrintJob`;
@@ -69,7 +69,7 @@ Index: `(printer_id, status, id)`, unique `(store_id, idempotency_key)`, `(sourc
 ## Server
 
 - Model: `server/app/models/spree/pos/printer.rb`, `print_job.rb`.
-- Bộ dựng tài liệu: `server/app/services/spree/pos/print_documents.rb` (dispatcher), `print_documents/receipt.rb` (từ snapshot + template), `print_documents/test_page.rb`. Các loại bếp / tem thêm ở phase 9 / 10, cùng thư mục.
+- Bộ dựng tài liệu: `server/app/services/spree/pos/print_documents.rb` (dispatcher), `print_documents/receipt.rb` (từ snapshot + template), `print_documents/test_page.rb`. Các loại bếp / tem thêm ở phần 7A / 7B, cùng thư mục.
 - Workflow `server/app/workflows/spree/pos/print_jobs/`: `enqueue.rb`, `claim.rb`, `report.rb` (printed / failed), `reprint.rb`, `cancel.rb`.
 - Job `server/app/jobs/spree/pos/release_print_claims_job.rb`, chạy mỗi phút: trả các lease đã hết hạn về `queued`.
 - Controller:
@@ -131,7 +131,7 @@ Index: `(printer_id, status, id)`, unique `(store_id, idempotency_key)`, `(sourc
 | Rủi ro | Giảm thiểu |
 |---|---|
 | Hai bộ render (TS và Ruby) lệch nhau | Fixture vàng dùng chung, CI chạy cả hai phía. Tài liệu chỉ có ở server thì không có bản TS. |
-| Trình duyệt chặn gọi HTTP tới máy in từ trang HTTPS | Phase 6 chọn HTTP trên LAN, hoặc bật HTTPS trên máy in. Nếu không được thì chuyển máy in đó sang trạm in. |
+| Trình duyệt chặn gọi HTTP tới máy in từ trang HTTPS | Phần 5B chọn HTTP trên LAN, hoặc bật HTTPS trên máy in. Nếu không được thì chuyển máy in đó sang trạm in. |
 | Hàng đợi tắc vì một job hỏng | Mỗi máy in một thứ tự; job `failed` không chặn job sau; UI cho hủy. |
 
 ## Tiêu chí xong
@@ -140,7 +140,7 @@ Index: `(printer_id, status, id)`, unique `(store_id, idempotency_key)`, `(sourc
 - [x] `PrintJob` đi đủ vòng đời, trạm in nhận job atomic, lease tự trả.
 - [x] `PrintDocument` v1 có schema; fixture Ruby / TS khớp nhau.
 - [ ] Thu ngân in thẳng ra Epson ePOS / Star WebPRNT trong LAN, hoặc đẩy job cho trạm in (đường đẩy job đã có; in thẳng chưa thử với máy thật).
-- [x] In lại tạm tính cần duyệt (trên đường hàng đợi; đường trình duyệt và máy LAN do phase 13 ghi nhận).
+- [x] In lại tạm tính cần duyệt (trên đường hàng đợi; đường trình duyệt và máy LAN do phần 8A ghi nhận).
 - [ ] Spec POS và test web xanh (spec và unit xanh; chưa chạy full suite và e2e dashboard).
 
 ## Kết quả
@@ -162,5 +162,5 @@ Code đã xong, đã qua review và đã commit. Phase giữ `in-progress` vì c
 **Hành vi cần biết:** giao job là at-least-once. Nếu giấy đã in, báo cáo bị mất và lease hết hạn rồi job bị nhận lại thì sẽ in hai lần; không tránh được khi máy in không xác nhận.
 
 **Còn lại:**
-- Phase 13: ghi nhận tạm tính in qua trình duyệt / máy LAN, và `workspace.cancel_prebill`.
+- Phần 8A: ghi nhận tạm tính in qua trình duyệt / máy LAN, và `workspace.cancel_prebill`.
 - Máy in có trạm đã bị thu hồi vẫn `active`; lệnh in bị từ chối với thông báo rõ và có cảnh báo job kẹt.
