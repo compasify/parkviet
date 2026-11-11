@@ -141,11 +141,81 @@ Migration `create_spree_pos_prebill_prints_and_payment_requests`:
 ### Tiêu chí xong
 
 - [ ] Quản lý tạo khu và bàn, kéo thả sơ đồ, đánh dấu bàn đang dọn.
-- [ ] Thu ngân mở bàn, nhập số khách, mở hai đơn trên một bàn, chuyển / gộp / tách đơn.
+- [x] Thu ngân mở bàn, nhập số khách, mở hai đơn trên một bàn, chuyển / gộp / tách đơn.
 - [ ] Trạng thái bàn trên `table_grid` và `floor_plan` cập nhật qua realtime (≤ 2 giây) và vẫn chạy khi chỉ có poll.
-- [ ] Tạm tính lần đầu in ngay; in lại hoặc hủy cần duyệt và có audit.
-- [ ] Phí phục vụ tự tính, chịu thuế, bỏ được có audit.
-- [ ] Đơn quầy và toàn bộ spec bán lẻ không đổi hành vi.
+- [x] Tạm tính lần đầu in ngay; in lại hoặc hủy cần duyệt và có audit.
+- [x] Phí phục vụ tự tính, chịu thuế, bỏ được có audit.
+- [x] Đơn quầy và toàn bộ spec bán lẻ không đổi hành vi.
+
+### Kết quả
+
+**Đã làm**
+
+- Server:
+  - Migration và model `Area`, `Resource`, `PrebillPrint`, `PaymentRequest`. Workspace có thêm `resource_id`, `guest_count`, `table_label`. Branch có thêm `table_register_id` và cấu hình phí phục vụ.
+  - `AccessPolicy#can_edit_workspace?`: `pos.table.serve` chỉ nới quyền sửa cho đơn có bàn.
+  - Workflow `Tables::{Open, Move, Merge, Split, RequestPayment, ResolvePaymentRequest}`, `Workspaces::Prebill` và `ServiceCharges::Apply`. Move, merge và split khóa các workspace theo `id` tăng dần.
+  - `ShiftRebind` chuyển đơn sang người thu tiền khi đơn chưa có tiền, và trả `shift_has_funds` khi đã có tiền.
+  - `ResourceState` và `GET /pos/resource_board`: 80 bàn tốn tối đa 6 truy vấn.
+  - Controller cho khu, bàn (CRUD, lưu trữ, `manual_status`), mở bàn, chuyển / gộp / tách, tạm tính, hủy tạm tính, yêu cầu thanh toán và bỏ phí phục vụ.
+  - Bật bốn module `resources`, `fnb.tables`, `fnb.postpay` và `fnb.service_charge`, cùng hai quyền `pos.table.serve` và `pos.resource.manage`.
+- OpenAPI `pos-staff.yaml`: thêm path và schema có tên cho mọi object, không còn object inline. Đã sinh lại client Dart `pos_api`.
+- `packages/pos-shared`:
+  - `tables.ts`: đọc board, lọc và đếm trạng thái, kiểm tra bàn nằm trong khu trên lưới.
+  - `tableSurfaceOf`: chọn surface `table_grid` / `floor_plan`.
+  - Nhãn module, nhãn quyền và nhãn trạng thái bàn tiếng vi / en.
+- `apps/pos`:
+  - Hai surface `table_grid` và `floor_plan`. Lựa chọn surface lưu trên máy.
+  - Thanh thao tác bàn: mở bàn, chuyển, gộp, tách (`split-order-dialog`), yêu cầu thanh toán, bỏ phí phục vụ, đánh dấu đang dọn.
+  - `prebill-dialog` theo luồng mới: lần đầu in ngay; in lại và hủy cần duyệt.
+  - `use-resource-board`: dùng realtime, có poll dự phòng.
+  - `shift-close-dialog` báo đơn tại bàn còn mở.
+  - e2e `tables.spec.ts`.
+- `apps/pos-dashboard`:
+  - Tab `/branches/$branchId/floor-plan`, chỉ hiện khi chi nhánh bật `resources`.
+  - Quản lý khu và bàn trên lưới: kéo thả, thao tác bằng bàn phím, form bàn, trạng thái tay.
+  - Thẻ "Phục vụ tại bàn": máy ghi sổ của bàn, phí phục vụ và tax category của phí.
+  - Nhóm và gợi ý cho hai quyền mới.
+
+**Lệch so với kế hoạch**
+
+- **Nơi đặt trình sửa sơ đồ:** nằm ở `apps/pos-dashboard` (màn quản trị), không ở `apps/pos/src/pages/settings/floor-plan.tsx`.
+- **Đường dẫn bỏ phí phục vụ:** là `POST /pos/workspaces/:id/service_charge`.
+- **Cấu hình bàn của chi nhánh:** đọc và ghi qua endpoint riêng `table_settings`, không thêm vào `Branch#to_pos`. Cách này giữ budget truy vấn của context.
+- **`PROFILE_HELD_MODULES`:** giữ các profile có module bàn ở `coming_soon`, nên `nha_hang` và `bar_pub_club` vẫn chưa mở.
+- **Giới hạn của gộp và tách:**
+  - Gộp và tách từ chối đơn có giảm giá (`discount_present`) và dòng có serial / lot.
+  - Gộp từ chối đơn đã khóa snapshot (`snapshot_locked`).
+- **Duyệt in lại / hủy tạm tính trên client:** chỉ chạy khi chính nhân viên đang đăng nhập có quyền duyệt. Chưa có luồng xin duyệt từ người khác.
+- **Trạng thái `reserved`:** để sang 9A.
+- **Spec migration `create_spree_pos_business_profiles_spec.rb`:** đã hỏng từ trước phần này, vì các module fnb mới mặc định tắt. Spec giờ chỉ so ba module bán lẻ.
+- **Cập nhật spec module / profile:** liệt kê các module mới. Spec kiểm tra module chưa mở giờ dùng `timed_billing` thay `fnb.tables`.
+
+**Lệnh và kết quả**
+
+- Spec phần này đều qua:
+  - `pnpm spree rspec spec/workflows/spree/pos/tables/`: 21 example, 0 lỗi. Gồm cả spec đơn có tiền không chuyển ca và gộp bàn đã khóa snapshot.
+  - `pnpm spree rspec spec/workflows/spree/pos/service_charges/apply_spec.rb`: 6 example, 0 lỗi. Gồm thuế đúng tax category, làm tròn, giảm giá và bỏ phí có audit.
+  - `pnpm spree rspec spec/requests/spree/pos/resource_board_spec.rb`: 4 example, 0 lỗi. Gồm budget 80 bàn ≤ 6 truy vấn.
+  - `pnpm spree rspec spec/requests/spree/pos/prebills_spec.rb spec/requests/spree/pos/tables_spec.rb`: 9 example, 0 lỗi. Gồm in lại không có duyệt trả 409 `approval_required`, và người chỉ có `pos.table.serve` không sửa được đơn quầy của người khác.
+  - `pnpm spree rspec spec/integration/spree/pos/table_merge_race_spec.rb`: 1 example, 0 lỗi.
+- Hồi quy đều qua:
+  - Request, workspace và race: 301, 198 và 114 example, 0 lỗi.
+  - Spec module / profile / onboarding / migration: 0 lỗi.
+- `packages/pos-shared`: typecheck và lint qua; 271 test qua.
+- `apps/pos`: typecheck và lint qua; 272 test qua.
+  - `playwright test e2e/tables.spec.ts`: 6/6 qua trên desktop, tablet và mobile.
+  - e2e liên quan: 26 qua, 1 bỏ qua.
+- `apps/pos-dashboard`: typecheck, lint và build qua; 99 test qua. Không chạy e2e vì cổng 5176 đang bận.
+- `apps/pos-staff`: `flutter analyze` không có lỗi; `flutter test` qua 106 test.
+
+**Còn mở**
+
+- **Tiêu chí 1 chưa tick:** trình sửa sơ đồ có test đơn vị và spec server cho CRUD và `manual_status`, nhưng chưa được mở trong trình duyệt và chưa có e2e dashboard. Từ sơ đồ trên `apps/pos` chưa đặt được trạng thái "ngưng phục vụ".
+- **Tiêu chí 3 chưa tick:** realtime ≤ 2 giây chưa đo trên stack thật. Poll dự phòng chỉ có unit test.
+- **e2e còn thiếu:** chuyển, gộp, tách, bỏ phí phục vụ và yêu cầu thanh toán chưa có e2e. Các luồng này đã có spec server.
+- **Tax category của phí phục vụ:** form dashboard đọc danh sách từ Admin API `GET /tax_categories`. Quản lý chi nhánh không có quyền cửa hàng có thể bị từ chối. Cách sửa gọn là để `table_settings` trả kèm danh sách tax category.
+- **Khu và bàn đã lưu trữ:** chưa có endpoint khôi phục, nên editor chỉ liệt kê khu và bàn đang hoạt động.
 
 ## Phần 8B: Nhiều máy cùng sửa đơn, báo bếp theo phần chênh lệch
 
