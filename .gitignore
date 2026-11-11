@@ -8,3 +8,4 @@ node_modules/
 
 # Local database dumps
 backups/
+.pi
