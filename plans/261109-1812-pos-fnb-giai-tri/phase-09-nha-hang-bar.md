@@ -202,7 +202,7 @@ Nguồn: research §3.3, §4 (S4), §5.2. S4 không thu tiền (D7). Cọc đi q
 - [x] Tách bill theo ghế ra đúng tổng.
 - [ ] Buffet có hạng vé, thực đơn theo hạng, giới hạn lượt và cảnh báo giờ.
 - [x] Đặt bàn có kiểm tra trống. Nhận, trừ, hoàn và mất cọc đều đi qua lõi tiền; hoàn và mất cọc có approval.
-- [ ] ADR cọc đã commit và ghi rõ `deposits` của bán lẻ dùng chung mô hình.
+- [x] ADR cọc đã commit và ghi rõ `deposits` của bán lẻ dùng chung mô hình.
 - [ ] OpenAPI và client Dart đã cập nhật. Spec, e2e và Flutter test đều xanh.
 
 ### Kết quả
@@ -413,14 +413,64 @@ Phần này làm các tính năng riêng của bar, pub và club ([research §3.
 
 ### Tiêu chí xong
 
-- [ ] `tab_list` tìm được tab, mở tab nhanh; máy nào cũng thêm món vào tab được.
-- [ ] Báo cáo bar theo ngày kinh doanh qua 0h là đúng.
-- [ ] Happy hour áp theo giờ server và có nhãn.
-- [ ] Gửi rượu: mở phiếu, rót, sửa có duyệt, hết hạn, in nhãn.
-- [ ] Rót theo ml trừ chai đang mở và trừ tồn đúng.
-- [ ] Minimum spend và drink credit đúng; bỏ phụ thu có approval.
-- [ ] Tip để ngoài doanh thu, có báo cáo chia và chi tip qua payout.
+- [x] `tab_list` tìm được tab, mở tab nhanh; máy nào cũng thêm món vào tab được.
+- [x] Báo cáo bar theo ngày kinh doanh qua 0h là đúng.
+- [x] Happy hour áp theo giờ server và có nhãn.
+- [x] Gửi rượu: mở phiếu, rót, sửa có duyệt, hết hạn, in nhãn.
+- [x] Rót theo ml trừ chai đang mở và trừ tồn đúng.
+- [x] Minimum spend và drink credit đúng; bỏ phụ thu có approval.
+- [x] Tip để ngoài doanh thu, có báo cáo chia và chi tip qua payout.
 - [ ] OpenAPI, client Dart, spec và e2e đều xanh.
+
+### Kết quả
+
+Đã làm:
+
+- **Dữ liệu.** Sáu migration: `20261112040000_add_tab_name_to_spree_pos_workspaces`, `…040100_add_minimum_spend_to_spree_pos_resources`, `…040200_create_spree_pos_bottle_keeps` (kèm bảng sự kiện), `…040300_create_spree_pos_open_bottles` (kèm `pour_events`), `…040400_create_spree_pos_tip_records` (kèm `tip_split_rules`), `…040500_add_happy_hour_and_drink_credit_to_spree_pos_menu`. Model mới: `BottleKeep`, `BottleKeepEvent` (chỉ đọc sau khi ghi), `OpenBottle`, `PourEvent`, `TipRecord`, `TipSplitRule`. Approval mới: `bottle_keep.adjust`, `tab.waive_minimum_spend`. Module `fnb.bottle_keep` và `fnb.pour_tracking` đã đăng ký; hồ sơ `bar_pub_club` gợi ý cả hai, `karaoke_bida` gợi ý `fnb.bottle_keep`.
+- **Tab.** `Tabs::Open` mở tab chỉ với tên, trên ca của người mở (waiter thì trên ca của quầy bàn); tên trùng với tab đang mở báo `tab_name_taken`. `GET workspaces?service_mode=tab&q=` tìm theo tên, bàn hoặc số gọi. Máy nào cũng thêm món vào tab qua đường thêm dòng không cần lease. Báo cáo đếm tab mở 23:30, trả 01:30 đúng một lần, vào ngày mở.
+- **Happy hour.** Khung giờ thực đơn có `price_label`; dòng bán ghi nhãn theo giờ server lúc thêm dòng. Web hiện nhãn trên ô món và trên dòng đơn; dashboard có ô nhãn ở khung giờ.
+- **Minimum spend.** `Fnb::MinimumSpend` thêm `Spree::Fee` có thuế bằng phần chênh, tính lại sau mỗi thay đổi dòng và chỉ ghi khi giá trị đổi. Bỏ phụ thu (`workspaces/:id/minimum_spend`) cần approval gắn với phí; đặt lại thì không cần. Dashboard nhập mức tối thiểu ở tài nguyên và ngày giữ chai ở cài đặt bar.
+- **Drink credit.** Món vé `cover` có `drink_credit` và nhóm đồ uống được áp. `Fnb::DrinkCredit` áp giảm giá cấp dòng nguồn `cover_credit` theo thứ tự thêm món, không vượt hạn mức, không áp cho đồ ăn; bỏ một ly đã trả bằng credit thì credit chuyển sang ly kế. Tạm tính và bản in có dòng phụ thu và drink credit còn lại.
+- **Gửi rượu.** Có `BottleKeeps::Open` (kèm ảnh), `Pour` (không bao giờ làm mức tăng, về 0 thì `finished`), `Adjust` (cần approval gắn revision của phiếu), `Close` (trả khách), `Label` (tài liệu in loại `receipt`, có QR mã chai) và `ExpireJob` chạy hằng ngày (`config/recurring.yml`). Lịch sử chỉ thêm dòng. Web có trang **Gửi rượu**: tìm theo SĐT hoặc mã, xem ảnh, mức và lịch sử, rót, sửa mức, in nhãn, trả chai.
+- **Rót.** Công thức nhận đơn vị ml từ variant chai. `Fnb::PourTracker` chạy trong `Workspaces::Complete`: ghi `PourEvent` trên chai đang mở, hết chai thì đóng chai, trừ tồn một chai và chuyển phần thiếu sang chai kế; idempotent theo dòng bán. `open_bottles` cho mở và đóng chai bằng tay.
+- **Tip.** Tender tiền mặt và `bank_manual` nhận `tip_amount`. Phần tip là số dư không allocate của `ReceivedFunds`, có `TipRecord`, không đổi `order.total` và không lên hóa đơn điện tử. `Tips::Payout` chia đều, theo giờ hoặc nhập tay, tạo `LiabilityPayout` cho từng nhân viên. Cờ chi nhánh `tips_as_revenue`. Web có ô tip trong hộp thanh toán (tiền khách đưa phải đủ cả tip) và trang **Chia tip**.
+- **Báo cáo.** `reports/bar`: doanh thu theo ngày kinh doanh và theo giờ, tab mở và đóng, chai đã mở, ml rót so với ml bán, phiếu gửi sắp hết hạn, tip.
+- **API.** `bottle_keeps` (list, show, create, `pour`, `adjust`, `label`, `return`), `open_bottles`, `tips` (list kèm nhân viên được chia, `payout`), `reports/bar`, `workspaces/:id/minimum_spend`. `pos-staff.yaml` có tab, phiếu gửi, rót và `Context.modules`; client Dart đã sinh lại.
+- **Web `apps/pos`.** Surface `tab_list` (ô tìm luôn focus, tên, bàn, giờ mở, tổng, "Mở tab" chỉ cần tên); màn gọi món của tab xếp đồ uống lên đầu; tên tab hiện trên thẻ đơn. Sửa thêm một lỗi: danh sách tab nằm dưới khóa cache của workspace nên mọi lệnh ghi sau khi mở danh sách đều hỏng (`writeWorkspaceToCache` nay bỏ qua dữ liệu khác dạng).
+- **Flutter `apps/pos-staff`.** Waiter có danh sách tab có tìm kiếm, mở tab mới, gọi món vào tab, và màn rót từ chai gửi (quét hoặc gõ mã, kéo mức, nhập ml, ảnh từ khung quét). Các nút bar chỉ hiện khi module bật.
+
+Lệch so với kế hoạch:
+
+- Tab mở qua workflow riêng `Tabs::Open`, không sửa `Workspaces::Create`.
+- Tip chỉ nhận ở tiền mặt và `bank_manual`; cách trả khác báo `tip_invalid`.
+- Chi tip tạo `LiabilityPayout` ở trạng thái giữ chỗ; tiền ra khi xác nhận bốn mắt như các khoản chi khác.
+- `tips_as_revenue` hiện chỉ là cờ đọc trong báo cáo; chưa đổi cách hạch toán.
+- Job hết hạn không ghi dòng audit riêng; sự kiện `expire` ghi người mở phiếu làm actor.
+- Nhãn chai là tài liệu in loại `receipt`, không có mẫu nhãn riêng.
+- Hồ sơ bar dùng surface `tab_list` và gợi ý `fnb.bottle_keep`; `fnb.pour_tracking` phải bật tay.
+- Minimum spend không tự tính lại khi sửa mức ở tài nguyên; tính lại ở lần đổi dòng kế tiếp.
+- `open_bottles` đóng chai chưa có trong `pos-staff.yaml` (chỉ web dùng).
+- Trang Chia tip nằm ở `apps/pos` theo bảng file của phần này, dù trang quản trị khác ở dashboard.
+- Không thêm capability mới; dashboard vẫn đếm 30 quyền.
+- E2E web dùng thế giới giả lập: mở tab, phụ thu tối thiểu và drink credit ở tạm tính, thanh toán tiền mặt có tip. Bước "hai máy cùng thêm món" và báo cáo được kiểm ở server spec.
+
+Lệnh và kết quả:
+
+- `pnpm spree rspec` các file mới: `spec/workflows/spree/pos/tabs/open_spec.rb` 5/0, `spec/workflows/spree/pos/fnb/bar_billing_spec.rb` 10/0, `spec/services/spree/pos/fnb/pour_tracker_spec.rb` 5/0, `spec/requests/spree/pos/bottle_keeps_spec.rb` 7/0.
+- Chạy chung các spec liên quan (thư mục `fnb`, `tabs`, `workspaces`, cùng `tables`, `menu`, `recipes`, `reports`, `table_settings`, `kitchen`, `table_kitchen`, `print_documents`, `menu_item` và các spec module, hồ sơ): 193/0.
+- `packages/pos-shared`: `pnpm test` 280 qua, typecheck và lint sạch.
+- `apps/pos`: `pnpm lint`, `pnpm typecheck` sạch, `pnpm test` 289 qua. `playwright test --project desktop`: `bar-tabs` (mới) 2/2; `tables`, `fnb-wave1`, `fnb-wave2`, `table-kitchen-send`, `reservations` cùng `bar-tabs` 17/17; `split-tender`, `full-retail`, `feature-flags`, `fnb-menu` 27 qua, 1 bỏ qua (cần API thật).
+- `apps/pos-dashboard`: typecheck, lint sạch, `pnpm test` 103 qua. Không chạy e2e dashboard: cổng 5176 đang dùng cho dashboard của developer. Không đổi route nên không cần build.
+- `apps/pos-staff`: `tool/gen_api.sh` sinh lại client; `flutter analyze` sạch; `flutter test` 137 qua (có `test/modes/waiter/bar_screens_test.dart` mới).
+
+Còn mở:
+
+- Gợi ý mở phiếu gửi rượu khi đóng tab có gói bottle service (Q9) chưa làm; gói bottle service vẫn dùng combo sẵn có.
+- E2E dashboard (cài đặt bar, mức tối thiểu, nhãn happy hour, drink credit) chưa chạy vì cổng 5176. Đây là lý do tiêu chí "spec và e2e đều xanh" chưa tick.
+- Chưa thử với máy in nhãn và điện thoại thật (quét mã chai, ảnh); chưa pilot ở quán.
+- Kế toán chưa xác nhận cách ghi tip; cờ `tips_as_revenue` chưa đổi hạch toán.
+- Ảnh chai giới hạn 2 MB và chỉ nhận kiểu ảnh; chưa nén ở client và chưa dọn ảnh của phiếu đã kết thúc.
+- Toàn bộ thay đổi chưa commit; controller sẽ commit. Chưa chạy full rspec / e2e: để GitHub Actions chạy.
 
 ## Tiêu chí xong của plan
 
