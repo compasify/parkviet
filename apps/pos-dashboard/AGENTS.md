@@ -18,7 +18,7 @@ pnpm typecheck
 pnpm lint
 pnpm test
 pnpm build
-pnpm test:e2e        # API fixtures, desktop/tablet/mobile; sequential workers
+pnpm test:e2e        # API fixtures, desktop/tablet/mobile; 4 workers
 ```
 
 ## Structure and integration contract

@@ -195,3 +195,7 @@ spree rspec spec/models/my_model_spec.rb:15 # one file or example
 ```
 
 `spree rspec` runs inside the container with `RAILS_ENV=test`, against the `spree_test` database — never your development data.
+
+Local runs skip SimpleCov and keep the test log at warn. Debug SQL was writing tens of megabytes to bind-mounted `log/test.log` on every suite. `COVERAGE=1` collects coverage. `DEPRECATIONS=1` prints ActiveSupport deprecations. Run the file you changed; the six POS directories together are about 600 full-stack examples.
+
+Only one suite may run at a time. `spec/support/single_rspec_process.rb` takes an exclusive lock in `tmp/` before Rails boots, shared by the web container and the CLI's one-off containers, and a second `spree rspec` exits immediately instead of sharing `spree_test`. Do not start another suite while one is running. `PARKVIET_RSPEC_LOCK=off` disables the guard.

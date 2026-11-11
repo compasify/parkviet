@@ -2,7 +2,7 @@ import { defineConfig, devices } from '@playwright/test'
 
 export default defineConfig({
   testDir: './e2e',
-  workers: 1,
+  workers: 4,
   projects: [
     { name: 'desktop', use: { ...devices['Desktop Chrome'] } },
     { name: 'tablet', use: { ...devices['iPad (gen 7)'], browserName: 'chromium' } },

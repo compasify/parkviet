@@ -31,7 +31,7 @@ pnpm test:e2e --project desktop
 ```
 
 Các bài kiểm thử E2E nằm trong `e2e/`; Playwright tự khởi động máy chủ trên cổng
-cố định 5176 và chạy với một worker. Không để máy chủ phát triển khác chiếm cổng
+cố định 5176 và chạy với 4 worker. Không để máy chủ phát triển khác chiếm cổng
 này khi chạy bộ kiểm thử. Các dự án desktop, tablet và mobile đều đã được cấu hình.
 
 Ứng dụng thu ngân (`apps/pos`) không còn các trang cài đặt hoặc thiết lập; menu

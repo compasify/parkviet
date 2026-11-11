@@ -61,6 +61,26 @@ written by `pnpm spree generate` and gems added with `pnpm spree bundle` — hav
 developer runs `pnpm spree eject`, which builds the API from `server/` with live reloading. The
 project is ejected when `docker-compose.yml` mounts `./server:/rails`.
 
+## Running tests
+
+Several sessions often share this checkout, the `spree_test` database and the fixed Playwright
+ports, so a full suite blocks every other session. The full rspec suite takes about 9 minutes.
+
+While working, run only the tests that cover the change:
+
+```bash
+pnpm spree rspec spec/path/to/changed_spec.rb
+pnpm --dir apps/pos exec playwright test e2e/changed.spec.ts --project desktop
+pnpm --dir apps/pos-dashboard exec playwright test e2e/changed.spec.ts --project desktop
+```
+
+- Add `--project tablet` and `--project mobile` for the affected spec files only when the change
+  touches layout or responsive behavior.
+- Run a full suite (`pnpm spree rspec` with no path, or `pnpm test:e2e` with no `--project`) once,
+  right before committing, and only for the side you changed.
+- If rspec refuses to start or a Playwright port is busy, another session is testing. Wait for it
+  to finish. Do not stop its processes, change the port or set `PARKVIET_RSPEC_LOCK=off`.
+
 ## Querying the Admin API
 
 Project setup mints a read-only secret key into `.spree/credentials.json`

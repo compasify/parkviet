@@ -34,8 +34,15 @@ Rails.application.configure do
   # Set host to be used by links generated in mailer templates.
   config.action_mailer.default_url_options = { host: "example.com" }
 
-  # Print deprecation notices to the stderr.
-  config.active_support.deprecation = :stderr
+  # /rails is a Windows bind mount. Debug SQL in log/test.log is a host
+  # filesystem write on every query, and one POS example issues hundreds.
+  config.log_level = :warn
+  config.colorize_logging = false
+  config.active_record.verbose_query_logs = false
+
+  # Selling specs trip known Spree deprecations. Printing each one through
+  # Docker costs more than the call. DEPRECATIONS=1 sends them to stderr again.
+  config.active_support.deprecation = ENV["DEPRECATIONS"] == "1" ? :stderr : :silence
 
   # Raise error when a before_action's only/except options reference missing actions.
   config.action_controller.raise_on_missing_callback_actions = true

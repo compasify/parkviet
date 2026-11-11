@@ -1,9 +1,18 @@
 # This file is copied to spec/ when you run 'rails generate rspec:install'
 require 'spec_helper'
+# Before the Rails boot, so a second suite exits in milliseconds.
+require_relative 'support/single_rspec_process'
 # Force (not ||=) because the dev container bakes RAILS_ENV=development;
 # without this, in-container rspec boots the dev env and DatabaseCleaner
 # truncates the development database.
 ENV['RAILS_ENV'] = 'test'
+# SimpleCov traces every loaded file and writes coverage/ onto the bind mount.
+# Local runs skip it. COVERAGE=1 turns it back on; CI keeps the gem default.
+if ENV['COVERAGE'] == '1'
+  ENV.delete('SPREE_DEV_TOOLS_DISABLE_SIMPLECOV')
+elsif ENV['CI'].to_s.empty?
+  ENV['SPREE_DEV_TOOLS_DISABLE_SIMPLECOV'] ||= '1'
+end
 require_relative '../config/environment'
 # Prevent database truncation if the environment is production
 abort("The Rails environment is running in production mode!") if Rails.env.production?
