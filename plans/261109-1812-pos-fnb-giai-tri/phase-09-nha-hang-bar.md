@@ -198,12 +198,84 @@ Nguồn: research §3.3, §4 (S4), §5.2. S4 không thu tiền (D7). Cọc đi q
 ### Tiêu chí xong
 
 - [ ] Expo trên Flutter thấy món xong, đánh dấu đã phục vụ, fire được course; S1 / S2 cập nhật trong ≤ 2 giây.
-- [ ] Course đang giữ không xuống trạm prep cho tới khi fire.
-- [ ] Tách bill theo ghế ra đúng tổng.
+- [x] Course đang giữ không xuống trạm prep cho tới khi fire.
+- [x] Tách bill theo ghế ra đúng tổng.
 - [ ] Buffet có hạng vé, thực đơn theo hạng, giới hạn lượt và cảnh báo giờ.
-- [ ] Đặt bàn có kiểm tra trống. Nhận, trừ, hoàn và mất cọc đều đi qua lõi tiền; hoàn và mất cọc có approval.
+- [x] Đặt bàn có kiểm tra trống. Nhận, trừ, hoàn và mất cọc đều đi qua lõi tiền; hoàn và mất cọc có approval.
 - [ ] ADR cọc đã commit và ghi rõ `deposits` của bán lẻ dùng chung mô hình.
 - [ ] OpenAPI và client Dart đã cập nhật. Spec, e2e và Flutter test đều xanh.
+
+### Kết quả
+
+Đã làm:
+
+- **Dữ liệu.** Ba migration (`20261112020000_add_course_seat_buffet_to_spree_pos_sale_lines`, `…020100_create_spree_pos_course_labels`, `…020200_create_spree_pos_reservations`) đã chạy ở DB dev và test. Bảng hạng buffet và món của hạng nằm trong migration đầu. Dòng bán có `course`, `course_status` (`none | held | fired`), `seat`, `buffet_tier_id`, `buffet_cover_line_id`. Đặt chỗ có bảng tài nguyên giữ (exclusion constraint `btree_gist`) và bảng cọc. Model mới: `BuffetTier`, `BuffetTierItem`, `CourseLabel`, `Reservation`, `ReservationResource` (scope `overlapping`), `ReservationDeposit`.
+- **Course.** `Kitchen::FireCourse` chuyển dòng `held → fired` rồi gửi phần chênh lệch qua đường báo bếp, idempotent theo key; fire lại báo `course_not_held`. Báo bếp bỏ qua dòng `held`. Bảng bếp có thêm `held`: các course đang giữ của đơn bàn còn mở, theo bàn và course, kèm tên course (nhãn của chi nhánh, nếu không có thì "Lượt N"), thời điểm giữ và món theo ghế. Phần này chỉ trả cho máy expo hoặc khi xem mọi trạm. Fire được từ thu ngân (`workspaces/:id/courses/:course/fire`) và từ máy expo (`pos_device/kitchen/workspaces/:id/courses/:course/fire`). `EditUnsentLine` đổi được course, ghế và giữ của dòng chưa gửi.
+- **Buffet.** `Buffet::SaveTier` tạo và sửa hạng vé. Vé là dòng `cover`, mỗi khách một vé, giá theo sản phẩm vé. Món buffet giá 0 gắn với dòng vé. `Kitchen::BuffetRounds` kiểm tra khi báo bếp: món có trong hạng (`buffet_item_not_in_tier`), số món mỗi lượt và khoảng cách giữa hai lượt (`buffet_round_limit`). Quản lý vượt được bằng approval `buffet.override_round`. Bảng bàn trả `buffet_ends_at`.
+- **Tách theo ghế.** `Tables::SplitBySeat` (`split` với `by: seat`) tạo mỗi ghế một đơn ở cùng bàn. Món dùng chung theo ghế thu ngân chọn trong `shared`, nếu không chọn thì về ghế đầu. Giảm giá cấp đơn được chia lại theo tỷ lệ; spec kiểm tổng các bill bằng bill gốc.
+- **Đặt chỗ.** Có các workflow `Reservations::Create / Update / Cancel / Seat`, service `Availability` và job `MarkNoShowJob`; job chỉ đổi trạng thái. Đặt trùng giờ báo `reservation_overlap`; thiếu chỗ báo `reservation_capacity`. Ô bàn có trạng thái `reserved` và `next_reservation`. `Seat` mở đơn `dine_in` ở bàn đã đặt; `Workspace#to_pos` có `reservation`. Module `fnb.reservations` đã đăng ký và bật trong hồ sơ `nha_hang`.
+- **Cọc** theo `docs/adr/0002-pos-tien-coc-giu-cho.md`:
+  - `TakeDeposit` ghi một `ReceivedFunds` không có đơn, vào ca đang mở của người nhận.
+  - `ApplyDeposit` trừ vào đơn bằng `FundsAllocation`.
+  - `RefundDeposit` hoàn bằng `LiabilityPayout`.
+  - `ForfeitDeposit` tạo đơn phí giữ chỗ có thuế, allocate tiền cọc vào đó rồi hoàn tất đơn.
+  - Hoàn và mất cọc tiêu thụ approval `reservation.refund_deposit` / `reservation.forfeit_deposit`, gắn với đặt chỗ.
+  - Capability mới: `pos.reservation.manage` và `pos.expo.operate`.
+- **API.** Thêm `reservations` (list, show, create, update, `availability`, `:id/seat`, `:id/cancel`, `:id/deposits`, `deposits/:deposit_id/refund`, `deposits/:deposit_id/forfeit`), `buffet_tiers`, `workspaces/:id/courses/:course/fire`, `workspaces/:id/deposits/apply` và lệnh fire của máy. `pos-staff.yaml` đã cập nhật, gồm mọi trường mới của dòng, bảng bếp, ô bàn, cài đặt bàn và `TableSplitInput` (`by`, `shared`, `new_workspaces`). Client Dart đã sinh lại, không có `InlineObject`.
+- **Web `apps/pos`.**
+  - Trang `/reservations` (Đặt bàn), có link trong menu tài khoản và thanh trang; chỉ hiện khi bật `fnb.reservations`. Trang có:
+    - timeline trong ngày theo bàn;
+    - form đặt với danh sách bàn trống theo giờ và số khách;
+    - nhận cọc bằng tiền mặt hoặc chuyển khoản;
+    - các nút Khách đã đến (mở đơn ở màn bán), Không đến, Hủy, Hoàn cọc, Mất cọc. Hai nút cuối hỏi mã duyệt khi bị `approval_required`.
+  - Màn đơn bàn (khi bật bếp) có `CourseSeatPicker`: chọn course, ghế và "giữ" cho món kế tiếp, cùng nút Gọi món cho mỗi course đang giữ. Cũng có `BuffetTierPicker`: thêm vé theo hạng và số khách, chọn vé cho món buffet.
+  - Đơn có khách đặt hiện khối cọc với nút "Trừ cọc". Hộp tách đơn có thêm lựa chọn "Theo ghế". Ô bàn hiện lượt đặt kế tiếp, và cảnh báo buffet vàng trong 10 phút cuối, đỏ khi quá giờ.
+  - Chuỗi vi / en.
+  - Logic chung ở `packages/pos-shared/src/reservations.ts` và `tables.ts` (`buffetTiming`, `next_reservation`).
+- **Flutter `apps/pos-staff`.**
+  - Expo: mục "Chờ gọi món" theo bàn và course, có nút fire. Mục "Đã xong, cần mang ra" hiện ghế của món. Có lọc theo khu khi có từ hai khu trở lên.
+  - Waiter: thanh chọn course, ghế và "giữ, chờ gọi" khi gọi món; dòng đơn hiện ghế và course; nút Gọi cho course đang giữ.
+  - Owner (hook): danh sách đặt bàn hôm nay kèm cọc, Hoàn cọc và Giữ cọc có hỏi xác nhận.
+  - Chuỗi vi / en.
+- **Dashboard.** Hai capability mới có trong nhóm quyền; e2e quản trị đếm 30 quyền.
+
+Lệch so với kế hoạch:
+
+- "Chờ fire" không lưu thành bản ghi riêng cho trạm expo. Bảng bếp tính nó từ các dòng `held` lúc đọc.
+- Đánh dấu đã phục vụ dùng lại route serve sẵn có của item (`posKitchenItemServe` / `posDeviceKitchenItemServe`, cả đơn qua `order_serve`). Không thêm `kitchen_ticket_items/:id/served`. Spec kiểm serve idempotent và chỉ báo một lần.
+- Cọc là `ReceivedFunds` trực tiếp, bằng tiền mặt hoặc `bank_manual` có mã giao dịch; chưa có VietQR. Nhận cọc cần quyền thu tiền và ca đang mở của chính người nhận (`shift_required`). Khách đến thì cọc không tự trừ: thu ngân bấm "Trừ cọc" (`deposits/apply`) trong luồng thanh toán.
+- Giới hạn lượt buffet tính theo số khách của vé (`round_item_limit` × số vé).
+- Tách theo ghế: món dùng chung về ghế thu ngân chọn, nếu không chọn thì về ghế đầu. Không chia đều.
+- Sản phẩm phí giữ chỗ, thời lượng đặt mặc định, ngưỡng no-show và nhãn course cấu hình qua `table_settings`. Chưa có màn dashboard cho các mục này, cũng chưa có màn cho hạng buffet; hiện chỉ cấu hình được qua API.
+- Exclusion constraint dùng `tsrange`, theo kiểu cột `datetime` của Rails, không dùng `tstzrange`.
+- Seat cần thêm quyền phục vụ bàn.
+- Hồ sơ `bar_pub_club` và `karaoke_bida` không có `fnb.reservations`. Phiên bản file hồ sơ giữ 2.
+- Owner hook: người duyệt hoàn / giữ cọc trực tiếp, không qua `approval.requested`. Người không có quyền duyệt nhận `approval_required` và nhập mã duyệt trên web.
+- Web: khối "Trừ cọc" là component riêng `reservation-deposit-note.tsx` đặt trên `PaymentPanel`; `payment-panel.tsx` không đổi. Thực đơn ở màn đơn chưa lọc theo hạng vé; server vẫn từ chối món ngoài hạng.
+- Waiter chưa đếm số món buffet còn gọi được trong lượt: payload chưa có thông tin lượt hiện tại.
+- E2E web đi tới bước thanh toán xong với cọc đã trừ, chưa kiểm in hóa đơn. Bước in dùng lại luồng hoàn tất sẵn có.
+
+Lệnh và kết quả:
+
+- `pnpm spree rspec` cho các file mới: `spec/workflows/spree/pos/kitchen/fire_course_spec.rb` (5/0), `kitchen/buffet_rounds_spec.rb` (3/0), `tables/split_by_seat_spec.rb` (3/0), `reservations/deposits_spec.rb` (4/0), `spec/requests/spree/pos/reservations_spec.rb` (6/0), `spec/jobs/spree/pos/reservations/mark_no_show_job_spec.rb` (2/0).
+- Spec module và hồ sơ (onboarding, business_profiles request và service, branch_profiles, topology, module_policy, branch_modules): 72/0.
+- Spec bàn, bếp và request liên quan: 181/0. Thư mục `workspaces` cùng `tables_spec`: 37/0.
+- Sau khi đổi `pos-staff.yaml`: `devices_spec`, `kitchen_board_spec`, `kitchen_spec`, `resource_board_spec`, `tables_spec`, `print_documents_spec`, `split_by_seat_spec`, `reservations_spec`: 45/0. Lần cuối, sau khi thêm path cọc: `reservations_spec`, `tables_spec`, `kitchen_board_spec`: 13/0.
+- `packages/pos-shared`: `pnpm test` 280 qua, `pnpm typecheck` sạch, `pnpm lint` sạch (1 info có từ trước).
+- `apps/pos`: `pnpm lint` sạch, `pnpm typecheck` sạch, `pnpm test` 287 qua.
+  - `playwright test e2e/reservations.spec.ts --project desktop` qua. Luồng: đặt bàn → nhận cọc 50 000 → khách đến → mở đơn → trừ cọc → trả nốt 150 000 tiền mặt → đơn hoàn tất.
+  - Chạy cùng `tables`, `table-kitchen-send`, `user-menu`, `fnb-wave2`, `pages-polish`: 15/15.
+- `apps/pos-dashboard`: `pnpm typecheck`, `pnpm lint` sạch, `pnpm test` 102 qua. Không chạy e2e dashboard: cổng 5176 đang dùng cho dashboard của developer.
+- `apps/pos-staff`: `tool/gen_api.sh` sinh lại client; `flutter analyze` không có lỗi; `flutter test` 133 qua (có `test/modes/table_service_test.dart` mới: course giữ, fire từ waiter, expo fire và lọc khu, owner hoàn / giữ cọc).
+
+Còn mở:
+
+- Chưa đo "S1 / S2 cập nhật trong ≤ 2 giây" khi expo phục vụ món: không có emulator, chưa chạy integration test Flutter qua realtime.
+- Thực đơn theo hạng vé ở web và waiter, và bộ đếm món buffet còn lại trong lượt, cần server trả lượt hiện tại của vé.
+- Chưa có màn dashboard cho hạng buffet, nhãn course, sản phẩm phí giữ chỗ, thời lượng đặt và ngưỡng no-show.
+- Chưa có báo cáo "cọc đang giữ" theo chi nhánh (rủi ro đã ghi ở trên).
+- ADR và toàn bộ thay đổi chưa commit; controller sẽ commit. Chưa chạy full rspec / e2e: để GitHub Actions chạy.
+- Request spec chưa kiểm schema của câu trả lời hoàn / giữ cọc qua HTTP. Workflow spec đã kiểm các bước này, và schema `Reservation` đã có `fee_workspace_id`.
 
 ## Phần 9B: Bar, pub & club
 
