@@ -320,12 +320,74 @@ Migration `create_spree_pos_kitchen_sends_and_voids`:
 
 ### Tiêu chí xong
 
-- [ ] Hai phục vụ và một thu ngân cùng thêm món vào một bàn mà không ai bị 409.
-- [ ] "Báo bếp" chỉ gửi phần chênh lệch; gửi lại cùng key không tạo ticket mới.
-- [ ] Hủy món đã báo bếp có lý do, duyệt theo quyền, phiếu hủy in ở trạm, và có audit.
-- [ ] Đơn đã có tiền không sửa được; gọi thêm đi vào đơn bổ sung.
-- [ ] Toàn bộ spec bán lẻ, `workspace_race_spec` và e2e bán hàng vẫn xanh.
+- [x] Hai phục vụ và một thu ngân cùng thêm món vào một bàn mà không ai bị 409.
+- [x] "Báo bếp" chỉ gửi phần chênh lệch; gửi lại cùng key không tạo ticket mới.
+- [x] Hủy món đã báo bếp có lý do, duyệt theo quyền, phiếu hủy in ở trạm, và có audit.
+- [x] Đơn đã có tiền không sửa được; gọi thêm đi vào đơn bổ sung.
+- [x] Toàn bộ spec bán lẻ, `workspace_race_spec` và e2e bán hàng vẫn xanh.
 
+### Kết quả
+
+**Đã làm**
+
+- Server:
+  - Migration `track_line_versions_on_pos_sale_lines`: `spree_pos_sale_lines` thêm `row_version`, `added_by_id`, `added_device_id`, `append_batch_id` và check `kitchen_sent_quantity ≤ sale_quantity`. `row_version` tăng trong mọi lệnh đổi dòng, kể cả lệnh cũ (callback `before_update`).
+  - Migration `create_spree_pos_kitchen_sends_and_voids`: bảng `spree_pos_kitchen_sends` và `spree_pos_kitchen_voids`, `kitchen_tickets.kitchen_send_id`, `spree_pos_branches.void_reasons` (mặc định bốn lý do).
+  - `LineBuilder` tách khỏi `ManageLineItem.add`, không đổi hành vi. Toàn bộ spec `workspaces/` qua ngay sau khi tách.
+  - `Workspaces::AppendItems`, `EditUnsentLine`, `RemoveUnsentLine`: không cần lease, chỉ cho đơn có bàn khi `fnb.tables` bật, quyền đi qua `can_edit_workspace?`. Sửa / xóa kiểm tra `row_version`, trả `line_changed` kèm dòng hiện tại hoặc `line_sent`.
+  - `Kitchen::Send`: ghi `KitchenSend` có `sequence`, idempotent theo key, chỉ gửi chênh lệch. Không còn gì để gửi thì trả 200 với `ticket_count: 0`. Đầu phiếu bếp có thêm tên bàn.
+  - `Kitchen::VoidSent`: lý do theo chi nhánh (`khac` cần ghi chú), approval `kitchen.void_sent` khi thiếu `pos.kitchen.void`, phiếu `void` và print job `void_ticket` ("HỦY MÓN", "-1 x Món", "Lý do: …"), cờ `wasted` khi bếp đã làm, không nhập lại kho, audit `kitchen.void_sent`.
+  - Hủy đơn sàn (`PlatformOrders::Cancel`) chuyển sang `VoidSent` với lý do `platform_canceled`: một approval cho cả đơn như trước, và giờ in phiếu hủy ở trạm.
+  - `Workspace#to_pos`: mỗi dòng thêm `pending_kitchen_quantity`, `row_version`, `added_by`; đơn có bàn thêm `kitchen_sends`. `Branch#to_pos` thêm `void_reasons`. `Kitchen::History` và `GET workspaces/:id/kitchen_history`.
+  - Quyền mới `pos.kitchen.void`.
+- OpenAPI `pos-staff.yaml`: path và schema có tên cho append, sửa / xóa dòng chưa gửi, hủy món, lịch sử báo bếp và kết quả báo bếp. Đã sinh lại client Dart `pos_api`, không có `InlineObject`.
+- `packages/pos-shared`: kiểu mới cho dòng, đơn và chi nhánh; quyền `pos.kitchen.void` cùng nhãn vi / en.
+- `apps/pos`:
+  - `lib/table-kitchen.ts` và test: khi nào được thêm / sửa không cần lease, danh sách lý do hủy, nhận diện `line_changed` / `line_sent`.
+  - `use-workspaces`: đơn có bàn thêm món qua `items/append` (mỗi tab là một mẻ đến lần báo bếp kế tiếp), sửa / xóa dòng chưa gửi theo `row_version`, báo bếp không cần lease, thêm `voidSent`. Đơn quầy giữ luồng cũ.
+  - `order-lines`: nhãn "Đã báo bếp ×n"; giảm hay xóa phần đã báo mở hộp hủy món; 409 `line_changed` tải lại đơn và báo "Dòng này vừa được người khác sửa"; `line_sent` mở hộp hủy món; `snapshot_locked` gợi ý mở đơn bổ sung.
+  - `void-item-dialog` mới: số lượng, lý do, ghi chú, mã duyệt khi thiếu quyền.
+  - `kitchen-history`: nút Báo bếp có số món luôn hiện với đơn có bàn; lịch sử đọc từ `kitchen_history` (lần gửi, giờ, người, món tăng / giảm, lý do hủy, người duyệt, hao hụt).
+  - `workspace-tabs`: cờ `appendable` cho phép thêm món, sửa dòng chưa gửi và báo bếp trên đơn có bàn không cần lease. Giảm giá, đổi giá, tùy chọn món và thanh toán vẫn theo lease.
+  - e2e `table-kitchen-send.spec.ts`: hai tab cùng thêm món vào một bàn rồi báo bếp. Fixture e2e mô phỏng append, sửa / xóa dòng chưa gửi và báo bếp.
+- `apps/pos-dashboard`: quyền mới nằm trong nhóm "menu" của danh sách quyền, có gợi ý vi / en.
+
+**Lệch so với kế hoạch**
+
+- **Báo bếp của đơn có bàn cũng không cần lease:** Q1 chỉ kể ba lệnh. Không vậy thì phục vụ không giữ đơn sẽ không gửi được món mình vừa thêm. Báo bếp vẫn chạy được sau khi đơn có tiền, vì lệnh không đổi tiền; thêm / sửa / hủy thì vẫn bị chặn.
+- **`KitchenSend` dùng `send_key`** (unique theo workspace) thay cho `command_receipt_id`, vì receipt của `CommandExecutor` chỉ tạo sau khi khối lệnh chạy xong. `KitchenSend` được ghi cho mọi lần gửi, kể cả gửi khi complete.
+- **Khóa ngoại:** `kitchen_ticket_items.sale_line_id` và `kitchen_voids.sale_line_id` chuyển sang `on_delete: :nullify`, vì hủy hết một dòng sẽ xóa SaleLine. Ticket vẫn giữ tên và số lượng.
+- **`void_reasons`** đọc qua `Branch#to_pos`; chưa có màn sửa danh sách trên dashboard.
+- **Đường dẫn:** `POST workspaces/:id/items/append` (không phải `items:append`) và `POST workspaces/:id/sale_lines/:sale_line_id/kitchen_voids`. `DELETE sale_lines/:id` nhận `row_version` ở query.
+- **Báo bếp trả 200** khi không còn gì để gửi, 201 khi có ticket mới.
+- **Chi tiết 409 `approval_required`** của hủy món dùng `details.action` như tạm tính, để client dùng chung `approvalAction`.
+- **Spec request** đặt tên `spec/requests/spree/pos/table_kitchen_spec.rb`. Không tách `kitchen-send-button.tsx`: nút nằm sẵn trong `kitchen-history.tsx`.
+- **Mẻ trên web:** một mẻ là mọi lần thêm từ một tab đến lần báo bếp kế tiếp, nên bấm cùng món hai lần vẫn gộp một dòng. Thêm món ở tab khác luôn ra dòng mới.
+
+**Lệnh và kết quả**
+
+- `pnpm spree rspec spec/workflows/spree/pos/ spec/integration/spree/pos/ spec/services/spree/pos/ spec/models/spree/pos/`: 574 example, 0 lỗi (gồm `workspace_race_spec` và `table_append_race_spec`).
+- `pnpm spree rspec spec/requests/spree/pos/`: 496 example, 1 lỗi. Lỗi ở `authentication_spec.rb:88`: spec chưa biết khóa `einvoice_type` mà `context_resolver.rb` đã trả từ commit trước. Cả hai file đều không đổi trong phần này.
+- Sau lần sửa cuối, chạy lại:
+  - `spec/workflows/spree/pos/kitchen/`, `workspaces/append_items_spec.rb`, `platform_orders/`, `requests/spree/pos/table_kitchen_spec.rb`, `integration/spree/pos/table_append_race_spec.rb`: 47 example, 0 lỗi.
+  - `append_items_spec.rb` (thêm kiểm tra báo bếp sau khi khóa snapshot): 9 example, 0 lỗi.
+  - `requests/spree/pos/devices_spec.rb` và `table_kitchen_spec.rb`: 7 example, 0 lỗi.
+- Spec phủ định đều có: đơn quầy gọi append trả `not_table_order`, tắt `fnb.tables` trả `module_disabled`, sửa dòng đã báo trả `line_sent`, hủy không duyệt và không có `pos.kitchen.void` trả `approval_required`.
+- `packages/pos-shared`: typecheck và lint qua; 271 test qua.
+- `apps/pos`: typecheck và lint qua; 278 test qua.
+  - `playwright test e2e/table-kitchen-send.spec.ts e2e/tables.spec.ts --project desktop`: 3/3 qua.
+  - e2e bán hàng (`fnb-menu`, `fnb-wave1`, `fnb-call-number`, `platform-orders`, `full-retail`, `lease`, `lease-recovery`, `concurrency-chaos`, `catalog-scan`, `scale-labels`, `split-tender`, `inventory-traceability`, `advanced-goods`, `ui-polish`) trên desktop: 54 qua, 3 bỏ qua (cần API thật).
+- `apps/pos-dashboard`: typecheck và lint qua; 99 test qua. Không chạy e2e vì cổng 5176 đang bận.
+- `apps/pos-staff`: `tool/gen_api.sh` chạy lại; `flutter analyze` không có lỗi; `flutter test` qua 106 test.
+
+**Còn mở**
+
+- **e2e dashboard:** chưa chạy. `e2e/administration.spec.ts` đếm 19 ô quyền, nhưng danh sách đã có 27 quyền từ trước phần này, nay là 28. Cần xem lại khi cổng 5176 rảnh.
+- **Xin duyệt hủy món:** hộp hủy món nhận mã duyệt do quản lý cấp (như giảm giá). Chưa có luồng gửi yêu cầu duyệt sang máy quản lý. Approval gắn với `revision`, nên một lần thêm món ở máy khác sẽ làm mã duyệt hết hiệu lực.
+- **Dòng đã báo một phần:** khi không giữ lease, dòng đã báo một phần không tăng / giảm được phần chưa gửi. Thêm thì dùng "Thêm ly giống vậy" (ra dòng mới), giảm thì dùng hủy món.
+- **Màn sửa `void_reasons`** trên dashboard chưa có.
+- **Client Flutter (S2):** mới có client API sinh lại; màn thêm món theo mẻ trên `apps/pos-staff` chưa làm trong phần này.
+- **Test chung:** spec `authentication_spec.rb:88` hỏng từ trước, cần thêm `einvoice_type` vào danh sách khóa.
 ## Phần 8C: App phục vụ, KDS đầy đủ
 
 ### Overview
