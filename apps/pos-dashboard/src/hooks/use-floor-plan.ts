@@ -18,12 +18,20 @@ export type TableSettings = {
   service_charge_rate: string | null
   service_charge_applies_to: ServiceMode[]
   service_charge_tax_category_id: string | null
+  // Bar settings: how long a guest's bottle is kept, whether tips count as
+  // revenue, and how tips are split (role ids empty: every staff member).
+  bottle_keep_days: number | null
+  tips_as_revenue: boolean
+  tip_split: TipSplit
   // The store's tax categories, sent with the settings so a branch manager
   // without the store's tax settings can still choose the charge's.
   tax_categories: TaxCategoryOption[]
 }
 
 export type TaxCategoryOption = { id: string; name: string }
+
+export const TIP_SPLIT_MODES = ['equal', 'by_hours', 'manual'] as const
+export type TipSplit = { mode: (typeof TIP_SPLIT_MODES)[number]; role_codes: string[] }
 
 const rows = (value: unknown): unknown[] => (Array.isArray(value) ? value : [])
 
@@ -60,6 +68,14 @@ export const useResources = (branchId: string) =>
       return table && table.status === 'active' ? [table] : []
     }),
   )
+const tipSplitOf = (value: unknown): TipSplit => {
+  const source = (typeof value === 'object' && value ? value : {}) as Record<string, unknown>
+  const mode = TIP_SPLIT_MODES.find((name) => name === source.mode) ?? 'equal'
+  return {
+    mode,
+    role_codes: rows(source.role_codes).filter((code): code is string => typeof code === 'string'),
+  }
+}
 const textOrNull = (value: unknown) => (typeof value === 'string' && value ? value : null)
 export const useTableSettings = (branchId: string) =>
   useFloorList('settings', '/pos/table_settings', branchId, (data): TableSettings => {
@@ -73,6 +89,11 @@ export const useTableSettings = (branchId: string) =>
         (mode): mode is ServiceMode => (SERVICE_MODES as readonly unknown[]).includes(mode),
       ),
       service_charge_tax_category_id: textOrNull(source.service_charge_tax_category_id),
+      bottle_keep_days: Number.isInteger(source.bottle_keep_days)
+        ? (source.bottle_keep_days as number)
+        : null,
+      tips_as_revenue: source.tips_as_revenue === true,
+      tip_split: tipSplitOf(source.tip_split),
       tax_categories: rows(source.tax_categories).flatMap((row) => {
         const item = row as { id?: unknown; name?: unknown }
         return typeof item.id === 'string' && typeof item.name === 'string'

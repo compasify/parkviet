@@ -100,6 +100,16 @@ export function UserMenu({
             {t('reservationsNav')}
           </Link>
         ) : null}
+        {staffed && data.modules?.['fnb.bottle_keep'] === true ? (
+          <Link to="/bottle-keeps" {...item}>
+            {t('bottleKeepsNav')}
+          </Link>
+        ) : null}
+        {data.modules?.['fnb.postpay'] === true && has('pos.payment.resolve') ? (
+          <Link to="/tips" {...item}>
+            {t('tipsNav')}
+          </Link>
+        ) : null}
       </MenuGroup>,
     );
   }

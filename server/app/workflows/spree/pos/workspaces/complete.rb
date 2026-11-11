@@ -78,6 +78,8 @@ module Spree
             # Ingredients of menu recipes leave the shelf with the sale; a
             # short shelf is recorded, never a reason to refuse it.
             Recipes::Consume.call(workspace: workspace, actor: staff)
+            # Measured pours come out of the bottle open behind the bar.
+            Fnb::PourTracker.call(workspace: workspace, actor: staff)
             # A counter-service order has its call number by the time it is
             # paid: from its first kitchen send, or now.
             OrderNumbers.assign!(workspace)

@@ -21,6 +21,8 @@ class _$MenuItemAllOfVariants extends MenuItemAllOfVariants {
   final String? listPrice;
   @override
   final String? scheduleId;
+  @override
+  final String? priceLabel;
 
   factory _$MenuItemAllOfVariants(
           [void Function(MenuItemAllOfVariantsBuilder)? updates]) =>
@@ -33,7 +35,8 @@ class _$MenuItemAllOfVariants extends MenuItemAllOfVariants {
       this.barcode,
       required this.price,
       this.listPrice,
-      this.scheduleId})
+      this.scheduleId,
+      this.priceLabel})
       : super._();
   @override
   MenuItemAllOfVariants rebuild(
@@ -54,7 +57,8 @@ class _$MenuItemAllOfVariants extends MenuItemAllOfVariants {
         barcode == other.barcode &&
         price == other.price &&
         listPrice == other.listPrice &&
-        scheduleId == other.scheduleId;
+        scheduleId == other.scheduleId &&
+        priceLabel == other.priceLabel;
   }
 
   @override
@@ -67,6 +71,7 @@ class _$MenuItemAllOfVariants extends MenuItemAllOfVariants {
     _$hash = $jc(_$hash, price.hashCode);
     _$hash = $jc(_$hash, listPrice.hashCode);
     _$hash = $jc(_$hash, scheduleId.hashCode);
+    _$hash = $jc(_$hash, priceLabel.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -80,7 +85,8 @@ class _$MenuItemAllOfVariants extends MenuItemAllOfVariants {
           ..add('barcode', barcode)
           ..add('price', price)
           ..add('listPrice', listPrice)
-          ..add('scheduleId', scheduleId))
+          ..add('scheduleId', scheduleId)
+          ..add('priceLabel', priceLabel))
         .toString();
   }
 }
@@ -117,6 +123,10 @@ class MenuItemAllOfVariantsBuilder
   String? get scheduleId => _$this._scheduleId;
   set scheduleId(String? scheduleId) => _$this._scheduleId = scheduleId;
 
+  String? _priceLabel;
+  String? get priceLabel => _$this._priceLabel;
+  set priceLabel(String? priceLabel) => _$this._priceLabel = priceLabel;
+
   MenuItemAllOfVariantsBuilder() {
     MenuItemAllOfVariants._defaults(this);
   }
@@ -131,6 +141,7 @@ class MenuItemAllOfVariantsBuilder
       _price = $v.price;
       _listPrice = $v.listPrice;
       _scheduleId = $v.scheduleId;
+      _priceLabel = $v.priceLabel;
       _$v = null;
     }
     return this;
@@ -161,6 +172,7 @@ class MenuItemAllOfVariantsBuilder
               price, r'MenuItemAllOfVariants', 'price'),
           listPrice: listPrice,
           scheduleId: scheduleId,
+          priceLabel: priceLabel,
         );
     replace(_$result);
     return _$result;

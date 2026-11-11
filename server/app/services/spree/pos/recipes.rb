@@ -65,6 +65,30 @@ module Spree
         [amount.numerator, base.code]
       end
 
+      # A measured pour from a bottle counted by the bottle: a volume unit
+      # (ml, l) for an ingredient whose stock unit is a count. Returns the
+      # row's pour fields (`bottle_ml` is the size of one bottle), or nil for
+      # any other row. Such a row moves no stock itself (Fnb::PourTracker).
+      def pour_quantity(store, variant, quantity, unit_code, bottle_ml)
+        UnitDefinition.ensure_defaults!(store)
+        base = base_unit(store, variant)
+        unit = UnitDefinition.for_store(store).active.find_by(code: unit_code.to_s.strip.downcase)
+        return nil unless unit&.dimension == 'volume' && base.dimension == 'count'
+
+        size = bottle_ml.to_s.match?(/\A\d{1,5}\z/) ? bottle_ml.to_i : 0
+        unless size.between?(1, OpenBottle::MAX_ML)
+          raise Conflict.new('Give the size of one bottle in ml.', reason: 'recipe_bottle_size_invalid', details: { unit: unit.code })
+        end
+
+        ml = quantity * Rational(unit.factor_to_base)
+        unless ml.denominator == 1 && ml.positive? && ml <= size
+          raise Conflict.new('A pour is a whole number of ml, at most one bottle.', reason: 'recipe_quantity_inexact',
+                                                                                 details: { unit: unit.code, base_unit: 'ml' })
+        end
+
+        { base_quantity: 0, base_unit_code: base.code, pour_ml: ml.numerator, bottle_ml: size }
+      end
+
       # The variant's cost per stock unit, from its `cost_price` (per price
       # unit, like its selling price), to four decimals; nil when it has none.
       def unit_cost(store_id, variant)

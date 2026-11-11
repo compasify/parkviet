@@ -48,7 +48,9 @@ module Spree
 
           rows.map do |row|
             row = row.to_h.stringify_keys
-            { 'variant_id' => row['variant_id'].to_s, 'quantity' => row['quantity'].to_s.strip, 'unit_code' => row['unit_code'].to_s }
+            entry = { 'variant_id' => row['variant_id'].to_s, 'quantity' => row['quantity'].to_s.strip, 'unit_code' => row['unit_code'].to_s }
+            entry['bottle_ml'] = row['bottle_ml'].to_s.strip if row['bottle_ml'].present?
+            entry
           end
         end
 
@@ -67,9 +69,12 @@ module Spree
             quantity >= 100_000_000 ||
             (quantity * 10_000).denominator != 1
 
+          parsed = { variant: variant, quantity: BigDecimal(row['quantity']), unit_code: row['unit_code'].strip.downcase }
+          pour = Recipes.pour_quantity(store, variant, quantity, row['unit_code'], row['bottle_ml'])
+          return parsed.merge(pour) if pour
+
           base_quantity, base_unit_code = Recipes.base_quantity(store, variant, quantity, row['unit_code'])
-          { variant: variant, quantity: BigDecimal(row['quantity']), unit_code: row['unit_code'].strip.downcase,
-            base_quantity: base_quantity, base_unit_code: base_unit_code }
+          parsed.merge(base_quantity: base_quantity, base_unit_code: base_unit_code)
         end
 
         # Returns what Spree will write off after commit, in stock units.
@@ -91,7 +96,8 @@ module Spree
           recipe = Recipe.create!(store: store, owner: owner, version: number, active: true, created_by: staff)
           parsed.each do |row|
             recipe.recipe_ingredients.create!(ingredient_variant: row[:variant], quantity: row[:quantity], unit_code: row[:unit_code],
-                                              base_quantity: row[:base_quantity], base_unit_code: row[:base_unit_code])
+                                              base_quantity: row[:base_quantity], base_unit_code: row[:base_unit_code],
+                                              pour_ml: row[:pour_ml], bottle_ml: row[:bottle_ml])
           end
           recipe
         end

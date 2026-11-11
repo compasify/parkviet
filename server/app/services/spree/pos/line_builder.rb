@@ -46,8 +46,11 @@ module Spree
             raise Conflict.new('A menu item is priced by the menu.', reason: 'menu_price_fixed') if price_override.present?
             raise Conflict.new('Menu items are sold by count.', reason: 'menu_count_only') unless kind == 'ordinary'
 
-            kind = SaleLineKinds::Menu::KIND
+            # A door ticket is a cover of its own, with the drink credit it carries.
+            kind = menu.menu_item.door_ticket? ? Workspaces::TableLines::COVER_KIND : SaleLineKinds::Menu::KIND
             unit_price = menu.unit_price
+            # The time-of-day menu the price came from names it ("Happy hour").
+            attributes = attributes.merge(price_label: menu.schedule&.label) if menu.schedule&.label.present?
           else
             unit_price = resolve_price!(workspace, staff, variant, variant_unit, price_override)
           end

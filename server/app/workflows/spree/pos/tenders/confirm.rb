@@ -11,8 +11,9 @@ module Spree
       class Confirm
         def self.call(workspace:, staff:, revision:, lease_generation:, editor_id:, key:, attempt_id:,
                       handed_amount: nil, received_amount: nil, evidence_kind: nil, reference: nil,
-                      receiving_account: nil, terminal_ref: nil, confirm_duplicate: nil)
+                      receiving_account: nil, terminal_ref: nil, confirm_duplicate: nil, tip_amount: nil)
           handed = Record.money(handed_amount.to_s) if handed_amount.present?
+          tip = tip_amount.present? ? Record.money(tip_amount.to_s) : BigDecimal('0')
           received = Record.money(received_amount.to_s) if received_amount.present?
           payload = {
             'command' => 'tender.confirm', 'revision' => revision, 'lease_generation' => lease_generation,
@@ -20,7 +21,7 @@ module Spree
             'handed_amount' => handed&.to_s('F'), 'received_amount' => received&.to_s('F'), 'evidence_kind' => evidence_kind.to_s.presence,
             'reference' => reference.to_s.presence, 'receiving_account' => receiving_account.to_s.presence,
             'terminal_ref' => terminal_ref.to_s.presence
-          }.merge(ReceiptReferenceGuard.payload_flag(confirm_duplicate))
+          }.merge(tip_amount.present? ? { 'tip_amount' => tip&.to_s('F') || tip_amount.to_s } : {}).merge(ReceiptReferenceGuard.payload_flag(confirm_duplicate))
           authorize = lambda do
             Guard.authorize_editor!(workspace, staff)
             Guard.authorize_collect!(workspace, staff)
@@ -40,7 +41,12 @@ module Spree
             kind = attempt.pos_payment_method.kind
             raise Conflict, 'Amount is invalid.' if (handed_amount.present? && handed.nil?) || (received_amount.present? && received.nil?)
 
-            money = money_for(kind, attempt, handed, received)
+            raise Conflict.new('The tip is invalid.', reason: 'tip_invalid') if tip.nil? || tip.negative?
+            if tip.positive? && !Fnb::Tips::KINDS.include?(kind)
+              raise Conflict.new('A tip is taken in cash or by bank transfer.', reason: 'tip_invalid')
+            end
+
+            money = money_for(kind, attempt, handed, received, tip)
             raise Conflict, 'Amounts must be whole amounts in the order currency.' unless countable?(money, order.currency)
 
             evidence = evidence_for(kind, evidence_kind, reference, receiving_account, terminal_ref)
@@ -99,13 +105,15 @@ module Spree
               end
             end
             ReceiptReferenceGuard.audit!(store: workspace.store, staff: staff, funds: funds, duplicate_ids: duplicate_ids)
+            Fnb::Tips.record!(workspace, funds, tip) if tip.positive?
             attempt.update!(status: 'confirmed', confirmed_at: Time.current)
             workspace.update!(revision: workspace.revision + 1)
             AuditEntry.record!(store: workspace.store, actor: staff, action: 'tender.confirm', subject: workspace,
                                metadata: { attempt_id: attempt.prefixed_id, funds_id: funds.prefixed_id,
                                            allocation_id: allocation&.prefixed_id, net: money[:net].to_s('F'),
                                            change: money[:change].to_s('F'),
-                                           unapplied: (money[:net] - money[:applied]).to_s('F') })
+                                           unapplied: (money[:net] - money[:applied]).to_s('F'),
+                                           tip: tip.positive? ? tip.to_s('F') : nil }.compact)
             OutboxEntry.record!(store: workspace.store, event_type: 'tender.confirmed', aggregate: funds,
                                 payload: { 'funds_id' => funds.prefixed_id, 'workspace_id' => workspace.prefixed_id })
             workspace.to_pos
@@ -130,18 +138,20 @@ module Spree
           money.values.all? { |value| Record.countable_money?(value, currency) }
         end
 
-        def self.money_for(kind, attempt, handed, received)
+        # A tip rides on the receipt but never on the order: it is received
+        # (net) and left unapplied, so the order's total and invoice ignore it.
+        def self.money_for(kind, attempt, handed, received, tip = BigDecimal('0'))
           case kind
           when 'cash'
             raise Conflict, 'Handed amount is required for cash.' if handed.nil?
             # A short count is not a partial receipt: the cashier cancels and
             # prepares the smaller amount actually handed over.
-            raise Conflict, 'Handed cash is less than the tender amount.' if handed < attempt.amount
+            raise Conflict, 'Handed cash is less than the tender amount.' if handed < attempt.amount + tip
 
-            { handed: handed, applied: attempt.amount, change: handed - attempt.amount, net: attempt.amount }
+            { handed: handed, applied: attempt.amount, change: handed - attempt.amount - tip, net: attempt.amount + tip }
           when 'bank_manual'
-            actual = received || attempt.amount
-            raise Conflict, 'Received transfer is less than the tender amount.' if actual < attempt.amount
+            actual = received || (attempt.amount + tip)
+            raise Conflict, 'Received transfer is less than the tender amount.' if actual < attempt.amount + tip
 
             { handed: actual, applied: attempt.amount, change: BigDecimal('0'), net: actual }
           when 'vietqr', PosPaymentMethod::PLATFORM_KIND

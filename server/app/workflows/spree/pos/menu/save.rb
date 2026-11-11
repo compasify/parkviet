@@ -8,10 +8,10 @@ module Spree
       # audited as `<resource>.change` with the operation.
       module Save
         CATEGORY_FIELDS = %w[name position color active].freeze
-        ITEM_FIELDS = %w[kind kitchen_category cup_label show_components_on_kds position active].freeze
+        ITEM_FIELDS = %w[kind kitchen_category cup_label show_components_on_kds position active drink_credit].freeze
         GROUP_FIELDS = %w[name min_select max_select allow_quantity position].freeze
         OPTION_FIELDS = %w[name price_delta default_selected position active].freeze
-        SCHEDULE_FIELDS = %w[name days_of_week starts_at ends_at active].freeze
+        SCHEDULE_FIELDS = %w[name days_of_week starts_at ends_at active label].freeze
         MAX_ROWS = 100
 
         module_function
@@ -34,6 +34,11 @@ module Spree
             record.lock! if record.persisted?
             record.assign_attributes(attributes.slice(*ITEM_FIELDS))
             record.kitchen_category = record.kitchen_category.presence
+            record.drink_credit = record.drink_credit.presence
+            # The kitchen categories a door ticket's drink credit pays for.
+            if attributes.key?('drink_credit_categories')
+              record.drink_credit_categories = Array(attributes['drink_credit_categories']).map { |value| value.to_s.strip }.compact_blank.uniq
+            end
             record.menu_category = category!(store, attributes['menu_category_id']) if attributes.key?('menu_category_id')
             if attributes.key?('tax_category_id')
               assign_tax_category!(store, record.product, attributes['tax_category_id'])

@@ -139,7 +139,8 @@ module Spree
 
         # The table and the letter of its order (A, B…).
         def table_name(workspace)
-          return nil if workspace.resource.nil?
+          # A bar tab has no table: the kitchen calls it by the guest's name.
+          return workspace.tab_name.presence if workspace.resource.nil?
 
           [workspace.resource.name, workspace.table_label.presence].compact.join(' ')
         end

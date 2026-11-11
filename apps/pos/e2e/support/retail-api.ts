@@ -131,6 +131,11 @@ export type Sheet = {
   // Counter service: the call number of the business day and the guest's name.
   orderNumber?: number | null;
   guestName?: string | null;
+  // A bar tab (`service_mode` tab): the guest's name.
+  tabName?: string;
+  // The VIP table's minimum spend and the door tickets' drink credit, as sent.
+  minimumSpend?: { minimum: string; amount: string; waived: boolean };
+  drinkCredit?: { total: string; used: string; remaining: string };
   // A table order (`fnb.tables`): the table, its letter and the guests.
   table?: { id: string; name: string; label: string | null; guests: number | null };
   // Its kitchen sends, in order.
@@ -201,7 +206,7 @@ export type World = {
   profile?: {
     key: string;
     version: number;
-    display: { catalog_view?: 'cards' | 'list'; surface?: 'catalog' | 'menu_grid' | 'table_grid' | 'floor_plan' };
+    display: { catalog_view?: 'cards' | 'list'; surface?: 'catalog' | 'menu_grid' | 'table_grid' | 'floor_plan' | 'tab_list' };
   };
   administration?: { read: boolean; write: boolean };
   // The store's e-invoice (`einvoice_type` in the context); absent on older servers.
@@ -450,6 +455,9 @@ export function serialize(world: World, sheet: Sheet) {
     note: null,
     order_number: sheet.orderNumber ?? null,
     guest_name: sheet.guestName ?? null,
+    ...(sheet.tabName ? { service_mode: 'tab', tab_name: sheet.tabName, opened_at: '2026-11-12T13:00:00Z' } : {}),
+    ...(sheet.minimumSpend ? { minimum_spend: sheet.minimumSpend } : {}),
+    ...(sheet.drinkCredit ? { drink_credit: sheet.drinkCredit } : {}),
     ...(sheet.table
       ? {
           service_mode: 'dine_in',
@@ -945,7 +953,11 @@ async function handle(world: World, route: Route) {
   if (method === 'GET') {
     const slow = [...world.slowReads.entries()].find(([prefix]) => path.startsWith(prefix));
     if (path === '/pos/workspaces') {
-      const rows = [...world.sheets.values()].map((sheet) => serialize(world, sheet));
+      const tabs = url.searchParams.get('service_mode') === 'tab';
+      const q = (url.searchParams.get('q') ?? '').toLowerCase();
+      const rows = [...world.sheets.values()]
+        .filter((sheet) => !tabs || (sheet.tabName && sheet.status !== 'completed' && sheet.tabName.toLowerCase().includes(q)))
+        .map((sheet) => serialize(world, sheet));
       if (slow) await sleep(slow[1]);
       return route.fulfill(page(rows));
     }
@@ -1344,7 +1356,10 @@ function run(world: World, family: Family, path: string, body: Record<string, un
   const reply = (target: Sheet, status = 200) => data(serialize(world, target), status);
   switch (family) {
     case 'workspace.create': {
-      const created = addSheet(world, nextId(world, 'ws'), { editor: String(body.editor_id), generation: 1 });
+      const created = addSheet(world, nextId(world, 'ws'), {
+        editor: String(body.editor_id), generation: 1,
+        ...(body.service_mode === 'tab' ? { tabName: String(body.tab_name) } : {}),
+      });
       return reply(created, 201);
     }
     case 'lease': {

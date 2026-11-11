@@ -106,6 +106,12 @@ class _$Workspace extends Workspace {
   @override
   final String? guestName;
   @override
+  final String? tabName;
+  @override
+  final WorkspaceMinimumSpend? minimumSpend;
+  @override
+  final WorkspaceDrinkCredit? drinkCredit;
+  @override
   final ResourceRef? resource;
   @override
   final int? guestCount;
@@ -138,6 +144,9 @@ class _$Workspace extends Workspace {
       required this.businessDate,
       this.orderNumber,
       this.guestName,
+      this.tabName,
+      this.minimumSpend,
+      this.drinkCredit,
       this.resource,
       this.guestCount,
       this.tableLabel,
@@ -168,6 +177,9 @@ class _$Workspace extends Workspace {
         businessDate == other.businessDate &&
         orderNumber == other.orderNumber &&
         guestName == other.guestName &&
+        tabName == other.tabName &&
+        minimumSpend == other.minimumSpend &&
+        drinkCredit == other.drinkCredit &&
         resource == other.resource &&
         guestCount == other.guestCount &&
         tableLabel == other.tableLabel &&
@@ -191,6 +203,9 @@ class _$Workspace extends Workspace {
     _$hash = $jc(_$hash, businessDate.hashCode);
     _$hash = $jc(_$hash, orderNumber.hashCode);
     _$hash = $jc(_$hash, guestName.hashCode);
+    _$hash = $jc(_$hash, tabName.hashCode);
+    _$hash = $jc(_$hash, minimumSpend.hashCode);
+    _$hash = $jc(_$hash, drinkCredit.hashCode);
     _$hash = $jc(_$hash, resource.hashCode);
     _$hash = $jc(_$hash, guestCount.hashCode);
     _$hash = $jc(_$hash, tableLabel.hashCode);
@@ -216,6 +231,9 @@ class _$Workspace extends Workspace {
           ..add('businessDate', businessDate)
           ..add('orderNumber', orderNumber)
           ..add('guestName', guestName)
+          ..add('tabName', tabName)
+          ..add('minimumSpend', minimumSpend)
+          ..add('drinkCredit', drinkCredit)
           ..add('resource', resource)
           ..add('guestCount', guestCount)
           ..add('tableLabel', tableLabel)
@@ -267,6 +285,22 @@ class WorkspaceBuilder implements Builder<Workspace, WorkspaceBuilder> {
   String? _guestName;
   String? get guestName => _$this._guestName;
   set guestName(String? guestName) => _$this._guestName = guestName;
+
+  String? _tabName;
+  String? get tabName => _$this._tabName;
+  set tabName(String? tabName) => _$this._tabName = tabName;
+
+  WorkspaceMinimumSpendBuilder? _minimumSpend;
+  WorkspaceMinimumSpendBuilder get minimumSpend =>
+      _$this._minimumSpend ??= WorkspaceMinimumSpendBuilder();
+  set minimumSpend(WorkspaceMinimumSpendBuilder? minimumSpend) =>
+      _$this._minimumSpend = minimumSpend;
+
+  WorkspaceDrinkCreditBuilder? _drinkCredit;
+  WorkspaceDrinkCreditBuilder get drinkCredit =>
+      _$this._drinkCredit ??= WorkspaceDrinkCreditBuilder();
+  set drinkCredit(WorkspaceDrinkCreditBuilder? drinkCredit) =>
+      _$this._drinkCredit = drinkCredit;
 
   ResourceRefBuilder? _resource;
   ResourceRefBuilder get resource => _$this._resource ??= ResourceRefBuilder();
@@ -335,6 +369,9 @@ class WorkspaceBuilder implements Builder<Workspace, WorkspaceBuilder> {
       _businessDate = $v.businessDate;
       _orderNumber = $v.orderNumber;
       _guestName = $v.guestName;
+      _tabName = $v.tabName;
+      _minimumSpend = $v.minimumSpend?.toBuilder();
+      _drinkCredit = $v.drinkCredit?.toBuilder();
       _resource = $v.resource?.toBuilder();
       _guestCount = $v.guestCount;
       _tableLabel = $v.tableLabel;
@@ -380,6 +417,9 @@ class WorkspaceBuilder implements Builder<Workspace, WorkspaceBuilder> {
                 businessDate, r'Workspace', 'businessDate'),
             orderNumber: orderNumber,
             guestName: guestName,
+            tabName: tabName,
+            minimumSpend: _minimumSpend?.build(),
+            drinkCredit: _drinkCredit?.build(),
             resource: _resource?.build(),
             guestCount: guestCount,
             tableLabel: tableLabel,
@@ -394,6 +434,10 @@ class WorkspaceBuilder implements Builder<Workspace, WorkspaceBuilder> {
     } catch (_) {
       late String _$failedField;
       try {
+        _$failedField = 'minimumSpend';
+        _minimumSpend?.build();
+        _$failedField = 'drinkCredit';
+        _drinkCredit?.build();
         _$failedField = 'resource';
         _resource?.build();
 

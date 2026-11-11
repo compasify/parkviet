@@ -783,6 +783,11 @@ export function prebillData(
         label: t('receiptDiscount'),
         value: money(totals.discount_total),
       });
+    // A VIP table's minimum spend shows as its own row.
+    for (const fee of totals.fees ?? []) {
+      if (fee.kind === 'minimum_spend' && nonZero(fee.amount))
+        totalRows.push({ field: null, label: t('receiptMinimumSpend'), value: money(fee.amount) });
+    }
     totalRows.push(...taxTableRows(totals.taxes, currency, t));
     totalRows.push({
       field: 'total',
@@ -790,6 +795,13 @@ export function prebillData(
       value: money(totals.total),
       strong: true,
     });
+    // The drink credit of door tickets left unused.
+    if (workspace.drink_credit)
+      totalRows.push({
+        field: null,
+        label: t('receiptDrinkCreditLeft'),
+        value: money(workspace.drink_credit.remaining),
+      });
   }
   const payments: DataRow<PaymentField>[] = workspace.financial
     ? [

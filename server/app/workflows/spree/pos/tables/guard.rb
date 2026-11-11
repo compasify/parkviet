@@ -105,7 +105,7 @@ module Spree
         # order they were given on, and traced units to their reservations,
         # so orders holding them are moved only after those are removed.
         def movable_lines!(workspace, sale_lines)
-          if DiscountIntent.exists?(workspace_id: workspace.id) || LineDiscountIntent.exists?(sale_line_id: sale_lines.map(&:id)) ||
+          if DiscountIntent.exists?(workspace_id: workspace.id) || LineDiscountIntent.manual.exists?(sale_line_id: sale_lines.map(&:id)) ||
              workspace.order.coupon_code.present?
             raise Conflict.new('Remove the discounts of this order first.', revision: workspace.revision, reason: 'discount_present')
           end

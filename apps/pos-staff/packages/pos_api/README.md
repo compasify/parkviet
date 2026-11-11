@@ -70,6 +70,10 @@ Class | Method | HTTP request | Description
 [*DefaultApi*](doc/DefaultApi.md) | [**posAreaCreate**](doc/DefaultApi.md#posareacreate) | **POST** /api/v3/admin/pos/areas | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posAreaUpdate**](doc/DefaultApi.md#posareaupdate) | **PATCH** /api/v3/admin/pos/areas/{id} | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posAreas**](doc/DefaultApi.md#posareas) | **GET** /api/v3/admin/pos/areas | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posBottleKeepLabel**](doc/DefaultApi.md#posbottlekeeplabel) | **POST** /api/v3/admin/pos/bottle_keeps/{id}/label | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posBottleKeepList**](doc/DefaultApi.md#posbottlekeeplist) | **GET** /api/v3/admin/pos/bottle_keeps | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posBottleKeepPour**](doc/DefaultApi.md#posbottlekeeppour) | **POST** /api/v3/admin/pos/bottle_keeps/{id}/pour | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posBottleKeepShow**](doc/DefaultApi.md#posbottlekeepshow) | **GET** /api/v3/admin/pos/bottle_keeps/{id} | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posBuffetTierList**](doc/DefaultApi.md#posbuffettierlist) | **GET** /api/v3/admin/pos/buffet_tiers | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posCatalog**](doc/DefaultApi.md#poscatalog) | **GET** /api/v3/admin/pos/catalog | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posContext**](doc/DefaultApi.md#poscontext) | **GET** /api/v3/admin/pos/context | 
@@ -202,6 +206,7 @@ Class | Method | HTTP request | Description
 [*DefaultApi*](doc/DefaultApi.md) | [**posWorkspaceKitchenHistory**](doc/DefaultApi.md#posworkspacekitchenhistory) | **GET** /api/v3/admin/pos/workspaces/{workspace_id}/kitchen_history | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posWorkspaceKitchenTickets**](doc/DefaultApi.md#posworkspacekitchentickets) | **GET** /api/v3/admin/pos/workspaces/{workspace_id}/kitchen_tickets | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posWorkspaceLineModifiers**](doc/DefaultApi.md#posworkspacelinemodifiers) | **PATCH** /api/v3/admin/pos/workspaces/{workspace_id}/items/{id}/modifiers | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posWorkspaceList**](doc/DefaultApi.md#posworkspacelist) | **GET** /api/v3/admin/pos/workspaces | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posWorkspaceRemoveUnsentLine**](doc/DefaultApi.md#posworkspaceremoveunsentline) | **DELETE** /api/v3/admin/pos/workspaces/{workspace_id}/sale_lines/{id} | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posWorkspaceShow**](doc/DefaultApi.md#posworkspaceshow) | **GET** /api/v3/admin/pos/workspaces/{id} | 
 
@@ -219,6 +224,12 @@ Class | Method | HTTP request | Description
  - [AreaList](doc/AreaList.md)
  - [AreaResult](doc/AreaResult.md)
  - [AvailableResource](doc/AvailableResource.md)
+ - [BottleKeep](doc/BottleKeep.md)
+ - [BottleKeepActor](doc/BottleKeepActor.md)
+ - [BottleKeepCustomer](doc/BottleKeepCustomer.md)
+ - [BottleKeepEvent](doc/BottleKeepEvent.md)
+ - [BottleKeepList](doc/BottleKeepList.md)
+ - [BottleKeepResult](doc/BottleKeepResult.md)
  - [BuffetTier](doc/BuffetTier.md)
  - [BuffetTierItem](doc/BuffetTierItem.md)
  - [BuffetTierList](doc/BuffetTierList.md)
@@ -518,12 +529,19 @@ Class | Method | HTTP request | Description
  - [TableSplitResult](doc/TableSplitResult.md)
  - [TableTaxCategory](doc/TableTaxCategory.md)
  - [TaxRow](doc/TaxRow.md)
+ - [TipSplitRule](doc/TipSplitRule.md)
  - [Workspace](doc/Workspace.md)
+ - [WorkspaceCreateInput](doc/WorkspaceCreateInput.md)
+ - [WorkspaceDrinkCredit](doc/WorkspaceDrinkCredit.md)
  - [WorkspaceLine](doc/WorkspaceLine.md)
+ - [WorkspaceMinimumSpend](doc/WorkspaceMinimumSpend.md)
+ - [WorkspacePageMeta](doc/WorkspacePageMeta.md)
  - [WorkspacePrebill](doc/WorkspacePrebill.md)
  - [WorkspaceReservation](doc/WorkspaceReservation.md)
  - [WorkspaceResult](doc/WorkspaceResult.md)
  - [WorkspaceServiceCharge](doc/WorkspaceServiceCharge.md)
+ - [WorkspaceSummary](doc/WorkspaceSummary.md)
+ - [WorkspaceSummaryList](doc/WorkspaceSummaryList.md)
  - [WorkspaceTotals](doc/WorkspaceTotals.md)
  - [WorkspaceTotalsTaxesInner](doc/WorkspaceTotalsTaxesInner.md)
 

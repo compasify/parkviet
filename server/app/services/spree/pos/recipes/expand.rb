@@ -15,6 +15,8 @@ module Spree
       # sale, so later menu edits never change what a line used.
       module Expand
         Entry = Data.define(:ingredient_variant_id, :base_quantity, :base_unit_code, :source_key, :recipe)
+        # ml poured from bottles of a variant, each bottle bottle_ml big.
+        Pour = Data.define(:variant_id, :ml, :bottle_ml)
 
         module_function
 
@@ -41,13 +43,10 @@ module Spree
         end
 
         def from_owner(recipes, owner_type, owner_id, times, source_key)
-          recipe = recipes.fetch([owner_type, owner_id]) do
-            recipes[[owner_type, owner_id]] = Recipe.active.includes(:recipe_ingredients).
-                                              find_by(owner_type: owner_type, owner_id: owner_id)
-          end
+          recipe = active_recipe(recipes, owner_type, owner_id)
           return [] if recipe.nil?
 
-          recipe.recipe_ingredients.map do |row|
+          recipe.recipe_ingredients.reject(&:pour?).map do |row|
             Entry.new(ingredient_variant_id: row.ingredient_variant_id, base_quantity: row.base_quantity * times,
                       base_unit_code: row.base_unit_code, source_key: source_key, recipe: recipe)
           end
@@ -61,6 +60,29 @@ module Spree
           store = sale_line.workspace.store
           [Entry.new(ingredient_variant_id: variant_id, base_quantity: times, base_unit_code: Recipes.base_unit(store, variant).code,
                      source_key: source_key, recipe: nil)]
+        end
+
+        # The measured pours of a line, from the same three sources, summed by bottle variant.
+        def pours(sale_line, recipes: {})
+          quantity = sale_line.base_quantity
+          owners = [['Spree::Variant', sale_line.variant_id, quantity]]
+          sale_line.line_modifiers.each do |pick|
+            owners << ['Spree::Pos::ModifierOption', pick.modifier_option_id, pick.quantity * quantity] if pick.modifier_option_id
+          end
+          sale_line.line_components.each { |part| owners << ['Spree::Variant', part.variant_id, part.quantity * quantity] }
+          rows = owners.flat_map do |owner_type, owner_id, times|
+            recipe = active_recipe(recipes, owner_type, owner_id)
+            next [] if recipe.nil?
+
+            recipe.recipe_ingredients.select(&:pour?).map { |row| [row.ingredient_variant_id, row.pour_ml * times, row.bottle_ml] }
+          end
+          rows.group_by(&:first).map { |variant_id, list| Pour.new(variant_id: variant_id, ml: list.sum { |row| row[1] }, bottle_ml: list.first[2]) }
+        end
+
+        def active_recipe(recipes, owner_type, owner_id)
+          recipes.fetch([owner_type, owner_id]) do
+            recipes[[owner_type, owner_id]] = Recipe.active.includes(:recipe_ingredients).find_by(owner_type: owner_type, owner_id: owner_id)
+          end
         end
 
         # Two picks of one source naming the same ingredient are one row.

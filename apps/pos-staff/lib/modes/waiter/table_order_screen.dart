@@ -83,7 +83,8 @@ class _TableOrderScreenState extends State<TableOrderScreen> {
   String get _title {
     final workspace = _workspace;
     if (workspace == null) return '';
-    final name = workspace.resource?.name ?? '';
+    // A bar tab is named by its guest, and maybe sits at a table too.
+    final name = [workspace.tabName, workspace.resource?.name].whereType<String>().join(' · ');
     return workspace.tableLabel == null ? name : '$name ${workspace.tableLabel}';
   }
 

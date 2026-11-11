@@ -1047,4 +1047,70 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get depositForfeited => 'kept';
+
+  @override
+  String get waiterTabsTitle => 'Open tabs';
+
+  @override
+  String get waiterTabOpen => 'Open tab';
+
+  @override
+  String get waiterTabSearch => 'Guest name, table or tab number';
+
+  @override
+  String get waiterTabsNone => 'No tab is open.';
+
+  @override
+  String get waiterTabsNoMatch => 'No tab matches.';
+
+  @override
+  String waiterTabOpenedAt(String time) {
+    return 'Opened $time';
+  }
+
+  @override
+  String get waiterTabName => 'Guest name or description';
+
+  @override
+  String get waiterTabNameTaken => 'An open tab already has this name.';
+
+  @override
+  String get waiterTabNameInvalid => 'Enter a tab name (up to 60 characters).';
+
+  @override
+  String get waiterBottleTitle => 'Pour a kept bottle';
+
+  @override
+  String get waiterBottleCode => 'Bottle code';
+
+  @override
+  String get waiterBottleNotFound => 'No kept bottle has this code.';
+
+  @override
+  String waiterBottleLevel(int level) {
+    return '$level% left';
+  }
+
+  @override
+  String waiterBottleNewLevel(int level) {
+    return 'Level after the pour: $level%';
+  }
+
+  @override
+  String get waiterBottleMl => 'Poured ml (optional)';
+
+  @override
+  String get waiterBottlePour => 'Pour';
+
+  @override
+  String waiterBottlePoured(int level) {
+    return 'Poured; $level% left.';
+  }
+
+  @override
+  String get waiterBottleClosed => 'This bottle is no longer kept.';
+
+  @override
+  String get waiterBottleLevelRaised =>
+      'A pour never raises the level; a manager corrects a mistake.';
 }

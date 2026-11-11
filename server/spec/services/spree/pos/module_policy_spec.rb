@@ -25,12 +25,12 @@ RSpec.describe Spree::Pos::ModulePolicy, pos_modules: :default do
   it 'reports every available module, off without a row, on only with an enabled row' do
     expect(described_class.for_branch(branch)).to eq('retail.units' => false, 'retail.measured' => false, 'retail.traceability' => false,
                                                      'fnb.menu' => false, 'fnb.recipes' => false, 'fnb.kitchen' => false, 'fnb.order_number' => false, 'fnb.cup_label' => false, 'fnb.delivery_platforms' => false, 'resources' => false, 'fnb.tables' => false, 'fnb.postpay' => false, 'fnb.service_charge' => false,
-                                     'fnb.reservations' => false)
+                                     'fnb.reservations' => false, 'fnb.bottle_keep' => false, 'fnb.pour_tracking' => false)
     turn(branch, 'retail.units', true)
     turn(branch, 'retail.traceability', false)
     expect(described_class.for_branch(branch)).to eq('retail.units' => true, 'retail.measured' => false, 'retail.traceability' => false,
                                                      'fnb.menu' => false, 'fnb.recipes' => false, 'fnb.kitchen' => false, 'fnb.order_number' => false, 'fnb.cup_label' => false, 'fnb.delivery_platforms' => false, 'resources' => false, 'fnb.tables' => false, 'fnb.postpay' => false, 'fnb.service_charge' => false,
-                                     'fnb.reservations' => false)
+                                     'fnb.reservations' => false, 'fnb.bottle_keep' => false, 'fnb.pour_tracking' => false)
     expect(described_class.for_branch(nil)).to eq({})
     expect(described_class.enabled?(branch, 'retail.units')).to be(true)
     expect(described_class.enabled?(branch, :'retail.traceability')).to be(false)

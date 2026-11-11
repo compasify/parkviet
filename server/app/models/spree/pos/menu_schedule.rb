@@ -20,6 +20,8 @@ module Spree
                                                         inverse_of: :menu_schedule
 
       validates :name, presence: true, length: { maximum: 80 }
+      # Shown next to the prices it sets, such as "Happy hour".
+      validates :label, length: { maximum: 40 }
       validates :starts_at, :ends_at, presence: true
       validate :days_known
       validate :window_not_empty
@@ -62,7 +64,7 @@ module Spree
       def to_pos
         {
           id: prefixed_id, branch_id: branch&.prefixed_id, name: name, days_of_week: Array(days_of_week),
-          starts_at: clock_label(starts_at), ends_at: clock_label(ends_at), active: active,
+          starts_at: clock_label(starts_at), ends_at: clock_label(ends_at), active: active, label: label,
           items: menu_schedule_items.map(&:to_pos)
         }
       end

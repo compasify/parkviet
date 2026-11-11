@@ -7,7 +7,7 @@ module Spree
       # seats, shape and place on the area's grid. A table must fit inside
       # its area.
       module UpsertResource
-        FIELDS = %w[name kind capacity shape x y w h rotation position resource_type_code].freeze
+        FIELDS = %w[name kind capacity shape x y w h rotation position resource_type_code minimum_spend].freeze
 
         module_function
 
@@ -30,6 +30,7 @@ module Spree
               resource.area = area
             end
             values['name'] = values['name'].to_s.strip if values.key?('name')
+            minimum!(store, resource, values.delete('minimum_spend')) if values.key?('minimum_spend')
             resource.assign_attributes(values)
             fits!(resource)
             resource.save!
@@ -38,6 +39,24 @@ module Spree
             Guard.changed!(branch, resource)
             resource.to_pos
           end
+        end
+
+        # A VIP table's minimum spend, in the store's currency; blank removes it.
+        def minimum!(store, resource, value)
+          if value.to_s.strip.empty?
+            resource.minimum_spend = nil
+            resource.minimum_spend_currency = nil
+            return
+          end
+
+          amount = Record.money(value.to_s.strip)
+          currency = store.default_currency
+          unless amount&.positive? && Record.countable_money?(amount, currency)
+            raise Conflict.new('The minimum spend is invalid.', reason: 'minimum_spend_invalid')
+          end
+
+          resource.minimum_spend = amount
+          resource.minimum_spend_currency = currency
         end
 
         def fits!(resource)

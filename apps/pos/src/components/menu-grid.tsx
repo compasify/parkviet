@@ -6,6 +6,7 @@ import {
   addsInOneTap,
   describeMenuFailure,
   favoriteItems,
+  drinksFirst as leadWithDrinks,
   visibleItems,
 } from '../lib/menu-selection';
 import type { PosMenu, PosMenuItem, PosModifierSelection } from '../lib/pos-context';
@@ -45,12 +46,15 @@ export function MenuGrid({
   addDisabled,
   addDisabledReason,
   canSetSoldOut,
+  drinksFirst = false,
   onAdd,
 }: {
   branchId: string | null;
   addDisabled: boolean;
   addDisabledReason?: string;
   canSetSoldOut: boolean;
+  // A bar tab: drinks and shots come first.
+  drinksFirst?: boolean;
   onAdd?: MenuAdd;
 }) {
   const { t } = useTranslation();
@@ -61,7 +65,7 @@ export function MenuGrid({
   const [sheetItem, setSheetItem] = useState<PosMenuItem | null>(null);
   const [notice, setNotice] = useState('');
   const searchRef = useRef<HTMLInputElement>(null);
-  const data = menu.data;
+  const data = menu.data && drinksFirst ? leadWithDrinks(menu.data) : menu.data;
 
   async function pick(item: PosMenuItem) {
     if (!data || !onAdd || addDisabled) return;
@@ -275,9 +279,10 @@ function MenuTile({
 }) {
   const { t } = useTranslation();
   const prices = item.variants.map((variant) => variant.price).filter((price) => price !== null);
-  const scheduled = item.variants.some(
+  const scheduledVariant = item.variants.find(
     (variant) => variant.schedule_id && variant.price !== variant.list_price,
   );
+  const scheduled = Boolean(scheduledVariant);
   return (
     <li className="menu-tile" data-sold-out={item.sold_out}>
       <button
@@ -300,7 +305,9 @@ function MenuTile({
           {prices[0] ? formatMoney(prices[0], menu.currency) : '—'}
           {prices.length > 1 ? '+' : ''}
           {scheduled ? (
-            <small className="menu-tile-schedule">{t('menuScheduledPrice')}</small>
+            <small className="menu-tile-schedule">
+              {scheduledVariant?.price_label || t('menuScheduledPrice')}
+            </small>
           ) : null}
         </span>
         {item.sold_out ? <span className="menu-tile-sold-out">{t('menuSoldOutShort')}</span> : null}

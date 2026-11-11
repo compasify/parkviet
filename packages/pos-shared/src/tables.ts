@@ -3,6 +3,8 @@
 // only reads that answer tolerantly, filters it, and checks a table fits its
 // area on the floor plan grid before the editor saves it.
 
+import { parseVndAmount } from './money';
+
 export const TABLE_STATES = [
   'available',
   'reserved',
@@ -100,6 +102,8 @@ export type ResourceRecord = Placement & {
   resource_type_code: string | null;
   status: string;
   position: number;
+  // A VIP table's minimum spend in whole VND; null without one.
+  minimum_spend?: string | null;
 };
 
 function record(value: unknown): Record<string, unknown> | null {
@@ -248,6 +252,8 @@ export function normalizeResource(value: unknown): ResourceRecord | null {
     resource_type_code: text(source.resource_type_code),
     status: text(source.status) ?? 'active',
     position: int(source.position),
+    minimum_spend:
+      typeof source.minimum_spend === 'string' ? parseVndAmount(source.minimum_spend) : null,
   };
 }
 

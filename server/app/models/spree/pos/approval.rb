@@ -32,7 +32,7 @@ module Spree
       # Records an approval may be bound to. Each carries its own revision, so
       # a changed subject invalidates the approval.
       SUBJECTS = %w[Spree::Pos::Workspace Spree::Pos::ReturnOperation Spree::Pos::RefundRequest Spree::Pos::Shift
-                    Spree::Pos::InventoryAdjustment Spree::Pos::Reservation].freeze
+                    Spree::Pos::InventoryAdjustment Spree::Pos::Reservation Spree::Pos::BottleKeep].freeze
       # Who may ask for an approval at the branch: sellers, and return staff
       # for returns and refunds.
       REQUESTER_CAPABILITIES = {
@@ -43,6 +43,8 @@ module Spree
         'Spree::Pos::InventoryAdjustment' => [Capabilities::INVENTORY_MANAGE],
         # Refunding or forfeiting a booking's deposit.
         'Spree::Pos::Reservation' => [Capabilities::RESERVATION_MANAGE, Capabilities::OPEN_SHIFT],
+        # Correcting the level of a kept bottle.
+        'Spree::Pos::BottleKeep' => [Capabilities::OPEN_SHIFT, Capabilities::TABLE_SERVE],
         # Sellers, and the people serving a table (only table orders are theirs to edit).
         'Spree::Pos::Workspace' => [Capabilities::OPEN_SHIFT, Capabilities::TABLE_SERVE]
       }.freeze
@@ -54,6 +56,10 @@ module Spree
       RESERVATION_ACTIONS = %w[reservation.refund_deposit reservation.forfeit_deposit].freeze
       # A buffet round past its limits, sent to the kitchen anyway.
       BUFFET_OVERRIDE_ACTION = 'buffet.override_round'
+      # A kept bottle's level set by hand.
+      BOTTLE_KEEP_ADJUST_ACTION = 'bottle_keep.adjust'
+      # A VIP table let off its minimum spend.
+      MINIMUM_SPEND_WAIVE_ACTION = 'tab.waive_minimum_spend'
 
       def consume!(action:, amount:, currency:, revision:, subject:, requester:)
         raise Conflict, 'Approval subject is required.' unless SUBJECTS.include?(subject.class.name) && subject.persisted?

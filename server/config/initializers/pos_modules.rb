@@ -43,6 +43,12 @@ Rails.application.config.to_prepare do
     # Bookings of tables and rooms, with deposits kept for the guest.
     modules.register(key: 'fnb.reservations', group: 'fnb', depends_on: ['resources'],
                      entrypoints: ['Spree::Api::V3::Admin::Pos::ReservationsController', 'Spree::Pos::Reservations::Create'])
+    # A bar's bottle-keeping book: guests' bottles kept by code, no money.
+    modules.register(key: 'fnb.bottle_keep', group: 'fnb', depends_on: [],
+                     entrypoints: ['Spree::Api::V3::Admin::Pos::BottleKeepsController', 'Spree::Pos::BottleKeeps::Open'])
+    # Pours measured in ml from open bottles, through the recipes.
+    modules.register(key: 'fnb.pour_tracking', group: 'fnb', depends_on: ['fnb.recipes'],
+                     entrypoints: ['Spree::Api::V3::Admin::Pos::OpenBottlesController', 'Spree::Pos::Fnb::PourTracker'])
 
     # Names only, so "coming soon" profiles can refer to them. No code, and
     # no branch can turn them on.

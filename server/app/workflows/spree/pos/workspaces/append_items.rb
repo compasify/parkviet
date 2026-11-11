@@ -53,19 +53,22 @@ module Spree
 
         # Table orders take additions and unsent-line edits without a lease
         # where the branch runs tables; every other order keeps the lease.
+        # A bar tab, too, where the branch runs tabs (pay later).
         def lease_free?(workspace)
+          return ModulePolicy.enabled?(workspace.branch, Tabs::Open::MODULE) if workspace.resource_id.nil? && workspace.service_mode == 'tab'
+
           workspace.resource_id.present? && ModulePolicy.enabled?(workspace.branch, Tables::Guard::MODULE)
         end
 
-        # The rules of every lease-free command on a table order.
+        # The rules of every lease-free command on a table order or a tab.
         # A kitchen send changes no money, so it still goes out once a payment
         # has locked the lines (snapshot: false).
         def validate_append!(workspace, snapshot: true)
-          unless workspace.resource_id
+          unless workspace.shared_service?
             raise Conflict.new('Only a table order takes items this way.', revision: workspace.revision, reason: 'not_table_order')
           end
 
-          ModulePolicy.require!(workspace.branch, Tables::Guard::MODULE)
+          ModulePolicy.require!(workspace.branch, workspace.resource_id ? Tables::Guard::MODULE : Tabs::Open::MODULE)
           unless Workspace::OPEN_STATUSES.include?(workspace.operational_status)
             raise Conflict.new('This order is no longer open.', revision: workspace.revision, reason: 'workspace_closed')
           end

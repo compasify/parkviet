@@ -4,10 +4,15 @@ module Spree
   module Pos
     module Workspaces
       class Create
-        def self.call(store:, staff:, key:, editor_id:, register_id: nil, branch_id: nil, service_mode: nil)
+        def self.call(store:, staff:, key:, editor_id:, register_id: nil, branch_id: nil, service_mode: nil, tab_name: nil)
           mode = service_mode.presence&.to_s || 'counter'
           unless Workspace::SERVICE_MODES.include?(mode)
             raise Conflict.new('Service mode is invalid.', reason: 'service_mode_invalid')
+          end
+          # A bar tab is named for its guest and shared by every device.
+          if mode == 'tab'
+            branch_id = Register.locate(Register.for_store(store), register_id)&.branch&.prefixed_id || branch_id if register_id.present?
+            return Tabs::Open.call(store: store, staff: staff, key: key, editor_id: editor_id, branch_id: branch_id, tab_name: tab_name)
           end
 
           editor_digest = Workspace.editor_digest(editor_id)

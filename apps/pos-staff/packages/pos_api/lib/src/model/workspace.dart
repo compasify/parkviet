@@ -4,15 +4,17 @@
 
 // ignore_for_file: unused_element
 import 'package:pos_api/src/model/date.dart';
-import 'package:built_collection/built_collection.dart';
 import 'package:pos_api/src/model/workspace_line.dart';
 import 'package:pos_api/src/model/resource_ref.dart';
-import 'package:pos_api/src/model/workspace_prebill.dart';
 import 'package:pos_api/src/model/workspace_reservation.dart';
-import 'package:pos_api/src/model/kitchen_send_summary.dart';
-import 'package:pos_api/src/model/workspace_service_charge.dart';
 import 'package:pos_api/src/model/workspace_totals.dart';
 import 'package:pos_api/src/model/payment_request.dart';
+import 'package:built_collection/built_collection.dart';
+import 'package:pos_api/src/model/workspace_drink_credit.dart';
+import 'package:pos_api/src/model/workspace_prebill.dart';
+import 'package:pos_api/src/model/workspace_minimum_spend.dart';
+import 'package:pos_api/src/model/kitchen_send_summary.dart';
+import 'package:pos_api/src/model/workspace_service_charge.dart';
 import 'package:built_value/json_object.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
@@ -30,6 +32,9 @@ part 'workspace.g.dart';
 /// * [businessDate]
 /// * [orderNumber] - Call number (`fnb.order_number`), 1, 2, 3… per branch and business date, given at the first kitchen send or at completion and kept.
 /// * [guestName] - The name the counter calls out with the call number.
+/// * [tabName] - The guest's name of a bar tab (`service_mode` tab).
+/// * [minimumSpend] - A VIP table's minimum spend and the fee making up the shortfall.
+/// * [drinkCredit] - The drink credit of the order's door tickets.
 /// * [resource] - The table of a table order (`fnb.tables`).
 /// * [guestCount]
 /// * [tableLabel] - A, B… when a table has several open orders.
@@ -69,6 +74,18 @@ abstract class Workspace implements Built<Workspace, WorkspaceBuilder> {
   /// The name the counter calls out with the call number.
   @BuiltValueField(wireName: r'guest_name')
   String? get guestName;
+
+  /// The guest's name of a bar tab (`service_mode` tab).
+  @BuiltValueField(wireName: r'tab_name')
+  String? get tabName;
+
+  /// A VIP table's minimum spend and the fee making up the shortfall.
+  @BuiltValueField(wireName: r'minimum_spend')
+  WorkspaceMinimumSpend? get minimumSpend;
+
+  /// The drink credit of the order's door tickets.
+  @BuiltValueField(wireName: r'drink_credit')
+  WorkspaceDrinkCredit? get drinkCredit;
 
   /// The table of a table order (`fnb.tables`).
   @BuiltValueField(wireName: r'resource')
@@ -174,6 +191,27 @@ class _$WorkspaceSerializer implements PrimitiveSerializer<Workspace> {
       yield serializers.serialize(
         object.guestName,
         specifiedType: const FullType.nullable(String),
+      );
+    }
+    if (object.tabName != null) {
+      yield r'tab_name';
+      yield serializers.serialize(
+        object.tabName,
+        specifiedType: const FullType.nullable(String),
+      );
+    }
+    if (object.minimumSpend != null) {
+      yield r'minimum_spend';
+      yield serializers.serialize(
+        object.minimumSpend,
+        specifiedType: const FullType.nullable(WorkspaceMinimumSpend),
+      );
+    }
+    if (object.drinkCredit != null) {
+      yield r'drink_credit';
+      yield serializers.serialize(
+        object.drinkCredit,
+        specifiedType: const FullType.nullable(WorkspaceDrinkCredit),
       );
     }
     if (object.resource != null) {
@@ -328,6 +366,30 @@ class _$WorkspaceSerializer implements PrimitiveSerializer<Workspace> {
           ) as String?;
           if (valueDes == null) continue;
           result.guestName = valueDes;
+          break;
+        case r'tab_name':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.tabName = valueDes;
+          break;
+        case r'minimum_spend':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(WorkspaceMinimumSpend),
+          ) as WorkspaceMinimumSpend?;
+          if (valueDes == null) continue;
+          result.minimumSpend.replace(valueDes);
+          break;
+        case r'drink_credit':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(WorkspaceDrinkCredit),
+          ) as WorkspaceDrinkCredit?;
+          if (valueDes == null) continue;
+          result.drinkCredit.replace(valueDes);
           break;
         case r'resource':
           final valueDes = serializers.deserialize(

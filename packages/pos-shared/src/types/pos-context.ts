@@ -145,6 +145,8 @@ export type PosTotals = {
   additional_tax_total: string;
   // Fees on the order (the delivery fee); missing from older servers.
   fee_total?: string;
+  // Each fee on the order: the service charge, a VIP table's minimum spend.
+  fees?: { kind: string; label: string; amount: string }[];
   total: string;
   currency: string;
   taxes?: PosTaxRow[];
@@ -225,6 +227,8 @@ export type PosMenuVariant = {
   price: string | null;
   list_price: string | null;
   schedule_id: string | null;
+  // The running schedule's label, such as "Happy hour".
+  price_label?: string | null;
 };
 
 export type PosMenuItem = {
@@ -245,6 +249,10 @@ export type PosMenuItem = {
   image_url: string | null;
   sold_out: boolean;
   variants: PosMenuVariant[];
+  // A door ticket: each one sold lets the guest drink this much (VND) of
+  // the listed kitchen categories (any drink when empty).
+  drink_credit?: string | null;
+  drink_credit_categories?: string[];
 };
 
 export type PosMenuCategory = {
@@ -312,6 +320,8 @@ export type PosLineItem = {
   base_unit?: string;
   conversion_version?: number | null;
   unit_price?: string;
+  // The time-of-day menu the price came from ("Happy hour").
+  price_label?: string | null;
   lot_code?: string | null;
   expiry_on?: string | null;
   serial_codes?: string[];
@@ -323,7 +333,7 @@ export type PosLineItem = {
   line_discount?: PosLineDiscount | null;
   item_discount?: {
     amount: string;
-    source: 'manual' | 'promotion' | 'none';
+    source: 'manual' | 'promotion' | 'cover_credit' | 'none';
     value_type: 'flat' | 'percent';
     value: string;
     labels: string[];
@@ -386,6 +396,8 @@ export type PosFinancial = {
   unapplied: string;
   remaining: string;
   change_due: string;
+  // Tips taken with the payments; never part of the order.
+  tip?: string;
   attempts: PosFinancialAttempt[];
   // Approved credit for the current snapshot; after a credit sale, the debt
   // and its balance from the receivable ledger.
@@ -619,6 +631,12 @@ export type PosWorkspace = {
   // given at its first kitchen send or at completion, and the guest's name.
   order_number?: number | null;
   guest_name?: string | null;
+  // A bar tab (service mode tab): the guest's name it is found by.
+  tab_name?: string | null;
+  // A VIP table's minimum spend and the fee making up the shortfall.
+  minimum_spend?: { minimum: string; amount: string; waived: boolean } | null;
+  // The drink credit of door tickets and what the drinks used of it.
+  drink_credit?: { total: string; used: string; remaining: string } | null;
   customer?: PosCustomer | null;
   line_items?: PosLineItem[];
   discount?: PosDiscount | null;

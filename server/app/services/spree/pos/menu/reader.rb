@@ -37,7 +37,7 @@ module Spree
             module_enabled: ModulePolicy.enabled?(branch, Guard::MODULE),
             categories: MenuCategory.for_store(store).where(active: true).order(:position, :name).map(&:to_pos),
             items: items, modifier_groups: groups.sort_by { |group| [group.position, group.id] }.map(&:to_pos),
-            schedules: schedules.map { |schedule| { id: schedule.prefixed_id, name: schedule.name } },
+            schedules: schedules.map { |schedule| { id: schedule.prefixed_id, name: schedule.name, label: schedule.label.presence } },
             favorites: favorites
           }
           body.merge(etag: Digest::SHA256.hexdigest(body.to_json)[0, 32])
@@ -73,7 +73,7 @@ module Spree
           {
             id: variant.prefixed_id, name: variant.is_master? ? nil : variant.options_text.presence, sku: variant.sku.presence,
             barcode: variant.barcode.presence, price: price.to_s('F'), list_price: list&.to_s('F'),
-            schedule_id: schedule&.prefixed_id
+            schedule_id: schedule&.prefixed_id, price_label: schedule&.label.presence
           }
         rescue Conflict => e
           raise unless e.reason == 'menu_item_hidden'

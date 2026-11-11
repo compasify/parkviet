@@ -60,8 +60,14 @@ function ShellFrame() {
           ? t('receiptsTitle')
           : pathname.endsWith('/reservations')
             ? t('reservationsNav')
-            : t('sellingArea');
-  const isSale = !/\/(returns|shifts|collect|receipts|reservations)(\/|$)/.test(pathname);
+            : pathname.endsWith('/bottle-keeps')
+              ? t('bottleKeepsNav')
+              : pathname.endsWith('/tips')
+                ? t('tipsNav')
+                : t('sellingArea');
+  const isSale = !/\/(returns|shifts|collect|receipts|reservations|bottle-keeps|tips)(\/|$)/.test(
+    pathname,
+  );
   // A store not set up yet, seen by someone who may set it up, is pointed at
   // the setup wizard of the POS dashboard instead of the branch picker dialog.
   // Without that permission the picker asks for an administrator

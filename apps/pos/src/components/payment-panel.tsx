@@ -376,6 +376,7 @@ export function PaymentPanel({
               reference: input.reference,
               receivingAccount: input.receivingAccount,
               terminalRef: input.terminalRef,
+              tipAmount: input.tipAmount,
             }),
           );
         },

@@ -180,6 +180,25 @@ export function visibleItems(
   });
 }
 
+// The kitchen category the bar route sends drinks by.
+export const DRINK_CATEGORY = 'do_uong';
+
+// A bar tab's menu: drinks and shots lead, in the categories and in the list,
+// each keeping its own order.
+export function drinksFirst(menu: PosMenu): PosMenu {
+  const drink = (item: PosMenuItem) => item.kitchen_category === DRINK_CATEGORY;
+  const drinkCategories = new Set(menu.items.filter(drink).map((item) => item.menu_category_id));
+  const lead = <T>(rows: T[], first: (row: T) => boolean) => [
+    ...rows.filter(first),
+    ...rows.filter((row) => !first(row)),
+  ];
+  return {
+    ...menu,
+    categories: lead(menu.categories, (category) => drinkCategories.has(category.id)),
+    items: lead(menu.items, drink),
+  };
+}
+
 export function favoriteItems(menu: PosMenu): PosMenuItem[] {
   const byId = new Map(menu.items.map((item) => [item.id, item]));
   return menu.favorites.flatMap((id) => {

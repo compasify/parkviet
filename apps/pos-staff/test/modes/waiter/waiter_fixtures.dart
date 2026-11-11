@@ -327,7 +327,79 @@ class FakeWaiterApi implements WaiterApi {
 
   @override
   Future<List<String>?> voidReasons(String branchId) async => branchVoidReasons;
+
+  /// The modules the fake branch runs.
+  Set<String> branchModules = const {};
+
+  @override
+  Future<Set<String>> modules(String branchId) async => branchModules;
+
+  List<WorkspaceSummary> openTabs = const [];
+
+  @override
+  Future<List<WorkspaceSummary>> tabs(String branchId, {String? query}) => _answer(
+        'tabs:${query ?? ''}',
+        () => openTabs
+            .where((tab) => (query ?? '').isEmpty || (tab.tabName ?? '').toLowerCase().contains(query!.toLowerCase()))
+            .toList(),
+      );
+
+  @override
+  Future<Workspace> openTab(String branchId, String name, {required String editorId}) =>
+      _answer('open-tab:$name', () => current!);
+
+  List<BottleKeep> keptBottles = const [];
+
+  @override
+  Future<List<BottleKeep>> bottles(String branchId, String query) =>
+      _answer('bottles:$query', () => keptBottles.where((bottle) => bottle.code.contains(query)).toList());
+
+  @override
+  Future<BottleKeep> pour(String id, {required int levelPercent, int? ml, String? workspaceId, List<int>? photo}) =>
+      _answer('pour:$id:$levelPercent:${ml ?? '-'}:${photo == null ? 'no-photo' : 'photo'}', () {
+        final bottle = keptBottles.firstWhere((row) => row.id == id);
+        return bottle.rebuild((b) => b
+          ..levelPercent = levelPercent
+          ..status = levelPercent == 0 ? BottleKeepStatusEnum.finished : BottleKeepStatusEnum.kept);
+      });
 }
+
+Map<String, Object?> tabJson(String id, {required String name, String total = '250000.0'}) => {
+      'id': id,
+      'branch_id': 'posbranch_1',
+      'revision': 2,
+      'operational_status': 'editing',
+      'service_mode': 'tab',
+      'business_date': '2026-11-12',
+      'order_number': 7,
+      'guest_name': null,
+      'tab_name': name,
+      'resource': null,
+      'opened_at': '2026-11-12T22:30:00.000+07:00',
+      'total': total,
+    };
+
+Map<String, Object?> bottleJson(String id, {required String code, int level = 70}) => {
+      'id': id,
+      'branch_id': 'posbranch_1',
+      'code': code,
+      'status': 'kept',
+      'level_percent': level,
+      'variant_id': 'variant_hennessy',
+      'product_name': 'Hennessy VSOP',
+      'options_text': null,
+      'customer': null,
+      'guest_name': 'Anh Hùng',
+      'phone': '0901234567',
+      'kept_on': '2026-11-01',
+      'expires_on': '2026-12-01',
+      'source_order_id': null,
+      'note': null,
+      'revision': 1,
+      'photo_url': null,
+      'created_at': '2026-11-01T21:00:00.000+07:00',
+      'closed_at': null,
+    };
 
 /// The app's localizations around a screen, in Vietnamese.
 Widget localized(Widget home) => MaterialApp(

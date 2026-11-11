@@ -61,13 +61,13 @@ module Spree
         return false unless active_staff?
         return true if workspace.shift.owner_id == staff.id && allows?(workspace.branch, Capabilities::OPEN_SHIFT)
 
-        workspace.resource_id.present? && allows?(workspace.branch, Capabilities::TABLE_SERVE)
+        workspace.shared_service? && allows?(workspace.branch, Capabilities::TABLE_SERVE)
       end
 
       # A cashier other than the shift owner collecting a table's bill; the
       # order then moves to their shift (ShiftRebind.rebind_to_collector!).
       def can_collect_table?(workspace)
-        workspace.resource_id.present? && allows?(workspace.branch, Capabilities::PAYMENT) &&
+        workspace.shared_service? && allows?(workspace.branch, Capabilities::PAYMENT) &&
           allows?(workspace.branch, Capabilities::OPEN_SHIFT)
       end
 

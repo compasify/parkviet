@@ -29,13 +29,17 @@ import {
 } from '../components/setup/model-ui'
 import {
   type TableSettings,
+  TIP_SPLIT_MODES,
+  type TipSplit,
   useAreas,
   useFloorPlanWrite,
   useResources,
   useTableSettings,
 } from '../hooks/use-floor-plan'
+import { useStaffRoles } from '../hooks/use-master-data'
 import { usePosSession } from '../hooks/use-pos-session'
 import {
+  BOTTLE_KEEP_DAYS_MAX,
   CAPACITY_MAX,
   changedFields,
   FLOOR_MAX,
@@ -43,6 +47,7 @@ import {
   freeSpot,
   placementDraft,
   readFloorSize,
+  readKeepDays,
   readServiceChargeRate,
   readTableDraft,
   SERVICE_CHARGE_MAX,
@@ -61,6 +66,9 @@ const REFUSALS = [
   'table_archived',
   'manual_status_invalid',
   'service_charge_rate_invalid',
+  'bottle_keep_days_invalid',
+  'tip_split_invalid',
+  'minimum_spend_invalid',
 ] as const
 const NEW = 'new'
 const DEFAULT_FLOOR = { width: 24, height: 16 }
@@ -186,6 +194,7 @@ const blankTable = (spot: Placement): TableDraft => ({
   capacity: '4',
   shape: 'rect',
   ...placementDraft(spot),
+  minimumSpend: '',
 })
 
 // The placement the canvas draws for a draft: what was typed when it is a
@@ -542,6 +551,7 @@ function TableForm({
       : null
   const edit = (patch: Partial<TableDraft>) => onChange({ ...draft, ...patch })
   const locked = !write || mutation.isPending
+  const minimumId = useId()
 
   const save = (event: FormEvent) => {
     event.preventDefault()
@@ -650,6 +660,20 @@ function TableForm({
             disabled={locked}
             onChange={(capacity) => edit({ capacity })}
           />
+          <div className="flex flex-col gap-2">
+            <Label htmlFor={minimumId}>{t('floorPlan.minimumSpend')}</Label>
+            <Input
+              id={minimumId}
+              inputMode="numeric"
+              value={draft.minimumSpend}
+              disabled={locked}
+              aria-describedby={`${minimumId}-hint`}
+              onChange={(event) => edit({ minimumSpend: event.target.value })}
+            />
+            <small id={`${minimumId}-hint`} className="text-muted-foreground">
+              {t('floorPlan.minimumSpendHint')}
+            </small>
+          </div>
           <NumberField
             label={t('floorPlan.rotation')}
             value={draft.rotation}
@@ -739,6 +763,9 @@ type SettingsDraft = {
   rate: string
   modes: ServiceMode[]
   tax: string
+  keepDays: string
+  tipsAsRevenue: boolean
+  tipSplit: TipSplit
 }
 
 const settingsDraftOf = (settings: TableSettings): SettingsDraft => ({
@@ -746,7 +773,104 @@ const settingsDraftOf = (settings: TableSettings): SettingsDraft => ({
   rate: settings.service_charge_rate ?? '',
   modes: settings.service_charge_applies_to,
   tax: settings.service_charge_tax_category_id ?? '',
+  keepDays: settings.bottle_keep_days === null ? '' : String(settings.bottle_keep_days),
+  tipsAsRevenue: settings.tips_as_revenue,
+  tipSplit: settings.tip_split,
 })
+
+// A bar's settings: how long kept bottles stay (with `fnb.bottle_keep`), and
+// with `fnb.postpay` whether tips count as revenue and how they are split
+// among which roles (none chosen: every staff member of the branch).
+function BarSettings({
+  draft,
+  write,
+  bottleKeep,
+  tips,
+  keepDaysInvalid,
+  roles,
+  onChange,
+}: {
+  draft: SettingsDraft
+  write: boolean
+  bottleKeep: boolean
+  tips: boolean
+  keepDaysInvalid: boolean
+  roles: { id: string; name: string }[]
+  onChange: (patch: Partial<SettingsDraft>) => void
+}) {
+  const { t } = useTranslation()
+  const keepId = useId()
+  const split = (patch: Partial<TipSplit>) =>
+    onChange({ tipSplit: { ...draft.tipSplit, ...patch } })
+  return (
+    <fieldset className="space-y-4">
+      <legend className="text-sm font-medium">{t('floorPlan.barSettings')}</legend>
+      {bottleKeep ? (
+        <div className="flex flex-col gap-2">
+          <Label htmlFor={keepId}>{t('floorPlan.bottleKeepDays')}</Label>
+          <Input
+            id={keepId}
+            inputMode="numeric"
+            value={draft.keepDays}
+            disabled={!write}
+            aria-invalid={keepDaysInvalid}
+            aria-describedby={`${keepId}-hint`}
+            onChange={(event) => onChange({ keepDays: event.target.value })}
+          />
+          <small
+            id={`${keepId}-hint`}
+            className={keepDaysInvalid ? 'text-destructive' : 'text-muted-foreground'}
+          >
+            {t('floorPlan.bottleKeepDaysHint', { max: BOTTLE_KEEP_DAYS_MAX })}
+          </small>
+        </div>
+      ) : null}
+      {tips ? (
+        <>
+          <ModelCheck
+            checked={draft.tipsAsRevenue}
+            disabled={!write}
+            onChange={(tipsAsRevenue) => onChange({ tipsAsRevenue })}
+          >
+            {t('floorPlan.tipsAsRevenue')}
+          </ModelCheck>
+          <small className="block text-muted-foreground">{t('floorPlan.tipsAsRevenueHint')}</small>
+          <ModelSelect
+            label={t('floorPlan.tipSplitMode')}
+            value={draft.tipSplit.mode}
+            disabled={!write}
+            options={TIP_SPLIT_MODES.map((mode) => ({
+              value: mode,
+              label: t(`floorPlan.tipSplit_${mode}`),
+            }))}
+            onChange={(mode) => split({ mode: mode as TipSplit['mode'] })}
+          />
+          {roles.length > 0 ? (
+            <fieldset className="space-y-2">
+              <legend className="text-sm font-medium">{t('floorPlan.tipSplitRoles')}</legend>
+              {roles.map((role) => (
+                <ModelCheck
+                  key={role.id}
+                  checked={draft.tipSplit.role_codes.includes(role.id)}
+                  disabled={!write}
+                  onChange={(checked) =>
+                    split({
+                      role_codes: checked
+                        ? [...draft.tipSplit.role_codes, role.id]
+                        : draft.tipSplit.role_codes.filter((code) => code !== role.id),
+                    })
+                  }
+                >
+                  {role.name}
+                </ModelCheck>
+              ))}
+            </fieldset>
+          ) : null}
+        </>
+      ) : null}
+    </fieldset>
+  )
+}
 
 // The register whose open shift table orders are booked on and, while the
 // branch runs the service charge, its rate, service modes and tax category.
@@ -756,12 +880,16 @@ function TableSettingsCard({ write }: { write: boolean }) {
   const { context } = usePosSession()
   const settings = useTableSettings(branch.id)
   const serviceCharge = modules?.['fnb.service_charge'] === true
+  const bottleKeep = modules?.['fnb.bottle_keep'] === true
+  const tips = modules?.['fnb.postpay'] === true
+  const roles = useStaffRoles(write && tips)
   const mutation = useFloorPlanWrite()
   const { notice, attempt } = useAttempt(t)
   const [draft, setDraft] = useState<SettingsDraft | null>(null)
   const loaded = settings.data
   const current = draft ?? (loaded ? settingsDraftOf(loaded) : null)
   const rate = current ? readServiceChargeRate(current.rate) : null
+  const keepDays = current ? readKeepDays(current.keepDays) : null
 
   const edit = (patch: Partial<SettingsDraft>) =>
     setDraft((value) => {
@@ -772,6 +900,7 @@ function TableSettingsCard({ write }: { write: boolean }) {
   const save = (event: FormEvent) => {
     event.preventDefault()
     if (!current || !draft || mutation.isPending || (serviceCharge && rate === undefined)) return
+    if (bottleKeep && keepDays === undefined) return
     void attempt(async () => {
       await mutation.mutateAsync({
         method: 'PUT',
@@ -786,6 +915,8 @@ function TableSettingsCard({ write }: { write: boolean }) {
                 service_charge_tax_category_id: current.tax || null,
               }
             : {}),
+          ...(bottleKeep && keepDays ? { bottle_keep_days: keepDays } : {}),
+          ...(tips ? { tips_as_revenue: current.tipsAsRevenue, tip_split: current.tipSplit } : {}),
         },
       })
       setDraft(null)
@@ -892,10 +1023,26 @@ function TableSettingsCard({ write }: { write: boolean }) {
               </fieldset>
             </fieldset>
           ) : null}
+          {bottleKeep || tips ? (
+            <BarSettings
+              draft={current}
+              write={write}
+              bottleKeep={bottleKeep}
+              tips={tips}
+              keepDaysInvalid={keepDays === undefined}
+              roles={(roles.data ?? []).map((role) => ({ id: role.id, name: role.name }))}
+              onChange={edit}
+            />
+          ) : null}
           {write ? (
             <Button
               type="submit"
-              disabled={mutation.isPending || !draft || (serviceCharge && rate === undefined)}
+              disabled={
+                mutation.isPending ||
+                !draft ||
+                (serviceCharge && rate === undefined) ||
+                (bottleKeep && keepDays === undefined)
+              }
             >
               {t('floorPlan.saveSettings')}
             </Button>

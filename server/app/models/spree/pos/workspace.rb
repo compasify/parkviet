@@ -39,6 +39,9 @@ module Spree
       validates :order_number, numericality: { only_integer: true, greater_than: 0 }, allow_nil: true
       validates :guest_count, numericality: { only_integer: true, in: 0..999 }, allow_nil: true
       validates :table_label, length: { maximum: 4 }
+      # Who a bar tab is for ("Anh Nam áo xanh"); open tabs are found by it.
+      TAB_NAME_MAX = 60
+      validates :tab_name, length: { maximum: TAB_NAME_MAX }
       validate :resource_fits_order
       validate :source_is_immutable
       validate :order_number_is_kept
@@ -62,6 +65,12 @@ module Spree
         raise Conflict, 'A valid editor ID is required.' unless id.match?(/\A[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\z/i)
 
         Digest::SHA256.hexdigest(id)
+      end
+
+      # Served by many hands: an order at a table, or a bar tab. Waiters and
+      # other counters add to it without its lease.
+      def shared_service?
+        resource_id.present? || service_mode == 'tab'
       end
 
       def lease_current?(staff, editor_id)
@@ -103,7 +112,10 @@ module Spree
           guest_name: guest_name,
           resource: resource&.to_ref,
           guest_count: guest_count,
-          table_label: table_label
+          table_label: table_label,
+          tab_name: tab_name,
+          opened_at: created_at&.iso8601,
+          total: money(order.total)
         }
       end
 
@@ -132,7 +144,7 @@ module Spree
         now = self.class.database_now
         memo = {}
         # How far the kitchen got with each line of a table order, one query.
-        kitchen = resource_id ? kitchen_status_by_line : {}
+        kitchen = shared_service? ? kitchen_status_by_line : {}
         traces = sale_lines.values.to_h do |sale|
           [sale.prefixed_id, Spree::Pos::Inventory::AllocateTraceability.line_trace(sale, branch, now: now, memo: memo,
                                                                                                  completed: operational_status == 'completed')]
@@ -162,14 +174,14 @@ module Spree
             explicit_item = line_intent&.value_type&.start_with?('item_')
             single_percent = !line_intent && item_promotions.one? && item_promotions.first.value_type == 'percent' && item_promotions.first.value.present?
             core[:item_discount] = {
-              amount: money(item_amount), source: line_intent ? 'manual' : (item_promotions.any? ? 'promotion' : 'none'),
+              amount: money(item_amount), source: line_intent ? (line_intent.source == 'cover_credit' ? 'cover_credit' : 'manual') : (item_promotions.any? ? 'promotion' : 'none'),
               value_type: explicit_item ? line_intent.value_type.delete_prefix('item_') : (single_percent ? 'percent' : 'flat'),
               value: explicit_item ? line_intent.value : (single_percent ? money(item_promotions.first.value) : money(item_amount.abs)),
               labels: item_promotions.map(&:label)
             }
             if sale
               row = core.merge(sale.to_pos(line)).merge(trace: traces[sale.prefixed_id])
-              resource_id ? row.merge(kitchen_status: kitchen.fetch(sale.id, {})) : row
+              shared_service? ? row.merge(kitchen_status: kitchen.fetch(sale.id, {})) : row
             else
               core.merge(sale_line_id: nil, trace: nil)
             end
@@ -185,15 +197,20 @@ module Spree
           delivery: Spree::Pos::Delivery.find_by(workspace_id: id)&.to_pos,
           # Read only where they can exist, so counter sales add no queries.
           service_charge: branch.service_charge_rate && ServiceCharges::Apply.to_pos(self),
+          # A VIP table's minimum and the fee still owed below it.
+          minimum_spend: resource_id && Fnb::MinimumSpend.to_pos(self),
+          # What the door tickets of the order still pay for in drinks.
+          drink_credit: Fnb::DrinkCredit.to_pos(self, sale_lines.values),
           prebill: resource_id && prebill_pos,
           payment_request: resource_id && PaymentRequest.open.find_by(workspace_id: id)&.to_pos,
           # The booking seated at this table and the deposits it brought.
           reservation: resource_id && reservation_pos,
           # Who told the kitchen what, and when; table orders are sent many times.
-          kitchen_sends: resource_id && KitchenSend.where(workspace_id: id).includes(:staff, :device).order(:sequence).map(&:to_pos),
+          kitchen_sends: (KitchenSend.where(workspace_id: id).includes(:staff, :device).order(:sequence).map(&:to_pos) if shared_service?),
           totals: {
             item_total: money(order.item_total), discount_total: money(discounts.sum(&:amount)),
             fee_total: money(order.fee_total),
+            fees: order.fees.map { |fee| { kind: fee.kind, label: fee.label, amount: money(fee.amount) } },
             manual_discount_total: money(manual_total), included_tax_total: money(order.included_tax_total),
             additional_tax_total: money(order.additional_tax_total), total: money(order.total),
             currency: order.currency,
@@ -248,6 +265,8 @@ module Spree
           received: money(received), allocated: money(allocated),
           unapplied: money(received_funds.sum { |row| Spree::Pos::FundsBalance.new(row).available }),
           remaining: money([order.total - allocated, 0].max), change_due: money(funds.sum(&:change_amount)),
+          # Tips handed over on top of the bill; kept off the order.
+          tip: money(Spree::Pos::TipRecord.where(workspace_id: id).sum(:amount)),
           attempts: attempts.map(&:to_pos), credit: credit_pos
         }
       end

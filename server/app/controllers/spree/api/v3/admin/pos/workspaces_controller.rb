@@ -29,6 +29,11 @@ module Spree
               end
               # The counter's tabs leave delivery platform orders to their tray.
               scope = scope.where.not(order_source: Spree::Pos::Workspace::PLATFORM_SOURCES) if params[:platform] == 'exclude'
+              # The bar's tab list: open tabs found by guest name, table or call number.
+              if params[:service_mode].present?
+                scope = scope.where(service_mode: params[:service_mode].to_s)
+                scope = Spree::Pos::Tabs::Open.search(scope, params[:q]) if params[:q].present?
+              end
               records, meta = page_scope(scope.includes(:branch, :register, :shift, :order, :resource).order(id: :desc))
               render json: { data: Spree::Pos::WorkspaceSummary.list(records), meta: meta }
             end
@@ -52,7 +57,8 @@ module Spree
                 branch_id: params[:branch_id],
                 key: key,
                 editor_id: params[:editor_id],
-                service_mode: params[:service_mode]
+                service_mode: params[:service_mode],
+                tab_name: params[:tab_name]
               )
               render json: { data: result }, status: :created
             end

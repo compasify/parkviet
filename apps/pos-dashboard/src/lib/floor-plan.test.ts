@@ -5,6 +5,7 @@ import {
   freeSpot,
   nudgePlacement,
   readFloorSize,
+  readKeepDays,
   readServiceChargeRate,
   readTableDraft,
   shiftPlacement,
@@ -80,7 +81,21 @@ describe('floor plan forms', () => {
   const draft = (patch: Partial<TableDraft>): TableDraft => ({ ...tableDraftOf(table), ...patch })
   it('reads a valid table and names the first broken rule', () => {
     expect(readTableDraft(draft({ name: ' T2 ' }), area)).toEqual({
-      values: { name: 'T2', kind: 'table', capacity: 4, shape: 'rect', ...start },
+      values: {
+        name: 'T2',
+        kind: 'table',
+        capacity: 4,
+        shape: 'rect',
+        ...start,
+        minimum_spend: null,
+      },
+    })
+    expect(readTableDraft(draft({ minimumSpend: '1.500.000' }), area)).toMatchObject({
+      values: { minimum_spend: '1500000' },
+    })
+    expect(readTableDraft(draft({ minimumSpend: '0' }), area)).toEqual({ problem: 'minimumSpend' })
+    expect(readTableDraft(draft({ minimumSpend: 'abc' }), area)).toEqual({
+      problem: 'minimumSpend',
     })
     expect(readTableDraft(draft({ name: '  ' }), area)).toEqual({ problem: 'name' })
     expect(readTableDraft(draft({ name: 'x'.repeat(41) }), area)).toEqual({ problem: 'name' })
@@ -97,6 +112,18 @@ describe('floor plan forms', () => {
     if (!('values' in read)) throw new Error('expected values')
     expect(changedFields(table, read.values)).toEqual({ x: 4, capacity: 6 })
     expect(changedFields(table, { ...read.values, x: 2, capacity: 4 })).toEqual({})
+    expect(
+      changedFields(table, { ...read.values, x: 2, capacity: 4, minimum_spend: '500000' }),
+    ).toEqual({
+      minimum_spend: '500000',
+    })
+  })
+  it('reads the days a kept bottle is held', () => {
+    expect(readKeepDays('')).toBeNull()
+    expect(readKeepDays('30')).toBe(30)
+    expect(readKeepDays('0')).toBeUndefined()
+    expect(readKeepDays('3651')).toBeUndefined()
+    expect(readKeepDays('1.5')).toBeUndefined()
   })
   it('accepts grid sizes between 4 and 200 cells', () => {
     expect(readFloorSize('24')).toBe(24)

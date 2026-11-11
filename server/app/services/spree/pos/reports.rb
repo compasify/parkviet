@@ -9,7 +9,7 @@ module Spree
     # close time; recipe usage, menu margin and delivery platforms by the
     # sale's business date. Dates are days in the branch's timezone.
     module Reports
-      TYPES = %w[sales receipts cashbook receivables closures ingredient_usage menu_margin platforms].freeze
+      TYPES = %w[sales receipts cashbook receivables closures ingredient_usage menu_margin platforms bar].freeze
 
       def self.klass(type)
         case type.to_s
@@ -21,6 +21,7 @@ module Spree
         when 'ingredient_usage' then IngredientUsage
         when 'menu_margin' then MenuMargin
         when 'platforms' then Platforms
+        when 'bar' then Bar
         else raise ActiveRecord::RecordNotFound
         end
       end

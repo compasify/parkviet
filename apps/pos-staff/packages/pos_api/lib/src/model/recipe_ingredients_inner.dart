@@ -22,6 +22,8 @@ part 'recipe_ingredients_inner.g.dart';
 /// * [baseUnit]
 /// * [unitCost] - Cost per stock unit now
 /// * [cost]
+/// * [pourMl] - A measured pour, ml taken from a bottle counted by the bottle (base_quantity 0).
+/// * [bottleMl] - The ml of one bottle of a measured pour.
 @BuiltValue()
 abstract class RecipeIngredientsInner
     implements Built<RecipeIngredientsInner, RecipeIngredientsInnerBuilder> {
@@ -59,6 +61,14 @@ abstract class RecipeIngredientsInner
 
   @BuiltValueField(wireName: r'cost')
   String? get cost;
+
+  /// A measured pour, ml taken from a bottle counted by the bottle (base_quantity 0).
+  @BuiltValueField(wireName: r'pour_ml')
+  int? get pourMl;
+
+  /// The ml of one bottle of a measured pour.
+  @BuiltValueField(wireName: r'bottle_ml')
+  int? get bottleMl;
 
   RecipeIngredientsInner._();
 
@@ -155,6 +165,20 @@ class _$RecipeIngredientsInnerSerializer
             object.cost,
             specifiedType: const FullType.nullable(String),
           );
+    if (object.pourMl != null) {
+      yield r'pour_ml';
+      yield serializers.serialize(
+        object.pourMl,
+        specifiedType: const FullType.nullable(int),
+      );
+    }
+    if (object.bottleMl != null) {
+      yield r'bottle_ml';
+      yield serializers.serialize(
+        object.bottleMl,
+        specifiedType: const FullType.nullable(int),
+      );
+    }
   }
 
   @override
@@ -261,6 +285,22 @@ class _$RecipeIngredientsInnerSerializer
           ) as String?;
           if (valueDes == null) continue;
           result.cost = valueDes;
+          break;
+        case r'pour_ml':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(int),
+          ) as int?;
+          if (valueDes == null) continue;
+          result.pourMl = valueDes;
+          break;
+        case r'bottle_ml':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(int),
+          ) as int?;
+          if (valueDes == null) continue;
+          result.bottleMl = valueDes;
           break;
         default:
           unhandled.add(key);

@@ -16,7 +16,7 @@ module Spree
               raise ActiveRecord::RecordNotFound if sale_line.nil?
 
               intent = LineDiscountIntent.find_or_initialize_by(sale_line: sale_line)
-              intent.assign_attributes(workspace: workspace, actor: staff, value_type: value_type.to_s, value: value.to_s, reason: reason.to_s)
+              intent.assign_attributes(workspace: workspace, actor: staff, value_type: value_type.to_s, value: value.to_s, reason: reason.to_s, source: 'manual')
               raise Conflict, 'Line discount is invalid.' unless intent.valid?
 
               before = intent.persisted? ? { value_type: intent.value_type_was, value: intent.value_was, amount: ApplyDiscount.applied_amount(intent).to_s('F') } : nil

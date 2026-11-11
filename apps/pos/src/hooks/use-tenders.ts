@@ -20,6 +20,8 @@ export type TenderCommandInput = {
   reference?: string;
   receivingAccount?: string;
   terminalRef?: string;
+  // A tip on top of the amount (cash or manual bank), kept outside revenue.
+  tipAmount?: string;
   fundsId?: string;
   allocationId?: string;
 };
@@ -194,6 +196,7 @@ export function useTenders(staffId: string | null, storeId: string | null) {
       reference: input.reference,
       receiving_account: input.receivingAccount,
       terminal_ref: input.terminalRef,
+      tip_amount: input.tipAmount,
       funds_id: input.fundsId,
       allocation_id: input.allocationId,
     };

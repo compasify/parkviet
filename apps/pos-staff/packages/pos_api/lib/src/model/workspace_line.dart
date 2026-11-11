@@ -26,6 +26,7 @@ part 'workspace_line.g.dart';
 /// * [saleLineId]
 /// * [kind]
 /// * [unitPrice]
+/// * [priceLabel] - The time-of-day menu the price came from (\"Happy hour\").
 /// * [note]
 /// * [modifiers]
 /// * [components]
@@ -69,6 +70,10 @@ abstract class WorkspaceLine
 
   @BuiltValueField(wireName: r'unit_price')
   String? get unitPrice;
+
+  /// The time-of-day menu the price came from (\"Happy hour\").
+  @BuiltValueField(wireName: r'price_label')
+  String? get priceLabel;
 
   @BuiltValueField(wireName: r'note')
   String? get note;
@@ -194,6 +199,13 @@ class _$WorkspaceLineSerializer implements PrimitiveSerializer<WorkspaceLine> {
       yield serializers.serialize(
         object.unitPrice,
         specifiedType: const FullType(String),
+      );
+    }
+    if (object.priceLabel != null) {
+      yield r'price_label';
+      yield serializers.serialize(
+        object.priceLabel,
+        specifiedType: const FullType.nullable(String),
       );
     }
     if (object.note != null) {
@@ -377,6 +389,14 @@ class _$WorkspaceLineSerializer implements PrimitiveSerializer<WorkspaceLine> {
           ) as String?;
           if (valueDes == null) continue;
           result.unitPrice = valueDes;
+          break;
+        case r'price_label':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.priceLabel = valueDes;
           break;
         case r'note':
           final valueDes = serializers.deserialize(

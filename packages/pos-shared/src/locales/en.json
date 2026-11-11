@@ -13,6 +13,8 @@
   "receiptLineDiscount": "Discount {{amount}}",
   "receiptItemTotal": "Item total",
   "receiptDiscount": "Discount",
+  "receiptMinimumSpend": "Minimum spend",
+  "receiptDrinkCreditLeft": "Drink credit left",
   "receiptTax": "Tax",
   "receiptIncludedTax": "Tax included in prices",
   "receiptTotal": "Total",
@@ -284,6 +286,18 @@
       "description": "Take table bookings, hold tables for their time, take deposits and take them off the bill.",
       "off": "Reservations are off at this branch.",
       "disabled": "Reservations are off at this branch; the server takes no new booking. Selling is not affected."
+    },
+    "fnb_bottle_keep": {
+      "label": "Bottle keeping",
+      "description": "The guests' kept bottles: a label code, a photo, the level, the pours and the keeping date. No money.",
+      "off": "Bottle keeping is off at this branch.",
+      "disabled": "Bottle keeping is off at this branch; the server keeps no new bottles. Selling is not affected."
+    },
+    "fnb_pour_tracking": {
+      "label": "Measured pours",
+      "description": "Recipes pour ml from open bottles; a bottle poured out leaves stock. Needs Recipes.",
+      "off": "Measured pours are off at this branch.",
+      "disabled": "Measured pours are off at this branch; sales take no ml from open bottles."
     }
   },
   "profiles": {

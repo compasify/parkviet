@@ -63,7 +63,7 @@ module Spree
           tracked_mode: tracked_mode, label_barcode: label_barcode, label_format_version: label_format_version,
           line_discount: line_discount_intent && {
             id: line_discount_intent.prefixed_id, value_type: line_discount_intent.value_type,
-            value: line_discount_intent.value, reason: line_discount_intent.reason,
+            value: line_discount_intent.value, reason: line_discount_intent.reason, source: line_discount_intent.source,
             amount: line_discount_intent.allocations.joins(:discount).sum('spree_discounts.amount').to_s('F')
           },
           note: note, modifiers: line_modifiers.map(&:to_pos), components: line_components.map(&:to_pos),
@@ -72,7 +72,9 @@ module Spree
           added_by: added_by_id && { id: added_by.prefixed_id, name: KitchenSend.staff_name(added_by) },
           course: course, course_status: course_status, seat: seat,
           buffet_tier_id: BuffetTier.prefixed_for(buffet_tier_id),
-          buffet_cover_line_id: SaleLine.prefixed_for(buffet_cover_line_id)
+          buffet_cover_line_id: SaleLine.prefixed_for(buffet_cover_line_id),
+          # The time-of-day price it was sold at, such as "Happy hour".
+          price_label: price_label
         }
       end
 

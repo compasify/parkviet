@@ -29,6 +29,10 @@ class _$RecipeIngredientsInner extends RecipeIngredientsInner {
   final String? unitCost;
   @override
   final String? cost;
+  @override
+  final int? pourMl;
+  @override
+  final int? bottleMl;
 
   factory _$RecipeIngredientsInner(
           [void Function(RecipeIngredientsInnerBuilder)? updates]) =>
@@ -45,7 +49,9 @@ class _$RecipeIngredientsInner extends RecipeIngredientsInner {
       required this.baseQuantity,
       required this.baseUnit,
       this.unitCost,
-      this.cost})
+      this.cost,
+      this.pourMl,
+      this.bottleMl})
       : super._();
   @override
   RecipeIngredientsInner rebuild(
@@ -70,7 +76,9 @@ class _$RecipeIngredientsInner extends RecipeIngredientsInner {
         baseQuantity == other.baseQuantity &&
         baseUnit == other.baseUnit &&
         unitCost == other.unitCost &&
-        cost == other.cost;
+        cost == other.cost &&
+        pourMl == other.pourMl &&
+        bottleMl == other.bottleMl;
   }
 
   @override
@@ -87,6 +95,8 @@ class _$RecipeIngredientsInner extends RecipeIngredientsInner {
     _$hash = $jc(_$hash, baseUnit.hashCode);
     _$hash = $jc(_$hash, unitCost.hashCode);
     _$hash = $jc(_$hash, cost.hashCode);
+    _$hash = $jc(_$hash, pourMl.hashCode);
+    _$hash = $jc(_$hash, bottleMl.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -104,7 +114,9 @@ class _$RecipeIngredientsInner extends RecipeIngredientsInner {
           ..add('baseQuantity', baseQuantity)
           ..add('baseUnit', baseUnit)
           ..add('unitCost', unitCost)
-          ..add('cost', cost))
+          ..add('cost', cost)
+          ..add('pourMl', pourMl)
+          ..add('bottleMl', bottleMl))
         .toString();
   }
 }
@@ -157,6 +169,14 @@ class RecipeIngredientsInnerBuilder
   String? get cost => _$this._cost;
   set cost(String? cost) => _$this._cost = cost;
 
+  int? _pourMl;
+  int? get pourMl => _$this._pourMl;
+  set pourMl(int? pourMl) => _$this._pourMl = pourMl;
+
+  int? _bottleMl;
+  int? get bottleMl => _$this._bottleMl;
+  set bottleMl(int? bottleMl) => _$this._bottleMl = bottleMl;
+
   RecipeIngredientsInnerBuilder() {
     RecipeIngredientsInner._defaults(this);
   }
@@ -175,6 +195,8 @@ class RecipeIngredientsInnerBuilder
       _baseUnit = $v.baseUnit;
       _unitCost = $v.unitCost;
       _cost = $v.cost;
+      _pourMl = $v.pourMl;
+      _bottleMl = $v.bottleMl;
       _$v = null;
     }
     return this;
@@ -213,6 +235,8 @@ class RecipeIngredientsInnerBuilder
               baseUnit, r'RecipeIngredientsInner', 'baseUnit'),
           unitCost: unitCost,
           cost: cost,
+          pourMl: pourMl,
+          bottleMl: bottleMl,
         );
     replace(_$result);
     return _$result;

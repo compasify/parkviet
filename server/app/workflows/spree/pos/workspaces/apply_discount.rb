@@ -121,6 +121,8 @@ module Spree
         end
 
         def self.recalculate!(workspace)
+          # Door tickets pay for drinks through line intents the adjuster reads.
+          Fnb::DrinkCredit.sync!(workspace)
           # Stale POS allocations must not cap this pass's campaign candidates.
           # The manual adjuster rebuilds these rows from their durable intents.
           workspace.order.line_items.reset
@@ -131,6 +133,8 @@ module Spree
           workspace.order.reload
           # The service charge follows the items and discounts just summed.
           ServiceCharges::Apply.call(workspace)
+          # So does the minimum spend of a VIP table.
+          Fnb::MinimumSpend.call(workspace)
         end
       end
     end

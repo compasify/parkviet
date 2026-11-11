@@ -22,6 +22,8 @@ export type MenuSchedule = {
   id: string
   branch_id: string | null
   name: string
+  // Shown on the menu while the schedule runs ("Happy hour").
+  label?: string | null
   days_of_week: number[]
   starts_at: string
   ends_at: string

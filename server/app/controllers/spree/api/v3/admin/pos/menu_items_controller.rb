@@ -40,7 +40,7 @@ module Spree
 
             def save(key, record)
               attributes = params.permit(:product_id, :menu_category_id, :tax_category_id, *Spree::Pos::Menu::Save::ITEM_FIELDS,
-                                         modifier_group_ids: [], components: %i[variant_id quantity]).to_h
+                                         modifier_group_ids: [], drink_credit_categories: [], components: %i[variant_id quantity]).to_h
               attributes.delete('product_id') if record
               menu_save.item(store: current_store, staff: current_user, key: key, attributes: attributes, item: record)
             end

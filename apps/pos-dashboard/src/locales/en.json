@@ -1565,7 +1565,14 @@
     "taxUnset": "Not set (new items take the food and drinks rate)",
     "taxFood": "Food and drinks",
     "taxAlcohol": "Alcohol and beer",
-    "taxOther": "Other rate in use"
+    "taxOther": "Other rate in use",
+    "drinkCredit": "Drink credit per ticket (VND)",
+    "drinkCreditHint": "Door ticket: each ticket sold lets the guest drink up to this amount. Leave blank otherwise.",
+    "drinkCreditInvalid": "Enter a VND amount above 0.",
+    "drinkCreditCategories": "Kitchen categories the credit pays",
+    "drinkCreditCategoriesHint": "Separated by commas, e.g. do_uong. Blank: any drink.",
+    "scheduleLabel": "Label",
+    "scheduleLabelHint": "Shown on items while the schedule runs, e.g. \"Happy hour\"."
   },
   "receivablesOpenCustomer": "View customer",
   "receivablesSearch": "Search by order or customer",
@@ -2498,6 +2505,22 @@
     "mode_delivery": "Delivery",
     "mode_tab": "Open tab",
     "mode_timed": "Timed",
-    "saveSettings": "Save table service"
+    "saveSettings": "Save table service",
+    "minimumSpend": "Minimum spend (VND)",
+    "minimumSpendHint": "VIP table: a tab below this is charged the difference. Leave blank for none.",
+    "problem_minimumSpend": "The minimum spend is a VND amount above 0.",
+    "failure_bottle_keep_days_invalid": "Bottles are kept 1 to 3650 days.",
+    "failure_tip_split_invalid": "The tip split is invalid.",
+    "failure_minimum_spend_invalid": "The minimum spend is invalid.",
+    "barSettings": "Bar, pub and club",
+    "bottleKeepDays": "Days a kept bottle is held",
+    "bottleKeepDaysHint": "1 to {{max}} days; past it the bottle expires by itself.",
+    "tipsAsRevenue": "Count tips as revenue",
+    "tipsAsRevenueHint": "By default tips stay outside VAT revenue. Turn this on only once accounting confirms it.",
+    "tipSplitMode": "Default tip split",
+    "tipSplit_equal": "Equally",
+    "tipSplit_by_hours": "By hours worked",
+    "tipSplit_manual": "By hand",
+    "tipSplitRoles": "Roles that share tips (none: every staff member)"
   }
 }

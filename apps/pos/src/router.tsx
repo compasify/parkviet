@@ -7,6 +7,7 @@ import {
 } from '@tanstack/react-router';
 import { PosShell } from './components/pos-shell';
 import { session } from './lib/app-session';
+import { BottleKeepsPage } from './pages/bottle-keeps';
 import { CollectPage } from './pages/collect';
 import { CustomerDisplayPage } from './pages/customer-display';
 import { LoginPage } from './pages/login';
@@ -15,6 +16,7 @@ import { ReservationsPage } from './pages/reservations';
 import { ReturnExchangePage } from './pages/return-exchange';
 import { SalePage } from './pages/sale';
 import { ShiftsPage } from './pages/shifts';
+import { TipsPage } from './pages/tips';
 
 const rootRoute = createRootRoute({
   component: () => <Outlet />,
@@ -87,6 +89,20 @@ const reservationsRoute = createRoute({
   component: ReservationsPage,
 });
 
+// A bar's bottle-keeping book: kept bottles, pours, levels and labels.
+const bottleKeepsRoute = createRoute({
+  getParentRoute: () => authedRoute,
+  path: '/bottle-keeps',
+  component: BottleKeepsPage,
+});
+
+// The tips of a business day and paying them to the staff.
+const tipsRoute = createRoute({
+  getParentRoute: () => authedRoute,
+  path: '/tips',
+  component: TipsPage,
+});
+
 // Receipts (authed) and the customer display, which has no staff session:
 // it reads only with its own display token.
 const receiptsRoute = createRoute({
@@ -118,6 +134,8 @@ export const router = createRouter({
       shiftsRoute,
       collectRoute,
       reservationsRoute,
+      bottleKeepsRoute,
+      tipsRoute,
       receiptsRoute,
     ]),
   ]),

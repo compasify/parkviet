@@ -269,6 +269,8 @@ class _$Resource extends Resource {
   final ResourceStatusEnum status;
   @override
   final int position;
+  @override
+  final String? minimumSpend;
 
   factory _$Resource([void Function(ResourceBuilder)? updates]) =>
       (ResourceBuilder()..update(updates))._build();
@@ -289,7 +291,8 @@ class _$Resource extends Resource {
       required this.manualStatus,
       this.resourceTypeCode,
       required this.status,
-      required this.position})
+      required this.position,
+      this.minimumSpend})
       : super._();
   @override
   Resource rebuild(void Function(ResourceBuilder) updates) =>
@@ -317,7 +320,8 @@ class _$Resource extends Resource {
         manualStatus == other.manualStatus &&
         resourceTypeCode == other.resourceTypeCode &&
         status == other.status &&
-        position == other.position;
+        position == other.position &&
+        minimumSpend == other.minimumSpend;
   }
 
   @override
@@ -339,6 +343,7 @@ class _$Resource extends Resource {
     _$hash = $jc(_$hash, resourceTypeCode.hashCode);
     _$hash = $jc(_$hash, status.hashCode);
     _$hash = $jc(_$hash, position.hashCode);
+    _$hash = $jc(_$hash, minimumSpend.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -361,7 +366,8 @@ class _$Resource extends Resource {
           ..add('manualStatus', manualStatus)
           ..add('resourceTypeCode', resourceTypeCode)
           ..add('status', status)
-          ..add('position', position))
+          ..add('position', position)
+          ..add('minimumSpend', minimumSpend))
         .toString();
   }
 }
@@ -435,6 +441,10 @@ class ResourceBuilder implements Builder<Resource, ResourceBuilder> {
   int? get position => _$this._position;
   set position(int? position) => _$this._position = position;
 
+  String? _minimumSpend;
+  String? get minimumSpend => _$this._minimumSpend;
+  set minimumSpend(String? minimumSpend) => _$this._minimumSpend = minimumSpend;
+
   ResourceBuilder() {
     Resource._defaults(this);
   }
@@ -458,6 +468,7 @@ class ResourceBuilder implements Builder<Resource, ResourceBuilder> {
       _resourceTypeCode = $v.resourceTypeCode;
       _status = $v.status;
       _position = $v.position;
+      _minimumSpend = $v.minimumSpend;
       _$v = null;
     }
     return this;
@@ -505,6 +516,7 @@ class ResourceBuilder implements Builder<Resource, ResourceBuilder> {
               status, r'Resource', 'status'),
           position: BuiltValueNullFieldError.checkNotNull(
               position, r'Resource', 'position'),
+          minimumSpend: minimumSpend,
         );
     replace(_$result);
     return _$result;

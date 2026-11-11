@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart' show DioMediaType, MultipartFile;
 import 'package:pos_api/pos_api.dart';
 import 'package:uuid/uuid.dart';
 
@@ -65,6 +66,22 @@ abstract interface class WaiterApi {
   /// The branch's reasons for voiding a sent dish, from the device's
   /// context; null when the server does not list them.
   Future<List<String>?> voidReasons(String branchId);
+
+  /// The POS modules turned on at the branch, from the device's context.
+  Future<Set<String>> modules(String branchId);
+
+  /// The open bar tabs of the branch, found by guest name, table or tab number.
+  Future<List<WorkspaceSummary>> tabs(String branchId, {String? query});
+
+  /// Opens a bar tab with only the guest's name; the phone holds its lease.
+  Future<Workspace> openTab(String branchId, String name, {required String editorId});
+
+  /// The branch's kept bottles matching a code, phone or guest name.
+  Future<List<BottleKeep>> bottles(String branchId, String query);
+
+  /// Pours from a kept bottle for free: its new level, the ml poured and a
+  /// photo (JPEG bytes) of the bottle.
+  Future<BottleKeep> pour(String id, {required int levelPercent, int? ml, String? workspaceId, List<int>? photo});
 }
 
 /// [WaiterApi] over the generated client.
@@ -248,4 +265,52 @@ class ApiWaiterApi implements WaiterApi {
     final context = await client.call((api) => api.posContext(branchId: branchId));
     return context.branches?.where((branch) => branch.id == branchId).firstOrNull?.voidReasons?.toList();
   }
+
+  @override
+  Future<Set<String>> modules(String branchId) async {
+    final context = await client.call((api) => api.posContext(branchId: branchId));
+    return {...?context.modules?.entries.where((entry) => entry.value).map((entry) => entry.key)};
+  }
+
+  @override
+  Future<List<WorkspaceSummary>> tabs(String branchId, {String? query}) async => (await client.call((api) =>
+          api.posWorkspaceList(
+            branchId: branchId,
+            serviceMode: 'tab',
+            status: 'editing,parked',
+            q: query == null || query.trim().isEmpty ? null : query.trim(),
+            limit: 100,
+          )))
+      .data
+      .toList();
+
+  @override
+  Future<Workspace> openTab(String branchId, String name, {required String editorId}) async =>
+      (await client.call((api) => api.posWorkspaceCreate(
+                idempotencyKey: _key,
+                workspaceCreateInput: WorkspaceCreateInput((b) => b
+                  ..branchId = branchId
+                  ..editorId = editorId
+                  ..serviceMode = WorkspaceCreateInputServiceModeEnum.tab
+                  ..tabName = name.trim()),
+              )))
+          .data;
+
+  @override
+  Future<List<BottleKeep>> bottles(String branchId, String query) async =>
+      (await client.call((api) => api.posBottleKeepList(branchId: branchId, q: query.trim()))).data.toList();
+
+  @override
+  Future<BottleKeep> pour(String id, {required int levelPercent, int? ml, String? workspaceId, List<int>? photo}) async =>
+      (await client.call((api) => api.posBottleKeepPour(
+                idempotencyKey: _key,
+                id: id,
+                levelPercent: levelPercent,
+                ml: ml,
+                workspaceId: workspaceId,
+                photo: photo == null
+                    ? null
+                    : MultipartFile.fromBytes(photo, filename: 'bottle.jpg', contentType: DioMediaType('image', 'jpeg')),
+              )))
+          .data;
 }

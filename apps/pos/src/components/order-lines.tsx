@@ -200,6 +200,9 @@ export function OrderLines({
                   <td>
                     <div className="basket-line-name">
                       <strong>{line.name}</strong>
+                      {line.price_label ? (
+                        <span className="basket-line-price-label">{line.price_label}</span>
+                      ) : null}
                       {measured ? (
                         <span>
                           {' · '}

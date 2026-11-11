@@ -33,6 +33,7 @@ import { appendable, voidReasons } from '../lib/table-kitchen';
 import {
   canServeTables,
   inSelection,
+  isTab,
   isTableOrder,
   savedTableSurface,
   tableOrderName,
@@ -52,6 +53,7 @@ import { DisplayPinControl } from './display-pin-control';
 import { GuestNameField } from './guest-name-field';
 import { KitchenHistory } from './kitchen-history';
 import { MenuGrid } from './menu-grid';
+import { MinimumSpendLines } from './minimum-spend-lines';
 import { NoteForm } from './note-form';
 import { OrderLines } from './order-lines';
 import { OrderSourcePicker } from './order-source-picker';
@@ -64,6 +66,7 @@ import { PrebillDialog } from './prebill-dialog';
 import { ReservationDepositNote } from './reservation-deposit-note';
 import { useScannerCalibration } from './scanner-calibration';
 import { ServiceModeControl } from './service-mode-control';
+import { TabList } from './tab-list';
 import { TableOrderBar } from './table-actions';
 import { TableFloor } from './table-floor';
 import { VoidItemDialog } from './void-item-dialog';
@@ -256,6 +259,13 @@ export function WorkspaceTabs() {
   const showFloor =
     tableSurface !== null &&
     (floorChoice ?? (isTableSurface(data?.profile?.display.surface) && !orderAtStart));
+  // A bar starts on its open tabs (profile surface `tab_list`, `fnb.postpay`).
+  const tabSurface = postpay;
+  const [tabsChoice, setTabsChoice] = useState<boolean | null>(null);
+  const showTabs =
+    tabSurface &&
+    !showFloor &&
+    (tabsChoice ?? (data?.profile?.display.surface === 'tab_list' && !orderAtStart));
   // Order the URL asks for and that is not selected yet.
   const requestedOrder = useRef<string | null>(search.order ?? null);
   // The URL as of the last render, and the order this component last wrote
@@ -697,6 +707,20 @@ export function WorkspaceTabs() {
   return (
     <section className="draft-workspace" aria-label={t('draftList')}>
       <div className="draft-toolbar">
+        {tabSurface ? (
+          <button
+            type="button"
+            className="floor-toggle"
+            aria-pressed={showTabs}
+            onClick={() => {
+              setTabsChoice(!showTabs);
+              if (!showTabs && showFloor) setFloorChoice(false);
+            }}
+          >
+            <PosIcon name={showTabs ? 'back' : 'grid'} />{' '}
+            {showTabs ? t('tableBackToSale') : t('tabListTitle')}
+          </button>
+        ) : null}
         {tableSurface ? (
           <button type="button" className="floor-toggle" onClick={() => setFloorChoice(!showFloor)}>
             <PosIcon name={showFloor ? 'back' : 'grid'} />{' '}
@@ -760,6 +784,8 @@ export function WorkspaceTabs() {
                     <span className="workspace-table-name">
                       {tableOrderName(seat.table.name, seat.label)}
                     </span>
+                  ) : isTab(workspace) ? (
+                    <span className="workspace-table-name">{workspace.tab_name}</span>
                   ) : null}
                   {/* The call number the counter calls out, once the order has one. */}
                   {workspace.order_number != null ? (
@@ -951,7 +977,24 @@ export function WorkspaceTabs() {
           canCollect={Boolean(data?.capabilities.includes('pos.payment.collect'))}
         />
       ) : null}
-      {showFloor && tableSurface ? (
+      {showTabs ? (
+        <TabList
+          key={`tabs:${storeId}:${selection.branchId}`}
+          branchId={selection.branchId}
+          storeId={storeId}
+          currency={data?.store.currency ?? 'VND'}
+          canOpen={canServeTables(data) && !locked && selectionComplete}
+          onOpenTab={async (name) => {
+            const created = await workspaces.openTab(name);
+            selectOrder(created.id);
+            setTabsChoice(false);
+          }}
+          onSelectOrder={(id) => {
+            selectOrder(id);
+            setTabsChoice(false);
+          }}
+        />
+      ) : showFloor && tableSurface ? (
         <TableFloor
           key={`${storeId}:${selection.branchId}`}
           branchId={selection.branchId}
@@ -1022,6 +1065,7 @@ export function WorkspaceTabs() {
                   branchId={selection.branchId}
                   addDisabled={quickAddDisabled}
                   addDisabledReason={lockReason}
+                  drinksFirst={isTab(active)}
                   canSetSoldOut={Boolean(
                     data?.capabilities.includes('pos.menu.sold_out') ||
                       data?.capabilities.includes('pos.menu.manage'),
@@ -1518,6 +1562,17 @@ export function WorkspaceTabs() {
                             </strong>
                           </div>
                         ) : null}
+                        <MinimumSpendLines
+                          workspace={active}
+                          currency={active.totals.currency}
+                          canApprove={Boolean(data?.capabilities.includes('pos.approval.grant'))}
+                          disabled={editDisabled}
+                          onWaive={(waived, approvalId) =>
+                            command(active, (current) =>
+                              workspaces.setMinimumSpend(current, waived, approvalId),
+                            )
+                          }
+                        />
                         {(active.totals.taxes ?? []).map((tax) => (
                           <div className="checkout-line" key={`${tax.rate}:${tax.label}`}>
                             <span>

@@ -23,6 +23,14 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(AreaStatusEnum.serializer)
       ..add(AvailableResource.serializer)
       ..add(AvailableResourceKindEnum.serializer)
+      ..add(BottleKeep.serializer)
+      ..add(BottleKeepActor.serializer)
+      ..add(BottleKeepCustomer.serializer)
+      ..add(BottleKeepEvent.serializer)
+      ..add(BottleKeepEventKindEnum.serializer)
+      ..add(BottleKeepList.serializer)
+      ..add(BottleKeepResult.serializer)
+      ..add(BottleKeepStatusEnum.serializer)
       ..add(BuffetTier.serializer)
       ..add(BuffetTierItem.serializer)
       ..add(BuffetTierList.serializer)
@@ -418,16 +426,25 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(TableSplitResult.serializer)
       ..add(TableTaxCategory.serializer)
       ..add(TaxRow.serializer)
+      ..add(TipSplitRule.serializer)
+      ..add(TipSplitRuleModeEnum.serializer)
       ..add(Workspace.serializer)
+      ..add(WorkspaceCreateInput.serializer)
+      ..add(WorkspaceCreateInputServiceModeEnum.serializer)
+      ..add(WorkspaceDrinkCredit.serializer)
       ..add(WorkspaceLine.serializer)
       ..add(WorkspaceLineCourseStatusEnum.serializer)
       ..add(WorkspaceLineKindEnum.serializer)
+      ..add(WorkspaceMinimumSpend.serializer)
+      ..add(WorkspacePageMeta.serializer)
       ..add(WorkspacePrebill.serializer)
       ..add(WorkspacePrebillStatusEnum.serializer)
       ..add(WorkspaceReservation.serializer)
       ..add(WorkspaceResult.serializer)
       ..add(WorkspaceServiceCharge.serializer)
       ..add(WorkspaceServiceModeEnum.serializer)
+      ..add(WorkspaceSummary.serializer)
+      ..add(WorkspaceSummaryList.serializer)
       ..add(WorkspaceTotals.serializer)
       ..add(WorkspaceTotalsTaxesInner.serializer)
       ..addBuilderFactory(
@@ -439,6 +456,12 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(AvailableResource)]),
           () => ListBuilder<AvailableResource>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(BottleKeep)]),
+          () => ListBuilder<BottleKeep>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(BottleKeepEvent)]),
+          () => ListBuilder<BottleKeepEvent>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(BuffetTier)]),
           () => ListBuilder<BuffetTier>())
@@ -822,9 +845,6 @@ Serializers _$serializers = (Serializers().toBuilder()
           const FullType(BuiltList, const [const FullType(String)]),
           () => ListBuilder<String>())
       ..addBuilderFactory(
-          const FullType(BuiltList, const [const FullType(ContextBranch)]),
-          () => ListBuilder<ContextBranch>())
-      ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
           () => ListBuilder<String>())
       ..addBuilderFactory(
@@ -844,6 +864,16 @@ Serializers _$serializers = (Serializers().toBuilder()
           const FullType(BuiltList, const [const FullType(String)]),
           () => ListBuilder<String>())
       ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltMap, const [const FullType(String), const FullType(bool)]),
+          () => MapBuilder<String, bool>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(ContextBranch)]),
+          () => ListBuilder<ContextBranch>())
+      ..addBuilderFactory(
           const FullType(BuiltList, const [
             const FullType(TableSettingsInputServiceChargeAppliesToEnum)
           ]),
@@ -855,6 +885,9 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(Workspace)]),
           () => ListBuilder<Workspace>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(WorkspaceSummary)]),
+          () => ListBuilder<WorkspaceSummary>())
       ..addBuilderFactory(
           const FullType(
               BuiltList, const [const FullType(WorkspaceTotalsTaxesInner)]),

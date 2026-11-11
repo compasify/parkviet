@@ -13,6 +13,8 @@
   "receiptLineDiscount": "Giảm {{amount}}",
   "receiptItemTotal": "Tổng tiền hàng",
   "receiptDiscount": "Giảm giá",
+  "receiptMinimumSpend": "Phụ thu mức tối thiểu",
+  "receiptDrinkCreditLeft": "Drink credit còn lại",
   "receiptTax": "Thuế",
   "receiptIncludedTax": "Thuế đã gồm trong giá",
   "receiptTotal": "Tổng cộng",
@@ -284,6 +286,18 @@
       "description": "Nhận đặt bàn, giữ bàn theo giờ, thu tiền cọc và trừ cọc khi khách thanh toán.",
       "off": "Chi nhánh chưa bật chức năng Đặt bàn.",
       "disabled": "Chi nhánh chưa bật chức năng Đặt bàn; máy chủ không nhận đặt bàn mới. Việc bán hàng không bị ảnh hưởng."
+    },
+    "fnb_bottle_keep": {
+      "label": "Gửi rượu",
+      "description": "Sổ gửi rượu của khách: mã dán chai, ảnh, mức còn lại, lịch sử rót và hạn gửi. Không thu tiền.",
+      "off": "Chi nhánh chưa bật chức năng Gửi rượu.",
+      "disabled": "Chi nhánh chưa bật chức năng Gửi rượu; máy chủ không nhận chai gửi mới. Việc bán hàng không bị ảnh hưởng."
+    },
+    "fnb_pour_tracking": {
+      "label": "Đo rót theo ml",
+      "description": "Công thức rót theo ml từ chai mở; chai rót hết thì kho trừ một chai. Cần Công thức.",
+      "off": "Chi nhánh chưa bật chức năng Đo rót theo ml.",
+      "disabled": "Chi nhánh chưa bật Đo rót theo ml; bán hàng không trừ ml từ chai mở."
     }
   },
   "profiles": {

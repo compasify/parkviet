@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   addsInOneTap,
   defaultPicks,
+  drinksFirst,
   estimatePrice,
   favoriteItems,
   groupProblem,
@@ -218,5 +219,26 @@ describe('sold-out dishes in the catalogue', () => {
     const ids = soldOutVariantIds(menu([item(), soldOut]));
     expect([...ids]).toEqual(soldOut.variants.map((variant) => variant.id));
     expect(soldOutVariantIds(null).size).toBe(0);
+  });
+});
+
+describe('drinksFirst', () => {
+  it('leads with drinks and their categories, keeping each order', () => {
+    const food = item({ id: 'food', menu_category_id: 'cat_food' });
+    const beer = item({ id: 'beer', menu_category_id: 'cat_bar', kitchen_category: 'do_uong' });
+    const shot = item({ id: 'shot', menu_category_id: 'cat_bar', kitchen_category: 'do_uong' });
+    const category = (id: string, position: number) => ({
+      id,
+      name: id,
+      position,
+      color: null,
+      active: true,
+    });
+    const result = drinksFirst({
+      ...menu([food, beer, shot]),
+      categories: [category('cat_food', 0), category('cat_bar', 1)],
+    });
+    expect(result.items.map((row) => row.id)).toEqual(['beer', 'shot', 'food']);
+    expect(result.categories.map((row) => row.id)).toEqual(['cat_bar', 'cat_food']);
   });
 });

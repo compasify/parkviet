@@ -14,6 +14,11 @@ module Spree
       validates :value_type, inclusion: { in: %w[flat percent unit_price item_flat item_percent] }
       validates :value, presence: true, length: { maximum: 64 }, format: { with: /\A\d+(?:\.\d+)?\z/ }
       validates :reason, presence: true, length: { maximum: 200 }
+      # cover_credit: written by Fnb::DrinkCredit from a door ticket, never by a cashier.
+      SOURCES = %w[manual cover_credit].freeze
+      validates :source, inclusion: { in: SOURCES }
+
+      scope :manual, -> { where(source: 'manual') }
       validate :valid_value
 
       private

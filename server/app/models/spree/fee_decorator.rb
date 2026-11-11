@@ -8,9 +8,11 @@ module Spree
   module FeeDecorator
     # Decorators are loaded again on every code reload.
     SERVICE_CHARGE_KIND = 'service_charge' unless const_defined?(:SERVICE_CHARGE_KIND)
+    # What a VIP table still owes below its minimum spend (Pos::Fnb::MinimumSpend).
+    MINIMUM_SPEND_KIND = 'minimum_spend' unless const_defined?(:MINIMUM_SPEND_KIND)
 
     def self.prepended(base)
-      base::KINDS << SERVICE_CHARGE_KIND unless base::KINDS.include?(SERVICE_CHARGE_KIND)
+      [SERVICE_CHARGE_KIND, MINIMUM_SPEND_KIND].each { |kind| base::KINDS << kind unless base::KINDS.include?(kind) }
     end
 
     def tax_category_id

@@ -110,6 +110,12 @@ class _$TableSettings extends TableSettings {
   @override
   final BuiltList<CourseLabel> courseLabels;
   @override
+  final int? bottleKeepDays;
+  @override
+  final bool? tipsAsRevenue;
+  @override
+  final TipSplitRule? tipSplit;
+  @override
   final String branchId;
   @override
   final String? tableRegisterId;
@@ -131,6 +137,9 @@ class _$TableSettings extends TableSettings {
       required this.reservationDurationMinutes,
       this.reservationFeeProductId,
       required this.courseLabels,
+      this.bottleKeepDays,
+      this.tipsAsRevenue,
+      this.tipSplit,
       required this.branchId,
       this.tableRegisterId,
       this.serviceChargeRate,
@@ -153,6 +162,9 @@ class _$TableSettings extends TableSettings {
         reservationDurationMinutes == other.reservationDurationMinutes &&
         reservationFeeProductId == other.reservationFeeProductId &&
         courseLabels == other.courseLabels &&
+        bottleKeepDays == other.bottleKeepDays &&
+        tipsAsRevenue == other.tipsAsRevenue &&
+        tipSplit == other.tipSplit &&
         branchId == other.branchId &&
         tableRegisterId == other.tableRegisterId &&
         serviceChargeRate == other.serviceChargeRate &&
@@ -168,6 +180,9 @@ class _$TableSettings extends TableSettings {
     _$hash = $jc(_$hash, reservationDurationMinutes.hashCode);
     _$hash = $jc(_$hash, reservationFeeProductId.hashCode);
     _$hash = $jc(_$hash, courseLabels.hashCode);
+    _$hash = $jc(_$hash, bottleKeepDays.hashCode);
+    _$hash = $jc(_$hash, tipsAsRevenue.hashCode);
+    _$hash = $jc(_$hash, tipSplit.hashCode);
     _$hash = $jc(_$hash, branchId.hashCode);
     _$hash = $jc(_$hash, tableRegisterId.hashCode);
     _$hash = $jc(_$hash, serviceChargeRate.hashCode);
@@ -185,6 +200,9 @@ class _$TableSettings extends TableSettings {
           ..add('reservationDurationMinutes', reservationDurationMinutes)
           ..add('reservationFeeProductId', reservationFeeProductId)
           ..add('courseLabels', courseLabels)
+          ..add('bottleKeepDays', bottleKeepDays)
+          ..add('tipsAsRevenue', tipsAsRevenue)
+          ..add('tipSplit', tipSplit)
           ..add('branchId', branchId)
           ..add('tableRegisterId', tableRegisterId)
           ..add('serviceChargeRate', serviceChargeRate)
@@ -219,6 +237,21 @@ class TableSettingsBuilder
       _$this._courseLabels ??= ListBuilder<CourseLabel>();
   set courseLabels(ListBuilder<CourseLabel>? courseLabels) =>
       _$this._courseLabels = courseLabels;
+
+  int? _bottleKeepDays;
+  int? get bottleKeepDays => _$this._bottleKeepDays;
+  set bottleKeepDays(int? bottleKeepDays) =>
+      _$this._bottleKeepDays = bottleKeepDays;
+
+  bool? _tipsAsRevenue;
+  bool? get tipsAsRevenue => _$this._tipsAsRevenue;
+  set tipsAsRevenue(bool? tipsAsRevenue) =>
+      _$this._tipsAsRevenue = tipsAsRevenue;
+
+  TipSplitRuleBuilder? _tipSplit;
+  TipSplitRuleBuilder get tipSplit =>
+      _$this._tipSplit ??= TipSplitRuleBuilder();
+  set tipSplit(TipSplitRuleBuilder? tipSplit) => _$this._tipSplit = tipSplit;
 
   String? _branchId;
   String? get branchId => _$this._branchId;
@@ -265,6 +298,9 @@ class TableSettingsBuilder
       _reservationDurationMinutes = $v.reservationDurationMinutes;
       _reservationFeeProductId = $v.reservationFeeProductId;
       _courseLabels = $v.courseLabels.toBuilder();
+      _bottleKeepDays = $v.bottleKeepDays;
+      _tipsAsRevenue = $v.tipsAsRevenue;
+      _tipSplit = $v.tipSplit?.toBuilder();
       _branchId = $v.branchId;
       _tableRegisterId = $v.tableRegisterId;
       _serviceChargeRate = $v.serviceChargeRate;
@@ -304,6 +340,9 @@ class TableSettingsBuilder
                 'reservationDurationMinutes'),
             reservationFeeProductId: reservationFeeProductId,
             courseLabels: courseLabels.build(),
+            bottleKeepDays: bottleKeepDays,
+            tipsAsRevenue: tipsAsRevenue,
+            tipSplit: _tipSplit?.build(),
             branchId: BuiltValueNullFieldError.checkNotNull(
                 branchId, r'TableSettings', 'branchId'),
             tableRegisterId: tableRegisterId,
@@ -317,6 +356,9 @@ class TableSettingsBuilder
       try {
         _$failedField = 'courseLabels';
         courseLabels.build();
+
+        _$failedField = 'tipSplit';
+        _tipSplit?.build();
 
         _$failedField = 'serviceChargeAppliesTo';
         serviceChargeAppliesTo.build();

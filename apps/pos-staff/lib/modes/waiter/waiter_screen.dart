@@ -13,7 +13,9 @@ import '../../core/realtime_provider.dart';
 import '../../core/session.dart';
 import '../../l10n/app_localizations.dart';
 import '../mode_scaffold.dart';
+import 'bottle_pour_screen.dart';
 import 'guest_keypad.dart';
+import 'tab_list_screen.dart';
 import 'table_order_screen.dart';
 import 'waiter_api.dart';
 import 'waiter_context.dart';
@@ -82,6 +84,7 @@ class _WaiterScreenState extends ConsumerState<WaiterScreen> {
     );
     unawaited(_context!.menu.load());
     unawaited(_context!.loadVoidReasons());
+    unawaited(_context!.loadModules());
     _ready = ReadyWatcher(api: api, onAnnounce: (_) => ref.read(waiterAlertProvider)());
     _startReady(realtime?.subscribed);
   }
@@ -276,6 +279,11 @@ class _TableBoardState extends State<TableBoard> {
     unawaited(_refresh());
   }
 
+  Future<void> _push(Widget screen) async {
+    await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => screen));
+    unawaited(_refresh());
+  }
+
   Future<void> _tileMenu(ResourceBoardTile tile) async {
     final l10n = AppLocalizations.of(context);
     final pinned = _pins.pinned.contains(tile.id);
@@ -358,6 +366,25 @@ class _TableBoardState extends State<TableBoard> {
     return ModeScaffold(
       mode: AppMode.waiter,
       actions: [
+        ValueListenableBuilder<Set<String>>(
+          valueListenable: widget.waiter.modules,
+          builder: (context, modules, _) => Row(mainAxisSize: MainAxisSize.min, children: [
+            if (modules.contains('fnb.postpay'))
+              IconButton(
+                key: const Key('waiter-tabs'),
+                tooltip: l10n.waiterTabsTitle,
+                icon: const Icon(Icons.receipt_long),
+                onPressed: () => _push(TabListScreen(waiter: widget.waiter)),
+              ),
+            if (modules.contains('fnb.bottle_keep'))
+              IconButton(
+                key: const Key('waiter-bottles'),
+                tooltip: l10n.waiterBottleTitle,
+                icon: const Icon(Icons.liquor),
+                onPressed: () => _push(BottlePourScreen(waiter: widget.waiter)),
+              ),
+          ]),
+        ),
         IconButton(
           key: const Key('waiter-follow'),
           tooltip: l10n.waiterFollowTitle,

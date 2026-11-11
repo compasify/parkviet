@@ -710,6 +710,11 @@ function ItemDialog({
   const [categoryId, setCategoryId] = useState(item?.menu_category_id ?? '')
   const [kitchen, setKitchen] = useState(item?.kitchen_category ?? '')
   const [cupLabel, setCupLabel] = useState(item?.cup_label === true)
+  const [drinkCredit, setDrinkCredit] = useState(item?.drink_credit?.replace(/\.0+$/, '') ?? '')
+  const [creditCategories, setCreditCategories] = useState(
+    (item?.drink_credit_categories ?? []).join(', '),
+  )
+  const creditValid = drinkCredit.trim() === '' || /^[1-9]\d*$/.test(drinkCredit.trim())
   const taxDefaults = useMenuTaxDefaults(true).data
   const initialTax = item?.tax_category_id ?? ''
   const [tax, setTax] = useState(initialTax)
@@ -724,7 +729,7 @@ function ItemDialog({
     })),
   )
   const { busy, error, submit } = useDialogSubmit(onClose)
-  const ready = (item || product) && (kind === 'single' || components.length > 0)
+  const ready = (item || product) && (kind === 'single' || components.length > 0) && creditValid
   return (
     <TopologyDialog
       title={t(item ? 'menuAdmin.editItem' : 'menuAdmin.addItem')}
@@ -745,6 +750,11 @@ function ItemDialog({
                 menu_category_id: categoryId || null,
                 kitchen_category: kitchen.trim() || null,
                 cup_label: cupLabel,
+                drink_credit: drinkCredit.trim() || null,
+                drink_credit_categories: creditCategories
+                  .split(',')
+                  .map((value) => value.trim())
+                  .filter(Boolean),
                 ...(tax !== initialTax ? { tax_category_id: tax || null } : {}),
                 active,
                 modifier_group_ids: kind === 'single' ? groupIds : [],
@@ -808,6 +818,22 @@ function ItemDialog({
               value={kitchen}
               onChange={setKitchen}
               maxLength={40}
+            />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <TextField
+              label={t('menuAdmin.drinkCredit')}
+              hint={t(creditValid ? 'menuAdmin.drinkCreditHint' : 'menuAdmin.drinkCreditInvalid')}
+              value={drinkCredit}
+              onChange={setDrinkCredit}
+              maxLength={12}
+            />
+            <TextField
+              label={t('menuAdmin.drinkCreditCategories')}
+              hint={t('menuAdmin.drinkCreditCategoriesHint')}
+              value={creditCategories}
+              onChange={setCreditCategories}
+              maxLength={200}
             />
           </div>
           {taxOptions.length > 1 ? (
@@ -1043,6 +1069,7 @@ function ScheduleDialog({
 }) {
   const { t } = useTranslation()
   const [name, setName] = useState(schedule?.name ?? '')
+  const [label, setLabel] = useState(schedule?.label ?? '')
   const [startsAt, setStartsAt] = useState(schedule?.starts_at ?? '14:00')
   const [endsAt, setEndsAt] = useState(schedule?.ends_at ?? '16:00')
   const [days, setDays] = useState<number[]>(schedule?.days_of_week ?? [])
@@ -1081,6 +1108,7 @@ function ScheduleDialog({
                 `/pos/menu_schedules${schedule ? `/${schedule.id}` : ''}`,
                 {
                   name: name.trim(),
+                  label: label.trim() || null,
                   starts_at: startsAt,
                   ends_at: endsAt,
                   days_of_week: days,
@@ -1096,6 +1124,13 @@ function ScheduleDialog({
           }}
         >
           <TextField label={t('adminName')} value={name} onChange={setName} maxLength={80} />
+          <TextField
+            label={t('menuAdmin.scheduleLabel')}
+            hint={t('menuAdmin.scheduleLabelHint')}
+            value={label}
+            onChange={setLabel}
+            maxLength={40}
+          />
           <div className="grid gap-4 sm:grid-cols-2">
             <TextField
               label={t('menuAdmin.startsAt')}

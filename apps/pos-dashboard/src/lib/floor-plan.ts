@@ -1,3 +1,4 @@
+import { parseVndInput } from '@parkviet/pos-shared/money'
 import {
   clampPlacement,
   type FloorArea,
@@ -88,6 +89,8 @@ export type TableDraft = {
   w: string
   h: string
   rotation: string
+  // Whole VND; blank for no minimum spend.
+  minimumSpend: string
 }
 
 export const tableDraftOf = (row: ResourceRecord): TableDraft => ({
@@ -101,6 +104,7 @@ export const tableDraftOf = (row: ResourceRecord): TableDraft => ({
   w: String(row.w),
   h: String(row.h),
   rotation: String(row.rotation),
+  minimumSpend: row.minimum_spend ?? '',
 })
 
 export const placementDraft = (placement: Placement) => ({
@@ -116,13 +120,21 @@ const whole = (value: string) => {
   return /^\d+$/.test(text) ? Number(text) : null
 }
 
-export type TableProblem = 'name' | 'capacity' | 'size' | 'position' | 'rotation' | 'outside'
+export type TableProblem =
+  | 'name'
+  | 'capacity'
+  | 'size'
+  | 'position'
+  | 'rotation'
+  | 'outside'
+  | 'minimumSpend'
 
 export type TableValues = Placement & {
   name: string
   kind: ResourceRecord['kind']
   capacity: number
   shape: ResourceRecord['shape']
+  minimum_spend: string | null
 }
 
 // The draft as the server takes it, or the first rule it breaks.
@@ -141,14 +153,26 @@ export function readTableDraft(
   if (rotation === null || rotation > 359) return { problem: 'rotation' }
   const placement = { x, y, w, h, rotation }
   if (!fitsArea(placement, area)) return { problem: 'outside' }
-  return { values: { name, kind: draft.kind, capacity, shape: draft.shape, ...placement } }
+  const minimum = draft.minimumSpend.trim()
+  const minimumSpend = minimum ? parseVndInput(minimum) : null
+  if (minimum && (minimumSpend === null || minimumSpend === '0')) return { problem: 'minimumSpend' }
+  return {
+    values: {
+      name,
+      kind: draft.kind,
+      capacity,
+      shape: draft.shape,
+      ...placement,
+      minimum_spend: minimumSpend,
+    },
+  }
 }
 
 // The fields of a saved table that the draft changes, for PATCH.
 export function changedFields(row: ResourceRecord, values: TableValues) {
   return Object.fromEntries(
     (Object.keys(values) as (keyof TableValues)[])
-      .filter((key) => row[key] !== values[key])
+      .filter((key) => (row[key] ?? null) !== values[key])
       .map((key) => [key, values[key]]),
   ) as Partial<TableValues>
 }
@@ -172,4 +196,15 @@ export function readServiceChargeRate(value: string): string | null | undefined 
   if (!/^\d{1,2}(\.\d{1,2})?$/.test(text)) return undefined
   const rate = Number(text)
   return rate > 0 && rate <= SERVICE_CHARGE_MAX ? text : undefined
+}
+
+// How many days a guest's bottle is kept, as typed: 1 to 3650. Null when
+// blank (keep the saved value); undefined when it is not a number of days.
+export const BOTTLE_KEEP_DAYS_MAX = 3650
+export function readKeepDays(value: string): number | null | undefined {
+  const text = value.trim()
+  if (!text) return null
+  if (!/^\d{1,4}$/.test(text)) return undefined
+  const days = Number(text)
+  return days >= 1 && days <= BOTTLE_KEEP_DAYS_MAX ? days : undefined
 }

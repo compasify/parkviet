@@ -15,7 +15,8 @@ export function writeWorkspaceToCache(
 ) {
   const base = posWorkspacesKey(generation, storeId);
   queryClient.setQueriesData<Page | { data: PosWorkspace }>({ queryKey: base }, (current) => {
-    if (!current) return current;
+    // Derived lists under the same key (the open bar tabs) hold their own shape.
+    if (!current || !('data' in current)) return current;
     const update = (previous: PosWorkspace) =>
       previous.id === workspace.id &&
       previous.revision <= workspace.revision &&

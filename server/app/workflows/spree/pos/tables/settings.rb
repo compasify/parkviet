@@ -20,6 +20,8 @@ module Spree
             reservation_duration_minutes: branch.reservation_duration_minutes,
             reservation_fee_product_id: branch.reservation_fee_product&.prefixed_id,
             course_labels: CourseLabel.to_pos(branch),
+            bottle_keep_days: branch.bottle_keep_days, tips_as_revenue: branch.tips_as_revenue,
+            tip_split: TipSplitRule.for(branch).to_pos.except(:branch_id),
             tax_categories: Spree::TaxCategory.where(store_id: branch.store_id).order(:name, :id).limit(100).map do |category|
               { id: category.prefixed_id, name: category.name, tax_code: category.tax_code.presence, is_default: category.is_default == true }
             end }
@@ -45,6 +47,29 @@ module Spree
           branch.reservation_fee_product = product
         end
 
+        # How long a kept bottle waits, whether tips count as revenue in the
+        # reports, and how tips are split.
+        def bar!(branch, values)
+          if values.key?('bottle_keep_days')
+            days = Integer(values['bottle_keep_days'].to_s, 10) rescue nil # rubocop:disable Style/RescueModifier
+            raise Conflict.new('The days are invalid.', reason: 'bottle_keep_days_invalid') unless days&.between?(1, 3650)
+
+            branch.bottle_keep_days = days
+          end
+          branch.tips_as_revenue = ActiveModel::Type::Boolean.new.cast(values['tips_as_revenue']) == true if values.key?('tips_as_revenue')
+          return unless values.key?('tip_split')
+
+          split = values['tip_split'].to_h.stringify_keys
+          rule = TipSplitRule.find_or_initialize_by(branch_id: branch.id)
+          rule.mode = split['mode'].to_s if split.key?('mode')
+          rule.mode ||= 'equal'
+          rule.role_codes = Array(split['role_codes']).map(&:to_s).uniq if split.key?('role_codes')
+          unknown = Array(rule.role_codes) - StaffRole.where(store_id: branch.store_id).map(&:prefixed_id)
+          raise Conflict.new('The tip split is invalid.', reason: 'tip_split_invalid') if unknown.any? || !rule.valid?
+
+          rule.save!
+        end
+
         # The names of the courses, numbered from 1; an empty list goes back
         # to the defaults.
         def labels!(branch, rows)
@@ -67,7 +92,8 @@ module Spree
         def update(store:, staff:, key:, branch:, attributes:)
           values = attributes.to_h.stringify_keys.slice('table_register_id', 'service_charge_rate', 'service_charge_applies_to',
                                                          'service_charge_tax_category_id', 'reservation_grace_minutes',
-                                                         'reservation_duration_minutes', 'reservation_fee_product_id', 'course_labels')
+                                                         'reservation_duration_minutes', 'reservation_fee_product_id', 'course_labels',
+                                                         'bottle_keep_days', 'tips_as_revenue', 'tip_split')
           payload = { 'command' => 'table_settings.update', 'branch_id' => branch.prefixed_id, 'attributes' => values }
           CommandExecutor.call(store: store, actor: staff, key: key, payload: payload, authorize: -> { manage!(store, staff, branch) }) do
             branch.lock!
@@ -89,6 +115,7 @@ module Spree
               branch.service_charge_tax_category = category
             end
             reservations!(store, branch, values)
+            bar!(branch, values)
             branch.save!
             labels!(branch, values['course_labels']) if values.key?('course_labels')
             after = to_pos(branch)

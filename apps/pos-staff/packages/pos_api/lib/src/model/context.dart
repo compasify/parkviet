@@ -22,6 +22,7 @@ part 'context.g.dart';
 /// * [store]
 /// * [administration]
 /// * [einvoiceType] - E-invoice the store issues for completed orders; the counter offers buyer details unless it is none.
+/// * [modules] - The selected branch's POS modules by key (such as `fnb.bottle_keep`), on or off.
 /// * [branches] - Branches this person may see, with what their screens need.
 @BuiltValue()
 abstract class Context implements Built<Context, ContextBuilder> {
@@ -42,6 +43,10 @@ abstract class Context implements Built<Context, ContextBuilder> {
   @BuiltValueField(wireName: r'einvoice_type')
   ContextEinvoiceTypeEnum? get einvoiceType;
   // enum einvoiceTypeEnum {  none,  cash_register,  coded,  };
+
+  /// The selected branch's POS modules by key (such as `fnb.bottle_keep`), on or off.
+  @BuiltValueField(wireName: r'modules')
+  BuiltMap<String, bool>? get modules;
 
   /// Branches this person may see, with what their screens need.
   @BuiltValueField(wireName: r'branches')
@@ -95,6 +100,14 @@ class _$ContextSerializer implements PrimitiveSerializer<Context> {
       yield serializers.serialize(
         object.einvoiceType,
         specifiedType: const FullType(ContextEinvoiceTypeEnum),
+      );
+    }
+    if (object.modules != null) {
+      yield r'modules';
+      yield serializers.serialize(
+        object.modules,
+        specifiedType:
+            const FullType(BuiltMap, [FullType(String), FullType(bool)]),
       );
     }
     if (object.branches != null) {
@@ -164,6 +177,15 @@ class _$ContextSerializer implements PrimitiveSerializer<Context> {
           ) as ContextEinvoiceTypeEnum?;
           if (valueDes == null) continue;
           result.einvoiceType = valueDes;
+          break;
+        case r'modules':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(
+                BuiltMap, [FullType(String), FullType(bool)]),
+          ) as BuiltMap<String, bool>?;
+          if (valueDes == null) continue;
+          result.modules.replace(valueDes);
           break;
         case r'branches':
           final valueDes = serializers.deserialize(

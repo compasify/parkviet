@@ -21,6 +21,8 @@
   "receiptDeliveryYes": "Giao tận nhà",
   "receiptDisclaimer": "Phiếu bán hàng POS — không phải hóa đơn điện tử",
   "receiptDiscount": "Giảm giá",
+  "receiptMinimumSpend": "Phụ thu mức tối thiểu",
+  "receiptDrinkCreditLeft": "Drink credit còn lại",
   "receiptDueOn": "Hạn thanh toán",
   "receiptExpected": "Tiền phải có",
   "receiptExpiry": "HSD: {{date}}",

@@ -64,8 +64,56 @@ paths:
                     items:
                       $ref: '#/components/schemas/CatalogItem'
   /api/v3/admin/pos/workspaces:
+    get:
+      operationId: posWorkspaceList
+      description: >
+        Orders visible to the person. A bar's tab list asks for
+        `service_mode=tab&status=editing,parked` and finds tabs by guest name,
+        table or call number with `q`.
+      parameters:
+        - name: branch_id
+          in: query
+          schema:
+            type: string
+        - name: service_mode
+          in: query
+          schema:
+            type: string
+            enum: [counter, dine_in, takeaway, delivery, tab, timed]
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: q
+          in: query
+          schema:
+            type: string
+            maxLength: 60
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: The orders
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceSummaryList'
     post:
       operationId: posWorkspaceCreate
+      description: >
+        A draft order. With `service_mode: tab` and a `tab_name` it opens a
+        bar tab (`fnb.postpay`) that everyone at the branch adds to;
+        `tab_name_taken` when an open tab already has the name.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkspaceCreateInput'
       responses:
         '201':
           description: Draft workspace
@@ -3728,6 +3776,101 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TablePinsResult'
+  /api/v3/admin/pos/bottle_keeps:
+    get:
+      operationId: posBottleKeepList
+      description: >
+        The bottle-keeping book of a branch (`fnb.bottle_keep`): kept bottles
+        by default, `status=all` for every one. `q` finds a bottle by its
+        label code, the guest's phone or name. At most 50, soonest to expire
+        first. For the branch's staff.
+      parameters:
+        - $ref: '#/components/parameters/ReportBranch'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [kept, finished, expired, returned, all]
+        - name: q
+          in: query
+          schema:
+            type: string
+            maxLength: 120
+      responses:
+        '200':
+          description: The bottles
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BottleKeepList'
+  /api/v3/admin/pos/bottle_keeps/{id}:
+    get:
+      operationId: posBottleKeepShow
+      description: One kept bottle with its whole history.
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: The bottle
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BottleKeepResult'
+  /api/v3/admin/pos/bottle_keeps/{id}/pour:
+    post:
+      operationId: posBottleKeepPour
+      description: >
+        Pours from a kept bottle: its new level (never above the old one),
+        optionally the ml, the order it is drunk at and a new photo. Nothing
+        is added to any bill; a level of 0 finishes the bottle. Whoever sells
+        or serves tables at the branch.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BottleKeepPourInput'
+      responses:
+        '200':
+          description: The bottle after the pour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BottleKeepResult'
+        '409':
+          description: >
+            Refused; `error.details.reason` is `bottle_level_raised`,
+            `bottle_level_invalid`, `bottle_ml_invalid`, `bottle_photo_invalid`,
+            `bottle_keep_closed` or `module_disabled`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/bottle_keeps/{id}/label:
+    post:
+      operationId: posBottleKeepLabel
+      description: >
+        The bottle's label as a receipt-kind print document (the device's own
+        printer prints it); with `printer_id` it is also queued there.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChecklistInput'
+      responses:
+        '200':
+          description: The label
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChecklistResult'
 components:
   parameters:
     Id:
@@ -3890,6 +4033,12 @@ components:
           type: string
           enum: [none, cash_register, coded]
           description: E-invoice the store issues for completed orders; the counter offers buyer details unless it is none.
+        modules:
+          type: object
+          nullable: true
+          description: The selected branch's POS modules by key (such as `fnb.bottle_keep`), on or off.
+          additionalProperties:
+            type: boolean
         branches:
           type: array
           description: Branches this person may see, with what their screens need.
@@ -3960,6 +4109,20 @@ components:
           type: [string, 'null']
           maxLength: 60
           description: The name the counter calls out with the call number.
+        tab_name:
+          type: [string, 'null']
+          maxLength: 60
+          description: The guest's name of a bar tab (`service_mode` tab).
+        minimum_spend:
+          description: A VIP table's minimum spend and the fee making up the shortfall.
+          oneOf:
+            - $ref: '#/components/schemas/WorkspaceMinimumSpend'
+            - type: 'null'
+        drink_credit:
+          description: The drink credit of the order's door tickets.
+          oneOf:
+            - $ref: '#/components/schemas/WorkspaceDrinkCredit'
+            - type: 'null'
         resource:
           description: The table of a table order (`fnb.tables`).
           oneOf:
@@ -4041,6 +4204,9 @@ components:
           enum: [ordinary, measured, tracked, menu, timed, cover]
         unit_price:
           type: string
+        price_label:
+          type: [string, 'null']
+          description: The time-of-day menu the price came from ("Happy hour").
         note:
           type: [string, 'null']
         modifiers:
@@ -4201,6 +4367,9 @@ components:
                 type: string
               name:
                 type: string
+              label:
+                type: [string, 'null']
+                description: Shown on its prices, e.g. "Happy hour".
         favorites:
           type: array
           description: Menu item ids of the favourites row, in order.
@@ -4306,6 +4475,9 @@ components:
                   schedule_id:
                     type: [string, 'null']
                     description: The time-of-day menu that sets `price`, if any.
+                  price_label:
+                    type: [string, 'null']
+                    description: That menu's label ("Happy hour"), shown next to the price.
     ModifierGroup:
       type: object
       additionalProperties: false
@@ -4595,6 +4767,12 @@ components:
                 description: Cost per stock unit now
               cost:
                 type: [string, 'null']
+              pour_ml:
+                type: [integer, 'null']
+                description: A measured pour, ml taken from a bottle counted by the bottle (base_quantity 0).
+              bottle_ml:
+                type: [integer, 'null']
+                description: The ml of one bottle of a measured pour.
     StockAlert:
       type: object
       additionalProperties: false
@@ -6956,6 +7134,9 @@ components:
           enum: [active, archived]
         position:
           type: integer
+        minimum_spend:
+          type: [string, 'null']
+          description: A VIP table's minimum spend; the shortfall is charged as a fee.
     ResourceInput:
       type: object
       properties:
@@ -7193,6 +7374,14 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CourseLabel'
+        bottle_keep_days:
+          type: integer
+          description: How many days a guest's bottle is kept.
+        tips_as_revenue:
+          type: boolean
+          description: Whether the reports count tips as revenue.
+        tip_split:
+          $ref: '#/components/schemas/TipSplitRule'
         branch_id:
           type: string
         table_register_id:
@@ -7992,3 +8181,243 @@ components:
           type: string
         waived:
           type: boolean
+    WorkspaceCreateInput:
+      type: object
+      properties:
+        register_id:
+          type: string
+        branch_id:
+          type: string
+          description: The branch of a tab opened without a register.
+        editor_id:
+          type: string
+        service_mode:
+          type: string
+          enum: [counter, tab]
+        tab_name:
+          type: string
+          maxLength: 60
+    WorkspaceSummary:
+      type: object
+      additionalProperties: true
+      required: [id, branch_id, revision, operational_status, service_mode, business_date, total]
+      properties:
+        id:
+          type: string
+        branch_id:
+          type: string
+        revision:
+          type: integer
+        operational_status:
+          type: string
+        service_mode:
+          type: string
+        business_date:
+          type: string
+          format: date
+        order_number:
+          type: [integer, 'null']
+        guest_name:
+          type: [string, 'null']
+        tab_name:
+          type: [string, 'null']
+          description: The guest's name a bar tab is found by.
+        resource:
+          oneOf:
+            - $ref: '#/components/schemas/ResourceRef'
+            - type: 'null'
+        opened_at:
+          type: string
+          format: date-time
+        total:
+          type: string
+    WorkspaceSummaryList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkspaceSummary'
+        meta:
+          $ref: '#/components/schemas/WorkspacePageMeta'
+    WorkspacePageMeta:
+      type: object
+      additionalProperties: true
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        count:
+          type: integer
+        pages:
+          type: integer
+    BottleKeepCustomer:
+      type: object
+      additionalProperties: true
+      required: [id, name]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        phone:
+          type: [string, 'null']
+    BottleKeepActor:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+    BottleKeepEvent:
+      type: object
+      required: [id, kind, level_after, actor, created_at]
+      properties:
+        id:
+          type: string
+        kind:
+          type: string
+          enum: [open, pour, adjust, expire, return]
+        level_before:
+          type: [integer, 'null']
+        level_after:
+          type: integer
+        ml:
+          type: [integer, 'null']
+        workspace_id:
+          type: [string, 'null']
+        approval_id:
+          type: [string, 'null']
+        actor:
+          $ref: '#/components/schemas/BottleKeepActor'
+        note:
+          type: [string, 'null']
+        created_at:
+          type: string
+          format: date-time
+    BottleKeep:
+      type: object
+      required: [id, branch_id, code, status, level_percent, variant_id, kept_on, expires_on, revision]
+      properties:
+        id:
+          type: string
+        branch_id:
+          type: string
+        code:
+          type: string
+          description: The code on the bottle's label.
+        status:
+          type: string
+          enum: [kept, finished, expired, returned]
+        level_percent:
+          type: integer
+          minimum: 0
+          maximum: 100
+        variant_id:
+          type: string
+        product_name:
+          type: [string, 'null']
+        options_text:
+          type: [string, 'null']
+        customer:
+          oneOf:
+            - $ref: '#/components/schemas/BottleKeepCustomer'
+            - type: 'null'
+        guest_name:
+          type: [string, 'null']
+        phone:
+          type: [string, 'null']
+        kept_on:
+          type: string
+          format: date
+        expires_on:
+          type: string
+          format: date
+        source_order_id:
+          type: [string, 'null']
+        note:
+          type: [string, 'null']
+        revision:
+          type: integer
+        photo_url:
+          type: [string, 'null']
+        created_at:
+          type: string
+          format: date-time
+        closed_at:
+          type: [string, 'null']
+          format: date-time
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/BottleKeepEvent'
+    BottleKeepList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/BottleKeep'
+    BottleKeepResult:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/BottleKeep'
+    BottleKeepPourInput:
+      type: object
+      required: [level_percent]
+      properties:
+        level_percent:
+          type: integer
+          minimum: 0
+          maximum: 100
+        ml:
+          type: integer
+          minimum: 1
+        workspace_id:
+          type: string
+        note:
+          type: string
+          maxLength: 200
+        photo:
+          type: string
+          format: binary
+          description: A JPEG, PNG or WebP photo of the bottle, at most 2 MB.
+    WorkspaceMinimumSpend:
+      type: object
+      required: [minimum, amount, waived]
+      properties:
+        minimum:
+          type: string
+        amount:
+          type: string
+          description: The fee "Phụ thu mức tối thiểu" on the bill now.
+        waived:
+          type: boolean
+    WorkspaceDrinkCredit:
+      type: object
+      required: [total, used, remaining]
+      properties:
+        total:
+          type: string
+        used:
+          type: string
+        remaining:
+          type: string
+    TipSplitRule:
+      type: object
+      required: [mode, role_codes]
+      properties:
+        mode:
+          type: string
+          enum: [equal, by_hours, manual]
+        role_codes:
+          type: array
+          description: Staff roles that share tips; every role when empty.
+          items:
+            type: string

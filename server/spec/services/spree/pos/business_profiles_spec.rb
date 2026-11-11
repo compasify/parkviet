@@ -105,7 +105,9 @@ RSpec.describe Spree::Pos::BusinessProfiles do
       bar = described_class.fetch!('bar_pub_club')
       expect(bar.modules).to include('resources', 'fnb.tables', 'fnb.postpay')
       expect(bar.modules).not_to include('fnb.reservations')
-      expect(bar.display).to eq('surface' => 'table_grid')
+      expect(bar.display).to eq('surface' => 'tab_list')
+      expect(bar.modules).to include('fnb.bottle_keep')
+      expect(bar.modules).not_to include('fnb.pour_tracking')
       expect(bar.branch_defaults).not_to have_key('service_charge_rate')
       [restaurant, bar].each { |item| expect(item.recommended_features).to eq(%w[vietqr customer_display]) }
       expect(described_class.fetch!('karaoke_bida').status).to eq('coming_soon')
@@ -243,7 +245,7 @@ RSpec.describe Spree::Pos::BusinessProfiles do
 
     it 'registers the three retail modules, the F&B modules, the planned names, and freezes the registry' do
       expect(described_class.available_keys).to eq(%w[retail.units retail.measured retail.traceability fnb.menu fnb.recipes fnb.kitchen fnb.order_number fnb.cup_label fnb.delivery_platforms resources fnb.tables fnb.postpay fnb.service_charge
-                                                          fnb.reservations])
+                                                          fnb.reservations fnb.bottle_keep fnb.pour_tracking])
       expect(described_class.find('fnb.recipes').depends_on).to eq(%w[fnb.menu retail.units])
       expect(described_class.find('retail.measured').depends_on).to eq(['retail.units'])
       expect(described_class.available?('fnb.menu')).to be(true)

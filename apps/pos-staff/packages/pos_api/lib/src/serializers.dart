@@ -25,6 +25,12 @@ import 'package:pos_api/src/model/area_input.dart';
 import 'package:pos_api/src/model/area_list.dart';
 import 'package:pos_api/src/model/area_result.dart';
 import 'package:pos_api/src/model/available_resource.dart';
+import 'package:pos_api/src/model/bottle_keep.dart';
+import 'package:pos_api/src/model/bottle_keep_actor.dart';
+import 'package:pos_api/src/model/bottle_keep_customer.dart';
+import 'package:pos_api/src/model/bottle_keep_event.dart';
+import 'package:pos_api/src/model/bottle_keep_list.dart';
+import 'package:pos_api/src/model/bottle_keep_result.dart';
 import 'package:pos_api/src/model/buffet_tier.dart';
 import 'package:pos_api/src/model/buffet_tier_item.dart';
 import 'package:pos_api/src/model/buffet_tier_list.dart';
@@ -324,12 +330,19 @@ import 'package:pos_api/src/model/table_split_orders.dart';
 import 'package:pos_api/src/model/table_split_result.dart';
 import 'package:pos_api/src/model/table_tax_category.dart';
 import 'package:pos_api/src/model/tax_row.dart';
+import 'package:pos_api/src/model/tip_split_rule.dart';
 import 'package:pos_api/src/model/workspace.dart';
+import 'package:pos_api/src/model/workspace_create_input.dart';
+import 'package:pos_api/src/model/workspace_drink_credit.dart';
 import 'package:pos_api/src/model/workspace_line.dart';
+import 'package:pos_api/src/model/workspace_minimum_spend.dart';
+import 'package:pos_api/src/model/workspace_page_meta.dart';
 import 'package:pos_api/src/model/workspace_prebill.dart';
 import 'package:pos_api/src/model/workspace_reservation.dart';
 import 'package:pos_api/src/model/workspace_result.dart';
 import 'package:pos_api/src/model/workspace_service_charge.dart';
+import 'package:pos_api/src/model/workspace_summary.dart';
+import 'package:pos_api/src/model/workspace_summary_list.dart';
 import 'package:pos_api/src/model/workspace_totals.dart';
 import 'package:pos_api/src/model/workspace_totals_taxes_inner.dart';
 
@@ -347,6 +360,12 @@ part 'serializers.g.dart';
   AreaList,
   AreaResult,
   AvailableResource,
+  BottleKeep,
+  BottleKeepActor,
+  BottleKeepCustomer,
+  BottleKeepEvent,
+  BottleKeepList,
+  BottleKeepResult,
   BuffetTier,
   BuffetTierItem,
   BuffetTierList,
@@ -649,12 +668,19 @@ part 'serializers.g.dart';
   TableSplitResult,
   TableTaxCategory,
   TaxRow,
+  TipSplitRule,
   Workspace,
+  WorkspaceCreateInput,
+  WorkspaceDrinkCredit,
   WorkspaceLine,
+  WorkspaceMinimumSpend,
+  WorkspacePageMeta,
   WorkspacePrebill,
   WorkspaceReservation,
   WorkspaceResult,
   WorkspaceServiceCharge,
+  WorkspaceSummary,
+  WorkspaceSummaryList,
   WorkspaceTotals,
   WorkspaceTotalsTaxesInner,
 ])
@@ -687,6 +713,10 @@ Serializers serializers = (_$serializers.toBuilder()
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(KitchenHistoryEntry)]),
         () => ListBuilder<KitchenHistoryEntry>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(BottleKeepEvent)]),
+        () => ListBuilder<BottleKeepEvent>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(PlatformSettleOrderInput)]),
@@ -792,6 +822,10 @@ Serializers serializers = (_$serializers.toBuilder()
         () => ListBuilder<WorkspaceTotalsTaxesInner>(),
       )
       ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(WorkspaceSummary)]),
+        () => ListBuilder<WorkspaceSummary>(),
+      )
+      ..addBuilderFactory(
         const FullType(BuiltList, [FullType(KitchenMenuItem)]),
         () => ListBuilder<KitchenMenuItem>(),
       )
@@ -842,6 +876,10 @@ Serializers serializers = (_$serializers.toBuilder()
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(PlatformOrderLineInput)]),
         () => ListBuilder<PlatformOrderLineInput>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(BottleKeep)]),
+        () => ListBuilder<BottleKeep>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(ModifierGroupOptionsInner)]),
@@ -996,6 +1034,10 @@ Serializers serializers = (_$serializers.toBuilder()
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(KitchenAllDayRow)]),
         () => ListBuilder<KitchenAllDayRow>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltMap, [FullType(String), FullType(bool)]),
+        () => MapBuilder<String, bool>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(String)]),

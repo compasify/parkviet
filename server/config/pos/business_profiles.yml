@@ -185,19 +185,20 @@ profiles:
   karaoke_bida:
     group: fnb
     order: 16
-    modules: [resources, timed_billing, fnb.menu, fnb.postpay]
+    modules: [resources, timed_billing, fnb.menu, fnb.postpay, fnb.bottle_keep]
     branch_defaults: {}
     display: {}
     recommended_features: []
     sample_units: []
 
-  # Sold by table for now; tabs and the bar's own modules come later.
+  # Tabs by guest name first, VIP tables on the floor plan, and the bottle-
+  # keeping book. Measured pours need recipes and units, turned on by hand.
   bar_pub_club:
     group: fnb
     order: 17
-    modules: [fnb.menu, fnb.kitchen, resources, fnb.tables, fnb.postpay, fnb.service_charge]
+    modules: [fnb.menu, fnb.kitchen, resources, fnb.tables, fnb.postpay, fnb.service_charge, fnb.bottle_keep]
     branch_defaults: { kitchen_send_trigger: manual }
-    display: { surface: table_grid }
+    display: { surface: tab_list }
     recommended_features: [vietqr, customer_display]
     sample_units: []
     kitchen_stations: [prep, bar]

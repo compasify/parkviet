@@ -242,8 +242,8 @@ module Spree
                 membership.allows?(Spree::Pos::Capabilities::OPEN_SHIFT) ||
                   membership.allows?(Spree::Pos::Capabilities::TAKEOVER)
               }.map(&:branch_id)
-              # Table orders are shared by the people serving tables and the
-              # cashiers who collect them.
+              # Table orders and bar tabs are shared by the people serving tables
+              # and the cashiers who collect them.
               serving_ids = memberships.select { |membership|
                 membership.allows?(Spree::Pos::Capabilities::TABLE_SERVE) ||
                   (membership.allows?(Spree::Pos::Capabilities::OPEN_SHIFT) && membership.allows?(Spree::Pos::Capabilities::PAYMENT))
@@ -251,7 +251,8 @@ module Spree
               Spree::Pos::Workspace.for_store(current_store).left_joins(:shift).where(
                 '((spree_pos_shifts.owner_id = :id OR spree_pos_workspaces.lease_holder_id = :id) AND ' \
                 'spree_pos_workspaces.branch_id IN (:working)) OR spree_pos_workspaces.branch_id IN (:takeover) OR ' \
-                '(spree_pos_workspaces.resource_id IS NOT NULL AND spree_pos_workspaces.branch_id IN (:serving))',
+                "((spree_pos_workspaces.resource_id IS NOT NULL OR spree_pos_workspaces.service_mode = 'tab') AND " \
+                'spree_pos_workspaces.branch_id IN (:serving))',
                 id: current_user.id,
                 working: working_ids.presence || [0],
                 takeover: takeover_ids.presence || [0],

@@ -36,6 +36,18 @@ class WaiterContext {
   /// own are read, and still the defaults when they cannot be.
   final voidReasons = ValueNotifier<List<String>>(voidReasonChoices(null));
 
+  /// The branch's POS modules that are on: a bar shows its tabs and kept
+  /// bottles only where they run. Empty until read.
+  final modules = ValueNotifier<Set<String>>(const {});
+
+  Future<void> loadModules() async {
+    try {
+      modules.value = await api.modules(branchId);
+    } on AppFailure {
+      // The bar shortcuts stay hidden; the tables work as before.
+    }
+  }
+
   Future<void> loadVoidReasons() async {
     try {
       voidReasons.value = voidReasonChoices(await api.voidReasons(branchId));
@@ -62,6 +74,7 @@ class WaiterContext {
   void dispose() {
     menu.dispose();
     voidReasons.dispose();
+    modules.dispose();
   }
 }
 

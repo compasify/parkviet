@@ -642,6 +642,27 @@ export function useWorkspaces(
     // Seats guests at a table: a dine-in draft booked on the open shift of the
     // branch's table register, its lease held by this page. `addOrder` opens
     // another order beside the table's open one.
+    // Opens a bar tab with only the guest's name; its lease is held by this page.
+    async openTab(tabName: string) {
+      try {
+        const { workspace: result, recovered } = await sendIntent(
+          `tab:${tabName.trim().toLowerCase()}`,
+          {
+            branch_id: branchId,
+            editor_id: editorId,
+            service_mode: 'tab',
+            tab_name: tabName.trim(),
+          },
+          '/pos/workspaces',
+        );
+        if (!recovered)
+          setOwned((current) => ({ ...current, [result.id]: result.lease_generation }));
+        return result;
+      } catch (error) {
+        abandonIfNeeded(error);
+        throw error;
+      }
+    },
     async openTable(resourceId: string, input: { guestCount: number | null; addOrder: boolean }) {
       try {
         const { workspace: result, recovered } = await sendIntent(
@@ -791,6 +812,18 @@ export function useWorkspaces(
       return (
         await sendIntent(workspace.id, body, `/pos/workspaces/${workspace.id}/service_charge`)
       ).workspace;
+    },
+    // Lets a VIP table off its minimum spend (a manager's approval), or puts it back.
+    async setMinimumSpend(workspace: PosWorkspace, waived: boolean, approvalId?: string) {
+      const body = {
+        expected_revision: workspace.revision,
+        lease_generation: workspace.lease_generation,
+        editor_id: editorId,
+        waived,
+        approval_id: approvalId,
+      };
+      return (await sendIntent(workspace.id, body, `/pos/workspaces/${workspace.id}/minimum_spend`))
+        .workspace;
     },
     // The table asks for the bill; no lease and no money.
     async requestPayment(workspace: PosWorkspace) {

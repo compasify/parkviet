@@ -23,6 +23,8 @@ module Spree
 
       validates :kind, inclusion: { in: KINDS }
       validates :kitchen_category, format: { with: KITCHEN_CATEGORY }, allow_nil: true
+      validates :drink_credit, numericality: { greater_than: 0 }, allow_nil: true
+      validate :drink_credit_categories_valid
       validates :position, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
       validates :product_id, uniqueness: { scope: :store_id }
       validate :product_belongs_to_store
@@ -33,6 +35,12 @@ module Spree
 
       def combo?
         kind == 'combo'
+      end
+
+      # A door ticket: each one sold lets the guest drink this much of the
+      # allowed kitchen categories (every category when none are named).
+      def door_ticket?
+        drink_credit.present?
       end
 
       # The active menu item a variant is sold as in a store, if any.
@@ -60,11 +68,19 @@ module Spree
           show_components_on_kds: show_components_on_kds, position: position, active: active,
           tax_category_id: product.tax_category.try(:prefixed_id),
           modifier_group_ids: menu_item_modifier_groups.map { |row| row.modifier_group.prefixed_id },
-          components: combo_components.map(&:to_pos)
+          components: combo_components.map(&:to_pos),
+          drink_credit: drink_credit&.to_s('F'), drink_credit_categories: Array(drink_credit_categories)
         }
       end
 
       private
+
+      def drink_credit_categories_valid
+        values = drink_credit_categories
+        return if values.is_a?(Array) && values.size <= 20 && values.all? { |value| value.is_a?(String) && value.match?(KITCHEN_CATEGORY) }
+
+        errors.add(:drink_credit_categories, :invalid)
+      end
 
       def product_belongs_to_store
         errors.add(:product, :invalid) if product && product.store_id != store_id

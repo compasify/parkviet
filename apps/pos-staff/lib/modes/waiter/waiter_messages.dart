@@ -17,6 +17,10 @@ String waiterFailureMessage(AppLocalizations l10n, AppFailure failure) => switch
       ConflictFailure(reason: 'void_quantity_invalid') => l10n.waiterVoidQuantityInvalid,
       ConflictFailure(reason: 'void_reason_invalid' || 'void_note_required') => l10n.waiterVoidReasonInvalid,
       ConflictFailure(reason: 'payment_request_status_invalid') => l10n.waiterPaymentRequested,
+      ConflictFailure(reason: 'tab_name_taken') => l10n.waiterTabNameTaken,
+      ConflictFailure(reason: 'tab_name_invalid') => l10n.waiterTabNameInvalid,
+      ConflictFailure(reason: 'bottle_level_raised') => l10n.waiterBottleLevelRaised,
+      ConflictFailure(reason: 'bottle_keep_closed') => l10n.waiterBottleClosed,
       ForbiddenFailure() => l10n.waiterForbidden,
       _ => failureMessage(l10n, failure),
     };

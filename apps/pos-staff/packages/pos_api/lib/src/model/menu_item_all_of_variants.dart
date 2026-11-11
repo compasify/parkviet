@@ -18,6 +18,7 @@ part 'menu_item_all_of_variants.g.dart';
 /// * [price]
 /// * [listPrice]
 /// * [scheduleId] - The time-of-day menu that sets `price`, if any.
+/// * [priceLabel] - That menu's label (\"Happy hour\"), shown next to the price.
 @BuiltValue()
 abstract class MenuItemAllOfVariants
     implements Built<MenuItemAllOfVariants, MenuItemAllOfVariantsBuilder> {
@@ -42,6 +43,10 @@ abstract class MenuItemAllOfVariants
   /// The time-of-day menu that sets `price`, if any.
   @BuiltValueField(wireName: r'schedule_id')
   String? get scheduleId;
+
+  /// That menu's label (\"Happy hour\"), shown next to the price.
+  @BuiltValueField(wireName: r'price_label')
+  String? get priceLabel;
 
   MenuItemAllOfVariants._();
 
@@ -117,6 +122,13 @@ class _$MenuItemAllOfVariantsSerializer
             object.scheduleId,
             specifiedType: const FullType.nullable(String),
           );
+    if (object.priceLabel != null) {
+      yield r'price_label';
+      yield serializers.serialize(
+        object.priceLabel,
+        specifiedType: const FullType.nullable(String),
+      );
+    }
   }
 
   @override
@@ -195,6 +207,14 @@ class _$MenuItemAllOfVariantsSerializer
           ) as String?;
           if (valueDes == null) continue;
           result.scheduleId = valueDes;
+          break;
+        case r'price_label':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.priceLabel = valueDes;
           break;
         default:
           unhandled.add(key);

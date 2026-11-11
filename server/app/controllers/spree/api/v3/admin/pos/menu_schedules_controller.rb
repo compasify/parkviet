@@ -18,7 +18,7 @@ module Spree
             end
 
             def save(key, record)
-              attributes = params.permit(:branch_id, :name, :starts_at, :ends_at, :active, days_of_week: [],
+              attributes = params.permit(:branch_id, :name, :label, :starts_at, :ends_at, :active, days_of_week: [],
                                                                                           items: %i[menu_item_id variant_id price hidden]).to_h
               attributes['days_of_week'] = days(attributes['days_of_week']) if attributes.key?('days_of_week')
               menu_save.schedule(store: current_store, staff: current_user, key: key, attributes: attributes, schedule: record)

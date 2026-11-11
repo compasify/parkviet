@@ -11,12 +11,15 @@ class _$MenuSchedulesInner extends MenuSchedulesInner {
   final String id;
   @override
   final String name;
+  @override
+  final String? label;
 
   factory _$MenuSchedulesInner(
           [void Function(MenuSchedulesInnerBuilder)? updates]) =>
       (MenuSchedulesInnerBuilder()..update(updates))._build();
 
-  _$MenuSchedulesInner._({required this.id, required this.name}) : super._();
+  _$MenuSchedulesInner._({required this.id, required this.name, this.label})
+      : super._();
   @override
   MenuSchedulesInner rebuild(
           void Function(MenuSchedulesInnerBuilder) updates) =>
@@ -29,7 +32,10 @@ class _$MenuSchedulesInner extends MenuSchedulesInner {
   @override
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
-    return other is MenuSchedulesInner && id == other.id && name == other.name;
+    return other is MenuSchedulesInner &&
+        id == other.id &&
+        name == other.name &&
+        label == other.label;
   }
 
   @override
@@ -37,6 +43,7 @@ class _$MenuSchedulesInner extends MenuSchedulesInner {
     var _$hash = 0;
     _$hash = $jc(_$hash, id.hashCode);
     _$hash = $jc(_$hash, name.hashCode);
+    _$hash = $jc(_$hash, label.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -45,7 +52,8 @@ class _$MenuSchedulesInner extends MenuSchedulesInner {
   String toString() {
     return (newBuiltValueToStringHelper(r'MenuSchedulesInner')
           ..add('id', id)
-          ..add('name', name))
+          ..add('name', name)
+          ..add('label', label))
         .toString();
   }
 }
@@ -62,6 +70,10 @@ class MenuSchedulesInnerBuilder
   String? get name => _$this._name;
   set name(String? name) => _$this._name = name;
 
+  String? _label;
+  String? get label => _$this._label;
+  set label(String? label) => _$this._label = label;
+
   MenuSchedulesInnerBuilder() {
     MenuSchedulesInner._defaults(this);
   }
@@ -71,6 +83,7 @@ class MenuSchedulesInnerBuilder
     if ($v != null) {
       _id = $v.id;
       _name = $v.name;
+      _label = $v.label;
       _$v = null;
     }
     return this;
@@ -96,6 +109,7 @@ class MenuSchedulesInnerBuilder
               id, r'MenuSchedulesInner', 'id'),
           name: BuiltValueNullFieldError.checkNotNull(
               name, r'MenuSchedulesInner', 'name'),
+          label: label,
         );
     replace(_$result);
     return _$result;

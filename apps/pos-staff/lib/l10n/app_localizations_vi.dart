@@ -1044,4 +1044,70 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get depositForfeited => 'đã giữ cọc';
+
+  @override
+  String get waiterTabsTitle => 'Tab đang mở';
+
+  @override
+  String get waiterTabOpen => 'Mở tab';
+
+  @override
+  String get waiterTabSearch => 'Tên khách, bàn hoặc số tab';
+
+  @override
+  String get waiterTabsNone => 'Chưa có tab nào đang mở.';
+
+  @override
+  String get waiterTabsNoMatch => 'Không có tab nào khớp.';
+
+  @override
+  String waiterTabOpenedAt(String time) {
+    return 'Mở lúc $time';
+  }
+
+  @override
+  String get waiterTabName => 'Tên hoặc mô tả khách';
+
+  @override
+  String get waiterTabNameTaken => 'Đã có tab đang mở với tên này.';
+
+  @override
+  String get waiterTabNameInvalid => 'Nhập tên tab (tối đa 60 ký tự).';
+
+  @override
+  String get waiterBottleTitle => 'Rót rượu gửi';
+
+  @override
+  String get waiterBottleCode => 'Mã chai';
+
+  @override
+  String get waiterBottleNotFound => 'Không thấy chai gửi với mã này.';
+
+  @override
+  String waiterBottleLevel(int level) {
+    return 'Còn $level%';
+  }
+
+  @override
+  String waiterBottleNewLevel(int level) {
+    return 'Mức còn sau khi rót: $level%';
+  }
+
+  @override
+  String get waiterBottleMl => 'Số ml đã rót (không bắt buộc)';
+
+  @override
+  String get waiterBottlePour => 'Rót';
+
+  @override
+  String waiterBottlePoured(int level) {
+    return 'Đã rót, chai còn $level%.';
+  }
+
+  @override
+  String get waiterBottleClosed => 'Phiếu gửi này đã kết thúc.';
+
+  @override
+  String get waiterBottleLevelRaised =>
+      'Rót không làm mức tăng; quản lý sửa mức nếu nhập sai.';
 }

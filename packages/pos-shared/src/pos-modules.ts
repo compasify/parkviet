@@ -15,14 +15,20 @@ export type PosModuleUsage = Record<string, boolean>;
 export type PosCatalogView = 'cards' | 'list';
 
 // The selling screen a profile suggests. menu_grid still needs fnb.menu; the
-// table surfaces (the floor as tiles or as a plan) need fnb.tables.
-export type PosSellingSurface = 'catalog' | 'menu_grid' | 'table_grid' | 'floor_plan';
+// table surfaces (the floor as tiles or as a plan) need fnb.tables; a bar's
+// tab list needs fnb.postpay.
+export type PosSellingSurface = 'catalog' | 'menu_grid' | 'table_grid' | 'floor_plan' | 'tab_list';
 
 export type PosTableSurface = 'table_grid' | 'floor_plan';
 
 export const TABLE_SURFACES: readonly PosTableSurface[] = ['table_grid', 'floor_plan'];
 
-const SELLING_SURFACES: readonly PosSellingSurface[] = ['catalog', 'menu_grid', ...TABLE_SURFACES];
+const SELLING_SURFACES: readonly PosSellingSurface[] = [
+  'catalog',
+  'menu_grid',
+  ...TABLE_SURFACES,
+  'tab_list',
+];
 
 export type PosProfileDisplay = { catalog_view?: PosCatalogView; surface?: PosSellingSurface };
 
@@ -52,6 +58,8 @@ export const LABELLED_MODULES = [
   'fnb.postpay',
   'fnb.service_charge',
   'fnb.reservations',
+  'fnb.bottle_keep',
+  'fnb.pour_tracking',
 ] as const;
 
 function record(value: unknown): Record<string, unknown> | null {

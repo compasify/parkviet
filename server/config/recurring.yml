@@ -81,6 +81,10 @@ production:
   pos_mark_reservation_no_shows:
     class: Spree::Pos::Reservations::MarkNoShowJob
     schedule: every 5 minutes
+  # POS kept bottles past their date become expired (status only).
+  pos_expire_bottle_keeps:
+    class: Spree::Pos::BottleKeeps::ExpireJob
+    schedule: 15 4 * * * Asia/Ho_Chi_Minh
   # POS print queue: return jobs whose print station lease ran out.
   pos_release_print_claims:
     class: Spree::Pos::ReleasePrintClaimsJob

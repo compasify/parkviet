@@ -1867,6 +1867,120 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'đã giữ cọc'**
   String get depositForfeited;
+
+  /// No description provided for @waiterTabsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tab đang mở'**
+  String get waiterTabsTitle;
+
+  /// No description provided for @waiterTabOpen.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mở tab'**
+  String get waiterTabOpen;
+
+  /// No description provided for @waiterTabSearch.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tên khách, bàn hoặc số tab'**
+  String get waiterTabSearch;
+
+  /// No description provided for @waiterTabsNone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có tab nào đang mở.'**
+  String get waiterTabsNone;
+
+  /// No description provided for @waiterTabsNoMatch.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không có tab nào khớp.'**
+  String get waiterTabsNoMatch;
+
+  /// No description provided for @waiterTabOpenedAt.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mở lúc {time}'**
+  String waiterTabOpenedAt(String time);
+
+  /// No description provided for @waiterTabName.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tên hoặc mô tả khách'**
+  String get waiterTabName;
+
+  /// No description provided for @waiterTabNameTaken.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã có tab đang mở với tên này.'**
+  String get waiterTabNameTaken;
+
+  /// No description provided for @waiterTabNameInvalid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập tên tab (tối đa 60 ký tự).'**
+  String get waiterTabNameInvalid;
+
+  /// No description provided for @waiterBottleTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Rót rượu gửi'**
+  String get waiterBottleTitle;
+
+  /// No description provided for @waiterBottleCode.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mã chai'**
+  String get waiterBottleCode;
+
+  /// No description provided for @waiterBottleNotFound.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không thấy chai gửi với mã này.'**
+  String get waiterBottleNotFound;
+
+  /// No description provided for @waiterBottleLevel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn {level}%'**
+  String waiterBottleLevel(int level);
+
+  /// No description provided for @waiterBottleNewLevel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mức còn sau khi rót: {level}%'**
+  String waiterBottleNewLevel(int level);
+
+  /// No description provided for @waiterBottleMl.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số ml đã rót (không bắt buộc)'**
+  String get waiterBottleMl;
+
+  /// No description provided for @waiterBottlePour.
+  ///
+  /// In vi, this message translates to:
+  /// **'Rót'**
+  String get waiterBottlePour;
+
+  /// No description provided for @waiterBottlePoured.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã rót, chai còn {level}%.'**
+  String waiterBottlePoured(int level);
+
+  /// No description provided for @waiterBottleClosed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Phiếu gửi này đã kết thúc.'**
+  String get waiterBottleClosed;
+
+  /// No description provided for @waiterBottleLevelRaised.
+  ///
+  /// In vi, this message translates to:
+  /// **'Rót không làm mức tăng; quản lý sửa mức nếu nhập sai.'**
+  String get waiterBottleLevelRaised;
 }
 
 class _AppLocalizationsDelegate

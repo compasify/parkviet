@@ -25,6 +25,7 @@ module Spree
               branch = Spree::Pos::Resources::Guard.branch!(current_store, params[:branch_id])
               attributes = params.permit(:table_register_id, :service_charge_rate, :service_charge_tax_category_id,
                                          :reservation_grace_minutes, :reservation_duration_minutes, :reservation_fee_product_id,
+                                         :bottle_keep_days, :tips_as_revenue, tip_split: [:mode, { role_codes: [] }],
                                          service_charge_applies_to: [], course_labels: [:name]).to_h
               result = Spree::Pos::Tables::Settings.update(store: current_store, staff: current_user, key: key, branch: branch, attributes: attributes)
               render json: { data: result }

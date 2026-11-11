@@ -96,8 +96,14 @@ export function tableOrderOf(workspace: PosWorkspace | null | undefined): TableO
   };
 }
 
+// An order everyone serving the branch adds to without a lease: a table
+// order, or a bar tab (`service_mode` tab, found by the guest's name).
 export function isTableOrder(workspace: PosWorkspace | null | undefined): boolean {
-  return tableOrderOf(workspace).table !== null;
+  return tableOrderOf(workspace).table !== null || isTab(workspace);
+}
+
+export function isTab(workspace: PosWorkspace | null | undefined): boolean {
+  return workspace?.service_mode === 'tab' && Boolean(workspace.tab_name);
 }
 
 // Whether an order belongs on the selling page of this branch and register.

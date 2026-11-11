@@ -29,6 +29,7 @@ module Spree
       validates :rotation, numericality: { only_integer: true, in: 0..359 }
       validates :position, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
       validates :resource_type_code, length: { maximum: 40 }, allow_nil: true
+      validates :minimum_spend, numericality: { greater_than: 0 }, allow_nil: true
       validate :name_unique_while_active
       validate :area_of_branch
 
@@ -41,7 +42,8 @@ module Spree
       def to_pos
         { id: prefixed_id, branch_id: branch.prefixed_id, area_id: area.prefixed_id, kind: kind, name: name,
           capacity: capacity, shape: shape, x: x, y: y, w: w, h: h, rotation: rotation, manual_status: manual_status,
-          resource_type_code: resource_type_code, status: status, position: position }
+          resource_type_code: resource_type_code, status: status, position: position,
+          minimum_spend: minimum_spend&.to_s('F') }
       end
 
       # What an order shows of its table; no extra query when the table is loaded.

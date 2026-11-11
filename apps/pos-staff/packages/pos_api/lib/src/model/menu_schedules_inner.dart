@@ -13,6 +13,7 @@ part 'menu_schedules_inner.g.dart';
 /// Properties:
 /// * [id]
 /// * [name]
+/// * [label] - Shown on its prices, e.g. \"Happy hour\".
 @BuiltValue()
 abstract class MenuSchedulesInner
     implements Built<MenuSchedulesInner, MenuSchedulesInnerBuilder> {
@@ -21,6 +22,10 @@ abstract class MenuSchedulesInner
 
   @BuiltValueField(wireName: r'name')
   String get name;
+
+  /// Shown on its prices, e.g. \"Happy hour\".
+  @BuiltValueField(wireName: r'label')
+  String? get label;
 
   MenuSchedulesInner._();
 
@@ -58,6 +63,13 @@ class _$MenuSchedulesInnerSerializer
       object.name,
       specifiedType: const FullType(String),
     );
+    if (object.label != null) {
+      yield r'label';
+      yield serializers.serialize(
+        object.label,
+        specifiedType: const FullType.nullable(String),
+      );
+    }
   }
 
   @override
@@ -96,6 +108,14 @@ class _$MenuSchedulesInnerSerializer
             specifiedType: const FullType(String),
           ) as String;
           result.name = valueDes;
+          break;
+        case r'label':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.label = valueDes;
           break;
         default:
           unhandled.add(key);

@@ -320,7 +320,7 @@ module Spree
             meta: [row('time', t('receiptTime'), time), *customer_rows(customer), *delivery_meta_rows(delivery)],
             lines: Array(workspace['line_items']).map { |line| prebill_line(line, currency) },
             line_labels: line_labels, signature_labels: signature_labels,
-            totals: with_delivery_fee(prebill_totals(totals, currency), delivery, currency),
+            totals: with_delivery_fee(prebill_totals(totals, currency, workspace['drink_credit']), delivery, currency),
             payments: prebill_payments(workspace['financial'], currency), pay_qr: nil,
             notes: [Text.trim(workspace['note'].to_s), t('receiptPrebillNote')].reject(&:empty?),
             disclaimer: t('receiptDisclaimer')
@@ -350,13 +350,20 @@ module Spree
           )
         end
 
-        def prebill_totals(totals, currency)
+        # A VIP table's minimum spend shows as its own row; the drink credit
+        # of door tickets left unused follows the total.
+        def prebill_totals(totals, currency, drink_credit = nil)
           return [] unless totals
 
           result = [row('item_total', t('receiptItemTotal'), money(totals['item_total'], currency))]
           result << row('discount', t('receiptDiscount'), money(totals['discount_total'], currency)) if non_zero?(totals['discount_total'])
+          Array(totals['fees']).select { |fee| fee['kind'] == 'minimum_spend' && non_zero?(fee['amount']) }.each do |fee|
+            result << row(nil, t('receiptMinimumSpend'), money(fee['amount'], currency))
+          end
           result.concat(tax_table_rows(totals['taxes'], currency))
           result << row('total', t('receiptTotal'), money(totals['total'], currency), strong: true)
+          result << row(nil, t('receiptDrinkCreditLeft'), money(drink_credit['remaining'], currency)) if drink_credit.is_a?(Hash) && drink_credit['remaining']
+          result
         end
 
         def prebill_payments(financial, currency)

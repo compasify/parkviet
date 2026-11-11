@@ -173,7 +173,7 @@ Rails.application.routes.draw do
             get 'shift_closures/open', to: 'shifts/closures#open'
             get 'cash_reconciliations/candidates', to: 'cash_reconciliations#candidates'
             resources :cash_reconciliations, only: [:index, :create]
-            get 'reports/:report', to: 'reports#show', as: :report, constraints: { report: /sales|receipts|cashbook|receivables|closures|ingredient_usage|menu_margin|platforms/ }
+            get 'reports/:report', to: 'reports#show', as: :report, constraints: { report: /sales|receipts|cashbook|receivables|closures|ingredient_usage|menu_margin|platforms|bar/ }
             resources :exports, only: [:index, :show, :create] do
               member do
                 post :download_link
@@ -267,6 +267,22 @@ Rails.application.routes.draw do
             end
             # Buffet tickets and their dishes.
             resources :buffet_tiers, only: [:index, :create, :update]
+            # A bar: the bottle-keeping book, the open bottles pours come
+            # from, and the tips of a business day.
+            resources :bottle_keeps, only: [:index, :show, :create] do
+              member do
+                post :pour
+                post :adjust
+                post :return, action: :return_bottle
+                post :expire
+                post :label
+              end
+            end
+            resources :open_bottles, only: [:index] do
+              post :finish, on: :member
+            end
+            get 'tips', to: 'tips#index'
+            post 'tips/payout', to: 'tips#payout'
             # E-invoices of completed orders and the store's provider settings.
             get 'einvoices/summary', to: 'einvoices#summary'
             post 'einvoices/retry', to: 'einvoices#retry_issue'
@@ -388,6 +404,7 @@ Rails.application.routes.draw do
               post 'payment_request', to: 'payment_requests#create'
               post 'payment_request/resolve', to: 'payment_requests#resolve'
               post 'service_charge', to: 'workspaces/service_charges#update'
+              post 'minimum_spend', to: 'workspaces/minimum_spends#update'
               post 'checklist', to: 'workspaces/checklists#create'
               # Courses held back from the kitchen, and a booking's deposits at payment.
               post 'courses/:course/fire', to: 'workspaces/courses#fire'

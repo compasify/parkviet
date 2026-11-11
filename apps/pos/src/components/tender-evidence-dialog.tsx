@@ -34,6 +34,7 @@ export type TenderEvidenceItemInput = {
   reference?: string;
   receivingAccount?: string;
   terminalRef?: string;
+  tipAmount?: string;
 };
 
 const FOCUSABLE =
@@ -101,34 +102,51 @@ export function TenderEvidenceDialog({
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   const locked = disabled || busy;
 
+  // The store's address and phone, and the branch, from the POS context.
+  const context = usePosSelection().context.data;
+  const branch = context?.branches.find((row) => row.id === workspace.branch_id);
+
+  // A guest's tip rides on the cash tender, or else on the manual transfer,
+  // where the branch serves at the table and settles later.
+  const tipAttempt =
+    context?.modules?.['fnb.postpay'] === true ? (cashAttempt ?? bankAttempt) : undefined;
+  const [tipInput, setTipInput] = useState('');
+  const tipParsed = parseVndInput(tipInput);
+  const tipInvalid = tipInput.trim() !== '' && tipParsed === null;
+  const tip = tipAttempt && tipParsed !== null && tipParsed !== '0' ? tipParsed : null;
+  const withTip = (attempt: PosFinancialAttempt | undefined) => {
+    const amount = attempt ? parseVndAmount(attempt.amount) : null;
+    if (amount === null || !attempt) return amount;
+    return tip && attempt.id === tipAttempt?.id ? String(BigInt(amount) + BigInt(tip)) : amount;
+  };
+
   const handed = parseVndInput(handedInput);
   const handedInvalid = handedInput.trim() !== '' && handed === null;
-  const handedShort = cashAttempt ? shortOf(handed, cashAttempt.amount) : null;
-  const cashAmount = cashAttempt ? parseVndAmount(cashAttempt.amount) : null;
+  const cashAmount = withTip(cashAttempt);
+  const handedShort = cashAttempt && cashAmount !== null ? shortOf(handed, cashAmount) : null;
   const change =
     handed !== null && cashAmount !== null && handedShort === false
       ? String(BigInt(handed) - BigInt(cashAmount))
       : null;
 
   const received = parseVndInput(receivedInput);
+  const bankAmount = withTip(bankAttempt);
   const receivedInvalid =
     receivedInput.trim() !== '' &&
-    (received === null || (bankAttempt ? shortOf(received, bankAttempt.amount) !== false : false));
+    (received === null || (bankAmount !== null ? shortOf(received, bankAmount) !== false : false));
 
   const cashReady = !cashAttempt || (handed !== null && handedShort === false);
   const bankReady =
     !bankAttempt || (reference.trim() !== '' && account.trim() !== '' && !receivedInvalid);
   const qrReady = !qrAttempt || qrInput !== null;
-  const ready = cashReady && bankReady && qrReady;
+  const ready = cashReady && bankReady && qrReady && !tipInvalid;
 
   const handedId = useId();
+  const tipId = useId();
   // The store's current default payment ticket template, on its paper.
   const template = usePrintTemplate('payment_ticket');
   const { paper } = template;
   const [printError, setPrintError] = useState('');
-  // The store's address and phone, and the branch, from the POS context.
-  const context = usePosSelection().context.data;
-  const branch = context?.branches.find((row) => row.id === workspace.branch_id);
   const ticket = invoiceTicketPrintDocument(
     {
       workspace,
@@ -216,8 +234,10 @@ export function TenderEvidenceDialog({
       root.focus();
       return;
     }
+
+    // The tip is optional: the cashier starts at the money handed.
     (
-      root.querySelector<HTMLElement>('input:not(:disabled)') ??
+      root.querySelector<HTMLElement>('input:not(:disabled):not([name="tip_amount"])') ??
       root.querySelector<HTMLElement>('button:not(:disabled)')
     )?.focus();
   }, [locked]);
@@ -256,9 +276,15 @@ export function TenderEvidenceDialog({
         onSubmit={(event) => {
           event.preventDefault();
           if (locked || !ready) return;
-          const inputs: TenderEvidenceItemInput[] = attempts.map((attempt) =>
-            attempt.kind === 'cash'
-              ? { attemptId: attempt.id, evidenceKind: 'cash_count', handedAmount: handed ?? '' }
+          const inputs: TenderEvidenceItemInput[] = attempts.map((attempt) => {
+            const tipAmount = tip && attempt.id === tipAttempt?.id ? tip : undefined;
+            return attempt.kind === 'cash'
+              ? {
+                  attemptId: attempt.id,
+                  evidenceKind: 'cash_count',
+                  handedAmount: handed ?? '',
+                  tipAmount,
+                }
               : attempt.kind === 'vietqr' && qrInput
                 ? { attemptId: attempt.id, ...qrInput }
                 : {
@@ -267,8 +293,9 @@ export function TenderEvidenceDialog({
                     reference: reference.trim(),
                     receivingAccount: account.trim(),
                     receivedAmount: received ?? undefined,
-                  },
-          );
+                    tipAmount,
+                  };
+          });
           void onConfirm(inputs);
         }}
       >
@@ -362,6 +389,31 @@ export function TenderEvidenceDialog({
                 </div>
               ))}
             </div>
+            {tipAttempt ? (
+              <div className="payment-handed-field payment-tip-field">
+                <label htmlFor={tipId}>{t('paymentTip')}</label>
+                <input
+                  id={tipId}
+                  className="money-input"
+                  name="tip_amount"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  value={tipInput}
+                  onChange={(event) => setTipInput(event.target.value)}
+                  placeholder="0"
+                  aria-invalid={tipInvalid}
+                  aria-describedby={`${tipId}-hint`}
+                  disabled={locked}
+                />
+                <small id={`${tipId}-hint`} className="muted">
+                  {tip
+                    ? t('paymentTipTotal', {
+                        amount: formatMoney(withTip(tipAttempt) ?? '0', currency),
+                      })
+                    : t('paymentTipHint')}
+                </small>
+              </div>
+            ) : null}
             {cashAttempt ? (
               <>
                 <div className="payment-handed-field">

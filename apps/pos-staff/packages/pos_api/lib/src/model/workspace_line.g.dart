@@ -171,6 +171,8 @@ class _$WorkspaceLine extends WorkspaceLine {
   @override
   final String? unitPrice;
   @override
+  final String? priceLabel;
+  @override
   final String? note;
   @override
   final BuiltList<LineModifier>? modifiers;
@@ -210,6 +212,7 @@ class _$WorkspaceLine extends WorkspaceLine {
       this.saleLineId,
       this.kind,
       this.unitPrice,
+      this.priceLabel,
       this.note,
       this.modifiers,
       this.components,
@@ -244,6 +247,7 @@ class _$WorkspaceLine extends WorkspaceLine {
         saleLineId == other.saleLineId &&
         kind == other.kind &&
         unitPrice == other.unitPrice &&
+        priceLabel == other.priceLabel &&
         note == other.note &&
         modifiers == other.modifiers &&
         components == other.components &&
@@ -271,6 +275,7 @@ class _$WorkspaceLine extends WorkspaceLine {
     _$hash = $jc(_$hash, saleLineId.hashCode);
     _$hash = $jc(_$hash, kind.hashCode);
     _$hash = $jc(_$hash, unitPrice.hashCode);
+    _$hash = $jc(_$hash, priceLabel.hashCode);
     _$hash = $jc(_$hash, note.hashCode);
     _$hash = $jc(_$hash, modifiers.hashCode);
     _$hash = $jc(_$hash, components.hashCode);
@@ -300,6 +305,7 @@ class _$WorkspaceLine extends WorkspaceLine {
           ..add('saleLineId', saleLineId)
           ..add('kind', kind)
           ..add('unitPrice', unitPrice)
+          ..add('priceLabel', priceLabel)
           ..add('note', note)
           ..add('modifiers', modifiers)
           ..add('components', components)
@@ -356,6 +362,10 @@ class WorkspaceLineBuilder
   String? _unitPrice;
   String? get unitPrice => _$this._unitPrice;
   set unitPrice(String? unitPrice) => _$this._unitPrice = unitPrice;
+
+  String? _priceLabel;
+  String? get priceLabel => _$this._priceLabel;
+  set priceLabel(String? priceLabel) => _$this._priceLabel = priceLabel;
 
   String? _note;
   String? get note => _$this._note;
@@ -435,6 +445,7 @@ class WorkspaceLineBuilder
       _saleLineId = $v.saleLineId;
       _kind = $v.kind;
       _unitPrice = $v.unitPrice;
+      _priceLabel = $v.priceLabel;
       _note = $v.note;
       _modifiers = $v.modifiers?.toBuilder();
       _components = $v.components?.toBuilder();
@@ -486,6 +497,7 @@ class WorkspaceLineBuilder
             saleLineId: saleLineId,
             kind: kind,
             unitPrice: unitPrice,
+            priceLabel: priceLabel,
             note: note,
             modifiers: _modifiers?.build(),
             components: _components?.build(),

@@ -4,6 +4,7 @@
 
 // ignore_for_file: unused_element
 import 'package:built_collection/built_collection.dart';
+import 'package:pos_api/src/model/tip_split_rule.dart';
 import 'package:pos_api/src/model/table_tax_category.dart';
 import 'package:pos_api/src/model/course_label.dart';
 import 'package:built_value/built_value.dart';
@@ -18,6 +19,9 @@ part 'table_settings.g.dart';
 /// * [reservationDurationMinutes] - The length of a booking when none is given.
 /// * [reservationFeeProductId] - The service sold when a deposit is kept (priced with its tax included).
 /// * [courseLabels]
+/// * [bottleKeepDays] - How many days a guest's bottle is kept.
+/// * [tipsAsRevenue] - Whether the reports count tips as revenue.
+/// * [tipSplit]
 /// * [branchId]
 /// * [tableRegisterId] - The register whose open shift table orders are booked on.
 /// * [serviceChargeRate] - Percent of the items after discounts; none when null.
@@ -41,6 +45,17 @@ abstract class TableSettings
 
   @BuiltValueField(wireName: r'course_labels')
   BuiltList<CourseLabel> get courseLabels;
+
+  /// How many days a guest's bottle is kept.
+  @BuiltValueField(wireName: r'bottle_keep_days')
+  int? get bottleKeepDays;
+
+  /// Whether the reports count tips as revenue.
+  @BuiltValueField(wireName: r'tips_as_revenue')
+  bool? get tipsAsRevenue;
+
+  @BuiltValueField(wireName: r'tip_split')
+  TipSplitRule? get tipSplit;
 
   @BuiltValueField(wireName: r'branch_id')
   String get branchId;
@@ -111,6 +126,27 @@ class _$TableSettingsSerializer implements PrimitiveSerializer<TableSettings> {
       object.courseLabels,
       specifiedType: const FullType(BuiltList, [FullType(CourseLabel)]),
     );
+    if (object.bottleKeepDays != null) {
+      yield r'bottle_keep_days';
+      yield serializers.serialize(
+        object.bottleKeepDays,
+        specifiedType: const FullType(int),
+      );
+    }
+    if (object.tipsAsRevenue != null) {
+      yield r'tips_as_revenue';
+      yield serializers.serialize(
+        object.tipsAsRevenue,
+        specifiedType: const FullType(bool),
+      );
+    }
+    if (object.tipSplit != null) {
+      yield r'tip_split';
+      yield serializers.serialize(
+        object.tipSplit,
+        specifiedType: const FullType(TipSplitRule),
+      );
+    }
     yield r'branch_id';
     yield serializers.serialize(
       object.branchId,
@@ -201,6 +237,30 @@ class _$TableSettingsSerializer implements PrimitiveSerializer<TableSettings> {
             specifiedType: const FullType(BuiltList, [FullType(CourseLabel)]),
           ) as BuiltList<CourseLabel>;
           result.courseLabels.replace(valueDes);
+          break;
+        case r'bottle_keep_days':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(int),
+          ) as int?;
+          if (valueDes == null) continue;
+          result.bottleKeepDays = valueDes;
+          break;
+        case r'tips_as_revenue':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(bool),
+          ) as bool?;
+          if (valueDes == null) continue;
+          result.tipsAsRevenue = valueDes;
+          break;
+        case r'tip_split':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(TipSplitRule),
+          ) as TipSplitRule?;
+          if (valueDes == null) continue;
+          result.tipSplit.replace(valueDes);
           break;
         case r'branch_id':
           final valueDes = serializers.deserialize(

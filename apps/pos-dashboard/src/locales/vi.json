@@ -1556,7 +1556,14 @@
     "taxUnset": "Chưa đặt (món mới lấy thuế đồ ăn, đồ uống)",
     "taxFood": "Đồ ăn, đồ uống",
     "taxAlcohol": "Rượu, bia",
-    "taxOther": "Thuế suất khác đang dùng"
+    "taxOther": "Thuế suất khác đang dùng",
+    "drinkCredit": "Drink credit mỗi vé (VND)",
+    "drinkCreditHint": "Vé vào cửa: mỗi vé bán ra cho khách uống tới số tiền này. Để trống nếu không phải vé.",
+    "drinkCreditInvalid": "Nhập số tiền VND lớn hơn 0.",
+    "drinkCreditCategories": "Nhóm bếp được dùng credit",
+    "drinkCreditCategoriesHint": "Cách nhau bằng dấu phẩy, ví dụ do_uong. Để trống: mọi đồ uống.",
+    "scheduleLabel": "Nhãn hiển thị",
+    "scheduleLabelHint": "Hiện trên món khi khung giờ đang chạy, ví dụ \"Happy hour\"."
   },
   "receivablesOpenCustomer": "Xem khách nợ",
   "receivablesSearch": "Tìm theo số đơn hoặc khách hàng",
@@ -2483,6 +2490,22 @@
     "mode_delivery": "Giao hàng",
     "mode_tab": "Tab (trả sau)",
     "mode_timed": "Tính giờ",
-    "saveSettings": "Lưu cài đặt phục vụ tại bàn"
+    "saveSettings": "Lưu cài đặt phục vụ tại bàn",
+    "minimumSpend": "Mức chi tối thiểu (VND)",
+    "minimumSpendHint": "Bàn VIP: tab dưới mức này có phụ thu phần chênh. Để trống nếu không có.",
+    "problem_minimumSpend": "Mức chi tối thiểu là số tiền VND lớn hơn 0.",
+    "failure_bottle_keep_days_invalid": "Số ngày gửi rượu phải từ 1 đến 3650.",
+    "failure_tip_split_invalid": "Cách chia tip không hợp lệ.",
+    "failure_minimum_spend_invalid": "Mức chi tối thiểu không hợp lệ.",
+    "barSettings": "Bar, pub và club",
+    "bottleKeepDays": "Số ngày giữ chai gửi",
+    "bottleKeepDaysHint": "Từ 1 đến {{max}} ngày; quá hạn thì phiếu gửi tự hết hạn.",
+    "tipsAsRevenue": "Ghi tip vào doanh thu",
+    "tipsAsRevenueHint": "Mặc định tip để ngoài doanh thu chịu thuế GTGT. Chỉ bật khi kế toán xác nhận.",
+    "tipSplitMode": "Cách chia tip mặc định",
+    "tipSplit_equal": "Chia đều",
+    "tipSplit_by_hours": "Theo giờ làm",
+    "tipSplit_manual": "Nhập tay",
+    "tipSplitRoles": "Vai trò được chia tip (không chọn: mọi nhân viên)"
   }
 }

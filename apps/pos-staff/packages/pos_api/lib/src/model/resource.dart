@@ -28,6 +28,7 @@ part 'resource.g.dart';
 /// * [resourceTypeCode]
 /// * [status]
 /// * [position]
+/// * [minimumSpend] - A VIP table's minimum spend; the shortfall is charged as a fee.
 @BuiltValue()
 abstract class Resource implements Built<Resource, ResourceBuilder> {
   @BuiltValueField(wireName: r'id')
@@ -81,6 +82,10 @@ abstract class Resource implements Built<Resource, ResourceBuilder> {
 
   @BuiltValueField(wireName: r'position')
   int get position;
+
+  /// A VIP table's minimum spend; the shortfall is charged as a fee.
+  @BuiltValueField(wireName: r'minimum_spend')
+  String? get minimumSpend;
 
   Resource._();
 
@@ -187,6 +192,13 @@ class _$ResourceSerializer implements PrimitiveSerializer<Resource> {
       object.position,
       specifiedType: const FullType(int),
     );
+    if (object.minimumSpend != null) {
+      yield r'minimum_spend';
+      yield serializers.serialize(
+        object.minimumSpend,
+        specifiedType: const FullType.nullable(String),
+      );
+    }
   }
 
   @override
@@ -324,6 +336,14 @@ class _$ResourceSerializer implements PrimitiveSerializer<Resource> {
             specifiedType: const FullType(int),
           ) as int;
           result.position = valueDes;
+          break;
+        case r'minimum_spend':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.minimumSpend = valueDes;
           break;
         default:
           unhandled.add(key);
