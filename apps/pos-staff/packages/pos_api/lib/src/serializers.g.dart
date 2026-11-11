@@ -7,11 +7,13 @@ part of 'serializers.dart';
 // **************************************************************************
 
 Serializers _$serializers = (Serializers().toBuilder()
+      ..add($MenuItemConfig.serializer)
       ..add(Approval.serializer)
       ..add(ApprovalRevision.serializer)
       ..add(CatalogItem.serializer)
       ..add(Context.serializer)
       ..add(ContextAdministration.serializer)
+      ..add(ContextEinvoiceTypeEnum.serializer)
       ..add(ContextStaff.serializer)
       ..add(ContextStore.serializer)
       ..add(Device.serializer)
@@ -25,9 +27,47 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(DeviceStaffMember.serializer)
       ..add(DeviceStaffSignIn.serializer)
       ..add(DeviceStatusEnum.serializer)
+      ..add(Einvoice.serializer)
+      ..add(EinvoiceBuyer.serializer)
+      ..add(EinvoiceInvoiceTypeEnum.serializer)
+      ..add(EinvoiceLine.serializer)
+      ..add(EinvoiceLineKindEnum.serializer)
+      ..add(EinvoicePaymentMethodEnum.serializer)
+      ..add(EinvoiceRelationEnum.serializer)
+      ..add(EinvoiceSample.serializer)
+      ..add(EinvoiceSeller.serializer)
+      ..add(EinvoiceSetting.serializer)
+      ..add(EinvoiceSettingInput.serializer)
+      ..add(EinvoiceSettingInputStatusEnum.serializer)
+      ..add(EinvoiceSettingStatusEnum.serializer)
+      ..add(EinvoiceSettings.serializer)
+      ..add(EinvoiceSettingsEinvoiceTypeEnum.serializer)
+      ..add(EinvoiceSettingsProvidersInner.serializer)
+      ..add(EinvoiceStatusEnum.serializer)
+      ..add(EinvoiceSummary.serializer)
+      ..add(EinvoiceSummaryEinvoiceTypeEnum.serializer)
+      ..add(EinvoiceSummaryRevenue.serializer)
+      ..add(EinvoiceSummaryRevenueLevelEnum.serializer)
+      ..add(EinvoiceTotals.serializer)
+      ..add(EinvoiceTotalsTaxesInner.serializer)
       ..add(ErrorResponse.serializer)
       ..add(ErrorResponseError.serializer)
       ..add(ErrorResponseErrorDetails.serializer)
+      ..add(IngredientUsageRow.serializer)
+      ..add(LineComponent.serializer)
+      ..add(LineModifier.serializer)
+      ..add(Menu.serializer)
+      ..add(MenuAvailability.serializer)
+      ..add(MenuCategory.serializer)
+      ..add(MenuItem.serializer)
+      ..add(MenuItemAllOfVariants.serializer)
+      ..add(MenuItemConfigComponentsInner.serializer)
+      ..add(MenuItemConfigKindEnum.serializer)
+      ..add(MenuMarginRow.serializer)
+      ..add(MenuSchedulesInner.serializer)
+      ..add(ModifierGroup.serializer)
+      ..add(ModifierGroupOptionsInner.serializer)
+      ..add(ModifierSelection.serializer)
       ..add(PosApprovalCreate201Response.serializer)
       ..add(PosCatalog200Response.serializer)
       ..add(PosDeviceMe200Response.serializer)
@@ -40,6 +80,29 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(PosDeviceStaff200Response.serializer)
       ..add(PosDeviceStaffSignIn201Response.serializer)
       ..add(PosDeviceStaffSignInRequest.serializer)
+      ..add(PosEinvoice200Response.serializer)
+      ..add(PosEinvoiceBuyerRequest.serializer)
+      ..add(PosEinvoiceCancelRequest.serializer)
+      ..add(PosEinvoiceReplaceRequest.serializer)
+      ..add(PosEinvoiceRetry200Response.serializer)
+      ..add(PosEinvoiceRetry200ResponseData.serializer)
+      ..add(PosEinvoiceRetryRequest.serializer)
+      ..add(PosEinvoiceSample200Response.serializer)
+      ..add(PosEinvoiceSampleRequest.serializer)
+      ..add(PosEinvoiceSettings200Response.serializer)
+      ..add(PosEinvoiceSettingsSaveRequest.serializer)
+      ..add(PosEinvoiceSettingsSaveRequestEinvoiceTypeEnum.serializer)
+      ..add(PosEinvoiceSummary200Response.serializer)
+      ..add(PosEinvoices200Response.serializer)
+      ..add(PosMenu200Response.serializer)
+      ..add(PosMenuCategories200Response.serializer)
+      ..add(PosMenuFavorites200Response.serializer)
+      ..add(PosMenuFavorites200ResponseData.serializer)
+      ..add(PosMenuFavoritesRequest.serializer)
+      ..add(PosMenuItems200Response.serializer)
+      ..add(PosMenuSoldOut200Response.serializer)
+      ..add(PosMenuSoldOutRequest.serializer)
+      ..add(PosModifierGroups200Response.serializer)
       ..add(PosPrintJobCancel200Response.serializer)
       ..add(PosPrintJobCreate201Response.serializer)
       ..add(PosPrintJobCreateRequest.serializer)
@@ -68,8 +131,16 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(PosReceiptPrintVoid200ResponseData.serializer)
       ..add(PosReceiptPrintVoidRequest.serializer)
       ..add(PosReceiptPrintVoidRequestReasonEnum.serializer)
+      ..add(PosRecipe200Response.serializer)
+      ..add(PosRecipeSaveRequest.serializer)
+      ..add(PosRecipeSaveRequestIngredientsInner.serializer)
+      ..add(PosReportIngredientUsage200Response.serializer)
+      ..add(PosReportMenuMargin200Response.serializer)
+      ..add(PosStockAlertSetRequest.serializer)
+      ..add(PosStockAlerts200Response.serializer)
       ..add(PosSystemStatus200Response.serializer)
       ..add(PosWorkspaceCreate201Response.serializer)
+      ..add(PosWorkspaceLineModifiersRequest.serializer)
       ..add(PrintBlock.serializer)
       ..add(PrintBlockOneOf.serializer)
       ..add(PrintBlockOneOf1.serializer)
@@ -115,6 +186,12 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(PrinterStatusEnum.serializer)
       ..add(RealtimeEvent.serializer)
       ..add(RealtimeEventEventEnum.serializer)
+      ..add(Recipe.serializer)
+      ..add(RecipeIngredientsInner.serializer)
+      ..add(RecipeOwner.serializer)
+      ..add(RecipeOwnerOwnerTypeEnum.serializer)
+      ..add(RecipeOwnerVersionsInner.serializer)
+      ..add(StockAlert.serializer)
       ..add(SystemStatus.serializer)
       ..add(SystemStatusBackup.serializer)
       ..add(SystemStatusDatabase.serializer)
@@ -128,6 +205,8 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(SystemStatusVietqr.serializer)
       ..add(TaxRow.serializer)
       ..add(Workspace.serializer)
+      ..add(WorkspaceLine.serializer)
+      ..add(WorkspaceLineKindEnum.serializer)
       ..add(WorkspaceServiceModeEnum.serializer)
       ..add(WorkspaceTotals.serializer)
       ..add(WorkspaceTotalsTaxesInner.serializer)
@@ -138,9 +217,84 @@ Serializers _$serializers = (Serializers().toBuilder()
           const FullType(BuiltList, const [const FullType(DeviceStaffMember)]),
           () => ListBuilder<DeviceStaffMember>())
       ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(Einvoice)]),
+          () => ListBuilder<Einvoice>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(EinvoiceLine)]),
+          () => ListBuilder<EinvoiceLine>())
+      ..addBuilderFactory(
+          const FullType(BuiltList,
+              const [const FullType(EinvoiceSettingsProvidersInner)]),
+          () => ListBuilder<EinvoiceSettingsProvidersInner>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(EinvoiceSetting)]),
+          () => ListBuilder<EinvoiceSetting>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(EinvoiceTotalsTaxesInner)]),
+          () => ListBuilder<EinvoiceTotalsTaxesInner>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(IngredientUsageRow)]),
+          () => ListBuilder<IngredientUsageRow>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(LineModifier)]),
+          () => ListBuilder<LineModifier>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(LineComponent)]),
+          () => ListBuilder<LineComponent>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(MenuCategory)]),
+          () => ListBuilder<MenuCategory>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(MenuCategory)]),
+          () => ListBuilder<MenuCategory>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(MenuItem)]),
+          () => ListBuilder<MenuItem>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(ModifierGroup)]),
+          () => ListBuilder<ModifierGroup>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(MenuSchedulesInner)]),
+          () => ListBuilder<MenuSchedulesInner>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(MenuItemAllOfVariants)]),
+          () => ListBuilder<MenuItemAllOfVariants>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(MenuItemConfigComponentsInner)]),
+          () => ListBuilder<MenuItemConfigComponentsInner>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(MenuItemConfig)]),
+          () => ListBuilder<MenuItemConfig>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(MenuMarginRow)]),
+          () => ListBuilder<MenuMarginRow>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(ModifierGroup)]),
+          () => ListBuilder<ModifierGroup>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(ModifierGroupOptionsInner)]),
+          () => ListBuilder<ModifierGroupOptionsInner>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(ModifierSelection)]),
+          () => ListBuilder<ModifierSelection>())
+      ..addBuilderFactory(
           const FullType(BuiltList,
               const [const FullType(PosPrinterStations200ResponseDataInner)]),
           () => ListBuilder<PosPrinterStations200ResponseDataInner>())
+      ..addBuilderFactory(
+          const FullType(BuiltList,
+              const [const FullType(PosRecipeSaveRequestIngredientsInner)]),
+          () => ListBuilder<PosRecipeSaveRequestIngredientsInner>())
       ..addBuilderFactory(
           const FullType(
               BuiltList, const [const FullType(PrintBlockOneOf4PartiesInner)]),
@@ -167,8 +321,16 @@ Serializers _$serializers = (Serializers().toBuilder()
           const FullType(BuiltList, const [const FullType(PrinterRolesEnum)]),
           () => ListBuilder<PrinterRolesEnum>())
       ..addBuilderFactory(
-          const FullType(BuiltList, const [const FullType(String)]),
-          () => ListBuilder<String>())
+          const FullType(
+              BuiltList, const [const FullType(RecipeIngredientsInner)]),
+          () => ListBuilder<RecipeIngredientsInner>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(RecipeOwnerVersionsInner)]),
+          () => ListBuilder<RecipeOwnerVersionsInner>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(StockAlert)]),
+          () => ListBuilder<StockAlert>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
           () => ListBuilder<String>())
@@ -190,6 +352,37 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
           () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(MenuItemConfigComponentsInner)]),
+          () => ListBuilder<MenuItemConfigComponentsInner>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(WorkspaceLine)]),
+          () => ListBuilder<WorkspaceLine>())
       ..addBuilderFactory(
           const FullType(
               BuiltList, const [const FullType(WorkspaceTotalsTaxesInner)]),
@@ -197,7 +390,15 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..addBuilderFactory(
           const FullType(
               BuiltMap, const [const FullType(String), const FullType(String)]),
-          () => MapBuilder<String, String>()))
+          () => MapBuilder<String, String>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltMap, const [const FullType(String), const FullType(String)]),
+          () => MapBuilder<String, String>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltMap, const [const FullType(String), const FullType(int)]),
+          () => MapBuilder<String, int>()))
     .build();
 
 // ignore_for_file: deprecated_member_use_from_same_package,type=lint

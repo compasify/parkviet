@@ -69,7 +69,7 @@ module Spree
             Inventory::AllocateTraceability.consume!(fulfillment)
 
             shipped << fulfillment
-            StockDiscrepancy.open_now.where(fulfillment_id: fulfillment.id).find_each do |gap|
+            StockDiscrepancy.open_now.handover.where(fulfillment_id: fulfillment.id).find_each do |gap|
               gap.update!(status: 'resolved', resolved_at: Time.current)
             end
           end
@@ -87,7 +87,7 @@ module Spree
             OutboxEntry.record_once!(store_id: workspace.store_id, event_type: 'stock.discrepancy', aggregate: gap,
                                      payload: { 'discrepancy_id' => gap.prefixed_id, 'order_id' => order.prefixed_id })
           end
-          workspace.to_pos.merge(stock_discrepancies: StockDiscrepancy.open_now.where(order_id: order.id).map(&:to_pos))
+          workspace.to_pos.merge(stock_discrepancies: StockDiscrepancy.open_now.handover.where(order_id: order.id).map(&:to_pos))
         end
 
         def self.paid?(order)
@@ -126,7 +126,7 @@ module Spree
         # that is still short refreshes nothing and records nothing twice.
         def self.record_shortfall!(workspace, fulfillment, shortfall, staff)
           shortfall.map do |variant_id, (needed, on_hand)|
-            StockDiscrepancy.open_now.find_by(fulfillment_id: fulfillment.id, variant_id: variant_id) ||
+            StockDiscrepancy.open_now.handover.find_by(fulfillment_id: fulfillment.id, variant_id: variant_id) ||
               StockDiscrepancy.create!(
                 store: workspace.store, branch: workspace.branch, workspace: workspace, order: workspace.order,
                 fulfillment: fulfillment, variant_id: variant_id, stock_location_id: fulfillment.stock_location_id,

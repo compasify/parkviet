@@ -14,7 +14,14 @@
 //
 // The server token expiring is separate: a valid token never proves freshness.
 
-export type DisplayLine = { name: string; quantity: string; unit: string | null; amount: string };
+export type DisplayLine = {
+  name: string;
+  quantity: string;
+  unit: string | null;
+  amount: string;
+  // Options and combo contents of a menu line, as short texts.
+  options?: string[];
+};
 
 export type DisplayOrder = {
   number: string;

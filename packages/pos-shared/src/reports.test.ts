@@ -5,6 +5,7 @@ import {
   canOpenReports,
   formatInZone,
   REPORT_TYPES,
+  reportTypesFor,
   todayIn,
   validReportRange,
 } from './reports';
@@ -16,7 +17,27 @@ describe('report access', () => {
     expect(canExportReports(undefined)).toBe(false);
     expect(canOpenReports(['pos.shift.open'])).toBe(true);
     expect(canOpenReports([])).toBe(false);
-    expect(REPORT_TYPES).toEqual(['sales', 'receipts', 'cashbook', 'receivables', 'closures']);
+    expect(REPORT_TYPES).toEqual([
+      'sales',
+      'receipts',
+      'cashbook',
+      'receivables',
+      'closures',
+      'ingredient_usage',
+      'menu_margin',
+    ]);
+  });
+
+  it('lists the recipe reports only while the branch runs recipes', () => {
+    expect(reportTypesFor({ 'fnb.recipes': false })).toEqual([
+      'sales',
+      'receipts',
+      'cashbook',
+      'receivables',
+      'closures',
+    ]);
+    expect(reportTypesFor(undefined)).not.toContain('menu_margin');
+    expect(reportTypesFor({ 'fnb.recipes': true })).toEqual(REPORT_TYPES);
   });
 });
 

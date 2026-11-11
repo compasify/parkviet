@@ -1,8 +1,25 @@
 // Report types, rows and the date rules the report screens apply before
 // asking the server. Shared by the POS app and the POS administration app.
 
-export const REPORT_TYPES = ['sales', 'receipts', 'cashbook', 'receivables', 'closures'] as const;
+export const REPORT_TYPES = [
+  'sales',
+  'receipts',
+  'cashbook',
+  'receivables',
+  'closures',
+  'ingredient_usage',
+  'menu_margin',
+] as const;
 export type ReportType = (typeof REPORT_TYPES)[number];
+
+// Reports read from recipe consumptions, listed while the branch runs recipes.
+export const RECIPE_REPORT_TYPES: readonly ReportType[] = ['ingredient_usage', 'menu_margin'];
+
+export function reportTypesFor(modules: Record<string, boolean> | null | undefined): ReportType[] {
+  return REPORT_TYPES.filter(
+    (type) => !RECIPE_REPORT_TYPES.includes(type) || modules?.['fnb.recipes'] === true,
+  );
+}
 
 export type ReportRow = Record<string, string | number | boolean | null>;
 

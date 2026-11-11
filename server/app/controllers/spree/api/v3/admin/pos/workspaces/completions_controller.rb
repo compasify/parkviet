@@ -18,7 +18,8 @@ module Spree
                 result = Spree::Pos::Workspaces::Complete.call(
                   workspace: workspace!(params[:workspace_id]), staff: current_user,
                   revision: params[:expected_revision].to_i, lease_generation: params[:lease_generation].to_i,
-                  editor_id: params[:editor_id], key: key, credit_approval_id: params[:credit_approval_id]
+                  editor_id: params[:editor_id], key: key, credit_approval_id: params[:credit_approval_id],
+                  einvoice_buyer: params[:einvoice_buyer]
                 )
                 render json: { data: result }
               end

@@ -110,7 +110,7 @@ module Spree
       def sale
         workspace = record
         order = workspace.order
-        sale_lines = SaleLine.where(workspace_id: workspace.id).index_by(&:line_item_id)
+        sale_lines = SaleLine.where(workspace_id: workspace.id).includes(:line_modifiers, :line_components).index_by(&:line_item_id)
         @traces = TraceAllocation.sold.where(sale_line_id: sale_lines.values.map(&:id)).includes(:serial_unit, :inventory_lot).
                   order(:id).group_by(&:sale_line_id)
         units = unit_names(workspace.store, sale_lines.values.flat_map { |row| [row.sale_unit_code, row.base_unit_code] })
@@ -156,7 +156,21 @@ module Spree
           'unit_price' => money(sale_line.unit_price),
           'conversion' => converted ? "#{quantity} #{sale_unit} = #{sale_line.base_quantity} #{base_unit}" : nil,
           'trace' => trace(sale_line)
-        )
+        ).merge(menu_details(sale_line))
+      end
+
+      # Options, combo contents and note of a menu line, printed as detail
+      # rows under the item. Other lines carry none of the keys.
+      def menu_details(sale_line)
+        return {} unless sale_line.kind == SaleLineKinds::Menu::KIND
+
+        {
+          'modifiers' => sale_line.line_modifiers.map do |row|
+            { 'name' => row.name, 'group_name' => row.group_name, 'quantity' => row.quantity, 'price_delta' => money(row.price_delta) }
+          end,
+          'components' => sale_line.line_components.map { |row| { 'name' => row.name, 'quantity' => row.quantity } },
+          'note' => sale_line.note
+        }
       end
 
       # Serial/IMEI and lot/expiry sold on the line: its committed trace

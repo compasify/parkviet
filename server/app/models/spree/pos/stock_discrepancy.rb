@@ -6,7 +6,14 @@ module Spree
     # with the customer; the fulfillment stays allocated and is dispatched
     # once whoever reconciles stock has corrected the shelf with a document,
     # so the stock effect still happens exactly once and never goes negative.
+    #
+    # `source = 'recipe'` is an ingredient a completed sale used beyond what
+    # the shelf showed: the shelf was taken to zero and the rest is left for
+    # a stock count. Handover dispatch and its recovery only touch
+    # `handover` rows.
     class StockDiscrepancy < Record
+      SOURCES = %w[handover recipe].freeze
+
       self.table_name = 'spree_pos_stock_discrepancies'
       has_prefix_id :posstockgap
 
@@ -20,11 +27,13 @@ module Spree
       belongs_to :actor, class_name: staff_class_name
 
       validates :status, inclusion: { in: %w[open resolved] }
+      validates :source, inclusion: { in: SOURCES }
 
       scope :open_now, -> { where(status: 'open') }
+      scope :handover, -> { where(source: 'handover') }
 
       def to_pos
-        { id: prefixed_id, variant_id: variant.prefixed_id, sku: variant.sku, name: variant.product.name,
+        { id: prefixed_id, source: source, variant_id: variant.prefixed_id, sku: variant.sku, name: variant.product.name,
           needed: needed, on_hand: on_hand, status: status, checked_at: checked_at.iso8601,
           resolved_at: resolved_at&.iso8601 }
       end

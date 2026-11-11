@@ -23,13 +23,15 @@ describe('POS administration authorization', () => {
       } as unknown as PosContext),
     ).toEqual({ read: true, write: true });
   });
-  it('offers all twenty branch capabilities without hiding discount, price, customer, credit, return, cash or report permissions', () => {
+  it('offers all twenty-three branch capabilities without hiding discount, price, customer, credit, return, cash or report permissions', () => {
     const keys = posCapabilities.map(([key]) => key);
-    expect(new Set(keys).size).toBe(20);
-    expect(keys.slice(-3)).toEqual([
-      'pos.inventory.trace',
+    expect(new Set(keys).size).toBe(23);
+    expect(keys.slice(-5)).toEqual([
       'pos.device.manage',
       'pos.printer.manage',
+      'pos.menu.manage',
+      'pos.menu.sold_out',
+      'pos.einvoice.manage',
     ]);
     expect(keys).toEqual(
       expect.arrayContaining(['pos.cash.move', 'pos.report.read', 'pos.report.export']),

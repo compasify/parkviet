@@ -1,4 +1,5 @@
 import { goToMenuPage } from './menu';
+import { isRefusal, menuBody, menuItemByVariant, type MenuLine, type MenuWorld, priceMenuAdd } from './menu-api';
 import { type BrowserContext, expect, type Page, type Request, type Route } from '@playwright/test';
 
 // An in-memory POS server for whole-day journeys. It keeps one shared state
@@ -32,6 +33,7 @@ export type Family =
   | 'workspace.create'
   | 'lease'
   | 'items'
+  | 'item.modifiers'
   | 'trace'
   | 'park'
   | 'tender.prepare'
@@ -78,6 +80,8 @@ type Line = {
   label?: { barcode: string; eventId: string; saleQuantity: string; base: number };
   serials?: string[];
   lots?: Array<{ code: string; expiry: string; quantity: number }>;
+  // A menu line: priced on the server with its options and note.
+  menu?: MenuLine;
 };
 
 type Attempt = {
@@ -178,6 +182,10 @@ export type World = {
   // Industry profile of the selected branch (`profile` in the context).
   profile?: { key: string; version: number; display: { catalog_view?: 'cards' | 'list' } };
   administration?: { read: boolean; write: boolean };
+  // The store's e-invoice (`einvoice_type` in the context); absent on older servers.
+  einvoiceType?: 'none' | 'cash_register' | 'coded';
+  // The branch menu (`GET /pos/menu`) when the branch runs `fnb.menu`.
+  menu?: MenuWorld;
   products: Product[];
   serialStock: Set<string>;
   lotStock: Map<string, LotStock[]>;
@@ -247,6 +255,7 @@ export function newWorld(
     modules?: Record<string, boolean>;
     moduleUsage?: Record<string, boolean>;
     profile?: World['profile'];
+    menu?: MenuWorld;
   } = {},
 ): World {
   return {
@@ -255,7 +264,11 @@ export function newWorld(
     modules: options.modules,
     moduleUsage: options.moduleUsage,
     profile: options.profile,
+    menu: options.menu,
     products: [
+      ...(options.menu?.items ?? []).map((item) => ({
+        id: item.variantId, name: item.name, sku: item.id.toUpperCase(), barcode: null, price: item.price, mode: 'ordinary' as const,
+      })),
       { id: 'v_rice', name: 'Gạo ST25', sku: 'GAO-1', barcode: '8930000000011', price: 100000, mode: 'ordinary' },
       { id: 'v_water', name: 'Nước suối', sku: 'NUOC-1', barcode: '8930000000028', price: 5000, mode: 'ordinary' },
       { id: 'v_pork', name: 'Thịt heo ba chỉ', sku: 'PORK', barcode: null, price: 120, mode: 'measured' },
@@ -344,6 +357,7 @@ const productOf = (world: World, id: string) => world.products.find((item) => it
 function lineAmount(world: World, line: Line) {
   const item = productOf(world, line.variantId);
   if (!item) return 0;
+  if (line.menu) return line.quantity * line.menu.unitPrice;
   return line.label ? line.label.base * item.price : line.quantity * item.price;
 }
 
@@ -441,6 +455,12 @@ export function serialize(world: World, sheet: Sheet) {
             }
           : { base_quantity: line.quantity, base_unit: trace?.mode === 'lot' ? 'hộp' : 'cái' }),
         ...(trace ? { tracked_mode: trace.mode, trace } : {}),
+        ...(line.menu
+          ? {
+              kind: 'menu', price: money(line.menu.unitPrice), unit_price: money(line.menu.unitPrice),
+              note: line.menu.note, modifiers: line.menu.modifiers, components: [],
+            }
+          : {}),
       };
     }),
     totals: {
@@ -857,6 +877,7 @@ async function handle(world: World, route: Route) {
         ...(world.moduleUsage ? { module_usage: world.moduleUsage } : {}),
         ...(world.profile ? { profile: branch ? world.profile : null } : {}),
         ...(world.administration ? { administration: world.administration } : {}),
+        ...(world.einvoiceType ? { einvoice_type: world.einvoiceType } : {}),
         branches: [{ id: 'br_1', name: 'Chi nhánh 1', status: 'active', timezone: 'Asia/Ho_Chi_Minh' }],
         registers: branch ? [{ id: 'reg_1', branch_id: 'br_1', name: 'Quầy 1', status: 'active' }] : [],
         shift:
@@ -936,6 +957,7 @@ async function handle(world: World, route: Route) {
           : null,
       }));
     }
+    if (path === '/pos/menu' && world.menu) return fulfill(data(menuBody(world.menu)));
     if (path === '/pos/catalog') {
       const q = url.searchParams.get('q') ?? '';
       const exact = url.searchParams.get('barcode') === 'true';
@@ -1113,6 +1135,7 @@ async function handle(world: World, route: Route) {
     if (path === '/pos/workspaces') return 'workspace.create';
     if (/\/lease$/.test(path)) return 'lease';
     if (/\/items$/.test(path)) return 'items';
+    if (/\/items\/[^/]+\/modifiers$/.test(path)) return 'item.modifiers';
     if (/\/trace_allocations$/.test(path)) return 'trace';
     if (/\/(park|reopen)$/.test(path)) return 'park';
     if (/\/tender_attempts$/.test(path)) return 'tender.prepare';
@@ -1315,6 +1338,7 @@ function run(world: World, family: Family, path: string, body: Record<string, un
         const item = productOf(world, String(body.variant_id));
         if (!item) return conflict('Unknown variant.');
         const quantity = Number(body.quantity);
+        const menuEntry = world.menu ? menuItemByVariant(world.menu, item.id) : undefined;
         if (item.mode === 'serial') {
           const serials = (body.serial_codes as string[] | undefined) ?? [];
           if (serials.length !== quantity) return conflict('Serials required.', 'trace_serial_required');
@@ -1322,11 +1346,45 @@ function run(world: World, family: Family, path: string, body: Record<string, un
           const bad = serials.find((serial) => !world.serialStock.has(serial) || taken.has(serial));
           if (bad) return conflict(`Serial ${bad} is not available.`, 'trace_serial_unavailable');
           sheet.lines.push({ saleLineId: `sl_${sheet.id}_${sheet.lines.length + 1}`, variantId: item.id, quantity, serials });
+        } else if (world.menu && menuEntry) {
+          const priced = priceMenuAdd(world.menu, menuEntry, body);
+          if (isRefusal(priced)) return conflict(priced.refused, priced.reason);
+          const twin = body.merge
+            ? sheet.lines.find((line) => line.variantId === item.id && line.menu?.signature === priced.signature && line.menu.unitPrice === priced.unitPrice)
+            : undefined;
+          if (twin) twin.quantity += quantity;
+          else sheet.lines.push({ saleLineId: `sl_${sheet.id}_${sheet.lines.length + 1}`, variantId: item.id, quantity, menu: priced });
         } else {
           const existing = body.merge ? sheet.lines.find((line) => line.variantId === item.id && !line.label) : undefined;
           if (existing) existing.quantity += quantity;
           else sheet.lines.push({ saleLineId: `sl_${sheet.id}_${sheet.lines.length + 1}`, variantId: item.id, quantity });
         }
+      }
+      sheet.revision += 1;
+      return reply(sheet);
+    }
+    case 'item.modifiers': {
+      // Options of a menu line change; a line left with the same options as
+      // another one joins it, as the server does.
+      if (!sheet || !world.menu) break;
+      const refused = guard(world, sheet, body);
+      if (refused) return refused;
+      const line = sheet.lines.find((row) => row.saleLineId === segments[5]);
+      const entry = line?.menu ? menuItemByVariant(world.menu, line.variantId) : undefined;
+      if (!line || !entry) return conflict('Only a menu line has options.', 'modifier_unknown');
+      const priced = priceMenuAdd(world.menu, { ...entry, scheduledPrice: undefined, price: line.menu?.basePrice ?? entry.price }, {
+        modifiers: body.modifiers ?? [],
+        note: body.note,
+      });
+      if (isRefusal(priced)) return conflict(priced.refused, priced.reason);
+      const twin = sheet.lines.find(
+        (row) => row !== line && row.variantId === line.variantId && row.menu?.signature === priced.signature && row.menu.unitPrice === priced.unitPrice,
+      );
+      if (twin) {
+        twin.quantity += line.quantity;
+        sheet.lines.splice(sheet.lines.indexOf(line), 1);
+      } else {
+        line.menu = priced;
       }
       sheet.revision += 1;
       return reply(sheet);
@@ -1400,6 +1458,10 @@ function run(world: World, family: Family, path: string, body: Record<string, un
       const refused = guard(world, sheet, body);
       if (refused) return refused;
       if (!shiftOpen(world, sheet)) return conflict('Shift is closed.', 'shift_closed');
+      // Like the server: a buyer with a tax code needs a name and an address.
+      const buyer = body.einvoice_buyer as Record<string, string> | undefined;
+      const missing = buyer?.tax_code ? ['name', 'address'].find((field) => !buyer[field]) : undefined;
+      if (missing) return conflict('Buyer details are invalid.', 'einvoice_buyer_invalid', { field: missing });
       const remaining = sheetTotal(world, sheet) - sheet.allocated;
       if (sheet.attempts.some((attempt) => attempt.status === 'prepared')) return conflict('A tender is unresolved.');
       if (remaining > 0 && !(body.credit_approval_id === 'posapproval_credit' && sheet.creditApproved))

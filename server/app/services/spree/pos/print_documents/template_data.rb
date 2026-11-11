@@ -80,8 +80,24 @@ module Spree
             discount_cell: non_zero?(discount) ? bare(discount, currency) : '',
             amount: money(amount, currency), amount_cell: bare(amount, currency),
             conversion: str(line['conversion']),
-            trace: rows(line['trace']).map { |trace| trace_text(trace) }.reject(&:empty?)
+            trace: rows(line['trace']).map { |trace| trace_text(trace) }.reject(&:empty?),
+            notes: menu_notes(line)
           )
+        end
+
+        # A menu line's options ("+ Trân châu ×2"), combo contents ("- Khoai
+        # tây") and note ("* Ít đá"), one detail row each.
+        def menu_notes(line)
+          notes = rows(line['modifiers']).filter_map { |row| menu_detail('+', str(row['name']), row['quantity']) }
+          notes.concat(rows(line['components']).filter_map { |row| menu_detail('-', str(row['name']), row['quantity']) })
+          notes << "* #{str(line['note'])}" if str(line['note'])
+          notes
+        end
+
+        def menu_detail(mark, name, quantity)
+          return unless name
+
+          quantity.is_a?(Integer) && quantity > 1 ? "#{mark} #{name} ×#{quantity}" : "#{mark} #{name}"
         end
 
         def tax_table_rows(taxes, currency)
@@ -200,6 +216,7 @@ module Spree
           end
           parts[:notes] << t('receiptIssuedLate') if receipt['issued_late']
           branch = obj(document['branch'])
+          einvoice = obj(receipt['einvoice'])
           parts.merge(
             document_type: SNAPSHOT_TYPES.fetch(receipt['source_type'], 'sale'),
             title: str(document['title']) || receipt['number'], number: receipt['number'], banner: nil,
@@ -209,8 +226,17 @@ module Spree
             register: str(document['register']), cashier: cashier, time: time, business_date: business_date,
             taxes_text: taxes_summary(document['taxes'], currency),
             customer_name: str(customer&.dig('name')), customer_phone: str(customer&.dig('phone')), customer_address: str(customer&.dig('address')),
-            meta: meta, line_labels: line_labels, signature_labels: signature_labels, disclaimer: receipt['disclaimer']
+            meta: meta, line_labels: line_labels, signature_labels: signature_labels, disclaimer: receipt['disclaimer'],
+            **einvoice_fields(einvoice)
           )
+        end
+
+        # The sale's e-invoice as the receipt reads it now (ReceiptInfo):
+        # lookup details once issued, the buyer link while it is open.
+        def einvoice_fields(einvoice)
+          buyer_url = str(einvoice&.dig('buyer_url'))
+          { einvoice_lookup_code: str(einvoice&.dig('lookup_code')), einvoice_lookup_url: str(einvoice&.dig('lookup_url')),
+            einvoice_buyer_url: buyer_url, einvoice_buyer_caption: buyer_url ? t('receiptEinvoiceBuyerCaption') : nil }
         end
 
         def snapshot_meta(document, time, business_date, cashier, customer)
@@ -316,7 +342,8 @@ module Spree
           empty_line(line['name']).merge(
             sku: str(line['sku']), quantity: Text.quantity(line['sale_quantity'] || line['quantity']),
             unit: str(line['sale_unit']), price: money(price, currency), price_cell: bare(price, currency),
-            amount: money(amount, currency), amount_cell: bare(amount, currency), trace: trace
+            amount: money(amount, currency), amount_cell: bare(amount, currency), trace: trace,
+            notes: menu_notes(line)
           )
         end
 

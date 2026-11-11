@@ -53,6 +53,16 @@ export const REPORT_COLUMNS: Record<ReportType, string[]> = {
     'approver',
     'reconciled',
   ],
+  ingredient_usage: [
+    'business_date',
+    'ingredient',
+    'menu_item',
+    'quantity',
+    'unit',
+    'cost',
+    'cost_missing',
+  ],
+  menu_margin: ['menu_item', 'quantity', 'revenue', 'cost', 'margin', 'margin_rate', 'costed'],
 }
 
 export const RETURN_COLUMNS = [
@@ -82,7 +92,13 @@ export const MONEY_COLUMNS = new Set([
   'entitlement_total',
   'credit_note_amount',
   'refund_entitlement',
+  'cost',
+  'revenue',
+  'margin',
 ])
+
+// Percent figures (one decimal) of rows and summaries.
+export const PERCENT_COLUMNS = new Set(['margin_rate'])
 
 export const TIME_COLUMNS = new Set([
   'sold_at',
@@ -102,6 +118,8 @@ export const CODE_COLUMNS: Record<string, string> = {
   category: 'reportCategory_',
   aging: 'reportAging_',
   order_source: 'orderSource_',
+  cost_missing: 'reportYesNo_',
+  costed: 'reportYesNo_',
 }
 
 export function reportColumns(type: ReportType, section?: string): string[] {

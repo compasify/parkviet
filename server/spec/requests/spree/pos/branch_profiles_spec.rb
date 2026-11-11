@@ -91,7 +91,7 @@ RSpec.describe 'POS branch profiles', type: :request, pos_modules: :default do
     data = apply(manager, 'nha_thuoc', apply_modules: true, apply_defaults: ['lot_selection'])['data']
     expect(response).to have_http_status(:ok)
     expect(branch.reload).to have_attributes(profile_key: 'nha_thuoc', profile_version: 1, lot_selection: 'fefo', return_window_days: 30)
-    expect(data['modules']).to eq('retail.units' => true, 'retail.measured' => false, 'retail.traceability' => true)
+    expect(data['modules']).to eq('retail.units' => true, 'retail.measured' => false, 'retail.traceability' => true, 'fnb.menu' => false, 'fnb.recipes' => false)
     expect(data['applied']).to eq(
       'modules' => { 'enabled' => [], 'disabled' => ['retail.measured'] },
       'defaults' => [{ 'field' => 'lot_selection', 'from' => 'cashier_pick', 'to' => 'fefo' }],
@@ -112,7 +112,7 @@ RSpec.describe 'POS branch profiles', type: :request, pos_modules: :default do
 
     # Without apply_modules the modules stay as they are, even for a profile with none.
     data = apply(manager, 'thoi_trang', expected: 'nha_thuoc')['data']
-    expect(data['modules']).to eq('retail.units' => true, 'retail.measured' => false, 'retail.traceability' => true)
+    expect(data['modules']).to eq('retail.units' => true, 'retail.measured' => false, 'retail.traceability' => true, 'fnb.menu' => false, 'fnb.recipes' => false)
     expect(data['applied']).to include('modules' => { 'enabled' => [], 'disabled' => [] }, 'defaults' => [])
     expect(branch.reload).to have_attributes(profile_key: 'thoi_trang', return_window_days: 30)
 
@@ -150,11 +150,12 @@ RSpec.describe 'POS branch profiles', type: :request, pos_modules: :default do
     it 'changes the default of new branches only, audited when something changes' do
       branch
       Spree::Pos::StoreProfile.create!(store: store, profile_key: 'khac', onboarded_at: 1.day.ago)
+      modules_before = Spree::Pos::ModulePolicy.for_branch(branch)
       data = call(manager, :put, 'store_profile', profile_key: 'nha_thuoc', wholesale: true, interests: ['quan_an'], reason: 'Đổi ngành')['data']
       expect(response).to have_http_status(:ok)
       expect(data).to include('profile_key' => 'nha_thuoc', 'wholesale' => true, 'interests' => ['quan_an'], 'changed_by_id' => manager.prefixed_id)
       expect(branch.reload.profile_key).to eq('khac')
-      expect(Spree::Pos::ModulePolicy.for_branch(branch).values).to all(be(true))
+      expect(Spree::Pos::ModulePolicy.for_branch(branch)).to eq(modules_before)
       audit = Spree::Pos::AuditEntry.find_by!(action: 'store_profile.change')
       expect(audit.metadata).to include('from' => include('profile_key' => 'khac'), 'to' => include('profile_key' => 'nha_thuoc'),
                                         'reason' => 'Đổi ngành')

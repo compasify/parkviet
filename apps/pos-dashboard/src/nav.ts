@@ -4,11 +4,13 @@ import {
   HandCoins,
   ListChecks,
   Package,
+  ReceiptText,
   Server,
   Settings,
   Settings2,
   ShoppingCart,
   Store,
+  UtensilsCrossed,
   Wallet,
 } from 'lucide-react'
 import { useLayoutEffect } from 'react'
@@ -28,6 +30,7 @@ const groups: { key: string; labelKey: string; icon: NavEntry['icon']; children:
     children: [
       { key: 'orders', labelKey: 'ordersTitle', path: '/orders' },
       { key: 'deliveries', labelKey: 'deliveriesTitle', path: '/deliveries' },
+      { key: 'einvoices', labelKey: 'einvoices.title', path: '/einvoices' },
     ],
   },
   {
@@ -50,10 +53,19 @@ const groups: { key: string; labelKey: string; icon: NavEntry['icon']; children:
     ],
   },
   {
+    key: 'food-menu',
+    labelKey: 'navMenu',
+    icon: UtensilsCrossed,
+    children: [{ key: 'menu', labelKey: 'menuAdmin.title', path: '/menu' }],
+  },
+  {
     key: 'stock',
     labelKey: 'navStock',
     icon: Package,
-    children: [{ key: 'inventory', labelKey: 'inventoryTitle', path: '/inventory' }],
+    children: [
+      { key: 'inventory', labelKey: 'inventoryTitle', path: '/inventory' },
+      { key: 'stock-alerts', labelKey: 'stockAlerts.title', path: '/stock-alerts' },
+    ],
   },
   {
     key: 'reporting',
@@ -92,6 +104,12 @@ const settings = [
     labelKey: 'businessModel.storeTitle',
     path: '/settings/business-model',
     icon: Store,
+  },
+  {
+    key: 'einvoice-settings',
+    labelKey: 'einvoiceSettings.title',
+    path: '/settings/einvoice',
+    icon: ReceiptText,
   },
   { key: 'system', labelKey: 'systemStatus.title', path: '/settings/system', icon: Server },
 ] satisfies { key: PosPage; labelKey: string; path: string; icon: typeof Settings }[]

@@ -87,6 +87,13 @@ RSpec.describe Spree::Pos::PrintDocuments do
   receipt_cases = {
     'sale-default' => -> { [receipt['sale', sale_document], { 'copy' => false, 'copy_number' => 0 }, default_config['sale']] },
     'sale-copy-custom' => -> { [receipt['sale', sale_document, late: true], { 'copy' => true, 'copy_number' => 2 }, custom_config] },
+    'sale-einvoice' => lambda {
+      einvoice = { 'status' => 'pending', 'invoice_type' => 'cash_register', 'number' => nil, 'symbol' => nil, 'template_code' => nil,
+                   'lookup_code' => 'AB12CD34EF', 'lookup_url' => 'https://tracuu.example.test',
+                   'buyer_url' => 'https://pos.example.test/pos_einvoice/token-1' }
+      footer = [{ 'type' => 'text', 'value' => "Mã tra cứu: {einvoice.lookup_code}\nTra cứu tại {einvoice.lookup_url}\n{einvoice.buyer_qr}" }]
+      [receipt['sale', sale_document].merge('einvoice' => einvoice), nil, default_config['sale'].merge('footer' => footer)]
+    },
     'return-default' => -> { [receipt['return', return_document, number: 'RT1'], nil, default_config['return']] },
     'return-pending' => lambda {
       [receipt['return_supplement', return_document.merge('entitlement_posted' => false), number: 'RT2'], nil, default_config['return']]

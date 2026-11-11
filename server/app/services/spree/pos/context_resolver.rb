@@ -33,6 +33,10 @@ module Spree
           # before the module was turned off at this branch.
           module_usage: ModulePolicy.usage_for(store),
           profile: profile_for(branch),
+          # E-invoice the store issues for completed orders (none,
+          # cash_register, coded): the counter offers buyer details only
+          # when it issues one.
+          einvoice_type: StoreProfile.einvoice_type_for(store),
           onboarding: onboarding,
           branches: branches.map(&:to_pos),
           registers: registers.map(&:to_pos),

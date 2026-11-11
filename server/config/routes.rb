@@ -172,7 +172,7 @@ Rails.application.routes.draw do
             get 'shift_closures/open', to: 'shifts/closures#open'
             get 'cash_reconciliations/candidates', to: 'cash_reconciliations#candidates'
             resources :cash_reconciliations, only: [:index, :create]
-            get 'reports/:report', to: 'reports#show', as: :report, constraints: { report: /sales|receipts|cashbook|receivables|closures/ }
+            get 'reports/:report', to: 'reports#show', as: :report, constraints: { report: /sales|receipts|cashbook|receivables|closures|ingredient_usage|menu_margin/ }
             resources :exports, only: [:index, :show, :create] do
               member do
                 post :download_link
@@ -193,6 +193,32 @@ Rails.application.routes.draw do
                 post 'prints/:print_id/void', action: :void_print
               end
             end
+            # The store's menu, and a branch's sold-out items and favourites.
+            get 'menu', to: 'menu#show'
+            resources :menu_categories, only: [:index, :create, :update, :destroy]
+            resources :menu_items, only: [:index, :create, :update, :destroy]
+            resources :modifier_groups, only: [:index, :create, :update, :destroy]
+            resources :menu_schedules, only: [:index, :create, :update, :destroy]
+            put 'menu_availabilities', to: 'menu_availabilities#update'
+            put 'menu_favorites', to: 'menu_favorites#update'
+            # Recipes of menu sizes and options, and a branch's low-stock thresholds.
+            get 'recipes', to: 'recipes#show'
+            put 'recipes', to: 'recipes#update'
+            get 'stock_alerts', to: 'stock_alerts#index'
+            put 'stock_alerts', to: 'stock_alerts#update'
+            # E-invoices of completed orders and the store's provider settings.
+            get 'einvoices/summary', to: 'einvoices#summary'
+            post 'einvoices/retry', to: 'einvoices#retry_issue'
+            resources :einvoices, only: [:index, :show] do
+              member do
+                put :buyer, action: :update_buyer
+                post :cancel
+                post :replace
+              end
+            end
+            get 'einvoice_settings', to: 'einvoice_settings#show'
+            put 'einvoice_settings', to: 'einvoice_settings#update'
+            post 'einvoice_settings/test', to: 'einvoice_settings#sample'
             resources :printers, only: [:index, :create, :update, :destroy] do
               collection do
                 get :stations
@@ -251,6 +277,7 @@ Rails.application.routes.draw do
               post 'items/:id/line_discount', to: 'workspaces/line_discounts#create'
               delete 'items/:id/line_discount', to: 'workspaces/line_discounts#destroy'
               post 'items/:id/price_override', to: 'workspaces/price_overrides#create'
+              patch 'items/:id/modifiers', to: 'workspaces/item_modifiers#update'
               resource :discount, only: [:create], controller: 'workspaces/discounts'
               post 'coupon', to: 'workspaces/discounts#coupon'
               post 'coupon/clear', to: 'workspaces/discounts#clear_coupon'
@@ -295,6 +322,11 @@ Rails.application.routes.draw do
   # the Vite dev server in development. 302, not 301, so browsers don't cache
   # it past a change of SPREE_DASHBOARD_URL.
   # Customer display: read-only, display-token channel outside the Admin API.
+  # The buyer's own e-invoice details page behind the QR on the bill (HTML).
+  get 'pos_einvoice/:token', to: 'spree/pos/einvoice_buyer#show', as: :pos_einvoice_buyer, constraints: { token: %r{[^/]+} },
+                             format: false
+  post 'pos_einvoice/:token', to: 'spree/pos/einvoice_buyer#update', constraints: { token: %r{[^/]+} }, format: false
+
   get 'api/v3/pos_display/state', to: 'spree/pos/display_views#show', defaults: { format: 'json' }
   post 'api/v3/pos_display/ack', to: 'spree/pos/display_views#ack', defaults: { format: 'json' }
   post 'api/v3/pos_display/pair', to: 'spree/pos/display_views#pair', defaults: { format: 'json' }

@@ -15,7 +15,15 @@ const GROUPS: { key: string; capabilities: Capability[] }[] = [
       'pos.credit.sell',
     ],
   },
-  { key: 'money', capabilities: ['pos.payment.collect', 'pos.payment.resolve', 'pos.cash.move'] },
+  {
+    key: 'money',
+    capabilities: [
+      'pos.payment.collect',
+      'pos.payment.resolve',
+      'pos.cash.move',
+      'pos.einvoice.manage',
+    ],
+  },
   {
     key: 'management',
     capabilities: [
@@ -30,6 +38,7 @@ const GROUPS: { key: string; capabilities: Capability[] }[] = [
   },
   { key: 'reports', capabilities: ['pos.report.read', 'pos.report.export'] },
   { key: 'stock', capabilities: ['pos.inventory.manage', 'pos.inventory.trace'] },
+  { key: 'menu', capabilities: ['pos.menu.manage', 'pos.menu.sold_out'] },
 ]
 const labels = new Map<string, string>(posCapabilities)
 export const capabilityLabel = (value: string) => labels.get(value) ?? 'adminUnknownPermission'

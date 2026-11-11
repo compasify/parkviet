@@ -17,5 +17,8 @@
   "document.taxes",
   "customer.name",
   "customer.phone",
-  "customer.address"
+  "customer.address",
+  "einvoice.lookup_code",
+  "einvoice.lookup_url",
+  "einvoice.buyer_qr"
 ]

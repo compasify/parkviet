@@ -167,7 +167,9 @@ module Spree
             'branch.return_window_days' => data[:branch][:return_window_days]&.to_s, 'register.name' => data[:register],
             'cashier' => data[:cashier], 'document.number' => data[:number], 'document.time' => data[:time],
             'document.business_date' => data[:business_date], 'document.taxes' => data[:taxes_text],
-            'customer.name' => data[:customer_name], 'customer.phone' => data[:customer_phone], 'customer.address' => data[:customer_address] }
+            'customer.name' => data[:customer_name], 'customer.phone' => data[:customer_phone], 'customer.address' => data[:customer_address],
+            'einvoice.lookup_code' => data[:einvoice_lookup_code], 'einvoice.lookup_url' => data[:einvoice_lookup_url],
+            'einvoice.buyer_qr' => data[:einvoice_buyer_url] }
         end
 
         # A line whose known variables are all empty disappears.
@@ -202,7 +204,19 @@ module Spree
             result << resolved if resolved
           end
           result << title_block(nil, data) if place == 'header' && !titled
+          einvoice = place == 'footer' ? einvoice_qr(data) : nil
+          result << einvoice if einvoice
           result
+        end
+
+        # While the sale's e-invoice still takes buyer details, the footer
+        # always ends with the QR of the buyer's own page; no template can
+        # leave it out.
+        def einvoice_qr(data)
+          url = data[:einvoice_buyer_url].to_s
+          return nil unless web_url?(url)
+
+          { 'kind' => 'qr', 'value' => url, 'caption' => data[:einvoice_buyer_caption], 'align' => 'center' }
         end
 
         def field_rows(rows, section, locked: [], fixed_labels: [])

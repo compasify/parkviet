@@ -37,9 +37,18 @@ module Spree
       DEVICE_MANAGE = 'pos.device.manage'
       # Add, change, disable and test the branch's printers.
       PRINTER_MANAGE = 'pos.printer.manage'
+      # Change the store's menu: categories, items, options, combos, time-of-day menus.
+      MANAGE_MENU = 'pos.menu.manage'
+      # Mark a menu item sold out at the branch for the business day.
+      SET_SOLD_OUT = 'pos.menu.sold_out'
+      # The branch's e-invoices: list, buyer details, retry, cancel an
+      # unsent one and request a replacement. Provider settings stay with
+      # store administrators.
+      EINVOICE_MANAGE = 'pos.einvoice.manage'
       ASSIGNABLE = [MANAGE, OPEN_SHIFT, DISCOUNT, PRICE_OVERRIDE, CUSTOMER, PAYMENT, RESOLVE, RECOVER, APPROVE, TAKEOVER,
                     CREDIT_MANAGE, CREDIT_SELL, RETURN, CASH_MOVE, REPORT_READ, REPORT_EXPORT,
-                    INVENTORY_MANAGE, INVENTORY_TRACE, DEVICE_MANAGE, PRINTER_MANAGE].freeze
+                    INVENTORY_MANAGE, INVENTORY_TRACE, DEVICE_MANAGE, PRINTER_MANAGE, MANAGE_MENU, SET_SOLD_OUT,
+                    EINVOICE_MANAGE].freeze
 
       def self.sanitize(values)
         Array(values).map(&:to_s).uniq

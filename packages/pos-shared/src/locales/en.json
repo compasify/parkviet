@@ -66,6 +66,9 @@
   "capabilityManage": "Configure",
   "capabilityDeviceManage": "Manage devices",
   "capabilityPrinterManage": "Manage printers",
+  "capabilityMenuManage": "Manage the menu",
+  "capabilityMenuSoldOut": "Mark items sold out",
+  "capabilityEinvoiceManage": "Manage e-invoices",
   "receiptCopyBanner": "COPY – no. {{number}}",
   "capabilityShift": "Open shift",
   "capabilityRecover": "Recover",
@@ -190,6 +193,18 @@
       "description": "Track each serial or lot with its expiry date, from receiving to sale and recall.",
       "off": "This branch has not turned on Serials, lots & expiry, so no opening balance can be declared and no more SKUs can be tracked. Tracked stock still sells, receives, transfers, counts and traces.",
       "disabled": "This branch has not turned on Serials, lots & expiry; the server did not record this setup. Selling tracked stock is not affected."
+    },
+    "fnb_menu": {
+      "label": "Menu, options & combos",
+      "description": "A picture grid of items with sizes, sugar, ice, toppings, notes, combos, time-of-day prices and sold-out marks.",
+      "off": "This branch has not turned on the Menu, so the counter sells through product search as before and options cannot be attached. Items still sell at their list price.",
+      "disabled": "This branch has not turned on the Menu; the server did not record the options or the menu change. Items still sell at their list price."
+    },
+    "fnb_recipes": {
+      "label": "Recipes & ingredient stock",
+      "description": "Recipes for each size and option, ingredients taken off stock when a sale completes, low-stock alerts and gross margin by item.",
+      "off": "This branch has not turned on Recipes, so completed sales take no ingredients off stock and no low-stock threshold can be set. Items still sell as usual.",
+      "disabled": "This branch has not turned on Recipes; the server did not record the recipe or the threshold. Selling is not affected."
     }
   },
   "profiles": {
@@ -308,6 +323,7 @@
   "receiptDeliveryAddress": "Deliver to",
   "featureDisabled_quick_credit": "Quick credit was just switched off at the branch; nothing was recorded. Collect the full amount or ask a manager to approve the credit.",
   "receiptPayQrCaption": "Scan to pay by bank transfer",
+  "receiptEinvoiceBuyerCaption": "Scan to enter your e-invoice details",
   "payLaterAmount": "Amount: {{amount}}",
   "payLaterNote": "Transfer note: {{note}}",
   "payLaterShareFrom": "Payment details from {{store}}:",

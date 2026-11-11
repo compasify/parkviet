@@ -37,6 +37,10 @@ export type PosPage =
   | 'setup'
   | 'store-model'
   | 'devices'
+  | 'menu'
+  | 'stock-alerts'
+  | 'einvoices'
+  | 'einvoice-settings'
   // Server information: store administrators (the default branch below).
   | 'system'
 export function canAdminister(access: PosAccess, write = false) {
@@ -96,12 +100,39 @@ export const canApproveSales = (access: PosAccess) =>
 export const canOpenStock = (access: PosAccess) => canOpenInventory(access.context?.capabilities)
 // Any branch member reads reports (their own shifts unless they hold report access).
 export const canReadReports = canReadOrders
+// The menu belongs to the store and is changed by store administrators or
+// menu managers; sold-out marks belong to the selected branch. The page is
+// offered while the selected branch runs the menu.
+export const canManageMenu = (access: PosAccess) =>
+  canAdminister(access, true) || hasCapability(access, 'pos.menu.manage')
+export const canSetSoldOut = (access: PosAccess) =>
+  canManageMenu(access) || hasCapability(access, 'pos.menu.sold_out')
+const runsMenu = (access: PosAccess) => access.context?.modules?.['fnb.menu'] === true
+// Recipes and low-stock thresholds are stock settings: store administrators
+// or inventory managers change them, report readers see the thresholds. They
+// are offered while the selected branch runs recipes.
+export const canManageRecipes = (access: PosAccess) =>
+  canAdminister(access, true) || hasCapability(access, 'pos.inventory.manage')
+export const runsRecipes = (access: PosAccess) => access.context?.modules?.['fnb.recipes'] === true
+const canReadStockAlerts = (access: PosAccess) =>
+  canAdminister(access) || canManageRecipes(access) || hasCapability(access, 'pos.report.read')
+// E-invoices of the selected branch: store administrators read them, and they
+// or e-invoice managers act on them. Provider settings stay with store
+// administrators. The list is offered while the store issues e-invoices.
+export const canManageEinvoices = (access: PosAccess) =>
+  canAdminister(access, true) || hasCapability(access, 'pos.einvoice.manage')
+const canReadEinvoices = (access: PosAccess) => canAdminister(access) || canManageEinvoices(access)
+const issuesEinvoices = (access: PosAccess) => (access.context?.einvoice_type ?? 'none') !== 'none'
 export function visibleNav(page: PosPage, access: PosAccess) {
+  if (page === 'einvoices') return issuesEinvoices(access) && canReadEinvoices(access)
+  if (page === 'einvoice-settings') return canAdminister(access, true)
+  if (page === 'stock-alerts') return runsRecipes(access) && canReadStockAlerts(access)
   if (page === 'receivables') return canReadDebts(access)
   if (page === 'credit-accounts') return canManageCredit(access)
   if (page === 'credit-approvals') return canApproveSales(access)
   if (page === 'inventory') return navVisible(access.context, 'inventory')
   if (page === 'reports') return canReadReports(access)
+  if (page === 'menu') return runsMenu(access) && canSetSoldOut(access)
   if (page === 'orders') return canReadOrders(access)
   if (page === 'funds') return canReadFunds(access)
   if (page === 'funds-attention') return hasCapability(access, 'pos.payment.resolve')
@@ -138,6 +169,11 @@ export function routeAllowed(page: PosPage, access: PosAccess) {
     return canAdminister(access) || canManageBranch(access) || canManagePrinters(access)
   if (page === 'deliveries') return canHandleDeliveries(access.context?.capabilities)
   if (page === 'inventory') return canOpenStock(access)
+  // Store administrators prepare the menu before a branch turns it on.
+  if (page === 'menu') return canSetSoldOut(access)
+  if (page === 'stock-alerts') return canReadStockAlerts(access)
+  // Invoices already made stay reachable after the store stops issuing.
+  if (page === 'einvoices') return canReadEinvoices(access)
   return visibleNav(page, access)
 }
 

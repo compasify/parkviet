@@ -7,6 +7,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { fetchCatalogPage, parseMeasurementBarcode } from '../hooks/use-catalog';
 import { useInvoiceNumbers } from '../hooks/use-invoice-numbers';
+import { useMenu } from '../hooks/use-menu';
 import { DraftReplayRefused, useWorkspaces } from '../hooks/use-workspaces';
 import { commandQueue } from '../lib/command-queue';
 import { resolveScan, type ScanOutcome } from '../lib/measured-label';
@@ -34,6 +35,7 @@ import { CustomerPanel } from './customer-panel';
 import { DeliveryForm } from './delivery-form';
 import { DiscountForm } from './discount-form';
 import { DisplayPinControl } from './display-pin-control';
+import { MenuGrid } from './menu-grid';
 import { NoteForm } from './note-form';
 import { OrderLines } from './order-lines';
 import { OrderSourcePicker } from './order-source-picker';
@@ -169,6 +171,9 @@ export function WorkspaceTabs() {
   const quickAddDisabled =
     channelUnavailable || !editable || creating || (active ? active.id in blockedScans : false);
   const lockReason = active?.payments ? t('editLockedPayments') : undefined;
+  // A branch running the menu sells from picture tiles; others search the catalogue.
+  const menuSurface = data?.modules?.['fnb.menu'] === true;
+  const menu = useMenu(selection.branchId, menuSurface);
   const tablist = useRef<HTMLDivElement>(null);
   const discountDetailsRef = useRef<HTMLDetailsElement>(null);
   const noteDetailsRef = useRef<HTMLDetailsElement>(null);
@@ -879,28 +884,47 @@ export function WorkspaceTabs() {
               </button>
             </div>
           ) : null}
-          <CatalogSearch
-            key={`${storeId}:${selection.branchId}`}
-            storeId={storeId}
-            branchId={selection.branchId}
-            workspaceId={active?.id ?? null}
-            addDisabled={quickAddDisabled}
-            addDisabledReason={lockReason}
-            scanNotice={scanNotice}
-            onScan={
-              editable && !channelUnavailable ? (code) => enqueueScan.current(code) : undefined
-            }
-            scanTerminator={calibration.terminator}
-            onAdd={active ? (variantId) => quickAdd(active, variantId) : undefined}
-            onAddForm={
-              active
-                ? (variantId, quantity, extra) =>
-                    command(active, (current) =>
-                      workspaces.addItem(current, variantId, quantity, extra),
-                    )
-                : undefined
-            }
-          />
+          {menuSurface ? (
+            <MenuGrid
+              key={`${storeId}:${selection.branchId}`}
+              branchId={selection.branchId}
+              addDisabled={quickAddDisabled}
+              addDisabledReason={lockReason}
+              canSetSoldOut={Boolean(
+                data?.capabilities.includes('pos.menu.sold_out') ||
+                  data?.capabilities.includes('pos.menu.manage'),
+              )}
+              onAdd={
+                active
+                  ? (variantId, extra) =>
+                      command(active, (current) => workspaces.addItem(current, variantId, 1, extra))
+                  : undefined
+              }
+            />
+          ) : (
+            <CatalogSearch
+              key={`${storeId}:${selection.branchId}`}
+              storeId={storeId}
+              branchId={selection.branchId}
+              workspaceId={active?.id ?? null}
+              addDisabled={quickAddDisabled}
+              addDisabledReason={lockReason}
+              scanNotice={scanNotice}
+              onScan={
+                editable && !channelUnavailable ? (code) => enqueueScan.current(code) : undefined
+              }
+              scanTerminator={calibration.terminator}
+              onAdd={active ? (variantId) => quickAdd(active, variantId) : undefined}
+              onAddForm={
+                active
+                  ? (variantId, quantity, extra) =>
+                      command(active, (current) =>
+                        workspaces.addItem(current, variantId, quantity, extra),
+                      )
+                  : undefined
+              }
+            />
+          )}
         </section>
         <section
           className="selling-panel basket-panel"
@@ -1022,6 +1046,17 @@ export function WorkspaceTabs() {
                 }
                 onPriceOverride={(saleLineId, input) =>
                   command(active, (current) => workspaces.priceOverride(current, saleLineId, input))
+                }
+                menu={menuSurface ? (menu.data ?? null) : null}
+                onUpdateModifiers={(saleLineId, input) =>
+                  command(active, (current) =>
+                    workspaces.updateModifiers(current, saleLineId, input),
+                  )
+                }
+                onAddSame={(variantId, input) =>
+                  command(active, (current) =>
+                    workspaces.addItem(current, variantId, 1, { ...input, merge: true }),
+                  )
                 }
               />
               {lockReason && isEditor ? (
@@ -1228,6 +1263,7 @@ export function WorkspaceTabs() {
                 canResolve={Boolean(data?.capabilities.includes('pos.payment.resolve'))}
                 canSellCredit={Boolean(data?.capabilities.includes('pos.credit.sell'))}
                 creditEnabled={contextFeature(data, 'credit')}
+                einvoiceType={data?.einvoice_type ?? 'none'}
                 // Only an explicit switch skips the second person.
                 quickCredit={data?.features?.quick_credit === true}
                 drawerOpen={Boolean(

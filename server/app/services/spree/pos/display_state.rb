@@ -56,7 +56,7 @@ module Spree
 
         allocated = FundsAllocation.where(workspace_id: workspace.id, status: 'active', collection_id: nil).sum(:amount)
         line_items = order.line_items.includes(variant: :product).sort_by(&:id)
-        sale_lines = SaleLine.where(line_item_id: line_items.map(&:id)).index_by(&:line_item_id)
+        sale_lines = SaleLine.where(line_item_id: line_items.map(&:id)).includes(:line_modifiers, :line_components).index_by(&:line_item_id)
         {
           state: 'order',
           order: {
@@ -73,8 +73,18 @@ module Spree
         {
           name: line.variant.product.name,
           quantity: sale_line ? sale_line.sale_quantity.to_s('F').delete_suffix('.0') : line.quantity.to_s,
-          unit: sale_line&.sale_unit_code, amount: money(line.amount)
+          unit: sale_line&.sale_unit_code, amount: money(line.amount),
+          options: options(sale_line)
         }
+      end
+
+      # What the customer picked on a menu line, as short texts: options with
+      # their count, then combo contents. The cashier's note stays off the screen.
+      def options(sale_line)
+        return [] unless sale_line&.kind == SaleLineKinds::Menu::KIND
+
+        sale_line.line_modifiers.map { |row| row.quantity > 1 ? "#{row.name} ×#{row.quantity}" : row.name } +
+          sale_line.line_components.map { |row| row.quantity > 1 ? "#{row.name} ×#{row.quantity}" : row.name }
       end
 
       # Only a bank tender still waiting is shown; confirmed, canceled or

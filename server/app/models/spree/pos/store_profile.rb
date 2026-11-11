@@ -10,6 +10,15 @@ module Spree
       self.table_name = 'spree_pos_store_profiles'
       has_prefix_id :posstoreprof
 
+      # E-invoice issued for completed POS orders: none (the default, for a
+      # seller under the threshold), from the cash register, or one
+      # tax-authority code per invoice. Set through Einvoices::SaveSettings.
+      EINVOICE_TYPES = %w[none cash_register coded].freeze
+
+      def self.einvoice_type_for(store)
+        find_by(store_id: store.id)&.einvoice_type || 'none'
+      end
+
       belongs_to :store, class_name: 'Spree::Store'
       belongs_to :changed_by, class_name: staff_class_name, optional: true
 
@@ -17,6 +26,7 @@ module Spree
       validates :profile_key, format: { with: Branch::PROFILE_KEY_FORMAT }
       validates :profile_version, numericality: { only_integer: true, greater_than_or_equal_to: 1 }
       validates :wholesale, inclusion: { in: [true, false] }
+      validates :einvoice_type, inclusion: { in: EINVOICE_TYPES }
       validate :interests_are_keys
 
       scope :for_store, ->(store) { where(store_id: store.id) }

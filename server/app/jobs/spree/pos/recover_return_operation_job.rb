@@ -56,11 +56,11 @@ module Spree
       end
 
       def retry_short_handovers
-        StockDiscrepancy.open_now.distinct.order(:workspace_id).pluck(:workspace_id).each do |workspace_id|
+        StockDiscrepancy.open_now.handover.distinct.order(:workspace_id).pluck(:workspace_id).each do |workspace_id|
           rescued(Workspace, workspace_id) do
             ApplicationRecord.transaction do
               workspace = Workspace.lock.find(workspace_id)
-              gaps = StockDiscrepancy.open_now.where(workspace_id: workspace_id).includes(:fulfillment).order(:id).to_a
+              gaps = StockDiscrepancy.open_now.handover.where(workspace_id: workspace_id).includes(:fulfillment).order(:id).to_a
               # Only once the shelf covers every short fulfillment; until then
               # a sweep would only re-record the same shortfall.
               next if gaps.empty? || gaps.map(&:fulfillment).uniq.any? { |row| Orders::Handover.shelf_shortfall(row).any? }

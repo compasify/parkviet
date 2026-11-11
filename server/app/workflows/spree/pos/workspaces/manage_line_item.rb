@@ -10,7 +10,9 @@ module Spree
         MAX_QUANTITY = 10_000
 
         class << self
-          def add(workspace:, staff:, revision:, lease_generation:, editor_id:, key:, variant_id: nil, quantity: nil, sale_quantity: nil, sale_unit_code: nil, lot_code: nil, expiry_on: nil, serial_codes: nil, price_override: nil, merge: nil, measurement_event_id: nil, label_barcode: nil)
+          # `modifiers` ([{ option_id:, quantity: }]) and `note` attach menu
+          # options; nil modifiers means none were sent (the menu defaults apply).
+          def add(workspace:, staff:, revision:, lease_generation:, editor_id:, key:, variant_id: nil, quantity: nil, sale_quantity: nil, sale_unit_code: nil, lot_code: nil, expiry_on: nil, serial_codes: nil, price_override: nil, merge: nil, measurement_event_id: nil, label_barcode: nil, modifiers: nil, note: nil)
             input = {
               'variant_id' => variant_id.to_s, 'quantity' => quantity, 'sale_quantity' => sale_quantity&.to_s,
               'sale_unit_code' => sale_unit_code&.to_s, 'lot_code' => lot_code&.to_s.presence,
@@ -18,6 +20,11 @@ module Spree
               'price_override' => price_override&.to_s.presence, 'merge' => merge == true,
               'measurement_event_id' => measurement_event_id&.to_s.presence, 'label_barcode' => label_barcode&.to_s.presence
             }
+            # Present only when sent, so the payload digest of a retail add is unchanged.
+            modifiers = normalize_modifiers(modifiers)
+            check_note!(note)
+            input['modifiers'] = modifiers unless modifiers.nil?
+            input['note'] = note.to_s if note.present?
             payload = command_payload('add_line_item', revision, lease_generation, editor_id, input)
             execute(workspace:, staff:, key:, payload:) do
               validate_command!(workspace, staff, revision, lease_generation, editor_id)
@@ -40,9 +47,24 @@ module Spree
               serial_codes = trace_inputs!(workspace, variant, variant_unit, serial_codes)
               lot_code, expiry_on = traced_lot!(workspace, variant, lot_code) if variant_unit.tracked_mode == 'lot'
               sale_qty, base_quantity, kind = resolve_quantities(variant_unit, quantity, sale_quantity, lot_code, serial_codes)
-              unit_price = resolve_price!(workspace, staff, variant, variant_unit, price_override)
+              raise Conflict, 'A scale label line takes no options.' if label && (!modifiers.nil? || note.present?)
+
+              menu = label ? nil : SaleLineKinds::Menu.resolve(workspace: workspace, variant: variant, modifiers: modifiers, note: note)
+              if menu
+                raise Conflict.new('A menu item is priced by the menu.', reason: 'menu_price_fixed') if price_override.present?
+                raise Conflict.new('Menu items are sold by count.', reason: 'menu_count_only') unless kind == 'ordinary'
+
+                kind = SaleLineKinds::Menu::KIND
+                unit_price = menu.unit_price
+              else
+                unit_price = resolve_price!(workspace, staff, variant, variant_unit, price_override)
+              end
               line_price = UnitNormalizer.unit_price_per_base(price: unit_price, variant_unit: variant_unit)
-              merge_key = SaleLine.build_merge_key(variant_id: variant.id, kind: kind, unit_price: line_price, sale_unit_code: variant_unit.sale_unit.code, lot_code: lot_code, serial_codes: Array(serial_codes), tracked_mode: variant_unit.tracked_mode, expiry_on: expiry_on)
+              merge_key = if menu
+                            SaleLineKinds::Menu.merge_key(variant: variant, sale_unit_code: variant_unit.sale_unit.code, line_price: line_price, pricing: menu)
+                          else
+                            SaleLine.build_merge_key(variant_id: variant.id, kind: kind, unit_price: line_price, sale_unit_code: variant_unit.sale_unit.code, lot_code: lot_code, serial_codes: Array(serial_codes), tracked_mode: variant_unit.tracked_mode, expiry_on: expiry_on)
+                          end
               ensure_new_measurement!(workspace, measurement_event_id)
               ensure_unsold_serials!(workspace, serial_codes)
 
@@ -82,9 +104,11 @@ module Spree
                 if variant_unit.tracked_mode == 'serial'
                   Inventory::AllocateTraceability.reserve_serials!(workspace: workspace, sale_line: sale_line, serials: sale_line.serial_codes)
                 end
+                SaleLineKinds::Menu.record!(sale_line, menu) if menu
               end
               recalculate!(workspace)
               audit = { variant_id: variant.prefixed_id, sale_line_id: sale_line.prefixed_id, line_item_id: line.prefixed_id, quantity: base_quantity }
+              audit[:menu] = SaleLineKinds::Menu.audit(menu) if menu
               audit.merge!(label_barcode: label.barcode, label_format_version: label.format.version, label_amount: label.label_amount&.to_s('F')) if label
               if price_override.present?
                 list_price = SalesChannel.price(variant, store: workspace.store, currency: workspace.order.currency, order: workspace.order).amount
@@ -111,6 +135,7 @@ module Spree
               if base_quantity > sale_line.base_quantity
                 SalesChannel.validate_order!(workspace)
                 sellable_variant!(branch: workspace.branch, variant: sale_line.variant)
+                SaleLineKinds::Menu.ensure_line_available!(workspace, sale_line) if sale_line.kind == SaleLineKinds::Menu::KIND
               end
               sale_line.line_item.update!(quantity: base_quantity)
               changed = sale_line.base_quantity != base_quantity
@@ -144,6 +169,24 @@ module Spree
           def remove_by_line(workspace:, staff:, revision:, lease_generation:, editor_id:, key:, line_item_id:)
             sale_line = SaleLine.find_by!(workspace: workspace, line_item_id: Spree::LineItem.find_by_prefix_id!(line_item_id.to_s).id)
             remove(workspace:, staff:, revision:, lease_generation:, editor_id:, key:, sale_line_id: sale_line.prefixed_id)
+          end
+
+          # Menu options as plain hashes, or nil when none were sent. Shared
+          # with UpdateLineModifiers. Quantities are checked by Menu::Pricing.
+          def normalize_modifiers(modifiers)
+            return nil if modifiers.nil?
+            raise Conflict.new('Options are invalid.', reason: 'modifier_unknown') unless modifiers.is_a?(Array)
+
+            modifiers.map do |row|
+              raise Conflict.new('Options are invalid.', reason: 'modifier_unknown') unless row.is_a?(Hash)
+
+              row = row.stringify_keys
+              { 'option_id' => row['option_id'].to_s, 'quantity' => row['quantity'].nil? ? 1 : row['quantity'] }
+            end
+          end
+
+          def check_note!(note)
+            raise Conflict.new('The note is too long.', reason: 'note_too_long') if note.to_s.length > 200
           end
 
           private

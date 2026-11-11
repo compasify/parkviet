@@ -21,10 +21,12 @@ import { Route as AuthenticatedStoreIdCreditAccountsRouteImport } from './routes
 import { Route as AuthenticatedStoreIdCreditApprovalsRouteImport } from './routes/_authenticated/$storeId/credit-approvals'
 import { Route as AuthenticatedStoreIdDeliveriesRouteImport } from './routes/_authenticated/$storeId/deliveries'
 import { Route as AuthenticatedStoreIdDevicesRouteImport } from './routes/_authenticated/$storeId/devices'
+import { Route as AuthenticatedStoreIdEinvoicesRouteImport } from './routes/_authenticated/$storeId/einvoices'
 import { Route as AuthenticatedStoreIdFeaturesRouteImport } from './routes/_authenticated/$storeId/features'
 import { Route as AuthenticatedStoreIdFundsRouteImport } from './routes/_authenticated/$storeId/funds'
 import { Route as AuthenticatedStoreIdInventoryRouteImport } from './routes/_authenticated/$storeId/inventory'
 import { Route as AuthenticatedStoreIdLabelFormatsRouteImport } from './routes/_authenticated/$storeId/label-formats'
+import { Route as AuthenticatedStoreIdMenuRouteImport } from './routes/_authenticated/$storeId/menu'
 import { Route as AuthenticatedStoreIdOrdersRouteImport } from './routes/_authenticated/$storeId/orders'
 import { Route as AuthenticatedStoreIdPaymentMethodsRouteImport } from './routes/_authenticated/$storeId/payment-methods'
 import { Route as AuthenticatedStoreIdProductsRouteImport } from './routes/_authenticated/$storeId/products'
@@ -37,6 +39,7 @@ import { Route as AuthenticatedStoreIdSetupRouteImport } from './routes/_authent
 import { Route as AuthenticatedStoreIdShiftsRouteImport } from './routes/_authenticated/$storeId/shifts'
 import { Route as AuthenticatedStoreIdStaffRouteImport } from './routes/_authenticated/$storeId/staff'
 import { Route as AuthenticatedStoreIdStaffRolesRouteImport } from './routes/_authenticated/$storeId/staff-roles'
+import { Route as AuthenticatedStoreIdStockAlertsRouteImport } from './routes/_authenticated/$storeId/stock-alerts'
 import { Route as AuthenticatedStoreIdUnitsRouteImport } from './routes/_authenticated/$storeId/units'
 import { Route as AuthenticatedStoreIdBranchesIndexRouteImport } from './routes/_authenticated/$storeId/branches/index'
 import { Route as AuthenticatedStoreIdBranchesBranchIdRouteImport } from './routes/_authenticated/$storeId/branches/$branchId'
@@ -51,10 +54,13 @@ import { Route as AuthenticatedStoreIdReceivablesOrdersRouteImport } from './rou
 import { Route as AuthenticatedStoreIdReportsIndexRouteImport } from './routes/_authenticated/$storeId/reports/index'
 import { Route as AuthenticatedStoreIdReportsCashbookRouteImport } from './routes/_authenticated/$storeId/reports/cashbook'
 import { Route as AuthenticatedStoreIdReportsClosuresRouteImport } from './routes/_authenticated/$storeId/reports/closures'
+import { Route as AuthenticatedStoreIdReportsIngredient_usageRouteImport } from './routes/_authenticated/$storeId/reports/ingredient_usage'
+import { Route as AuthenticatedStoreIdReportsMenu_marginRouteImport } from './routes/_authenticated/$storeId/reports/menu_margin'
 import { Route as AuthenticatedStoreIdReportsReceiptsRouteImport } from './routes/_authenticated/$storeId/reports/receipts'
 import { Route as AuthenticatedStoreIdReportsReceivablesRouteImport } from './routes/_authenticated/$storeId/reports/receivables'
 import { Route as AuthenticatedStoreIdSettingsIndexRouteImport } from './routes/_authenticated/$storeId/settings/index'
 import { Route as AuthenticatedStoreIdSettingsBusinessModelRouteImport } from './routes/_authenticated/$storeId/settings/business-model'
+import { Route as AuthenticatedStoreIdSettingsEinvoiceRouteImport } from './routes/_authenticated/$storeId/settings/einvoice'
 import { Route as AuthenticatedStoreIdSettingsReceiptTemplatesRouteImport } from './routes/_authenticated/$storeId/settings/receipt-templates'
 import { Route as AuthenticatedStoreIdSettingsSetupRouteImport } from './routes/_authenticated/$storeId/settings/setup'
 import { Route as AuthenticatedStoreIdSettingsSystemRouteImport } from './routes/_authenticated/$storeId/settings/system'
@@ -139,6 +145,12 @@ const AuthenticatedStoreIdDevicesRoute =
     path: '/devices',
     getParentRoute: () => AuthenticatedStoreIdRoute,
   } as any)
+const AuthenticatedStoreIdEinvoicesRoute =
+  AuthenticatedStoreIdEinvoicesRouteImport.update({
+    id: '/einvoices',
+    path: '/einvoices',
+    getParentRoute: () => AuthenticatedStoreIdRoute,
+  } as any)
 const AuthenticatedStoreIdFeaturesRoute =
   AuthenticatedStoreIdFeaturesRouteImport.update({
     id: '/features',
@@ -161,6 +173,12 @@ const AuthenticatedStoreIdLabelFormatsRoute =
   AuthenticatedStoreIdLabelFormatsRouteImport.update({
     id: '/label-formats',
     path: '/label-formats',
+    getParentRoute: () => AuthenticatedStoreIdRoute,
+  } as any)
+const AuthenticatedStoreIdMenuRoute =
+  AuthenticatedStoreIdMenuRouteImport.update({
+    id: '/menu',
+    path: '/menu',
     getParentRoute: () => AuthenticatedStoreIdRoute,
   } as any)
 const AuthenticatedStoreIdOrdersRoute =
@@ -233,6 +251,12 @@ const AuthenticatedStoreIdStaffRolesRoute =
   AuthenticatedStoreIdStaffRolesRouteImport.update({
     id: '/staff-roles',
     path: '/staff-roles',
+    getParentRoute: () => AuthenticatedStoreIdRoute,
+  } as any)
+const AuthenticatedStoreIdStockAlertsRoute =
+  AuthenticatedStoreIdStockAlertsRouteImport.update({
+    id: '/stock-alerts',
+    path: '/stock-alerts',
     getParentRoute: () => AuthenticatedStoreIdRoute,
   } as any)
 const AuthenticatedStoreIdUnitsRoute =
@@ -319,6 +343,18 @@ const AuthenticatedStoreIdReportsClosuresRoute =
     path: '/closures',
     getParentRoute: () => AuthenticatedStoreIdReportsRoute,
   } as any)
+const AuthenticatedStoreIdReportsIngredient_usageRoute =
+  AuthenticatedStoreIdReportsIngredient_usageRouteImport.update({
+    id: '/ingredient_usage',
+    path: '/ingredient_usage',
+    getParentRoute: () => AuthenticatedStoreIdReportsRoute,
+  } as any)
+const AuthenticatedStoreIdReportsMenu_marginRoute =
+  AuthenticatedStoreIdReportsMenu_marginRouteImport.update({
+    id: '/menu_margin',
+    path: '/menu_margin',
+    getParentRoute: () => AuthenticatedStoreIdReportsRoute,
+  } as any)
 const AuthenticatedStoreIdReportsReceiptsRoute =
   AuthenticatedStoreIdReportsReceiptsRouteImport.update({
     id: '/receipts',
@@ -341,6 +377,12 @@ const AuthenticatedStoreIdSettingsBusinessModelRoute =
   AuthenticatedStoreIdSettingsBusinessModelRouteImport.update({
     id: '/business-model',
     path: '/business-model',
+    getParentRoute: () => AuthenticatedStoreIdSettingsRoute,
+  } as any)
+const AuthenticatedStoreIdSettingsEinvoiceRoute =
+  AuthenticatedStoreIdSettingsEinvoiceRouteImport.update({
+    id: '/einvoice',
+    path: '/einvoice',
     getParentRoute: () => AuthenticatedStoreIdSettingsRoute,
   } as any)
 const AuthenticatedStoreIdSettingsReceiptTemplatesRoute =
@@ -457,10 +499,12 @@ export interface FileRoutesByFullPath {
   '/$storeId/credit-approvals': typeof AuthenticatedStoreIdCreditApprovalsRoute
   '/$storeId/deliveries': typeof AuthenticatedStoreIdDeliveriesRoute
   '/$storeId/devices': typeof AuthenticatedStoreIdDevicesRoute
+  '/$storeId/einvoices': typeof AuthenticatedStoreIdEinvoicesRoute
   '/$storeId/features': typeof AuthenticatedStoreIdFeaturesRoute
   '/$storeId/funds': typeof AuthenticatedStoreIdFundsRouteWithChildren
   '/$storeId/inventory': typeof AuthenticatedStoreIdInventoryRouteWithChildren
   '/$storeId/label-formats': typeof AuthenticatedStoreIdLabelFormatsRoute
+  '/$storeId/menu': typeof AuthenticatedStoreIdMenuRoute
   '/$storeId/orders': typeof AuthenticatedStoreIdOrdersRouteWithChildren
   '/$storeId/payment-methods': typeof AuthenticatedStoreIdPaymentMethodsRoute
   '/$storeId/products': typeof AuthenticatedStoreIdProductsRoute
@@ -473,6 +517,7 @@ export interface FileRoutesByFullPath {
   '/$storeId/shifts': typeof AuthenticatedStoreIdShiftsRouteWithChildren
   '/$storeId/staff': typeof AuthenticatedStoreIdStaffRoute
   '/$storeId/staff-roles': typeof AuthenticatedStoreIdStaffRolesRoute
+  '/$storeId/stock-alerts': typeof AuthenticatedStoreIdStockAlertsRoute
   '/$storeId/units': typeof AuthenticatedStoreIdUnitsRoute
   '/$storeId/': typeof AuthenticatedStoreIdIndexRoute
   '/$storeId/branches/$branchId': typeof AuthenticatedStoreIdBranchesBranchIdRouteWithChildren
@@ -482,9 +527,12 @@ export interface FileRoutesByFullPath {
   '/$storeId/receivables/orders': typeof AuthenticatedStoreIdReceivablesOrdersRoute
   '/$storeId/reports/cashbook': typeof AuthenticatedStoreIdReportsCashbookRoute
   '/$storeId/reports/closures': typeof AuthenticatedStoreIdReportsClosuresRoute
+  '/$storeId/reports/ingredient_usage': typeof AuthenticatedStoreIdReportsIngredient_usageRoute
+  '/$storeId/reports/menu_margin': typeof AuthenticatedStoreIdReportsMenu_marginRoute
   '/$storeId/reports/receipts': typeof AuthenticatedStoreIdReportsReceiptsRoute
   '/$storeId/reports/receivables': typeof AuthenticatedStoreIdReportsReceivablesRoute
   '/$storeId/settings/business-model': typeof AuthenticatedStoreIdSettingsBusinessModelRoute
+  '/$storeId/settings/einvoice': typeof AuthenticatedStoreIdSettingsEinvoiceRoute
   '/$storeId/settings/receipt-templates': typeof AuthenticatedStoreIdSettingsReceiptTemplatesRouteWithChildren
   '/$storeId/settings/setup': typeof AuthenticatedStoreIdSettingsSetupRoute
   '/$storeId/settings/system': typeof AuthenticatedStoreIdSettingsSystemRoute
@@ -519,8 +567,10 @@ export interface FileRoutesByTo {
   '/$storeId/credit-approvals': typeof AuthenticatedStoreIdCreditApprovalsRoute
   '/$storeId/deliveries': typeof AuthenticatedStoreIdDeliveriesRoute
   '/$storeId/devices': typeof AuthenticatedStoreIdDevicesRoute
+  '/$storeId/einvoices': typeof AuthenticatedStoreIdEinvoicesRoute
   '/$storeId/features': typeof AuthenticatedStoreIdFeaturesRoute
   '/$storeId/label-formats': typeof AuthenticatedStoreIdLabelFormatsRoute
+  '/$storeId/menu': typeof AuthenticatedStoreIdMenuRoute
   '/$storeId/payment-methods': typeof AuthenticatedStoreIdPaymentMethodsRoute
   '/$storeId/products': typeof AuthenticatedStoreIdProductsRoute
   '/$storeId/registers': typeof AuthenticatedStoreIdRegistersRoute
@@ -528,6 +578,7 @@ export interface FileRoutesByTo {
   '/$storeId/setup': typeof AuthenticatedStoreIdSetupRoute
   '/$storeId/staff': typeof AuthenticatedStoreIdStaffRoute
   '/$storeId/staff-roles': typeof AuthenticatedStoreIdStaffRolesRoute
+  '/$storeId/stock-alerts': typeof AuthenticatedStoreIdStockAlertsRoute
   '/$storeId/units': typeof AuthenticatedStoreIdUnitsRoute
   '/$storeId': typeof AuthenticatedStoreIdIndexRoute
   '/$storeId/funds/attention': typeof AuthenticatedStoreIdFundsAttentionRoute
@@ -536,9 +587,12 @@ export interface FileRoutesByTo {
   '/$storeId/receivables/orders': typeof AuthenticatedStoreIdReceivablesOrdersRoute
   '/$storeId/reports/cashbook': typeof AuthenticatedStoreIdReportsCashbookRoute
   '/$storeId/reports/closures': typeof AuthenticatedStoreIdReportsClosuresRoute
+  '/$storeId/reports/ingredient_usage': typeof AuthenticatedStoreIdReportsIngredient_usageRoute
+  '/$storeId/reports/menu_margin': typeof AuthenticatedStoreIdReportsMenu_marginRoute
   '/$storeId/reports/receipts': typeof AuthenticatedStoreIdReportsReceiptsRoute
   '/$storeId/reports/receivables': typeof AuthenticatedStoreIdReportsReceivablesRoute
   '/$storeId/settings/business-model': typeof AuthenticatedStoreIdSettingsBusinessModelRoute
+  '/$storeId/settings/einvoice': typeof AuthenticatedStoreIdSettingsEinvoiceRoute
   '/$storeId/settings/setup': typeof AuthenticatedStoreIdSettingsSetupRoute
   '/$storeId/settings/system': typeof AuthenticatedStoreIdSettingsSystemRoute
   '/$storeId/shifts/closures': typeof AuthenticatedStoreIdShiftsClosuresRoute
@@ -576,10 +630,12 @@ export interface FileRoutesById {
   '/_authenticated/$storeId/credit-approvals': typeof AuthenticatedStoreIdCreditApprovalsRoute
   '/_authenticated/$storeId/deliveries': typeof AuthenticatedStoreIdDeliveriesRoute
   '/_authenticated/$storeId/devices': typeof AuthenticatedStoreIdDevicesRoute
+  '/_authenticated/$storeId/einvoices': typeof AuthenticatedStoreIdEinvoicesRoute
   '/_authenticated/$storeId/features': typeof AuthenticatedStoreIdFeaturesRoute
   '/_authenticated/$storeId/funds': typeof AuthenticatedStoreIdFundsRouteWithChildren
   '/_authenticated/$storeId/inventory': typeof AuthenticatedStoreIdInventoryRouteWithChildren
   '/_authenticated/$storeId/label-formats': typeof AuthenticatedStoreIdLabelFormatsRoute
+  '/_authenticated/$storeId/menu': typeof AuthenticatedStoreIdMenuRoute
   '/_authenticated/$storeId/orders': typeof AuthenticatedStoreIdOrdersRouteWithChildren
   '/_authenticated/$storeId/payment-methods': typeof AuthenticatedStoreIdPaymentMethodsRoute
   '/_authenticated/$storeId/products': typeof AuthenticatedStoreIdProductsRoute
@@ -592,6 +648,7 @@ export interface FileRoutesById {
   '/_authenticated/$storeId/shifts': typeof AuthenticatedStoreIdShiftsRouteWithChildren
   '/_authenticated/$storeId/staff': typeof AuthenticatedStoreIdStaffRoute
   '/_authenticated/$storeId/staff-roles': typeof AuthenticatedStoreIdStaffRolesRoute
+  '/_authenticated/$storeId/stock-alerts': typeof AuthenticatedStoreIdStockAlertsRoute
   '/_authenticated/$storeId/units': typeof AuthenticatedStoreIdUnitsRoute
   '/_authenticated/$storeId/': typeof AuthenticatedStoreIdIndexRoute
   '/_authenticated/$storeId/branches/$branchId': typeof AuthenticatedStoreIdBranchesBranchIdRouteWithChildren
@@ -601,9 +658,12 @@ export interface FileRoutesById {
   '/_authenticated/$storeId/receivables/orders': typeof AuthenticatedStoreIdReceivablesOrdersRoute
   '/_authenticated/$storeId/reports/cashbook': typeof AuthenticatedStoreIdReportsCashbookRoute
   '/_authenticated/$storeId/reports/closures': typeof AuthenticatedStoreIdReportsClosuresRoute
+  '/_authenticated/$storeId/reports/ingredient_usage': typeof AuthenticatedStoreIdReportsIngredient_usageRoute
+  '/_authenticated/$storeId/reports/menu_margin': typeof AuthenticatedStoreIdReportsMenu_marginRoute
   '/_authenticated/$storeId/reports/receipts': typeof AuthenticatedStoreIdReportsReceiptsRoute
   '/_authenticated/$storeId/reports/receivables': typeof AuthenticatedStoreIdReportsReceivablesRoute
   '/_authenticated/$storeId/settings/business-model': typeof AuthenticatedStoreIdSettingsBusinessModelRoute
+  '/_authenticated/$storeId/settings/einvoice': typeof AuthenticatedStoreIdSettingsEinvoiceRoute
   '/_authenticated/$storeId/settings/receipt-templates': typeof AuthenticatedStoreIdSettingsReceiptTemplatesRouteWithChildren
   '/_authenticated/$storeId/settings/setup': typeof AuthenticatedStoreIdSettingsSetupRoute
   '/_authenticated/$storeId/settings/system': typeof AuthenticatedStoreIdSettingsSystemRoute
@@ -642,10 +702,12 @@ export interface FileRouteTypes {
     | '/$storeId/credit-approvals'
     | '/$storeId/deliveries'
     | '/$storeId/devices'
+    | '/$storeId/einvoices'
     | '/$storeId/features'
     | '/$storeId/funds'
     | '/$storeId/inventory'
     | '/$storeId/label-formats'
+    | '/$storeId/menu'
     | '/$storeId/orders'
     | '/$storeId/payment-methods'
     | '/$storeId/products'
@@ -658,6 +720,7 @@ export interface FileRouteTypes {
     | '/$storeId/shifts'
     | '/$storeId/staff'
     | '/$storeId/staff-roles'
+    | '/$storeId/stock-alerts'
     | '/$storeId/units'
     | '/$storeId/'
     | '/$storeId/branches/$branchId'
@@ -667,9 +730,12 @@ export interface FileRouteTypes {
     | '/$storeId/receivables/orders'
     | '/$storeId/reports/cashbook'
     | '/$storeId/reports/closures'
+    | '/$storeId/reports/ingredient_usage'
+    | '/$storeId/reports/menu_margin'
     | '/$storeId/reports/receipts'
     | '/$storeId/reports/receivables'
     | '/$storeId/settings/business-model'
+    | '/$storeId/settings/einvoice'
     | '/$storeId/settings/receipt-templates'
     | '/$storeId/settings/setup'
     | '/$storeId/settings/system'
@@ -704,8 +770,10 @@ export interface FileRouteTypes {
     | '/$storeId/credit-approvals'
     | '/$storeId/deliveries'
     | '/$storeId/devices'
+    | '/$storeId/einvoices'
     | '/$storeId/features'
     | '/$storeId/label-formats'
+    | '/$storeId/menu'
     | '/$storeId/payment-methods'
     | '/$storeId/products'
     | '/$storeId/registers'
@@ -713,6 +781,7 @@ export interface FileRouteTypes {
     | '/$storeId/setup'
     | '/$storeId/staff'
     | '/$storeId/staff-roles'
+    | '/$storeId/stock-alerts'
     | '/$storeId/units'
     | '/$storeId'
     | '/$storeId/funds/attention'
@@ -721,9 +790,12 @@ export interface FileRouteTypes {
     | '/$storeId/receivables/orders'
     | '/$storeId/reports/cashbook'
     | '/$storeId/reports/closures'
+    | '/$storeId/reports/ingredient_usage'
+    | '/$storeId/reports/menu_margin'
     | '/$storeId/reports/receipts'
     | '/$storeId/reports/receivables'
     | '/$storeId/settings/business-model'
+    | '/$storeId/settings/einvoice'
     | '/$storeId/settings/setup'
     | '/$storeId/settings/system'
     | '/$storeId/shifts/closures'
@@ -760,10 +832,12 @@ export interface FileRouteTypes {
     | '/_authenticated/$storeId/credit-approvals'
     | '/_authenticated/$storeId/deliveries'
     | '/_authenticated/$storeId/devices'
+    | '/_authenticated/$storeId/einvoices'
     | '/_authenticated/$storeId/features'
     | '/_authenticated/$storeId/funds'
     | '/_authenticated/$storeId/inventory'
     | '/_authenticated/$storeId/label-formats'
+    | '/_authenticated/$storeId/menu'
     | '/_authenticated/$storeId/orders'
     | '/_authenticated/$storeId/payment-methods'
     | '/_authenticated/$storeId/products'
@@ -776,6 +850,7 @@ export interface FileRouteTypes {
     | '/_authenticated/$storeId/shifts'
     | '/_authenticated/$storeId/staff'
     | '/_authenticated/$storeId/staff-roles'
+    | '/_authenticated/$storeId/stock-alerts'
     | '/_authenticated/$storeId/units'
     | '/_authenticated/$storeId/'
     | '/_authenticated/$storeId/branches/$branchId'
@@ -785,9 +860,12 @@ export interface FileRouteTypes {
     | '/_authenticated/$storeId/receivables/orders'
     | '/_authenticated/$storeId/reports/cashbook'
     | '/_authenticated/$storeId/reports/closures'
+    | '/_authenticated/$storeId/reports/ingredient_usage'
+    | '/_authenticated/$storeId/reports/menu_margin'
     | '/_authenticated/$storeId/reports/receipts'
     | '/_authenticated/$storeId/reports/receivables'
     | '/_authenticated/$storeId/settings/business-model'
+    | '/_authenticated/$storeId/settings/einvoice'
     | '/_authenticated/$storeId/settings/receipt-templates'
     | '/_authenticated/$storeId/settings/setup'
     | '/_authenticated/$storeId/settings/system'
@@ -906,6 +984,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStoreIdDevicesRouteImport
       parentRoute: typeof AuthenticatedStoreIdRoute
     }
+    '/_authenticated/$storeId/einvoices': {
+      id: '/_authenticated/$storeId/einvoices'
+      path: '/einvoices'
+      fullPath: '/$storeId/einvoices'
+      preLoaderRoute: typeof AuthenticatedStoreIdEinvoicesRouteImport
+      parentRoute: typeof AuthenticatedStoreIdRoute
+    }
     '/_authenticated/$storeId/features': {
       id: '/_authenticated/$storeId/features'
       path: '/features'
@@ -932,6 +1017,13 @@ declare module '@tanstack/react-router' {
       path: '/label-formats'
       fullPath: '/$storeId/label-formats'
       preLoaderRoute: typeof AuthenticatedStoreIdLabelFormatsRouteImport
+      parentRoute: typeof AuthenticatedStoreIdRoute
+    }
+    '/_authenticated/$storeId/menu': {
+      id: '/_authenticated/$storeId/menu'
+      path: '/menu'
+      fullPath: '/$storeId/menu'
+      preLoaderRoute: typeof AuthenticatedStoreIdMenuRouteImport
       parentRoute: typeof AuthenticatedStoreIdRoute
     }
     '/_authenticated/$storeId/orders': {
@@ -1016,6 +1108,13 @@ declare module '@tanstack/react-router' {
       path: '/staff-roles'
       fullPath: '/$storeId/staff-roles'
       preLoaderRoute: typeof AuthenticatedStoreIdStaffRolesRouteImport
+      parentRoute: typeof AuthenticatedStoreIdRoute
+    }
+    '/_authenticated/$storeId/stock-alerts': {
+      id: '/_authenticated/$storeId/stock-alerts'
+      path: '/stock-alerts'
+      fullPath: '/$storeId/stock-alerts'
+      preLoaderRoute: typeof AuthenticatedStoreIdStockAlertsRouteImport
       parentRoute: typeof AuthenticatedStoreIdRoute
     }
     '/_authenticated/$storeId/units': {
@@ -1116,6 +1215,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStoreIdReportsClosuresRouteImport
       parentRoute: typeof AuthenticatedStoreIdReportsRoute
     }
+    '/_authenticated/$storeId/reports/ingredient_usage': {
+      id: '/_authenticated/$storeId/reports/ingredient_usage'
+      path: '/ingredient_usage'
+      fullPath: '/$storeId/reports/ingredient_usage'
+      preLoaderRoute: typeof AuthenticatedStoreIdReportsIngredient_usageRouteImport
+      parentRoute: typeof AuthenticatedStoreIdReportsRoute
+    }
+    '/_authenticated/$storeId/reports/menu_margin': {
+      id: '/_authenticated/$storeId/reports/menu_margin'
+      path: '/menu_margin'
+      fullPath: '/$storeId/reports/menu_margin'
+      preLoaderRoute: typeof AuthenticatedStoreIdReportsMenu_marginRouteImport
+      parentRoute: typeof AuthenticatedStoreIdReportsRoute
+    }
     '/_authenticated/$storeId/reports/receipts': {
       id: '/_authenticated/$storeId/reports/receipts'
       path: '/receipts'
@@ -1142,6 +1255,13 @@ declare module '@tanstack/react-router' {
       path: '/business-model'
       fullPath: '/$storeId/settings/business-model'
       preLoaderRoute: typeof AuthenticatedStoreIdSettingsBusinessModelRouteImport
+      parentRoute: typeof AuthenticatedStoreIdSettingsRoute
+    }
+    '/_authenticated/$storeId/settings/einvoice': {
+      id: '/_authenticated/$storeId/settings/einvoice'
+      path: '/einvoice'
+      fullPath: '/$storeId/settings/einvoice'
+      preLoaderRoute: typeof AuthenticatedStoreIdSettingsEinvoiceRouteImport
       parentRoute: typeof AuthenticatedStoreIdSettingsRoute
     }
     '/_authenticated/$storeId/settings/receipt-templates': {
@@ -1396,6 +1516,8 @@ const AuthenticatedStoreIdReceivablesRouteWithChildren =
 interface AuthenticatedStoreIdReportsRouteChildren {
   AuthenticatedStoreIdReportsCashbookRoute: typeof AuthenticatedStoreIdReportsCashbookRoute
   AuthenticatedStoreIdReportsClosuresRoute: typeof AuthenticatedStoreIdReportsClosuresRoute
+  AuthenticatedStoreIdReportsIngredient_usageRoute: typeof AuthenticatedStoreIdReportsIngredient_usageRoute
+  AuthenticatedStoreIdReportsMenu_marginRoute: typeof AuthenticatedStoreIdReportsMenu_marginRoute
   AuthenticatedStoreIdReportsReceiptsRoute: typeof AuthenticatedStoreIdReportsReceiptsRoute
   AuthenticatedStoreIdReportsReceivablesRoute: typeof AuthenticatedStoreIdReportsReceivablesRoute
   AuthenticatedStoreIdReportsIndexRoute: typeof AuthenticatedStoreIdReportsIndexRoute
@@ -1407,6 +1529,10 @@ const AuthenticatedStoreIdReportsRouteChildren: AuthenticatedStoreIdReportsRoute
       AuthenticatedStoreIdReportsCashbookRoute,
     AuthenticatedStoreIdReportsClosuresRoute:
       AuthenticatedStoreIdReportsClosuresRoute,
+    AuthenticatedStoreIdReportsIngredient_usageRoute:
+      AuthenticatedStoreIdReportsIngredient_usageRoute,
+    AuthenticatedStoreIdReportsMenu_marginRoute:
+      AuthenticatedStoreIdReportsMenu_marginRoute,
     AuthenticatedStoreIdReportsReceiptsRoute:
       AuthenticatedStoreIdReportsReceiptsRoute,
     AuthenticatedStoreIdReportsReceivablesRoute:
@@ -1440,6 +1566,7 @@ const AuthenticatedStoreIdSettingsReceiptTemplatesRouteWithChildren =
 
 interface AuthenticatedStoreIdSettingsRouteChildren {
   AuthenticatedStoreIdSettingsBusinessModelRoute: typeof AuthenticatedStoreIdSettingsBusinessModelRoute
+  AuthenticatedStoreIdSettingsEinvoiceRoute: typeof AuthenticatedStoreIdSettingsEinvoiceRoute
   AuthenticatedStoreIdSettingsReceiptTemplatesRoute: typeof AuthenticatedStoreIdSettingsReceiptTemplatesRouteWithChildren
   AuthenticatedStoreIdSettingsSetupRoute: typeof AuthenticatedStoreIdSettingsSetupRoute
   AuthenticatedStoreIdSettingsSystemRoute: typeof AuthenticatedStoreIdSettingsSystemRoute
@@ -1450,6 +1577,8 @@ const AuthenticatedStoreIdSettingsRouteChildren: AuthenticatedStoreIdSettingsRou
   {
     AuthenticatedStoreIdSettingsBusinessModelRoute:
       AuthenticatedStoreIdSettingsBusinessModelRoute,
+    AuthenticatedStoreIdSettingsEinvoiceRoute:
+      AuthenticatedStoreIdSettingsEinvoiceRoute,
     AuthenticatedStoreIdSettingsReceiptTemplatesRoute:
       AuthenticatedStoreIdSettingsReceiptTemplatesRouteWithChildren,
     AuthenticatedStoreIdSettingsSetupRoute:
@@ -1492,10 +1621,12 @@ interface AuthenticatedStoreIdRouteChildren {
   AuthenticatedStoreIdCreditApprovalsRoute: typeof AuthenticatedStoreIdCreditApprovalsRoute
   AuthenticatedStoreIdDeliveriesRoute: typeof AuthenticatedStoreIdDeliveriesRoute
   AuthenticatedStoreIdDevicesRoute: typeof AuthenticatedStoreIdDevicesRoute
+  AuthenticatedStoreIdEinvoicesRoute: typeof AuthenticatedStoreIdEinvoicesRoute
   AuthenticatedStoreIdFeaturesRoute: typeof AuthenticatedStoreIdFeaturesRoute
   AuthenticatedStoreIdFundsRoute: typeof AuthenticatedStoreIdFundsRouteWithChildren
   AuthenticatedStoreIdInventoryRoute: typeof AuthenticatedStoreIdInventoryRouteWithChildren
   AuthenticatedStoreIdLabelFormatsRoute: typeof AuthenticatedStoreIdLabelFormatsRoute
+  AuthenticatedStoreIdMenuRoute: typeof AuthenticatedStoreIdMenuRoute
   AuthenticatedStoreIdOrdersRoute: typeof AuthenticatedStoreIdOrdersRouteWithChildren
   AuthenticatedStoreIdPaymentMethodsRoute: typeof AuthenticatedStoreIdPaymentMethodsRoute
   AuthenticatedStoreIdProductsRoute: typeof AuthenticatedStoreIdProductsRoute
@@ -1508,6 +1639,7 @@ interface AuthenticatedStoreIdRouteChildren {
   AuthenticatedStoreIdShiftsRoute: typeof AuthenticatedStoreIdShiftsRouteWithChildren
   AuthenticatedStoreIdStaffRoute: typeof AuthenticatedStoreIdStaffRoute
   AuthenticatedStoreIdStaffRolesRoute: typeof AuthenticatedStoreIdStaffRolesRoute
+  AuthenticatedStoreIdStockAlertsRoute: typeof AuthenticatedStoreIdStockAlertsRoute
   AuthenticatedStoreIdUnitsRoute: typeof AuthenticatedStoreIdUnitsRoute
   AuthenticatedStoreIdIndexRoute: typeof AuthenticatedStoreIdIndexRoute
 }
@@ -1523,11 +1655,13 @@ const AuthenticatedStoreIdRouteChildren: AuthenticatedStoreIdRouteChildren = {
     AuthenticatedStoreIdCreditApprovalsRoute,
   AuthenticatedStoreIdDeliveriesRoute: AuthenticatedStoreIdDeliveriesRoute,
   AuthenticatedStoreIdDevicesRoute: AuthenticatedStoreIdDevicesRoute,
+  AuthenticatedStoreIdEinvoicesRoute: AuthenticatedStoreIdEinvoicesRoute,
   AuthenticatedStoreIdFeaturesRoute: AuthenticatedStoreIdFeaturesRoute,
   AuthenticatedStoreIdFundsRoute: AuthenticatedStoreIdFundsRouteWithChildren,
   AuthenticatedStoreIdInventoryRoute:
     AuthenticatedStoreIdInventoryRouteWithChildren,
   AuthenticatedStoreIdLabelFormatsRoute: AuthenticatedStoreIdLabelFormatsRoute,
+  AuthenticatedStoreIdMenuRoute: AuthenticatedStoreIdMenuRoute,
   AuthenticatedStoreIdOrdersRoute: AuthenticatedStoreIdOrdersRouteWithChildren,
   AuthenticatedStoreIdPaymentMethodsRoute:
     AuthenticatedStoreIdPaymentMethodsRoute,
@@ -1544,6 +1678,7 @@ const AuthenticatedStoreIdRouteChildren: AuthenticatedStoreIdRouteChildren = {
   AuthenticatedStoreIdShiftsRoute: AuthenticatedStoreIdShiftsRouteWithChildren,
   AuthenticatedStoreIdStaffRoute: AuthenticatedStoreIdStaffRoute,
   AuthenticatedStoreIdStaffRolesRoute: AuthenticatedStoreIdStaffRolesRoute,
+  AuthenticatedStoreIdStockAlertsRoute: AuthenticatedStoreIdStockAlertsRoute,
   AuthenticatedStoreIdUnitsRoute: AuthenticatedStoreIdUnitsRoute,
   AuthenticatedStoreIdIndexRoute: AuthenticatedStoreIdIndexRoute,
 }

@@ -42,7 +42,8 @@ module Spree
             line_price = UnitNormalizer.unit_price_per_base(price: unit_price, variant_unit: variant_unit)
             before = sale_line.line_item.price
             sale_line.line_item.update!(price: line_price, price_source: Spree::LineItem::MANUAL_PRICE_SOURCE)
-            sale_line.update!(unit_price: unit_price, line_price: line_price, merge_key: SaleLine.build_merge_key(variant_id: sale_line.variant_id, kind: sale_line.kind, unit_price: line_price, sale_unit_code: sale_line.sale_unit_code, lot_code: sale_line.lot_code, serial_codes: sale_line.serial_codes, tracked_mode: sale_line.tracked_mode, expiry_on: sale_line.expiry_on&.iso8601))
+            sale_line.assign_attributes(unit_price: unit_price, line_price: line_price)
+            sale_line.update!(merge_key: sale_line.merge_key_now)
             ApplyDiscount.recalculate!(workspace)
             workspace.update!(revision: workspace.revision + 1)
             AuditEntry.record!(store: workspace.store, actor: staff, action: 'workspace.price.override', subject: workspace, metadata: { sale_line_id: sale_line.prefixed_id, before: before.to_s('F'), after: line_price.to_s('F'), reason: reason.to_s }.merge(ApplyDiscount.approval_metadata(approval)))

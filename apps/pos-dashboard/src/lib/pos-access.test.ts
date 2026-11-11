@@ -4,7 +4,10 @@ import {
   branchTabs,
   canAdminister,
   canManageBranch,
+  canManageEinvoices,
+  canManageMenu,
   canSendReminders,
+  canSetSoldOut,
   routeAllowed,
   visibleNav,
 } from './pos-access'
@@ -38,6 +41,23 @@ describe('POS permission gates', () => {
     expect(visibleNav('receipt-templates', access)).toBe(false)
     expect(canManageBranch(access, 'other')).toBe(false)
     expect(canManageBranch(access, null)).toBe(false)
+  })
+  it('offers the menu where the branch runs it, to menu managers and sold-out staff', () => {
+    const at = (capabilities: string[], menu: boolean) => ({
+      permissionKeys: [],
+      context: { capabilities, modules: { 'fnb.menu': menu } } as unknown as PosContext,
+    })
+    expect(visibleNav('menu', at(['pos.menu.manage'], true))).toBe(true)
+    expect(visibleNav('menu', at(['pos.menu.sold_out'], true))).toBe(true)
+    expect(canManageMenu(at(['pos.menu.sold_out'], true))).toBe(false)
+    expect(canSetSoldOut(at(['pos.menu.sold_out'], true))).toBe(true)
+    expect(visibleNav('menu', at(['pos.menu.manage'], false))).toBe(false)
+    expect(visibleNav('menu', at(['pos.payment.collect'], true))).toBe(false)
+    // An administrator prepares the menu by URL before any branch runs it.
+    const owner = { permissionKeys: ['write_pos_topology'], context: at([], false).context }
+    expect(visibleNav('menu', owner)).toBe(false)
+    expect(routeAllowed('menu', owner)).toBe(true)
+    expect(canManageMenu(owner)).toBe(true)
   })
   it('fails closed before permissions/context arrive', () => {
     expect(visibleNav('features', { permissionKeys: [] })).toBe(false)
@@ -212,5 +232,23 @@ describe('POS permission gates', () => {
       } as PosContext,
     }
     expect(routeAllowed('system', manager)).toBe(false)
+  })
+  it('offers e-invoices to their managers while the store issues them', () => {
+    const staff = (capabilities: string[], einvoice_type: PosContext['einvoice_type']) => ({
+      permissionKeys: [],
+      context: {
+        selection: { branch_id: 'b', register_id: null },
+        capabilities,
+        einvoice_type,
+      } as PosContext,
+    })
+    expect(visibleNav('einvoices', staff(['pos.einvoice.manage'], 'cash_register'))).toBe(true)
+    expect(visibleNav('einvoices', staff(['pos.einvoice.manage'], 'none'))).toBe(false)
+    expect(routeAllowed('einvoices', staff(['pos.einvoice.manage'], 'none'))).toBe(true)
+    expect(routeAllowed('einvoices', staff(['pos.shift.open'], 'coded'))).toBe(false)
+    expect(canManageEinvoices(staff(['pos.einvoice.manage'], 'coded'))).toBe(true)
+    expect(routeAllowed('einvoice-settings', staff(['pos.einvoice.manage'], 'coded'))).toBe(false)
+    expect(routeAllowed('einvoice-settings', { permissionKeys: ['write_pos_topology'] })).toBe(true)
+    expect(routeAllowed('einvoice-settings', { permissionKeys: ['read_pos_topology'] })).toBe(false)
   })
 })

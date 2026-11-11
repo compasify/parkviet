@@ -96,6 +96,14 @@ paths:
   /api/v3/admin/pos/workspaces/{id}/items:
     post:
       operationId: posWorkspaceAddItem
+      description: >
+        Adds a line. A menu item at a branch running `fnb.menu` is priced by
+        the server from its options: send `modifiers` ([ModifierSelection],
+        omitted for the item's default options) and `note`, never a price.
+        Two lines merge (`merge: true`) only with the same options and note.
+        Refused with 409 `menu_item_sold_out`, `menu_item_hidden`,
+        `modifier_min`, `modifier_max`, `modifier_unknown`, or
+        `module_disabled` when options are sent where the menu is off.
       parameters:
         - $ref: '#/components/parameters/Id'
       responses:
@@ -109,6 +117,747 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/Workspace'
+  /api/v3/admin/pos/workspaces/{workspace_id}/items/{id}/modifiers:
+    patch:
+      operationId: posWorkspaceLineModifiers
+      description: >
+        Replaces the options and note of a menu line. The line keeps its base
+        price; a line that ends up with the same options as another merges
+        into it. Refused with 409 `module_disabled`, `modifier_min`,
+        `modifier_max`, `modifier_unknown` or `snapshot_locked`.
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [expected_revision, lease_generation, editor_id, modifiers]
+              properties:
+                expected_revision:
+                  type: integer
+                lease_generation:
+                  type: integer
+                editor_id:
+                  type: string
+                  format: uuid
+                modifiers:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/ModifierSelection'
+                note:
+                  type: string
+                  maxLength: 200
+      responses:
+        '200':
+          description: Workspace after the change
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Workspace'
+        '409':
+          description: Refused; `error.details.reason` says why
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/menu:
+    get:
+      operationId: posMenu
+      description: >
+        The menu a branch sells from now: a running time-of-day menu applied,
+        hidden items left out, today's sold-out items marked. Send the last
+        `etag` as `If-None-Match` to get 304 when nothing changed. Read again
+        on `menu.sold_out`.
+      parameters:
+        - name: branch_id
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: If-None-Match
+          in: header
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Menu
+          headers:
+            ETag:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Menu'
+        '304':
+          description: Unchanged since the etag sent
+  /api/v3/admin/pos/menu_availabilities:
+    put:
+      operationId: posMenuSoldOut
+      description: >
+        Marks a menu item sold out at a branch for the current business day,
+        or back on sale. Needs `pos.menu.sold_out`, `pos.menu.manage`, or a
+        kitchen screen (device mode `kds`) of the branch.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [branch_id, menu_item_id, sold_out]
+              properties:
+                branch_id:
+                  type: string
+                menu_item_id:
+                  type: string
+                sold_out:
+                  type: boolean
+      responses:
+        '200':
+          description: Sold-out state
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/MenuAvailability'
+        '409':
+          description: Refused; `error.details.reason` says why
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/menu_favorites:
+    put:
+      operationId: posMenuFavorites
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [branch_id, menu_item_ids]
+              properties:
+                branch_id:
+                  type: string
+                menu_item_ids:
+                  type: array
+                  maxItems: 20
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: The branch's favourites, in order
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [branch_id, menu_item_ids]
+                    properties:
+                      branch_id:
+                        type: string
+                      menu_item_ids:
+                        type: array
+                        items:
+                          type: string
+  /api/v3/admin/pos/menu_categories:
+    get:
+      operationId: posMenuCategories
+      responses:
+        '200':
+          description: Categories of the store's menu
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MenuCategory'
+  /api/v3/admin/pos/menu_items:
+    get:
+      operationId: posMenuItems
+      responses:
+        '200':
+          description: Items of the store's menu, inactive ones included
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MenuItemConfig'
+  /api/v3/admin/pos/modifier_groups:
+    get:
+      operationId: posModifierGroups
+      responses:
+        '200':
+          description: Modifier groups of the store with their options
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ModifierGroup'
+  /api/v3/admin/pos/recipes:
+    get:
+      operationId: posRecipe
+      description: >
+        The recipe of one menu size (`variant_id`) or one modifier option
+        (`modifier_option_id`): the active version with its estimated cost at
+        today's cost prices, and every version, newest first.
+      parameters:
+        - name: variant_id
+          in: query
+          schema:
+            type: string
+        - name: modifier_option_id
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Recipe and history
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/RecipeOwner'
+    put:
+      operationId: posRecipeSave
+      description: >
+        Saves a new version and retires the active one; an empty list retires
+        the recipe. Quantities must be a whole number of the ingredient's stock
+        unit. A size with a recipe stops tracking its own stock, so a size with
+        stock on hand needs `confirm_stock_write_off` (409
+        `recipe_variant_has_stock` otherwise). Needs `pos.inventory.manage`
+        and `fnb.recipes` on at a branch of the store.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ingredients]
+              properties:
+                variant_id:
+                  type: string
+                modifier_option_id:
+                  type: string
+                confirm_stock_write_off:
+                  type: boolean
+                ingredients:
+                  type: array
+                  maxItems: 50
+                  items:
+                    type: object
+                    required: [variant_id, quantity, unit_code]
+                    properties:
+                      variant_id:
+                        type: string
+                      quantity:
+                        type: string
+                        pattern: '^\d+(\.\d{1,4})?$'
+                      unit_code:
+                        type: string
+      responses:
+        '200':
+          description: Recipe and history after the change
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/RecipeOwner'
+        '409':
+          description: >
+            Refused; `error.details.reason` is one of `recipe_ingredient_tracked`,
+            `recipe_unit_dimension`, `recipe_unit_unknown`, `recipe_quantity_inexact`,
+            `recipe_quantity_invalid`, `recipe_ingredient_duplicate`, `recipe_ingredient_self`,
+            `recipe_variant_has_stock`, `recipe_rows_limit` or `module_disabled`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/stock_alerts:
+    get:
+      operationId: posStockAlerts
+      description: Low-stock thresholds of a branch with its shelf now, low ones first.
+      parameters:
+        - name: branch_id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thresholds
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/StockAlert'
+    put:
+      operationId: posStockAlertSet
+      description: >
+        Sets the threshold of one variant at a branch, in its stock unit, or
+        removes it when `min_quantity` is null. Needs `pos.inventory.manage`
+        at the branch and `fnb.recipes` on there. Answers with the branch's list.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [branch_id, variant_id]
+              properties:
+                branch_id:
+                  type: string
+                variant_id:
+                  type: string
+                min_quantity:
+                  type: [integer, 'null']
+                  minimum: 1
+      responses:
+        '200':
+          description: Thresholds after the change
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/StockAlert'
+        '409':
+          description: Refused; `error.details.reason` is `stock_alert_invalid` or `module_disabled`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/reports/ingredient_usage:
+    get:
+      operationId: posReportIngredientUsage
+      description: >
+        Ingredients completed sales used, by business date, ingredient and
+        menu item, in stock units, at the cost copied at completion.
+      parameters:
+        - $ref: '#/components/parameters/ReportBranch'
+        - $ref: '#/components/parameters/ReportFrom'
+        - $ref: '#/components/parameters/ReportTo'
+      responses:
+        '200':
+          description: One page of rows
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/IngredientUsageRow'
+                  meta:
+                    type: object
+  /api/v3/admin/pos/reports/menu_margin:
+    get:
+      operationId: posReportMenuMargin
+      description: >
+        Gross margin by menu size over completed sales: line revenue after
+        line promotions and before added tax, less what the recipes consumed.
+      parameters:
+        - $ref: '#/components/parameters/ReportBranch'
+        - $ref: '#/components/parameters/ReportFrom'
+        - $ref: '#/components/parameters/ReportTo'
+      responses:
+        '200':
+          description: One page of rows
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MenuMarginRow'
+                  meta:
+                    type: object
+  /api/v3/admin/pos/einvoice_settings:
+    get:
+      operationId: posEinvoiceSettings
+      description: >
+        Which e-invoice the store issues, the providers it may pick (only those
+        with an adapter), and its settings rows (store default first, then
+        branch rows). Credentials are never returned, only which fields are
+        set. Store administration (`write_pos_topology`) only.
+      responses:
+        '200':
+          description: Settings
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/EinvoiceSettings'
+    put:
+      operationId: posEinvoiceSettingsSave
+      description: >
+        Sets the store's e-invoice type and/or one settings row: the store
+        default (no `branch_id`) or a branch's own row (`status: disabled`
+        makes the branch use the default). `setting.credentials` replaces the
+        stored credentials when present and is write-only. Issuing (`einvoice_type`
+        other than `none`) needs an active store default.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                einvoice_type:
+                  type: string
+                  enum: [none, cash_register, coded]
+                branch_id:
+                  type: string
+                setting:
+                  $ref: '#/components/schemas/EinvoiceSettingInput'
+      responses:
+        '200':
+          description: Settings after the change
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/EinvoiceSettings'
+        '409':
+          description: >
+            Refused; `error.details.reason` is `einvoice_provider_unknown`,
+            `einvoice_setting_invalid` (with `details.field`), `einvoice_type_invalid`,
+            `einvoice_not_configured` or `store_profile_required`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/einvoice_settings/test:
+    post:
+      operationId: posEinvoiceSample
+      description: >
+        Issues one made-up invoice through a sandbox provider with the store
+        default (or `branch_id`'s) settings and saves nothing. Refused for a
+        real provider (`einvoice_sample_sandbox_only`).
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                branch_id:
+                  type: string
+      responses:
+        '200':
+          description: What the provider answered
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/EinvoiceSample'
+        '409':
+          description: Refused
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/einvoices:
+    get:
+      operationId: posEinvoices
+      description: >
+        E-invoices of completed orders, newest first, at the branches where the
+        person has `pos.einvoice.manage` (every branch for POS administration).
+        `status=outstanding` lists orders without an issued invoice yet
+        (pending, issuing, failed).
+      parameters:
+        - name: branch_id
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [outstanding, pending, issuing, issued, failed, canceled, replaced, adjusted]
+        - name: q
+          in: query
+          description: Part of the order number
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: One page of invoices
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Einvoice'
+                  meta:
+                    type: object
+  /api/v3/admin/pos/einvoices/summary:
+    get:
+      operationId: posEinvoiceSummary
+      description: >
+        Invoices still waiting, by status, and the store's turnover of the
+        year so far against the 1 billion VND mark (`level` is `warning` from
+        80% and `reached` from 100%).
+      parameters:
+        - name: branch_id
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Summary
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/EinvoiceSummary'
+  /api/v3/admin/pos/einvoices/retry:
+    post:
+      operationId: posEinvoiceRetry
+      description: >
+        Queues `ids` (up to 100), or every failed invoice of `branch_id`, for
+        an immediate try. Invoices that are not pending or failed are skipped.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ids:
+                  type: array
+                  maxItems: 100
+                  items:
+                    type: string
+                branch_id:
+                  type: string
+      responses:
+        '200':
+          description: What was queued
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    additionalProperties: false
+                    required: [queued, skipped]
+                    properties:
+                      queued:
+                        type: array
+                        items:
+                          type: string
+                      skipped:
+                        type: integer
+  /api/v3/admin/pos/einvoices/{id}:
+    get:
+      operationId: posEinvoice
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: The invoice
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Einvoice'
+  /api/v3/admin/pos/einvoices/{id}/buyer:
+    put:
+      operationId: posEinvoiceBuyer
+      description: >
+        Sets the buyer an invoice that has not gone to the provider will carry
+        (empty: a sale to a consumer). A failed invoice is queued again.
+        Refused with `einvoice_already_issued` once issued: request a replacement.
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [buyer]
+              properties:
+                buyer:
+                  $ref: '#/components/schemas/EinvoiceBuyer'
+      responses:
+        '200':
+          description: The invoice
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Einvoice'
+        '409':
+          description: >
+            Refused; `error.details.reason` is `einvoice_buyer_invalid` (with
+            `details.field`), `einvoice_issuing` or `einvoice_already_issued`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/einvoices/{id}/cancel:
+    post:
+      operationId: posEinvoiceCancel
+      description: Stops an invoice that never reached the provider. An issued invoice is replaced instead.
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason:
+                  type: string
+                  maxLength: 200
+      responses:
+        '200':
+          description: The cancelled invoice
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Einvoice'
+        '409':
+          description: Refused
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/einvoices/{id}/replace:
+    post:
+      operationId: posEinvoiceReplace
+      description: >
+        Requests a replacement of an issued invoice with a new buyer, for
+        example company details the buyer asked for later. The replacement is
+        issued through the queue; the original becomes `replaced` then.
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [buyer, reason]
+              properties:
+                buyer:
+                  $ref: '#/components/schemas/EinvoiceBuyer'
+                reason:
+                  type: string
+                  maxLength: 200
+      responses:
+        '201':
+          description: The replacement invoice
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Einvoice'
+        '409':
+          description: >
+            Refused; `error.details.reason` is `einvoice_not_issued`,
+            `einvoice_replacement_pending`, `einvoice_reason_required` or `einvoice_buyer_invalid`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/v3/admin/pos/approvals:
     post:
       operationId: posApprovalCreate
@@ -785,6 +1534,26 @@ components:
       required: true
       schema:
         type: string
+    ReportBranch:
+      name: branch_id
+      in: query
+      required: true
+      schema:
+        type: string
+    ReportFrom:
+      name: from
+      in: query
+      description: First business date, YYYY-MM-DD; today by default
+      schema:
+        type: string
+        format: date
+    ReportTo:
+      name: to
+      in: query
+      description: Last business date, YYYY-MM-DD; the start date by default
+      schema:
+        type: string
+        format: date
   schemas:
     RealtimeEvent:
       type: object
@@ -853,6 +1622,10 @@ components:
               type: boolean
             write:
               type: boolean
+        einvoice_type:
+          type: string
+          enum: [none, cash_register, coded]
+          description: E-invoice the store issues for completed orders; the counter offers buyer details unless it is none.
     CatalogItem:
       type: object
       additionalProperties: true
@@ -892,6 +1665,10 @@ components:
         business_date:
           type: string
           format: date
+        line_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkspaceLine'
         totals:
           type: object
           additionalProperties: true
@@ -910,6 +1687,286 @@ components:
                     type: string
                   amount:
                     type: string
+    WorkspaceLine:
+      type: object
+      additionalProperties: true
+      required: [id, variant_id, name, quantity, price, amount, sale_line_id]
+      properties:
+        id:
+          type: string
+        variant_id:
+          type: string
+        name:
+          type: string
+        quantity:
+          type: integer
+        price:
+          type: string
+        amount:
+          type: string
+        sale_line_id:
+          type: [string, 'null']
+        kind:
+          type: string
+          enum: [ordinary, measured, tracked, menu, timed, cover]
+        unit_price:
+          type: string
+        note:
+          type: [string, 'null']
+        modifiers:
+          type: array
+          items:
+            $ref: '#/components/schemas/LineModifier'
+        components:
+          type: array
+          items:
+            $ref: '#/components/schemas/LineComponent'
+    LineModifier:
+      type: object
+      additionalProperties: false
+      description: An option a line was sold with, copied at the time of sale.
+      required: [id, option_id, name, group_name, price_delta, quantity]
+      properties:
+        id:
+          type: string
+        option_id:
+          type: [string, 'null']
+          description: Null once the option itself was deleted.
+        name:
+          type: string
+        group_name:
+          type: string
+        price_delta:
+          type: string
+        quantity:
+          type: integer
+          minimum: 1
+    LineComponent:
+      type: object
+      additionalProperties: false
+      description: What one unit of a combo line contained when it was sold.
+      required: [id, variant_id, name, quantity]
+      properties:
+        id:
+          type: string
+        variant_id:
+          type: string
+        name:
+          type: string
+        quantity:
+          type: integer
+          minimum: 1
+    ModifierSelection:
+      type: object
+      additionalProperties: false
+      required: [option_id]
+      properties:
+        option_id:
+          type: string
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 10
+          description: Above 1 only in a group with `allow_quantity`.
+    Menu:
+      type: object
+      additionalProperties: false
+      required: [branch_id, currency, business_date, module_enabled, categories, items, modifier_groups, schedules, favorites, etag]
+      properties:
+        branch_id:
+          type: string
+        currency:
+          type: string
+        business_date:
+          type: string
+          format: date
+        module_enabled:
+          type: boolean
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/MenuCategory'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/MenuItem'
+        modifier_groups:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModifierGroup'
+        schedules:
+          type: array
+          description: Time-of-day menus running now.
+          items:
+            type: object
+            additionalProperties: false
+            required: [id, name]
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+        favorites:
+          type: array
+          description: Menu item ids of the favourites row, in order.
+          items:
+            type: string
+        etag:
+          type: string
+    MenuCategory:
+      type: object
+      additionalProperties: false
+      required: [id, name, position, color, active]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        position:
+          type: integer
+        color:
+          type: [string, 'null']
+        active:
+          type: boolean
+    MenuItemConfig:
+      type: object
+      additionalProperties: true
+      required: [id, product_id, name, kind, menu_category_id, kitchen_category, cup_label, show_components_on_kds, position, active,
+                 tax_category_id, modifier_group_ids, components]
+      properties:
+        id:
+          type: string
+        product_id:
+          type: string
+        name:
+          type: string
+        kind:
+          type: string
+          enum: [single, combo]
+        menu_category_id:
+          type: [string, 'null']
+        kitchen_category:
+          type: [string, 'null']
+          pattern: '^[a-z_]{2,40}$'
+        cup_label:
+          type: boolean
+        show_components_on_kds:
+          type: boolean
+        position:
+          type: integer
+        active:
+          type: boolean
+        tax_category_id:
+          type: [string, 'null']
+        modifier_group_ids:
+          type: array
+          items:
+            type: string
+        components:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [id, variant_id, name, quantity]
+            properties:
+              id:
+                type: string
+              variant_id:
+                type: string
+              name:
+                type: string
+              quantity:
+                type: integer
+    MenuItem:
+      allOf:
+        - $ref: '#/components/schemas/MenuItemConfig'
+        - type: object
+          required: [image_url, sold_out, variants]
+          properties:
+            image_url:
+              type: [string, 'null']
+            sold_out:
+              type: boolean
+            variants:
+              type: array
+              minItems: 1
+              description: Sizes, each at its price now.
+              items:
+                type: object
+                additionalProperties: false
+                required: [id, name, sku, barcode, price, list_price, schedule_id]
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: [string, 'null']
+                  sku:
+                    type: [string, 'null']
+                  barcode:
+                    type: [string, 'null']
+                  price:
+                    type: string
+                  list_price:
+                    type: [string, 'null']
+                  schedule_id:
+                    type: [string, 'null']
+                    description: The time-of-day menu that sets `price`, if any.
+    ModifierGroup:
+      type: object
+      additionalProperties: false
+      required: [id, name, min_select, max_select, allow_quantity, position, required, options]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        min_select:
+          type: integer
+          minimum: 0
+        max_select:
+          type: integer
+          minimum: 1
+        allow_quantity:
+          type: boolean
+        position:
+          type: integer
+        required:
+          type: boolean
+        options:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [id, name, price_delta, variant_id, default_selected, position, active]
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+              price_delta:
+                type: string
+              variant_id:
+                type: [string, 'null']
+              default_selected:
+                type: boolean
+              position:
+                type: integer
+              active:
+                type: boolean
+    MenuAvailability:
+      type: object
+      additionalProperties: false
+      required: [menu_item_id, branch_id, sold_out, business_date]
+      properties:
+        menu_item_id:
+          type: string
+        branch_id:
+          type: string
+        sold_out:
+          type: boolean
+        business_date:
+          type: string
+          format: date
     Approval:
       type: object
       additionalProperties: true
@@ -1057,6 +2114,524 @@ components:
           type: string
         name:
           type: [string, 'null']
+    RecipeOwner:
+      type: object
+      additionalProperties: false
+      required: [owner_type, owner_id, track_inventory, active, versions]
+      properties:
+        owner_type:
+          type: string
+          enum: [variant, modifier_option]
+        owner_id:
+          type: string
+        track_inventory:
+          type: [boolean, 'null']
+          description: Whether a size still keeps its own stock; null for an option
+        active:
+          oneOf:
+            - $ref: '#/components/schemas/Recipe'
+            - type: 'null'
+        versions:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [id, version, active, created_at, ingredients]
+            properties:
+              id:
+                type: string
+              version:
+                type: integer
+              active:
+                type: boolean
+              created_at:
+                type: string
+                format: date-time
+              ingredients:
+                type: integer
+    Recipe:
+      type: object
+      additionalProperties: false
+      required: [id, version, active, created_at, ingredients, estimated_cost]
+      properties:
+        id:
+          type: string
+        version:
+          type: integer
+        active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        estimated_cost:
+          type: [string, 'null']
+          description: At today's cost prices; null while an ingredient has none
+        ingredients:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [id, variant_id, name, sku, options_text, quantity, unit_code, base_quantity, base_unit, unit_cost, cost]
+            properties:
+              id:
+                type: string
+              variant_id:
+                type: string
+              name:
+                type: [string, 'null']
+              sku:
+                type: [string, 'null']
+              options_text:
+                type: [string, 'null']
+              quantity:
+                type: string
+              unit_code:
+                type: string
+              base_quantity:
+                type: integer
+                description: The quantity in the ingredient's stock unit
+              base_unit:
+                type: string
+              unit_cost:
+                type: [string, 'null']
+                description: Cost per stock unit now
+              cost:
+                type: [string, 'null']
+    StockAlert:
+      type: object
+      additionalProperties: false
+      required: [id, branch_id, variant_id, name, sku, options_text, base_unit, min_quantity, on_hand, low]
+      properties:
+        id:
+          type: string
+        branch_id:
+          type: string
+        variant_id:
+          type: string
+        name:
+          type: [string, 'null']
+        sku:
+          type: [string, 'null']
+        options_text:
+          type: [string, 'null']
+        base_unit:
+          type: string
+        min_quantity:
+          type: integer
+        on_hand:
+          type: integer
+        low:
+          type: boolean
+    IngredientUsageRow:
+      type: object
+      additionalProperties: false
+      required: [business_date, ingredient, ingredient_sku, menu_item, quantity, unit, cost, cost_missing]
+      properties:
+        business_date:
+          type: string
+          format: date
+        ingredient:
+          type: string
+        ingredient_sku:
+          type: [string, 'null']
+        menu_item:
+          type: string
+        quantity:
+          type: integer
+        unit:
+          type: string
+        cost:
+          type: string
+        cost_missing:
+          type: boolean
+          description: Some of the rows had no cost price and count as zero
+    MenuMarginRow:
+      type: object
+      additionalProperties: false
+      required: [menu_item, sku, quantity, revenue, cost, margin, margin_rate, costed]
+      properties:
+        menu_item:
+          type: string
+        sku:
+          type: [string, 'null']
+        quantity:
+          type: integer
+        revenue:
+          type: string
+        cost:
+          type: string
+        margin:
+          type: string
+        margin_rate:
+          type: [string, 'null']
+          description: Percent of revenue, one decimal
+        costed:
+          type: boolean
+          description: Whether any recipe consumption was recorded for the size
+    EinvoiceBuyer:
+      type: object
+      additionalProperties: false
+      description: >
+        Who the invoice is for. Empty is a sale to a consumer, printed with the
+        store's consumer label. A tax code needs the registered name and address.
+        `label` is set by the server when the invoice issues to a consumer.
+      properties:
+        tax_code:
+          type: string
+          pattern: '^\d{10}(-\d{3})?$'
+        name:
+          type: string
+          maxLength: 400
+        address:
+          type: string
+          maxLength: 400
+        personal_id:
+          type: string
+          pattern: '^\d{12}$'
+        phone:
+          type: string
+          maxLength: 15
+        passport_no:
+          type: string
+          maxLength: 20
+        nationality:
+          type: string
+          maxLength: 60
+        email:
+          type: string
+          maxLength: 120
+        buyer_note:
+          type: string
+          maxLength: 200
+        label:
+          type: string
+    EinvoiceLine:
+      type: object
+      additionalProperties: false
+      required: [position, kind, name, unit, quantity, unit_price, discount, tax_rate, tax_amount, amount_before_tax, amount,
+                 price_includes_tax]
+      properties:
+        position:
+          type: integer
+        kind:
+          type: string
+          enum: [goods, service_charge, fee]
+        name:
+          type: string
+        sku:
+          type: [string, 'null']
+        unit:
+          type: string
+        quantity:
+          type: string
+          description: Decimal; hours with two decimals for time-billed lines
+        unit_price:
+          type: string
+          description: As sold; tax included when `price_includes_tax`
+        discount:
+          type: string
+        tax_rate:
+          type: [string, 'null']
+          description: Percent, e.g. "8" or "10"; null when the line carries no tax line
+        tax_amount:
+          type: string
+        amount_before_tax:
+          type: string
+        amount:
+          type: string
+          description: Paid amount with tax
+        price_includes_tax:
+          type: boolean
+    Einvoice:
+      type: object
+      additionalProperties: false
+      required: [id, order_id, order_number, workspace_id, branch_id, branch_name, relation, original_einvoice_id, invoice_type,
+                 provider, status, buyer, seller, lines, totals, payment_method, currency, template_code, symbol, number,
+                 cqt_code, lookup_code, lookup_url, issued_at, attempts, next_attempt_at, last_error, buyer_link_open,
+                 buyer_token_expires_at, buyer_submitted_at, canceled_at, cancel_reason, completed_at, total, created_at]
+      properties:
+        id:
+          type: string
+        order_id:
+          type: string
+        order_number:
+          type: string
+        workspace_id:
+          type: string
+        branch_id:
+          type: string
+        branch_name:
+          type: string
+        relation:
+          type: string
+          enum: [original, replacement]
+        original_einvoice_id:
+          type: [string, 'null']
+        invoice_type:
+          type: string
+          enum: [cash_register, coded]
+        provider:
+          type: [string, 'null']
+        status:
+          type: string
+          enum: [pending, issuing, issued, failed, canceled, replaced, adjusted]
+        buyer:
+          $ref: '#/components/schemas/EinvoiceBuyer'
+        seller:
+          type: object
+          additionalProperties: false
+          properties:
+            name:
+              type: [string, 'null']
+            tax_code:
+              type: [string, 'null']
+            address:
+              type: [string, 'null']
+            outlet_code:
+              type: [string, 'null']
+            outlet_name:
+              type: [string, 'null']
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/EinvoiceLine'
+        totals:
+          type: object
+          additionalProperties: false
+          properties:
+            amount_before_tax:
+              type: string
+            tax_amount:
+              type: string
+            discount_total:
+              type: string
+            total:
+              type: string
+            taxes:
+              type: array
+              items:
+                type: object
+                additionalProperties: false
+                required: [tax_rate, amount_before_tax, tax_amount]
+                properties:
+                  tax_rate:
+                    type: [string, 'null']
+                  amount_before_tax:
+                    type: string
+                  tax_amount:
+                    type: string
+        payment_method:
+          type: [string, 'null']
+          enum: [TM, CK, TM/CK, null]
+        currency:
+          type: string
+        template_code:
+          type: [string, 'null']
+        symbol:
+          type: [string, 'null']
+        number:
+          type: [string, 'null']
+        cqt_code:
+          type: [string, 'null']
+          description: The tax authority's code
+        lookup_code:
+          type: [string, 'null']
+        lookup_url:
+          type: [string, 'null']
+        issued_at:
+          type: [string, 'null']
+          format: date-time
+        attempts:
+          type: integer
+        next_attempt_at:
+          type: [string, 'null']
+          format: date-time
+        last_error:
+          type: [string, 'null']
+        buyer_link_open:
+          type: boolean
+          description: The buyer's own page still takes details
+        buyer_token_expires_at:
+          type: [string, 'null']
+          format: date-time
+        buyer_submitted_at:
+          type: [string, 'null']
+          format: date-time
+        canceled_at:
+          type: [string, 'null']
+          format: date-time
+        cancel_reason:
+          type: [string, 'null']
+        completed_at:
+          type: [string, 'null']
+          format: date-time
+        total:
+          type: [string, 'null']
+        created_at:
+          type: string
+          format: date-time
+    EinvoiceSettingInput:
+      type: object
+      additionalProperties: false
+      properties:
+        provider:
+          type: string
+          description: A registered provider key
+        credentials:
+          type: object
+          description: Write-only provider fields; replaces the stored ones
+          additionalProperties:
+            type: string
+        template_code:
+          type: [string, 'null']
+          pattern: '^[1-9]$'
+        symbol:
+          type: [string, 'null']
+          pattern: '^[CKck]\d{2}[A-Za-z]{3}$'
+        seller_name:
+          type: [string, 'null']
+        seller_tax_code:
+          type: [string, 'null']
+        seller_address:
+          type: [string, 'null']
+        consumer_label:
+          type: [string, 'null']
+          description: Printed for a buyer without details; default "Bán cho người tiêu dùng"
+        lookup_url:
+          type: [string, 'null']
+        buyer_link_hours:
+          type: [integer, 'null']
+          minimum: 1
+          maximum: 720
+          description: Lifetime of the bill QR link; null keeps it until the end of the business day
+        status:
+          type: string
+          enum: [active, disabled]
+    EinvoiceSetting:
+      type: object
+      additionalProperties: false
+      required: [id, branch_id, branch_name, provider, status, template_code, symbol, seller_name, seller_tax_code, seller_address,
+                 consumer_label, lookup_url, buyer_link_hours, credential_fields, updated_at]
+      properties:
+        id:
+          type: string
+        branch_id:
+          type: [string, 'null']
+        branch_name:
+          type: [string, 'null']
+        provider:
+          type: string
+        status:
+          type: string
+          enum: [active, disabled]
+        template_code:
+          type: [string, 'null']
+        symbol:
+          type: [string, 'null']
+        seller_name:
+          type: [string, 'null']
+        seller_tax_code:
+          type: [string, 'null']
+        seller_address:
+          type: [string, 'null']
+        consumer_label:
+          type: [string, 'null']
+        lookup_url:
+          type: [string, 'null']
+        buyer_link_hours:
+          type: [integer, 'null']
+        credential_fields:
+          type: array
+          description: Names of the credential fields that are set (never their values)
+          items:
+            type: string
+        updated_at:
+          type: [string, 'null']
+          format: date-time
+    EinvoiceSettings:
+      type: object
+      additionalProperties: false
+      required: [einvoice_type, providers, settings, public_link]
+      properties:
+        einvoice_type:
+          type: string
+          enum: [none, cash_register, coded]
+        providers:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [key, label, sandbox, credential_fields, tax_code_lookup]
+            properties:
+              key:
+                type: string
+              label:
+                type: string
+              sandbox:
+                type: boolean
+              credential_fields:
+                type: array
+                items:
+                  type: string
+              tax_code_lookup:
+                type: boolean
+        settings:
+          type: array
+          items:
+            $ref: '#/components/schemas/EinvoiceSetting'
+        public_link:
+          type: boolean
+          description: Whether the server has a public address for the bill QR (POS_PUBLIC_BASE_URL)
+    EinvoiceSample:
+      type: object
+      additionalProperties: true
+      required: [provider, number, symbol, lookup_code]
+      properties:
+        provider:
+          type: string
+        template_code:
+          type: [string, 'null']
+        symbol:
+          type: [string, 'null']
+        number:
+          type: [string, 'null']
+        cqt_code:
+          type: [string, 'null']
+        lookup_code:
+          type: [string, 'null']
+    EinvoiceSummary:
+      type: object
+      additionalProperties: false
+      required: [einvoice_type, outstanding, counts, oldest_outstanding_at, revenue]
+      properties:
+        einvoice_type:
+          type: string
+          enum: [none, cash_register, coded]
+        outstanding:
+          type: integer
+        counts:
+          type: object
+          additionalProperties:
+            type: integer
+        oldest_outstanding_at:
+          type: [string, 'null']
+          format: date-time
+        revenue:
+          type: object
+          additionalProperties: false
+          required: [year, total, threshold, share, level]
+          properties:
+            year:
+              type: integer
+            total:
+              type: string
+            threshold:
+              type: string
+            share:
+              type: string
+            level:
+              type: string
+              enum: [ok, warning, reached]
     ErrorResponse:
       type: object
       additionalProperties: true

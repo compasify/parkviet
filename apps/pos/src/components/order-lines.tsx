@@ -6,10 +6,18 @@ import {
 } from '@parkviet/pos-shared/traceability';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { PosLineItem, PosWorkspace } from '../lib/pos-context';
+import { linePicks, toSelections } from '../lib/menu-selection';
+import type {
+  PosLineItem,
+  PosMenu,
+  PosMenuItem,
+  PosModifierSelection,
+  PosWorkspace,
+} from '../lib/pos-context';
 import { MAX_COUNT_QUANTITY, parseCountQuantity, parseMeasuredQuantity } from '../lib/quantity';
 import { ItemDiscountEditor } from './item-discount-editor';
 import { LinePriceEditor } from './line-price-editor';
+import { ModifierSheet } from './modifier-sheet';
 import { PosIcon } from './pos-icon';
 import { lotLabel } from './sold-trace';
 
@@ -24,6 +32,9 @@ export function OrderLines({
   onLineDiscount,
   onClearLineDiscount,
   onPriceOverride,
+  menu = null,
+  onUpdateModifiers,
+  onAddSame,
 }: {
   workspace: PosWorkspace;
   disabled: boolean;
@@ -49,9 +60,20 @@ export function OrderLines({
     saleLineId: string,
     input: { price: string; reason: string; approvalId?: string },
   ) => Promise<PosWorkspace>;
+  // The branch's menu while it runs one: menu lines can change their options.
+  menu?: PosMenu | null;
+  onUpdateModifiers?: (
+    saleLineId: string,
+    input: { modifiers: PosModifierSelection[]; note: string | null },
+  ) => Promise<PosWorkspace>;
+  onAddSame?: (
+    variantId: string,
+    input: { modifiers: PosModifierSelection[]; note?: string },
+  ) => Promise<PosWorkspace>;
 }) {
   const { t } = useTranslation();
   const [quantities, setQuantities] = useState<Record<string, string>>({});
+  const [editing, setEditing] = useState<{ line: PosLineItem; item: PosMenuItem } | null>(null);
   const [error, setError] = useState('');
   const lines = workspace.line_items ?? [];
   const currency = workspace.totals?.currency ?? 'VND';
@@ -153,6 +175,44 @@ export function OrderLines({
                         </span>
                       ) : null}
                       <LineTrace line={line} />
+                      <MenuLineDetail line={line} />
+                      {line.kind === 'menu' && line.sale_line_id
+                        ? (() => {
+                            const item = menuItemOf(menu, line);
+                            const same = sameSelections(line);
+                            return (
+                              <span className="basket-line-actions">
+                                {item && onUpdateModifiers ? (
+                                  <button
+                                    type="button"
+                                    disabled={disabled}
+                                    title={disabledReason}
+                                    onClick={() => setEditing({ line, item })}
+                                  >
+                                    {t('menuEditOptions')}
+                                  </button>
+                                ) : null}
+                                {onAddSame && same ? (
+                                  <button
+                                    type="button"
+                                    disabled={disabled || line.quantity >= MAX_COUNT_QUANTITY}
+                                    title={disabledReason}
+                                    onClick={() =>
+                                      void run(line.id, () =>
+                                        onAddSame(line.variant_id, {
+                                          modifiers: same,
+                                          note: line.note ?? undefined,
+                                        }),
+                                      )
+                                    }
+                                  >
+                                    {t('menuAddSame')}
+                                  </button>
+                                ) : null}
+                              </span>
+                            );
+                          })()
+                        : null}
                     </div>
                   </td>
                   <td>
@@ -312,7 +372,65 @@ export function OrderLines({
           {error}
         </p>
       ) : null}
+      {editing && menu && onUpdateModifiers && editing.line.sale_line_id ? (
+        <ModifierSheet
+          menu={menu}
+          item={editing.item}
+          editing
+          initial={{
+            variantId: editing.line.variant_id,
+            picks: linePicks(editing.line),
+            note: editing.line.note ?? '',
+          }}
+          onSubmit={(result) =>
+            onUpdateModifiers(editing.line.sale_line_id as string, {
+              modifiers: result.modifiers,
+              note: result.note || null,
+            })
+          }
+          onClose={() => setEditing(null)}
+        />
+      ) : null}
     </>
+  );
+}
+
+function menuItemOf(menu: PosMenu | null, line: PosLineItem): PosMenuItem | null {
+  return (
+    menu?.items.find((item) => item.variants.some((variant) => variant.id === line.variant_id)) ??
+    null
+  );
+}
+
+// The options of a line to send again for one more of the same. A line whose
+// option was deleted since cannot be repeated exactly, so it offers nothing.
+function sameSelections(line: PosLineItem): PosModifierSelection[] | null {
+  const rows = line.modifiers ?? [];
+  if (rows.some((row) => row.option_id === null)) return null;
+  return toSelections(linePicks(line));
+}
+
+// What the line was sold with: options, combo contents and the note.
+function MenuLineDetail({ line }: { line: PosLineItem }) {
+  const modifiers = line.modifiers ?? [];
+  const components = line.components ?? [];
+  if (modifiers.length === 0 && components.length === 0 && !line.note) return null;
+  return (
+    <span className="basket-line-menu">
+      {modifiers.length > 0 ? (
+        <span className="basket-line-label">
+          {modifiers
+            .map((row) => (row.quantity > 1 ? `+ ${row.name} ×${row.quantity}` : `+ ${row.name}`))
+            .join(', ')}
+        </span>
+      ) : null}
+      {components.length > 0 ? (
+        <span className="basket-line-label">
+          {components.map((row) => `${row.name} ×${row.quantity}`).join(', ')}
+        </span>
+      ) : null}
+      {line.note ? <span className="basket-line-label basket-line-note">* {line.note}</span> : null}
+    </span>
   );
 }
 

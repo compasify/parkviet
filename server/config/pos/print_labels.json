@@ -36,6 +36,7 @@
   "receiptOutflow": "Tiền ra",
   "receiptPaidTotal": "Đã thanh toán",
   "receiptPayQrCaption": "Quét mã để chuyển khoản trả nợ",
+  "receiptEinvoiceBuyerCaption": "Quét mã để nhập thông tin xuất hóa đơn",
   "receiptPrebillBanner": "TẠM TÍNH – CHƯA THANH TOÁN",
   "receiptPrebillNote": "Phiếu tạm tính không phải biên nhận thanh toán.",
   "receiptPrebillTitle": "PHIẾU TẠM TÍNH",

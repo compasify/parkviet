@@ -10,6 +10,7 @@ import {
   dayText,
   isDecimalText,
   MONEY_COLUMNS,
+  PERCENT_COLUMNS,
   type ShiftLine,
   summaryEntries,
   TIME_COLUMNS,
@@ -39,6 +40,7 @@ export function ReportCell({
   if (value == null || value === '') return <>—</>
   if (column === 'variance') return <VarianceText variance={String(value)} currency={money} />
   if (MONEY_COLUMNS.has(column)) return <>{formatMoney(String(value), money)}</>
+  if (PERCENT_COLUMNS.has(column)) return <>{value}%</>
   if (TIME_COLUMNS.has(column)) return <>{formatInstant(String(value), i18n.language, timeZone)}</>
   if (column === 'business_date') return <>{dayText(String(value))}</>
   const prefix = CODE_COLUMNS[column]
@@ -84,7 +86,11 @@ export function ReportSummary({
               })}
             </dt>
             <dd className="font-medium tabular-nums">
-              {isDecimalText(value) ? formatMoney(value, currency) : String(value)}
+              {PERCENT_COLUMNS.has(key)
+                ? `${value}%`
+                : isDecimalText(value)
+                  ? formatMoney(value, currency)
+                  : String(value)}
             </dd>
           </div>
         ))}

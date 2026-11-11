@@ -15,6 +15,19 @@ export type ReceiptSnapshot = {
   // Null before the first print and for prints made before templates existed.
   original_print?: PrintLayout | null;
   document: Record<string, unknown>;
+  // A sale's e-invoice, read live by the server; null without one.
+  einvoice?: ReceiptEinvoice | null;
+};
+
+export type ReceiptEinvoice = {
+  status: string;
+  invoice_type: 'cash_register' | 'coded';
+  number: string | null;
+  symbol: string | null;
+  template_code: string | null;
+  lookup_code: string | null;
+  lookup_url: string | null;
+  buyer_url: string | null;
 };
 
 export type ReceiptPrint = {

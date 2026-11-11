@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_11_120400) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_11_170200) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -2491,6 +2491,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_120400) do
     t.index ["store_id"], name: "index_spree_pos_collections_on_store_id"
   end
 
+  create_table "spree_pos_combo_components", force: :cascade do |t|
+    t.bigint "menu_item_id", null: false
+    t.bigint "variant_id", null: false
+    t.integer "quantity", default: 1, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["menu_item_id", "variant_id"], name: "idx_pos_combo_components_pair", unique: true
+    t.index ["variant_id"], name: "index_spree_pos_combo_components_on_variant_id"
+    t.check_constraint "quantity > 0", name: "chk_pos_combo_components_quantity"
+  end
+
   create_table "spree_pos_command_receipts", force: :cascade do |t|
     t.bigint "store_id", null: false
     t.bigint "workspace_id"
@@ -2754,6 +2765,82 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_120400) do
     t.check_constraint "pinned_tender_attempt_id IS NULL OR pinned_workspace_id IS NOT NULL", name: "chk_pos_display_sessions_attempt_pin"
   end
 
+  create_table "spree_pos_einvoice_settings", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "branch_id"
+    t.string "provider", limit: 40, null: false
+    t.text "credentials"
+    t.string "template_code", limit: 1
+    t.string "symbol", limit: 6
+    t.string "seller_name", limit: 400
+    t.string "seller_tax_code", limit: 14
+    t.string "seller_address", limit: 400
+    t.string "consumer_label", limit: 100
+    t.string "lookup_url", limit: 300
+    t.integer "buyer_link_hours"
+    t.string "status", limit: 16, default: "active", null: false
+    t.bigint "changed_by_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["branch_id"], name: "index_spree_pos_einvoice_settings_on_branch_id"
+    t.index ["changed_by_id"], name: "index_spree_pos_einvoice_settings_on_changed_by_id"
+    t.index ["store_id", "branch_id"], name: "idx_pos_einvoice_settings_branch", unique: true, where: "(branch_id IS NOT NULL)"
+    t.index ["store_id"], name: "idx_pos_einvoice_settings_store", unique: true, where: "(branch_id IS NULL)"
+    t.index ["store_id"], name: "index_spree_pos_einvoice_settings_on_store_id"
+    t.check_constraint "buyer_link_hours IS NULL OR buyer_link_hours >= 1 AND buyer_link_hours <= 720", name: "chk_pos_einvoice_settings_link_hours"
+    t.check_constraint "status::text = ANY (ARRAY['active'::character varying, 'disabled'::character varying]::text[])", name: "chk_pos_einvoice_settings_status"
+  end
+
+  create_table "spree_pos_einvoices", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "branch_id", null: false
+    t.bigint "order_id", null: false
+    t.bigint "workspace_id", null: false
+    t.bigint "original_einvoice_id"
+    t.bigint "created_by_id", null: false
+    t.string "relation", limit: 16, default: "original", null: false
+    t.string "invoice_type", limit: 16, null: false
+    t.string "provider", limit: 40
+    t.string "status", limit: 16, default: "pending", null: false
+    t.jsonb "buyer", default: {}, null: false
+    t.jsonb "seller", default: {}, null: false
+    t.jsonb "lines_snapshot", default: [], null: false
+    t.jsonb "totals_snapshot", default: {}, null: false
+    t.string "payment_method", limit: 16
+    t.string "currency", limit: 3, null: false
+    t.string "template_code", limit: 1
+    t.string "symbol", limit: 6
+    t.string "number", limit: 16
+    t.string "provider_ref", limit: 100
+    t.string "cqt_code", limit: 40
+    t.string "lookup_code", limit: 64
+    t.string "lookup_url", limit: 300
+    t.datetime "issued_at"
+    t.datetime "signed_at"
+    t.datetime "sent_to_cqt_at"
+    t.integer "attempts", default: 0, null: false
+    t.datetime "next_attempt_at"
+    t.text "last_error"
+    t.datetime "buyer_token_expires_at"
+    t.datetime "buyer_submitted_at"
+    t.datetime "canceled_at"
+    t.string "cancel_reason", limit: 200
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["branch_id"], name: "index_spree_pos_einvoices_on_branch_id"
+    t.index ["created_by_id"], name: "index_spree_pos_einvoices_on_created_by_id"
+    t.index ["order_id"], name: "idx_pos_einvoices_original_order", unique: true, where: "((relation)::text = 'original'::text)"
+    t.index ["order_id"], name: "index_spree_pos_einvoices_on_order_id"
+    t.index ["original_einvoice_id"], name: "index_spree_pos_einvoices_on_original_einvoice_id"
+    t.index ["store_id", "status", "next_attempt_at"], name: "idx_pos_einvoices_queue"
+    t.index ["store_id"], name: "index_spree_pos_einvoices_on_store_id"
+    t.index ["workspace_id"], name: "index_spree_pos_einvoices_on_workspace_id"
+    t.check_constraint "(relation::text = 'original'::text) = (original_einvoice_id IS NULL)", name: "chk_pos_einvoices_original"
+    t.check_constraint "invoice_type::text = ANY (ARRAY['cash_register'::character varying, 'coded'::character varying]::text[])", name: "chk_pos_einvoices_type"
+    t.check_constraint "relation::text = ANY (ARRAY['original'::character varying, 'replacement'::character varying]::text[])", name: "chk_pos_einvoices_relation"
+    t.check_constraint "status::text = ANY (ARRAY['pending'::character varying, 'issuing'::character varying, 'issued'::character varying, 'failed'::character varying, 'canceled'::character varying, 'replaced'::character varying, 'adjusted'::character varying]::text[])", name: "chk_pos_einvoices_status"
+  end
+
   create_table "spree_pos_exchange_operations", force: :cascade do |t|
     t.bigint "store_id", null: false
     t.bigint "branch_id", null: false
@@ -2787,7 +2874,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_120400) do
     t.index ["requester_id"], name: "index_spree_pos_export_requests_on_requester_id"
     t.index ["status", "expires_at"], name: "idx_pos_export_requests_expiry"
     t.index ["store_id"], name: "index_spree_pos_export_requests_on_store_id"
-    t.check_constraint "report_type::text = ANY (ARRAY['sales'::character varying::text, 'receipts'::character varying::text, 'cashbook'::character varying::text, 'receivables'::character varying::text, 'closures'::character varying::text])", name: "chk_pos_export_requests_report"
+    t.check_constraint "report_type::text = ANY (ARRAY['sales'::character varying, 'receipts'::character varying, 'cashbook'::character varying, 'receivables'::character varying, 'closures'::character varying, 'ingredient_usage'::character varying, 'menu_margin'::character varying]::text[])", name: "chk_pos_export_requests_report"
     t.check_constraint "status::text = ANY (ARRAY['queued'::character varying::text, 'processing'::character varying::text, 'ready'::character varying::text, 'failed'::character varying::text, 'expired'::character varying::text])", name: "chk_pos_export_requests_status"
   end
 
@@ -2932,6 +3019,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_120400) do
     t.check_constraint "status::text = ANY (ARRAY['requested'::character varying::text, 'reserved'::character varying::text, 'unknown'::character varying::text, 'confirmed'::character varying::text, 'failed'::character varying::text, 'canceled'::character varying::text])", name: "chk_pos_liability_payouts_status"
   end
 
+  create_table "spree_pos_line_components", force: :cascade do |t|
+    t.bigint "sale_line_id", null: false
+    t.bigint "variant_id", null: false
+    t.string "name", limit: 200, null: false
+    t.integer "quantity", default: 1, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["sale_line_id"], name: "index_spree_pos_line_components_on_sale_line_id"
+    t.index ["variant_id"], name: "index_spree_pos_line_components_on_variant_id"
+    t.check_constraint "quantity > 0", name: "chk_pos_line_components_quantity"
+  end
+
   create_table "spree_pos_line_discount_intents", force: :cascade do |t|
     t.bigint "workspace_id", null: false
     t.bigint "sale_line_id", null: false
@@ -2944,6 +3043,142 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_120400) do
     t.index ["sale_line_id"], name: "index_spree_pos_line_discount_intents_on_sale_line_id", unique: true
     t.index ["workspace_id"], name: "index_spree_pos_line_discount_intents_on_workspace_id"
     t.check_constraint "value_type::text = ANY (ARRAY['flat'::character varying::text, 'percent'::character varying::text, 'unit_price'::character varying::text, 'item_flat'::character varying::text, 'item_percent'::character varying::text])", name: "chk_pos_line_discount_type"
+  end
+
+  create_table "spree_pos_line_modifiers", force: :cascade do |t|
+    t.bigint "sale_line_id", null: false
+    t.bigint "modifier_option_id"
+    t.string "name", limit: 80, null: false
+    t.string "group_name", limit: 80, null: false
+    t.decimal "price_delta", precision: 10, scale: 2, default: "0.0", null: false
+    t.integer "quantity", default: 1, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["modifier_option_id"], name: "index_spree_pos_line_modifiers_on_modifier_option_id"
+    t.index ["sale_line_id"], name: "index_spree_pos_line_modifiers_on_sale_line_id"
+    t.check_constraint "quantity > 0 AND price_delta >= 0::numeric", name: "chk_pos_line_modifiers_values"
+  end
+
+  create_table "spree_pos_menu_availabilities", force: :cascade do |t|
+    t.bigint "branch_id", null: false
+    t.bigint "menu_item_id", null: false
+    t.date "sold_out_on"
+    t.string "updated_by_type"
+    t.bigint "updated_by_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["branch_id", "menu_item_id"], name: "idx_pos_menu_availabilities_pair", unique: true
+    t.index ["menu_item_id"], name: "index_spree_pos_menu_availabilities_on_menu_item_id"
+  end
+
+  create_table "spree_pos_menu_categories", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.string "name", limit: 80, null: false
+    t.integer "position", default: 0, null: false
+    t.string "color", limit: 16
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["store_id", "name"], name: "idx_pos_menu_categories_name", unique: true
+    t.index ["store_id"], name: "index_spree_pos_menu_categories_on_store_id"
+  end
+
+  create_table "spree_pos_menu_favorites", force: :cascade do |t|
+    t.bigint "branch_id", null: false
+    t.bigint "menu_item_id", null: false
+    t.integer "position", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["branch_id", "menu_item_id"], name: "idx_pos_menu_favorites_pair", unique: true
+    t.index ["menu_item_id"], name: "index_spree_pos_menu_favorites_on_menu_item_id"
+  end
+
+  create_table "spree_pos_menu_item_modifier_groups", force: :cascade do |t|
+    t.bigint "menu_item_id", null: false
+    t.bigint "modifier_group_id", null: false
+    t.integer "position", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["menu_item_id", "modifier_group_id"], name: "idx_pos_menu_item_modifier_groups_pair", unique: true
+    t.index ["modifier_group_id"], name: "index_spree_pos_menu_item_modifier_groups_on_modifier_group_id"
+  end
+
+  create_table "spree_pos_menu_items", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "product_id", null: false
+    t.bigint "menu_category_id"
+    t.string "kind", default: "single", null: false
+    t.string "kitchen_category", limit: 40
+    t.boolean "cup_label", default: false, null: false
+    t.boolean "show_components_on_kds", default: true, null: false
+    t.integer "position", default: 0, null: false
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["menu_category_id"], name: "index_spree_pos_menu_items_on_menu_category_id"
+    t.index ["product_id"], name: "index_spree_pos_menu_items_on_product_id"
+    t.index ["store_id", "product_id"], name: "idx_pos_menu_items_product", unique: true
+    t.index ["store_id"], name: "index_spree_pos_menu_items_on_store_id"
+    t.check_constraint "kind::text = ANY (ARRAY['single'::character varying, 'combo'::character varying]::text[])", name: "chk_pos_menu_items_kind"
+    t.check_constraint "kitchen_category IS NULL OR kitchen_category::text ~ '^[a-z_]{2,40}$'::text", name: "chk_pos_menu_items_kitchen_category"
+  end
+
+  create_table "spree_pos_menu_schedule_items", force: :cascade do |t|
+    t.bigint "menu_schedule_id", null: false
+    t.bigint "menu_item_id", null: false
+    t.bigint "variant_id"
+    t.decimal "price", precision: 19, scale: 4
+    t.boolean "hidden", default: false, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index "menu_schedule_id, menu_item_id, COALESCE(variant_id, (0)::bigint)", name: "idx_pos_menu_schedule_items_target", unique: true
+    t.index ["menu_item_id"], name: "index_spree_pos_menu_schedule_items_on_menu_item_id"
+    t.index ["variant_id"], name: "index_spree_pos_menu_schedule_items_on_variant_id"
+    t.check_constraint "price IS NULL OR price >= 0::numeric", name: "chk_pos_menu_schedule_items_price"
+  end
+
+  create_table "spree_pos_menu_schedules", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "branch_id"
+    t.string "name", limit: 80, null: false
+    t.integer "days_of_week", default: [], null: false, array: true
+    t.time "starts_at", null: false
+    t.time "ends_at", null: false
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["branch_id"], name: "index_spree_pos_menu_schedules_on_branch_id"
+    t.index ["store_id"], name: "index_spree_pos_menu_schedules_on_store_id"
+    t.check_constraint "days_of_week <@ ARRAY[0, 1, 2, 3, 4, 5, 6]", name: "chk_pos_menu_schedules_days"
+    t.check_constraint "starts_at <> ends_at", name: "chk_pos_menu_schedules_window"
+  end
+
+  create_table "spree_pos_modifier_groups", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.string "name", limit: 80, null: false
+    t.integer "min_select", default: 0, null: false
+    t.integer "max_select", default: 1, null: false
+    t.boolean "allow_quantity", default: false, null: false
+    t.integer "position", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["store_id"], name: "index_spree_pos_modifier_groups_on_store_id"
+    t.check_constraint "min_select >= 0 AND max_select >= 1 AND min_select <= max_select", name: "chk_pos_modifier_groups_select"
+  end
+
+  create_table "spree_pos_modifier_options", force: :cascade do |t|
+    t.bigint "modifier_group_id", null: false
+    t.string "name", limit: 80, null: false
+    t.decimal "price_delta", precision: 10, scale: 2, default: "0.0", null: false
+    t.bigint "variant_id"
+    t.boolean "default_selected", default: false, null: false
+    t.integer "position", default: 0, null: false
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["modifier_group_id"], name: "index_spree_pos_modifier_options_on_modifier_group_id"
+    t.index ["variant_id"], name: "index_spree_pos_modifier_options_on_variant_id"
+    t.check_constraint "price_delta >= 0::numeric", name: "chk_pos_modifier_options_price"
   end
 
   create_table "spree_pos_outbox_entries", force: :cascade do |t|
@@ -3231,6 +3466,68 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_120400) do
     t.check_constraint "status::text = ANY (ARRAY['received'::character varying::text, 'attention'::character varying::text])", name: "chk_pos_received_funds_status"
   end
 
+  create_table "spree_pos_recipe_consumptions", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "branch_id", null: false
+    t.bigint "workspace_id", null: false
+    t.bigint "order_id", null: false
+    t.bigint "sale_line_id", null: false
+    t.bigint "ingredient_variant_id", null: false
+    t.bigint "stock_location_id", null: false
+    t.integer "base_quantity", null: false
+    t.string "base_unit_code", limit: 16, null: false
+    t.bigint "recipe_id"
+    t.integer "recipe_version"
+    t.string "source_key", limit: 64, null: false
+    t.decimal "unit_cost", precision: 19, scale: 4
+    t.date "business_date", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["branch_id", "business_date"], name: "idx_pos_recipe_consumptions_day"
+    t.index ["branch_id"], name: "index_spree_pos_recipe_consumptions_on_branch_id"
+    t.index ["ingredient_variant_id"], name: "index_spree_pos_recipe_consumptions_on_ingredient_variant_id"
+    t.index ["order_id"], name: "index_spree_pos_recipe_consumptions_on_order_id"
+    t.index ["recipe_id"], name: "index_spree_pos_recipe_consumptions_on_recipe_id"
+    t.index ["sale_line_id", "ingredient_variant_id", "source_key"], name: "idx_pos_recipe_consumptions_source", unique: true
+    t.index ["sale_line_id"], name: "index_spree_pos_recipe_consumptions_on_sale_line_id"
+    t.index ["stock_location_id"], name: "index_spree_pos_recipe_consumptions_on_stock_location_id"
+    t.index ["store_id"], name: "index_spree_pos_recipe_consumptions_on_store_id"
+    t.index ["workspace_id"], name: "index_spree_pos_recipe_consumptions_on_workspace_id"
+    t.check_constraint "base_quantity > 0", name: "chk_pos_recipe_consumptions_quantity"
+  end
+
+  create_table "spree_pos_recipe_ingredients", force: :cascade do |t|
+    t.bigint "recipe_id", null: false
+    t.bigint "ingredient_variant_id", null: false
+    t.decimal "quantity", precision: 12, scale: 4, null: false
+    t.string "unit_code", limit: 16, null: false
+    t.integer "base_quantity", null: false
+    t.string "base_unit_code", limit: 16, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["ingredient_variant_id"], name: "index_spree_pos_recipe_ingredients_on_ingredient_variant_id"
+    t.index ["recipe_id", "ingredient_variant_id"], name: "idx_pos_recipe_ingredients_variant", unique: true
+    t.index ["recipe_id"], name: "index_spree_pos_recipe_ingredients_on_recipe_id"
+    t.check_constraint "quantity > 0::numeric AND base_quantity > 0", name: "chk_pos_recipe_ingredients_quantity"
+  end
+
+  create_table "spree_pos_recipes", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.string "owner_type", limit: 64, null: false
+    t.bigint "owner_id", null: false
+    t.integer "version", null: false
+    t.boolean "active", default: true, null: false
+    t.bigint "created_by_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["created_by_id"], name: "index_spree_pos_recipes_on_created_by_id"
+    t.index ["owner_type", "owner_id", "version"], name: "idx_pos_recipes_version", unique: true
+    t.index ["owner_type", "owner_id"], name: "idx_pos_recipes_active", unique: true, where: "active"
+    t.index ["store_id"], name: "index_spree_pos_recipes_on_store_id"
+    t.check_constraint "owner_type::text = ANY (ARRAY['Spree::Variant'::character varying, 'Spree::Pos::ModifierOption'::character varying]::text[])", name: "chk_pos_recipes_owner"
+    t.check_constraint "version > 0", name: "chk_pos_recipes_version"
+  end
+
   create_table "spree_pos_refund_requests", force: :cascade do |t|
     t.bigint "store_id", null: false
     t.bigint "branch_id", null: false
@@ -3395,6 +3692,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_120400) do
     t.string "label_barcode"
     t.bigint "label_format_id"
     t.integer "label_format_version"
+    t.string "note", limit: 200
+    t.string "modifier_signature", limit: 64
     t.index ["line_item_id"], name: "index_spree_pos_sale_lines_on_line_item_id", unique: true
     t.index ["order_id"], name: "index_spree_pos_sale_lines_on_order_id"
     t.index ["variant_id"], name: "index_spree_pos_sale_lines_on_variant_id"
@@ -3520,6 +3819,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_120400) do
     t.check_constraint "status::text = ANY (ARRAY['active'::character varying::text, 'disabled'::character varying::text])", name: "chk_pos_staff_roles_status"
   end
 
+  create_table "spree_pos_stock_alerts", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "branch_id", null: false
+    t.bigint "variant_id", null: false
+    t.integer "min_quantity", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["branch_id", "variant_id"], name: "idx_pos_stock_alerts_variant", unique: true
+    t.index ["branch_id"], name: "index_spree_pos_stock_alerts_on_branch_id"
+    t.index ["store_id"], name: "index_spree_pos_stock_alerts_on_store_id"
+    t.index ["variant_id"], name: "index_spree_pos_stock_alerts_on_variant_id"
+    t.check_constraint "min_quantity > 0", name: "chk_pos_stock_alerts_min"
+  end
+
   create_table "spree_pos_stock_discrepancies", force: :cascade do |t|
     t.bigint "store_id", null: false
     t.bigint "branch_id", null: false
@@ -3536,9 +3849,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_120400) do
     t.datetime "resolved_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "source", limit: 16, default: "handover", null: false
     t.index ["actor_id"], name: "index_spree_pos_stock_discrepancies_on_actor_id"
     t.index ["branch_id"], name: "index_spree_pos_stock_discrepancies_on_branch_id"
-    t.index ["fulfillment_id", "variant_id"], name: "idx_pos_stock_discrepancies_open", unique: true, where: "((status)::text = 'open'::text)"
+    t.index ["fulfillment_id", "variant_id", "source"], name: "idx_pos_stock_discrepancies_open", unique: true, where: "((status)::text = 'open'::text)"
     t.index ["fulfillment_id"], name: "index_spree_pos_stock_discrepancies_on_fulfillment_id"
     t.index ["order_id"], name: "index_spree_pos_stock_discrepancies_on_order_id"
     t.index ["stock_location_id"], name: "index_spree_pos_stock_discrepancies_on_stock_location_id"
@@ -3546,6 +3860,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_120400) do
     t.index ["variant_id"], name: "index_spree_pos_stock_discrepancies_on_variant_id"
     t.index ["workspace_id"], name: "index_spree_pos_stock_discrepancies_on_workspace_id"
     t.check_constraint "needed > 0", name: "chk_pos_stock_discrepancies_needed"
+    t.check_constraint "source::text = ANY (ARRAY['handover'::character varying, 'recipe'::character varying]::text[])", name: "chk_pos_stock_discrepancies_source"
     t.check_constraint "status::text = ANY (ARRAY['open'::character varying::text, 'resolved'::character varying::text])", name: "chk_pos_stock_discrepancies_status"
   end
 
@@ -3559,7 +3874,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_120400) do
     t.bigint "changed_by_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "einvoice_type", limit: 16, default: "none", null: false
     t.index ["store_id"], name: "index_spree_pos_store_profiles_on_store_id", unique: true
+    t.check_constraint "einvoice_type::text = ANY (ARRAY['none'::character varying, 'cash_register'::character varying, 'coded'::character varying]::text[])", name: "chk_pos_store_profiles_einvoice_type"
     t.check_constraint "profile_version >= 1", name: "chk_pos_store_profiles_version"
   end
 
@@ -5522,6 +5839,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_120400) do
   add_foreign_key "spree_pos_collections", "spree_pos_credit_accounts", column: "credit_account_id"
   add_foreign_key "spree_pos_collections", "spree_pos_received_funds", column: "received_funds_id"
   add_foreign_key "spree_pos_collections", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_combo_components", "spree_pos_menu_items", column: "menu_item_id", on_delete: :cascade
+  add_foreign_key "spree_pos_combo_components", "spree_variants", column: "variant_id"
   add_foreign_key "spree_pos_command_receipts", "spree_admin_users", column: "actor_id"
   add_foreign_key "spree_pos_command_receipts", "spree_pos_workspaces", column: "workspace_id"
   add_foreign_key "spree_pos_command_receipts", "spree_stores", column: "store_id"
@@ -5569,6 +5888,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_120400) do
   add_foreign_key "spree_pos_discount_allocations", "spree_pos_line_discount_intents", column: "line_discount_intent_id", on_delete: :cascade
   add_foreign_key "spree_pos_discount_intents", "spree_admin_users", column: "actor_id"
   add_foreign_key "spree_pos_discount_intents", "spree_pos_workspaces", column: "workspace_id"
+  add_foreign_key "spree_pos_einvoice_settings", "spree_admin_users", column: "changed_by_id"
+  add_foreign_key "spree_pos_einvoice_settings", "spree_pos_branches", column: "branch_id"
+  add_foreign_key "spree_pos_einvoice_settings", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_einvoices", "spree_admin_users", column: "created_by_id"
+  add_foreign_key "spree_pos_einvoices", "spree_orders", column: "order_id"
+  add_foreign_key "spree_pos_einvoices", "spree_pos_branches", column: "branch_id"
+  add_foreign_key "spree_pos_einvoices", "spree_pos_einvoices", column: "original_einvoice_id"
+  add_foreign_key "spree_pos_einvoices", "spree_pos_workspaces", column: "workspace_id"
+  add_foreign_key "spree_pos_einvoices", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_exchange_operations", "spree_admin_users", column: "actor_id"
   add_foreign_key "spree_pos_exchange_operations", "spree_pos_branches", column: "branch_id"
   add_foreign_key "spree_pos_exchange_operations", "spree_pos_return_operations", column: "return_operation_id"
@@ -5597,9 +5925,31 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_120400) do
   add_foreign_key "spree_pos_liability_payouts", "spree_pos_branches", column: "branch_id"
   add_foreign_key "spree_pos_liability_payouts", "spree_pos_received_funds", column: "received_funds_id"
   add_foreign_key "spree_pos_liability_payouts", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_line_components", "spree_pos_sale_lines", column: "sale_line_id", on_delete: :cascade
+  add_foreign_key "spree_pos_line_components", "spree_variants", column: "variant_id"
   add_foreign_key "spree_pos_line_discount_intents", "spree_admin_users", column: "actor_id"
   add_foreign_key "spree_pos_line_discount_intents", "spree_pos_sale_lines", column: "sale_line_id", on_delete: :cascade
   add_foreign_key "spree_pos_line_discount_intents", "spree_pos_workspaces", column: "workspace_id"
+  add_foreign_key "spree_pos_line_modifiers", "spree_pos_modifier_options", column: "modifier_option_id", on_delete: :nullify
+  add_foreign_key "spree_pos_line_modifiers", "spree_pos_sale_lines", column: "sale_line_id", on_delete: :cascade
+  add_foreign_key "spree_pos_menu_availabilities", "spree_pos_branches", column: "branch_id", on_delete: :cascade
+  add_foreign_key "spree_pos_menu_availabilities", "spree_pos_menu_items", column: "menu_item_id", on_delete: :cascade
+  add_foreign_key "spree_pos_menu_categories", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_menu_favorites", "spree_pos_branches", column: "branch_id", on_delete: :cascade
+  add_foreign_key "spree_pos_menu_favorites", "spree_pos_menu_items", column: "menu_item_id", on_delete: :cascade
+  add_foreign_key "spree_pos_menu_item_modifier_groups", "spree_pos_menu_items", column: "menu_item_id", on_delete: :cascade
+  add_foreign_key "spree_pos_menu_item_modifier_groups", "spree_pos_modifier_groups", column: "modifier_group_id", on_delete: :cascade
+  add_foreign_key "spree_pos_menu_items", "spree_pos_menu_categories", column: "menu_category_id", on_delete: :nullify
+  add_foreign_key "spree_pos_menu_items", "spree_products", column: "product_id"
+  add_foreign_key "spree_pos_menu_items", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_menu_schedule_items", "spree_pos_menu_items", column: "menu_item_id", on_delete: :cascade
+  add_foreign_key "spree_pos_menu_schedule_items", "spree_pos_menu_schedules", column: "menu_schedule_id", on_delete: :cascade
+  add_foreign_key "spree_pos_menu_schedule_items", "spree_variants", column: "variant_id"
+  add_foreign_key "spree_pos_menu_schedules", "spree_pos_branches", column: "branch_id", on_delete: :cascade
+  add_foreign_key "spree_pos_menu_schedules", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_modifier_groups", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_modifier_options", "spree_pos_modifier_groups", column: "modifier_group_id", on_delete: :cascade
+  add_foreign_key "spree_pos_modifier_options", "spree_variants", column: "variant_id"
   add_foreign_key "spree_pos_outbox_entries", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_payment_methods", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_payout_evidences", "spree_admin_users", column: "actor_id"
@@ -5643,6 +5993,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_120400) do
   add_foreign_key "spree_pos_received_funds", "spree_pos_tender_attempts", column: "tender_attempt_id"
   add_foreign_key "spree_pos_received_funds", "spree_pos_workspaces", column: "workspace_id"
   add_foreign_key "spree_pos_received_funds", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_recipe_consumptions", "spree_orders", column: "order_id"
+  add_foreign_key "spree_pos_recipe_consumptions", "spree_pos_branches", column: "branch_id"
+  add_foreign_key "spree_pos_recipe_consumptions", "spree_pos_recipes", column: "recipe_id"
+  add_foreign_key "spree_pos_recipe_consumptions", "spree_pos_sale_lines", column: "sale_line_id"
+  add_foreign_key "spree_pos_recipe_consumptions", "spree_pos_workspaces", column: "workspace_id"
+  add_foreign_key "spree_pos_recipe_consumptions", "spree_stock_locations", column: "stock_location_id"
+  add_foreign_key "spree_pos_recipe_consumptions", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_recipe_consumptions", "spree_variants", column: "ingredient_variant_id"
+  add_foreign_key "spree_pos_recipe_ingredients", "spree_pos_recipes", column: "recipe_id", on_delete: :cascade
+  add_foreign_key "spree_pos_recipe_ingredients", "spree_variants", column: "ingredient_variant_id"
+  add_foreign_key "spree_pos_recipes", "spree_admin_users", column: "created_by_id"
+  add_foreign_key "spree_pos_recipes", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_refund_requests", "spree_admin_users", column: "confirmer_id"
   add_foreign_key "spree_pos_refund_requests", "spree_admin_users", column: "requester_id"
   add_foreign_key "spree_pos_refund_requests", "spree_orders", column: "order_id"
@@ -5688,6 +6050,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_120400) do
   add_foreign_key "spree_pos_staff_memberships", "spree_pos_staff_roles", column: "staff_role_id"
   add_foreign_key "spree_pos_staff_memberships", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_staff_roles", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_stock_alerts", "spree_pos_branches", column: "branch_id"
+  add_foreign_key "spree_pos_stock_alerts", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_stock_alerts", "spree_variants", column: "variant_id"
   add_foreign_key "spree_pos_stock_discrepancies", "spree_admin_users", column: "actor_id"
   add_foreign_key "spree_pos_stock_discrepancies", "spree_fulfillments", column: "fulfillment_id"
   add_foreign_key "spree_pos_stock_discrepancies", "spree_orders", column: "order_id"

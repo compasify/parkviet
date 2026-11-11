@@ -66,6 +66,9 @@
   "capabilityManage": "Cấu hình",
   "capabilityDeviceManage": "Quản lý thiết bị",
   "capabilityPrinterManage": "Quản lý máy in",
+  "capabilityMenuManage": "Quản lý thực đơn",
+  "capabilityMenuSoldOut": "Báo hết món",
+  "capabilityEinvoiceManage": "Quản lý hóa đơn điện tử",
   "receiptCopyBanner": "BẢN SAO – lần {{number}}",
   "capabilityShift": "Mở ca",
   "capabilityRecover": "Khôi phục",
@@ -190,6 +193,18 @@
       "description": "Theo dõi từng serial hoặc từng lô kèm hạn dùng, từ lúc nhập đến lúc bán và thu hồi.",
       "off": "Chi nhánh chưa bật chức năng Serial, lô, hạn dùng, nên không khai báo được tồn đầu kỳ và không đưa thêm SKU vào theo dõi. Hàng đã theo dõi vẫn bán, nhập thêm, chuyển kho, kiểm kê và tra cứu được.",
       "disabled": "Chi nhánh chưa bật chức năng Serial, lô, hạn dùng; máy chủ không ghi nhận thiết lập này. Việc bán hàng đã theo dõi không bị ảnh hưởng."
+    },
+    "fnb_menu": {
+      "label": "Thực đơn, tùy chọn, combo",
+      "description": "Lưới món có ảnh, size, đường, đá, topping, ghi chú, combo, giá theo khung giờ và báo hết món.",
+      "off": "Chi nhánh chưa bật chức năng Thực đơn, nên quầy bán bằng tìm hàng như cũ và không gắn được tùy chọn cho món. Món vẫn bán được theo giá gốc.",
+      "disabled": "Chi nhánh chưa bật chức năng Thực đơn; máy chủ không ghi nhận tùy chọn hay thay đổi thực đơn. Món vẫn bán được theo giá gốc."
+    },
+    "fnb_recipes": {
+      "label": "Công thức, trừ nguyên liệu",
+      "description": "Công thức cho từng size và tùy chọn, trừ nguyên liệu khỏi kho khi hoàn tất đơn, cảnh báo sắp hết và lãi gộp theo món.",
+      "off": "Chi nhánh chưa bật chức năng Công thức, nên đơn hoàn tất không trừ nguyên liệu và không đặt được ngưỡng cảnh báo. Món vẫn bán bình thường.",
+      "disabled": "Chi nhánh chưa bật chức năng Công thức; máy chủ không ghi nhận công thức hay ngưỡng cảnh báo. Việc bán hàng không bị ảnh hưởng."
     }
   },
   "profiles": {
@@ -308,6 +323,7 @@
   "receiptDeliveryAddress": "Giao đến",
   "featureDisabled_quick_credit": "Ghi nợ nhanh vừa bị tắt ở chi nhánh; máy chủ không ghi nhận. Hãy thu đủ tiền hoặc nhờ quản lý duyệt ghi nợ.",
   "receiptPayQrCaption": "Quét mã để chuyển khoản trả nợ",
+  "receiptEinvoiceBuyerCaption": "Quét mã để nhập thông tin xuất hóa đơn",
   "payLaterAmount": "Số tiền: {{amount}}",
   "payLaterNote": "Nội dung CK: {{note}}",
   "payLaterShareFrom": "{{store}} gửi thông tin thanh toán:",

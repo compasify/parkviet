@@ -203,6 +203,9 @@ export function CustomerDisplayPage() {
                 <span>
                   {line.name} × {formatQuantity(line.quantity)}
                   {line.unit ? ` ${line.unit}` : ''}
+                  {line.options && line.options.length > 0 ? (
+                    <small className="customer-display-options">{line.options.join(', ')}</small>
+                  ) : null}
                 </span>
                 <span className="money">{formatMoney(line.amount, state.order?.currency)}</span>
               </li>

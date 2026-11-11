@@ -100,6 +100,8 @@ class _$Workspace extends Workspace {
   @override
   final Date businessDate;
   @override
+  final BuiltList<WorkspaceLine>? lineItems;
+  @override
   final WorkspaceTotals totals;
 
   factory _$Workspace([void Function(WorkspaceBuilder)? updates]) =>
@@ -111,6 +113,7 @@ class _$Workspace extends Workspace {
       required this.operationalStatus,
       required this.serviceMode,
       required this.businessDate,
+      this.lineItems,
       required this.totals})
       : super._();
   @override
@@ -129,6 +132,7 @@ class _$Workspace extends Workspace {
         operationalStatus == other.operationalStatus &&
         serviceMode == other.serviceMode &&
         businessDate == other.businessDate &&
+        lineItems == other.lineItems &&
         totals == other.totals;
   }
 
@@ -140,6 +144,7 @@ class _$Workspace extends Workspace {
     _$hash = $jc(_$hash, operationalStatus.hashCode);
     _$hash = $jc(_$hash, serviceMode.hashCode);
     _$hash = $jc(_$hash, businessDate.hashCode);
+    _$hash = $jc(_$hash, lineItems.hashCode);
     _$hash = $jc(_$hash, totals.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
@@ -153,6 +158,7 @@ class _$Workspace extends Workspace {
           ..add('operationalStatus', operationalStatus)
           ..add('serviceMode', serviceMode)
           ..add('businessDate', businessDate)
+          ..add('lineItems', lineItems)
           ..add('totals', totals))
         .toString();
   }
@@ -183,6 +189,12 @@ class WorkspaceBuilder implements Builder<Workspace, WorkspaceBuilder> {
   Date? get businessDate => _$this._businessDate;
   set businessDate(Date? businessDate) => _$this._businessDate = businessDate;
 
+  ListBuilder<WorkspaceLine>? _lineItems;
+  ListBuilder<WorkspaceLine> get lineItems =>
+      _$this._lineItems ??= ListBuilder<WorkspaceLine>();
+  set lineItems(ListBuilder<WorkspaceLine>? lineItems) =>
+      _$this._lineItems = lineItems;
+
   WorkspaceTotalsBuilder? _totals;
   WorkspaceTotalsBuilder get totals =>
       _$this._totals ??= WorkspaceTotalsBuilder();
@@ -200,6 +212,7 @@ class WorkspaceBuilder implements Builder<Workspace, WorkspaceBuilder> {
       _operationalStatus = $v.operationalStatus;
       _serviceMode = $v.serviceMode;
       _businessDate = $v.businessDate;
+      _lineItems = $v.lineItems?.toBuilder();
       _totals = $v.totals.toBuilder();
       _$v = null;
     }
@@ -233,11 +246,14 @@ class WorkspaceBuilder implements Builder<Workspace, WorkspaceBuilder> {
                 serviceMode, r'Workspace', 'serviceMode'),
             businessDate: BuiltValueNullFieldError.checkNotNull(
                 businessDate, r'Workspace', 'businessDate'),
+            lineItems: _lineItems?.build(),
             totals: totals.build(),
           );
     } catch (_) {
       late String _$failedField;
       try {
+        _$failedField = 'lineItems';
+        _lineItems?.build();
         _$failedField = 'totals';
         totals.build();
       } catch (e) {

@@ -247,14 +247,21 @@ export function useTenders(staffId: string | null, storeId: string | null) {
       );
     },
     // With an approval id the unpaid remainder is sold on that approved credit.
-    complete(workspace: PosWorkspace, creditApprovalId?: string) {
+    // Buyer details, when the customer asked for an e-invoice, go with it.
+    complete(
+      workspace: PosWorkspace,
+      creditApprovalId?: string,
+      einvoiceBuyer?: Record<string, string>,
+    ) {
       return runFinancial(
         workspace,
         creditApprovalId ? 'workspace.complete_on_credit' : 'workspace.complete',
         `/pos/workspaces/${workspace.id}/complete`,
-        creditApprovalId
-          ? { ...workspaceBody(workspace, {}), credit_approval_id: creditApprovalId }
-          : workspaceBody(workspace, {}),
+        {
+          ...workspaceBody(workspace, {}),
+          ...(creditApprovalId ? { credit_approval_id: creditApprovalId } : {}),
+          ...(einvoiceBuyer ? { einvoice_buyer: einvoiceBuyer } : {}),
+        },
       );
     },
     handover(workspace: PosWorkspace) {

@@ -1,0 +1,103 @@
+<%
+  labels = {
+    'tax_code' => 'Mã số thuế', 'name' => 'Tên người mua / đơn vị', 'address' => 'Địa chỉ',
+    'personal_id' => 'Số định danh cá nhân (CCCD)', 'phone' => 'Số điện thoại', 'passport_no' => 'Số hộ chiếu',
+    'nationality' => 'Quốc tịch', 'email' => 'Email nhận hóa đơn', 'buyer_note' => 'Ghi chú'
+  }
+  buyer = @buyer || {}
+%><!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Thông tin xuất hóa đơn</title>
+  <style>
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; margin: 0; background: #f5f5f4; color: #1c1917; }
+    main { max-width: 32rem; margin: 0 auto; padding: 1.25rem; }
+    h1 { font-size: 1.25rem; margin: 0 0 .25rem; }
+    p { line-height: 1.5; }
+    .muted { color: #57534e; font-size: .9rem; }
+    .card { background: #fff; border-radius: .75rem; padding: 1rem; margin-top: 1rem; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+    label { display: block; font-weight: 600; font-size: .9rem; margin: .9rem 0 .3rem; }
+    input, textarea { width: 100%; box-sizing: border-box; font: inherit; padding: .7rem; border: 1px solid #d6d3d1; border-radius: .5rem; }
+    .row { display: flex; gap: .5rem; align-items: end; }
+    .row > div { flex: 1; }
+    button { font: inherit; font-weight: 600; padding: .75rem 1rem; border-radius: .5rem; border: 0; cursor: pointer; min-height: 44px; }
+    .primary { background: #1d4ed8; color: #fff; width: 100%; margin-top: 1.25rem; }
+    .secondary { background: #e7e5e4; color: #1c1917; }
+    .error { color: #b91c1c; font-size: .9rem; margin-top: .3rem; }
+    .notice { background: #fef3c7; padding: .75rem; border-radius: .5rem; }
+    .ok { background: #dcfce7; padding: .75rem; border-radius: .5rem; }
+    dl { display: grid; grid-template-columns: auto 1fr; gap: .25rem .75rem; margin: 0; }
+    dt { color: #57534e; }
+    dd { margin: 0; font-weight: 600; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Thông tin xuất hóa đơn điện tử</h1>
+  <% if @store_name %><p class="muted"><%= @store_name %></p><% end %>
+
+  <% case @state %>
+  <% when :expired %>
+    <div class="card"><p>Liên kết này không còn hiệu lực. Vui lòng liên hệ cửa hàng nếu bạn cần hóa đơn.</p></div>
+  <% when :limited %>
+    <div class="card"><p>Bạn đã thử quá nhiều lần. Vui lòng đợi một phút rồi thử lại.</p></div>
+  <% when :issuing %>
+    <div class="card"><p>Hóa đơn đang được phát hành. Vui lòng thử lại sau ít phút.</p></div>
+  <% when :issued %>
+    <div class="card">
+      <p>Hóa đơn của đơn hàng này đã được phát hành, nên không thể đổi thông tin người mua tại đây.
+        Vui lòng liên hệ cửa hàng để được lập hóa đơn thay thế.</p>
+      <% if @einvoice.number.present? %>
+        <dl>
+          <dt>Ký hiệu</dt><dd><%= [@einvoice.template_code, @einvoice.symbol].compact.join %></dd>
+          <dt>Số</dt><dd><%= @einvoice.number %></dd>
+          <% if @einvoice.lookup_code.present? %><dt>Mã tra cứu</dt><dd><%= @einvoice.lookup_code %></dd><% end %>
+          <% if @einvoice.lookup_url.present? %><dt>Tra cứu tại</dt><dd><%= @einvoice.lookup_url %></dd><% end %>
+        </dl>
+      <% end %>
+    </div>
+  <% when :saved %>
+    <div class="card">
+      <p class="ok">Đã nhận thông tin. Hóa đơn sẽ được phát hành với thông tin này<%= buyer['email'].present? ? ' và gửi tới email của bạn' : '' %>.</p>
+      <dl>
+        <% labels.each do |field, label| %>
+          <% next if buyer[field].blank? %>
+          <dt><%= label %></dt><dd><%= buyer[field] %></dd>
+        <% end %>
+      </dl>
+    </div>
+  <% else %>
+    <div class="card">
+      <p class="muted">Đơn <strong><%= @einvoice.order.number %></strong> · Tổng <strong><%= number_with_delimiter(@einvoice.totals_snapshot['total'].to_d.to_i, delimiter: '.') %> <%= @einvoice.currency %></strong></p>
+      <p class="muted">Doanh nghiệp, hộ kinh doanh: nhập mã số thuế, tên và địa chỉ đúng như đăng ký thuế. Cá nhân: nhập họ tên kèm số định danh cá nhân hoặc số điện thoại.</p>
+      <% if @notice == :lookup_missing %><p class="notice">Không tra được mã số thuế này. Vui lòng nhập tên và địa chỉ.</p><% end %>
+      <form method="post" action="<%= Spree::Pos::Einvoices::BuyerLink::PATH %><%= params[:token] %>">
+        <div class="row">
+          <div>
+            <label for="tax_code"><%= labels['tax_code'] %></label>
+            <input id="tax_code" name="buyer[tax_code]" inputmode="numeric" autocomplete="off" value="<%= buyer['tax_code'] %>">
+          </div>
+          <button class="secondary" type="submit" name="lookup" value="1">Tra cứu</button>
+        </div>
+        <% if @error == 'tax_code' %><p class="error">Mã số thuế gồm 10 chữ số, hoặc 10 chữ số kèm "-" và 3 chữ số.</p><% end %>
+        <% %w[name address personal_id phone email buyer_note].each do |field| %>
+          <label for="<%= field %>"><%= labels[field] %></label>
+          <% if field == 'address' %>
+            <textarea id="address" name="buyer[address]" rows="2"><%= buyer['address'] %></textarea>
+          <% else %>
+            <input id="<%= field %>" name="buyer[<%= field %>]" value="<%= buyer[field] %>"
+                   <%= { 'phone' => 'type="tel" autocomplete="tel"', 'email' => 'type="email" autocomplete="email"', 'personal_id' => 'inputmode="numeric"', 'name' => 'autocomplete="name"' }.fetch(field, '').html_safe %>>
+          <% end %>
+          <% if @error == field %><p class="error">Vui lòng kiểm tra lại <%= labels[field].downcase %>.</p><% end %>
+        <% end %>
+        <% if @error == 'buyer' %><p class="error">Thông tin chưa hợp lệ.</p><% end %>
+        <button class="primary" type="submit">Gửi thông tin</button>
+      </form>
+    </div>
+  <% end %>
+</main>
+</body>
+</html>

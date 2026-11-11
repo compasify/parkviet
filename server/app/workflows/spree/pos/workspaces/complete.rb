@@ -11,13 +11,19 @@ module Spree
         # approved reservation becomes the order's receivable debit in the same
         # transaction as placement. Only this server path asks core to place an
         # order whose payments do not cover it; clients never pass that flag.
-        def self.call(workspace:, staff:, revision:, lease_generation:, editor_id:, key:, credit_approval_id: nil)
+        #
+        # `einvoice_buyer` is who the e-invoice is for (Einvoices::Buyer); none
+        # means a sale to a consumer. The invoice itself is only queued here.
+        def self.call(workspace:, staff:, revision:, lease_generation:, editor_id:, key:, credit_approval_id: nil,
+                      einvoice_buyer: nil)
           credit = credit_approval_id.to_s.presence
+          buyer = Einvoices::Buyer.normalize!(einvoice_buyer)
           payload = {
             'command' => 'workspace.complete', 'revision' => revision, 'lease_generation' => lease_generation,
             'editor_digest' => Workspace.editor_digest(editor_id)
           }
           payload['credit_approval_id'] = credit if credit
+          payload['einvoice_buyer'] = buyer if buyer.any?
           authorize = lambda do
             Tenders::Guard.authorize_editor!(workspace, staff)
             Tenders::Guard.authorize_collect!(workspace, staff)
@@ -67,6 +73,9 @@ module Spree
             raise Conflict, 'Order was not placed.' unless order.reload.placed?
 
             Inventory::AllocateTraceability.commit!(workspace)
+            # Ingredients of menu recipes leave the shelf with the sale; a
+            # short shelf is recorded, never a reason to refuse it.
+            Recipes::Consume.call(workspace: workspace, actor: staff)
 
             workspace.update!(revision: workspace.revision + 1, operational_status: 'completed')
             AuditEntry.record!(store: workspace.store, actor: staff, subject: workspace, action: audit_action(entry, zero_total),
@@ -74,6 +83,9 @@ module Spree
                                            receivable_id: entry&.prefixed_id, debt: debt.to_s('F') })
             OutboxEntry.record!(store: workspace.store, event_type: 'workspace.completed', aggregate: workspace,
                                 payload: { 'workspace_id' => workspace.prefixed_id, 'order_id' => order.prefixed_id })
+            # The e-invoice is queued with the sale and issued after it commits;
+            # a provider that is down never stops the sale.
+            Einvoices::Enqueue.call(workspace: workspace, staff: staff, buyer: buyer)
             ReceiptBuilder.issue_safely!(workspace, actor: staff) # receipt from the facts above; never blocks the sale
             workspace.to_pos
           end

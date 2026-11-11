@@ -255,6 +255,16 @@ function blocks(list: unknown, data: TemplateData, place: 'header' | 'footer'): 
     if (resolved) result.push(resolved);
   }
   if (place === 'header' && !titled) result.push(titleBlock(undefined, data));
+  // While the sale's e-invoice still takes buyer details, the footer always
+  // ends with the QR of the buyer's own page; no template can leave it out.
+  const buyerUrl = data.einvoice?.buyerUrl ?? '';
+  if (place === 'footer' && isWebUrl(buyerUrl))
+    result.push({
+      kind: 'qr',
+      value: buyerUrl,
+      caption: data.einvoice?.buyerCaption ?? null,
+      align: 'center',
+    });
   return result;
 }
 

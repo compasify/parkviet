@@ -6,6 +6,67 @@ part of 'context.dart';
 // BuiltValueGenerator
 // **************************************************************************
 
+const ContextEinvoiceTypeEnum _$contextEinvoiceTypeEnum_none =
+    const ContextEinvoiceTypeEnum._('none');
+const ContextEinvoiceTypeEnum _$contextEinvoiceTypeEnum_cashRegister =
+    const ContextEinvoiceTypeEnum._('cashRegister');
+const ContextEinvoiceTypeEnum _$contextEinvoiceTypeEnum_coded =
+    const ContextEinvoiceTypeEnum._('coded');
+
+ContextEinvoiceTypeEnum _$contextEinvoiceTypeEnumValueOf(String name) {
+  switch (name) {
+    case 'none':
+      return _$contextEinvoiceTypeEnum_none;
+    case 'cashRegister':
+      return _$contextEinvoiceTypeEnum_cashRegister;
+    case 'coded':
+      return _$contextEinvoiceTypeEnum_coded;
+    default:
+      throw ArgumentError(name);
+  }
+}
+
+final BuiltSet<ContextEinvoiceTypeEnum> _$contextEinvoiceTypeEnumValues =
+    BuiltSet<ContextEinvoiceTypeEnum>(const <ContextEinvoiceTypeEnum>[
+  _$contextEinvoiceTypeEnum_none,
+  _$contextEinvoiceTypeEnum_cashRegister,
+  _$contextEinvoiceTypeEnum_coded,
+]);
+
+Serializer<ContextEinvoiceTypeEnum> _$contextEinvoiceTypeEnumSerializer =
+    _$ContextEinvoiceTypeEnumSerializer();
+
+class _$ContextEinvoiceTypeEnumSerializer
+    implements PrimitiveSerializer<ContextEinvoiceTypeEnum> {
+  static const Map<String, Object> _toWire = const <String, Object>{
+    'none': 'none',
+    'cashRegister': 'cash_register',
+    'coded': 'coded',
+  };
+  static const Map<Object, String> _fromWire = const <Object, String>{
+    'none': 'none',
+    'cash_register': 'cashRegister',
+    'coded': 'coded',
+  };
+
+  @override
+  final Iterable<Type> types = const <Type>[ContextEinvoiceTypeEnum];
+  @override
+  final String wireName = 'ContextEinvoiceTypeEnum';
+
+  @override
+  Object serialize(Serializers serializers, ContextEinvoiceTypeEnum object,
+          {FullType specifiedType = FullType.unspecified}) =>
+      _toWire[object.name] ?? object.name;
+
+  @override
+  ContextEinvoiceTypeEnum deserialize(
+          Serializers serializers, Object serialized,
+          {FullType specifiedType = FullType.unspecified}) =>
+      ContextEinvoiceTypeEnum.valueOf(
+          _fromWire[serialized] ?? (serialized is String ? serialized : ''));
+}
+
 class _$Context extends Context {
   @override
   final BuiltList<String> capabilities;
@@ -15,6 +76,8 @@ class _$Context extends Context {
   final ContextStore store;
   @override
   final ContextAdministration administration;
+  @override
+  final ContextEinvoiceTypeEnum? einvoiceType;
 
   factory _$Context([void Function(ContextBuilder)? updates]) =>
       (ContextBuilder()..update(updates))._build();
@@ -23,7 +86,8 @@ class _$Context extends Context {
       {required this.capabilities,
       required this.staff,
       required this.store,
-      required this.administration})
+      required this.administration,
+      this.einvoiceType})
       : super._();
   @override
   Context rebuild(void Function(ContextBuilder) updates) =>
@@ -39,7 +103,8 @@ class _$Context extends Context {
         capabilities == other.capabilities &&
         staff == other.staff &&
         store == other.store &&
-        administration == other.administration;
+        administration == other.administration &&
+        einvoiceType == other.einvoiceType;
   }
 
   @override
@@ -49,6 +114,7 @@ class _$Context extends Context {
     _$hash = $jc(_$hash, staff.hashCode);
     _$hash = $jc(_$hash, store.hashCode);
     _$hash = $jc(_$hash, administration.hashCode);
+    _$hash = $jc(_$hash, einvoiceType.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -59,7 +125,8 @@ class _$Context extends Context {
           ..add('capabilities', capabilities)
           ..add('staff', staff)
           ..add('store', store)
-          ..add('administration', administration))
+          ..add('administration', administration)
+          ..add('einvoiceType', einvoiceType))
         .toString();
   }
 }
@@ -87,6 +154,11 @@ class ContextBuilder implements Builder<Context, ContextBuilder> {
   set administration(ContextAdministrationBuilder? administration) =>
       _$this._administration = administration;
 
+  ContextEinvoiceTypeEnum? _einvoiceType;
+  ContextEinvoiceTypeEnum? get einvoiceType => _$this._einvoiceType;
+  set einvoiceType(ContextEinvoiceTypeEnum? einvoiceType) =>
+      _$this._einvoiceType = einvoiceType;
+
   ContextBuilder() {
     Context._defaults(this);
   }
@@ -98,6 +170,7 @@ class ContextBuilder implements Builder<Context, ContextBuilder> {
       _staff = $v.staff.toBuilder();
       _store = $v.store.toBuilder();
       _administration = $v.administration.toBuilder();
+      _einvoiceType = $v.einvoiceType;
       _$v = null;
     }
     return this;
@@ -125,6 +198,7 @@ class ContextBuilder implements Builder<Context, ContextBuilder> {
             staff: staff.build(),
             store: store.build(),
             administration: administration.build(),
+            einvoiceType: einvoiceType,
           );
     } catch (_) {
       late String _$failedField;

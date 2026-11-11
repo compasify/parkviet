@@ -102,6 +102,9 @@ export function invalidationsFor(
       ];
     case 'print_job.created':
       return [{ queryKey: ['pos', 'print-jobs', scope.generation] }];
+    // The menu of the branch: sold-out marks show on the tiles at once.
+    case 'menu.sold_out':
+      return [{ queryKey: ['pos', 'menu', scope.generation] }];
     // Claims, prints and cancels of a job; other resources announce through
     // this event too and do not concern the queue.
     case 'resource.updated':

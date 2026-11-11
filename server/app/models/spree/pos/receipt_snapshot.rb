@@ -71,7 +71,9 @@ module Spree
           register_id: register&.prefixed_id, issued_at: issued_at.iso8601, issued_late: issued_late,
           disclaimer: DISCLAIMER, printed: !copies.nil?, copy_count: copies.to_i,
           original_print: original&.receipt_template_id ? original.layout : nil,
-          document: data
+          document: data,
+          # Read live, never part of the frozen document (Einvoices::ReceiptInfo).
+          einvoice: source_type == 'sale' ? Einvoices::ReceiptInfo.for_workspace(source_id) : nil
         }
       end
     end

@@ -25,6 +25,9 @@ export const TEMPLATE_VARIABLES = [
   'customer.name',
   'customer.phone',
   'customer.address',
+  'einvoice.lookup_code',
+  'einvoice.lookup_url',
+  'einvoice.buyer_qr',
 ] as const;
 
 export type TemplateVariable = (typeof TEMPLATE_VARIABLES)[number];
@@ -58,6 +61,9 @@ export function variableValues(data: TemplateData): Record<TemplateVariable, str
     'customer.name': data.customerName ?? '',
     'customer.phone': data.customerPhone ?? '',
     'customer.address': data.customerAddress ?? '',
+    'einvoice.lookup_code': data.einvoice?.lookupCode ?? '',
+    'einvoice.lookup_url': data.einvoice?.lookupUrl ?? '',
+    'einvoice.buyer_qr': data.einvoice?.buyerUrl ?? '',
   };
 }
 

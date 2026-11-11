@@ -75,6 +75,22 @@ Class | Method | HTTP request | Description
 [*DefaultApi*](doc/DefaultApi.md) | [**posDeviceStaff**](doc/DefaultApi.md#posdevicestaff) | **GET** /api/v3/pos_device/staff | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posDeviceStaffSignIn**](doc/DefaultApi.md#posdevicestaffsignin) | **POST** /api/v3/pos_device/staff_sessions | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posDeviceStaffSignOut**](doc/DefaultApi.md#posdevicestaffsignout) | **DELETE** /api/v3/pos_device/staff_sessions | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posEinvoice**](doc/DefaultApi.md#poseinvoice) | **GET** /api/v3/admin/pos/einvoices/{id} | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posEinvoiceBuyer**](doc/DefaultApi.md#poseinvoicebuyer) | **PUT** /api/v3/admin/pos/einvoices/{id}/buyer | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posEinvoiceCancel**](doc/DefaultApi.md#poseinvoicecancel) | **POST** /api/v3/admin/pos/einvoices/{id}/cancel | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posEinvoiceReplace**](doc/DefaultApi.md#poseinvoicereplace) | **POST** /api/v3/admin/pos/einvoices/{id}/replace | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posEinvoiceRetry**](doc/DefaultApi.md#poseinvoiceretry) | **POST** /api/v3/admin/pos/einvoices/retry | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posEinvoiceSample**](doc/DefaultApi.md#poseinvoicesample) | **POST** /api/v3/admin/pos/einvoice_settings/test | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posEinvoiceSettings**](doc/DefaultApi.md#poseinvoicesettings) | **GET** /api/v3/admin/pos/einvoice_settings | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posEinvoiceSettingsSave**](doc/DefaultApi.md#poseinvoicesettingssave) | **PUT** /api/v3/admin/pos/einvoice_settings | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posEinvoiceSummary**](doc/DefaultApi.md#poseinvoicesummary) | **GET** /api/v3/admin/pos/einvoices/summary | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posEinvoices**](doc/DefaultApi.md#poseinvoices) | **GET** /api/v3/admin/pos/einvoices | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posMenu**](doc/DefaultApi.md#posmenu) | **GET** /api/v3/admin/pos/menu | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posMenuCategories**](doc/DefaultApi.md#posmenucategories) | **GET** /api/v3/admin/pos/menu_categories | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posMenuFavorites**](doc/DefaultApi.md#posmenufavorites) | **PUT** /api/v3/admin/pos/menu_favorites | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posMenuItems**](doc/DefaultApi.md#posmenuitems) | **GET** /api/v3/admin/pos/menu_items | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posMenuSoldOut**](doc/DefaultApi.md#posmenusoldout) | **PUT** /api/v3/admin/pos/menu_availabilities | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posModifierGroups**](doc/DefaultApi.md#posmodifiergroups) | **GET** /api/v3/admin/pos/modifier_groups | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posPrintJobCancel**](doc/DefaultApi.md#posprintjobcancel) | **POST** /api/v3/admin/pos/print_jobs/{id}/cancel | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posPrintJobCreate**](doc/DefaultApi.md#posprintjobcreate) | **POST** /api/v3/admin/pos/print_jobs | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posPrintJobPrebills**](doc/DefaultApi.md#posprintjobprebills) | **GET** /api/v3/admin/pos/print_jobs/prebills | 
@@ -87,9 +103,16 @@ Class | Method | HTTP request | Description
 [*DefaultApi*](doc/DefaultApi.md) | [**posPrinterUpdate**](doc/DefaultApi.md#posprinterupdate) | **PATCH** /api/v3/admin/pos/printers/{id} | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posPrinters**](doc/DefaultApi.md#posprinters) | **GET** /api/v3/admin/pos/printers | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posReceiptPrintVoid**](doc/DefaultApi.md#posreceiptprintvoid) | **POST** /api/v3/admin/pos/receipts/{id}/prints/{print_id}/void | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posRecipe**](doc/DefaultApi.md#posrecipe) | **GET** /api/v3/admin/pos/recipes | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posRecipeSave**](doc/DefaultApi.md#posrecipesave) | **PUT** /api/v3/admin/pos/recipes | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posReportIngredientUsage**](doc/DefaultApi.md#posreportingredientusage) | **GET** /api/v3/admin/pos/reports/ingredient_usage | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posReportMenuMargin**](doc/DefaultApi.md#posreportmenumargin) | **GET** /api/v3/admin/pos/reports/menu_margin | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posStockAlertSet**](doc/DefaultApi.md#posstockalertset) | **PUT** /api/v3/admin/pos/stock_alerts | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posStockAlerts**](doc/DefaultApi.md#posstockalerts) | **GET** /api/v3/admin/pos/stock_alerts | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posSystemStatus**](doc/DefaultApi.md#possystemstatus) | **GET** /api/v3/admin/pos/system_status | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posWorkspaceAddItem**](doc/DefaultApi.md#posworkspaceadditem) | **POST** /api/v3/admin/pos/workspaces/{id}/items | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posWorkspaceCreate**](doc/DefaultApi.md#posworkspacecreate) | **POST** /api/v3/admin/pos/workspaces | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posWorkspaceLineModifiers**](doc/DefaultApi.md#posworkspacelinemodifiers) | **PATCH** /api/v3/admin/pos/workspaces/{workspace_id}/items/{id}/modifiers | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posWorkspaceShow**](doc/DefaultApi.md#posworkspaceshow) | **GET** /api/v3/admin/pos/workspaces/{id} | 
 
 
@@ -111,9 +134,37 @@ Class | Method | HTTP request | Description
  - [DeviceSessionStaff](doc/DeviceSessionStaff.md)
  - [DeviceStaffMember](doc/DeviceStaffMember.md)
  - [DeviceStaffSignIn](doc/DeviceStaffSignIn.md)
+ - [Einvoice](doc/Einvoice.md)
+ - [EinvoiceBuyer](doc/EinvoiceBuyer.md)
+ - [EinvoiceLine](doc/EinvoiceLine.md)
+ - [EinvoiceSample](doc/EinvoiceSample.md)
+ - [EinvoiceSeller](doc/EinvoiceSeller.md)
+ - [EinvoiceSetting](doc/EinvoiceSetting.md)
+ - [EinvoiceSettingInput](doc/EinvoiceSettingInput.md)
+ - [EinvoiceSettings](doc/EinvoiceSettings.md)
+ - [EinvoiceSettingsProvidersInner](doc/EinvoiceSettingsProvidersInner.md)
+ - [EinvoiceSummary](doc/EinvoiceSummary.md)
+ - [EinvoiceSummaryRevenue](doc/EinvoiceSummaryRevenue.md)
+ - [EinvoiceTotals](doc/EinvoiceTotals.md)
+ - [EinvoiceTotalsTaxesInner](doc/EinvoiceTotalsTaxesInner.md)
  - [ErrorResponse](doc/ErrorResponse.md)
  - [ErrorResponseError](doc/ErrorResponseError.md)
  - [ErrorResponseErrorDetails](doc/ErrorResponseErrorDetails.md)
+ - [IngredientUsageRow](doc/IngredientUsageRow.md)
+ - [LineComponent](doc/LineComponent.md)
+ - [LineModifier](doc/LineModifier.md)
+ - [Menu](doc/Menu.md)
+ - [MenuAvailability](doc/MenuAvailability.md)
+ - [MenuCategory](doc/MenuCategory.md)
+ - [MenuItem](doc/MenuItem.md)
+ - [MenuItemAllOfVariants](doc/MenuItemAllOfVariants.md)
+ - [MenuItemConfig](doc/MenuItemConfig.md)
+ - [MenuItemConfigComponentsInner](doc/MenuItemConfigComponentsInner.md)
+ - [MenuMarginRow](doc/MenuMarginRow.md)
+ - [MenuSchedulesInner](doc/MenuSchedulesInner.md)
+ - [ModifierGroup](doc/ModifierGroup.md)
+ - [ModifierGroupOptionsInner](doc/ModifierGroupOptionsInner.md)
+ - [ModifierSelection](doc/ModifierSelection.md)
  - [PosApprovalCreate201Response](doc/PosApprovalCreate201Response.md)
  - [PosCatalog200Response](doc/PosCatalog200Response.md)
  - [PosDeviceMe200Response](doc/PosDeviceMe200Response.md)
@@ -124,6 +175,28 @@ Class | Method | HTTP request | Description
  - [PosDeviceStaff200Response](doc/PosDeviceStaff200Response.md)
  - [PosDeviceStaffSignIn201Response](doc/PosDeviceStaffSignIn201Response.md)
  - [PosDeviceStaffSignInRequest](doc/PosDeviceStaffSignInRequest.md)
+ - [PosEinvoice200Response](doc/PosEinvoice200Response.md)
+ - [PosEinvoiceBuyerRequest](doc/PosEinvoiceBuyerRequest.md)
+ - [PosEinvoiceCancelRequest](doc/PosEinvoiceCancelRequest.md)
+ - [PosEinvoiceReplaceRequest](doc/PosEinvoiceReplaceRequest.md)
+ - [PosEinvoiceRetry200Response](doc/PosEinvoiceRetry200Response.md)
+ - [PosEinvoiceRetry200ResponseData](doc/PosEinvoiceRetry200ResponseData.md)
+ - [PosEinvoiceRetryRequest](doc/PosEinvoiceRetryRequest.md)
+ - [PosEinvoiceSample200Response](doc/PosEinvoiceSample200Response.md)
+ - [PosEinvoiceSampleRequest](doc/PosEinvoiceSampleRequest.md)
+ - [PosEinvoiceSettings200Response](doc/PosEinvoiceSettings200Response.md)
+ - [PosEinvoiceSettingsSaveRequest](doc/PosEinvoiceSettingsSaveRequest.md)
+ - [PosEinvoiceSummary200Response](doc/PosEinvoiceSummary200Response.md)
+ - [PosEinvoices200Response](doc/PosEinvoices200Response.md)
+ - [PosMenu200Response](doc/PosMenu200Response.md)
+ - [PosMenuCategories200Response](doc/PosMenuCategories200Response.md)
+ - [PosMenuFavorites200Response](doc/PosMenuFavorites200Response.md)
+ - [PosMenuFavorites200ResponseData](doc/PosMenuFavorites200ResponseData.md)
+ - [PosMenuFavoritesRequest](doc/PosMenuFavoritesRequest.md)
+ - [PosMenuItems200Response](doc/PosMenuItems200Response.md)
+ - [PosMenuSoldOut200Response](doc/PosMenuSoldOut200Response.md)
+ - [PosMenuSoldOutRequest](doc/PosMenuSoldOutRequest.md)
+ - [PosModifierGroups200Response](doc/PosModifierGroups200Response.md)
  - [PosPrintJobCancel200Response](doc/PosPrintJobCancel200Response.md)
  - [PosPrintJobCreate201Response](doc/PosPrintJobCreate201Response.md)
  - [PosPrintJobCreateRequest](doc/PosPrintJobCreateRequest.md)
@@ -142,8 +215,16 @@ Class | Method | HTTP request | Description
  - [PosReceiptPrintVoid200Response](doc/PosReceiptPrintVoid200Response.md)
  - [PosReceiptPrintVoid200ResponseData](doc/PosReceiptPrintVoid200ResponseData.md)
  - [PosReceiptPrintVoidRequest](doc/PosReceiptPrintVoidRequest.md)
+ - [PosRecipe200Response](doc/PosRecipe200Response.md)
+ - [PosRecipeSaveRequest](doc/PosRecipeSaveRequest.md)
+ - [PosRecipeSaveRequestIngredientsInner](doc/PosRecipeSaveRequestIngredientsInner.md)
+ - [PosReportIngredientUsage200Response](doc/PosReportIngredientUsage200Response.md)
+ - [PosReportMenuMargin200Response](doc/PosReportMenuMargin200Response.md)
+ - [PosStockAlertSetRequest](doc/PosStockAlertSetRequest.md)
+ - [PosStockAlerts200Response](doc/PosStockAlerts200Response.md)
  - [PosSystemStatus200Response](doc/PosSystemStatus200Response.md)
  - [PosWorkspaceCreate201Response](doc/PosWorkspaceCreate201Response.md)
+ - [PosWorkspaceLineModifiersRequest](doc/PosWorkspaceLineModifiersRequest.md)
  - [PrintBlock](doc/PrintBlock.md)
  - [PrintBlockOneOf](doc/PrintBlockOneOf.md)
  - [PrintBlockOneOf1](doc/PrintBlockOneOf1.md)
@@ -171,6 +252,11 @@ Class | Method | HTTP request | Description
  - [PrintRow](doc/PrintRow.md)
  - [Printer](doc/Printer.md)
  - [RealtimeEvent](doc/RealtimeEvent.md)
+ - [Recipe](doc/Recipe.md)
+ - [RecipeIngredientsInner](doc/RecipeIngredientsInner.md)
+ - [RecipeOwner](doc/RecipeOwner.md)
+ - [RecipeOwnerVersionsInner](doc/RecipeOwnerVersionsInner.md)
+ - [StockAlert](doc/StockAlert.md)
  - [SystemStatus](doc/SystemStatus.md)
  - [SystemStatusBackup](doc/SystemStatusBackup.md)
  - [SystemStatusDatabase](doc/SystemStatusDatabase.md)
@@ -183,6 +269,7 @@ Class | Method | HTTP request | Description
  - [SystemStatusVietqr](doc/SystemStatusVietqr.md)
  - [TaxRow](doc/TaxRow.md)
  - [Workspace](doc/Workspace.md)
+ - [WorkspaceLine](doc/WorkspaceLine.md)
  - [WorkspaceTotals](doc/WorkspaceTotals.md)
  - [WorkspaceTotalsTaxesInner](doc/WorkspaceTotalsTaxesInner.md)
 

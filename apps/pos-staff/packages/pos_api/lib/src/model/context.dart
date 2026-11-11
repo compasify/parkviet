@@ -20,6 +20,7 @@ part 'context.g.dart';
 /// * [staff]
 /// * [store]
 /// * [administration]
+/// * [einvoiceType] - E-invoice the store issues for completed orders; the counter offers buyer details unless it is none.
 @BuiltValue()
 abstract class Context implements Built<Context, ContextBuilder> {
   /// What the signed-in person may do at the selected branch, such as `pos.device.manage`.
@@ -34,6 +35,11 @@ abstract class Context implements Built<Context, ContextBuilder> {
 
   @BuiltValueField(wireName: r'administration')
   ContextAdministration get administration;
+
+  /// E-invoice the store issues for completed orders; the counter offers buyer details unless it is none.
+  @BuiltValueField(wireName: r'einvoice_type')
+  ContextEinvoiceTypeEnum? get einvoiceType;
+  // enum einvoiceTypeEnum {  none,  cash_register,  coded,  };
 
   Context._();
 
@@ -78,6 +84,13 @@ class _$ContextSerializer implements PrimitiveSerializer<Context> {
       object.administration,
       specifiedType: const FullType(ContextAdministration),
     );
+    if (object.einvoiceType != null) {
+      yield r'einvoice_type';
+      yield serializers.serialize(
+        object.einvoiceType,
+        specifiedType: const FullType(ContextEinvoiceTypeEnum),
+      );
+    }
   }
 
   @override
@@ -131,6 +144,14 @@ class _$ContextSerializer implements PrimitiveSerializer<Context> {
           ) as ContextAdministration;
           result.administration.replace(valueDes);
           break;
+        case r'einvoice_type':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(ContextEinvoiceTypeEnum),
+          ) as ContextEinvoiceTypeEnum?;
+          if (valueDes == null) continue;
+          result.einvoiceType = valueDes;
+          break;
         default:
           unhandled.add(key);
           unhandled.add(value);
@@ -158,4 +179,25 @@ class _$ContextSerializer implements PrimitiveSerializer<Context> {
     );
     return result.build();
   }
+}
+
+/// E-invoice the store issues for completed orders; the counter offers buyer details unless it is none.
+class ContextEinvoiceTypeEnum extends EnumClass {
+  @BuiltValueEnumConst(wireName: r'none')
+  static const ContextEinvoiceTypeEnum none = _$contextEinvoiceTypeEnum_none;
+  @BuiltValueEnumConst(wireName: r'cash_register')
+  static const ContextEinvoiceTypeEnum cashRegister =
+      _$contextEinvoiceTypeEnum_cashRegister;
+  @BuiltValueEnumConst(wireName: r'coded')
+  static const ContextEinvoiceTypeEnum coded = _$contextEinvoiceTypeEnum_coded;
+
+  static Serializer<ContextEinvoiceTypeEnum> get serializer =>
+      _$contextEinvoiceTypeEnumSerializer;
+
+  const ContextEinvoiceTypeEnum._(String name) : super(name);
+
+  static BuiltSet<ContextEinvoiceTypeEnum> get values =>
+      _$contextEinvoiceTypeEnumValues;
+  static ContextEinvoiceTypeEnum valueOf(String name) =>
+      _$contextEinvoiceTypeEnumValueOf(name);
 }

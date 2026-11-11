@@ -31,7 +31,8 @@ RSpec.describe Spree::Pos::BusinessProfiles do
     end
 
     it 'turns on every retail module for khac, the profile of branches that already run' do
-      expect(described_class.fetch!('khac').modules).to match_array(Spree::Pos::Modules.available_keys)
+      retail = Spree::Pos::Modules.available.select { |definition| definition.group == 'retail' }.map(&:key)
+      expect(described_class.fetch!('khac').modules).to match_array(retail)
     end
 
     it 'keeps every profile default within the Branch validations' do
@@ -58,7 +59,8 @@ RSpec.describe Spree::Pos::BusinessProfiles do
     it 'serializes modules and profiles for the API' do
       data = described_class.to_pos
       expect(data[:modules]).to include({ key: 'retail.measured', group: 'retail', status: 'available', depends_on: ['retail.units'] },
-                                        include(key: 'fnb.menu', status: 'planned'))
+                                        include(key: 'fnb.menu', status: 'available'),
+                                        include(key: 'fnb.kitchen', status: 'planned'))
       expect(data[:profiles].first.keys).
         to eq(%i[key group order status modules branch_defaults display recommended_features sample_units])
     end
@@ -121,7 +123,7 @@ RSpec.describe Spree::Pos::BusinessProfiles do
     end
 
     it 'counts a profile with a planned module as coming soon' do
-      built = described_class.build(catalog({ 'quan_an' => profile(group: 'fnb', modules: ['fnb.menu', 'retail.units']) }))
+      built = described_class.build(catalog({ 'quan_an' => profile(group: 'fnb', modules: ['fnb.order_number', 'retail.units']) }))
       expect(built.profiles.first.status).to eq('coming_soon')
     end
   end
@@ -136,11 +138,13 @@ RSpec.describe Spree::Pos::BusinessProfiles do
       end
     end
 
-    it 'registers the three retail modules, the planned F&B names, and freezes the registry' do
-      expect(described_class.available_keys).to eq(%w[retail.units retail.measured retail.traceability])
+    it 'registers the three retail modules, the menu, recipes, the planned F&B names, and freezes the registry' do
+      expect(described_class.available_keys).to eq(%w[retail.units retail.measured retail.traceability fnb.menu fnb.recipes])
+      expect(described_class.find('fnb.recipes').depends_on).to eq(%w[fnb.menu retail.units])
       expect(described_class.find('retail.measured').depends_on).to eq(['retail.units'])
-      expect(described_class.known?('fnb.menu')).to be(true)
-      expect(described_class.available?('fnb.menu')).to be(false)
+      expect(described_class.available?('fnb.menu')).to be(true)
+      expect(described_class.known?('fnb.order_number')).to be(true)
+      expect(described_class.available?('fnb.order_number')).to be(false)
       expect(described_class.all).to all(be_frozen)
       expect { described_class.send(:registry)['retail.extra'] = nil }.to raise_error(FrozenError)
     end

@@ -99,6 +99,9 @@ export type PosContext = {
   profile?: PosBranchProfile | null;
   // First-run setup; null on servers without it.
   onboarding?: PosOnboarding | null;
+  // E-invoice the store issues for completed sales; absent on older servers
+  // (read as none).
+  einvoice_type?: 'none' | 'cash_register' | 'coded';
   staff: { id: string; email: string; full_name: string | null };
   store: {
     id: string;
@@ -162,6 +165,99 @@ export type PosLineDiscount = {
   amount: string;
 };
 
+export type PosLineModifier = {
+  id: string;
+  option_id: string | null;
+  name: string;
+  group_name: string;
+  price_delta: string;
+  quantity: number;
+};
+
+export type PosLineComponent = {
+  id: string;
+  variant_id: string;
+  name: string;
+  quantity: number;
+};
+
+// One picked option as the item endpoints take it.
+export type PosModifierSelection = { option_id: string; quantity?: number };
+
+// `GET /pos/menu`: what the counter sells from at one branch.
+export type PosMenuOption = {
+  id: string;
+  name: string;
+  price_delta: string;
+  variant_id: string | null;
+  default_selected: boolean;
+  position: number;
+  active: boolean;
+};
+
+export type PosMenuModifierGroup = {
+  id: string;
+  name: string;
+  min_select: number;
+  max_select: number;
+  allow_quantity: boolean;
+  required: boolean;
+  position: number;
+  options: PosMenuOption[];
+};
+
+export type PosMenuVariant = {
+  id: string;
+  name: string;
+  sku: string | null;
+  barcode: string | null;
+  // The price now, after a running time-of-day menu; list_price is without it.
+  price: string | null;
+  list_price: string | null;
+  schedule_id: string | null;
+};
+
+export type PosMenuItem = {
+  id: string;
+  product_id: string;
+  name: string;
+  kind: 'single' | 'combo';
+  menu_category_id: string | null;
+  kitchen_category: string | null;
+  cup_label: string | null;
+  show_components_on_kds: boolean;
+  position: number;
+  active: boolean;
+  tax_category_id: string | null;
+  modifier_group_ids: string[];
+  components: { id: string; variant_id: string; name: string; quantity: number }[];
+  image_url: string | null;
+  sold_out: boolean;
+  variants: PosMenuVariant[];
+};
+
+export type PosMenuCategory = {
+  id: string;
+  name: string;
+  position: number;
+  color: string | null;
+  active: boolean;
+};
+
+export type PosMenu = {
+  branch_id: string;
+  currency: string;
+  business_date: string;
+  module_enabled: boolean;
+  categories: PosMenuCategory[];
+  items: PosMenuItem[];
+  modifier_groups: PosMenuModifierGroup[];
+  // Time-of-day menus running now.
+  schedules: { id: string; name: string }[];
+  favorites: string[];
+  etag: string;
+};
+
 export type PosLineItem = {
   id: string;
   variant_id: string;
@@ -176,7 +272,11 @@ export type PosLineItem = {
   net_amount?: string;
   item_net_amount?: string;
   sale_line_id: string | null;
-  kind?: 'ordinary' | 'measured' | 'tracked';
+  kind?: 'ordinary' | 'measured' | 'tracked' | 'menu';
+  // A menu line's options, combo contents and note, copied at the time of sale.
+  note?: string | null;
+  modifiers?: PosLineModifier[];
+  components?: PosLineComponent[];
   sale_quantity?: string;
   base_quantity?: number;
   sale_unit?: string;

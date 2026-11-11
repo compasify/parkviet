@@ -2,9 +2,9 @@ import { contextFeature } from '@parkviet/pos-shared/pos-features'
 import {
   businessDate,
   canExportReports,
-  REPORT_TYPES,
   type ReportRow,
   type ReportType,
+  reportTypesFor,
   todayIn,
 } from '@parkviet/pos-shared/reports'
 import { describeShiftFailure } from '@parkviet/pos-shared/shifts'
@@ -51,10 +51,12 @@ import { type ReportSearch, reportSearchSchema } from '../schemas/report-search'
 import { hiddenTimestamps } from '../tables/columns'
 
 type Row = ReportRow & { id: string }
+const BUSINESS_DATED = new Set<ReportType>(['sales', 'ingredient_usage', 'menu_margin'])
 type Notice = { text: string; failed: boolean } | null
 
 // "Báo cáo": sales, receipts, drawer cash, receivables and closures of the
-// selected branch, each computed by the server in the branch's timezone.
+// selected branch, and its recipe usage and menu margin while it runs
+// recipes, each computed by the server in the branch's timezone.
 // Every tab is its own route; the day range, register, shift and "mine"
 // filters travel with the tabs.
 export function ReportsPage({ type }: { type: ReportType }) {
@@ -72,7 +74,7 @@ export function ReportsPage({ type }: { type: ReportType }) {
     shiftId: search.shiftId,
     mine: search.mine,
   }
-  const tabs = REPORT_TYPES.map((value) => ({
+  const tabs = reportTypesFor(context.data?.modules).map((value) => ({
     key: value,
     label: t(`reportTab_${value}`),
     to: (value === 'sales' ? base : `${base}/${value}`) as PageTab['to'] & string,
@@ -118,8 +120,8 @@ function Report({
   const branch = data?.branches.find((row) => row.id === branchId)
   const branchZone = branchTimeZone(data)
   const cutoff = branch?.business_day_cutoff ?? '04:00'
-  // Sales follow the business date. Other reports follow the calendar day.
-  const today = type === 'sales' ? businessDate(branchZone, cutoff) : todayIn(branchZone)
+  // Sales and recipe reports follow the business date. Other reports follow the calendar day.
+  const today = BUSINESS_DATED.has(type) ? businessDate(branchZone, cutoff) : todayIn(branchZone)
   const { dated, from, to, rangeValid, filters } = reportRequest(
     type,
     search,
@@ -206,7 +208,9 @@ function Report({
     <div className="space-y-4">
       <div className="space-y-1 text-sm text-muted-foreground">
         <p>{t(`reportTabHint_${type}`)}</p>
-        {type === 'sales' && <p>{t('businessDay.reportHint', { cutoff: cutoff.slice(0, 5) })}</p>}
+        {BUSINESS_DATED.has(type) && (
+          <p>{t('businessDay.reportHint', { cutoff: cutoff.slice(0, 5) })}</p>
+        )}
       </div>
       <ReportFilters
         type={type}

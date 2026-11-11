@@ -25,7 +25,13 @@ export type PosOnboarding = { required: boolean; can_setup: boolean };
 
 // Modules this client has labels and notes for. Translation only: whether a
 // module is on is always read from the server's object, never from this list.
-export const LABELLED_MODULES = ['retail.units', 'retail.measured', 'retail.traceability'] as const;
+export const LABELLED_MODULES = [
+  'retail.units',
+  'retail.measured',
+  'retail.traceability',
+  'fnb.menu',
+  'fnb.recipes',
+] as const;
 
 function record(value: unknown): Record<string, unknown> | null {
   return typeof value === 'object' && value !== null && !Array.isArray(value)

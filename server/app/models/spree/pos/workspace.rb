@@ -98,7 +98,8 @@ module Spree
         order.reload
         discounts = order.discounts.to_a
         intent = Spree::Pos::DiscountIntent.find_by(workspace_id: id)
-        sale_lines = Spree::Pos::SaleLine.where(workspace_id: id).includes(:line_discount_intent).index_by(&:line_item_id)
+        sale_lines = Spree::Pos::SaleLine.where(workspace_id: id).includes(:line_discount_intent, line_modifiers: :modifier_option, line_components: :variant).
+                     index_by(&:line_item_id)
         # Every line reads its variant, product, base price and discounts; load
         # them in a few queries instead of five or six per line.
         lines = order.line_items.includes(variant: %i[product prices], discounts: :promotion_action).to_a.sort_by(&:id)

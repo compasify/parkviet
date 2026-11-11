@@ -99,6 +99,14 @@ export type TemplateData = {
   payQr?: PrintPayQr | null;
   notes: string[];
   disclaimer: string | null;
+  // The sale's e-invoice as the receipt reads it now (server ReceiptInfo):
+  // lookup details once issued, the buyer link while it is open.
+  einvoice?: {
+    lookupCode: string | null;
+    lookupUrl: string | null;
+    buyerUrl: string | null;
+    buyerCaption: string | null;
+  } | null;
 };
 
 type Doc = Record<string, unknown>;
@@ -256,6 +264,25 @@ export type PrintPlace = {
   returnWindowDays?: number | null;
 };
 
+function menuDetail(mark: string, name: string | null, quantity: unknown): string | null {
+  if (!name) return null;
+  return typeof quantity === 'number' && Number.isInteger(quantity) && quantity > 1
+    ? `${mark} ${name} ×${quantity}`
+    : `${mark} ${name}`;
+}
+
+// A menu line's options ("+ Trân châu ×2"), combo contents ("- Khoai tây")
+// and note ("* Ít đá"), one detail row each.
+export function menuNotes(line: Doc): string[] {
+  const notes = [
+    ...rows(line.modifiers).map((row) => menuDetail('+', str(row.name), row.quantity)),
+    ...rows(line.components).map((row) => menuDetail('-', str(row.name), row.quantity)),
+  ].filter((note): note is string => note !== null);
+  const note = str(line.note);
+  if (note) notes.push(`* ${note}`);
+  return notes;
+}
+
 function saleLine(line: Doc, currency: string, t: Translate): LineData {
   const discount = str(line.discount);
   const amount = str(line.net_amount) ?? str(line.amount);
@@ -277,6 +304,7 @@ function saleLine(line: Doc, currency: string, t: Translate): LineData {
     trace: rows(line.trace)
       .map((trace) => traceText(trace, t))
       .filter(Boolean),
+    notes: menuNotes(line),
   };
 }
 
@@ -673,6 +701,18 @@ export function snapshotData(receipt: ReceiptSnapshot, t: Translate): TemplateDa
     payQr,
     notes,
     disclaimer: receipt.disclaimer,
+    einvoice: einvoiceData(receipt, t),
+  };
+}
+
+function einvoiceData(receipt: ReceiptSnapshot, t: Translate): TemplateData['einvoice'] {
+  const einvoice = obj(receipt.einvoice);
+  const buyerUrl = str(einvoice?.buyer_url);
+  return {
+    lookupCode: str(einvoice?.lookup_code),
+    lookupUrl: str(einvoice?.lookup_url),
+    buyerUrl,
+    buyerCaption: buyerUrl ? t('receiptEinvoiceBuyerCaption') : null,
   };
 }
 
@@ -716,6 +756,7 @@ export function prebillData(
       amount: money(amount),
       amountCell: bare(amount, currency),
       trace,
+      notes: menuNotes(line as unknown as Doc),
     };
   });
   const totalRows: DataRow<TotalField>[] = [];
@@ -828,6 +869,7 @@ export function paymentTicketData(
       discountCell: discount ? bare(discount, currency) : '',
       amount: money(amount),
       amountCell: bare(amount, currency),
+      notes: menuNotes(line as unknown as Doc),
     };
   });
 

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { session } from '../lib/app-session';
 import { commandDigest, commandQueue } from '../lib/command-queue';
 import type { OrderSource } from '../lib/order-source';
-import type { PosWorkspace } from '../lib/pos-context';
+import type { PosModifierSelection, PosWorkspace } from '../lib/pos-context';
 import { posWorkspacesKey } from '../lib/query-keys';
 import { leaseConflict, posFailureKey } from '../lib/request-failure';
 import { SessionSuperseded } from '../lib/session-coordinator';
@@ -287,6 +287,9 @@ export function useWorkspaces(
         serial_codes: string[];
         price_override: string;
         merge: boolean;
+        // Menu lines: absent options mean the item's defaults, [] means none.
+        modifiers: PosModifierSelection[];
+        note: string;
       }> = {},
     ) {
       const body = {
@@ -330,6 +333,29 @@ export function useWorkspaces(
           workspace.id,
           body,
           `/pos/workspaces/${workspace.id}/items/${lineItemId}/update`,
+        )
+      ).workspace;
+    },
+    // Replaces the options and note of a menu line. The server prices the
+    // line again on its base price and may merge it into a twin line.
+    async updateModifiers(
+      workspace: PosWorkspace,
+      saleLineId: string,
+      input: { modifiers: PosModifierSelection[]; note: string | null },
+    ) {
+      const body = {
+        expected_revision: workspace.revision,
+        lease_generation: workspace.lease_generation,
+        editor_id: editorId,
+        modifiers: input.modifiers,
+        note: input.note ?? undefined,
+      };
+      return (
+        await sendIntent(
+          workspace.id,
+          body,
+          `/pos/workspaces/${workspace.id}/items/${saleLineId}/modifiers`,
+          'PATCH',
         )
       ).workspace;
     },

@@ -3,12 +3,10 @@
 require 'rails_helper'
 
 RSpec.describe Spree::Pos::SaleLineKinds do
-  it 'registers the six kinds and merges only the retail ones' do
+  it 'registers the six kinds and merges the retail and menu ones' do
     expect(described_class.keys).to contain_exactly('ordinary', 'measured', 'tracked', 'menu', 'timed', 'cover')
-    expect(described_class.mergeable?('ordinary')).to be(true)
-    expect(described_class.mergeable?('measured')).to be(true)
-    expect(described_class.mergeable?('tracked')).to be(true)
-    %w[menu timed cover].each { |kind| expect(described_class.mergeable?(kind)).to be(false) }
+    %w[ordinary measured tracked menu].each { |kind| expect(described_class.mergeable?(kind)).to be(true) }
+    %w[timed cover].each { |kind| expect(described_class.mergeable?(kind)).to be(false) }
   end
 
   it 'refuses a kind that was never registered' do

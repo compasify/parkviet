@@ -66,6 +66,44 @@ function paidInFull(workspace: PosWorkspace) {
   );
 }
 
+const EINVOICE_BUYER_FIELDS = [
+  'tax_code',
+  'name',
+  'address',
+  'email',
+  'phone',
+  'personal_id',
+  'passport_no',
+  'nationality',
+  'buyer_note',
+] as const;
+type EinvoiceBuyerField = (typeof EINVOICE_BUYER_FIELDS)[number];
+const emptyBuyer = Object.fromEntries(EINVOICE_BUYER_FIELDS.map((key) => [key, ''])) as Record<
+  EinvoiceBuyerField,
+  string
+>;
+
+// Only the fields typed in; nothing when the buyer gave no details.
+function filledBuyer(buyer: Record<EinvoiceBuyerField, string>) {
+  const filled = Object.fromEntries(
+    Object.entries(buyer)
+      .map(([key, value]) => [key, value.trim()])
+      .filter(([, value]) => value !== ''),
+  );
+  return Object.keys(filled).length > 0 ? filled : undefined;
+}
+
+function einvoiceBuyerField(failure: unknown) {
+  if (typeof failure !== 'object' || failure === null || !('details' in failure)) return '';
+  const details = failure.details;
+  return typeof details === 'object' &&
+    details !== null &&
+    'field' in details &&
+    typeof details.field === 'string'
+    ? details.field
+    : '';
+}
+
 async function eachRow<T>(
   rows: T[],
   label: (row: T) => string,
@@ -95,7 +133,10 @@ export function PaymentPanel({
   reserveTrace,
   ticketNames,
   timeZone,
+  einvoiceType = 'none',
 }: {
+  // The store's e-invoice; anything but `none` offers the buyer's details.
+  einvoiceType?: 'none' | 'cash_register' | 'coded';
   // Store, branch, register and cashier printed on the payment invoice.
   ticketNames?: TicketNames;
   timeZone?: string;
@@ -146,6 +187,15 @@ export function PaymentPanel({
   }, [evidenceOpen]);
   const [creditOpen, setCreditOpen] = useState(false);
   const [handedOver, setHandedOver] = useState(false);
+  // "Khách lấy hóa đơn": who the e-invoice is made out to. Left empty, the
+  // invoice is for a consumer and the receipt carries a QR to add details.
+  const [buyer, setBuyer] = useState<Record<EinvoiceBuyerField, string>>(emptyBuyer);
+  const [buyerFor, setBuyerFor] = useState(workspace.id);
+  if (buyerFor !== workspace.id) {
+    setBuyerFor(workspace.id);
+    setBuyer(emptyBuyer);
+  }
+  const buyerDetails = einvoiceType === 'none' ? undefined : filledBuyer(buyer);
   const financial = workspace.financial;
   const credit = financial?.credit ?? null;
   const offeredMethods = methodsQuery.data ?? [];
@@ -257,6 +307,12 @@ export function PaymentPanel({
 
   function explain(failure: unknown, fallbackKey?: string) {
     const reason = conflictReason(failure);
+    if (reason === 'einvoice_buyer_invalid') {
+      const field = einvoiceBuyerField(failure);
+      return t('einvoiceBuyerInvalid', {
+        field: field ? t(`einvoiceBuyer_${field}`, { defaultValue: field }) : '',
+      });
+    }
     const key = creditConflictKey(reason) ?? vietqrConflictKey(reason);
     return key ? t(key) : describeTraceFailure(failure, t, fallbackKey);
   }
@@ -327,7 +383,8 @@ export function PaymentPanel({
       // "Finish" in the dialog finishes the sale: once the confirmed money
       // covers the order, complete it here instead of a second click. A
       // refusal (e.g. lost lease) leaves the "Complete order" button as before.
-      if (latest && paidInFull(latest)) await command((current) => tenders.complete(current));
+      if (latest && paidInFull(latest))
+        await command((current) => tenders.complete(current, undefined, buyerDetails));
     });
   }
 
@@ -640,7 +697,7 @@ export function PaymentPanel({
             void run(() =>
               command(async (current) => {
                 const held = await quickApproveCredit(current);
-                return tenders.complete(current, held.approval_id);
+                return tenders.complete(current, held.approval_id, buyerDetails);
               }),
             ).then((done) => {
               if (done) setCreditOpen(false);
@@ -658,12 +715,36 @@ export function PaymentPanel({
             setError('');
           }}
           onComplete={(approvalId) =>
-            run(() => command((current) => tenders.complete(current, approvalId))).then((done) => {
+            run(() =>
+              command((current) => tenders.complete(current, approvalId, buyerDetails)),
+            ).then((done) => {
               if (done) setCreditOpen(false);
               return done;
             })
           }
         />
+      ) : null}
+      {canCollect && einvoiceType !== 'none' && !completed && financial && hasItems ? (
+        <details className="einvoice-buyer checkout-optional">
+          <summary>
+            {t('einvoiceBuyerTitle')}
+            {buyerDetails ? ` · ${buyer.name || buyer.tax_code || t('einvoiceBuyerFilled')}` : ''}
+          </summary>
+          <small className="muted">{t('einvoiceBuyerHint')}</small>
+          {EINVOICE_BUYER_FIELDS.map((field) => (
+            <label key={field}>
+              {t(`einvoiceBuyer_${field}`)}
+              <input
+                value={buyer[field]}
+                disabled={locked}
+                inputMode={field === 'tax_code' || field === 'phone' ? 'numeric' : undefined}
+                type={field === 'email' ? 'email' : 'text'}
+                autoComplete="off"
+                onChange={(event) => setBuyer({ ...buyer, [field]: event.target.value })}
+              />
+            </label>
+          ))}
+        </details>
       ) : null}
       {canCollect && !completed && financial && remainingIsZero && hasItems ? (
         <button
@@ -673,7 +754,7 @@ export function PaymentPanel({
           aria-describedby={blockedBy}
           onClick={() =>
             void run(
-              () => command((current) => tenders.complete(current)),
+              () => command((current) => tenders.complete(current, undefined, buyerDetails)),
               (failure) =>
                 totalIsZero && posFailureKey(failure) === 'forbidden'
                   ? 'paymentZeroTotalApproval'

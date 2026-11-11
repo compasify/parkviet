@@ -21,7 +21,9 @@ function Settings() {
                     ? '/$storeId/settings/business-model'
                     : entry.key === 'system'
                       ? '/$storeId/settings/system'
-                      : '/$storeId/settings/receipt-templates'
+                      : entry.key === 'einvoice-settings'
+                        ? '/$storeId/settings/einvoice'
+                        : '/$storeId/settings/receipt-templates'
               }
               params={{ storeId }}
             >

@@ -5,6 +5,7 @@
 // ignore_for_file: unused_element
 import 'package:pos_api/src/model/date.dart';
 import 'package:built_collection/built_collection.dart';
+import 'package:pos_api/src/model/workspace_line.dart';
 import 'package:pos_api/src/model/workspace_totals.dart';
 import 'package:built_value/json_object.dart';
 import 'package:built_value/built_value.dart';
@@ -20,6 +21,7 @@ part 'workspace.g.dart';
 /// * [operationalStatus]
 /// * [serviceMode]
 /// * [businessDate]
+/// * [lineItems]
 /// * [totals]
 @BuiltValue()
 abstract class Workspace implements Built<Workspace, WorkspaceBuilder> {
@@ -38,6 +40,9 @@ abstract class Workspace implements Built<Workspace, WorkspaceBuilder> {
 
   @BuiltValueField(wireName: r'business_date')
   Date get businessDate;
+
+  @BuiltValueField(wireName: r'line_items')
+  BuiltList<WorkspaceLine>? get lineItems;
 
   @BuiltValueField(wireName: r'totals')
   WorkspaceTotals get totals;
@@ -90,6 +95,13 @@ class _$WorkspaceSerializer implements PrimitiveSerializer<Workspace> {
       object.businessDate,
       specifiedType: const FullType(Date),
     );
+    if (object.lineItems != null) {
+      yield r'line_items';
+      yield serializers.serialize(
+        object.lineItems,
+        specifiedType: const FullType(BuiltList, [FullType(WorkspaceLine)]),
+      );
+    }
     yield r'totals';
     yield serializers.serialize(
       object.totals,
@@ -154,6 +166,15 @@ class _$WorkspaceSerializer implements PrimitiveSerializer<Workspace> {
             specifiedType: const FullType(Date),
           ) as Date;
           result.businessDate = valueDes;
+          break;
+        case r'line_items':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType:
+                const FullType.nullable(BuiltList, [FullType(WorkspaceLine)]),
+          ) as BuiltList<WorkspaceLine>?;
+          if (valueDes == null) continue;
+          result.lineItems.replace(valueDes);
           break;
         case r'totals':
           final valueDes = serializers.deserialize(

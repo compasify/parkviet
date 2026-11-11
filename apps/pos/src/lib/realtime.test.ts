@@ -61,6 +61,14 @@ describe('print queue invalidation', () => {
   });
 });
 
+describe('menu invalidation', () => {
+  it('reads the menu again when an item is marked sold out or back on sale', () => {
+    const menu = ['pos', 'menu', 3, 'br_1'];
+    expect(matched(event({ event: 'menu.sold_out', id: 'posmenuitem_1' }), menu)).toBe(true);
+    expect(matched(event({ event: 'print_job.created', id: 'posprintjob_1' }), menu)).toBe(false);
+  });
+});
+
 const list = ['pos', 'workspaces', 3, 'store_1', 'br_1', null, 1];
 const selected = (id: string) => ['pos', 'workspaces', 3, 'store_1', 'selected', 'br_1', null, id];
 
@@ -153,7 +161,7 @@ describe('invalidationsFor', () => {
   });
 
   it('ignores an event this build does not know', () => {
-    expect(invalidationsFor(event({ event: 'menu.sold_out' }), scope)).toEqual([]);
+    expect(invalidationsFor(event({ event: 'table.moved' }), scope)).toEqual([]);
   });
 });
 
