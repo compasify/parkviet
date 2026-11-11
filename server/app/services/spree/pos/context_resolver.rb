@@ -36,7 +36,7 @@ module Spree
           # E-invoice the store issues for completed orders (none,
           # cash_register, coded): the counter offers buyer details only
           # when it issues one.
-          einvoice_type: StoreProfile.einvoice_type_for(store),
+          einvoice_type: store_profile&.einvoice_type || 'none',
           onboarding: onboarding,
           branches: branches.map(&:to_pos),
           registers: registers.map(&:to_pos),
@@ -89,8 +89,15 @@ module Spree
       # The first-run setup is needed only by a store with neither a store
       # profile nor an active branch; stores that already run never see it.
       def onboarding
-        required = !StoreProfile.for_store(store).exists? && !Branch.for_store(store).where(status: 'active').exists?
+        required = store_profile.nil? && !Branch.for_store(store).where(status: 'active').exists?
         { required: required, can_setup: policy.permission?('write_pos_topology') }
+      end
+
+      # One read serves both the e-invoice type and the onboarding check.
+      def store_profile
+        return @store_profile if defined?(@store_profile)
+
+        @store_profile = StoreProfile.for_store(store).first
       end
 
       def capabilities_for(branch)
