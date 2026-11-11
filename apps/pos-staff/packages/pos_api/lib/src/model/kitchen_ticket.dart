@@ -25,7 +25,7 @@ part 'kitchen_ticket.g.dart';
 /// * [kind]
 /// * [serviceMode]
 /// * [businessDate]
-/// * [header] - Copied at the send - service mode, order source, customer name, note, register, and for counter service the call number (`order_number`) and the guest's name (`guest_name`). A delivery platform's order (`order_source` grabfood or shopeefood) adds the platform's order code (`platform_order_ref`) and the driver's pickup code (`pickup_code`).
+/// * [header] - Copied at the send - service mode, order source, customer name, note, register, and for counter service the call number (`order_number`) and the guest's name (`guest_name`). A delivery platform's order (`order_source` grabfood or shopeefood) adds the platform's order code (`platform_order_ref`) and the driver's pickup code (`pickup_code`). A table order names its table and order letter (`table`). A `void` ticket lists the items taken back, with the reason as their note.
 /// * [sentAt]
 /// * [done]
 /// * [doneAt]
@@ -66,7 +66,7 @@ abstract class KitchenTicket
   @BuiltValueField(wireName: r'business_date')
   Date get businessDate;
 
-  /// Copied at the send - service mode, order source, customer name, note, register, and for counter service the call number (`order_number`) and the guest's name (`guest_name`). A delivery platform's order (`order_source` grabfood or shopeefood) adds the platform's order code (`platform_order_ref`) and the driver's pickup code (`pickup_code`).
+  /// Copied at the send - service mode, order source, customer name, note, register, and for counter service the call number (`order_number`) and the guest's name (`guest_name`). A delivery platform's order (`order_source` grabfood or shopeefood) adds the platform's order code (`platform_order_ref`) and the driver's pickup code (`pickup_code`). A table order names its table and order letter (`table`). A `void` ticket lists the items taken back, with the reason as their note.
   @BuiltValueField(wireName: r'header')
   BuiltMap<String, JsonObject?> get header;
 

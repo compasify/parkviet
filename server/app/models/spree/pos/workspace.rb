@@ -119,7 +119,7 @@ module Spree
         order.reload
         discounts = order.discounts.to_a
         intent = Spree::Pos::DiscountIntent.find_by(workspace_id: id)
-        sale_lines = Spree::Pos::SaleLine.where(workspace_id: id).includes(:line_discount_intent, line_modifiers: :modifier_option, line_components: :variant).
+        sale_lines = Spree::Pos::SaleLine.where(workspace_id: id).includes(:line_discount_intent, :added_by, line_modifiers: :modifier_option, line_components: :variant).
                      index_by(&:line_item_id)
         # Every line reads its variant, product, base price and discounts; load
         # them in a few queries instead of five or six per line.
@@ -180,6 +180,8 @@ module Spree
           service_charge: branch.service_charge_rate && ServiceCharges::Apply.to_pos(self),
           prebill: resource_id && prebill_pos,
           payment_request: resource_id && PaymentRequest.open.find_by(workspace_id: id)&.to_pos,
+          # Who told the kitchen what, and when; table orders are sent many times.
+          kitchen_sends: resource_id && KitchenSend.where(workspace_id: id).includes(:staff, :device).order(:sequence).map(&:to_pos),
           totals: {
             item_total: money(order.item_total), discount_total: money(discounts.sum(&:amount)),
             fee_total: money(order.fee_total),

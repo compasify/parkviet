@@ -3,79 +3,84 @@
 //
 
 // ignore_for_file: unused_element
+import 'package:built_collection/built_collection.dart';
+import 'package:built_value/json_object.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
 
-part 'pos_kitchen_send_request.g.dart';
+part 'kitchen_send_input.g.dart';
 
-/// PosKitchenSendRequest
+/// The editor fields; a table order sends none.
 ///
 /// Properties:
 /// * [expectedRevision]
 /// * [leaseGeneration]
 /// * [editorId]
 @BuiltValue()
-abstract class PosKitchenSendRequest
-    implements Built<PosKitchenSendRequest, PosKitchenSendRequestBuilder> {
+abstract class KitchenSendInput
+    implements Built<KitchenSendInput, KitchenSendInputBuilder> {
   @BuiltValueField(wireName: r'expected_revision')
-  int get expectedRevision;
+  int? get expectedRevision;
 
   @BuiltValueField(wireName: r'lease_generation')
-  int get leaseGeneration;
+  int? get leaseGeneration;
 
   @BuiltValueField(wireName: r'editor_id')
-  String get editorId;
+  String? get editorId;
 
-  PosKitchenSendRequest._();
+  KitchenSendInput._();
 
-  factory PosKitchenSendRequest(
-      [void updates(PosKitchenSendRequestBuilder b)]) = _$PosKitchenSendRequest;
+  factory KitchenSendInput([void updates(KitchenSendInputBuilder b)]) =
+      _$KitchenSendInput;
 
   @BuiltValueHook(initializeBuilder: true)
-  static void _defaults(PosKitchenSendRequestBuilder b) => b;
+  static void _defaults(KitchenSendInputBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<PosKitchenSendRequest> get serializer =>
-      _$PosKitchenSendRequestSerializer();
+  static Serializer<KitchenSendInput> get serializer =>
+      _$KitchenSendInputSerializer();
 }
 
-class _$PosKitchenSendRequestSerializer
-    implements PrimitiveSerializer<PosKitchenSendRequest> {
+class _$KitchenSendInputSerializer
+    implements PrimitiveSerializer<KitchenSendInput> {
   @override
-  final Iterable<Type> types = const [
-    PosKitchenSendRequest,
-    _$PosKitchenSendRequest
-  ];
+  final Iterable<Type> types = const [KitchenSendInput, _$KitchenSendInput];
 
   @override
-  final String wireName = r'PosKitchenSendRequest';
+  final String wireName = r'KitchenSendInput';
 
   Iterable<Object?> _serializeProperties(
     Serializers serializers,
-    PosKitchenSendRequest object, {
+    KitchenSendInput object, {
     FullType specifiedType = FullType.unspecified,
   }) sync* {
-    yield r'expected_revision';
-    yield serializers.serialize(
-      object.expectedRevision,
-      specifiedType: const FullType(int),
-    );
-    yield r'lease_generation';
-    yield serializers.serialize(
-      object.leaseGeneration,
-      specifiedType: const FullType(int),
-    );
-    yield r'editor_id';
-    yield serializers.serialize(
-      object.editorId,
-      specifiedType: const FullType(String),
-    );
+    if (object.expectedRevision != null) {
+      yield r'expected_revision';
+      yield serializers.serialize(
+        object.expectedRevision,
+        specifiedType: const FullType(int),
+      );
+    }
+    if (object.leaseGeneration != null) {
+      yield r'lease_generation';
+      yield serializers.serialize(
+        object.leaseGeneration,
+        specifiedType: const FullType(int),
+      );
+    }
+    if (object.editorId != null) {
+      yield r'editor_id';
+      yield serializers.serialize(
+        object.editorId,
+        specifiedType: const FullType(String),
+      );
+    }
   }
 
   @override
   Object serialize(
     Serializers serializers,
-    PosKitchenSendRequest object, {
+    KitchenSendInput object, {
     FullType specifiedType = FullType.unspecified,
   }) {
     return _serializeProperties(serializers, object,
@@ -88,7 +93,7 @@ class _$PosKitchenSendRequestSerializer
     Object serialized, {
     FullType specifiedType = FullType.unspecified,
     required List<Object?> serializedList,
-    required PosKitchenSendRequestBuilder result,
+    required KitchenSendInputBuilder result,
     required List<Object?> unhandled,
   }) {
     for (var i = 0; i < serializedList.length; i += 2) {
@@ -98,22 +103,25 @@ class _$PosKitchenSendRequestSerializer
         case r'expected_revision':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType: const FullType(int),
-          ) as int;
+            specifiedType: const FullType.nullable(int),
+          ) as int?;
+          if (valueDes == null) continue;
           result.expectedRevision = valueDes;
           break;
         case r'lease_generation':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType: const FullType(int),
-          ) as int;
+            specifiedType: const FullType.nullable(int),
+          ) as int?;
+          if (valueDes == null) continue;
           result.leaseGeneration = valueDes;
           break;
         case r'editor_id':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType: const FullType(String),
-          ) as String;
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
           result.editorId = valueDes;
           break;
         default:
@@ -125,12 +133,12 @@ class _$PosKitchenSendRequestSerializer
   }
 
   @override
-  PosKitchenSendRequest deserialize(
+  KitchenSendInput deserialize(
     Serializers serializers,
     Object serialized, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    final result = PosKitchenSendRequestBuilder();
+    final result = KitchenSendInputBuilder();
     final serializedList = (serialized as Iterable<Object?>).toList();
     final unhandled = <Object?>[];
     _deserializeProperties(

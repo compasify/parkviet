@@ -4,65 +4,68 @@
 
 // ignore_for_file: unused_element
 import 'package:built_collection/built_collection.dart';
-import 'package:pos_api/src/model/kitchen_ticket.dart';
+import 'package:pos_api/src/model/kitchen_history_entry.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
 
-part 'pos_kitchen_send201_response_meta.g.dart';
+part 'kitchen_history.g.dart';
 
-/// PosKitchenSend201ResponseMeta
+/// KitchenHistory
 ///
 /// Properties:
-/// * [tickets]
+/// * [workspaceId]
+/// * [entries]
 @BuiltValue()
-abstract class PosKitchenSend201ResponseMeta
-    implements
-        Built<PosKitchenSend201ResponseMeta,
-            PosKitchenSend201ResponseMetaBuilder> {
-  @BuiltValueField(wireName: r'tickets')
-  BuiltList<KitchenTicket> get tickets;
+abstract class KitchenHistory
+    implements Built<KitchenHistory, KitchenHistoryBuilder> {
+  @BuiltValueField(wireName: r'workspace_id')
+  String get workspaceId;
 
-  PosKitchenSend201ResponseMeta._();
+  @BuiltValueField(wireName: r'entries')
+  BuiltList<KitchenHistoryEntry> get entries;
 
-  factory PosKitchenSend201ResponseMeta(
-          [void updates(PosKitchenSend201ResponseMetaBuilder b)]) =
-      _$PosKitchenSend201ResponseMeta;
+  KitchenHistory._();
+
+  factory KitchenHistory([void updates(KitchenHistoryBuilder b)]) =
+      _$KitchenHistory;
 
   @BuiltValueHook(initializeBuilder: true)
-  static void _defaults(PosKitchenSend201ResponseMetaBuilder b) => b;
+  static void _defaults(KitchenHistoryBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<PosKitchenSend201ResponseMeta> get serializer =>
-      _$PosKitchenSend201ResponseMetaSerializer();
+  static Serializer<KitchenHistory> get serializer =>
+      _$KitchenHistorySerializer();
 }
 
-class _$PosKitchenSend201ResponseMetaSerializer
-    implements PrimitiveSerializer<PosKitchenSend201ResponseMeta> {
+class _$KitchenHistorySerializer
+    implements PrimitiveSerializer<KitchenHistory> {
   @override
-  final Iterable<Type> types = const [
-    PosKitchenSend201ResponseMeta,
-    _$PosKitchenSend201ResponseMeta
-  ];
+  final Iterable<Type> types = const [KitchenHistory, _$KitchenHistory];
 
   @override
-  final String wireName = r'PosKitchenSend201ResponseMeta';
+  final String wireName = r'KitchenHistory';
 
   Iterable<Object?> _serializeProperties(
     Serializers serializers,
-    PosKitchenSend201ResponseMeta object, {
+    KitchenHistory object, {
     FullType specifiedType = FullType.unspecified,
   }) sync* {
-    yield r'tickets';
+    yield r'workspace_id';
     yield serializers.serialize(
-      object.tickets,
-      specifiedType: const FullType(BuiltList, [FullType(KitchenTicket)]),
+      object.workspaceId,
+      specifiedType: const FullType(String),
+    );
+    yield r'entries';
+    yield serializers.serialize(
+      object.entries,
+      specifiedType: const FullType(BuiltList, [FullType(KitchenHistoryEntry)]),
     );
   }
 
   @override
   Object serialize(
     Serializers serializers,
-    PosKitchenSend201ResponseMeta object, {
+    KitchenHistory object, {
     FullType specifiedType = FullType.unspecified,
   }) {
     return _serializeProperties(serializers, object,
@@ -75,19 +78,27 @@ class _$PosKitchenSend201ResponseMetaSerializer
     Object serialized, {
     FullType specifiedType = FullType.unspecified,
     required List<Object?> serializedList,
-    required PosKitchenSend201ResponseMetaBuilder result,
+    required KitchenHistoryBuilder result,
     required List<Object?> unhandled,
   }) {
     for (var i = 0; i < serializedList.length; i += 2) {
       final key = serializedList[i] as String;
       final value = serializedList[i + 1];
       switch (key) {
-        case r'tickets':
+        case r'workspace_id':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType: const FullType(BuiltList, [FullType(KitchenTicket)]),
-          ) as BuiltList<KitchenTicket>;
-          result.tickets.replace(valueDes);
+            specifiedType: const FullType(String),
+          ) as String;
+          result.workspaceId = valueDes;
+          break;
+        case r'entries':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType:
+                const FullType(BuiltList, [FullType(KitchenHistoryEntry)]),
+          ) as BuiltList<KitchenHistoryEntry>;
+          result.entries.replace(valueDes);
           break;
         default:
           unhandled.add(key);
@@ -98,12 +109,12 @@ class _$PosKitchenSend201ResponseMetaSerializer
   }
 
   @override
-  PosKitchenSend201ResponseMeta deserialize(
+  KitchenHistory deserialize(
     Serializers serializers,
     Object serialized, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    final result = PosKitchenSend201ResponseMetaBuilder();
+    final result = KitchenHistoryBuilder();
     final serializedList = (serialized as Iterable<Object?>).toList();
     final unhandled = <Object?>[];
     _deserializeProperties(

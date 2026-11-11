@@ -116,6 +116,8 @@ class _$Workspace extends Workspace {
   @override
   final PaymentRequest? paymentRequest;
   @override
+  final BuiltList<KitchenSendSummary>? kitchenSends;
+  @override
   final BuiltList<WorkspaceLine>? lineItems;
   @override
   final WorkspaceTotals totals;
@@ -137,6 +139,7 @@ class _$Workspace extends Workspace {
       this.serviceCharge,
       this.prebill,
       this.paymentRequest,
+      this.kitchenSends,
       this.lineItems,
       required this.totals})
       : super._();
@@ -164,6 +167,7 @@ class _$Workspace extends Workspace {
         serviceCharge == other.serviceCharge &&
         prebill == other.prebill &&
         paymentRequest == other.paymentRequest &&
+        kitchenSends == other.kitchenSends &&
         lineItems == other.lineItems &&
         totals == other.totals;
   }
@@ -184,6 +188,7 @@ class _$Workspace extends Workspace {
     _$hash = $jc(_$hash, serviceCharge.hashCode);
     _$hash = $jc(_$hash, prebill.hashCode);
     _$hash = $jc(_$hash, paymentRequest.hashCode);
+    _$hash = $jc(_$hash, kitchenSends.hashCode);
     _$hash = $jc(_$hash, lineItems.hashCode);
     _$hash = $jc(_$hash, totals.hashCode);
     _$hash = $jf(_$hash);
@@ -206,6 +211,7 @@ class _$Workspace extends Workspace {
           ..add('serviceCharge', serviceCharge)
           ..add('prebill', prebill)
           ..add('paymentRequest', paymentRequest)
+          ..add('kitchenSends', kitchenSends)
           ..add('lineItems', lineItems)
           ..add('totals', totals))
         .toString();
@@ -274,6 +280,12 @@ class WorkspaceBuilder implements Builder<Workspace, WorkspaceBuilder> {
   set paymentRequest(PaymentRequestBuilder? paymentRequest) =>
       _$this._paymentRequest = paymentRequest;
 
+  ListBuilder<KitchenSendSummary>? _kitchenSends;
+  ListBuilder<KitchenSendSummary> get kitchenSends =>
+      _$this._kitchenSends ??= ListBuilder<KitchenSendSummary>();
+  set kitchenSends(ListBuilder<KitchenSendSummary>? kitchenSends) =>
+      _$this._kitchenSends = kitchenSends;
+
   ListBuilder<WorkspaceLine>? _lineItems;
   ListBuilder<WorkspaceLine> get lineItems =>
       _$this._lineItems ??= ListBuilder<WorkspaceLine>();
@@ -305,6 +317,7 @@ class WorkspaceBuilder implements Builder<Workspace, WorkspaceBuilder> {
       _serviceCharge = $v.serviceCharge?.toBuilder();
       _prebill = $v.prebill?.toBuilder();
       _paymentRequest = $v.paymentRequest?.toBuilder();
+      _kitchenSends = $v.kitchenSends?.toBuilder();
       _lineItems = $v.lineItems?.toBuilder();
       _totals = $v.totals.toBuilder();
       _$v = null;
@@ -347,6 +360,7 @@ class WorkspaceBuilder implements Builder<Workspace, WorkspaceBuilder> {
             serviceCharge: _serviceCharge?.build(),
             prebill: _prebill?.build(),
             paymentRequest: _paymentRequest?.build(),
+            kitchenSends: _kitchenSends?.build(),
             lineItems: _lineItems?.build(),
             totals: totals.build(),
           );
@@ -362,6 +376,8 @@ class WorkspaceBuilder implements Builder<Workspace, WorkspaceBuilder> {
         _prebill?.build();
         _$failedField = 'paymentRequest';
         _paymentRequest?.build();
+        _$failedField = 'kitchenSends';
+        _kitchenSends?.build();
         _$failedField = 'lineItems';
         _lineItems?.build();
         _$failedField = 'totals';

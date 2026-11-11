@@ -53,6 +53,7 @@ module Spree
       validates :kitchen_send_trigger, inclusion: { in: %w[on_complete manual] }
       # Percent of the items after discounts; nil means no service charge.
       validates :service_charge_rate, numericality: { greater_than: 0, less_than_or_equal_to: 50 }, allow_nil: true
+      validate :void_reasons_are_codes
       validate :locations_belong_to_store
       validate :table_settings_of_store
       validate :stock_location_fixed_for_open_drafts, on: :update
@@ -85,7 +86,8 @@ module Spree
           profile_key: profile_key, profile_version: profile_version,
           business_day_cutoff: cutoff_label,
           staff_session_idle_minutes: staff_session_idle_minutes,
-          kitchen_send_trigger: kitchen_send_trigger
+          kitchen_send_trigger: kitchen_send_trigger,
+          void_reasons: void_reasons
         }
       end
 
@@ -112,6 +114,18 @@ module Spree
         return unless Workspace.where(branch_id: id, operational_status: %w[editing parked]).exists?
 
         errors.add(:stock_location, :invalid)
+      end
+
+      # Why a sent item may be taken back here: short codes the screens label.
+      VOID_REASON_FORMAT = /\A[a-z0-9_]{1,40}\z/
+      VOID_REASONS_MAX = 20
+
+      def void_reasons_are_codes
+        reasons = void_reasons
+        return if reasons.is_a?(Array) && reasons.size <= VOID_REASONS_MAX && reasons.uniq.size == reasons.size &&
+                  reasons.all? { |code| code.is_a?(String) && code.match?(VOID_REASON_FORMAT) }
+
+        errors.add(:void_reasons, :invalid)
       end
 
       def table_settings_of_store

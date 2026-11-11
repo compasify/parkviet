@@ -6,9 +6,9 @@ module Spree
       module Admin
         module Pos
           module Workspaces
-            # The cashier's "send to kitchen": the part of every menu line the
-            # kitchen has not been told yet. Answers the workspace, with the
-            # tickets of this send in `meta`.
+            # "Send to kitchen": the part of every menu line the kitchen has not
+            # been told yet. A table order needs no lease. Answers the workspace,
+            # with the tickets of this send in `meta`.
             class KitchenSendsController < BaseController
               scoped_resource :pos_orders
 
@@ -21,9 +21,11 @@ module Spree
                 result = Spree::Pos::Kitchen::Send.command(
                   workspace: workspace!(params[:workspace_id]), staff: current_user, key: key,
                   revision: params[:expected_revision].to_i, lease_generation: params[:lease_generation].to_i,
-                  editor_id: params[:editor_id]
+                  editor_id: params[:editor_id], device: @pos_device
                 )
-                render json: { data: result['workspace'], meta: { tickets: result['tickets'] } }, status: :created
+                # Nothing new to tell the kitchen is an answer, not a creation.
+                render json: { data: result['workspace'], meta: { tickets: result['tickets'], ticket_count: result['ticket_count'] } },
+                       status: result['ticket_count'].to_i.positive? ? :created : :ok
               end
             end
           end

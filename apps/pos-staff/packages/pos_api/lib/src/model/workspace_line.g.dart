@@ -114,6 +114,12 @@ class _$WorkspaceLine extends WorkspaceLine {
   final BuiltList<LineComponent>? components;
   @override
   final String? kitchenSentQuantity;
+  @override
+  final String? pendingKitchenQuantity;
+  @override
+  final int? rowVersion;
+  @override
+  final StaffRef? addedBy;
 
   factory _$WorkspaceLine([void Function(WorkspaceLineBuilder)? updates]) =>
       (WorkspaceLineBuilder()..update(updates))._build();
@@ -131,7 +137,10 @@ class _$WorkspaceLine extends WorkspaceLine {
       this.note,
       this.modifiers,
       this.components,
-      this.kitchenSentQuantity})
+      this.kitchenSentQuantity,
+      this.pendingKitchenQuantity,
+      this.rowVersion,
+      this.addedBy})
       : super._();
   @override
   WorkspaceLine rebuild(void Function(WorkspaceLineBuilder) updates) =>
@@ -156,7 +165,10 @@ class _$WorkspaceLine extends WorkspaceLine {
         note == other.note &&
         modifiers == other.modifiers &&
         components == other.components &&
-        kitchenSentQuantity == other.kitchenSentQuantity;
+        kitchenSentQuantity == other.kitchenSentQuantity &&
+        pendingKitchenQuantity == other.pendingKitchenQuantity &&
+        rowVersion == other.rowVersion &&
+        addedBy == other.addedBy;
   }
 
   @override
@@ -175,6 +187,9 @@ class _$WorkspaceLine extends WorkspaceLine {
     _$hash = $jc(_$hash, modifiers.hashCode);
     _$hash = $jc(_$hash, components.hashCode);
     _$hash = $jc(_$hash, kitchenSentQuantity.hashCode);
+    _$hash = $jc(_$hash, pendingKitchenQuantity.hashCode);
+    _$hash = $jc(_$hash, rowVersion.hashCode);
+    _$hash = $jc(_$hash, addedBy.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -194,7 +209,10 @@ class _$WorkspaceLine extends WorkspaceLine {
           ..add('note', note)
           ..add('modifiers', modifiers)
           ..add('components', components)
-          ..add('kitchenSentQuantity', kitchenSentQuantity))
+          ..add('kitchenSentQuantity', kitchenSentQuantity)
+          ..add('pendingKitchenQuantity', pendingKitchenQuantity)
+          ..add('rowVersion', rowVersion)
+          ..add('addedBy', addedBy))
         .toString();
   }
 }
@@ -260,6 +278,19 @@ class WorkspaceLineBuilder
   set kitchenSentQuantity(String? kitchenSentQuantity) =>
       _$this._kitchenSentQuantity = kitchenSentQuantity;
 
+  String? _pendingKitchenQuantity;
+  String? get pendingKitchenQuantity => _$this._pendingKitchenQuantity;
+  set pendingKitchenQuantity(String? pendingKitchenQuantity) =>
+      _$this._pendingKitchenQuantity = pendingKitchenQuantity;
+
+  int? _rowVersion;
+  int? get rowVersion => _$this._rowVersion;
+  set rowVersion(int? rowVersion) => _$this._rowVersion = rowVersion;
+
+  StaffRefBuilder? _addedBy;
+  StaffRefBuilder get addedBy => _$this._addedBy ??= StaffRefBuilder();
+  set addedBy(StaffRefBuilder? addedBy) => _$this._addedBy = addedBy;
+
   WorkspaceLineBuilder() {
     WorkspaceLine._defaults(this);
   }
@@ -280,6 +311,9 @@ class WorkspaceLineBuilder
       _modifiers = $v.modifiers?.toBuilder();
       _components = $v.components?.toBuilder();
       _kitchenSentQuantity = $v.kitchenSentQuantity;
+      _pendingKitchenQuantity = $v.pendingKitchenQuantity;
+      _rowVersion = $v.rowVersion;
+      _addedBy = $v.addedBy?.toBuilder();
       _$v = null;
     }
     return this;
@@ -322,6 +356,9 @@ class WorkspaceLineBuilder
             modifiers: _modifiers?.build(),
             components: _components?.build(),
             kitchenSentQuantity: kitchenSentQuantity,
+            pendingKitchenQuantity: pendingKitchenQuantity,
+            rowVersion: rowVersion,
+            addedBy: _addedBy?.build(),
           );
     } catch (_) {
       late String _$failedField;
@@ -330,6 +367,9 @@ class WorkspaceLineBuilder
         _modifiers?.build();
         _$failedField = 'components';
         _components?.build();
+
+        _$failedField = 'addedBy';
+        _addedBy?.build();
       } catch (e) {
         throw BuiltValueNestedFieldError(
             r'WorkspaceLine', _$failedField, e.toString());

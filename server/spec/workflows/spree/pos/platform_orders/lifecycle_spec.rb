@@ -87,8 +87,12 @@ RSpec.describe 'Platform order lifecycle' do
     expect(order.workspace.reload.operational_status).to eq('canceled')
     items = Spree::Pos::KitchenTicketItem.joins(:kitchen_ticket).where(spree_pos_kitchen_tickets: { workspace_id: order.workspace_id })
     expect(items.map(&:status).uniq).to eq(['voided'])
-    void = Spree::Pos::AuditEntry.find_by!(action: 'kitchen.void', subject_id: order.workspace_id)
-    expect(void.metadata).to include('reason' => 'platform_canceled')
+    # The kitchen void: a void ticket per sent line, with the platform's reason and the approval.
+    tickets = Spree::Pos::KitchenTicket.where(workspace_id: order.workspace_id)
+    expect(tickets.where(kind: 'void').count).to eq(Spree::Pos::KitchenVoid.where(workspace_id: order.workspace_id).count)
+    expect(Spree::Pos::KitchenVoid.where(workspace_id: order.workspace_id).pluck(:reason_code).uniq).to eq(['platform_canceled'])
+    void = Spree::Pos::AuditEntry.where(action: 'kitchen.void_sent', subject_id: order.workspace_id).first!
+    expect(void.metadata).to include('reason_code' => 'platform_canceled')
     expect(order.workspace.order_number).to eq(1)
 
     expect { complete_platform(order, counter) }.

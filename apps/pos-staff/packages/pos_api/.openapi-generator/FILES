@@ -10,6 +10,10 @@ lib/src/auth/basic_auth.dart
 lib/src/auth/bearer_auth.dart
 lib/src/auth/oauth.dart
 lib/src/date_serializer.dart
+lib/src/model/append_item.dart
+lib/src/model/append_items_input.dart
+lib/src/model/append_items_meta.dart
+lib/src/model/append_items_result.dart
 lib/src/model/approval.dart
 lib/src/model/approval_revision.dart
 lib/src/model/area.dart
@@ -35,6 +39,7 @@ lib/src/model/device_session_branch.dart
 lib/src/model/device_session_staff.dart
 lib/src/model/device_staff_member.dart
 lib/src/model/device_staff_sign_in.dart
+lib/src/model/edit_unsent_line_input.dart
 lib/src/model/einvoice.dart
 lib/src/model/einvoice_buyer.dart
 lib/src/model/einvoice_line.dart
@@ -62,9 +67,17 @@ lib/src/model/hardware_status.dart
 lib/src/model/ingredient_usage_row.dart
 lib/src/model/kitchen_board.dart
 lib/src/model/kitchen_board_result.dart
+lib/src/model/kitchen_history.dart
+lib/src/model/kitchen_history_entry.dart
+lib/src/model/kitchen_history_item.dart
+lib/src/model/kitchen_history_result.dart
 lib/src/model/kitchen_menu_item.dart
 lib/src/model/kitchen_order_served_result.dart
 lib/src/model/kitchen_order_served_result_data.dart
+lib/src/model/kitchen_send_input.dart
+lib/src/model/kitchen_send_meta.dart
+lib/src/model/kitchen_send_result.dart
+lib/src/model/kitchen_send_summary.dart
 lib/src/model/kitchen_settings.dart
 lib/src/model/kitchen_station.dart
 lib/src/model/kitchen_station_input.dart
@@ -75,6 +88,10 @@ lib/src/model/kitchen_ticket_item.dart
 lib/src/model/kitchen_ticket_item_components_inner.dart
 lib/src/model/kitchen_ticket_item_modifiers_inner.dart
 lib/src/model/kitchen_ticket_result.dart
+lib/src/model/kitchen_void.dart
+lib/src/model/kitchen_void_input.dart
+lib/src/model/kitchen_void_meta.dart
+lib/src/model/kitchen_void_result.dart
 lib/src/model/line_component.dart
 lib/src/model/line_modifier.dart
 lib/src/model/menu.dart
@@ -90,6 +107,7 @@ lib/src/model/menu_schedules_inner.dart
 lib/src/model/menu_tax_defaults.dart
 lib/src/model/modifier_group.dart
 lib/src/model/modifier_group_options_inner.dart
+lib/src/model/modifier_pick.dart
 lib/src/model/modifier_selection.dart
 lib/src/model/payment_request.dart
 lib/src/model/payment_request_input.dart
@@ -143,9 +161,6 @@ lib/src/model/pos_einvoice_summary200_response.dart
 lib/src/model/pos_einvoices200_response.dart
 lib/src/model/pos_hardware_status200_response.dart
 lib/src/model/pos_kitchen_orders200_response.dart
-lib/src/model/pos_kitchen_send201_response.dart
-lib/src/model/pos_kitchen_send201_response_meta.dart
-lib/src/model/pos_kitchen_send_request.dart
 lib/src/model/pos_kitchen_settings200_response.dart
 lib/src/model/pos_kitchen_settings_update_request.dart
 lib/src/model/pos_kitchen_station_create_request.dart
@@ -241,6 +256,7 @@ lib/src/model/resource_manual_status_input.dart
 lib/src/model/resource_ref.dart
 lib/src/model/resource_result.dart
 lib/src/model/service_charge_waive_input.dart
+lib/src/model/staff_ref.dart
 lib/src/model/station_route.dart
 lib/src/model/station_route_input.dart
 lib/src/model/stock_alert.dart

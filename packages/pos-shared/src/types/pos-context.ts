@@ -47,6 +47,8 @@ export type PosBranch = {
   staff_session_idle_minutes?: number;
   // When menu lines reach the kitchen: as the sale completes, or on "send".
   kitchen_send_trigger?: 'on_complete' | 'manual';
+  // Reasons a sent item may be voided for; `khac` (other) always needs a note.
+  void_reasons?: string[];
 };
 
 export type PosRegister = {
@@ -290,6 +292,11 @@ export type PosLineItem = {
   // The part of a menu line already sent to the kitchen; the line cannot
   // go below it or change its options.
   kitchen_sent_quantity?: string;
+  // Units of a menu line the kitchen has not been told about yet.
+  pending_kitchen_quantity?: string;
+  // Bumped on every change; an unsent table line is edited by its version.
+  row_version?: number;
+  added_by?: { id: string; name: string } | null;
   base_quantity?: number;
   sale_unit?: string;
   base_unit?: string;
@@ -616,6 +623,17 @@ export type PosWorkspace = {
   financial?: PosFinancial | null;
   // Missing on payloads from servers without stock traceability.
   trace?: WorkspaceTrace | null;
+  // Table orders: every kitchen send, in order. Null on other orders.
+  kitchen_sends?: PosKitchenSend[] | null;
+};
+
+export type PosKitchenSend = {
+  id: string;
+  sequence: number;
+  sent_at: string;
+  staff_id: string | null;
+  staff_name: string | null;
+  device_id: string | null;
 };
 
 export type PosMembership = {

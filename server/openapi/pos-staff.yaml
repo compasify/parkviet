@@ -2292,9 +2292,13 @@ paths:
       operationId: posKitchenSend
       description: >
         "Send to kitchen": one ticket per station for the part of every menu
-        line not sent yet. Same editor rules as other draft commands. Answers
-        the workspace, with the tickets of this send in `meta.tickets` (empty
-        when nothing was left to send).
+        line not sent yet, recorded as one numbered send. A table order
+        (`fnb.tables`) is sent by anyone who may edit it, without a lease or
+        revision, even once a payment locked its lines; other orders follow
+        the usual editor rules. The same key
+        again answers the same send. Answers the workspace, with the tickets
+        of this send in `meta.tickets`; 200 with `ticket_count` 0 when
+        nothing was left to send.
       parameters:
         - $ref: '#/components/parameters/KitchenIdempotencyKey'
         - name: workspace_id
@@ -2307,34 +2311,20 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required: [expected_revision, lease_generation, editor_id]
-              properties:
-                expected_revision:
-                  type: integer
-                lease_generation:
-                  type: integer
-                editor_id:
-                  type: string
+              $ref: '#/components/schemas/KitchenSendInput'
       responses:
         '201':
           description: The workspace after the send
           content:
             application/json:
               schema:
-                type: object
-                required: [data, meta]
-                properties:
-                  data:
-                    $ref: '#/components/schemas/Workspace'
-                  meta:
-                    type: object
-                    required: [tickets]
-                    properties:
-                      tickets:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/KitchenTicket'
+                $ref: '#/components/schemas/KitchenSendResult'
+        '200':
+          description: Nothing was left to send
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KitchenSendResult'
         '409':
           description: Refused; `error.details.reason` says why
           content:
@@ -2364,6 +2354,168 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/KitchenTicket'
+  /api/v3/admin/pos/workspaces/{workspace_id}/kitchen_history:
+    get:
+      operationId: posWorkspaceKitchenHistory
+      description: >
+        An order's kitchen history, oldest first: every send (when, who,
+        which items to which station) and every void (when, who, what came
+        back, the reason, who approved it, whether it was waste).
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+      responses:
+        '200':
+          description: The history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KitchenHistoryResult'
+  /api/v3/admin/pos/workspaces/{workspace_id}/items/append:
+    post:
+      operationId: posWorkspaceAppendItems
+      description: >
+        Adds one batch of items to a table order (`fnb.tables`) without a
+        lease or revision, so several waiters and the cashier add at once.
+        Needs `pos.table.serve` or the order's shift. A batch writes new
+        lines; an item joins only an unsent line of the same batch. Refused
+        once a payment locked the order: further items go to another order of
+        the table (`tables/{resource_id}/open` with `add_order`).
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/WorkspaceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppendItemsInput'
+      responses:
+        '200':
+          description: The order, with the lines of the batch in `meta`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppendItemsResult'
+        '409':
+          description: >
+            Refused; `error.details.reason` is `not_table_order`,
+            `module_disabled`, `workspace_closed`, `snapshot_locked`,
+            `append_items_invalid` or a menu reason such as `menu_sold_out`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/workspaces/{workspace_id}/sale_lines/{id}:
+    patch:
+      operationId: posWorkspaceEditUnsentLine
+      description: >
+        Changes the quantity of a table order's line the kitchen has not been
+        told about, without a lease, checked against the line's
+        `row_version`.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/WorkspaceId'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EditUnsentLineInput'
+      responses:
+        '200':
+          description: The order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceResult'
+        '409':
+          description: >
+            Refused; `error.details.reason` is `line_changed` (with the line
+            as it is now in `error.details.sale_line`), `line_sent` (void the
+            sent part instead), `not_table_order`, `module_disabled` or
+            `snapshot_locked`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      operationId: posWorkspaceRemoveUnsentLine
+      description: >
+        Takes a table order's line the kitchen has not been told about off
+        the order, without a lease, checked against its `row_version`.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/WorkspaceId'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: row_version
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: The order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceResult'
+        '409':
+          description: Refused; the same reasons as the edit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/workspaces/{workspace_id}/sale_lines/{sale_line_id}/kitchen_voids:
+    post:
+      operationId: posKitchenVoid
+      description: >
+        Takes back part of a line the kitchen was told about. Needs a reason
+        from the branch's `void_reasons` (or `khac` with a note) and, unless
+        the person has `pos.kitchen.void`, an approval of `kitchen.void_sent`
+        for the order at its current revision. The line and its sent
+        quantity go down together; the station gets a `void` ticket and its
+        printer a `void_ticket` job. An item the kitchen had made is marked
+        `wasted`; nothing goes back to stock. A table order needs no lease;
+        other orders send the editor fields.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/WorkspaceId'
+        - name: sale_line_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KitchenVoidInput'
+      responses:
+        '201':
+          description: The order, with the void in `meta`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KitchenVoidResult'
+        '409':
+          description: >
+            Refused; `error.details.reason` is `approval_required` (with
+            `details.action` `kitchen.void_sent`), `void_reason_invalid`, `void_note_required`,
+            `void_quantity_invalid`, `snapshot_locked` or `lease_stale`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/v3/pos_device/kitchen/stations:
     get:
       operationId: posDeviceKitchenStations
@@ -3275,6 +3427,11 @@ components:
           oneOf:
             - $ref: '#/components/schemas/PaymentRequest'
             - type: 'null'
+        kitchen_sends:
+          description: Every kitchen send of a table order; null for other orders.
+          type: [array, 'null']
+          items:
+            $ref: '#/components/schemas/KitchenSendSummary'
         line_items:
           type: array
           items:
@@ -3333,7 +3490,48 @@ components:
             $ref: '#/components/schemas/LineComponent'
         kitchen_sent_quantity:
           type: string
-          description: How much of the line the kitchen has been told about. The line cannot go lower.
+          description: >
+            How much of the line the kitchen has been told about. The line
+            goes lower only by a kitchen void.
+        pending_kitchen_quantity:
+          type: string
+          description: What the next kitchen send would send of a menu line.
+        row_version:
+          type: integer
+          description: Moves on every change of the line; unsent-line edits send it back.
+        added_by:
+          description: Who added the line.
+          oneOf:
+            - $ref: '#/components/schemas/StaffRef'
+            - type: 'null'
+    StaffRef:
+      type: object
+      additionalProperties: false
+      required: [id, name]
+      properties:
+        id:
+          type: string
+        name:
+          type: [string, 'null']
+    KitchenSendSummary:
+      type: object
+      additionalProperties: false
+      description: One kitchen send of an order that told the kitchen something.
+      required: [id, sequence, sent_at, staff_id, staff_name, device_id]
+      properties:
+        id:
+          type: string
+        sequence:
+          type: integer
+        sent_at:
+          type: string
+          format: date-time
+        staff_id:
+          type: [string, 'null']
+        staff_name:
+          type: [string, 'null']
+        device_id:
+          type: [string, 'null']
     LineModifier:
       type: object
       additionalProperties: false
@@ -5078,7 +5276,8 @@ components:
         id:
           type: string
         sale_line_id:
-          type: string
+          type: [string, 'null']
+          description: Null once the line was voided off the order; the ticket keeps what it said.
         name:
           type: string
           description: The item and its size, as sold.
@@ -5165,7 +5364,9 @@ components:
             (`order_number`) and the guest's name (`guest_name`). A delivery
             platform's order (`order_source` grabfood or shopeefood) adds the
             platform's order code (`platform_order_ref`) and the driver's
-            pickup code (`pickup_code`).
+            pickup code (`pickup_code`). A table order names its table and
+            order letter (`table`). A `void` ticket lists the items taken
+            back, with the reason as their note.
         sent_at:
           type: string
           format: date-time
@@ -6098,6 +6299,240 @@ components:
         add_order:
           type: boolean
           description: Open another order beside the table's open one.
+    KitchenSendInput:
+      type: object
+      additionalProperties: true
+      description: The editor fields; a table order sends none.
+      properties:
+        expected_revision:
+          type: integer
+        lease_generation:
+          type: integer
+        editor_id:
+          type: string
+    KitchenSendResult:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/Workspace'
+        meta:
+          $ref: '#/components/schemas/KitchenSendMeta'
+    KitchenSendMeta:
+      type: object
+      required: [tickets, ticket_count]
+      properties:
+        tickets:
+          type: array
+          items:
+            $ref: '#/components/schemas/KitchenTicket'
+        ticket_count:
+          type: integer
+    AppendItem:
+      type: object
+      additionalProperties: false
+      required: [variant_id]
+      properties:
+        variant_id:
+          type: string
+        quantity:
+          type: integer
+          minimum: 1
+          default: 1
+        modifiers:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModifierPick'
+        note:
+          type: string
+          maxLength: 200
+    ModifierPick:
+      type: object
+      additionalProperties: false
+      required: [option_id]
+      properties:
+        option_id:
+          type: string
+        quantity:
+          type: integer
+    AppendItemsInput:
+      type: object
+      additionalProperties: true
+      required: [items]
+      properties:
+        items:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/AppendItem'
+        append_batch_id:
+          type: string
+          format: uuid
+          description: One per "add to order" press; groups the batch's lines.
+    AppendItemsResult:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/Workspace'
+        meta:
+          $ref: '#/components/schemas/AppendItemsMeta'
+    AppendItemsMeta:
+      type: object
+      required: [sale_line_ids]
+      properties:
+        sale_line_ids:
+          type: array
+          items:
+            type: string
+    EditUnsentLineInput:
+      type: object
+      additionalProperties: true
+      required: [row_version, quantity]
+      properties:
+        row_version:
+          type: integer
+        quantity:
+          type: integer
+          minimum: 1
+    KitchenVoidInput:
+      type: object
+      additionalProperties: true
+      required: [quantity, reason_code]
+      properties:
+        quantity:
+          type: integer
+          minimum: 1
+        reason_code:
+          type: string
+          description: One of the branch's `void_reasons`, or `khac` with a note.
+        note:
+          type: string
+          maxLength: 200
+        approval_id:
+          type: string
+        expected_revision:
+          type: integer
+        lease_generation:
+          type: integer
+        editor_id:
+          type: string
+    KitchenVoid:
+      type: object
+      additionalProperties: false
+      required: [id, sale_line_id, name, quantity, reason_code, note, wasted, staff_id, staff_name, approval_id, approver_id, kitchen_ticket_id, voided_at]
+      properties:
+        id:
+          type: string
+        sale_line_id:
+          type: [string, 'null']
+        name:
+          type: string
+        quantity:
+          type: string
+        reason_code:
+          type: string
+        note:
+          type: [string, 'null']
+        wasted:
+          type: boolean
+          description: The kitchen had already made it.
+        staff_id:
+          type: string
+        staff_name:
+          type: [string, 'null']
+        approval_id:
+          type: [string, 'null']
+        approver_id:
+          type: [string, 'null']
+        kitchen_ticket_id:
+          type: [string, 'null']
+        voided_at:
+          type: string
+          format: date-time
+    KitchenVoidResult:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/Workspace'
+        meta:
+          $ref: '#/components/schemas/KitchenVoidMeta'
+    KitchenVoidMeta:
+      type: object
+      required: [kitchen_void]
+      properties:
+        kitchen_void:
+          $ref: '#/components/schemas/KitchenVoid'
+    KitchenHistoryItem:
+      type: object
+      additionalProperties: false
+      required: [name, quantity, station_name, status, modifiers, note]
+      properties:
+        name:
+          type: string
+        quantity:
+          type: string
+          description: Positive for a send, negative for a void.
+        station_name:
+          type: [string, 'null']
+        status:
+          type: string
+        modifiers:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        note:
+          type: [string, 'null']
+    KitchenHistoryEntry:
+      type: object
+      additionalProperties: true
+      required: [kind, id, sequence, at, staff_name, items]
+      properties:
+        kind:
+          type: string
+          enum: [send, void]
+        id:
+          type: [string, 'null']
+        sequence:
+          type: [integer, 'null']
+        at:
+          type: string
+          format: date-time
+        staff_name:
+          type: [string, 'null']
+        device_id:
+          type: [string, 'null']
+        reason_code:
+          type: string
+        note:
+          type: [string, 'null']
+        wasted:
+          type: boolean
+        approver_name:
+          type: [string, 'null']
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/KitchenHistoryItem'
+    KitchenHistory:
+      type: object
+      required: [workspace_id, entries]
+      properties:
+        workspace_id:
+          type: string
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/KitchenHistoryEntry'
+    KitchenHistoryResult:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/KitchenHistory'
     TableMoveInput:
       type: object
       required: [expected_revision, lease_generation, editor_id, resource_id]

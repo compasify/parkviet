@@ -46,6 +46,8 @@ module Spree
       }.freeze
       # Pre-bills of a table: printing one again, or taking one back.
       PREBILL_ACTIONS = %w[workspace.reprint_prebill workspace.cancel_prebill].freeze
+      # Taking back an item the kitchen was told about (Kitchen::VoidSent).
+      KITCHEN_VOID_ACTION = 'kitchen.void_sent'
 
       def consume!(action:, amount:, currency:, revision:, subject:, requester:)
         raise Conflict, 'Approval subject is required.' unless SUBJECTS.include?(subject.class.name) && subject.persisted?

@@ -71,6 +71,7 @@
   "capabilityEinvoiceManage": "Quản lý hóa đơn điện tử",
   "capabilityKitchenOperate": "Làm bếp (màn bếp)",
   "capabilityKitchenManage": "Cài đặt bếp & bar",
+  "capabilityKitchenVoid": "Hủy món đã báo bếp",
   "capabilityTableServe": "Phục vụ bàn",
   "capabilityResourceManage": "Sơ đồ bàn, khu vực",
   "tableState_available": "Trống",

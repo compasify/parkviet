@@ -7,6 +7,8 @@ module Spree
       # ticket number, the call number or table, how the order is served and
       # when it was sent, then every item in large type with its options
       # indented below it and its note printed white on black. No prices.
+      # A void ticket (oid_ticket) says so in a white-on-black band and
+      # prints each taken-back item with a minus and its reason.
       module TicketDocument
         PAGE = { 'margin_mm' => 2, 'font' => 'sans', 'font_size' => 'm', 'line_spacing' => 1.2 }.freeze
         SERVICE_MODES = {
@@ -19,7 +21,7 @@ module Spree
 
         def build(ticket)
           header = ticket.header.to_h
-          PrintDocuments.wrap('kitchen_ticket', {
+          PrintDocuments.wrap(ticket.kind == 'void' ? 'void_ticket' : 'kitchen_ticket', {
                                 'documentType' => nil, 'page' => PAGE, 'banners' => [],
                                 'header' => head(ticket, header) + ticket.items.flat_map { |item| item_blocks(item) },
                                 'meta' => meta(ticket, header), 'lines' => { 'layout' => 'stacked', 'items' => [] },
@@ -29,6 +31,7 @@ module Spree
 
         def head(ticket, header)
           blocks = [{ 'kind' => 'title', 'title' => ticket.kitchen_station.name.upcase, 'number' => "Phiếu ##{ticket.sequence}" }]
+          blocks << text(['HỦY MÓN'], size: 'l', bold: true, align: 'center', invert: true) if ticket.kind == 'void'
           call = [header['order_number'] && "Số #{header['order_number']}", header['table'] && "Bàn #{header['table']}"].compact
           blocks << text(call, size: 'l', bold: true, align: 'center') if call.any?
           blocks << text([header['guest_name']], bold: true, align: 'center') if header['guest_name']
@@ -43,14 +46,15 @@ module Spree
         end
 
         def item_blocks(item)
-          blocks = [text(["#{quantity(item.quantity)} x #{item.name}"], size: 'l', bold: true)]
+          void = item.kitchen_ticket.kind == 'void'
+          blocks = [text(["#{void ? '-' : ''}#{quantity(item.quantity)} x #{item.name}"], size: 'l', bold: true)]
           options = Array(item.modifiers).map do |row|
             count = row['quantity'].to_i > 1 ? " x#{row['quantity']}" : ''
             "+ #{row['name']}#{count}"
           end
           parts = Array(item.components).map { |row| "- #{row['name']} x#{quantity(row['quantity'])}" }
           blocks << text(options + parts) if (options + parts).any?
-          blocks << text(["Ghi chú: #{item.note}"], bold: true, invert: true) if item.note.present?
+          blocks << text(["#{void ? 'Lý do' : 'Ghi chú'}: #{item.note}"], bold: true, invert: true) if item.note.present?
           blocks
         end
 

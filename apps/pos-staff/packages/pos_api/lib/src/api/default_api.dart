@@ -9,18 +9,26 @@ import 'package:built_value/serializer.dart';
 import 'package:dio/dio.dart';
 
 import 'package:pos_api/src/api_util.dart';
+import 'package:pos_api/src/model/append_items_input.dart';
+import 'package:pos_api/src/model/append_items_result.dart';
 import 'package:pos_api/src/model/area_input.dart';
 import 'package:pos_api/src/model/area_list.dart';
 import 'package:pos_api/src/model/area_result.dart';
 import 'package:pos_api/src/model/context.dart';
 import 'package:pos_api/src/model/date.dart';
+import 'package:pos_api/src/model/edit_unsent_line_input.dart';
 import 'package:pos_api/src/model/error_response.dart';
 import 'package:pos_api/src/model/kitchen_board_result.dart';
+import 'package:pos_api/src/model/kitchen_history_result.dart';
 import 'package:pos_api/src/model/kitchen_order_served_result.dart';
+import 'package:pos_api/src/model/kitchen_send_input.dart';
+import 'package:pos_api/src/model/kitchen_send_result.dart';
 import 'package:pos_api/src/model/kitchen_station_input.dart';
 import 'package:pos_api/src/model/kitchen_station_list.dart';
 import 'package:pos_api/src/model/kitchen_station_result.dart';
 import 'package:pos_api/src/model/kitchen_ticket_result.dart';
+import 'package:pos_api/src/model/kitchen_void_input.dart';
+import 'package:pos_api/src/model/kitchen_void_result.dart';
 import 'package:pos_api/src/model/payment_request_input.dart';
 import 'package:pos_api/src/model/payment_request_resolve_input.dart';
 import 'package:pos_api/src/model/platform_order_cancel_input.dart';
@@ -64,8 +72,6 @@ import 'package:pos_api/src/model/pos_einvoice_summary200_response.dart';
 import 'package:pos_api/src/model/pos_einvoices200_response.dart';
 import 'package:pos_api/src/model/pos_hardware_status200_response.dart';
 import 'package:pos_api/src/model/pos_kitchen_orders200_response.dart';
-import 'package:pos_api/src/model/pos_kitchen_send201_response.dart';
-import 'package:pos_api/src/model/pos_kitchen_send_request.dart';
 import 'package:pos_api/src/model/pos_kitchen_settings200_response.dart';
 import 'package:pos_api/src/model/pos_kitchen_settings_update_request.dart';
 import 'package:pos_api/src/model/pos_kitchen_station_create_request.dart';
@@ -3974,12 +3980,12 @@ class DefaultApi {
   }
 
   /// posKitchenSend
-  /// \&quot;Send to kitchen\&quot;: one ticket per station for the part of every menu line not sent yet. Same editor rules as other draft commands. Answers the workspace, with the tickets of this send in &#x60;meta.tickets&#x60; (empty when nothing was left to send).
+  /// \&quot;Send to kitchen\&quot;: one ticket per station for the part of every menu line not sent yet, recorded as one numbered send. A table order (&#x60;fnb.tables&#x60;) is sent by anyone who may edit it, without a lease or revision, even once a payment locked its lines; other orders follow the usual editor rules. The same key again answers the same send. Answers the workspace, with the tickets of this send in &#x60;meta.tickets&#x60;; 200 with &#x60;ticket_count&#x60; 0 when nothing was left to send.
   ///
   /// Parameters:
   /// * [idempotencyKey]
   /// * [workspaceId]
-  /// * [posKitchenSendRequest]
+  /// * [kitchenSendInput]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -3987,12 +3993,12 @@ class DefaultApi {
   /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
   /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
   ///
-  /// Returns a [Future] containing a [Response] with a [PosKitchenSend201Response] as data
+  /// Returns a [Future] containing a [Response] with a [KitchenSendResult] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<PosKitchenSend201Response>> posKitchenSend({
+  Future<Response<KitchenSendResult>> posKitchenSend({
     required String idempotencyKey,
     required String workspaceId,
-    required PosKitchenSendRequest posKitchenSendRequest,
+    required KitchenSendInput kitchenSendInput,
     CancelToken? cancelToken,
     Map<String, dynamic>? headers,
     Map<String, dynamic>? extra,
@@ -4023,9 +4029,9 @@ class DefaultApi {
     dynamic _bodyData;
 
     try {
-      const _type = FullType(PosKitchenSendRequest);
+      const _type = FullType(KitchenSendInput);
       _bodyData =
-          _serializers.serialize(posKitchenSendRequest, specifiedType: _type);
+          _serializers.serialize(kitchenSendInput, specifiedType: _type);
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _options.compose(
@@ -4047,7 +4053,7 @@ class DefaultApi {
       onReceiveProgress: onReceiveProgress,
     );
 
-    PosKitchenSend201Response? _responseData;
+    KitchenSendResult? _responseData;
 
     try {
       final rawResponse = _response.data;
@@ -4055,8 +4061,8 @@ class DefaultApi {
           ? null
           : _serializers.deserialize(
               rawResponse,
-              specifiedType: const FullType(PosKitchenSend201Response),
-            ) as PosKitchenSend201Response;
+              specifiedType: const FullType(KitchenSendResult),
+            ) as KitchenSendResult;
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -4067,7 +4073,7 @@ class DefaultApi {
       );
     }
 
-    return Response<PosKitchenSend201Response>(
+    return Response<KitchenSendResult>(
       data: _responseData,
       headers: _response.headers,
       isRedirect: _response.isRedirect,
@@ -4666,6 +4672,120 @@ class DefaultApi {
     }
 
     return Response<KitchenTicketResult>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// posKitchenVoid
+  /// Takes back part of a line the kitchen was told about. Needs a reason from the branch&#39;s &#x60;void_reasons&#x60; (or &#x60;khac&#x60; with a note) and, unless the person has &#x60;pos.kitchen.void&#x60;, an approval of &#x60;kitchen.void_sent&#x60; for the order at its current revision. The line and its sent quantity go down together; the station gets a &#x60;void&#x60; ticket and its printer a &#x60;void_ticket&#x60; job. An item the kitchen had made is marked &#x60;wasted&#x60;; nothing goes back to stock. A table order needs no lease; other orders send the editor fields.
+  ///
+  /// Parameters:
+  /// * [idempotencyKey]
+  /// * [workspaceId]
+  /// * [saleLineId]
+  /// * [kitchenVoidInput]
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [KitchenVoidResult] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<KitchenVoidResult>> posKitchenVoid({
+    required String idempotencyKey,
+    required String workspaceId,
+    required String saleLineId,
+    required KitchenVoidInput kitchenVoidInput,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path =
+        r'/api/v3/admin/pos/workspaces/{workspace_id}/sale_lines/{sale_line_id}/kitchen_voids'
+            .replaceAll(
+                '{' r'workspace_id' '}',
+                encodeQueryParameter(
+                        _serializers, workspaceId, const FullType(String))
+                    .toString())
+            .replaceAll(
+                '{' r'sale_line_id' '}',
+                encodeQueryParameter(
+                        _serializers, saleLineId, const FullType(String))
+                    .toString());
+    final _options = Options(
+      method: r'POST',
+      headers: <String, dynamic>{
+        r'Idempotency-Key': idempotencyKey,
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[],
+        ...?extra,
+      },
+      contentType: 'application/json',
+      validateStatus: validateStatus,
+    );
+
+    dynamic _bodyData;
+
+    try {
+      const _type = FullType(KitchenVoidInput);
+      _bodyData =
+          _serializers.serialize(kitchenVoidInput, specifiedType: _type);
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _options.compose(
+          _dio.options,
+          _path,
+        ),
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    final _response = await _dio.request<Object>(
+      _path,
+      data: _bodyData,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    KitchenVoidResult? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(KitchenVoidResult),
+            ) as KitchenVoidResult;
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<KitchenVoidResult>(
       data: _responseData,
       headers: _response.headers,
       isRedirect: _response.isRedirect,
@@ -9858,6 +9978,112 @@ class DefaultApi {
     );
   }
 
+  /// posWorkspaceAppendItems
+  /// Adds one batch of items to a table order (&#x60;fnb.tables&#x60;) without a lease or revision, so several waiters and the cashier add at once. Needs &#x60;pos.table.serve&#x60; or the order&#39;s shift. A batch writes new lines; an item joins only an unsent line of the same batch. Refused once a payment locked the order: further items go to another order of the table (&#x60;tables/{resource_id}/open&#x60; with &#x60;add_order&#x60;).
+  ///
+  /// Parameters:
+  /// * [idempotencyKey]
+  /// * [workspaceId]
+  /// * [appendItemsInput]
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [AppendItemsResult] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<AppendItemsResult>> posWorkspaceAppendItems({
+    required String idempotencyKey,
+    required String workspaceId,
+    required AppendItemsInput appendItemsInput,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v3/admin/pos/workspaces/{workspace_id}/items/append'
+        .replaceAll(
+            '{' r'workspace_id' '}',
+            encodeQueryParameter(
+                    _serializers, workspaceId, const FullType(String))
+                .toString());
+    final _options = Options(
+      method: r'POST',
+      headers: <String, dynamic>{
+        r'Idempotency-Key': idempotencyKey,
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[],
+        ...?extra,
+      },
+      contentType: 'application/json',
+      validateStatus: validateStatus,
+    );
+
+    dynamic _bodyData;
+
+    try {
+      const _type = FullType(AppendItemsInput);
+      _bodyData =
+          _serializers.serialize(appendItemsInput, specifiedType: _type);
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _options.compose(
+          _dio.options,
+          _path,
+        ),
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    final _response = await _dio.request<Object>(
+      _path,
+      data: _bodyData,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    AppendItemsResult? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(AppendItemsResult),
+            ) as AppendItemsResult;
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<AppendItemsResult>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
   /// posWorkspaceCreate
   ///
   ///
@@ -10042,6 +10268,118 @@ class DefaultApi {
     );
   }
 
+  /// posWorkspaceEditUnsentLine
+  /// Changes the quantity of a table order&#39;s line the kitchen has not been told about, without a lease, checked against the line&#39;s &#x60;row_version&#x60;.
+  ///
+  /// Parameters:
+  /// * [idempotencyKey]
+  /// * [workspaceId]
+  /// * [id]
+  /// * [editUnsentLineInput]
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [WorkspaceResult] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<WorkspaceResult>> posWorkspaceEditUnsentLine({
+    required String idempotencyKey,
+    required String workspaceId,
+    required String id,
+    required EditUnsentLineInput editUnsentLineInput,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v3/admin/pos/workspaces/{workspace_id}/sale_lines/{id}'
+        .replaceAll(
+            '{' r'workspace_id' '}',
+            encodeQueryParameter(
+                    _serializers, workspaceId, const FullType(String))
+                .toString())
+        .replaceAll(
+            '{' r'id' '}',
+            encodeQueryParameter(_serializers, id, const FullType(String))
+                .toString());
+    final _options = Options(
+      method: r'PATCH',
+      headers: <String, dynamic>{
+        r'Idempotency-Key': idempotencyKey,
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[],
+        ...?extra,
+      },
+      contentType: 'application/json',
+      validateStatus: validateStatus,
+    );
+
+    dynamic _bodyData;
+
+    try {
+      const _type = FullType(EditUnsentLineInput);
+      _bodyData =
+          _serializers.serialize(editUnsentLineInput, specifiedType: _type);
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _options.compose(
+          _dio.options,
+          _path,
+        ),
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    final _response = await _dio.request<Object>(
+      _path,
+      data: _bodyData,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    WorkspaceResult? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(WorkspaceResult),
+            ) as WorkspaceResult;
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<WorkspaceResult>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
   /// posWorkspaceGuestName
   /// The name called out with the call number. Same editor rules as the order source; it moves no money, so it can change while a payment is under way. Blank clears it. Needs &#x60;fnb.order_number&#x60; or &#x60;fnb.cup_label&#x60;.
   ///
@@ -10137,6 +10475,87 @@ class DefaultApi {
     }
 
     return Response<PosWorkspaceCreate201Response>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// posWorkspaceKitchenHistory
+  /// An order&#39;s kitchen history, oldest first: every send (when, who, which items to which station) and every void (when, who, what came back, the reason, who approved it, whether it was waste).
+  ///
+  /// Parameters:
+  /// * [workspaceId]
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [KitchenHistoryResult] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<KitchenHistoryResult>> posWorkspaceKitchenHistory({
+    required String workspaceId,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v3/admin/pos/workspaces/{workspace_id}/kitchen_history'
+        .replaceAll(
+            '{' r'workspace_id' '}',
+            encodeQueryParameter(
+                    _serializers, workspaceId, const FullType(String))
+                .toString());
+    final _options = Options(
+      method: r'GET',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[],
+        ...?extra,
+      },
+      validateStatus: validateStatus,
+    );
+
+    final _response = await _dio.request<Object>(
+      _path,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    KitchenHistoryResult? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(KitchenHistoryResult),
+            ) as KitchenHistoryResult;
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<KitchenHistoryResult>(
       data: _responseData,
       headers: _response.headers,
       isRedirect: _response.isRedirect,
@@ -10330,6 +10749,104 @@ class DefaultApi {
     }
 
     return Response<PosWorkspaceCreate201Response>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// posWorkspaceRemoveUnsentLine
+  /// Takes a table order&#39;s line the kitchen has not been told about off the order, without a lease, checked against its &#x60;row_version&#x60;.
+  ///
+  /// Parameters:
+  /// * [idempotencyKey]
+  /// * [workspaceId]
+  /// * [id]
+  /// * [rowVersion]
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [WorkspaceResult] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<WorkspaceResult>> posWorkspaceRemoveUnsentLine({
+    required String idempotencyKey,
+    required String workspaceId,
+    required String id,
+    required int rowVersion,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v3/admin/pos/workspaces/{workspace_id}/sale_lines/{id}'
+        .replaceAll(
+            '{' r'workspace_id' '}',
+            encodeQueryParameter(
+                    _serializers, workspaceId, const FullType(String))
+                .toString())
+        .replaceAll(
+            '{' r'id' '}',
+            encodeQueryParameter(_serializers, id, const FullType(String))
+                .toString());
+    final _options = Options(
+      method: r'DELETE',
+      headers: <String, dynamic>{
+        r'Idempotency-Key': idempotencyKey,
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[],
+        ...?extra,
+      },
+      validateStatus: validateStatus,
+    );
+
+    final _queryParameters = <String, dynamic>{
+      r'row_version':
+          encodeQueryParameter(_serializers, rowVersion, const FullType(int)),
+    };
+
+    final _response = await _dio.request<Object>(
+      _path,
+      options: _options,
+      queryParameters: _queryParameters,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    WorkspaceResult? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(WorkspaceResult),
+            ) as WorkspaceResult;
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<WorkspaceResult>(
       data: _responseData,
       headers: _response.headers,
       isRedirect: _response.isRedirect,

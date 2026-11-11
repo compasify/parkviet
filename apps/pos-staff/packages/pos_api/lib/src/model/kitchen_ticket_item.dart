@@ -15,7 +15,7 @@ part 'kitchen_ticket_item.g.dart';
 ///
 /// Properties:
 /// * [id]
-/// * [saleLineId]
+/// * [saleLineId] - Null once the line was voided off the order; the ticket keeps what it said.
 /// * [name] - The item and its size, as sold.
 /// * [modifiers]
 /// * [components] - The parts of a combo, when the combo shows them on the kitchen screen.
@@ -32,8 +32,9 @@ abstract class KitchenTicketItem
   @BuiltValueField(wireName: r'id')
   String get id;
 
+  /// Null once the line was voided off the order; the ticket keeps what it said.
   @BuiltValueField(wireName: r'sale_line_id')
-  String get saleLineId;
+  String? get saleLineId;
 
   /// The item and its size, as sold.
   @BuiltValueField(wireName: r'name')
@@ -100,10 +101,12 @@ class _$KitchenTicketItemSerializer
       specifiedType: const FullType(String),
     );
     yield r'sale_line_id';
-    yield serializers.serialize(
-      object.saleLineId,
-      specifiedType: const FullType(String),
-    );
+    yield object.saleLineId == null
+        ? null
+        : serializers.serialize(
+            object.saleLineId,
+            specifiedType: const FullType.nullable(String),
+          );
     yield r'name';
     yield serializers.serialize(
       object.name,
@@ -201,8 +204,9 @@ class _$KitchenTicketItemSerializer
         case r'sale_line_id':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType: const FullType(String),
-          ) as String;
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
           result.saleLineId = valueDes;
           break;
         case r'name':

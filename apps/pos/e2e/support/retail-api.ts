@@ -33,6 +33,10 @@ export type Family =
   | 'workspace.create'
   | 'lease'
   | 'items'
+  | 'items.append'
+  | 'sale_line.edit'
+  | 'sale_line.remove'
+  | 'kitchen.send'
   | 'item.modifiers'
   | 'trace'
   | 'park'
@@ -82,6 +86,11 @@ type Line = {
   lots?: Array<{ code: string; expiry: string; quantity: number }>;
   // A menu line: priced on the server with its options and note.
   menu?: MenuLine;
+  // Table orders: what the kitchen was told, the line's own version and the
+  // batch of additions that made it.
+  sent?: number;
+  version?: number;
+  batch?: string;
 };
 
 type Attempt = {
@@ -124,6 +133,8 @@ export type Sheet = {
   guestName?: string | null;
   // A table order (`fnb.tables`): the table, its letter and the guests.
   table?: { id: string; name: string; label: string | null; guests: number | null };
+  // Its kitchen sends, in order.
+  kitchenSends?: Array<{ id: string; sequence: number; sent_at: string; items: number }>;
 };
 
 type Funds = {
@@ -443,6 +454,9 @@ export function serialize(world: World, sheet: Sheet) {
           resource: { id: sheet.table.id, name: sheet.table.name, kind: 'table', area_id: 'posarea_1' },
           guest_count: sheet.table.guests,
           table_label: sheet.table.label,
+          kitchen_sends: (sheet.kitchenSends ?? []).map(({ items: _items, ...send }) => ({
+            ...send, staff_id: STAFF_ID, staff_name: 'Lan', device_id: null,
+          })),
         }
       : {}),
     customer: sheet.customer && {
@@ -478,6 +492,10 @@ export function serialize(world: World, sheet: Sheet) {
           ? {
               kind: 'menu', price: money(line.menu.unitPrice), unit_price: money(line.menu.unitPrice),
               note: line.menu.note, modifiers: line.menu.modifiers, components: [],
+              kitchen_sent_quantity: money(line.sent ?? 0),
+              pending_kitchen_quantity: money(Math.max(line.quantity - (line.sent ?? 0), 0)),
+              row_version: line.version ?? 0,
+              added_by: null,
             }
           : {}),
       };
@@ -1154,6 +1172,9 @@ async function handle(world: World, route: Route) {
     if (path === '/pos/workspaces') return 'workspace.create';
     if (/\/lease$/.test(path)) return 'lease';
     if (/\/items$/.test(path)) return 'items';
+    if (/\/items\/append$/.test(path)) return 'items.append';
+    if (/\/sale_lines\/[^/]+$/.test(path)) return method === 'DELETE' ? 'sale_line.remove' : 'sale_line.edit';
+    if (/\/kitchen_sends$/.test(path)) return 'kitchen.send';
     if (/\/items\/[^/]+\/modifiers$/.test(path)) return 'item.modifiers';
     if (/\/trace_allocations$/.test(path)) return 'trace';
     if (/\/(park|reopen)$/.test(path)) return 'park';
@@ -1381,6 +1402,70 @@ function run(world: World, family: Family, path: string, body: Record<string, un
       }
       sheet.revision += 1;
       return reply(sheet);
+    }
+    // A table order takes a batch from anyone serving it: no lease, no
+    // revision, and a dish merges only into an unsent line of the same batch.
+    case 'items.append': {
+      if (!sheet?.table || !world.menu) return conflict('Only a table order takes items this way.', 'not_table_order');
+      if (sheet.attempts.some((attempt) => attempt.status !== 'canceled'))
+        return conflict('Payments recorded.', 'snapshot_locked');
+      const batch = String(body.append_batch_id ?? crypto.randomUUID());
+      for (const input of (body.items as Array<Record<string, unknown>>) ?? []) {
+        const entry = menuItemByVariant(world.menu, String(input.variant_id));
+        if (!entry) return conflict('Unknown variant.');
+        const priced = priceMenuAdd(world.menu, entry, input);
+        if (isRefusal(priced)) return conflict(priced.refused, priced.reason);
+        const quantity = Number(input.quantity ?? 1);
+        const twin = sheet.lines.find((line) => line.batch === batch && !line.sent && line.variantId === entry.variantId
+          && line.menu?.signature === priced.signature);
+        if (twin) {
+          twin.quantity += quantity;
+          twin.version = (twin.version ?? 0) + 1;
+        } else {
+          sheet.lines.push({ saleLineId: `sl_${sheet.id}_${sheet.lines.length + 1}`, variantId: entry.variantId, quantity,
+            menu: priced, sent: 0, version: 0, batch });
+        }
+      }
+      sheet.revision += 1;
+      return reply(sheet);
+    }
+    case 'sale_line.edit':
+    case 'sale_line.remove': {
+      const line = sheet?.lines.find((row) => row.saleLineId === segments[5]);
+      if (!sheet || !line) break;
+      if ((line.sent ?? 0) > 0) return conflict('The kitchen has this line.', 'line_sent');
+      if (Number(body.row_version) !== (line.version ?? 0))
+        return conflict('The line changed.', 'line_changed', {
+          sale_line: { sale_line_id: line.saleLineId, row_version: line.version ?? 0, sale_quantity: money(line.quantity), kitchen_sent_quantity: '0.0' },
+        });
+      if (family === 'sale_line.remove') sheet.lines = sheet.lines.filter((row) => row !== line);
+      else {
+        line.quantity = Number(body.quantity);
+        line.version = (line.version ?? 0) + 1;
+      }
+      sheet.revision += 1;
+      return reply(sheet);
+    }
+    // Sends what the kitchen has not heard yet; nothing new is an answer, not a send.
+    case 'kitchen.send': {
+      if (!sheet) break;
+      if (!sheet.table) {
+        const refused = guard(world, sheet, body);
+        if (refused) return refused;
+      }
+      const pending = sheet.lines.filter((line) => line.menu && line.quantity > (line.sent ?? 0));
+      if (pending.length === 0)
+        return { status: 200, json: { data: serialize(world, sheet), meta: { tickets: [], ticket_count: 0 } } };
+      const items = pending.reduce((sum, line) => sum + line.quantity - (line.sent ?? 0), 0);
+      for (const line of pending) {
+        line.sent = line.quantity;
+        line.version = (line.version ?? 0) + 1;
+      }
+      sheet.kitchenSends ??= [];
+      const sequence = sheet.kitchenSends.length + 1;
+      sheet.kitchenSends.push({ id: `posksend_${sequence}`, sequence, sent_at: '2026-11-11T05:00:00Z', items });
+      sheet.revision += 1;
+      return { status: 201, json: { data: serialize(world, sheet), meta: { tickets: [{ id: `poskticket_${sequence}` }], ticket_count: 1 } } };
     }
     case 'item.modifiers': {
       // Options of a menu line change; a line left with the same options as

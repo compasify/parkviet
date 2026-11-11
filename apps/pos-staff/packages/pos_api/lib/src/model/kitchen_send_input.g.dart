@@ -1,41 +1,38 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'pos_kitchen_send_request.dart';
+part of 'kitchen_send_input.dart';
 
 // **************************************************************************
 // BuiltValueGenerator
 // **************************************************************************
 
-class _$PosKitchenSendRequest extends PosKitchenSendRequest {
+class _$KitchenSendInput extends KitchenSendInput {
   @override
-  final int expectedRevision;
+  final int? expectedRevision;
   @override
-  final int leaseGeneration;
+  final int? leaseGeneration;
   @override
-  final String editorId;
+  final String? editorId;
 
-  factory _$PosKitchenSendRequest(
-          [void Function(PosKitchenSendRequestBuilder)? updates]) =>
-      (PosKitchenSendRequestBuilder()..update(updates))._build();
+  factory _$KitchenSendInput(
+          [void Function(KitchenSendInputBuilder)? updates]) =>
+      (KitchenSendInputBuilder()..update(updates))._build();
 
-  _$PosKitchenSendRequest._(
-      {required this.expectedRevision,
-      required this.leaseGeneration,
-      required this.editorId})
+  _$KitchenSendInput._(
+      {this.expectedRevision, this.leaseGeneration, this.editorId})
       : super._();
   @override
-  PosKitchenSendRequest rebuild(
-          void Function(PosKitchenSendRequestBuilder) updates) =>
+  KitchenSendInput rebuild(void Function(KitchenSendInputBuilder) updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
-  PosKitchenSendRequestBuilder toBuilder() =>
-      PosKitchenSendRequestBuilder()..replace(this);
+  KitchenSendInputBuilder toBuilder() =>
+      KitchenSendInputBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
-    return other is PosKitchenSendRequest &&
+    return other is KitchenSendInput &&
         expectedRevision == other.expectedRevision &&
         leaseGeneration == other.leaseGeneration &&
         editorId == other.editorId;
@@ -53,7 +50,7 @@ class _$PosKitchenSendRequest extends PosKitchenSendRequest {
 
   @override
   String toString() {
-    return (newBuiltValueToStringHelper(r'PosKitchenSendRequest')
+    return (newBuiltValueToStringHelper(r'KitchenSendInput')
           ..add('expectedRevision', expectedRevision)
           ..add('leaseGeneration', leaseGeneration)
           ..add('editorId', editorId))
@@ -61,9 +58,9 @@ class _$PosKitchenSendRequest extends PosKitchenSendRequest {
   }
 }
 
-class PosKitchenSendRequestBuilder
-    implements Builder<PosKitchenSendRequest, PosKitchenSendRequestBuilder> {
-  _$PosKitchenSendRequest? _$v;
+class KitchenSendInputBuilder
+    implements Builder<KitchenSendInput, KitchenSendInputBuilder> {
+  _$KitchenSendInput? _$v;
 
   int? _expectedRevision;
   int? get expectedRevision => _$this._expectedRevision;
@@ -79,11 +76,11 @@ class PosKitchenSendRequestBuilder
   String? get editorId => _$this._editorId;
   set editorId(String? editorId) => _$this._editorId = editorId;
 
-  PosKitchenSendRequestBuilder() {
-    PosKitchenSendRequest._defaults(this);
+  KitchenSendInputBuilder() {
+    KitchenSendInput._defaults(this);
   }
 
-  PosKitchenSendRequestBuilder get _$this {
+  KitchenSendInputBuilder get _$this {
     final $v = _$v;
     if ($v != null) {
       _expectedRevision = $v.expectedRevision;
@@ -95,27 +92,24 @@ class PosKitchenSendRequestBuilder
   }
 
   @override
-  void replace(PosKitchenSendRequest other) {
-    _$v = other as _$PosKitchenSendRequest;
+  void replace(KitchenSendInput other) {
+    _$v = other as _$KitchenSendInput;
   }
 
   @override
-  void update(void Function(PosKitchenSendRequestBuilder)? updates) {
+  void update(void Function(KitchenSendInputBuilder)? updates) {
     if (updates != null) updates(this);
   }
 
   @override
-  PosKitchenSendRequest build() => _build();
+  KitchenSendInput build() => _build();
 
-  _$PosKitchenSendRequest _build() {
+  _$KitchenSendInput _build() {
     final _$result = _$v ??
-        _$PosKitchenSendRequest._(
-          expectedRevision: BuiltValueNullFieldError.checkNotNull(
-              expectedRevision, r'PosKitchenSendRequest', 'expectedRevision'),
-          leaseGeneration: BuiltValueNullFieldError.checkNotNull(
-              leaseGeneration, r'PosKitchenSendRequest', 'leaseGeneration'),
-          editorId: BuiltValueNullFieldError.checkNotNull(
-              editorId, r'PosKitchenSendRequest', 'editorId'),
+        _$KitchenSendInput._(
+          expectedRevision: expectedRevision,
+          leaseGeneration: leaseGeneration,
+          editorId: editorId,
         );
     replace(_$result);
     return _$result;

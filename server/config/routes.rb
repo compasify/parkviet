@@ -316,6 +316,13 @@ Rails.application.routes.draw do
               end
             end
             resources :workspaces, only: [:index, :show, :create] do
+              # Table orders, several people at once: a batch of items, and
+              # the unsent lines by their own version.
+              post 'items/append', to: 'workspaces/append_items#create'
+              patch 'sale_lines/:id', to: 'workspaces/sale_lines#update'
+              delete 'sale_lines/:id', to: 'workspaces/sale_lines#destroy'
+              post 'sale_lines/:sale_line_id/kitchen_voids', to: 'workspaces/kitchen_voids#create'
+              get 'kitchen_history', to: 'workspaces/kitchen_histories#show'
               post 'items/:id/update', to: 'workspaces/items#update'
               post 'items/:id/remove', to: 'workspaces/items#destroy'
               post 'customer', to: 'workspaces/customers#update'

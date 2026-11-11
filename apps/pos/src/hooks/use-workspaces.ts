@@ -7,6 +7,8 @@ import type { PosModifierSelection, PosWorkspace } from '../lib/pos-context';
 import { posWorkspacesKey } from '../lib/query-keys';
 import { leaseConflict, posFailureKey } from '../lib/request-failure';
 import { SessionSuperseded } from '../lib/session-coordinator';
+import { addsByAppend, editsByVersion, findLine } from '../lib/table-kitchen';
+import { isTableOrder } from '../lib/tables';
 import { beginIntent, finishIntent, forgetIntent, hasIntent } from '../lib/uncertain-intents';
 import { writeWorkspaceToCache } from '../lib/workspace-cache';
 import { browserWorkspaceChannel, workspaceHint } from '../lib/workspace-channel';
@@ -26,6 +28,25 @@ export const workspaceEditorId = crypto.randomUUID();
 const editorId = workspaceEditorId;
 
 type Page = { data: PosWorkspace[]; meta: { page: number; pages: number; count: number } };
+
+export type KitchenVoidInput = {
+  quantity: number;
+  reason_code: string;
+  note?: string;
+  approval_id?: string;
+};
+
+// Additions to a table order made on this page before its next kitchen send
+// are one batch: the same dish added twice there lands on one line.
+const appendBatches = new Map<string, string>();
+function appendBatch(workspaceId: string) {
+  let batch = appendBatches.get(workspaceId);
+  if (!batch) {
+    batch = crypto.randomUUID();
+    appendBatches.set(workspaceId, batch);
+  }
+  return batch;
+}
 
 function abandonIfNeeded(error: unknown) {
   if (!(error instanceof SessionSuperseded) && posFailureKey(error) === 'unauthorized')
@@ -295,6 +316,22 @@ export function useWorkspaces(
         note: string;
       }> = {},
     ) {
+      // A table order takes additions from anyone serving it, without the lease.
+      if (addsByAppend(workspace, extra)) {
+        const item = {
+          variant_id: variantId,
+          quantity,
+          ...(extra.modifiers ? { modifiers: extra.modifiers } : {}),
+          ...(extra.note ? { note: extra.note } : {}),
+        };
+        return (
+          await sendIntent(
+            workspace.id,
+            { items: [item], append_batch_id: appendBatch(workspace.id) },
+            `/pos/workspaces/${workspace.id}/items/append`,
+          )
+        ).workspace;
+      }
       const body = {
         expected_revision: workspace.revision,
         lease_generation: workspace.lease_generation,
@@ -325,6 +362,16 @@ export function useWorkspaces(
       lineItemId: string,
       input: { quantity?: number; sale_quantity?: string },
     ) {
+      const line = findLine(workspace, lineItemId);
+      if (line && input.quantity !== undefined && editsByVersion(workspace, line))
+        return (
+          await sendIntent(
+            workspace.id,
+            { row_version: line.row_version, quantity: input.quantity },
+            `/pos/workspaces/${workspace.id}/sale_lines/${line.sale_line_id}`,
+            'PATCH',
+          )
+        ).workspace;
       const body = {
         expected_revision: workspace.revision,
         lease_generation: workspace.lease_generation,
@@ -363,6 +410,16 @@ export function useWorkspaces(
       ).workspace;
     },
     async removeItem(workspace: PosWorkspace, lineItemId: string) {
+      const line = findLine(workspace, lineItemId);
+      if (line && editsByVersion(workspace, line))
+        return (
+          await sendIntent(
+            workspace.id,
+            { row_version: line.row_version },
+            `/pos/workspaces/${workspace.id}/sale_lines/${line.sale_line_id}?row_version=${line.row_version}`,
+            'DELETE',
+          )
+        ).workspace;
       const body = {
         expected_revision: workspace.revision,
         lease_generation: workspace.lease_generation,
@@ -537,14 +594,45 @@ export function useWorkspaces(
         .workspace;
     },
     // "Báo bếp": the part of every menu line the kitchen has not heard yet.
+    // A table order sends without the lease, whoever serves it.
     async sendToKitchen(workspace: PosWorkspace) {
+      const body = isTableOrder(workspace)
+        ? {}
+        : {
+            expected_revision: workspace.revision,
+            lease_generation: workspace.lease_generation,
+            editor_id: editorId,
+          };
+      const result = (
+        await sendIntent(workspace.id, body, `/pos/workspaces/${workspace.id}/kitchen_sends`)
+      ).workspace;
+      // What this page adds from now on is a new batch.
+      appendBatches.delete(workspace.id);
+      return result;
+    },
+    // Takes back part of a line the kitchen has: a reason from the branch's
+    // list and, unless this person may void, a manager's approval.
+    async voidSent(workspace: PosWorkspace, saleLineId: string, input: KitchenVoidInput) {
       const body = {
-        expected_revision: workspace.revision,
-        lease_generation: workspace.lease_generation,
-        editor_id: editorId,
+        quantity: input.quantity,
+        reason_code: input.reason_code,
+        ...(input.note ? { note: input.note } : {}),
+        ...(input.approval_id ? { approval_id: input.approval_id } : {}),
+        ...(isTableOrder(workspace)
+          ? {}
+          : {
+              expected_revision: workspace.revision,
+              lease_generation: workspace.lease_generation,
+              editor_id: editorId,
+            }),
       };
-      return (await sendIntent(workspace.id, body, `/pos/workspaces/${workspace.id}/kitchen_sends`))
-        .workspace;
+      return (
+        await sendIntent(
+          workspace.id,
+          body,
+          `/pos/workspaces/${workspace.id}/sale_lines/${saleLineId}/kitchen_voids`,
+        )
+      ).workspace;
     },
     // Seats guests at a table: a dine-in draft booked on the open shift of the
     // branch's table register, its lease held by this page. `addOrder` opens

@@ -12,7 +12,7 @@ import { useMenu } from '../hooks/use-menu';
 import { DraftReplayRefused, useWorkspaces } from '../hooks/use-workspaces';
 import { commandQueue } from '../lib/command-queue';
 import { resolveScan, type ScanOutcome } from '../lib/measured-label';
-import { type PosWorkspace, writesLocked } from '../lib/pos-context';
+import { type PosLineItem, type PosWorkspace, writesLocked } from '../lib/pos-context';
 import {
   describeFailure,
   leaseConflict,
@@ -27,6 +27,7 @@ import {
   type ScanResult,
   shouldCaptureScannerKey,
 } from '../lib/scanner-queue';
+import { appendable, voidReasons } from '../lib/table-kitchen';
 import {
   canServeTables,
   inSelection,
@@ -60,6 +61,7 @@ import { useScannerCalibration } from './scanner-calibration';
 import { ServiceModeControl } from './service-mode-control';
 import { TableOrderBar } from './table-actions';
 import { TableFloor } from './table-floor';
+import { VoidItemDialog } from './void-item-dialog';
 
 type ScanPlan = { workspace?: PosWorkspace } & (
   | { kind: 'variant'; variantId: string }
@@ -183,8 +185,14 @@ export function WorkspaceTabs() {
   // Tapping a product does not wait for the previous add: the serializer
   // queues it on the newest revision. Only a blocked scan or a draft still
   // being created stops it.
+  // A table order takes additions and changes to unsent lines from anyone
+  // serving it, without the lease.
+  const canAppend = appendable(active, data?.modules?.['fnb.tables'] === true, locked);
   const quickAddDisabled =
-    channelUnavailable || !editable || creating || (active ? active.id in blockedScans : false);
+    channelUnavailable ||
+    !(editable || canAppend) ||
+    creating ||
+    (active ? active.id in blockedScans : false);
   const lockReason = active?.payments ? t('editLockedPayments') : undefined;
   // A branch running the menu sells from picture tiles unless its profile asks for the catalogue.
   const menuSurface = sellingSurfaceOf(data) === 'menu_grid';
@@ -644,6 +652,9 @@ export function WorkspaceTabs() {
     [calibration.terminator, calibration.maxGapMs],
   );
   const [prebillOpen, setPrebillOpen] = useState(false);
+  // The sent line whose items are being voided.
+  const [voiding, setVoiding] = useState<PosLineItem | null>(null);
+  const kitchenOn = data?.modules?.['fnb.kitchen'] === true;
   const enqueueScan = useRef<(code: string) => void>(() => undefined);
   enqueueScan.current = (code) => {
     if (!active || !editable || channelUnavailable) return;
@@ -1201,6 +1212,9 @@ export function WorkspaceTabs() {
                     workspace={active}
                     disabled={editDisabled}
                     disabledReason={lockReason}
+                    appendOnly={canAppend && !busy}
+                    onVoid={kitchenOn && !active.payments ? setVoiding : undefined}
+                    onStale={() => void workspaces.refresh()}
                     canApplyDiscount={Boolean(data?.capabilities.includes('pos.discount.apply'))}
                     canOverridePrice={Boolean(data?.capabilities.includes('pos.price.override'))}
                     onUpdate={(lineId, input) =>
@@ -1237,6 +1251,22 @@ export function WorkspaceTabs() {
                     }
                     cupLabels={cupLabels}
                   />
+                  {voiding?.sale_line_id ? (
+                    <VoidItemDialog
+                      key={voiding.id}
+                      line={voiding}
+                      reasons={voidReasons(
+                        data?.branches.find((row) => row.id === active.branch_id),
+                      )}
+                      canVoid={Boolean(data?.capabilities.includes('pos.kitchen.void'))}
+                      onVoid={(input) =>
+                        command(active, (current) =>
+                          workspaces.voidSent(current, voiding.sale_line_id as string, input),
+                        )
+                      }
+                      onClose={() => setVoiding(null)}
+                    />
+                  ) : null}
                   {lockReason && isEditor ? (
                     <p className="workspace-hint" role="status">
                       {lockReason}
@@ -1456,14 +1486,22 @@ export function WorkspaceTabs() {
                     )}
                   </section>
                   {active.note ? <p className="checkout-note-preview">{active.note}</p> : null}
-                  {data?.modules?.['fnb.kitchen'] === true ? (
+                  {kitchenOn && data ? (
                     <KitchenHistory
                       workspace={active}
                       manual={
                         data.branches.find((row) => row.id === active.branch_id)
                           ?.kitchen_send_trigger === 'manual'
                       }
-                      disabled={editDisabled || !isEditor}
+                      // Anyone serving a table sends its additions; a counter
+                      // order is sent by the person holding it.
+                      disabled={
+                        activeTable.table
+                          ? locked ||
+                            busy ||
+                            !['editing', 'parked'].includes(active.operational_status)
+                          : editDisabled || !isEditor
+                      }
                       disabledReason={lockReason}
                       onSend={() =>
                         run(() => command(active, (current) => workspaces.sendToKitchen(current)))

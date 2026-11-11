@@ -6,6 +6,7 @@
 import 'package:pos_api/src/model/line_component.dart';
 import 'package:pos_api/src/model/line_modifier.dart';
 import 'package:built_collection/built_collection.dart';
+import 'package:pos_api/src/model/staff_ref.dart';
 import 'package:built_value/json_object.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
@@ -27,7 +28,10 @@ part 'workspace_line.g.dart';
 /// * [note]
 /// * [modifiers]
 /// * [components]
-/// * [kitchenSentQuantity] - How much of the line the kitchen has been told about. The line cannot go lower.
+/// * [kitchenSentQuantity] - How much of the line the kitchen has been told about. The line goes lower only by a kitchen void.
+/// * [pendingKitchenQuantity] - What the next kitchen send would send of a menu line.
+/// * [rowVersion] - Moves on every change of the line; unsent-line edits send it back.
+/// * [addedBy] - Who added the line.
 @BuiltValue()
 abstract class WorkspaceLine
     implements Built<WorkspaceLine, WorkspaceLineBuilder> {
@@ -68,9 +72,21 @@ abstract class WorkspaceLine
   @BuiltValueField(wireName: r'components')
   BuiltList<LineComponent>? get components;
 
-  /// How much of the line the kitchen has been told about. The line cannot go lower.
+  /// How much of the line the kitchen has been told about. The line goes lower only by a kitchen void.
   @BuiltValueField(wireName: r'kitchen_sent_quantity')
   String? get kitchenSentQuantity;
+
+  /// What the next kitchen send would send of a menu line.
+  @BuiltValueField(wireName: r'pending_kitchen_quantity')
+  String? get pendingKitchenQuantity;
+
+  /// Moves on every change of the line; unsent-line edits send it back.
+  @BuiltValueField(wireName: r'row_version')
+  int? get rowVersion;
+
+  /// Who added the line.
+  @BuiltValueField(wireName: r'added_by')
+  StaffRef? get addedBy;
 
   WorkspaceLine._();
 
@@ -174,6 +190,27 @@ class _$WorkspaceLineSerializer implements PrimitiveSerializer<WorkspaceLine> {
       yield serializers.serialize(
         object.kitchenSentQuantity,
         specifiedType: const FullType(String),
+      );
+    }
+    if (object.pendingKitchenQuantity != null) {
+      yield r'pending_kitchen_quantity';
+      yield serializers.serialize(
+        object.pendingKitchenQuantity,
+        specifiedType: const FullType(String),
+      );
+    }
+    if (object.rowVersion != null) {
+      yield r'row_version';
+      yield serializers.serialize(
+        object.rowVersion,
+        specifiedType: const FullType(int),
+      );
+    }
+    if (object.addedBy != null) {
+      yield r'added_by';
+      yield serializers.serialize(
+        object.addedBy,
+        specifiedType: const FullType.nullable(StaffRef),
       );
     }
   }
@@ -300,6 +337,30 @@ class _$WorkspaceLineSerializer implements PrimitiveSerializer<WorkspaceLine> {
           ) as String?;
           if (valueDes == null) continue;
           result.kitchenSentQuantity = valueDes;
+          break;
+        case r'pending_kitchen_quantity':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.pendingKitchenQuantity = valueDes;
+          break;
+        case r'row_version':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(int),
+          ) as int?;
+          if (valueDes == null) continue;
+          result.rowVersion = valueDes;
+          break;
+        case r'added_by':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(StaffRef),
+          ) as StaffRef?;
+          if (valueDes == null) continue;
+          result.addedBy.replace(valueDes);
           break;
         default:
           unhandled.add(key);

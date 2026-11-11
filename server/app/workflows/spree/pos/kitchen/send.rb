@@ -23,24 +23,32 @@ module Spree
           call(workspace: workspace, actor: actor, send_key: "complete:#{workspace.prefixed_id}")
         end
 
-        # The cashier's "send to kitchen" while the order is still open.
-        def command(workspace:, staff:, key:, revision:, lease_generation:, editor_id:)
-          payload = {
-            'command' => 'kitchen.send', 'revision' => revision, 'lease_generation' => lease_generation,
-            'editor_digest' => Workspace.editor_digest(editor_id)
-          }
+        # "Send to kitchen" while the order is still open. A table order is
+        # sent by anyone serving it, without a lease: a send only tells the
+        # kitchen what the order already holds. Other orders keep the lease.
+        def command(workspace:, staff:, key:, revision: nil, lease_generation: nil, editor_id: nil, device: nil)
+          lease_free = Workspaces::AppendItems.lease_free?(workspace)
+          payload = { 'command' => 'kitchen.send' }
+          unless lease_free
+            payload.merge!('revision' => revision, 'lease_generation' => lease_generation,
+                           'editor_digest' => Workspace.editor_digest(editor_id))
+          end
           CommandExecutor.call(store: workspace.store, actor: staff, key: key, payload: payload, workspace: workspace,
                                authorize: -> { Deliveries::Assign.authorize!(workspace, staff) }) do
-            Deliveries::Assign.validate_editing!(workspace, staff, revision, lease_generation, editor_id)
+            if lease_free
+              Workspaces::AppendItems.validate_append!(workspace, snapshot: false)
+            else
+              Deliveries::Assign.validate_editing!(workspace, staff, revision, lease_generation, editor_id)
+            end
             ModulePolicy.require!(workspace.branch, MODULE)
-            tickets = call(workspace: workspace, actor: staff, send_key: key)
+            tickets = call(workspace: workspace, actor: staff, send_key: key, device: device)
             workspace.update!(revision: workspace.revision + 1) if tickets.any?
-            { 'workspace' => workspace.to_pos, 'tickets' => tickets.map(&:to_pos) }
+            { 'workspace' => workspace.to_pos, 'tickets' => tickets.map(&:to_pos), 'ticket_count' => tickets.size }
           end
         end
 
         # @return [Array<KitchenTicket>] the tickets of this send, new or replayed
-        def call(workspace:, actor:, send_key:)
+        def call(workspace:, actor:, send_key:, device: nil)
           branch = workspace.branch
           return [] unless ModulePolicy.enabled?(branch, MODULE)
 
@@ -60,7 +68,8 @@ module Spree
           # The first send gives the order its call number, so the ticket
           # header carries it.
           OrderNumbers.assign!(workspace)
-          tickets = write!(workspace, actor, send_key, groups)
+          kitchen_send = record_send!(workspace, actor, send_key, device)
+          tickets = write!(workspace, actor, send_key, groups, kitchen_send)
           AuditEntry.record!(store: workspace.store, actor: actor, action: 'kitchen.send', subject: workspace,
                              metadata: { send_key: send_key, tickets: tickets.map(&:prefixed_id),
                                          lines: pending.map(&:prefixed_id) })
@@ -69,7 +78,14 @@ module Spree
           tickets
         end
 
-        def write!(workspace, actor, send_key, groups)
+        # Sends are numbered per order, under the workspace lock.
+        def record_send!(workspace, actor, send_key, device)
+          sequence = KitchenSend.where(workspace_id: workspace.id).maximum(:sequence).to_i + 1
+          staff = actor.is_a?(Spree.admin_user_class) ? actor : nil
+          KitchenSend.create!(workspace: workspace, sequence: sequence, staff: staff, device: device, send_key: send_key)
+        end
+
+        def write!(workspace, actor, send_key, groups, kitchen_send = nil)
           now = Workspace.database_now
           sequence = KitchenTicket.where(workspace_id: workspace.id).maximum(:sequence).to_i
           header = header_for(workspace)
@@ -79,7 +95,8 @@ module Spree
             ticket = KitchenTicket.create!(
               store: workspace.store, branch: workspace.branch, workspace: workspace, kitchen_station: station,
               sequence: sequence, kind: 'fire', send_key: send_key, service_mode: workspace.service_mode,
-              business_date: workspace.business_date, header: header, sent_by: actor, sent_at: now
+              business_date: workspace.business_date, header: header, sent_by: actor, sent_at: now,
+              kitchen_send: kitchen_send
             )
             lines.each do |line|
               KitchenTicketItem.create!(kitchen_ticket: ticket, sale_line: line, name: item_name(line),
@@ -105,8 +122,15 @@ module Spree
             'service_mode' => workspace.service_mode, 'order_source' => workspace.order_source,
             'customer_name' => workspace.customer_pos&.dig(:name).presence, 'note' => workspace.note.presence,
             'register_name' => workspace.register&.name, 'order_number' => workspace.order_number,
-            'guest_name' => workspace.guest_name.presence, 'table' => nil
+            'guest_name' => workspace.guest_name.presence, 'table' => table_name(workspace)
           }.compact
+        end
+
+        # The table and the letter of its order (A, B…).
+        def table_name(workspace)
+          return nil if workspace.resource.nil?
+
+          [workspace.resource.name, workspace.table_label.presence].compact.join(' ')
         end
 
         def combo_flags(workspace, lines)

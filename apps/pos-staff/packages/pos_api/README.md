@@ -118,6 +118,7 @@ Class | Method | HTTP request | Description
 [*DefaultApi*](doc/DefaultApi.md) | [**posKitchenStationUpdate**](doc/DefaultApi.md#poskitchenstationupdate) | **PATCH** /api/v3/admin/pos/kitchen_stations/{id} | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posKitchenStations**](doc/DefaultApi.md#poskitchenstations) | **GET** /api/v3/admin/pos/kitchen_stations | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posKitchenTicketBump**](doc/DefaultApi.md#poskitchenticketbump) | **POST** /api/v3/admin/pos/kitchen/tickets/{id}/bump | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posKitchenVoid**](doc/DefaultApi.md#poskitchenvoid) | **POST** /api/v3/admin/pos/workspaces/{workspace_id}/sale_lines/{sale_line_id}/kitchen_voids | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posMenu**](doc/DefaultApi.md#posmenu) | **GET** /api/v3/admin/pos/menu | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posMenuCategories**](doc/DefaultApi.md#posmenucategories) | **GET** /api/v3/admin/pos/menu_categories | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posMenuFavorites**](doc/DefaultApi.md#posmenufavorites) | **PUT** /api/v3/admin/pos/menu_favorites | 
@@ -174,16 +175,24 @@ Class | Method | HTTP request | Description
 [*DefaultApi*](doc/DefaultApi.md) | [**posTableSettingsUpdate**](doc/DefaultApi.md#postablesettingsupdate) | **PUT** /api/v3/admin/pos/table_settings | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posTableSplit**](doc/DefaultApi.md#postablesplit) | **POST** /api/v3/admin/pos/workspaces/{workspace_id}/split | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posWorkspaceAddItem**](doc/DefaultApi.md#posworkspaceadditem) | **POST** /api/v3/admin/pos/workspaces/{id}/items | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posWorkspaceAppendItems**](doc/DefaultApi.md#posworkspaceappenditems) | **POST** /api/v3/admin/pos/workspaces/{workspace_id}/items/append | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posWorkspaceCreate**](doc/DefaultApi.md#posworkspacecreate) | **POST** /api/v3/admin/pos/workspaces | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posWorkspaceCupLabelsReprint**](doc/DefaultApi.md#posworkspacecuplabelsreprint) | **POST** /api/v3/admin/pos/workspaces/{workspace_id}/cup_labels | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posWorkspaceEditUnsentLine**](doc/DefaultApi.md#posworkspaceeditunsentline) | **PATCH** /api/v3/admin/pos/workspaces/{workspace_id}/sale_lines/{id} | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posWorkspaceGuestName**](doc/DefaultApi.md#posworkspaceguestname) | **POST** /api/v3/admin/pos/workspaces/{workspace_id}/guest_name | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posWorkspaceKitchenHistory**](doc/DefaultApi.md#posworkspacekitchenhistory) | **GET** /api/v3/admin/pos/workspaces/{workspace_id}/kitchen_history | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posWorkspaceKitchenTickets**](doc/DefaultApi.md#posworkspacekitchentickets) | **GET** /api/v3/admin/pos/workspaces/{workspace_id}/kitchen_tickets | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posWorkspaceLineModifiers**](doc/DefaultApi.md#posworkspacelinemodifiers) | **PATCH** /api/v3/admin/pos/workspaces/{workspace_id}/items/{id}/modifiers | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posWorkspaceRemoveUnsentLine**](doc/DefaultApi.md#posworkspaceremoveunsentline) | **DELETE** /api/v3/admin/pos/workspaces/{workspace_id}/sale_lines/{id} | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posWorkspaceShow**](doc/DefaultApi.md#posworkspaceshow) | **GET** /api/v3/admin/pos/workspaces/{id} | 
 
 
 ## Documentation For Models
 
+ - [AppendItem](doc/AppendItem.md)
+ - [AppendItemsInput](doc/AppendItemsInput.md)
+ - [AppendItemsMeta](doc/AppendItemsMeta.md)
+ - [AppendItemsResult](doc/AppendItemsResult.md)
  - [Approval](doc/Approval.md)
  - [ApprovalRevision](doc/ApprovalRevision.md)
  - [Area](doc/Area.md)
@@ -208,6 +217,7 @@ Class | Method | HTTP request | Description
  - [DeviceSessionStaff](doc/DeviceSessionStaff.md)
  - [DeviceStaffMember](doc/DeviceStaffMember.md)
  - [DeviceStaffSignIn](doc/DeviceStaffSignIn.md)
+ - [EditUnsentLineInput](doc/EditUnsentLineInput.md)
  - [Einvoice](doc/Einvoice.md)
  - [EinvoiceBuyer](doc/EinvoiceBuyer.md)
  - [EinvoiceLine](doc/EinvoiceLine.md)
@@ -235,9 +245,17 @@ Class | Method | HTTP request | Description
  - [IngredientUsageRow](doc/IngredientUsageRow.md)
  - [KitchenBoard](doc/KitchenBoard.md)
  - [KitchenBoardResult](doc/KitchenBoardResult.md)
+ - [KitchenHistory](doc/KitchenHistory.md)
+ - [KitchenHistoryEntry](doc/KitchenHistoryEntry.md)
+ - [KitchenHistoryItem](doc/KitchenHistoryItem.md)
+ - [KitchenHistoryResult](doc/KitchenHistoryResult.md)
  - [KitchenMenuItem](doc/KitchenMenuItem.md)
  - [KitchenOrderServedResult](doc/KitchenOrderServedResult.md)
  - [KitchenOrderServedResultData](doc/KitchenOrderServedResultData.md)
+ - [KitchenSendInput](doc/KitchenSendInput.md)
+ - [KitchenSendMeta](doc/KitchenSendMeta.md)
+ - [KitchenSendResult](doc/KitchenSendResult.md)
+ - [KitchenSendSummary](doc/KitchenSendSummary.md)
  - [KitchenSettings](doc/KitchenSettings.md)
  - [KitchenStation](doc/KitchenStation.md)
  - [KitchenStationInput](doc/KitchenStationInput.md)
@@ -248,6 +266,10 @@ Class | Method | HTTP request | Description
  - [KitchenTicketItemComponentsInner](doc/KitchenTicketItemComponentsInner.md)
  - [KitchenTicketItemModifiersInner](doc/KitchenTicketItemModifiersInner.md)
  - [KitchenTicketResult](doc/KitchenTicketResult.md)
+ - [KitchenVoid](doc/KitchenVoid.md)
+ - [KitchenVoidInput](doc/KitchenVoidInput.md)
+ - [KitchenVoidMeta](doc/KitchenVoidMeta.md)
+ - [KitchenVoidResult](doc/KitchenVoidResult.md)
  - [LineComponent](doc/LineComponent.md)
  - [LineModifier](doc/LineModifier.md)
  - [Menu](doc/Menu.md)
@@ -263,6 +285,7 @@ Class | Method | HTTP request | Description
  - [MenuTaxDefaults](doc/MenuTaxDefaults.md)
  - [ModifierGroup](doc/ModifierGroup.md)
  - [ModifierGroupOptionsInner](doc/ModifierGroupOptionsInner.md)
+ - [ModifierPick](doc/ModifierPick.md)
  - [ModifierSelection](doc/ModifierSelection.md)
  - [PaymentRequest](doc/PaymentRequest.md)
  - [PaymentRequestInput](doc/PaymentRequestInput.md)
@@ -316,9 +339,6 @@ Class | Method | HTTP request | Description
  - [PosEinvoices200Response](doc/PosEinvoices200Response.md)
  - [PosHardwareStatus200Response](doc/PosHardwareStatus200Response.md)
  - [PosKitchenOrders200Response](doc/PosKitchenOrders200Response.md)
- - [PosKitchenSend201Response](doc/PosKitchenSend201Response.md)
- - [PosKitchenSend201ResponseMeta](doc/PosKitchenSend201ResponseMeta.md)
- - [PosKitchenSendRequest](doc/PosKitchenSendRequest.md)
  - [PosKitchenSettings200Response](doc/PosKitchenSettings200Response.md)
  - [PosKitchenSettingsUpdateRequest](doc/PosKitchenSettingsUpdateRequest.md)
  - [PosKitchenStationCreateRequest](doc/PosKitchenStationCreateRequest.md)
@@ -414,6 +434,7 @@ Class | Method | HTTP request | Description
  - [ResourceRef](doc/ResourceRef.md)
  - [ResourceResult](doc/ResourceResult.md)
  - [ServiceChargeWaiveInput](doc/ServiceChargeWaiveInput.md)
+ - [StaffRef](doc/StaffRef.md)
  - [StationRoute](doc/StationRoute.md)
  - [StationRouteInput](doc/StationRouteInput.md)
  - [StockAlert](doc/StockAlert.md)

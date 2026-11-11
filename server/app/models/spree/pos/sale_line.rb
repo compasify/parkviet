@@ -10,6 +10,8 @@ module Spree
       belongs_to :order, class_name: 'Spree::Order'
       belongs_to :line_item, class_name: 'Spree::LineItem'
       belongs_to :variant, class_name: 'Spree::Variant'
+      belongs_to :added_by, class_name: staff_class_name, optional: true
+      belongs_to :added_device, class_name: 'Spree::Pos::Device', optional: true
       has_one :line_discount_intent, class_name: 'Spree::Pos::LineDiscountIntent', dependent: :destroy
       has_many :line_modifiers, -> { order(:id) }, class_name: 'Spree::Pos::LineModifier', dependent: :delete_all,
                                                    inverse_of: :sale_line
@@ -19,6 +21,9 @@ module Spree
       validates :merge_key, presence: true
       validates :note, length: { maximum: 200 }
       validate :kind_is_registered
+      # Every change of the line moves its version, so an edit made from an
+      # older copy of the line is refused (Workspaces::EditUnsentLine).
+      before_update :bump_row_version
 
       def self.build_merge_key(variant_id:, kind:, unit_price:, sale_unit_code:, lot_code: nil, serial_codes: [],
                                tracked_mode: 'none', expiry_on: nil, modifier_signature: nil)
@@ -54,11 +59,24 @@ module Spree
             amount: line_discount_intent.allocations.joins(:discount).sum('spree_discounts.amount').to_s('F')
           },
           note: note, modifiers: line_modifiers.map(&:to_pos), components: line_components.map(&:to_pos),
-          kitchen_sent_quantity: kitchen_sent_quantity.to_s('F')
+          kitchen_sent_quantity: kitchen_sent_quantity.to_s('F'),
+          pending_kitchen_quantity: pending_kitchen_quantity.to_s('F'), row_version: row_version,
+          added_by: added_by_id && { id: added_by.prefixed_id, name: KitchenSend.staff_name(added_by) }
         }
       end
 
+      # What the kitchen has not been told yet; only menu lines go to the kitchen.
+      def pending_kitchen_quantity
+        return BigDecimal('0') unless kind == SaleLineKinds::Menu::KIND
+
+        [sale_quantity - kitchen_sent_quantity, BigDecimal('0')].max
+      end
+
       private
+
+      def bump_row_version
+        self.row_version = row_version.to_i + 1 if changed? && !row_version_changed?
+      end
 
       def kind_is_registered
         errors.add(:kind, :inclusion) unless SaleLineKinds.known?(kind)

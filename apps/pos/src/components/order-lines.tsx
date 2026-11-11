@@ -17,6 +17,8 @@ import type {
   PosWorkspace,
 } from '../lib/pos-context';
 import { MAX_COUNT_QUANTITY, parseCountQuantity, parseMeasuredQuantity } from '../lib/quantity';
+import { snapshotLocked } from '../lib/request-failure';
+import { lineChanged, lineSent } from '../lib/table-kitchen';
 import { ItemDiscountEditor } from './item-discount-editor';
 import { LinePriceEditor } from './line-price-editor';
 import { ModifierSheet } from './modifier-sheet';
@@ -38,6 +40,9 @@ export function OrderLines({
   onUpdateModifiers,
   onAddSame,
   cupLabels = false,
+  appendOnly = false,
+  onVoid,
+  onStale,
 }: {
   workspace: PosWorkspace;
   disabled: boolean;
@@ -76,6 +81,13 @@ export function OrderLines({
   // The branch prints cup labels: a line already sent or sold can print its
   // labels again.
   cupLabels?: boolean;
+  // A table order: without the lease, lines the kitchen has not heard about
+  // still change by their own version; prices, discounts and options do not.
+  appendOnly?: boolean;
+  // Takes back what the kitchen has of a line: the void dialog.
+  onVoid?: (line: PosLineItem) => void;
+  // Someone else changed a line first: reload the order.
+  onStale?: () => void;
 }) {
   const { t } = useTranslation();
   const [quantities, setQuantities] = useState<Record<string, string>>({});
@@ -86,8 +98,11 @@ export function OrderLines({
   const lines = workspace.line_items ?? [];
   const currency = workspace.totals?.currency ?? 'VND';
 
+  // Changing counts and taking lines off, which a table order allows without the lease.
+  const countDisabled = disabled && !appendOnly;
+
   async function run(lineId: string, action: () => Promise<PosWorkspace>) {
-    if (disabled) return;
+    if (countDisabled) return;
     setError('');
     try {
       await action();
@@ -97,7 +112,13 @@ export function OrderLines({
         return next;
       });
     } catch (failure) {
-      setError(describeTraceFailure(failure, t));
+      const line = lines.find((row) => row.id === lineId);
+      if (lineChanged(failure)) {
+        setError(t('lineChangedByOther'));
+        onStale?.();
+      } else if (lineSent(failure) && line && onVoid) onVoid(line);
+      else if (snapshotLocked(failure) && appendOnly) setError(t('tableSnapshotLocked'));
+      else setError(describeTraceFailure(failure, t));
     }
   }
 
@@ -140,10 +161,17 @@ export function OrderLines({
               const labelled = Boolean(line.label_barcode);
               // Each unit of a serial line is one scanned serial: re-add to change it.
               const serialLine = line.trace?.mode === 'serial';
-              const quantityLocked = disabled || labelled || serialLine;
               // The kitchen has made this much already: the line may grow, not shrink.
               const sent = kitchenSent(line);
-              const sentTitle = sent > 0 ? t('kitchenSentLocked', { count: sent }) : undefined;
+              // Without the lease only a line the kitchen has not heard about changes.
+              const quantityLocked =
+                countDisabled || labelled || serialLine || (disabled && sent > 0);
+              // What the kitchen has comes back only through a void.
+              const voidable = sent > 0 && Boolean(onVoid) && !countDisabled;
+              const sentTitle =
+                sent > 0
+                  ? t(voidable ? 'kitchenSentVoid' : 'kitchenSentLocked', { count: sent })
+                  : undefined;
               const quantityTitle = labelled
                 ? t('saleLineLabelLocked')
                 : serialLine
@@ -217,7 +245,7 @@ export function OrderLines({
                                 {onAddSame && same ? (
                                   <button
                                     type="button"
-                                    disabled={disabled || line.quantity >= MAX_COUNT_QUANTITY}
+                                    disabled={countDisabled || line.quantity >= MAX_COUNT_QUANTITY}
                                     title={disabledReason}
                                     onClick={() =>
                                       void run(line.id, () =>
@@ -269,12 +297,18 @@ export function OrderLines({
                         <button
                           type="button"
                           aria-label={t('decreaseQuantity', { name: line.name })}
-                          disabled={quantityLocked || line.quantity <= Math.max(1, sent)}
+                          disabled={
+                            voidable && line.quantity <= sent
+                              ? false
+                              : quantityLocked || line.quantity <= Math.max(1, sent)
+                          }
                           title={line.quantity <= sent ? sentTitle : quantityTitle}
                           onClick={() =>
-                            void run(line.id, () =>
-                              onUpdate(targetId, { quantity: line.quantity - 1 }),
-                            )
+                            voidable && line.quantity <= sent
+                              ? onVoid?.(line)
+                              : void run(line.id, () =>
+                                  onUpdate(targetId, { quantity: line.quantity - 1 }),
+                                )
                           }
                         >
                           <PosIcon name="minus" />
@@ -390,7 +424,7 @@ export function OrderLines({
                       {quantities[line.id] !== undefined ? (
                         <button
                           type="button"
-                          disabled={disabled || !validQuantity}
+                          disabled={quantityLocked || !validQuantity}
                           title={disabledReason}
                           onClick={saveQuantity}
                         >
@@ -402,8 +436,10 @@ export function OrderLines({
                         type="button"
                         title={sentTitle ?? disabledReason ?? t('removeItem')}
                         aria-label={`${t('removeItem')} ${line.name}`}
-                        disabled={disabled || sent > 0}
-                        onClick={() => void run(line.id, () => onRemove(targetId))}
+                        disabled={voidable ? false : countDisabled || sent > 0}
+                        onClick={() =>
+                          voidable ? onVoid?.(line) : void run(line.id, () => onRemove(targetId))
+                        }
                       >
                         <PosIcon name="trash" />
                       </button>

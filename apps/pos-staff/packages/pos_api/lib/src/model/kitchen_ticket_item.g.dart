@@ -87,7 +87,7 @@ class _$KitchenTicketItem extends KitchenTicketItem {
   @override
   final String id;
   @override
-  final String saleLineId;
+  final String? saleLineId;
   @override
   final String name;
   @override
@@ -115,7 +115,7 @@ class _$KitchenTicketItem extends KitchenTicketItem {
 
   _$KitchenTicketItem._(
       {required this.id,
-      required this.saleLineId,
+      this.saleLineId,
       required this.name,
       required this.modifiers,
       required this.components,
@@ -291,8 +291,7 @@ class KitchenTicketItemBuilder
           _$KitchenTicketItem._(
             id: BuiltValueNullFieldError.checkNotNull(
                 id, r'KitchenTicketItem', 'id'),
-            saleLineId: BuiltValueNullFieldError.checkNotNull(
-                saleLineId, r'KitchenTicketItem', 'saleLineId'),
+            saleLineId: saleLineId,
             name: BuiltValueNullFieldError.checkNotNull(
                 name, r'KitchenTicketItem', 'name'),
             modifiers: modifiers.build(),

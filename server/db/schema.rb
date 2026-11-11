@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_11_220300) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_11_230100) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -2398,6 +2398,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_220300) do
     t.decimal "service_charge_rate", precision: 5, scale: 2
     t.jsonb "service_charge_applies_to", default: ["dine_in"], null: false
     t.bigint "service_charge_tax_category_id"
+    t.jsonb "void_reasons", default: ["khach_doi_y", "het_mon", "nhap_nham", "lam_hong"], null: false
     t.index ["cup_label_printer_id"], name: "index_spree_pos_branches_on_cup_label_printer_id"
     t.index ["service_charge_tax_category_id"], name: "index_spree_pos_branches_on_service_charge_tax_category_id"
     t.index ["stock_location_id"], name: "index_spree_pos_branches_on_stock_location_id"
@@ -3005,6 +3006,21 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_220300) do
     t.check_constraint "status::text = ANY (ARRAY['active'::character varying::text, 'quarantined'::character varying::text, 'expired'::character varying::text])", name: "chk_pos_inventory_lots_status"
   end
 
+  create_table "spree_pos_kitchen_sends", force: :cascade do |t|
+    t.bigint "workspace_id", null: false
+    t.integer "sequence", null: false
+    t.bigint "staff_id"
+    t.bigint "device_id"
+    t.string "send_key", limit: 200, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["device_id"], name: "index_spree_pos_kitchen_sends_on_device_id"
+    t.index ["staff_id"], name: "index_spree_pos_kitchen_sends_on_staff_id"
+    t.index ["workspace_id", "send_key"], name: "idx_pos_kitchen_sends_key", unique: true
+    t.index ["workspace_id", "sequence"], name: "idx_pos_kitchen_sends_sequence", unique: true
+    t.check_constraint "sequence > 0", name: "chk_pos_kitchen_sends_sequence"
+  end
+
   create_table "spree_pos_kitchen_stations", force: :cascade do |t|
     t.bigint "store_id", null: false
     t.bigint "branch_id", null: false
@@ -3030,7 +3046,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_220300) do
 
   create_table "spree_pos_kitchen_ticket_items", force: :cascade do |t|
     t.bigint "kitchen_ticket_id", null: false
-    t.bigint "sale_line_id", null: false
+    t.bigint "sale_line_id"
     t.string "name", null: false
     t.jsonb "modifiers", default: [], null: false
     t.jsonb "components", default: [], null: false
@@ -3067,7 +3083,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_220300) do
     t.datetime "sent_at", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "kitchen_send_id"
     t.index ["branch_id"], name: "index_spree_pos_kitchen_tickets_on_branch_id"
+    t.index ["kitchen_send_id"], name: "index_spree_pos_kitchen_tickets_on_kitchen_send_id"
     t.index ["kitchen_station_id", "sent_at"], name: "idx_pos_kitchen_tickets_board"
     t.index ["kitchen_station_id"], name: "index_spree_pos_kitchen_tickets_on_kitchen_station_id"
     t.index ["store_id"], name: "index_spree_pos_kitchen_tickets_on_store_id"
@@ -3075,6 +3093,30 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_220300) do
     t.index ["workspace_id", "sequence"], name: "idx_pos_kitchen_tickets_sequence", unique: true
     t.index ["workspace_id"], name: "index_spree_pos_kitchen_tickets_on_workspace_id"
     t.check_constraint "kind::text = ANY (ARRAY['fire'::character varying, 'void'::character varying]::text[])", name: "chk_pos_kitchen_tickets_kind"
+  end
+
+  create_table "spree_pos_kitchen_voids", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "workspace_id", null: false
+    t.bigint "sale_line_id"
+    t.decimal "quantity", precision: 19, scale: 4, null: false
+    t.string "name", null: false
+    t.string "reason_code", limit: 40, null: false
+    t.string "note", limit: 200
+    t.bigint "staff_id", null: false
+    t.bigint "device_id"
+    t.bigint "approval_id"
+    t.boolean "wasted", default: false, null: false
+    t.bigint "kitchen_ticket_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["approval_id"], name: "index_spree_pos_kitchen_voids_on_approval_id"
+    t.index ["device_id"], name: "index_spree_pos_kitchen_voids_on_device_id"
+    t.index ["kitchen_ticket_id"], name: "index_spree_pos_kitchen_voids_on_kitchen_ticket_id"
+    t.index ["sale_line_id"], name: "index_spree_pos_kitchen_voids_on_sale_line_id"
+    t.index ["staff_id"], name: "index_spree_pos_kitchen_voids_on_staff_id"
+    t.index ["workspace_id"], name: "index_spree_pos_kitchen_voids_on_workspace_id"
+    t.check_constraint "quantity > 0::numeric", name: "chk_pos_kitchen_voids_quantity"
   end
 
   create_table "spree_pos_label_formats", force: :cascade do |t|
@@ -3924,14 +3966,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_220300) do
     t.string "note", limit: 200
     t.string "modifier_signature", limit: 64
     t.decimal "kitchen_sent_quantity", precision: 19, scale: 4, default: "0.0", null: false
+    t.integer "row_version", default: 0, null: false
+    t.bigint "added_by_id"
+    t.bigint "added_device_id"
+    t.uuid "append_batch_id"
     t.index ["line_item_id"], name: "index_spree_pos_sale_lines_on_line_item_id", unique: true
     t.index ["order_id"], name: "index_spree_pos_sale_lines_on_order_id"
     t.index ["variant_id"], name: "index_spree_pos_sale_lines_on_variant_id"
+    t.index ["workspace_id", "append_batch_id"], name: "idx_pos_sale_lines_append_batch", where: "(append_batch_id IS NOT NULL)"
     t.index ["workspace_id", "measurement_event_id"], name: "idx_pos_sale_lines_event", unique: true, where: "(measurement_event_id IS NOT NULL)"
     t.index ["workspace_id", "merge_key"], name: "idx_pos_sale_lines_merge"
     t.index ["workspace_id"], name: "index_spree_pos_sale_lines_on_workspace_id"
     t.check_constraint "base_quantity > 0 AND sale_quantity > 0::numeric", name: "chk_pos_sale_lines_qty"
     t.check_constraint "kind::text = ANY (ARRAY['ordinary'::character varying::text, 'measured'::character varying::text, 'tracked'::character varying::text, 'menu'::character varying::text, 'timed'::character varying::text, 'cover'::character varying::text])", name: "chk_pos_sale_lines_kind"
+    t.check_constraint "kitchen_sent_quantity <= sale_quantity", name: "chk_pos_sale_lines_kitchen_sent_within_sale"
     t.check_constraint "kitchen_sent_quantity >= 0::numeric", name: "chk_pos_sale_lines_kitchen_sent"
     t.check_constraint "tracked_mode::text = ANY (ARRAY['none'::character varying::text, 'serial'::character varying::text, 'lot'::character varying::text])", name: "chk_pos_sale_lines_tracked"
   end
@@ -6189,15 +6237,26 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_220300) do
   add_foreign_key "spree_pos_inventory_lots", "spree_stock_locations", column: "stock_location_id"
   add_foreign_key "spree_pos_inventory_lots", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_inventory_lots", "spree_variants", column: "variant_id"
+  add_foreign_key "spree_pos_kitchen_sends", "spree_admin_users", column: "staff_id"
+  add_foreign_key "spree_pos_kitchen_sends", "spree_pos_devices", column: "device_id"
+  add_foreign_key "spree_pos_kitchen_sends", "spree_pos_workspaces", column: "workspace_id"
   add_foreign_key "spree_pos_kitchen_stations", "spree_pos_branches", column: "branch_id"
   add_foreign_key "spree_pos_kitchen_stations", "spree_pos_printers", column: "printer_id", on_delete: :nullify
   add_foreign_key "spree_pos_kitchen_stations", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_kitchen_ticket_items", "spree_pos_kitchen_tickets", column: "kitchen_ticket_id", on_delete: :cascade
-  add_foreign_key "spree_pos_kitchen_ticket_items", "spree_pos_sale_lines", column: "sale_line_id"
+  add_foreign_key "spree_pos_kitchen_ticket_items", "spree_pos_sale_lines", column: "sale_line_id", on_delete: :nullify
   add_foreign_key "spree_pos_kitchen_tickets", "spree_pos_branches", column: "branch_id"
+  add_foreign_key "spree_pos_kitchen_tickets", "spree_pos_kitchen_sends", column: "kitchen_send_id"
   add_foreign_key "spree_pos_kitchen_tickets", "spree_pos_kitchen_stations", column: "kitchen_station_id"
   add_foreign_key "spree_pos_kitchen_tickets", "spree_pos_workspaces", column: "workspace_id"
   add_foreign_key "spree_pos_kitchen_tickets", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_kitchen_voids", "spree_admin_users", column: "staff_id"
+  add_foreign_key "spree_pos_kitchen_voids", "spree_pos_approvals", column: "approval_id"
+  add_foreign_key "spree_pos_kitchen_voids", "spree_pos_devices", column: "device_id"
+  add_foreign_key "spree_pos_kitchen_voids", "spree_pos_kitchen_tickets", column: "kitchen_ticket_id"
+  add_foreign_key "spree_pos_kitchen_voids", "spree_pos_sale_lines", column: "sale_line_id", on_delete: :nullify
+  add_foreign_key "spree_pos_kitchen_voids", "spree_pos_workspaces", column: "workspace_id"
+  add_foreign_key "spree_pos_kitchen_voids", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_liability_payouts", "spree_admin_users", column: "requester_id"
   add_foreign_key "spree_pos_liability_payouts", "spree_pos_branches", column: "branch_id"
   add_foreign_key "spree_pos_liability_payouts", "spree_pos_received_funds", column: "received_funds_id"
@@ -6329,8 +6388,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_220300) do
   add_foreign_key "spree_pos_return_reservations", "spree_pos_sale_lines", column: "sale_line_id"
   add_foreign_key "spree_pos_return_reservations", "spree_return_line_items", column: "return_line_item_id"
   add_foreign_key "spree_pos_return_reservations", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_sale_lines", "spree_admin_users", column: "added_by_id"
   add_foreign_key "spree_pos_sale_lines", "spree_line_items", column: "line_item_id", on_delete: :cascade
   add_foreign_key "spree_pos_sale_lines", "spree_orders", column: "order_id"
+  add_foreign_key "spree_pos_sale_lines", "spree_pos_devices", column: "added_device_id"
   add_foreign_key "spree_pos_sale_lines", "spree_pos_workspaces", column: "workspace_id"
   add_foreign_key "spree_pos_sale_lines", "spree_variants", column: "variant_id"
   add_foreign_key "spree_pos_serial_units", "spree_stock_locations", column: "stock_location_id"

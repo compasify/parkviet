@@ -3,56 +3,51 @@
 //
 
 // ignore_for_file: unused_element
-import 'package:pos_api/src/model/pos_kitchen_send201_response_meta.dart';
+import 'package:pos_api/src/model/kitchen_void_meta.dart';
 import 'package:pos_api/src/model/workspace.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
 
-part 'pos_kitchen_send201_response.g.dart';
+part 'kitchen_void_result.g.dart';
 
-/// PosKitchenSend201Response
+/// KitchenVoidResult
 ///
 /// Properties:
 /// * [data]
 /// * [meta]
 @BuiltValue()
-abstract class PosKitchenSend201Response
-    implements
-        Built<PosKitchenSend201Response, PosKitchenSend201ResponseBuilder> {
+abstract class KitchenVoidResult
+    implements Built<KitchenVoidResult, KitchenVoidResultBuilder> {
   @BuiltValueField(wireName: r'data')
   Workspace get data;
 
   @BuiltValueField(wireName: r'meta')
-  PosKitchenSend201ResponseMeta get meta;
+  KitchenVoidMeta get meta;
 
-  PosKitchenSend201Response._();
+  KitchenVoidResult._();
 
-  factory PosKitchenSend201Response(
-          [void updates(PosKitchenSend201ResponseBuilder b)]) =
-      _$PosKitchenSend201Response;
+  factory KitchenVoidResult([void updates(KitchenVoidResultBuilder b)]) =
+      _$KitchenVoidResult;
 
   @BuiltValueHook(initializeBuilder: true)
-  static void _defaults(PosKitchenSend201ResponseBuilder b) => b;
+  static void _defaults(KitchenVoidResultBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<PosKitchenSend201Response> get serializer =>
-      _$PosKitchenSend201ResponseSerializer();
+  static Serializer<KitchenVoidResult> get serializer =>
+      _$KitchenVoidResultSerializer();
 }
 
-class _$PosKitchenSend201ResponseSerializer
-    implements PrimitiveSerializer<PosKitchenSend201Response> {
+class _$KitchenVoidResultSerializer
+    implements PrimitiveSerializer<KitchenVoidResult> {
   @override
-  final Iterable<Type> types = const [
-    PosKitchenSend201Response,
-    _$PosKitchenSend201Response
-  ];
+  final Iterable<Type> types = const [KitchenVoidResult, _$KitchenVoidResult];
 
   @override
-  final String wireName = r'PosKitchenSend201Response';
+  final String wireName = r'KitchenVoidResult';
 
   Iterable<Object?> _serializeProperties(
     Serializers serializers,
-    PosKitchenSend201Response object, {
+    KitchenVoidResult object, {
     FullType specifiedType = FullType.unspecified,
   }) sync* {
     yield r'data';
@@ -63,14 +58,14 @@ class _$PosKitchenSend201ResponseSerializer
     yield r'meta';
     yield serializers.serialize(
       object.meta,
-      specifiedType: const FullType(PosKitchenSend201ResponseMeta),
+      specifiedType: const FullType(KitchenVoidMeta),
     );
   }
 
   @override
   Object serialize(
     Serializers serializers,
-    PosKitchenSend201Response object, {
+    KitchenVoidResult object, {
     FullType specifiedType = FullType.unspecified,
   }) {
     return _serializeProperties(serializers, object,
@@ -83,7 +78,7 @@ class _$PosKitchenSend201ResponseSerializer
     Object serialized, {
     FullType specifiedType = FullType.unspecified,
     required List<Object?> serializedList,
-    required PosKitchenSend201ResponseBuilder result,
+    required KitchenVoidResultBuilder result,
     required List<Object?> unhandled,
   }) {
     for (var i = 0; i < serializedList.length; i += 2) {
@@ -100,8 +95,8 @@ class _$PosKitchenSend201ResponseSerializer
         case r'meta':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType: const FullType(PosKitchenSend201ResponseMeta),
-          ) as PosKitchenSend201ResponseMeta;
+            specifiedType: const FullType(KitchenVoidMeta),
+          ) as KitchenVoidMeta;
           result.meta.replace(valueDes);
           break;
         default:
@@ -113,12 +108,12 @@ class _$PosKitchenSend201ResponseSerializer
   }
 
   @override
-  PosKitchenSend201Response deserialize(
+  KitchenVoidResult deserialize(
     Serializers serializers,
     Object serialized, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    final result = PosKitchenSend201ResponseBuilder();
+    final result = KitchenVoidResultBuilder();
     final serializedList = (serialized as Iterable<Object?>).toList();
     final unhandled = <Object?>[];
     _deserializeProperties(

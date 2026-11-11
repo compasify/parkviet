@@ -3,11 +3,13 @@
 module Spree
   module Pos
     module PlatformOrders
-      # The platform canceled the order before the driver took it. Items the
-      # kitchen has and has not handed over are voided with the reason
-      # `platform_canceled`, which takes an approval (or a cashier who may
-      # grant one), and the draft is canceled; the call number stays with
-      # the order. A completed order is returned like any other sale.
+      # The platform canceled the order before the driver took it. While the
+      # kitchen still has items of it, every sent item is voided through the
+      # kitchen void (Kitchen::VoidSent) with the reason `platform_canceled`:
+      # the stations get void tickets, and it takes one approval (or a
+      # cashier who may grant one). Then the draft is canceled; the call
+      # number stays with the order. A completed order is returned like any
+      # other sale.
       module Cancel
         ACTION = 'platform_order.cancel'
         REASON = 'platform_canceled'
@@ -34,7 +36,7 @@ module Spree
             items = kitchen_items(workspace)
             if items.any?
               approval = approve!(workspace, staff, approval_id)
-              tickets = void!(workspace, staff, items, approval)
+              tickets = void!(workspace, staff, approval, key)
             end
             Workspaces::ChangeStatus.call(workspace: workspace, staff: staff, status: 'canceled', revision: workspace.revision,
                                           lease_generation: workspace.lease_generation, key: "#{key}:cancel",
@@ -45,7 +47,7 @@ module Spree
                                            voided_items: items.map(&:prefixed_id) })
             platform_order.to_pos
           end
-          tickets.each { |ticket| Kitchen::ChangeItemStatus.publish(ticket) }
+          tickets.each { |ticket| Kitchen::VoidSent.print_after_commit(ticket, staff) }
           result
         end
 
@@ -68,13 +70,14 @@ module Spree
                                                                                                 message: 'Canceling items the kitchen has needs an approval.')
         end
 
-        def void!(workspace, staff, items, approval)
-          now = Workspace.database_now
-          items.each { |item| item.update!(status: 'voided', voided_at: now, changed_by: staff) }
-          AuditEntry.record!(store: workspace.store, actor: staff, action: 'kitchen.void', subject: workspace,
-                             metadata: { reason: REASON, items: items.map(&:prefixed_id) }.
-                                                                                          merge(Workspaces::ApplyDiscount.approval_metadata(approval)))
-          KitchenTicket.where(id: items.map(&:kitchen_ticket_id).uniq).includes(:kitchen_station, :workspace, :branch).to_a
+        # Every sent line goes back whole; the void tickets are returned for printing.
+        def void!(workspace, staff, approval, key)
+          lines = SaleLine.where(workspace_id: workspace.id).where('kitchen_sent_quantity > 0').order(:id).lock.to_a
+          lines.filter_map do |line|
+            Kitchen::VoidSent.void!(workspace: workspace, staff: staff, sale_line: line, quantity: line.kitchen_sent_quantity,
+                                    reason_code: KitchenVoid::PLATFORM_CANCELED, note: nil, approval: approval, device: nil,
+                                    key: "#{key}:#{line.prefixed_id}").kitchen_ticket
+          end
         end
       end
     end

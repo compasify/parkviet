@@ -48,6 +48,40 @@ export function useKitchenTickets(workspace: PosWorkspace, enabled: boolean) {
   });
 }
 
+export type KitchenHistoryEntry = {
+  kind: 'send' | 'void';
+  // Null for a send made before sends were recorded.
+  id: string | null;
+  sequence: number | null;
+  at: string;
+  staff_name: string | null;
+  reason_code?: string;
+  note?: string | null;
+  wasted?: boolean;
+  approver_name?: string | null;
+  items: { name: string; quantity: string; station_name: string | null; status?: string }[];
+};
+
+// A table order's kitchen history: every send, who made it and what went to
+// which station, and every void with its reason, oldest first.
+export function useKitchenHistory(workspace: PosWorkspace, enabled: boolean) {
+  const snapshot = useSession();
+  return useQuery({
+    queryKey: [
+      ...kitchenTicketsKey(snapshot.generation, workspace.id),
+      'history',
+      workspace.revision,
+    ],
+    enabled: enabled && snapshot.status === 'authenticated',
+    queryFn: async () =>
+      (
+        await session.request<{ data: { entries: KitchenHistoryEntry[] } }>(
+          'GET',
+          `/pos/workspaces/${workspace.id}/kitchen_history`,
+        )
+      ).data.entries,
+  });
+}
 // The branch's call numbers today: preparing while the kitchen works, ready
 // once every item is done and not handed over yet.
 export type PickupQueue = {

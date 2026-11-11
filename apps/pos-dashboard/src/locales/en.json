@@ -584,6 +584,7 @@
   "capabilityMenuSoldOutHint": "Mark items sold out at the branch for the business day, or back on sale.",
   "capabilityKitchenOperateHint": "Start, finish, serve and recall kitchen items when signed in as a person. A paired kitchen screen needs no grant.",
   "capabilityKitchenManageHint": "Add kitchen and bar stations, their printers and timers, which station makes what, and when orders are sent.",
+  "capabilityKitchenVoidHint": "Lower or remove items already sent to the kitchen without a manager's approval; a reason is still required and the station prints a void ticket.",
   "capabilityTableServeHint": "Seat guests and change orders at tables, including tables opened by other staff, without owning the shift.",
   "capabilityResourceManageHint": "Add, rename, move and archive the branch's areas and tables on the floor plan.",
   "capabilityInventoryTraceHint": "Look up which orders and customers bought a lot or serial (recall). Customer phones stay masked.",

@@ -8,6 +8,7 @@ import 'package:built_collection/built_collection.dart';
 import 'package:pos_api/src/model/workspace_line.dart';
 import 'package:pos_api/src/model/resource_ref.dart';
 import 'package:pos_api/src/model/workspace_prebill.dart';
+import 'package:pos_api/src/model/kitchen_send_summary.dart';
 import 'package:pos_api/src/model/workspace_service_charge.dart';
 import 'package:pos_api/src/model/workspace_totals.dart';
 import 'package:pos_api/src/model/payment_request.dart';
@@ -33,6 +34,7 @@ part 'workspace.g.dart';
 /// * [serviceCharge] - Present when the branch has a service charge rate.
 /// * [prebill] - The latest pre-bill of a table order.
 /// * [paymentRequest] - The table's open request for the bill.
+/// * [kitchenSends] - Every kitchen send of a table order; null for other orders.
 /// * [lineItems]
 /// * [totals]
 @BuiltValue()
@@ -83,6 +85,10 @@ abstract class Workspace implements Built<Workspace, WorkspaceBuilder> {
   /// The table's open request for the bill.
   @BuiltValueField(wireName: r'payment_request')
   PaymentRequest? get paymentRequest;
+
+  /// Every kitchen send of a table order; null for other orders.
+  @BuiltValueField(wireName: r'kitchen_sends')
+  BuiltList<KitchenSendSummary>? get kitchenSends;
 
   @BuiltValueField(wireName: r'line_items')
   BuiltList<WorkspaceLine>? get lineItems;
@@ -192,6 +198,14 @@ class _$WorkspaceSerializer implements PrimitiveSerializer<Workspace> {
       yield serializers.serialize(
         object.paymentRequest,
         specifiedType: const FullType.nullable(PaymentRequest),
+      );
+    }
+    if (object.kitchenSends != null) {
+      yield r'kitchen_sends';
+      yield serializers.serialize(
+        object.kitchenSends,
+        specifiedType:
+            const FullType.nullable(BuiltList, [FullType(KitchenSendSummary)]),
       );
     }
     if (object.lineItems != null) {
@@ -329,6 +343,15 @@ class _$WorkspaceSerializer implements PrimitiveSerializer<Workspace> {
           ) as PaymentRequest?;
           if (valueDes == null) continue;
           result.paymentRequest.replace(valueDes);
+          break;
+        case r'kitchen_sends':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(
+                BuiltList, [FullType(KitchenSendSummary)]),
+          ) as BuiltList<KitchenSendSummary>?;
+          if (valueDes == null) continue;
+          result.kitchenSends.replace(valueDes);
           break;
         case r'line_items':
           final valueDes = serializers.deserialize(

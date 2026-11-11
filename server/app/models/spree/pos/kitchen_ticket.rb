@@ -18,6 +18,8 @@ module Spree
       belongs_to :workspace, class_name: 'Spree::Pos::Workspace'
       belongs_to :kitchen_station, class_name: 'Spree::Pos::KitchenStation'
       belongs_to :sent_by, polymorphic: true, optional: true
+      # The send that made a fire ticket; a void ticket has none.
+      belongs_to :kitchen_send, class_name: 'Spree::Pos::KitchenSend', optional: true, inverse_of: :kitchen_tickets
       has_many :items, -> { order(:id) }, class_name: 'Spree::Pos::KitchenTicketItem', inverse_of: :kitchen_ticket,
                                          dependent: :restrict_with_error
 

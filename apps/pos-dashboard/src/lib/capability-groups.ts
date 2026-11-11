@@ -47,6 +47,7 @@ const GROUPS: { key: string; capabilities: Capability[] }[] = [
       'pos.menu.sold_out',
       'pos.kitchen.operate',
       'pos.kitchen.manage',
+      'pos.kitchen.void',
     ],
   },
 ]

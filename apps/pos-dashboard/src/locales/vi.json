@@ -583,6 +583,7 @@
   "capabilityMenuSoldOutHint": "Báo hết món hoặc mở bán lại tại chi nhánh trong ngày kinh doanh.",
   "capabilityKitchenOperateHint": "Bắt đầu, xong, ra món, gọi lại món trên màn bếp khi đăng nhập bằng tài khoản. Màn bếp đã ghép không cần quyền này.",
   "capabilityKitchenManageHint": "Thêm trạm bếp/bar, chọn máy in, ngưỡng thời gian, món đi trạm nào và khi nào báo bếp.",
+  "capabilityKitchenVoidHint": "Giảm hay xóa món đã báo bếp mà không cần quản lý duyệt; vẫn phải chọn lý do và in phiếu hủy ở trạm.",
   "capabilityTableServeHint": "Mở bàn và sửa đơn tại bàn, kể cả bàn người khác mở, mà không cần là chủ ca.",
   "capabilityResourceManageHint": "Thêm, đổi tên, sắp xếp và lưu trữ khu vực, bàn trên sơ đồ của chi nhánh.",
   "capabilityInventoryTraceHint": "Tra cứu lô hoặc serial đã bán cho đơn và khách nào (thu hồi). Số điện thoại khách vẫn được che.",

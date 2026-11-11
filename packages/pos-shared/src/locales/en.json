@@ -71,6 +71,7 @@
   "capabilityEinvoiceManage": "Manage e-invoices",
   "capabilityKitchenOperate": "Work the kitchen screen",
   "capabilityKitchenManage": "Set up the kitchen and bar",
+  "capabilityKitchenVoid": "Void items sent to the kitchen",
   "capabilityTableServe": "Serve tables",
   "capabilityResourceManage": "Floor plan and areas",
   "tableState_available": "Free",

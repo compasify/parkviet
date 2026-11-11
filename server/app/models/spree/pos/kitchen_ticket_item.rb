@@ -14,7 +14,8 @@ module Spree
       CONTENT = %w[kitchen_ticket_id sale_line_id name modifiers components note quantity].freeze
 
       belongs_to :kitchen_ticket, class_name: 'Spree::Pos::KitchenTicket', inverse_of: :items
-      belongs_to :sale_line, class_name: 'Spree::Pos::SaleLine'
+      # Gone once the line was voided to nothing; the ticket keeps what it said.
+      belongs_to :sale_line, class_name: 'Spree::Pos::SaleLine', optional: true
       belongs_to :changed_by, polymorphic: true, optional: true
 
       validates :name, presence: true
@@ -24,7 +25,7 @@ module Spree
 
       def to_pos
         {
-          id: prefixed_id, sale_line_id: sale_line.prefixed_id, name: name, modifiers: modifiers, components: components,
+          id: prefixed_id, sale_line_id: sale_line&.prefixed_id, name: name, modifiers: modifiers, components: components,
           note: note, quantity: quantity.to_s('F'), status: status, started_at: started_at&.iso8601(3),
           ready_at: ready_at&.iso8601(3), served_at: served_at&.iso8601(3), voided_at: voided_at&.iso8601(3)
         }
