@@ -825,17 +825,7 @@ export function WorkspaceTabs() {
       {active && (activePhase === 'parked' || workspaceIsSettled(active)) ? (
         <div className={`lease-notice phase-notice phase-notice-${activePhase}`} role="status">
           <span>{t(`workspacePhaseHint_${activePhase}`)}</span>
-          {activePhase === 'parked' ? (
-            <button
-              type="button"
-              disabled={busy || locked || !isEditor}
-              onClick={() =>
-                void run(() => command(active, (current) => workspaces.change(current, 'reopen')))
-              }
-            >
-              {t('reopenDraft')}
-            </button>
-          ) : (
+          {activePhase === 'parked' ? null : (
             <button type="button" onClick={() => hideWorkspace(active.id)}>
               {t('closeView')}
             </button>
