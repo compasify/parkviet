@@ -35,13 +35,10 @@ module Spree
         connection.select_value('SELECT clock_timestamp()').to_time
       end
 
-      # Clock for a business date. Tests freeze Ruby time and not Postgres, so
-      # a frozen clock wins; otherwise the database clock is the one that
-      # matches leases.
+      # Clock for a business date: the database clock, the same one leases use.
+      # A separate name so specs can freeze it without freezing leases.
       def self.business_now
-        ruby = Time.current
-        database = database_now
-        (ruby - database).abs > 5 ? ruby : database
+        database_now
       end
 
       def self.editor_digest(editor_id)

@@ -99,4 +99,6 @@ require_relative 'support/pos_schema_helpers'
 
 RSpec.configure do |config|
   config.include PosSchemaHelpers, type: :request
+  # travel_to moves Ruby's clock and not Postgres, so specs read business dates from it.
+  config.before { allow(Spree::Pos::Workspace).to receive(:business_now) { Time.current } }
 end

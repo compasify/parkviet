@@ -432,7 +432,9 @@
       "cashier": "Cashier",
       "document": {
         "number": "Document number",
-        "time": "Document time"
+        "time": "Document time",
+        "business_date": "Business date",
+        "taxes": "Tax table by rate"
       },
       "customer": {
         "name": "Customer name",
@@ -576,6 +578,7 @@
   "cashRequestsHint": "Cash out and safe drops are only recorded once someone else confirms the cash and the reference.",
   "shiftOthersHint": "Close for an absent cashier: you count the drawer; a variance still needs another approver.",
   "capabilityInventoryManageHint": "Receive, transfer, count and adjust, declare opening balances, quarantine and release lots and serials at the branch.",
+  "capabilityDeviceManageHint": "Pair, rename and revoke branch devices, and reset staff PINs.",
   "capabilityInventoryTraceHint": "Look up which orders and customers bought a lot or serial (recall). Customer phones stay masked.",
   "adminLotSelection_fefo": "Automatic, earliest expiry first (FEFO)",
   "adminLotSelection_cashier_pick": "Cashier may pick the lot",

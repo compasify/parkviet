@@ -20,6 +20,12 @@ RSpec.describe Spree::Pos::BusinessDay, type: :model do
     expect(described_class.for(branch, zone.local(2026, 11, 6, 4, 0))).to eq(Date.new(2026, 11, 6))
   end
 
+  it 'takes the business clock from the database, whatever the app clock says' do
+    allow(Spree::Pos::Workspace).to receive(:business_now).and_call_original
+    allow(Spree::Pos::Workspace).to receive(:database_now).and_return(zone.local(2026, 11, 6, 1, 0))
+    expect(Spree::Pos::Workspace.business_now).to eq(zone.local(2026, 11, 6, 1, 0))
+  end
+
   it 'uses the branch timezone, so the same instant can be a different business date' do
     instant = Time.utc(2026, 11, 5, 22, 0)
     expect(described_class.for(branch, instant)).to eq(Date.new(2026, 11, 6))

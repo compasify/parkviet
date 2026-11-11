@@ -17,8 +17,8 @@ module Spree
       def seed!(store)
         food = category!(store, FOOD, 'VAT thực phẩm')
         special = category!(store, SPECIAL, 'VAT đặc biệt')
-        food_rate = rate!(store, food, 'VAT thực phẩm 8%', FOOD_RATE)
-        rate!(store, special, 'VAT đặc biệt 10%', SPECIAL_RATE)
+        food_rate = rate!(store, food, 'VAT thực phẩm', FOOD_RATE)
+        rate!(store, special, 'VAT đặc biệt', SPECIAL_RATE)
         schedule!(store, food_rate, FOOD_BECOMES_STANDARD_ON, SPECIAL_RATE)
       end
 
@@ -31,13 +31,15 @@ module Spree
 
       # Spree 6 matches a rate by country code. Vietnam is VN; a later seed
       # leaves an existing rate's amount alone so a schedule can change it.
+      # The name holds no percentage, because a schedule changes the amount;
+      # receipts print the rate from the tax line.
       def rate!(store, category, name, amount)
         found = Spree::TaxRate.find_by(store_id: store.id, tax_category_id: category.id, country_code: 'VN')
         return found if found
 
         Spree::TaxRate.create!(
           store: store, tax_category: category, name: name, amount: amount,
-          included_in_price: true, show_rate_in_label: true, country_code: 'VN'
+          included_in_price: true, show_rate_in_label: false, country_code: 'VN'
         )
       end
 

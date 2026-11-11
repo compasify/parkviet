@@ -55,7 +55,7 @@ test('a branch manager sees every attention item with its count and links', asyn
     await expect(sidebar.getByRole('link', { name: 'Việc cần xử lý' })).toBeVisible();
     await expect(sidebar.getByRole('link', { name: 'Bán hàng' })).toHaveAttribute('href', '/store_1/orders');
     await expect(sidebar.getByRole('link', { name: 'Tiền', exact: true })).toHaveAttribute('href', '/store_1/funds');
-    await expect(sidebar.getByRole('link', { name: 'Thiết lập' })).toHaveCount(0);
+    await expect(sidebar.getByRole('link', { name: 'Thiết lập' })).toHaveAttribute('href', '/store_1/devices');
   }
   await card(page, 'Đơn chờ giao').getByRole('link', { name: 'Xem' }).click();
   await expect(page).toHaveURL(/\/store_1\/deliveries/);

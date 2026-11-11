@@ -431,7 +431,9 @@
       "cashier": "Thu ngân",
       "document": {
         "number": "Số chứng từ",
-        "time": "Thời gian chứng từ"
+        "time": "Thời gian chứng từ",
+        "business_date": "Ngày kinh doanh",
+        "taxes": "Bảng thuế theo thuế suất"
       },
       "customer": {
         "name": "Tên khách hàng",
@@ -575,6 +577,7 @@
   "cashRequestsHint": "Lấy tiền ra hoặc nộp két sắt chỉ được ghi khi một người khác xác nhận đã kiểm tiền và chứng từ.",
   "shiftOthersHint": "Đóng ca giúp thu ngân vắng mặt: bạn tự đếm két, chênh lệch vẫn cần người duyệt khác.",
   "capabilityInventoryManageHint": "Nhập hàng, chuyển kho, kiểm kê/điều chỉnh, khai báo tồn đầu kỳ, cách ly và giải phóng lô/serial tại chi nhánh.",
+  "capabilityDeviceManageHint": "Ghép, đổi tên và thu hồi thiết bị của chi nhánh, đặt lại PIN của nhân viên.",
   "capabilityInventoryTraceHint": "Tra cứu lô hoặc serial đã bán cho đơn và khách nào (thu hồi). Số điện thoại khách vẫn được che.",
   "adminLotSelection_fefo": "Tự động theo hạn dùng gần nhất (FEFO)",
   "adminLotSelection_cashier_pick": "Thu ngân được chọn lô",

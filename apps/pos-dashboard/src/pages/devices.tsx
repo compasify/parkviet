@@ -3,13 +3,13 @@ import type { PosMembership } from '@parkviet/pos-shared/types/pos-context'
 import { PageHeader, usePermissions } from '@spree/dashboard-core'
 import { Button, Input, Label, useConfirm } from '@spree/dashboard-ui'
 import { useQuery } from '@tanstack/react-query'
-import { encode } from 'uqr'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { encode } from 'uqr'
 import { usePosSession } from '../hooks/use-pos-session'
 import { useSession } from '../hooks/use-session'
 import { useRegisters, useTopologyMutation } from '../hooks/use-topology'
-import { hasCapability, canAdminister } from '../lib/pos-access'
+import { canAdminister, hasCapability } from '../lib/pos-access'
 import { posRequest } from '../lib/pos-request'
 import { posKey } from '../lib/query-keys'
 
@@ -23,7 +23,10 @@ type DeviceRow = {
   last_seen_at: string | null
   register_id: string | null
 }
-type PinRow = PosMembership & { pin_set?: boolean; staff?: { full_name: string | null; email: string } }
+type PinRow = PosMembership & {
+  pin_set?: boolean
+  staff?: { full_name: string | null; email: string }
+}
 type Pairing = {
   id: string
   code: string
@@ -43,7 +46,9 @@ export function DevicesPage() {
     queryKey: posKey(storeId, 'devices', branchId ?? undefined),
     enabled: manage && Boolean(branchId),
     queryFn: () =>
-      posRequest<{ data: DeviceRow[] }>('GET', '/pos/devices', { params: { branch_id: branchId ?? undefined } }),
+      posRequest<{ data: DeviceRow[] }>('GET', '/pos/devices', {
+        params: { branch_id: branchId ?? undefined },
+      }),
   })
   // Own row for everyone, every row for a device manager. The memberships
   // API needs topology access, which a cashier setting a PIN does not have.
@@ -51,7 +56,9 @@ export function DevicesPage() {
     queryKey: posKey(storeId, 'staff-pins', branchId ?? undefined),
     enabled: Boolean(branchId),
     queryFn: () =>
-      posRequest<{ data: PinRow[] }>('GET', '/pos/staff_pins', { params: { branch_id: branchId ?? undefined } }),
+      posRequest<{ data: PinRow[] }>('GET', '/pos/staff_pins', {
+        params: { branch_id: branchId ?? undefined },
+      }),
   })
   const mine = context.data?.staff.id
   const rows = pins.data?.data ?? []
@@ -114,7 +121,9 @@ function DeviceList({
     }
     const tick = () => {
       const seconds = Math.max(0, Math.floor((Date.parse(pairing.expires_at) - Date.now()) / 1000))
-      setLeft(`${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`)
+      setLeft(
+        `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`,
+      )
     }
     tick()
     const timer = window.setInterval(tick, 1000)
@@ -140,7 +149,14 @@ function DeviceList({
     }
   }
   async function revoke(device: DeviceRow) {
-    if (!(await confirm({ message: t('devices.revokeConfirm', { name: device.name }), variant: 'destructive', confirmLabel: t('devices.revoke'), cancelLabel: t('adminCancel') })))
+    if (
+      !(await confirm({
+        message: t('devices.revokeConfirm', { name: device.name }),
+        variant: 'destructive',
+        confirmLabel: t('devices.revoke'),
+        cancelLabel: t('adminCancel'),
+      }))
+    )
       return
     await send('POST', `/pos/devices/${device.id}/revoke`, {})
   }
@@ -152,7 +168,11 @@ function DeviceList({
   async function send(method: string, path: string, body: Record<string, unknown>) {
     setNotice('')
     try {
-      await write.mutateAsync({ method, path, body: { ...body, idempotency_key: crypto.randomUUID() } })
+      await write.mutateAsync({
+        method,
+        path,
+        body: { ...body, idempotency_key: crypto.randomUUID() },
+      })
     } catch (failure) {
       setNotice(describeFailure(failure, t))
     }
@@ -168,10 +188,18 @@ function DeviceList({
             <strong>{device.name}</strong>
             <span>{t(`devices.mode.${device.mode}`)}</span>
             <span>{device.status === 'active' ? t('devices.active') : t('devices.revoked')}</span>
-            <span>{device.last_seen_at ? new Date(device.last_seen_at).toLocaleString() : t('devices.neverSeen')}</span>
-            <Button type="button" onClick={() => void rename(device)}>{t('devices.rename')}</Button>
+            <span>
+              {device.last_seen_at
+                ? new Date(device.last_seen_at).toLocaleString()
+                : t('devices.neverSeen')}
+            </span>
+            <Button type="button" onClick={() => void rename(device)}>
+              {t('devices.rename')}
+            </Button>
             {device.status === 'active' ? (
-              <Button type="button" onClick={() => void revoke(device)}>{t('devices.revoke')}</Button>
+              <Button type="button" onClick={() => void revoke(device)}>
+                {t('devices.revoke')}
+              </Button>
             ) : null}
           </li>
         ))}
@@ -179,9 +207,14 @@ function DeviceList({
       <div className="flex flex-wrap items-end gap-3">
         <Label>
           {t('devices.modeLabel')}
-          <select value={mode} onChange={(event) => setMode(event.target.value as (typeof MODES)[number])}>
+          <select
+            value={mode}
+            onChange={(event) => setMode(event.target.value as (typeof MODES)[number])}
+          >
             {MODES.map((item) => (
-              <option key={item} value={item}>{t(`devices.mode.${item}`)}</option>
+              <option key={item} value={item}>
+                {t(`devices.mode.${item}`)}
+              </option>
             ))}
           </select>
         </Label>
@@ -190,13 +223,19 @@ function DeviceList({
             {t('devices.register')}
             <select value={registerId} onChange={(event) => setRegisterId(event.target.value)}>
               <option value="">{t('devices.chooseRegister')}</option>
-              {(registers.data?.data ?? []).filter((row) => row.branch_id === branchId).map((row) => (
-                <option key={row.id} value={row.id}>{row.name}</option>
-              ))}
+              {(registers.data?.data ?? [])
+                .filter((row) => row.branch_id === branchId)
+                .map((row) => (
+                  <option key={row.id} value={row.id}>
+                    {row.name}
+                  </option>
+                ))}
             </select>
           </Label>
         ) : null}
-        <Button type="button" onClick={() => void pair()}>{t('devices.pair')}</Button>
+        <Button type="button" onClick={() => void pair()}>
+          {t('devices.pair')}
+        </Button>
       </div>
       {notice ? <p role="alert">{notice}</p> : null}
       {pairing ? (
@@ -210,15 +249,7 @@ function DeviceList({
   )
 }
 
-function PinList({
-  rows,
-  mine,
-  manage,
-}: {
-  rows: PinRow[]
-  mine?: string
-  manage: boolean
-}) {
+function PinList({ rows, mine, manage }: { rows: PinRow[]; mine?: string; manage: boolean }) {
   const { t } = useTranslation()
   const write = useTopologyMutation()
   const [pin, setPin] = useState('')
@@ -253,12 +284,22 @@ function PinList({
               <span>{row.pin_set ? t('devices.pinSet') : t('devices.pinMissing')}</span>
               {own ? (
                 <>
-                  <Input value={pin} inputMode="numeric" maxLength={6} onChange={(event) => setPin(event.target.value)} aria-label={t('devices.pin')} />
-                  <Button type="button" onClick={() => void save(row.id, false)}>{t('devices.pinSave')}</Button>
+                  <Input
+                    value={pin}
+                    inputMode="numeric"
+                    maxLength={6}
+                    onChange={(event) => setPin(event.target.value)}
+                    aria-label={t('devices.pin')}
+                  />
+                  <Button type="button" onClick={() => void save(row.id, false)}>
+                    {t('devices.pinSave')}
+                  </Button>
                 </>
               ) : null}
               {manage && !own ? (
-                <Button type="button" onClick={() => void save(row.id, true)}>{t('devices.pinReset')}</Button>
+                <Button type="button" onClick={() => void save(row.id, true)}>
+                  {t('devices.pinReset')}
+                </Button>
               ) : null}
             </li>
           )

@@ -1,5 +1,6 @@
 import { formatMoney } from '@parkviet/pos-shared/money';
 import { contextFeature } from '@parkviet/pos-shared/pos-features';
+import { rateLabel } from '@parkviet/pos-shared/receipt-template/data';
 import { describeTraceFailure } from '@parkviet/pos-shared/traceability';
 import { useNavigate, useSearch } from '@tanstack/react-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -36,12 +37,12 @@ import { DisplayPinControl } from './display-pin-control';
 import { NoteForm } from './note-form';
 import { OrderLines } from './order-lines';
 import { OrderSourcePicker } from './order-source-picker';
-import { ServiceModeControl } from './service-mode-control';
 import { PaymentPanel } from './payment-panel';
 import { PosIcon } from './pos-icon';
 import { usePosSelection } from './pos-selection';
 import { PrebillDialog } from './prebill-dialog';
 import { useScannerCalibration } from './scanner-calibration';
+import { ServiceModeControl } from './service-mode-control';
 
 type ScanPlan = { workspace?: PosWorkspace } & (
   | { kind: 'variant'; variantId: string }
@@ -1214,7 +1215,7 @@ export function WorkspaceTabs() {
                     {(active.totals.taxes ?? []).map((tax) => (
                       <div className="checkout-line" key={`${tax.rate}:${tax.label}`}>
                         <span>
-                          {tax.label} ({tax.rate})
+                          {tax.label} ({rateLabel(tax.rate)})
                         </span>
                         <strong>{formatMoney(tax.amount, active.totals?.currency ?? 'VND')}</strong>
                       </div>

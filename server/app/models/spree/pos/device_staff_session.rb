@@ -27,14 +27,16 @@ module Spree
         SecureRandom.urlsafe_base64(32)
       end
 
-      # The open session for this device and token, or nil.
-      def self.authenticate(device, token)
+      # The open session for this device and token, or nil. `touch: false` is
+      # for callers that are not a person acting, such as a socket reconnecting,
+      # so they cannot keep an idle session alive.
+      def self.authenticate(device, token, touch: true)
         return if token.blank? || token.length > 200
 
         session = open.find_by(device_id: device.id, token_digest: digest(token))
         return unless session&.usable?
 
-        session.touch_active!
+        session.touch_active! if touch
         session
       end
 

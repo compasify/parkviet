@@ -73,7 +73,7 @@ test('a manager confirms a colleague\'s drawer outflow and approves a variance',
   await page.goto('/store_1/shifts');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Quản lý ca & két');
   // The manager's own request is not theirs to confirm.
-  await expect(page.getByText('Nộp két sắt')).toHaveCount(0);
+  await expect(page.getByRole('region', { name: 'Thu/chi két chờ xác nhận' }).getByText('Nộp két sắt', { exact: true })).toHaveCount(0);
   await page.screenshot({ path: testInfo.outputPath('shifts.png'), fullPage: true });
 
   await act(page, 'Thu/chi két chờ xác nhận', 'Lan', 'Xác nhận');
@@ -91,7 +91,7 @@ test('a manager closes a shift left open with a blind count', async ({ page }) =
   const state = await install(page);
   await page.goto('/store_1/shifts');
   await act(page, 'Ca đang mở khác', 'Lan', 'Đóng ca của Lan');
-  await page.getByRole('alertdialog').getByRole('button', { name: 'Đóng ca của Lan' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Đóng ca của Lan' }).click();
   const dialog = page.getByRole('dialog');
   await expect(dialog).toContainText('Không còn việc nào chặn đóng ca.');
   await dialog.getByRole('button', { name: 'Tiếp tục: đếm két' }).click();

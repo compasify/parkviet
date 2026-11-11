@@ -77,15 +77,10 @@ production:
     class: Spree::Pos::ReleaseTraceReservationsJob
     schedule: every minute
   # Vietnam VAT schedules (the 8% food rate becomes 10% on 2027-01-01).
-  # 00:05 in the server clock; the job itself uses Asia/Ho_Chi_Minh's date.
+  # 00:05 Vietnam time. The containers run in UTC, so the zone must be named.
   pos_apply_tax_rate_schedules:
     class: Spree::Pos::ApplyTaxRateScheduleJob
-    schedule: at 12:05am every day
-  # Vietnam VAT schedules (the 8% food rate becomes 10% on 2027-01-01).
-  # 00:05 in the server clock; the job itself uses Asia/Ho_Chi_Minh's date.
-  pos_apply_tax_rate_schedules:
-    class: Spree::Pos::ApplyTaxRateScheduleJob
-    schedule: at 12:05am every day
+    schedule: 5 0 * * * Asia/Ho_Chi_Minh
 
   # Solid Queue / Solid Cable housekeeping.
   clear_solid_queue_finished_jobs:

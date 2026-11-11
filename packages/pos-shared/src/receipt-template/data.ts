@@ -280,7 +280,7 @@ function saleLine(line: Doc, currency: string, t: Translate): LineData {
   };
 }
 
-function rateLabel(rate: string): string {
+export function rateLabel(rate: string): string {
   const value = Number(rate);
   if (!Number.isFinite(value)) return rate;
   const percent = Math.abs(value) <= 1 ? value * 100 : value;
