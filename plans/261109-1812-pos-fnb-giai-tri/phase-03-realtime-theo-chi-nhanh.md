@@ -1,7 +1,7 @@
 ---
 phase: 3
 title: "Realtime theo chi nhánh"
-status: pending
+status: completed
 effort: "4 ngày"
 dependsOn: [2]
 ---
@@ -28,7 +28,7 @@ Hiện trạng đã kiểm:
    - **Thiết bị có session nhân viên:** như thiết bị, nhưng có thêm thông tin nhân viên.
 
    Khi thiết bị bị thu hồi hoặc `generation` đổi, server ngắt kết nối bằng `ActionCable.server.remote_connections.where(device_id:).disconnect`.
-3. **Sự kiện mỏng** chỉ gồm: `{ event, id, branch_id, revision?, at, refs }`.
+3. **Sự kiện mỏng** chỉ gồm: `{ event, id, branch_id, revision?, lease_generation?, at, refs }`.
    - Không kèm tiền, tên khách hay nội dung món. Client gọi lại API để lấy dữ liệu.
    - Danh sách sự kiện đúng theo plan.md: `workspace.updated`, `kitchen_ticket.updated`, `menu.sold_out`, `payment.requested`, `print_job.created`, `resource.updated`, `approval.requested`. Các phase sau thêm sự kiện của mình vào `EVENTS` (ví dụ `guest_order.created`, `guest_request.created`, `owner_alert.created`, `relay.command`) và cập nhật danh sách trong plan.md.
    - Phase này đã phát `workspace.updated` và `approval.requested`. Các phase sau tự phát sự kiện của mình.
@@ -103,8 +103,27 @@ Hiện trạng đã kiểm:
 
 ## Tiêu chí xong
 
-- [ ] `/cable` chạy với JWT nhân viên và device token; sai chi nhánh bị từ chối.
-- [ ] Sự kiện phát sau commit, không mang dữ liệu nhạy cảm.
-- [ ] Web nhận `workspace.updated` và refetch; poll tự giãn hoặc trở lại theo trạng thái socket.
-- [ ] Có số đo p50 / p95 ghi trong phase.
-- [ ] Spec POS và e2e web xanh.
+- [x] `/cable` chạy với JWT nhân viên và device token; sai chi nhánh bị từ chối.
+- [x] Sự kiện phát sau commit, không mang dữ liệu nhạy cảm.
+- [x] Web nhận `workspace.updated` và refetch; poll tự giãn hoặc trở lại theo trạng thái socket (chỉ với poll có sự kiện phủ, xem Kết quả).
+- [x] Có số đo p50 / p95 ghi trong phase.
+- [x] Spec POS và e2e web xanh (một test timeout khi chạy full, chạy lại riêng thì xanh, xem Kết quả).
+
+## Kết quả
+
+**Bài đo** (`server/script/pos_realtime_bench.rb`, `RAILS_ENV=production`, Solid Cable trên DB chính, 20 socket thiết bị, 50 sự kiện/giây trong 120 giây): p50 59,3 ms, p95 106,2 ms, p99 118,7 ms, max 318,2 ms, từ lúc commit đến lúc nhận; 120000/120000 lượt tới nơi. Đạt mục tiêu p95 ≤ 2 giây, chưa cần đổi adapter. Bài đo chạy trước các bản sửa sau review và chỉ đo đường socket, không đo tải refetch.
+
+**Kiểm thử:** rspec full 714 example, 0 failure; `apps/pos` 231 unit test xanh; e2e full ba project 327 xanh, 26 bỏ qua, 1 timeout (`feature-recovery.spec.ts:126` trên tablet, chạy lại riêng 8/8 xanh); e2e hai tab với API thật xanh 3/3. Lượt đo được trên stack development mất 1884 ms, sát ngưỡng 2 giây, chủ yếu do server dev trả lời chậm.
+
+**Khác với kế hoạch ban đầu:**
+- Bảng `solid_cable_messages` đã có sẵn nên không thêm migration. `/cable` do engine Action Cable tự mount trước mọi route nên không sửa `routes.rb`.
+- Sự kiện có thêm `lease_generation`, vì giành quyền sửa không đổi `revision` và client cần biết mình đã mất bản nháp.
+- Chỉ `useWorkspaceCredit` chuyển sang poll động. Giữ nguyên poll của VietQR, trả hàng, chốt ca, yêu cầu tiền mặt và màn khách vì chưa có sự kiện nào báo các thay đổi đó; giãn 60 giây sẽ làm thu ngân chờ lâu.
+- JWT chỉ kiểm khi kết nối; membership, thiết bị và session được kiểm lại mỗi 5 phút. Socket nối lại không tính là hoạt động của session nhân viên.
+- Thu hồi hoặc ghép lại thiết bị ngắt socket từ `Spree::Pos::Device`.
+
+**Còn lại:**
+- `approval.requested` phát khi quản lý cấp duyệt, và `apps/pos` chưa có màn hình dùng sự kiện này.
+- Các thay đổi không qua `CommandExecutor` chưa phát sự kiện: `Approvals::Revoke`, các job khôi phục, `AllocateTraceability.expire_stale!`, webhook VietQR, `ReceiveTransfer`.
+- Proxy production phải chuyển tiếp WebSocket của `/cable` (phase 6).
+- `apps/pos/e2e/support/pos-live-fixture.rb` chưa publish sản phẩm lên kênh POS, nên e2e thật có quét mã cần thêm `Spree::ProductPublication`.
