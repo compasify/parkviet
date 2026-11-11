@@ -48,7 +48,7 @@
 .login-slide-tags { display: flex; gap: var(--pos-s2); overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
 .login-slide-tags::-webkit-scrollbar { display: none; }
 .login-split .login-slide-tag {
-  flex: 0 0 auto; gap: var(--pos-s2); min-height: 38px; padding: var(--pos-s2) 14px; border-radius: 999px;
+  flex: 0 0 auto; gap: var(--pos-s2); min-height: var(--pos-target); padding: var(--pos-s2) 14px; border-radius: 999px;
   color: var(--login-on-dark); background: #ffffff14; border: 1px solid #ffffff2b; font-size: var(--pos-small); white-space: nowrap;
   transition: background .2s, color .2s, border-color .2s;
 }
@@ -77,7 +77,7 @@
 .login-progress-fill { display: block; height: 100%; width: 100%; border-radius: inherit; background: white; transform-origin: left; transform: scaleX(0); animation: login-progress 8s linear forwards; animation-play-state: paused; }
 .login-progress-fill[data-running='true'] { animation-play-state: running; }
 .login-carousel-count { min-width: 64px; text-align: center; font-size: var(--pos-small); font-weight: 700; font-variant-numeric: tabular-nums; color: var(--login-on-dark); }
-.login-split .login-carousel-button { width: 40px; min-width: 40px; min-height: 40px; padding: 0; border-radius: 50%; color: white; background: #ffffff14; border-color: #ffffff38; }
+.login-split .login-carousel-button { width: var(--pos-target); min-width: var(--pos-target); min-height: var(--pos-target); padding: 0; border-radius: 50%; color: white; background: #ffffff14; border-color: #ffffff38; }
 .login-split .login-carousel-button:not(:disabled):hover { background: #ffffff2e; border-color: #ffffff80; }
 .login-split .login-carousel-button:not(:disabled):active { background: #ffffff40; }
 .login-carousel-button .pos-icon { width: 18px; height: 18px; }
@@ -97,7 +97,7 @@
 .login-split .login-details-head > p { margin: 0; font-size: .925rem; line-height: 1.6; }
 .login-group-nav { display: flex; flex-wrap: wrap; gap: var(--pos-s2); margin-top: var(--pos-s5); }
 .login-split .login-group-nav a {
-  display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 4px 12px 4px 6px; border-radius: 999px;
+  display: inline-flex; align-items: center; gap: 6px; min-height: var(--pos-target); padding: 4px 12px 4px 6px; border-radius: 999px;
   font-size: var(--pos-small); font-weight: 600; text-decoration: none; color: var(--pos-ink); background: white; border: 1px solid var(--pos-border);
   transition: border-color .15s, color .15s, transform .15s;
 }

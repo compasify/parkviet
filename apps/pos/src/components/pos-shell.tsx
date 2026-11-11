@@ -368,7 +368,9 @@ function ShellFrame() {
           ) : null}
         </div>
         {/* Recovery notices float over the page: they come and go with the
-            outcome of a request and must not push the sale screen around. */}
+            outcome of a request, must not push the sale screen around, and
+            must not block the controls beneath them (only their own links and
+            buttons take clicks). */}
         <div className="pos-floating-alerts" aria-live="polite">
           {uncertain ? (
             <p className="error" role="status">
