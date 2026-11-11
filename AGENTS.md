@@ -66,7 +66,10 @@ project is ejected when `docker-compose.yml` mounts `./server:/rails`.
 Several sessions often share this checkout, the `spree_test` database and the fixed Playwright
 ports, so a full suite blocks every other session. The full rspec suite takes about 9 minutes.
 
-While working, run only the tests that cover the change:
+Run only the specs for the files you changed, also before committing. Never run a full suite
+locally: GitHub Actions runs rspec and both e2e suites on every push
+(`.github/workflows/backend-ci.yml`, `pos-e2e.yml`, `pos-dashboard-e2e.yml`), and the developer
+runs a full suite themself when a feature is released.
 
 ```bash
 pnpm spree rspec spec/path/to/changed_spec.rb
@@ -76,8 +79,8 @@ pnpm --dir apps/pos-dashboard exec playwright test e2e/changed.spec.ts --project
 
 - Add `--project tablet` and `--project mobile` for the affected spec files only when the change
   touches layout or responsive behavior.
-- Run a full suite (`pnpm spree rspec` with no path, or `pnpm test:e2e` with no `--project`) once,
-  right before committing, and only for the side you changed.
+- A spec file is related when it tests the file you changed or a behavior you changed. If you
+  cannot tell which specs cover a change, run the spec directory of that feature, not the suite.
 - If rspec refuses to start or a Playwright port is busy, another session is testing. Wait for it
   to finish. Do not stop its processes, change the port or set `PARKVIET_RSPEC_LOCK=off`.
 

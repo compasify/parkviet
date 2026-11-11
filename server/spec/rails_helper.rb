@@ -7,7 +7,8 @@ require_relative 'support/single_rspec_process'
 # truncates the development database.
 ENV['RAILS_ENV'] = 'test'
 # SimpleCov traces every loaded file and writes coverage/ onto the bind mount.
-# Local runs skip it. COVERAGE=1 turns it back on; CI keeps the gem default.
+# Local runs skip it. COVERAGE=1 turns it back on. On CI the workflow decides
+# through SPREE_DEV_TOOLS_DISABLE_SIMPLECOV.
 if ENV['COVERAGE'] == '1'
   ENV.delete('SPREE_DEV_TOOLS_DISABLE_SIMPLECOV')
 elsif ENV['CI'].to_s.empty?

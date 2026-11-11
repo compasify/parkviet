@@ -1,0 +1,72 @@
+name: POS dashboard e2e
+
+# Every branch, whenever the POS administration app or the shared POS logic
+# changes. The suite mocks the API, so no backend runs here.
+on:
+  push:
+    paths:
+      - apps/pos-dashboard/**
+      - packages/pos-shared/**
+      - .github/workflows/pos-dashboard-e2e.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    name: playwright (${{ matrix.shard }}/2)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: apps/pos-dashboard/package.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: |
+            packages/pos-shared/pnpm-lock.yaml
+            apps/pos-dashboard/pnpm-lock.yaml
+
+      # The app links pos-shared from source, and its imports resolve from
+      # pos-shared's own node_modules.
+      - name: Install pos-shared
+        working-directory: packages/pos-shared
+        run: pnpm install --frozen-lockfile
+
+      - name: Install the app
+        working-directory: apps/pos-dashboard
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Chromium
+        working-directory: apps/pos-dashboard
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run Playwright
+        working-directory: apps/pos-dashboard
+        run: pnpm exec playwright test --shard=${{ matrix.shard }}/2 --reporter=list,html
+
+      - name: Upload the report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pos-dashboard-e2e-report-${{ matrix.shard }}
+          path: |
+            apps/pos-dashboard/playwright-report/
+            apps/pos-dashboard/test-results/
+          retention-days: 7

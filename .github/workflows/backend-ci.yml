@@ -1,17 +1,32 @@
-name: CI
+name: Backend CI
 
+# Every branch, whenever the API changes. Run it by hand from the Actions tab
+# (or `gh workflow run backend-ci.yml --ref <branch>`) to test a branch at will.
 on:
   push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+    paths:
+      - server/**
+      - .github/workflows/backend-ci.yml
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+# A newer push to the same branch makes the older run pointless.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  test:
+  rspec:
+    name: rspec (${{ matrix.shard }}/4)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
 
     defaults:
       run:
@@ -31,11 +46,20 @@ jobs:
           --health-retries=5
 
     env:
-      DATABASE_URL: postgres://postgres@localhost:5432/spree_test
+      # database.yml builds the test config from these. Not DATABASE_URL: it
+      # would override database.yml for every Rails env.
+      DATABASE_HOST: localhost
+      DATABASE_USERNAME: postgres
       RAILS_ENV: test
+      # Each shard sees a quarter of the code, so its coverage report means
+      # nothing on its own. Run locally with COVERAGE=1 for a report.
+      SPREE_DEV_TOOLS_DISABLE_SIMPLECOV: '1'
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          # spree_vietqr is a git submodule under vendor/gems; bundler needs it.
+          submodules: true
 
       # libvips, as in the Docker image: uploads and image variants run
       # through it. libvips-tools pulls in the library under whatever name
@@ -54,8 +78,43 @@ jobs:
       - name: Precompile assets
         run: bin/rake assets:precompile
 
+      # Files are dealt largest first to the shard with the least so far, so
+      # the four shards finish close together. The split depends only on the
+      # files, so a failing shard reruns the same files.
+      - name: Pick this shard's spec files
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: |
+          find spec -name '*_spec.rb' -printf '%s %p\n' | sort -k1,1nr -k2,2 |
+            awk -v n=4 -v shard="$SHARD" '{
+              best = 0
+              for (k = 1; k < n; k++) if (load[k] < load[best]) best = k
+              load[best] += $1
+              if (best == shard - 1) print $2
+            }' > "$RUNNER_TEMP/shard-files"
+          echo "$(wc -l < "$RUNNER_TEMP/shard-files") spec files in this shard"
+
       - name: Run tests
-        run: bundle exec rspec
+        run: xargs bundle exec rspec < "$RUNNER_TEMP/shard-files"
+
+  security:
+    name: Brakeman and bundle audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    defaults:
+      run:
+        working-directory: server
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          working-directory: server
+          bundler-cache: true
 
       - name: Brakeman security scan
         run: bundle exec brakeman --no-pager -q
