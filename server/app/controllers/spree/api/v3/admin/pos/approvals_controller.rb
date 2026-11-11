@@ -9,6 +9,10 @@ module Spree
           class ApprovalsController < BaseController
             scoped_resource :pos_topology
 
+            # Granting is decided per branch by the approve capability, so a
+            # branch manager needs no store-level setup permission for it.
+            pos_permissions create: %w[write_pos_orders write_pos_topology]
+
             def index
               return if channel_rejected?
 

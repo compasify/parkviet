@@ -65,6 +65,8 @@
   "leaseStale": "This page's editing access expired or was taken over elsewhere. Select “Claim editing” again; reloading is not required.",
   "capabilityManage": "Configure",
   "capabilityDeviceManage": "Manage devices",
+  "capabilityPrinterManage": "Manage printers",
+  "receiptCopyBanner": "COPY – no. {{number}}",
   "capabilityShift": "Open shift",
   "capabilityRecover": "Recover",
   "capabilityApprove": "Approve",

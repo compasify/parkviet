@@ -150,6 +150,7 @@ const REFUSALS = [
   'payment_method_in_use',
   'unit_in_use',
   'staff_role_in_use',
+  'printer_in_use',
 ] as const
 // The refusal text of a master-data write: the known 409 reasons in the
 // reader's language, anything else as the shared POS failure text.

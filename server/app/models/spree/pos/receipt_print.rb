@@ -16,9 +16,26 @@ module Spree
       belongs_to :receipt_snapshot, class_name: 'Spree::Pos::ReceiptSnapshot'
       belongs_to :actor, class_name: staff_class_name
       belongs_to :receipt_template, class_name: 'Spree::Pos::ReceiptTemplate', optional: true
+      # The LAN printer the browser sent it to. Only such a print can be taken back.
+      belongs_to :printer, class_name: 'Spree::Pos::Printer', optional: true
 
       validates :copy_number, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
       validates :paper, inclusion: { in: ReceiptTemplate::PAPERS }, allow_nil: true
+
+      # Prints that count. A voided print never reached paper.
+      scope :active, -> { where(voided_at: nil) }
+
+      # Records the next print of `snapshot`. The caller is inside a command;
+      # the snapshot lock is what makes the number safe to read.
+      def self.record!(snapshot:, actor:, requested:, printer: nil)
+        snapshot.lock!
+        copy_number = (snapshot.prints.active.maximum(:copy_number) || -1) + 1
+        layout = layout_for!(snapshot, requested)
+        row = create!(store: snapshot.store, receipt_snapshot: snapshot, actor: actor, copy_number: copy_number, printer: printer, **layout)
+        AuditEntry.record!(store: snapshot.store, actor: actor, action: row.copy? ? 'receipt.reprint' : 'receipt.print', subject: snapshot,
+                           metadata: { print_id: row.prefixed_id, copy_number: copy_number, number: snapshot.number }.merge(row.layout))
+        row
+      end
 
       # The template, version and paper for printing `snapshot`, from the
       # `receipt_template_id`, `template_version` and `paper` asked for.
@@ -30,7 +47,7 @@ module Spree
       # any other template defaults to its current version and paper.
       def self.layout_for!(snapshot, requested)
         document_type = ReceiptTemplate.document_type_for(snapshot.source_type)
-        original = snapshot.prints.find_by(copy_number: 0)
+        original = snapshot.prints.active.find_by(copy_number: 0)
         return requested_layout(snapshot, document_type, original, requested) if requested['receipt_template_id'].present?
 
         %w[template_version paper].each do |key|
@@ -80,6 +97,27 @@ module Spree
 
       def copy?
         copy_number.positive?
+      end
+
+      def voided?
+        voided_at.present?
+      end
+
+      # Prints stay immutable except for this one fact; `update_all` is the
+      # write `readonly?` leaves open. Returns whether this call voided it.
+      def void!
+        self.class.where(id: id, voided_at: nil).update_all(voided_at: Time.current).positive?
+      end
+
+      # The caller holds the snapshot lock, as for `record!`.
+      def latest?
+        copy_number == receipt_snapshot.prints.active.maximum(:copy_number)
+      end
+
+      # Gives the number back only when nothing was numbered after it, so an
+      # original can never vanish while a later copy still counts.
+      def void_if_latest!
+        latest? && void!
       end
 
       def to_pos

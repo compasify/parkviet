@@ -65,6 +65,8 @@
   "leaseStale": "Quyền sửa của trang này đã hết hạn hoặc đã được tiếp quản ở nơi khác. Bấm “Nhận quyền sửa” để xin lại; không cần F5.",
   "capabilityManage": "Cấu hình",
   "capabilityDeviceManage": "Quản lý thiết bị",
+  "capabilityPrinterManage": "Quản lý máy in",
+  "receiptCopyBanner": "BẢN SAO – lần {{number}}",
   "capabilityShift": "Mở ca",
   "capabilityRecover": "Khôi phục",
   "capabilityApprove": "Duyệt",

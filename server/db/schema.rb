@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_11_090000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_11_120400) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -3004,6 +3004,72 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_090000) do
     t.check_constraint "kind::text = ANY (ARRAY['cash_count'::character varying::text, 'bank_manual'::character varying::text, 'failed_no_effect'::character varying::text])", name: "chk_pos_payout_evidences_kind"
   end
 
+  create_table "spree_pos_print_jobs", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "branch_id", null: false
+    t.bigint "printer_id", null: false
+    t.string "kind", null: false
+    t.jsonb "document", null: false
+    t.string "source_type"
+    t.bigint "source_id"
+    t.integer "source_revision"
+    t.string "status", default: "queued", null: false
+    t.integer "attempts", default: 0, null: false
+    t.bigint "claimed_by_device_id"
+    t.datetime "claim_expires_at"
+    t.datetime "printed_at"
+    t.string "last_error"
+    t.jsonb "attempt_reports", default: {}, null: false
+    t.string "idempotency_key", null: false
+    t.bigint "created_by_id"
+    t.bigint "copy_of_id"
+    t.bigint "receipt_print_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "content_digest"
+    t.datetime "next_attempt_at"
+    t.bigint "receipt_template_id"
+    t.integer "template_version"
+    t.index ["branch_id"], name: "index_spree_pos_print_jobs_on_branch_id"
+    t.index ["claim_expires_at"], name: "idx_pos_print_jobs_leases", where: "((status)::text = 'claimed'::text)"
+    t.index ["claimed_by_device_id"], name: "index_spree_pos_print_jobs_on_claimed_by_device_id"
+    t.index ["copy_of_id"], name: "index_spree_pos_print_jobs_on_copy_of_id"
+    t.index ["printer_id", "status", "id"], name: "idx_pos_print_jobs_queue"
+    t.index ["receipt_print_id"], name: "index_spree_pos_print_jobs_on_receipt_print_id"
+    t.index ["receipt_template_id"], name: "index_spree_pos_print_jobs_on_receipt_template_id"
+    t.index ["source_type", "source_id"], name: "idx_pos_print_jobs_source"
+    t.index ["store_id", "idempotency_key"], name: "idx_pos_print_jobs_key", unique: true
+    t.check_constraint "attempts >= 0", name: "chk_pos_print_jobs_attempts"
+    t.check_constraint "kind::text = ANY (ARRAY['receipt'::character varying, 'prebill'::character varying, 'kitchen_ticket'::character varying, 'void_ticket'::character varying, 'cup_label'::character varying, 'checklist'::character varying, 'table_qr'::character varying, 'test'::character varying]::text[])", name: "chk_pos_print_jobs_kind"
+    t.check_constraint "status::text = ANY (ARRAY['queued'::character varying, 'claimed'::character varying, 'printed'::character varying, 'failed'::character varying, 'canceled'::character varying]::text[])", name: "chk_pos_print_jobs_status"
+  end
+
+  create_table "spree_pos_printers", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "branch_id", null: false
+    t.bigint "register_id"
+    t.bigint "print_station_device_id"
+    t.string "name", null: false
+    t.string "connection", null: false
+    t.string "address"
+    t.string "bluetooth_id"
+    t.string "paper", default: "80mm", null: false
+    t.string "command_language", default: "escpos", null: false
+    t.text "roles", default: [], null: false, array: true
+    t.string "status", default: "active", null: false
+    t.jsonb "settings", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["branch_id"], name: "index_spree_pos_printers_on_branch_id"
+    t.index ["print_station_device_id"], name: "index_spree_pos_printers_on_print_station_device_id"
+    t.index ["register_id"], name: "index_spree_pos_printers_on_register_id"
+    t.index ["store_id"], name: "index_spree_pos_printers_on_store_id"
+    t.check_constraint "command_language::text = ANY (ARRAY['escpos'::character varying, 'tspl'::character varying]::text[])", name: "chk_pos_printers_language"
+    t.check_constraint "connection::text = ANY (ARRAY['escpos_lan'::character varying, 'escpos_bluetooth'::character varying, 'sunmi_builtin'::character varying, 'epson_epos'::character varying, 'star_webprnt'::character varying, 'browser'::character varying]::text[])", name: "chk_pos_printers_connection"
+    t.check_constraint "paper::text = ANY (ARRAY['58mm'::character varying, '80mm'::character varying]::text[])", name: "chk_pos_printers_paper"
+    t.check_constraint "status::text = ANY (ARRAY['active'::character varying, 'disabled'::character varying]::text[])", name: "chk_pos_printers_status"
+  end
+
   create_table "spree_pos_receipt_evidences", force: :cascade do |t|
     t.bigint "store_id", null: false
     t.bigint "tender_attempt_id", null: false
@@ -3032,7 +3098,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_090000) do
     t.bigint "receipt_template_id"
     t.integer "template_version"
     t.string "paper"
-    t.index ["receipt_snapshot_id", "copy_number"], name: "idx_pos_receipt_prints_copy", unique: true
+    t.datetime "voided_at"
+    t.bigint "printer_id"
+    t.index ["printer_id"], name: "index_spree_pos_receipt_prints_on_printer_id"
+    t.index ["receipt_snapshot_id", "copy_number"], name: "idx_pos_receipt_prints_copy", unique: true, where: "(voided_at IS NULL)"
     t.index ["receipt_template_id"], name: "idx_pos_receipt_prints_template"
     t.check_constraint "copy_number >= 0", name: "chk_pos_receipt_prints_copy_number"
     t.check_constraint "paper IS NULL OR (paper::text = ANY (ARRAY['58mm'::character varying::text, '80mm'::character varying::text, 'a4'::character varying::text, 'a5'::character varying::text, 'a6'::character varying::text]))", name: "chk_pos_receipt_prints_paper"
@@ -5537,9 +5606,22 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_090000) do
   add_foreign_key "spree_pos_payout_evidences", "spree_pos_liability_payouts", column: "liability_payout_id"
   add_foreign_key "spree_pos_payout_evidences", "spree_pos_refund_requests", column: "refund_request_id"
   add_foreign_key "spree_pos_payout_evidences", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_print_jobs", "spree_admin_users", column: "created_by_id"
+  add_foreign_key "spree_pos_print_jobs", "spree_pos_branches", column: "branch_id"
+  add_foreign_key "spree_pos_print_jobs", "spree_pos_devices", column: "claimed_by_device_id"
+  add_foreign_key "spree_pos_print_jobs", "spree_pos_print_jobs", column: "copy_of_id", on_delete: :restrict
+  add_foreign_key "spree_pos_print_jobs", "spree_pos_printers", column: "printer_id", on_delete: :restrict
+  add_foreign_key "spree_pos_print_jobs", "spree_pos_receipt_prints", column: "receipt_print_id", on_delete: :restrict
+  add_foreign_key "spree_pos_print_jobs", "spree_pos_receipt_templates", column: "receipt_template_id", on_delete: :restrict
+  add_foreign_key "spree_pos_print_jobs", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_printers", "spree_pos_branches", column: "branch_id"
+  add_foreign_key "spree_pos_printers", "spree_pos_devices", column: "print_station_device_id"
+  add_foreign_key "spree_pos_printers", "spree_pos_registers", column: "register_id"
+  add_foreign_key "spree_pos_printers", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_receipt_evidences", "spree_admin_users", column: "actor_id"
   add_foreign_key "spree_pos_receipt_evidences", "spree_pos_tender_attempts", column: "tender_attempt_id"
   add_foreign_key "spree_pos_receipt_evidences", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_receipt_prints", "spree_pos_printers", column: "printer_id", on_delete: :nullify
   add_foreign_key "spree_pos_receipt_prints", "spree_pos_receipt_templates", column: "receipt_template_id"
   add_foreign_key "spree_pos_receipt_template_versions", "spree_admin_users", column: "created_by_id"
   add_foreign_key "spree_pos_receipt_template_versions", "spree_pos_receipt_templates", column: "receipt_template_id"

@@ -83,6 +83,13 @@ describe('POS permission gates', () => {
     }
     expect(tabs(cashier)).toEqual([])
     expect(routeAllowed('branch', cashier)).toBe(false)
+    const printerManager = {
+      ...manager,
+      context: { ...manager.context, capabilities: ['pos.printer.manage'] },
+    }
+    expect(tabs(printerManager)).toEqual(['overview', 'printing'])
+    expect(routeAllowed('branch-printing', printerManager)).toBe(true)
+    expect(routeAllowed('branch-payments', printerManager)).toBe(false)
   })
   it('opens orders to branch staff and deliveries to sellers or collectors', () => {
     const staff = (capabilities: string[], delivery?: boolean) => ({

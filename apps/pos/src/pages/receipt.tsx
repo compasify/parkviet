@@ -4,6 +4,7 @@ import { type FormEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PosPage } from '../components/pos-page';
 import { usePosSelection } from '../components/pos-selection';
+import { PrintQueuePanel } from '../components/print-queue-panel';
 import { ReceiptPrintPanel } from '../components/receipt-print-panel';
 import { useSession } from '../hooks/use-session';
 import { abandonIfNeeded } from '../hooks/use-tenders';
@@ -122,6 +123,7 @@ function Receipts() {
           refreshing={(selectedId ? byId : bySource).isFetching}
         />
       ) : null}
+      <PrintQueuePanel />
     </PosPage>
   );
 }

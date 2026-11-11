@@ -1,3 +1,4 @@
+import { certainlyUnprinted, type VoidReason } from '@parkviet/pos-shared/print-commands/direct';
 import { snapshotDocumentType } from '@parkviet/pos-shared/receipt-template/data';
 import { defaultTemplate } from '@parkviet/pos-shared/receipt-template/defaults';
 import { printCopies } from '@parkviet/pos-shared/receipt-template/render';
@@ -7,6 +8,7 @@ import { serverIssues } from '@parkviet/pos-shared/receipt-template/validate';
 import { type QueryClient, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { usePrintRoute } from '../hooks/use-print-jobs';
 import {
   loadReceiptTemplateVersion,
   refreshReceiptTemplates,
@@ -19,11 +21,13 @@ import {
   createBrowserPrintAdapter,
   isPaperSize,
   type PaperSize,
+  type PrintOutcome,
   type ReceiptPrint,
   type ReceiptSnapshot,
   receiptPrintDocument,
   receiptPrintTitle,
 } from '../lib/print-adapter';
+import { BROWSER_ROUTE, deliverDirect, type PrintRoute } from '../lib/print-adapters';
 import { autoPrintEnabled, rememberTemplate, setAutoPrint } from '../lib/receipt-preferences';
 import { describeFailure, failureStatus } from '../lib/request-failure';
 import { PayLaterShareButton } from './pay-later-share-button';
@@ -113,6 +117,9 @@ async function recordedConfig(
 // used up its number and the next one is a copy. A reprint starts from the
 // template, version and paper of the original; another template prints with
 // its current version. The sheet follows the layout the server recorded.
+// A LAN printer is sent the document from here: a delivery known to have left
+// no paper gives its number back, and the browser dialog stays as the fallback.
+// A print station's queue prints it later and reports back to the server.
 // A sale template may print several copies with the first press: each is
 // recorded in turn under its own key, and a copy that could not be recorded
 // is never printed. `autoPrint` prints a sale receipt that was never printed
@@ -139,6 +146,8 @@ export function ReceiptPrintPanel({
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
   const [autoOn, setAutoOn] = useState(autoPrintEnabled);
+  const [sending, setSending] = useState(false);
+  const [offerBrowser, setOfferBrowser] = useState(false);
   const autoStarted = useRef(false);
   // The newer of the two: a refreshed read may know of prints made elsewhere.
   const printCount = (row: ReceiptSnapshot) => (row.printed ? row.copy_count + 1 : 0);
@@ -152,8 +161,16 @@ export function ReceiptPrintPanel({
     remember: true,
   });
 
+  const printRoute = usePrintRoute(receipt.branch_id, receipt.register_id ?? null, 'receipt');
+
   const print = useMutation({
-    mutationFn: async (target: ReceiptSnapshot): Promise<PrintBatch> => {
+    mutationFn: async ({
+      target,
+      route,
+    }: {
+      target: ReceiptSnapshot;
+      route: PrintRoute;
+    }): Promise<PrintBatch> => {
       const { choice } = template;
       // Only a loaded template counts; the built-in stand-in never does.
       const loadedConfig = template.loading || template.fallback ? null : template.config;
@@ -164,9 +181,16 @@ export function ReceiptPrintPanel({
         return (
           await session.request<{ data: PrintResult }>(
             'POST',
-            `/pos/receipts/${target.id}/prints`,
+            route.kind === 'queue' ? '/pos/print_jobs' : `/pos/receipts/${target.id}/prints`,
             {
-              body: { idempotency_key: idempotencyKey, ...layout },
+              body: {
+                idempotency_key: idempotencyKey,
+                ...layout,
+                ...(route.kind === 'queue'
+                  ? { kind: 'receipt', printer_id: route.printer.id, receipt_id: target.id }
+                  : {}),
+                ...(route.kind === 'direct' ? { printer_id: route.printer.id } : {}),
+              },
               idempotencyKey,
             },
           )
@@ -211,7 +235,7 @@ export function ReceiptPrintPanel({
       return { prints, receipt, config, total, failure };
     },
   });
-  const busy = print.isPending || Boolean(job);
+  const busy = print.isPending || Boolean(job) || sending;
 
   useEffect(() => {
     onBusyChange?.(busy);
@@ -253,12 +277,61 @@ export function ReceiptPrintPanel({
     });
   });
 
-  const doPrint = async () => {
+  // Takes back prints the printer never got, newest first as the server
+  // requires. A refusal leaves them counted, which only costs a copy label.
+  const voidPrints = async (
+    prints: ReceiptPrint[],
+    fallback: ReceiptSnapshot,
+    reason: VoidReason,
+  ) => {
+    let latest = fallback;
+    for (const row of [...prints].reverse()) {
+      const idempotencyKey = crypto.randomUUID();
+      try {
+        const voided = await session.request<{ data: PrintResult }>(
+          'POST',
+          `/pos/receipts/${fallback.id}/prints/${row.id}/void`,
+          { body: { idempotency_key: idempotencyKey, reason }, idempotencyKey },
+        );
+        latest = voided.data.receipt;
+      } catch (failure) {
+        abandonIfNeeded(failure);
+        break;
+      }
+    }
+    return latest;
+  };
+
+  // Sends each print in turn and stops at the first that fails. The prints
+  // after it were never sent, so they go back. The failed one goes back only on
+  // an outcome known to leave no paper: after a timeout or a dropped connection
+  // the printer may have printed, and its number stays.
+  const sendDirect = async (
+    route: Extract<PrintRoute, { kind: 'direct' }>,
+    batch: PrintBatch,
+  ): Promise<{ outcome: PrintOutcome; receipt: ReceiptSnapshot }> => {
+    const config = batch.config ?? defaultTemplate(documentType);
+    for (const [index, row] of batch.prints.entries()) {
+      const outcome = await deliverDirect(
+        route.printer,
+        receiptPrintDocument(batch.receipt, row, t, config),
+      );
+      if (outcome.ok) continue;
+      const receipt = certainlyUnprinted(outcome)
+        ? await voidPrints(batch.prints.slice(index), batch.receipt, outcome.reason)
+        : await voidPrints(batch.prints.slice(index + 1), batch.receipt, 'not_sent');
+      return { outcome, receipt };
+    }
+    return { outcome: { ok: true }, receipt: batch.receipt };
+  };
+
+  const doPrint = async (route: PrintRoute = printRoute.route) => {
     if (busy) return;
     setError('');
     setNotice('');
+    setOfferBrowser(false);
     try {
-      const batch = await print.mutateAsync(receipt);
+      const batch = await print.mutateAsync({ target: receipt, route });
       const [first] = batch.prints;
       if (!first) return;
       setPrinted(batch.receipt);
@@ -284,6 +357,26 @@ export function ReceiptPrintPanel({
       if (first.template_id) rememberTemplate(documentType, first.template_id);
       // The next print starts again from the original's template.
       template.reset();
+      if (route.kind === 'queue') {
+        setNotice(t('printQueuedNotice', { printer: route.printer.name }));
+        return;
+      }
+      if (route.kind === 'direct') {
+        setSending(true);
+        try {
+          const sent = await sendDirect(route, batch);
+          setPrinted(sent.receipt);
+          cachePrinted(queryClient, sent.receipt);
+          if (!sent.outcome.ok) {
+            setNotice('');
+            setError(t(`printOutcome_${sent.outcome.reason}`, { printer: route.printer.name }));
+            setOfferBrowser(true);
+          }
+        } finally {
+          setSending(false);
+        }
+        return;
+      }
       setJob({
         prints: batch.prints,
         paper: isPaperSize(first.paper) ? first.paper : template.paper,
@@ -300,7 +393,7 @@ export function ReceiptPrintPanel({
   // An automatic print starts once, when the template is ready.
   useEffect(() => {
     if (!autoPrint || autoStarted.current || receipt.printed || documentType !== 'sale') return;
-    if (template.loading || refreshing) return;
+    if (template.loading || refreshing || printRoute.loading) return;
     autoStarted.current = true;
     void doPrint();
   });
@@ -363,6 +456,11 @@ export function ReceiptPrintPanel({
         <p className="error" role="alert">
           {error}
         </p>
+      ) : null}
+      {offerBrowser ? (
+        <button type="button" disabled={busy} onClick={() => void doPrint(BROWSER_ROUTE)}>
+          {t('printUseBrowser')}
+        </button>
       ) : null}
       <div className="receipt-preview">
         <ReceiptSheet document={preview} paper={paper} printId={job?.prints[0]?.id} />

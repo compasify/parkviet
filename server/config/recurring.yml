@@ -76,6 +76,10 @@ production:
   pos_release_trace_reservations:
     class: Spree::Pos::ReleaseTraceReservationsJob
     schedule: every minute
+  # POS print queue: return jobs whose print station lease ran out.
+  pos_release_print_claims:
+    class: Spree::Pos::ReleasePrintClaimsJob
+    schedule: every minute
   # Vietnam VAT schedules (the 8% food rate becomes 10% on 2027-01-01).
   # 00:05 Vietnam time. The containers run in UTC, so the zone must be named.
   pos_apply_tax_rate_schedules:

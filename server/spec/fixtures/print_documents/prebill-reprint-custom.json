@@ -1,0 +1,361 @@
+{
+  "input": {
+    "workspace": {
+      "business_date": "2026-11-11",
+      "note": "  Không hành\n ",
+      "customer": {
+        "name": "A•• B•",
+        "phone": "•••••••000",
+        "address": ""
+      },
+      "delivery": {
+        "deliverer": "",
+        "fee": "0.0"
+      },
+      "totals": {
+        "currency": "VND",
+        "item_total": "60000.0",
+        "discount_total": "1000.0",
+        "total": "59000.0",
+        "taxes": [
+          {
+            "label": "VAT",
+            "rate": "10",
+            "amount": "500.0"
+          }
+        ]
+      },
+      "financial": {
+        "allocated": "9000.0",
+        "remaining": "50000.0"
+      },
+      "line_items": [
+        {
+          "name": "Bia <1>",
+          "sku": "B1",
+          "quantity": 2,
+          "price": "30000.0",
+          "amount": "60000.0",
+          "serial_codes": [
+            "X1"
+          ],
+          "lot_code": "L9"
+        }
+      ]
+    },
+    "place": {
+      "storeName": "Quán",
+      "storeProfile": {
+        "address": "3 Pasteur",
+        "logo_url": "https://cdn.example.test/l.png"
+      },
+      "branchName": "CN2",
+      "branchCode": "C2",
+      "returnWindowDays": null,
+      "registerName": "Bar"
+    },
+    "now": "2026-11-11T03:04:05.000Z",
+    "timeZone": "Asia/Ho_Chi_Minh",
+    "config": {
+      "schema": 1,
+      "page": {
+        "margin_mm": 99,
+        "font": "mono",
+        "font_size": "l",
+        "line_spacing": 1.2,
+        "copies": 2
+      },
+      "header": [
+        {
+          "type": "logo",
+          "width_pct": 50,
+          "align": "left",
+          "monochrome": true
+        },
+        {
+          "type": "business",
+          "fields": [
+            "name",
+            "branch",
+            "address",
+            "phone",
+            "unknown"
+          ],
+          "align": "center"
+        },
+        {
+          "type": "text",
+          "value": "ĐT: {store.phone}\n{unknown.variable}\nCa: {cashier}\nSố: {document.number}",
+          "bold": true,
+          "size": "l"
+        },
+        {
+          "type": "title",
+          "label": "HÓA ĐƠN <b>"
+        },
+        {
+          "type": "title",
+          "label": "bỏ qua"
+        },
+        {
+          "type": "divider",
+          "style": "solid"
+        },
+        {
+          "type": "spacer",
+          "mm": 50
+        },
+        "not a block"
+      ],
+      "meta": {
+        "fields": [
+          "time",
+          "customer"
+        ],
+        "labels": {
+          "time": "Lúc"
+        }
+      },
+      "lines": {
+        "layout": "table",
+        "columns": [
+          "index",
+          "name",
+          "sku",
+          "unit",
+          "qty",
+          "price",
+          "discount",
+          "amount"
+        ],
+        "show_trace": true,
+        "show_conversion": true
+      },
+      "totals": {
+        "fields": [
+          "item_total"
+        ],
+        "labels": {
+          "total": "Phải trả"
+        }
+      },
+      "payments": {
+        "fields": [
+          "methods",
+          "paid_total",
+          "debt",
+          "pay_qr"
+        ],
+        "labels": {
+          "methods": "bỏ qua",
+          "pay_qr": "Trả sau"
+        }
+      },
+      "footer": [
+        {
+          "type": "qr",
+          "source": "url",
+          "value": "https://example.test/a?b=1",
+          "caption": "Xem",
+          "align": "right"
+        },
+        {
+          "type": "qr",
+          "source": "url",
+          "value": "javascript:alert(1)"
+        },
+        {
+          "type": "qr",
+          "source": "store_social",
+          "field": "facebook"
+        },
+        {
+          "type": "barcode",
+          "align": "center"
+        },
+        {
+          "type": "signatures",
+          "parties": [
+            "seller",
+            "buyer"
+          ],
+          "labels": {
+            "buyer": "Khách"
+          }
+        },
+        {
+          "type": "title",
+          "label": "không in ở chân"
+        }
+      ]
+    },
+    "banner": "IN LẠI"
+  },
+  "document": {
+    "version": 1,
+    "kind": "prebill",
+    "documentType": "prebill",
+    "page": {
+      "margin_mm": 20,
+      "font": "mono",
+      "font_size": "l",
+      "line_spacing": 1.2
+    },
+    "banners": [
+      "TẠM TÍNH – CHƯA THANH TOÁN",
+      "IN LẠI"
+    ],
+    "header": [
+      {
+        "kind": "image",
+        "src": "https://cdn.example.test/l.png",
+        "alt": "Quán",
+        "widthPct": 50,
+        "align": "left",
+        "monochrome": true
+      },
+      {
+        "kind": "text",
+        "lines": [
+          "Quán",
+          "CN2",
+          "3 Pasteur"
+        ],
+        "align": "center",
+        "bold": false,
+        "size": "m"
+      },
+      {
+        "kind": "text",
+        "lines": [
+          "{unknown.variable}"
+        ],
+        "align": "center",
+        "bold": true,
+        "size": "l"
+      },
+      {
+        "kind": "title",
+        "title": "HÓA ĐƠN <b>",
+        "number": null
+      },
+      {
+        "kind": "divider",
+        "style": "solid"
+      },
+      {
+        "kind": "spacer",
+        "mm": 10
+      }
+    ],
+    "meta": [
+      {
+        "label": "Lúc",
+        "value": "11/11/2026 10:04"
+      },
+      {
+        "label": "Khách hàng",
+        "value": "A•• B• · •••••••000"
+      },
+      {
+        "label": "Giao hàng",
+        "value": "Giao tận nhà",
+        "strong": true
+      }
+    ],
+    "lines": {
+      "layout": "table",
+      "headings": {
+        "index": "STT",
+        "name": "Tên hàng"
+      },
+      "columns": [
+        {
+          "key": "qty",
+          "label": "SL"
+        },
+        {
+          "key": "price",
+          "label": "Đ.giá"
+        },
+        {
+          "key": "discount",
+          "label": "Giảm"
+        },
+        {
+          "key": "amount",
+          "label": "T.tiền"
+        }
+      ],
+      "rows": [
+        {
+          "index": 1,
+          "name": "Bia <1> (B1)",
+          "cells": [
+            "2",
+            "30.000",
+            "",
+            "60.000"
+          ],
+          "details": [
+            "Serial/IMEI: X1",
+            "Lô: L9"
+          ]
+        }
+      ]
+    },
+    "totals": [
+      {
+        "label": "Tổng tiền hàng",
+        "value": "60.000 ₫"
+      },
+      {
+        "label": "VAT (10%)",
+        "value": "500 ₫"
+      },
+      {
+        "label": "Phải trả",
+        "value": "59.000 ₫",
+        "strong": true
+      }
+    ],
+    "payments": [
+      {
+        "label": "Đã thanh toán",
+        "value": "9.000 ₫"
+      },
+      {
+        "label": "Còn phải thu",
+        "value": "50.000 ₫",
+        "strong": true
+      }
+    ],
+    "payQr": null,
+    "notes": [
+      "Không hành",
+      "Phiếu tạm tính không phải biên nhận thanh toán."
+    ],
+    "footer": [
+      {
+        "kind": "qr",
+        "value": "https://example.test/a?b=1",
+        "caption": "Xem",
+        "align": "right"
+      },
+      {
+        "kind": "signatures",
+        "parties": [
+          {
+            "party": "buyer",
+            "label": "Khách"
+          },
+          {
+            "party": "seller",
+            "label": "Người bán"
+          }
+        ]
+      }
+    ],
+    "disclaimer": "Phiếu bán hàng POS — không phải hóa đơn điện tử"
+  }
+}

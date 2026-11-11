@@ -1,0 +1,172 @@
+{
+  "input": {
+    "receipt": {
+      "source_type": "return",
+      "number": "RT1",
+      "issued_at": "2026-11-10T02:00:00Z",
+      "issued_late": false,
+      "disclaimer": "Không phải hóa đơn",
+      "document": {
+        "title": "PHIẾU TRẢ",
+        "timezone": "Asia/Ho_Chi_Minh",
+        "at": "2026-11-10T02:00:00Z",
+        "return_number": "RT1",
+        "order_number": "R100",
+        "lines": [
+          {
+            "name": "Trà",
+            "sku": "T",
+            "quantity": "2.50",
+            "condition": "damaged",
+            "amount": "10000.0"
+          },
+          {
+            "name": "Cà phê",
+            "quantity": 1,
+            "condition": "resellable",
+            "amount": "5000.0"
+          }
+        ],
+        "entitlement_total": "15000.0",
+        "entitlement_posted": true,
+        "credit_note_amount": "1000.0",
+        "refund_entitlement": "14000.0",
+        "reason": "Lỗi"
+      }
+    },
+    "print": null,
+    "config": {
+      "schema": 1,
+      "page": {
+        "margin_mm": 3,
+        "font": "sans",
+        "font_size": "m",
+        "line_spacing": 1.35
+      },
+      "header": [
+        {
+          "type": "business",
+          "fields": [
+            "name",
+            "address",
+            "phone",
+            "branch"
+          ],
+          "align": "center"
+        },
+        {
+          "type": "text",
+          "value": "{register.name}",
+          "align": "center"
+        },
+        {
+          "type": "title"
+        }
+      ],
+      "meta": {
+        "fields": [
+          "time",
+          "cashier",
+          "order_number",
+          "return_number",
+          "customer"
+        ],
+        "labels": {}
+      },
+      "lines": {
+        "layout": "stacked",
+        "columns": [
+          "name",
+          "amount"
+        ],
+        "show_trace": false,
+        "show_conversion": false
+      },
+      "totals": {
+        "fields": [
+          "total"
+        ],
+        "labels": {}
+      },
+      "footer": []
+    }
+  },
+  "document": {
+    "version": 1,
+    "kind": "receipt",
+    "documentType": "return",
+    "page": {
+      "margin_mm": 3,
+      "font": "sans",
+      "font_size": "m",
+      "line_spacing": 1.35
+    },
+    "banners": [],
+    "header": [
+      {
+        "kind": "title",
+        "title": "PHIẾU TRẢ",
+        "number": "RT1"
+      }
+    ],
+    "meta": [
+      {
+        "label": "Thời gian",
+        "value": "10/11/2026 09:00"
+      },
+      {
+        "label": "Đơn gốc",
+        "value": "R100"
+      },
+      {
+        "label": "Phiếu trả",
+        "value": "RT1"
+      }
+    ],
+    "lines": {
+      "layout": "stacked",
+      "items": [
+        {
+          "index": null,
+          "name": "Trà",
+          "amount": "10.000 ₫",
+          "details": [
+            "SL trả: 2,50",
+            "Hàng lỗi"
+          ]
+        },
+        {
+          "index": null,
+          "name": "Cà phê",
+          "amount": "5.000 ₫",
+          "details": [
+            "SL trả: 1",
+            "Bán lại được"
+          ]
+        }
+      ]
+    },
+    "totals": [
+      {
+        "label": "Giá trị hàng trả",
+        "value": "15.000 ₫",
+        "strong": true
+      },
+      {
+        "label": "Trừ vào công nợ",
+        "value": "1.000 ₫"
+      },
+      {
+        "label": "Được hoàn",
+        "value": "14.000 ₫"
+      }
+    ],
+    "payments": [],
+    "payQr": null,
+    "notes": [
+      "Lý do: Lỗi"
+    ],
+    "footer": [],
+    "disclaimer": "Không phải hóa đơn"
+  }
+}

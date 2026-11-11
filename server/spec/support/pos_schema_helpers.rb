@@ -23,6 +23,6 @@ module PosSchemaHelpers
     schema = document.dig('components', 'schemas', name)
     raise "Missing POS schema #{name}" if schema.nil?
 
-    schema
+    schema.merge('components' => document['components'])
   end
 end

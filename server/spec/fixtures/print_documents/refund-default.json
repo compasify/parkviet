@@ -1,0 +1,111 @@
+{
+  "input": {
+    "receipt": {
+      "source_type": "refund",
+      "number": "RF1",
+      "issued_at": "2026-11-10T02:00:00Z",
+      "issued_late": false,
+      "disclaimer": "Không phải hóa đơn",
+      "document": {
+        "title": "HOÀN TIỀN",
+        "at": "2026-11-10T02:00:00Z",
+        "method": "bank",
+        "amount": "5000.0",
+        "reference": "FT9"
+      }
+    },
+    "print": null,
+    "config": {
+      "schema": 1,
+      "page": {
+        "margin_mm": 3,
+        "font": "sans",
+        "font_size": "m",
+        "line_spacing": 1.35
+      },
+      "header": [
+        {
+          "type": "business",
+          "fields": [
+            "name",
+            "address",
+            "phone",
+            "branch"
+          ],
+          "align": "center"
+        },
+        {
+          "type": "text",
+          "value": "{register.name}",
+          "align": "center"
+        },
+        {
+          "type": "title"
+        }
+      ],
+      "meta": {
+        "fields": [
+          "time",
+          "cashier",
+          "order_number",
+          "return_number",
+          "customer"
+        ],
+        "labels": {}
+      },
+      "payments": {
+        "fields": [
+          "methods",
+          "reference"
+        ],
+        "labels": {}
+      },
+      "footer": []
+    }
+  },
+  "document": {
+    "version": 1,
+    "kind": "receipt",
+    "documentType": "refund",
+    "page": {
+      "margin_mm": 3,
+      "font": "sans",
+      "font_size": "m",
+      "line_spacing": 1.35
+    },
+    "banners": [],
+    "header": [
+      {
+        "kind": "title",
+        "title": "HOÀN TIỀN",
+        "number": "RF1"
+      }
+    ],
+    "meta": [
+      {
+        "label": "Thời gian",
+        "value": "10/11/2026 09:00"
+      }
+    ],
+    "lines": {
+      "layout": "stacked",
+      "items": []
+    },
+    "totals": [],
+    "payments": [
+      {
+        "label": "Đã hoàn chuyển khoản",
+        "value": "5.000 ₫",
+        "strong": true
+      },
+      {
+        "label": "Mã giao dịch",
+        "value": "FT9"
+      }
+    ],
+    "payQr": null,
+    "notes": [],
+    "footer": [],
+    "disclaimer": "Không phải hóa đơn"
+  }
+}

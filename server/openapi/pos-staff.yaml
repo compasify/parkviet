@@ -146,6 +146,494 @@ paths:
       responses:
         '204':
           description: Signed out
+  /api/v3/admin/pos/printers:
+    get:
+      operationId: posPrinters
+      parameters:
+        - name: branch_id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Printers of the branch
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Printer'
+    post:
+      operationId: posPrinterCreate
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            maxLength: 200
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [branch_id, name, connection]
+              properties:
+                branch_id:
+                  type: string
+                name:
+                  type: string
+                  maxLength: 80
+                connection:
+                  type: string
+                  enum: [escpos_lan, escpos_bluetooth, sunmi_builtin, epson_epos, star_webprnt, browser]
+                address:
+                  type: [string, 'null']
+                  description: Host or IP with an optional port; no scheme or path.
+                bluetooth_id:
+                  type: [string, 'null']
+                paper:
+                  type: string
+                  enum: [58mm, 80mm]
+                command_language:
+                  type: string
+                  enum: [escpos, tspl]
+                roles:
+                  type: array
+                  items:
+                    type: string
+                print_station_device_id:
+                  type: [string, 'null']
+                register_id:
+                  type: [string, 'null']
+                status:
+                  type: string
+                  enum: [active, disabled]
+                settings:
+                  type: object
+      responses:
+        '201':
+          description: The new printer
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Printer'
+  /api/v3/admin/pos/printers/stations:
+    get:
+      operationId: posPrinterStations
+      parameters:
+        - name: branch_id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Active print station devices of the branch
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      required: [id, name]
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+  /api/v3/admin/pos/printers/{id}:
+    patch:
+      operationId: posPrinterUpdate
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            maxLength: 200
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  maxLength: 80
+                connection:
+                  type: string
+                  enum: [escpos_lan, escpos_bluetooth, sunmi_builtin, epson_epos, star_webprnt, browser]
+                address:
+                  type: [string, 'null']
+                  description: Host or IP with an optional port; no scheme or path.
+                bluetooth_id:
+                  type: [string, 'null']
+                paper:
+                  type: string
+                  enum: [58mm, 80mm]
+                command_language:
+                  type: string
+                  enum: [escpos, tspl]
+                roles:
+                  type: array
+                  items:
+                    type: string
+                print_station_device_id:
+                  type: [string, 'null']
+                register_id:
+                  type: [string, 'null']
+                status:
+                  type: string
+                  enum: [active, disabled]
+                settings:
+                  type: object
+      responses:
+        '200':
+          description: The changed printer
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Printer'
+    delete:
+      operationId: posPrinterDelete
+      description: Refused with `printer_in_use` once the printer has print jobs; disable it instead.
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            maxLength: 200
+      responses:
+        '200':
+          description: The removed printer id
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [id]
+                    properties:
+                      id:
+                        type: string
+        '409':
+          description: Refused; `error.details.reason` says why
+  /api/v3/admin/pos/printers/{id}/test:
+    post:
+      operationId: posPrinterTest
+      description: >
+        A print station printer gets a queued test job. A printer the browser
+        drives gets the test document back, to print from the browser.
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            maxLength: 200
+      responses:
+        '200':
+          description: The test job or document
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [print_job, document]
+                    properties:
+                      print_job:
+                        oneOf:
+                          - $ref: '#/components/schemas/PrintJob'
+                          - type: 'null'
+                      document:
+                        oneOf:
+                          - $ref: '#/components/schemas/PrintDocument'
+                          - type: 'null'
+        '409':
+          description: Refused; `error.details.reason` says why
+  /api/v3/admin/pos/print_jobs:
+    get:
+      operationId: posPrintJobs
+      parameters:
+        - name: branch_id
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: Comma-separated statuses
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The print queue of the branch, newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PrintJob'
+    post:
+      operationId: posPrintJobCreate
+      description: >
+        Queues a receipt (recording its print) or a pre-bill. A pre-bill of a
+        revision already issued is refused with `prebill_already_printed`.
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            maxLength: 200
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [kind, printer_id]
+              properties:
+                kind:
+                  type: string
+                  enum: [receipt, prebill]
+                printer_id:
+                  type: string
+                receipt_id:
+                  type: string
+                workspace_id:
+                  type: string
+                receipt_template_id:
+                  type: string
+                template_version:
+                  type: string
+                paper:
+                  type: string
+      responses:
+        '201':
+          description: The queued job
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PrintJobResult'
+        '409':
+          description: Refused; `error.details.reason` says why
+  /api/v3/admin/pos/print_jobs/prebills:
+    get:
+      operationId: posPrintJobPrebills
+      parameters:
+        - name: branch_id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The latest printed pre-bill of each open order, newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PrintJob'
+  /api/v3/admin/pos/print_jobs/{id}/reprint:
+    post:
+      operationId: posPrintJobReprint
+      description: >
+        A new job for the same document. A pre-bill needs an approval for
+        `workspace.reprint_prebill` bound to the workspace and its revision,
+        and answers `approval_required` without one.
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            maxLength: 200
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                approval_id:
+                  type: string
+      responses:
+        '201':
+          description: The new job
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PrintJobResult'
+        '409':
+          description: Refused; `error.details.reason` says why
+  /api/v3/admin/pos/print_jobs/{id}/cancel:
+    post:
+      operationId: posPrintJobCancel
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            maxLength: 200
+      responses:
+        '200':
+          description: The canceled job
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PrintJob'
+        '409':
+          description: Refused; `error.details.reason` says why
+  /api/v3/admin/pos/receipts/{id}/prints/{print_id}/void:
+    post:
+      operationId: posReceiptPrintVoid
+      description: >
+        Takes back the caller's latest print recorded for a LAN printer, when
+        delivery certainly failed, so it does not count as printed.
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            maxLength: 200
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason:
+                  type: string
+                  enum: [mixed_content, no_address, printer_error, not_sent]
+      responses:
+        '200':
+          description: The voided print
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [print, receipt]
+                    properties:
+                      print:
+                        type: object
+                      receipt:
+                        type: object
+        '409':
+          description: Refused; `error.details.reason` says why
+  /api/v3/pos_device/print_jobs/claim:
+    post:
+      operationId: posDevicePrintClaim
+      description: >
+        The next job of a printer bound to this print station, or null. A
+        printer has one job out at a time, in id order. Printing is
+        at-least-once: deliver the report of an attempt before claiming again,
+        because an attempt whose lease ran out and whose job was claimed again
+        can no longer be reported.
+      responses:
+        '200':
+          description: A claimed job or null
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    oneOf:
+                      - $ref: '#/components/schemas/PrintJobClaim'
+                      - type: 'null'
+  /api/v3/pos_device/print_jobs/{id}/report:
+    post:
+      operationId: posDevicePrintReport
+      description: >
+        How one attempt ended. Repeating the same report is safe. A report for
+        an attempt that is no longer current answers `print_claim_stale`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [attempt, status]
+              properties:
+                attempt:
+                  type: integer
+                  minimum: 1
+                status:
+                  type: string
+                  enum: [printed, failed]
+                error:
+                  type: string
+                  maxLength: 500
+      responses:
+        '200':
+          description: The job after the report
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PrintJob'
+        '409':
+          description: Refused; `error.details.reason` says why
 components:
   schemas:
     RealtimeEvent:
@@ -348,3 +836,409 @@ components:
           $ref: '#/components/schemas/Device'
         server_time:
           type: string
+    Printer:
+      type: object
+      additionalProperties: false
+      required: [id, branch_id, name, connection, address, bluetooth_id, paper, command_language, roles, print_station_device_id, register_id, status, settings]
+      properties:
+        id:
+          type: string
+        branch_id:
+          type: string
+        name:
+          type: string
+        connection:
+          type: string
+          enum: [escpos_lan, escpos_bluetooth, sunmi_builtin, epson_epos, star_webprnt, browser]
+        address:
+          type: [string, 'null']
+        bluetooth_id:
+          type: [string, 'null']
+        paper:
+          type: string
+          enum: [58mm, 80mm]
+        command_language:
+          type: string
+          enum: [escpos, tspl]
+        roles:
+          type: array
+          items:
+            type: string
+            enum: [receipt, prebill, kitchen_ticket, void_ticket, cup_label, checklist, table_qr]
+        print_station_device_id:
+          type: [string, 'null']
+        register_id:
+          type: [string, 'null']
+        status:
+          type: string
+          enum: [active, disabled]
+        settings:
+          type: object
+    PrintJob:
+      type: object
+      additionalProperties: false
+      description: The queue view; a job's document goes only to its print station.
+      required: [id, branch_id, printer_id, printer_name, kind, status, attempts, label, last_error, copy_of_id, created_at, printed_at, workspace_id, source_revision, printer_available, reprinted]
+      properties:
+        id:
+          type: string
+        branch_id:
+          type: string
+        printer_id:
+          type: string
+        printer_name:
+          type: string
+        kind:
+          type: string
+          enum: [receipt, prebill, kitchen_ticket, void_ticket, cup_label, checklist, table_qr, test]
+        status:
+          type: string
+          enum: [queued, claimed, printed, failed, canceled]
+        attempts:
+          type: integer
+        label:
+          type: [string, 'null']
+        last_error:
+          type: [string, 'null']
+        copy_of_id:
+          type: [string, 'null']
+        created_at:
+          type: string
+        printed_at:
+          type: [string, 'null']
+        workspace_id:
+          type: [string, 'null']
+          description: The order of a pre-bill.
+        source_revision:
+          type: [integer, 'null']
+          description: The order's revision when the pre-bill was built.
+        printer_available:
+          type: boolean
+          description: False when the printer is disabled or its print station is revoked, so a waiting job is stuck.
+        reprinted:
+          type: boolean
+          description: A reprint of this job exists and was not canceled.
+        reprint:
+          type: object
+          additionalProperties: false
+          description: Listed pre-bills of open orders only. What the reader may do about reprinting.
+          required: [workspace_revision, approval_id, requester_id, can_approve]
+          properties:
+            workspace_revision:
+              type: integer
+            approval_id:
+              type: [string, 'null']
+              description: A usable approval the reader can spend on this order.
+            requester_id:
+              type: [string, 'null']
+              description: Who an approval would be granted to.
+            can_approve:
+              type: boolean
+    PrintJobResult:
+      type: object
+      required: [print_job]
+      properties:
+        print_job:
+          $ref: '#/components/schemas/PrintJob'
+        print:
+          type: object
+        receipt:
+          type: object
+    PrintJobClaim:
+      type: object
+      additionalProperties: false
+      required: [id, kind, attempt, claim_expires_at, printer, document]
+      properties:
+        id:
+          type: string
+        kind:
+          type: string
+        attempt:
+          type: integer
+          description: Send it back with the report.
+        claim_expires_at:
+          type: string
+        printer:
+          type: object
+          additionalProperties: false
+          required: [id, name, connection, address, bluetooth_id, paper, command_language, settings]
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+            connection:
+              type: string
+            address:
+              type: [string, 'null']
+            bluetooth_id:
+              type: [string, 'null']
+            paper:
+              type: string
+            command_language:
+              type: string
+            settings:
+              type: object
+        document:
+          $ref: '#/components/schemas/PrintDocument'
+    PrintDocument:
+      type: object
+      additionalProperties: false
+      description: >
+        Version 1 of the neutral document a printer prints. Text is plain and
+        unescaped: every printer language must escape it.
+      required: [version, kind, documentType, page, banners, header, meta, lines, totals, payments, payQr, notes, footer, disclaimer]
+      properties:
+        version:
+          const: 1
+        kind:
+          type: string
+          enum: [receipt, prebill, kitchen_ticket, void_ticket, cup_label, checklist, table_qr, test]
+        documentType:
+          enum: [sale, prebill, payment_ticket, return, refund, shift_closure, null]
+        page:
+          $ref: '#/components/schemas/PrintPage'
+        banners:
+          type: array
+          items:
+            type: string
+        header:
+          type: array
+          items:
+            $ref: '#/components/schemas/PrintBlock'
+        meta:
+          type: array
+          items:
+            $ref: '#/components/schemas/PrintRow'
+        lines:
+          $ref: '#/components/schemas/PrintLines'
+        totals:
+          type: array
+          items:
+            $ref: '#/components/schemas/PrintRow'
+        payments:
+          type: array
+          items:
+            $ref: '#/components/schemas/PrintRow'
+        payQr:
+          oneOf:
+            - $ref: '#/components/schemas/PrintPayQr'
+            - type: 'null'
+        notes:
+          type: array
+          items:
+            type: string
+        footer:
+          type: array
+          items:
+            $ref: '#/components/schemas/PrintBlock'
+        disclaimer:
+          type: [string, 'null']
+    PrintPage:
+      type: object
+      additionalProperties: false
+      required: [margin_mm, font, font_size, line_spacing]
+      properties:
+        margin_mm:
+          type: number
+        font:
+          enum: [sans, mono]
+        font_size:
+          enum: [s, m, l]
+        line_spacing:
+          type: number
+        copies:
+          type: integer
+    PrintRow:
+      type: object
+      additionalProperties: false
+      required: [label, value]
+      properties:
+        label:
+          type: string
+        value:
+          type: string
+        strong:
+          type: boolean
+    PrintPayQr:
+      type: object
+      additionalProperties: false
+      required: [value, caption, lines]
+      properties:
+        value:
+          type: string
+        caption:
+          type: string
+        lines:
+          type: array
+          items:
+            type: string
+    PrintBlock:
+      oneOf:
+        - type: object
+          additionalProperties: false
+          required: [kind, lines, align, bold, size]
+          properties:
+            kind:
+              const: text
+            lines:
+              type: array
+              items:
+                type: string
+            align:
+              enum: [left, center, right]
+            bold:
+              type: boolean
+            size:
+              enum: [s, m, l]
+        - type: object
+          additionalProperties: false
+          required: [kind, src, alt, widthPct, align, monochrome]
+          properties:
+            kind:
+              const: image
+            src:
+              type: string
+            alt:
+              type: string
+            widthPct:
+              type: number
+            align:
+              enum: [left, center, right]
+            monochrome:
+              type: boolean
+        - type: object
+          additionalProperties: false
+          required: [kind, value, caption, align]
+          properties:
+            kind:
+              const: qr
+            value:
+              type: string
+            caption:
+              type: [string, 'null']
+            align:
+              enum: [left, center, right]
+        - type: object
+          additionalProperties: false
+          required: [kind, value, align]
+          properties:
+            kind:
+              const: barcode
+            value:
+              type: string
+            align:
+              enum: [left, center, right]
+        - type: object
+          additionalProperties: false
+          required: [kind, parties]
+          properties:
+            kind:
+              const: signatures
+            parties:
+              type: array
+              items:
+                type: object
+                additionalProperties: false
+                required: [party, label]
+                properties:
+                  party:
+                    enum: [buyer, seller, cashier]
+                  label:
+                    type: string
+        - type: object
+          additionalProperties: false
+          required: [kind, title, number]
+          properties:
+            kind:
+              const: title
+            title:
+              type: string
+            number:
+              type: [string, 'null']
+        - type: object
+          additionalProperties: false
+          required: [kind, style]
+          properties:
+            kind:
+              const: divider
+            style:
+              enum: [solid, dashed]
+        - type: object
+          additionalProperties: false
+          required: [kind, mm]
+          properties:
+            kind:
+              const: spacer
+            mm:
+              type: number
+    PrintLines:
+      oneOf:
+        - type: object
+          additionalProperties: false
+          required: [layout, items]
+          properties:
+            layout:
+              const: stacked
+            items:
+              type: array
+              items:
+                type: object
+                additionalProperties: false
+                required: [index, name, amount, details]
+                properties:
+                  index:
+                    type: [integer, 'null']
+                  name:
+                    type: string
+                  amount:
+                    type: [string, 'null']
+                  details:
+                    type: array
+                    items:
+                      type: string
+        - type: object
+          additionalProperties: false
+          required: [layout, headings, columns, rows]
+          properties:
+            layout:
+              const: table
+            headings:
+              type: object
+              additionalProperties: false
+              required: [index, name]
+              properties:
+                index:
+                  type: [string, 'null']
+                name:
+                  type: string
+            columns:
+              type: array
+              items:
+                type: object
+                additionalProperties: false
+                required: [key, label]
+                properties:
+                  key:
+                    enum: [qty, price, discount, amount]
+                  label:
+                    type: string
+            rows:
+              type: array
+              items:
+                type: object
+                additionalProperties: false
+                required: [index, name, cells, details]
+                properties:
+                  index:
+                    type: [integer, 'null']
+                  name:
+                    type: string
+                  cells:
+                    type: array
+                    items:
+                      type: string
+                  details:
+                    type: array
+                    items:
+                      type: string

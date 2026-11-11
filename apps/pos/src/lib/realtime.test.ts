@@ -45,6 +45,22 @@ function matched(target: RealtimeEvent, key: readonly unknown[]) {
   return invalidationsFor(target, scope).some((filter) => matches(filter, key));
 }
 
+describe('print queue invalidation', () => {
+  const queue = ['pos', 'print-jobs', 3, 'br_1'];
+
+  it('refreshes the queue when a job is added, requeued or fails', () => {
+    expect(matched(event({ event: 'print_job.created', id: 'posprintjob_1' }), queue)).toBe(true);
+  });
+
+  it('refreshes the queue when a job is claimed, printed or canceled', () => {
+    expect(matched(event({ event: 'resource.updated', id: 'posprintjob_1' }), queue)).toBe(true);
+  });
+
+  it('leaves the queue alone for other resources', () => {
+    expect(matched(event({ event: 'resource.updated', id: 'posprinter_1' }), queue)).toBe(false);
+  });
+});
+
 const list = ['pos', 'workspaces', 3, 'store_1', 'br_1', null, 1];
 const selected = (id: string) => ['pos', 'workspaces', 3, 'store_1', 'selected', 'br_1', null, id];
 
@@ -121,6 +137,12 @@ describe('invalidationsFor', () => {
   it('reloads the credit state of that workspace, at any revision', () => {
     expect(matched(event(), ['pos', 'workspace-credit', 3, 'ws_1', 7])).toBe(true);
     expect(matched(event(), ['pos', 'workspace-credit', 3, 'ws_2', 7])).toBe(false);
+  });
+
+  it('reloads the print queue on approval.requested, for a granted reprint', () => {
+    expect(matched(event({ event: 'approval.requested' }), ['pos', 'print-jobs', 3, 'br_1'])).toBe(
+      true,
+    );
   });
 
   it('reloads approvals on approval.requested', () => {

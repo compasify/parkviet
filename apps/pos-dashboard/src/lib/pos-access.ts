@@ -60,6 +60,7 @@ export function canManageBranch(
 // there; the server checks the same capabilities on every request.
 export const hasCapability = (access: PosAccess, capability: string) =>
   Boolean(access.context?.capabilities.includes(capability))
+export const canManagePrinters = (access: PosAccess) => hasCapability(access, 'pos.printer.manage')
 // Order history is read by any staff member of the branch.
 export const canReadOrders = (access: PosAccess) => (access.context?.capabilities.length ?? 0) > 0
 // The received-funds ledger is read by collectors and resolvers; only
@@ -113,12 +114,16 @@ export function visibleNav(page: PosPage, access: PosAccess) {
     )
   // Administrators reach a branch from the branch list; a branch manager
   // without store administration gets a direct entry to their own branch.
-  if (page === 'branch') return !canAdminister(access) && canManageBranch(access)
+  if (page === 'branch')
+    return !canAdminister(access) && (canManageBranch(access) || canManagePrinters(access))
+  if (page === 'branch-printing') return canAdminister(access) || canManagePrinters(access)
   if (page === 'features' || page === 'business-model')
     return canAdminister(access) || canManageBranch(access)
   if (page === 'setup' || page === 'store-model') return canAdminister(access, true)
   if (page === 'devices')
-    return canAdminister(access) || hasCapability(access, 'pos.device.manage') || canReadOrders(access)
+    return (
+      canAdminister(access) || hasCapability(access, 'pos.device.manage') || canReadOrders(access)
+    )
   return canAdminister(access)
 }
 // Direct URLs. Setup is reachable by readers: the page shows ask-admin
@@ -127,7 +132,8 @@ export function visibleNav(page: PosPage, access: PosAccess) {
 // traceability module off.
 export function routeAllowed(page: PosPage, access: PosAccess) {
   if (page === 'setup') return canAdminister(access)
-  if (page === 'branch') return canAdminister(access) || canManageBranch(access)
+  if (page === 'branch')
+    return canAdminister(access) || canManageBranch(access) || canManagePrinters(access)
   if (page === 'deliveries') return canHandleDeliveries(access.context?.capabilities)
   if (page === 'inventory') return canOpenStock(access)
   return visibleNav(page, access)

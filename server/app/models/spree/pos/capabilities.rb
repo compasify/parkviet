@@ -35,9 +35,11 @@ module Spree
       INVENTORY_TRACE = 'pos.inventory.trace'
       # Pair, rename and revoke branch devices, and reset another person's PIN.
       DEVICE_MANAGE = 'pos.device.manage'
+      # Add, change, disable and test the branch's printers.
+      PRINTER_MANAGE = 'pos.printer.manage'
       ASSIGNABLE = [MANAGE, OPEN_SHIFT, DISCOUNT, PRICE_OVERRIDE, CUSTOMER, PAYMENT, RESOLVE, RECOVER, APPROVE, TAKEOVER,
                     CREDIT_MANAGE, CREDIT_SELL, RETURN, CASH_MOVE, REPORT_READ, REPORT_EXPORT,
-                    INVENTORY_MANAGE, INVENTORY_TRACE, DEVICE_MANAGE].freeze
+                    INVENTORY_MANAGE, INVENTORY_TRACE, DEVICE_MANAGE, PRINTER_MANAGE].freeze
 
       def self.sanitize(values)
         Array(values).map(&:to_s).uniq

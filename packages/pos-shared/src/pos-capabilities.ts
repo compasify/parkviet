@@ -18,6 +18,7 @@ export const posCapabilities = [
   ['pos.inventory.manage', 'capabilityInventoryManage'],
   ['pos.inventory.trace', 'capabilityInventoryTrace'],
   ['pos.device.manage', 'capabilityDeviceManage'],
+  ['pos.printer.manage', 'capabilityPrinterManage'],
 ] as const;
 
 export const sensitiveCapabilities = [
@@ -37,4 +38,5 @@ export const sensitiveCapabilities = [
   'pos.inventory.manage',
   'pos.inventory.trace',
   'pos.device.manage',
+  'pos.printer.manage',
 ];

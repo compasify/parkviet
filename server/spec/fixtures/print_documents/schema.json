@@ -1,0 +1,567 @@
+{
+  "PrintDocument": {
+    "type": "object",
+    "additionalProperties": false,
+    "description": "Version 1 of the neutral document a printer prints. Text is plain and unescaped: every printer language must escape it.\n",
+    "required": [
+      "version",
+      "kind",
+      "documentType",
+      "page",
+      "banners",
+      "header",
+      "meta",
+      "lines",
+      "totals",
+      "payments",
+      "payQr",
+      "notes",
+      "footer",
+      "disclaimer"
+    ],
+    "properties": {
+      "version": {
+        "const": 1
+      },
+      "kind": {
+        "type": "string",
+        "enum": [
+          "receipt",
+          "prebill",
+          "kitchen_ticket",
+          "void_ticket",
+          "cup_label",
+          "checklist",
+          "table_qr",
+          "test"
+        ]
+      },
+      "documentType": {
+        "enum": [
+          "sale",
+          "prebill",
+          "payment_ticket",
+          "return",
+          "refund",
+          "shift_closure",
+          null
+        ]
+      },
+      "page": {
+        "$ref": "#/components/schemas/PrintPage"
+      },
+      "banners": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "header": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/PrintBlock"
+        }
+      },
+      "meta": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/PrintRow"
+        }
+      },
+      "lines": {
+        "$ref": "#/components/schemas/PrintLines"
+      },
+      "totals": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/PrintRow"
+        }
+      },
+      "payments": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/PrintRow"
+        }
+      },
+      "payQr": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/PrintPayQr"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "notes": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "footer": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/PrintBlock"
+        }
+      },
+      "disclaimer": {
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    }
+  },
+  "PrintPage": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "margin_mm",
+      "font",
+      "font_size",
+      "line_spacing"
+    ],
+    "properties": {
+      "margin_mm": {
+        "type": "number"
+      },
+      "font": {
+        "enum": [
+          "sans",
+          "mono"
+        ]
+      },
+      "font_size": {
+        "enum": [
+          "s",
+          "m",
+          "l"
+        ]
+      },
+      "line_spacing": {
+        "type": "number"
+      },
+      "copies": {
+        "type": "integer"
+      }
+    }
+  },
+  "PrintRow": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "label",
+      "value"
+    ],
+    "properties": {
+      "label": {
+        "type": "string"
+      },
+      "value": {
+        "type": "string"
+      },
+      "strong": {
+        "type": "boolean"
+      }
+    }
+  },
+  "PrintPayQr": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "value",
+      "caption",
+      "lines"
+    ],
+    "properties": {
+      "value": {
+        "type": "string"
+      },
+      "caption": {
+        "type": "string"
+      },
+      "lines": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "PrintBlock": {
+    "oneOf": [
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "lines",
+          "align",
+          "bold",
+          "size"
+        ],
+        "properties": {
+          "kind": {
+            "const": "text"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "align": {
+            "enum": [
+              "left",
+              "center",
+              "right"
+            ]
+          },
+          "bold": {
+            "type": "boolean"
+          },
+          "size": {
+            "enum": [
+              "s",
+              "m",
+              "l"
+            ]
+          }
+        }
+      },
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "src",
+          "alt",
+          "widthPct",
+          "align",
+          "monochrome"
+        ],
+        "properties": {
+          "kind": {
+            "const": "image"
+          },
+          "src": {
+            "type": "string"
+          },
+          "alt": {
+            "type": "string"
+          },
+          "widthPct": {
+            "type": "number"
+          },
+          "align": {
+            "enum": [
+              "left",
+              "center",
+              "right"
+            ]
+          },
+          "monochrome": {
+            "type": "boolean"
+          }
+        }
+      },
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "value",
+          "caption",
+          "align"
+        ],
+        "properties": {
+          "kind": {
+            "const": "qr"
+          },
+          "value": {
+            "type": "string"
+          },
+          "caption": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "align": {
+            "enum": [
+              "left",
+              "center",
+              "right"
+            ]
+          }
+        }
+      },
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "value",
+          "align"
+        ],
+        "properties": {
+          "kind": {
+            "const": "barcode"
+          },
+          "value": {
+            "type": "string"
+          },
+          "align": {
+            "enum": [
+              "left",
+              "center",
+              "right"
+            ]
+          }
+        }
+      },
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "parties"
+        ],
+        "properties": {
+          "kind": {
+            "const": "signatures"
+          },
+          "parties": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "party",
+                "label"
+              ],
+              "properties": {
+                "party": {
+                  "enum": [
+                    "buyer",
+                    "seller",
+                    "cashier"
+                  ]
+                },
+                "label": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "title",
+          "number"
+        ],
+        "properties": {
+          "kind": {
+            "const": "title"
+          },
+          "title": {
+            "type": "string"
+          },
+          "number": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "style"
+        ],
+        "properties": {
+          "kind": {
+            "const": "divider"
+          },
+          "style": {
+            "enum": [
+              "solid",
+              "dashed"
+            ]
+          }
+        }
+      },
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "mm"
+        ],
+        "properties": {
+          "kind": {
+            "const": "spacer"
+          },
+          "mm": {
+            "type": "number"
+          }
+        }
+      }
+    ]
+  },
+  "PrintLines": {
+    "oneOf": [
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "layout",
+          "items"
+        ],
+        "properties": {
+          "layout": {
+            "const": "stacked"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "index",
+                "name",
+                "amount",
+                "details"
+              ],
+              "properties": {
+                "index": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "name": {
+                  "type": "string"
+                },
+                "amount": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "details": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "layout",
+          "headings",
+          "columns",
+          "rows"
+        ],
+        "properties": {
+          "layout": {
+            "const": "table"
+          },
+          "headings": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "index",
+              "name"
+            ],
+            "properties": {
+              "index": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "key",
+                "label"
+              ],
+              "properties": {
+                "key": {
+                  "enum": [
+                    "qty",
+                    "price",
+                    "discount",
+                    "amount"
+                  ]
+                },
+                "label": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "index",
+                "name",
+                "cells",
+                "details"
+              ],
+              "properties": {
+                "index": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "name": {
+                  "type": "string"
+                },
+                "cells": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "details": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    ]
+  }
+}

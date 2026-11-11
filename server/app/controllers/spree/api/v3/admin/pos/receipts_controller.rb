@@ -17,11 +17,13 @@ module Spree
           # a reprint uses the original's unless another template of the same
           # document type is asked for.
           class ReceiptsController < BaseController
+            include ReceiptAccess
+
             scoped_resource :pos_orders
             pos_permissions index: %w[read_pos_orders write_pos_orders], show: %w[read_pos_orders write_pos_orders],
-                            lookup: %w[read_pos_orders write_pos_orders], prints: %w[write_pos_orders]
+                            lookup: %w[read_pos_orders write_pos_orders], prints: %w[write_pos_orders],
+                            void_print: %w[write_pos_orders]
 
-            UNMASKED = ReceivablesController::UNMASKED
             LAYOUT_PARAMS = %w[receipt_template_id template_version paper].freeze
             RETURN_TYPES = %w[return return_supplement refund].freeze
             SOURCES = {
@@ -46,8 +48,8 @@ module Spree
                 scope = scope.where(source_type: params[:source_type])
               end
               records, meta = page_scope(scope)
-              copies = Spree::Pos::ReceiptPrint.where(receipt_snapshot_id: records.map(&:id)).group(:receipt_snapshot_id).maximum(:copy_number)
-              originals = Spree::Pos::ReceiptPrint.where(receipt_snapshot_id: records.map(&:id), copy_number: 0).
+              copies = Spree::Pos::ReceiptPrint.active.where(receipt_snapshot_id: records.map(&:id)).group(:receipt_snapshot_id).maximum(:copy_number)
+              originals = Spree::Pos::ReceiptPrint.active.where(receipt_snapshot_id: records.map(&:id), copy_number: 0).
                           includes(:receipt_template).index_by(&:receipt_snapshot_id)
               mask = mask?(branch)
               render json: {
@@ -87,49 +89,39 @@ module Spree
 
               snapshot = snapshot!(params[:id])
               requested = LAYOUT_PARAMS.select { |name| params[name].present? }.index_with { |name| params[name].to_s }
+              printer = Spree::Pos::PrintJobs::Guard.printer!(current_store, params[:printer_id], branch: snapshot.branch) if params[:printer_id].present?
               payload = { 'command' => 'receipt.print', 'receipt_id' => snapshot.prefixed_id }
               payload['layout'] = requested if requested.any?
+              payload['printer_id'] = printer.prefixed_id if printer
               authorize = -> { raise ActiveRecord::RecordNotFound unless readable?(snapshot.source_type, snapshot.source_record) }
               print = Spree::Pos::CommandExecutor.call(store: current_store, actor: current_user, key: key, payload: payload,
                                                        authorize: authorize) do
-                snapshot.lock!
-                copy_number = (snapshot.prints.maximum(:copy_number) || -1) + 1
-                layout = Spree::Pos::ReceiptPrint.layout_for!(snapshot, requested)
-                row = Spree::Pos::ReceiptPrint.create!(store: current_store, receipt_snapshot: snapshot, actor: current_user,
-                                                       copy_number: copy_number, **layout)
-                audit!(row.copy? ? 'receipt.reprint' : 'receipt.print', snapshot,
-                       { print_id: row.prefixed_id, copy_number: copy_number, number: snapshot.number }.merge(row.layout))
-                row.to_pos
+                Spree::Pos::PrintJobs::Guard.direct_printer!(printer) if printer
+                Spree::Pos::ReceiptPrint.record!(snapshot: snapshot, actor: current_user, requested: requested, printer: printer).to_pos
               end
               render json: { data: { print: print, receipt: snapshot.to_pos(mask: mask?(snapshot.branch)) } }, status: :created
             end
 
-            private
+            # A direct print the browser could not get to the printer: the
+            # number goes back, so the next print is not labelled a copy.
+            def void_print
+              return if channel_rejected?
 
-            def member?(branch)
-              policy.membership_for(branch)&.status == 'active'
-            end
+              key = idempotency_key
+              return if key.nil?
 
-            def returns_reader?(*branches)
-              branches.compact.any? { |branch| Spree::Pos::Masking.returns_visible?(policy, branch) }
-            end
-
-            def readable?(type, record)
-              case type
-              when 'sale' then member?(record.branch)
-              when 'return', 'return_supplement' then returns_reader?(record.branch, record.sale_branch)
-              when 'refund' then returns_reader?(record.branch, record.return_operation.sale_branch)
-              when 'shift_closure' then closure_reader?(record)
-              else false
+              reason = params[:reason].to_s
+              unless Spree::Pos::PrintJobs::VoidDirectPrint::REASONS.include?(reason)
+                return render_error(code: 'parameter_invalid', message: 'Say why the print failed.', status: :unprocessable_content)
               end
+
+              snapshot = snapshot!(params[:id])
+              print = Spree::Pos::PrintJobs::VoidDirectPrint.call(store: current_store, staff: current_user, key: key, snapshot: snapshot,
+                                                                  print_id: params[:print_id], reason: reason)
+              render json: { data: { print: print, receipt: snapshot.to_pos(mask: mask?(snapshot.branch)) } }
             end
 
-            def closure_reader?(closure)
-              return false unless member?(closure.branch)
-
-              [closure.closer_id, closure.approver_id].include?(current_user.id) ||
-                policy.allows?(closure.branch, Spree::Pos::Capabilities::REPORT_READ)
-            end
+            private
 
             # Rows of one branch the reader may list: sales as a member,
             # return documents with return rights there, closing slips they
@@ -149,13 +141,6 @@ module Spree
               scope.or(closures)
             end
 
-            def snapshot!(prefixed)
-              snapshot = Spree::Pos::ReceiptSnapshot.locate(Spree::Pos::ReceiptSnapshot.for_store(current_store), prefixed)
-              raise ActiveRecord::RecordNotFound if snapshot.nil? || !readable?(snapshot.source_type, snapshot.source_record)
-
-              snapshot
-            end
-
             def source!(prefixed)
               model = SOURCES[prefixed.to_s.split('_').first]
               raise ActiveRecord::RecordNotFound if model.nil?
@@ -164,10 +149,6 @@ module Spree
               raise ActiveRecord::RecordNotFound if source.nil?
 
               source
-            end
-
-            def mask?(branch)
-              UNMASKED.none? { |capability| policy.allows?(branch, capability) }
             end
           end
         end

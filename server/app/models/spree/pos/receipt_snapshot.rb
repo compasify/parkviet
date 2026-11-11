@@ -49,20 +49,23 @@ module Spree
       end
 
       # `mask` hides the customer's name; the phone is always masked on a
-      # printed document, the customer copy included.
+      # printed document, the customer copy included. The address stays, since
+      # a delivery needs it.
+      def self.masked_customer(customer, mask:)
+        customer.merge('name' => mask ? masked_name(customer['name']) : customer['name'],
+                       'phone' => ReceivableProjection.masked(customer['phone']))
+      end
+
       # `copies` (number of copies, nil when never printed) and `original`
       # (the copy-0 print, nil when none) may be preloaded for a list;
       # otherwise they are read here. `original_print` is the template,
       # version and paper of the original, null when it was never printed
       # or was printed before templates existed.
       def to_pos(mask: true, copies: :load, original: :load)
-        copies = prints.maximum(:copy_number) if copies == :load
-        original = copies.nil? ? nil : prints.includes(:receipt_template).find_by(copy_number: 0) if original == :load
+        copies = prints.active.maximum(:copy_number) if copies == :load
+        original = copies.nil? ? nil : prints.active.includes(:receipt_template).find_by(copy_number: 0) if original == :load
         data = payload.deep_dup
-        if (customer = data['customer'])
-          customer['name'] = self.class.masked_name(customer['name']) if mask
-          customer['phone'] = ReceivableProjection.masked(customer['phone'])
-        end
+        data['customer'] = self.class.masked_customer(data['customer'], mask: mask) if data['customer']
         {
           id: prefixed_id, source_type: source_type, number: number, branch_id: branch.prefixed_id,
           register_id: register&.prefixed_id, issued_at: issued_at.iso8601, issued_late: issued_late,

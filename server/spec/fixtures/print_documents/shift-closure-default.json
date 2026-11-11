@@ -1,0 +1,140 @@
+{
+  "input": {
+    "receipt": {
+      "source_type": "shift_closure",
+      "number": "SC1",
+      "issued_at": "2026-11-10T02:00:00Z",
+      "issued_late": false,
+      "disclaimer": "Không phải hóa đơn",
+      "document": {
+        "title": "CHỐT CA",
+        "at": "2026-11-10T02:00:00Z",
+        "opened_at": "2026-11-10T01:00:00Z",
+        "closer": "A",
+        "approver": "B",
+        "opening_float": "1.0",
+        "inflow_total": "2.0",
+        "outflow_total": "3.0",
+        "expected": "0.0",
+        "counted": "1.0",
+        "variance": "1.0",
+        "reason": "Thiếu"
+      }
+    },
+    "print": null,
+    "config": {
+      "schema": 1,
+      "page": {
+        "margin_mm": 3,
+        "font": "sans",
+        "font_size": "m",
+        "line_spacing": 1.35
+      },
+      "header": [
+        {
+          "type": "business",
+          "fields": [
+            "name",
+            "address",
+            "phone",
+            "branch"
+          ],
+          "align": "center"
+        },
+        {
+          "type": "text",
+          "value": "{register.name}",
+          "align": "center"
+        },
+        {
+          "type": "title"
+        }
+      ],
+      "meta": {
+        "fields": [
+          "time",
+          "cashier"
+        ],
+        "labels": {}
+      },
+      "footer": []
+    }
+  },
+  "document": {
+    "version": 1,
+    "kind": "receipt",
+    "documentType": "shift_closure",
+    "page": {
+      "margin_mm": 3,
+      "font": "sans",
+      "font_size": "m",
+      "line_spacing": 1.35
+    },
+    "banners": [],
+    "header": [
+      {
+        "kind": "title",
+        "title": "CHỐT CA",
+        "number": "SC1"
+      }
+    ],
+    "meta": [
+      {
+        "label": "Thời gian",
+        "value": "10/11/2026 09:00"
+      },
+      {
+        "label": "Mở ca",
+        "value": "10/11/2026 08:00"
+      },
+      {
+        "label": "Người đóng ca",
+        "value": "A"
+      },
+      {
+        "label": "Người duyệt",
+        "value": "B"
+      }
+    ],
+    "lines": {
+      "layout": "stacked",
+      "items": []
+    },
+    "totals": [
+      {
+        "label": "Tiền đầu ca",
+        "value": "1 ₫"
+      },
+      {
+        "label": "Tiền vào",
+        "value": "2 ₫"
+      },
+      {
+        "label": "Tiền ra",
+        "value": "3 ₫"
+      },
+      {
+        "label": "Tiền phải có",
+        "value": "0 ₫",
+        "strong": true
+      },
+      {
+        "label": "Tiền đếm được",
+        "value": "1 ₫",
+        "strong": true
+      },
+      {
+        "label": "Chênh lệch",
+        "value": "1 ₫",
+        "strong": true
+      }
+    ],
+    "payments": [],
+    "payQr": null,
+    "notes": [
+      "Lý do: Thiếu"
+    ],
+    "footer": [],
+    "disclaimer": "Không phải hóa đơn"
+  }
+}

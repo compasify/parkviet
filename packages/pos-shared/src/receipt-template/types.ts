@@ -210,3 +210,20 @@ export type PrintDocument = {
 };
 
 export type PrintPayQr = { value: string; caption: string; lines: string[] };
+
+export type PrintJobKind =
+  | 'receipt'
+  | 'prebill'
+  | 'kitchen_ticket'
+  | 'void_ticket'
+  | 'cup_label'
+  | 'checklist'
+  | 'table_qr'
+  | 'test';
+
+// A document as the server queues it. A test page has no document type.
+export type PrintJobDocument = Omit<PrintDocument, 'documentType'> & {
+  version: 1;
+  kind: PrintJobKind;
+  documentType: DocumentType | null;
+};

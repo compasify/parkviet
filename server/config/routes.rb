@@ -189,6 +189,22 @@ Rails.application.routes.draw do
             resources :receipts, only: [:index, :show] do
               member do
                 post :prints
+                post 'prints/:print_id/void', action: :void_print
+              end
+            end
+            resources :printers, only: [:index, :create, :update, :destroy] do
+              collection do
+                get :stations
+              end
+              member do
+                post :test
+              end
+            end
+            resources :print_jobs, only: [:index, :create] do
+              get :prebills, on: :collection
+              member do
+                post :reprint
+                post :cancel
               end
             end
             get 'display_sessions/current', to: 'display_sessions#current'
@@ -287,6 +303,8 @@ Rails.application.routes.draw do
   get 'api/v3/pos_device/staff', to: 'spree/pos/device_api/staff_sessions#index', defaults: { format: 'json' }
   post 'api/v3/pos_device/staff_sessions', to: 'spree/pos/device_api/staff_sessions#create', defaults: { format: 'json' }
   delete 'api/v3/pos_device/staff_sessions', to: 'spree/pos/device_api/staff_sessions#destroy', defaults: { format: 'json' }
+  post 'api/v3/pos_device/print_jobs/claim', to: 'spree/pos/device_api/print_jobs#claim', defaults: { format: 'json' }
+  post 'api/v3/pos_device/print_jobs/:id/report', to: 'spree/pos/device_api/print_jobs#report', defaults: { format: 'json' }
 
   root to: redirect(status: 302) { Spree::Stores::DashboardUrl.call.presence || '/dashboard' }
 

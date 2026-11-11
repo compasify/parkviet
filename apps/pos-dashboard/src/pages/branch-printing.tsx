@@ -4,6 +4,7 @@ import { Button } from '@spree/dashboard-ui'
 import { type FormEvent, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useBranchScope } from '../components/branch-detail'
+import { BranchPrinters } from '../components/branch-printers'
 import { ModelCard, ModelNotice, ModelSelect, ModelState } from '../components/setup/model-ui'
 import {
   type BranchTemplateAssignment,
@@ -13,10 +14,21 @@ import {
 } from '../hooks/use-master-data'
 import { type ReceiptTemplate, useReceiptTemplates } from '../hooks/use-receipt-templates'
 
+// The branch's printers, and for store administrators its print templates.
+export function BranchPrintingTab() {
+  const { access } = useBranchScope()
+  return (
+    <div className="space-y-6">
+      <BranchPrinters />
+      {access.read ? <BranchTemplates /> : null}
+    </div>
+  )
+}
+
 // The print template the branch uses per document type. A type without a
 // choice, or whose chosen template was disabled since, prints with the store
 // default.
-export function BranchPrintingTab() {
+function BranchTemplates() {
   const { t } = useTranslation()
   const { branch, access } = useBranchScope()
   const assignments = useBranchReceiptTemplates(branch.id, access.read)

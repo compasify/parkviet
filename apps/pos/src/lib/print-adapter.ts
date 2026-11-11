@@ -11,14 +11,18 @@ import type {
   PrintDocument,
   TemplateConfig,
 } from '@parkviet/pos-shared/receipt-template/types';
-import type { ReceiptPrint, ReceiptSnapshot } from '@parkviet/pos-shared/types/print-adapter';
+import type {
+  PrintOutcome,
+  ReceiptPrint,
+  ReceiptSnapshot,
+} from '@parkviet/pos-shared/types/print-adapter';
 import type { PosWorkspace } from './pos-context';
 
 // Printing is two steps behind one interface: a template renderer turns a
 // server receipt snapshot (or a provisional pre-bill of an open order) into
 // a printable document without computing any amount, and `deliver` sends it
-// to a printer. Only a browser implementation exists; a native driver or
-// silent printing would be another adapter after merchant device approval.
+// to a printer. This is the browser's implementation; LAN printers and print
+// stations are routed in lib/print-adapters.
 // A failed or blocked print is reported and never undoes or repeats a sale.
 
 export { isPaperSize, PAPER_SIZES } from '@parkviet/pos-shared/paper-size';
@@ -28,7 +32,11 @@ export {
   formatQuantity,
 } from '@parkviet/pos-shared/receipt-template/data';
 export type { PaperSize } from '@parkviet/pos-shared/receipt-template/types';
-export type { ReceiptPrint, ReceiptSnapshot } from '@parkviet/pos-shared/types/print-adapter';
+export type {
+  PrintOutcome,
+  ReceiptPrint,
+  ReceiptSnapshot,
+} from '@parkviet/pos-shared/types/print-adapter';
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
 
@@ -63,10 +71,6 @@ export function prebillPrintDocument(
 ): PrintDocument {
   return renderDocument(config, prebillData(workspace, place, t, now, timeZone));
 }
-
-export type PrintOutcome =
-  | { ok: true }
-  | { ok: false; reason: 'blocked' | 'failed'; message?: string };
 
 // `title` replaces the page title while printing: browsers print it in the
 // page header and use it as the file name when saving as PDF.

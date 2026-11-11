@@ -94,8 +94,20 @@ export function invalidationsFor(
   switch (event.event) {
     case 'workspace.updated':
       return [{ queryKey: ['pos', 'workspace-credit', scope.generation, event.id] }];
+    // A granted reprint approval shows on the print queue's pre-bills.
     case 'approval.requested':
-      return [{ queryKey: ['pos', 'approvals', scope.generation] }];
+      return [
+        { queryKey: ['pos', 'approvals', scope.generation] },
+        { queryKey: ['pos', 'print-jobs', scope.generation] },
+      ];
+    case 'print_job.created':
+      return [{ queryKey: ['pos', 'print-jobs', scope.generation] }];
+    // Claims, prints and cancels of a job; other resources announce through
+    // this event too and do not concern the queue.
+    case 'resource.updated':
+      return event.id.startsWith('posprintjob_')
+        ? [{ queryKey: ['pos', 'print-jobs', scope.generation] }]
+        : [];
     default:
       return [];
   }
