@@ -1,0 +1,205 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:pos_api/pos_api.dart';
+
+import '../../core/errors.dart';
+import '../../l10n/app_localizations.dart';
+import 'table_order_screen.dart';
+import 'waiter_context.dart';
+import 'waiter_messages.dart';
+
+/// The branch's default void reasons; "khac" needs a note.
+const voidReasons = ['khach_doi_y', 'het_mon', 'nhap_nham', 'lam_hong', voidOther];
+const voidOther = 'khac';
+
+/// The most characters of a void note.
+const voidNoteMax = 200;
+
+String voidReasonLabel(AppLocalizations l10n, String code) => switch (code) {
+      'khach_doi_y' => l10n.voidReasonChangedMind,
+      'het_mon' => l10n.voidReasonSoldOut,
+      'nhap_nham' => l10n.voidReasonMistake,
+      'lam_hong' => l10n.voidReasonSpoiled,
+      _ => l10n.voidReasonOther,
+    };
+
+/// Takes back dishes the kitchen has. Answers the order after the void,
+/// or null when closed.
+Future<Workspace?> showVoidDialog(
+  BuildContext context, {
+  required WaiterContext waiter,
+  required String workspaceId,
+  required WorkspaceLine line,
+}) =>
+    showDialog<Workspace>(
+      context: context,
+      builder: (_) => VoidDialog(waiter: waiter, workspaceId: workspaceId, line: line),
+    );
+
+/// How many, why, and for a person who may not void, the code of a
+/// manager's approval: "Chờ quản lý duyệt" until the manager grants it. A
+/// grant for this order announced on the branch channel fills the code
+/// and tries again by itself.
+class VoidDialog extends StatefulWidget {
+  const VoidDialog({super.key, required this.waiter, required this.workspaceId, required this.line});
+
+  final WaiterContext waiter;
+  final String workspaceId;
+  final WorkspaceLine line;
+
+  @override
+  State<VoidDialog> createState() => _VoidDialogState();
+}
+
+class _VoidDialogState extends State<VoidDialog> {
+  late final int _sent = sentQuantity(widget.line);
+  int _quantity = 1;
+  String _reason = voidReasons.first;
+  final _note = TextEditingController();
+  final _approval = TextEditingController();
+  bool _needsApproval = false;
+  bool _busy = false;
+  String? _error;
+  StreamSubscription<Map<String, Object?>>? _grants;
+
+  @override
+  void initState() {
+    super.initState();
+    _grants = widget.waiter.events.listen((event) {
+      final refs = event['refs'];
+      final id = event['id'];
+      if (!_needsApproval || event['event'] != 'approval.requested' || id is! String) return;
+      if (refs is Map && refs['workspace_id'] == widget.workspaceId) {
+        _approval.text = id;
+        unawaited(_submit());
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _grants?.cancel();
+    _note.dispose();
+    _approval.dispose();
+    super.dispose();
+  }
+
+  bool get _valid =>
+      _quantity >= 1 &&
+      _quantity <= _sent &&
+      (_reason != voidOther || _note.text.trim().isNotEmpty) &&
+      (!_needsApproval || _approval.text.trim().isNotEmpty);
+
+  Future<void> _submit() async {
+    if (!_valid || _busy) return;
+    final l10n = AppLocalizations.of(context);
+    final navigator = Navigator.of(context);
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final saleLineId = widget.line.saleLineId!;
+      final workspace = await widget.waiter.api.voidSent(
+        widget.workspaceId,
+        saleLineId,
+        quantity: _quantity,
+        reasonCode: _reason,
+        note: _note.text.trim().isEmpty ? null : _note.text.trim(),
+        approvalId: _approval.text.trim().isEmpty ? null : _approval.text.trim(),
+      );
+      navigator.pop(workspace);
+    } on AppFailure catch (failure) {
+      if (!mounted) return;
+      setState(() {
+        if (failure case ConflictFailure(reason: 'approval_required')) {
+          _needsApproval = true;
+          _error = null;
+        } else {
+          _error = waiterFailureMessage(l10n, failure);
+        }
+      });
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    return AlertDialog(
+      title: Text(l10n.waiterVoidTitle(widget.line.name)),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(l10n.waiterVoidSentCount(_sent)),
+            Row(
+              children: [
+                IconButton(
+                  key: const Key('void-less'),
+                  onPressed: _quantity > 1 ? () => setState(() => _quantity--) : null,
+                  icon: const Icon(Icons.remove_circle_outline),
+                ),
+                Text('$_quantity', key: const Key('void-quantity'), style: theme.textTheme.headlineSmall),
+                IconButton(
+                  key: const Key('void-more'),
+                  onPressed: _quantity < _sent ? () => setState(() => _quantity++) : null,
+                  icon: const Icon(Icons.add_circle_outline),
+                ),
+              ],
+            ),
+            for (final code in voidReasons)
+              RadioListTile<String>(
+                key: Key('void-reason-$code'),
+                contentPadding: EdgeInsets.zero,
+                value: code,
+                groupValue: _reason,
+                title: Text(voidReasonLabel(l10n, code)),
+                onChanged: (value) => setState(() => _reason = value ?? _reason),
+              ),
+            TextField(
+              key: const Key('void-note'),
+              controller: _note,
+              maxLength: voidNoteMax,
+              onChanged: (_) => setState(() {}),
+              decoration: InputDecoration(
+                labelText: _reason == voidOther ? l10n.waiterVoidNoteRequired : l10n.waiterVoidNote,
+              ),
+            ),
+            if (_needsApproval) ...[
+              Container(
+                key: const Key('void-waiting-approval'),
+                padding: const EdgeInsets.all(12),
+                color: theme.colorScheme.tertiaryContainer,
+                child: Text(l10n.waiterWaitingApproval, style: theme.textTheme.titleMedium),
+              ),
+              TextField(
+                key: const Key('void-approval'),
+                controller: _approval,
+                onChanged: (_) => setState(() {}),
+                decoration: InputDecoration(labelText: l10n.waiterApprovalCode),
+              ),
+            ],
+            if (_error != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(_error!, style: TextStyle(color: theme.colorScheme.error)),
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(l10n.cancel)),
+        FilledButton(
+          key: const Key('void-confirm'),
+          onPressed: _valid && !_busy ? _submit : null,
+          child: Text(l10n.waiterVoidConfirm),
+        ),
+      ],
+    );
+  }
+}

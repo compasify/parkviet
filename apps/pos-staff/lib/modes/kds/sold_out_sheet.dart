@@ -8,15 +8,31 @@ import '../../core/failure_messages.dart';
 import '../../l10n/app_localizations.dart';
 import 'kds_repository.dart';
 
+void showSoldOutSheet(
+  BuildContext context, {
+  required KitchenApi api,
+  required String branchId,
+  required String? stationId,
+  String? query,
+}) =>
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => SoldOutSheet(api: api, branchId: branchId, stationId: stationId, query: query),
+    );
+
 /// "Hết món": the dishes this station makes and whether each is sold out
 /// today. A change names a person, who picks their name and enters their
 /// PIN; the session it opens ends with the change.
 class SoldOutSheet extends ConsumerStatefulWidget {
-  const SoldOutSheet({super.key, required this.api, required this.branchId, required this.stationId});
+  const SoldOutSheet({super.key, required this.api, required this.branchId, required this.stationId, this.query});
 
   final KitchenApi api;
   final String branchId;
   final String? stationId;
+
+  /// Opened from an item of a ticket: only the dishes of that name.
+  final String? query;
 
   @override
   ConsumerState<SoldOutSheet> createState() => _SoldOutSheetState();
@@ -60,11 +76,15 @@ class _SoldOutSheetState extends ConsumerState<SoldOutSheet> {
           }
           final items = snapshot.data;
           if (items == null) return const Padding(padding: EdgeInsets.all(24), child: LinearProgressIndicator());
+          final query = widget.query?.toLowerCase();
+          final shown = query == null
+              ? items
+              : items.where((item) => item.name.toLowerCase().contains(query) || query.contains(item.name.toLowerCase())).toList();
           return ListView(
             shrinkWrap: true,
             children: [
               ListTile(title: Text(l10n.kdsSoldOutTitle, style: Theme.of(context).textTheme.titleLarge)),
-              for (final item in items)
+              for (final item in shown)
                 SwitchListTile(
                   key: Key('sold-out-${item.id}'),
                   title: Text(item.name, style: const TextStyle(fontSize: 18)),

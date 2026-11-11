@@ -16,6 +16,7 @@ part 'pos_kitchen_station_create_request.g.dart';
 /// * [name]
 /// * [kind]
 /// * [printerId]
+/// * [expoStationId] - An `expo` station of the same branch; null hands nothing to a pass.
 /// * [kdsEnabled]
 /// * [isDefault]
 /// * [warnAfterMinutes]
@@ -123,6 +124,13 @@ class _$PosKitchenStationCreateRequestSerializer
         specifiedType: const FullType(int),
       );
     }
+    if (object.expoStationId != null) {
+      yield r'expo_station_id';
+      yield serializers.serialize(
+        object.expoStationId,
+        specifiedType: const FullType.nullable(String),
+      );
+    }
     if (object.lateAfterMinutes != null) {
       yield r'late_after_minutes';
       yield serializers.serialize(
@@ -225,6 +233,14 @@ class _$PosKitchenStationCreateRequestSerializer
           ) as int?;
           if (valueDes == null) continue;
           result.position = valueDes;
+          break;
+        case r'expo_station_id':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.expoStationId = valueDes;
           break;
         case r'late_after_minutes':
           final valueDes = serializers.deserialize(

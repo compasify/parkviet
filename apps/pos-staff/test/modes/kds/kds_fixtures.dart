@@ -29,6 +29,7 @@ Map<String, Object?> itemJson(
   String? note,
   List<Map<String, Object?>> modifiers = const [],
   String? readyAt,
+  int recallCount = 0,
 }) =>
     {
       'id': id,
@@ -43,6 +44,10 @@ Map<String, Object?> itemJson(
       'ready_at': readyAt,
       'served_at': null,
       'voided_at': null,
+      'recalled_at': null,
+      'recall_count': recallCount,
+      'prep_seconds': null,
+      'late': false,
     };
 
 Map<String, Object?> ticketJson(
@@ -80,15 +85,31 @@ KitchenBoard board({
   List<Map<String, Object?>> open = const [],
   List<Map<String, Object?>> done = const [],
   Map<String, Object?>? station,
+  List<Map<String, Object?>> allDay = const [],
+  List<Map<String, Object?>> expo = const [],
 }) =>
     standardSerializers.deserializeWith(KitchenBoard.serializer, {
       'branch_id': 'posbranch_1',
       'station': station,
       'stations': [station ?? stationJson()],
+      'service_mode': null,
       'server_now': serverNow,
       'open': open,
       'done': done,
+      'all_day': allDay,
+      'expo': expo,
     })!;
+
+/// One all-day row as `Kitchen::Board` answers it.
+Map<String, Object?> allDayJson(String key, {String name = 'Phở bò', String quantity = '3.0', List<String> itemIds = const []}) =>
+    {
+      'key': key,
+      'name': name,
+      'modifiers': <Object?>[],
+      'quantity': quantity,
+      'oldest_sent_at': '2026-11-11T11:54:00.000+07:00',
+      'item_ids': itemIds,
+    };
 
 /// A [KitchenApi] that answers from memory and records what it was asked.
 class FakeKitchenApi implements KitchenApi {
@@ -103,8 +124,8 @@ class FakeKitchenApi implements KitchenApi {
   Completer<void>? holdBoard;
 
   @override
-  Future<KitchenBoard> board(String? stationId) async {
-    calls.add('board:${stationId ?? '*'}');
+  Future<KitchenBoard> board(List<String>? stationIds, {String? serviceMode}) async {
+    calls.add('board:${stationIds?.join(',') ?? '*'}${serviceMode == null ? '' : ':$serviceMode'}');
     if (holdBoard != null) await holdBoard!.future;
     if (boardFailures.isNotEmpty) throw boardFailures.removeAt(0);
     return current;
@@ -120,6 +141,15 @@ class FakeKitchenApi implements KitchenApi {
   Future<KitchenTicket> bump(String ticketId) async {
     calls.add('bump:$ticketId');
     return actionResults.removeAt(0);
+  }
+
+  /// Answered by the next [allDayBump].
+  List<KitchenTicket> allDayResult = const [];
+
+  @override
+  Future<List<KitchenTicket>> allDayBump(List<String>? stationIds, String key, int quantity) async {
+    calls.add('allDay:$key:$quantity');
+    return allDayResult;
   }
 
   /// Answered by the next [serveOrder].

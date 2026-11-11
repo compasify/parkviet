@@ -11,14 +11,18 @@ import 'kds_grouping.dart';
 import 'kds_repository.dart';
 import 'ticket_card.dart';
 
-/// The board of one station, or of every station: three ways to read the
-/// open tickets (oldest first, by dish, by order) and the tickets finished
-/// in the last 30 minutes for recall or for handing the order over. Shows a banner with the last update
-/// while the server cannot be reached.
+/// The board of the chosen stations, or of every station: three ways to
+/// read the open tickets (oldest first with late ones on top, all-day by
+/// dish, by order) and "Đã xong gần đây", the tickets finished in the last
+/// 30 minutes, for recall or for handing the order over. Shows a banner
+/// with the last update while the server cannot be reached.
 class KdsBoard extends StatefulWidget {
-  const KdsBoard({super.key, required this.controller, this.tick = const Duration(seconds: 1)});
+  const KdsBoard({super.key, required this.controller, this.onSoldOut, this.tick = const Duration(seconds: 1)});
 
   final KdsController controller;
+
+  /// "Hết món" for the dish of an item, offered when an item is held.
+  final ItemSoldOutCallback? onSoldOut;
 
   /// How often the timers move.
   final Duration tick;
@@ -74,11 +78,18 @@ class _KdsBoardState extends State<KdsBoard> {
                           board: board,
                           now: now,
                           onAction: _onAction,
+                          onSoldOut: widget.onSoldOut,
                           onBump: _bump,
                           onServeOrder: _serveOrder,
                         ),
-                        _ItemsView(board: board, onAction: _onAction),
-                        _OrdersView(board: board, now: now, onAction: _onAction, onBump: _bump),
+                        _AllDayView(board: board, onBump: _bumpAllDay),
+                        _OrdersView(
+                          board: board,
+                          now: now,
+                          onAction: _onAction,
+                          onSoldOut: widget.onSoldOut,
+                          onBump: _bump,
+                        ),
                       ],
                     ),
             ),
@@ -90,7 +101,9 @@ class _KdsBoardState extends State<KdsBoard> {
 
   void _bump(KitchenTicket ticket) => _run(() => widget.controller.bump(ticket));
 
-  void _serveOrder(KitchenTicket ticket) => _run(() => widget.controller.serveOrder(ticket));
+  void _bumpAllDay(KitchenAllDayRow row, int quantity) => _run(() => widget.controller.bumpAllDay(row, quantity));
+
+  void _serveOrder(KitchenTicket ticket) => _run(() => widget.controller.serveOrder(ticket.workspaceId));
 }
 
 String _shortId(String id) => id.length > 4 ? id.substring(id.length - 4) : id;
@@ -159,6 +172,7 @@ class _PriorityView extends StatelessWidget {
     required this.board,
     required this.now,
     required this.onAction,
+    required this.onSoldOut,
     required this.onBump,
     required this.onServeOrder,
   });
@@ -166,6 +180,7 @@ class _PriorityView extends StatelessWidget {
   final KitchenBoard board;
   final DateTime now;
   final ItemActionCallback onAction;
+  final ItemSoldOutCallback? onSoldOut;
   final void Function(KitchenTicket ticket) onBump;
   final void Function(KitchenTicket ticket) onServeOrder;
 
@@ -187,6 +202,7 @@ class _PriorityView extends StatelessWidget {
                 now: now,
                 showStation: all,
                 onAction: onAction,
+                onSoldOut: onSoldOut,
                 onBump: () => onBump(ticket),
               ),
           ],
@@ -194,6 +210,7 @@ class _PriorityView extends StatelessWidget {
         ExpansionTile(
           key: const Key('kds-done'),
           title: Text('${l10n.kdsDone} (${board.done.length})'),
+          subtitle: Text(l10n.kdsDoneHint),
           children: [
             if (board.done.isEmpty) _Empty(l10n.kdsNothingDone),
             _TicketGrid(
@@ -217,51 +234,66 @@ class _PriorityView extends StatelessWidget {
   }
 }
 
-/// Every open dish summed across tickets, to cook in batches. The button
-/// moves the oldest item of the batch on by one step.
-class _ItemsView extends StatelessWidget {
-  const _ItemsView({required this.board, required this.onAction});
+/// Every open dish added up across tickets by the server (`all_day`), to
+/// cook in batches. "Xong 1" makes the oldest unit ready; "Xong hết" the
+/// whole batch, first sent first.
+class _AllDayView extends StatelessWidget {
+  const _AllDayView({required this.board, required this.onBump});
 
   final KitchenBoard board;
-  final ItemActionCallback onAction;
+  final void Function(KitchenAllDayRow row, int quantity) onBump;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final tallies = tallyByItem(board.open);
-    if (tallies.isEmpty) return _Empty(l10n.kdsNothingOpen);
+    final rows = board.allDay.toList()
+      ..sort((a, b) {
+        final byQuantity = (num.tryParse(b.quantity) ?? 0).compareTo(num.tryParse(a.quantity) ?? 0);
+        return byQuantity != 0 ? byQuantity : a.oldestSentAt.compareTo(b.oldestSentAt);
+      });
+    if (rows.isEmpty) return _Empty(l10n.kdsNothingOpen);
     return ListView.separated(
       key: const Key('kds-items'),
       padding: const EdgeInsets.all(8),
-      itemCount: tallies.length,
+      itemCount: rows.length,
       separatorBuilder: (_, _) => const Divider(),
       itemBuilder: (context, index) {
-        final tally = tallies[index];
-        final first = tally.items.first;
-        final action = nextAction(first);
+        final row = rows[index];
+        final total = (num.tryParse(row.quantity) ?? 1).ceil().clamp(1, 99);
+        final options = allDayModifiersLabel(row);
         return ListTile(
           key: Key('tally-$index'),
           minTileHeight: kdsButtonHeight + 16,
           title: Text(
-            '${quantityLabel('${tally.quantity}')} x ${tally.name}',
+            '${quantityLabel(row.quantity)} x ${row.name}',
             style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
           ),
-          subtitle: Text(
-            [
-              if (tally.options.isNotEmpty) '+ ${tally.options}',
-              l10n.kdsTickets(tally.ticketSequences.map((number) => '#$number').join(', ')),
-            ].join('\n'),
-          ),
-          trailing: action == null
+          subtitle: options.isEmpty
               ? null
-              : SizedBox(
+              : Text('+ $options', style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w800)),
+          trailing: Wrap(
+            spacing: 8,
+            children: [
+              SizedBox(
+                height: kdsButtonHeight,
+                child: FilledButton.tonal(
+                  key: Key('all-day-one-$index'),
+                  onPressed: () => onBump(row, 1),
+                  child: Text(l10n.kdsAllDayOne, style: const TextStyle(fontSize: 18)),
+                ),
+              ),
+              if (total > 1)
+                SizedBox(
                   height: kdsButtonHeight,
-                  child: FilledButton.tonal(
-                    onPressed: () => onAction(first, action),
-                    child: Text(actionLabel(l10n, action), style: const TextStyle(fontSize: 18)),
+                  child: FilledButton(
+                    key: Key('all-day-all-$index'),
+                    onPressed: () => onBump(row, total),
+                    child: Text(l10n.kdsAllDayAll(total), style: const TextStyle(fontSize: 18)),
                   ),
                 ),
+            ],
+          ),
         );
       },
     );
@@ -270,11 +302,18 @@ class _ItemsView extends StatelessWidget {
 
 /// Open tickets by table, call number or order, the longest waiting first.
 class _OrdersView extends StatelessWidget {
-  const _OrdersView({required this.board, required this.now, required this.onAction, required this.onBump});
+  const _OrdersView({
+    required this.board,
+    required this.now,
+    required this.onAction,
+    required this.onSoldOut,
+    required this.onBump,
+  });
 
   final KitchenBoard board;
   final DateTime now;
   final ItemActionCallback onAction;
+  final ItemSoldOutCallback? onSoldOut;
   final void Function(KitchenTicket ticket) onBump;
 
   @override
@@ -304,6 +343,7 @@ class _OrdersView extends StatelessWidget {
                   now: now,
                   showStation: board.station == null,
                   onAction: onAction,
+                  onSoldOut: onSoldOut,
                   onBump: () => onBump(ticket),
                 ),
             ],

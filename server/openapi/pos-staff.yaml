@@ -1766,9 +1766,11 @@ paths:
     get:
       operationId: posKitchenBoard
       description: >
-        Open tickets of a station (oldest first) and those finished in the last
-        30 minutes. Without `station_id`, every station of the branch. Needs
-        `pos.kitchen.operate`; a kitchen screen uses /pos_device/kitchen/board.
+        Open tickets of a station (late first, then oldest), those finished
+        in the last 30 minutes, the open items by dish and the ready items at
+        the pass. Without `station_id` or `station_ids`, every station of
+        the branch. Needs `pos.kitchen.operate`; a kitchen screen uses
+        /pos_device/kitchen/board.
       parameters:
         - $ref: '#/components/parameters/ReportBranch'
         - name: station_id
@@ -1776,6 +1778,8 @@ paths:
           required: false
           schema:
             type: string
+        - $ref: '#/components/parameters/KitchenStationIds'
+        - $ref: '#/components/parameters/KitchenServiceMode'
       responses:
         '200':
           description: The board
@@ -1816,7 +1820,9 @@ paths:
   /api/v3/admin/pos/kitchen/items/{id}/recall:
     post:
       operationId: posKitchenItemRecall
-      description: A ready item back to preparing, within 30 minutes of being ready.
+      description: >
+        A ready or served item back to preparing, within 30 minutes of being
+        ready or served; counted on the item and audited.
       parameters:
         - $ref: '#/components/parameters/Id'
       responses:
@@ -1833,6 +1839,28 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/KitchenTicketChanged'
+  /api/v3/admin/pos/kitchen/all_day/bump:
+    post:
+      operationId: posKitchenAllDayBump
+      description: >
+        One dish on the "by dish" tab (`key` of a KitchenAllDayRow): its
+        oldest open items at the stations become ready, first sent first,
+        until `quantity` units are covered. Answers the tickets that moved.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KitchenAllDayBumpInput'
+      responses:
+        '200':
+          description: The tickets that moved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KitchenTicketList'
+        '409':
+          $ref: '#/components/responses/KitchenRefused'
   /api/v3/admin/pos/kitchen/orders:
     get:
       operationId: posKitchenOrders
@@ -2556,13 +2584,15 @@ paths:
       operationId: posDeviceKitchenBoard
       description: >
         The board of the screen's station (or `station_id`; empty for every
-        station). Poll it when the socket is down.
+        station; `station_ids` for several). Poll it when the socket is down.
       parameters:
         - name: station_id
           in: query
           required: false
           schema:
             type: string
+        - $ref: '#/components/parameters/KitchenStationIds'
+        - $ref: '#/components/parameters/KitchenServiceMode'
       responses:
         '200':
           description: The board
@@ -2644,6 +2674,27 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/KitchenTicketChanged'
+  /api/v3/pos_device/kitchen/all_day/bump:
+    post:
+      operationId: posDeviceKitchenAllDayBump
+      description: >
+        The kitchen screen's all-day bump; without `station_ids` the
+        screen's own station, or every station.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KitchenAllDayBumpInput'
+      responses:
+        '200':
+          description: The tickets that moved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KitchenTicketList'
+        '409':
+          $ref: '#/components/responses/KitchenRefused'
   /api/v3/pos_device/kitchen/orders/{workspace_id}/serve:
     post:
       operationId: posDeviceKitchenOrderServe
@@ -3220,6 +3271,142 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/workspaces/{id}/lease:
+    post:
+      operationId: posWorkspaceClaimLease
+      description: >
+        Takes the editing lease of an order for this screen (`editor_id`),
+        as move and merge of a table order need. Whoever may edit the order or
+        collect the table may take it; with strict editing locks a lease held
+        elsewhere answers 409 `lease_busy`.
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeaseClaimInput'
+      responses:
+        '200':
+          description: The order, with its lease generation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceResult'
+        '409':
+          description: Refused; `error.details.reason` is `lease_busy` (with `retry_after_seconds`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/workspaces/{workspace_id}/checklist:
+    post:
+      operationId: posWorkspaceChecklist
+      description: >
+        The checklist of a table order: each line with how much came out of
+        the kitchen and how much is still to come. Answers the print document
+        (a waiter's Bluetooth printer prints it); with `printer_id` it is
+        also queued there. Changes nothing. Needs `fnb.tables`.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/WorkspaceId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChecklistInput'
+      responses:
+        '201':
+          description: The checklist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChecklistResult'
+        '409':
+          description: Refused; `error.details.reason` is `not_table_order`, `module_disabled` or a printer reason
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/devices/current/ready_feed:
+    get:
+      operationId: posDeviceReadyFeed
+      description: >
+        The waiter device's dishes: items of open table orders that became
+        ready or were served in the last 30 minutes, on the tables its person
+        added to and the tables it follows; with `area_id` every table of
+        that area. Read it on every `kitchen_ticket.updated` and when the
+        app opens. Only a `waiter` device signed in by someone with
+        `pos.table.serve`.
+      parameters:
+        - name: area_id
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The feed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadyFeedResult'
+        '403':
+          description: Not a waiter device (`device_mode_forbidden`) or no `pos.table.serve`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/devices/current/table_pins:
+    get:
+      operationId: posDeviceTablePins
+      description: The tables the waiter device follows, and those its signed-in person serves.
+      responses:
+        '200':
+          description: The tables
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TablePinsResult'
+    post:
+      operationId: posDeviceTablePin
+      description: Follows a table; following it again changes nothing.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TablePinInput'
+      responses:
+        '200':
+          description: The tables
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TablePinsResult'
+  /api/v3/admin/pos/devices/current/table_pins/{resource_id}:
+    delete:
+      operationId: posDeviceTableUnpin
+      description: Stops following a table.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - name: resource_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The tables
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TablePinsResult'
 components:
   parameters:
     Id:
@@ -3234,6 +3421,20 @@ components:
       required: true
       schema:
         type: string
+    KitchenStationIds:
+      name: station_ids
+      in: query
+      required: false
+      description: Several stations, comma separated.
+      schema:
+        type: string
+    KitchenServiceMode:
+      name: service_mode
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [counter, dine_in, takeaway, delivery, tab, timed]
     WorkspaceId:
       name: workspace_id
       in: path
@@ -3385,6 +3586,9 @@ components:
           type: string
         revision:
           type: integer
+        lease_generation:
+          type: integer
+          description: Sent back with commands that need the editing lease (move, merge).
         operational_status:
           type: string
         service_mode:
@@ -3504,6 +3708,9 @@ components:
           oneOf:
             - $ref: '#/components/schemas/StaffRef'
             - type: 'null'
+        kitchen_status:
+          description: Table orders only, how far the kitchen got with what was sent of the line.
+          $ref: '#/components/schemas/LineKitchenStatus'
     StaffRef:
       type: object
       additionalProperties: false
@@ -4895,8 +5102,12 @@ components:
     KitchenStation:
       type: object
       additionalProperties: false
-      required: [id, branch_id, name, kind, printer_id, printer_name, kds_enabled, is_default, warn_after_minutes, late_after_minutes, position, active]
+      required: [id, branch_id, name, kind, printer_id, printer_name, kds_enabled, is_default, warn_after_minutes, late_after_minutes, position, active,
+                 expo_station_id]
       properties:
+        expo_station_id:
+          type: [string, 'null']
+          description: The pass (an `expo` station of the branch) this station hands its finished items to.
         id:
           type: string
         branch_id:
@@ -4934,6 +5145,9 @@ components:
           enum: [prep, bar, expo]
         printer_id:
           type: [string, 'null']
+        expo_station_id:
+          type: [string, 'null']
+          description: An `expo` station of the same branch; null hands nothing to a pass.
         kds_enabled:
           type: boolean
         is_default:
@@ -5271,8 +5485,22 @@ components:
     KitchenTicketItem:
       type: object
       additionalProperties: false
-      required: [id, sale_line_id, name, modifiers, components, note, quantity, status, started_at, ready_at, served_at, voided_at]
+      required: [id, sale_line_id, name, modifiers, components, note, quantity, status, started_at, ready_at, served_at, voided_at,
+                 recalled_at, recall_count, prep_seconds, late]
       properties:
+        recalled_at:
+          type: [string, 'null']
+          format: date-time
+          description: The last time the item was called back to the kitchen.
+        recall_count:
+          type: integer
+          minimum: 0
+        prep_seconds:
+          type: [integer, 'null']
+          description: From the send to ready, written when the item became ready.
+        late:
+          type: boolean
+          description: It took longer than its station's red threshold.
         id:
           type: string
         sale_line_id:
@@ -5402,25 +5630,32 @@ components:
     KitchenBoard:
       type: object
       additionalProperties: false
-      required: [branch_id, station, stations, server_now, open, done]
+      required: [branch_id, station, stations, service_mode, server_now, open, done, all_day, expo]
       properties:
         branch_id:
           type: string
         station:
+          description: The one station shown; null for several or every station.
           oneOf:
             - $ref: '#/components/schemas/KitchenStation'
             - type: 'null'
         stations:
           type: array
+          description: The stations shown.
           items:
             $ref: '#/components/schemas/KitchenStation'
+        service_mode:
+          type: [string, 'null']
+          description: The way of serving the board is narrowed to; null for all.
         server_now:
           type: string
           format: date-time
           description: The database clock; screens run their timers from it.
         open:
           type: array
-          description: Tickets with an item still to make, oldest first.
+          description: >
+            Tickets with an item still to make: tickets past their station's
+            red threshold first, then the oldest.
           items:
             $ref: '#/components/schemas/KitchenTicket'
         done:
@@ -5428,6 +5663,239 @@ components:
           description: Tickets finished in the last 30 minutes, newest first.
           items:
             $ref: '#/components/schemas/KitchenTicket'
+        all_day:
+          type: array
+          description: The open items added up by dish and options, in the order the oldest of each was sent.
+          items:
+            $ref: '#/components/schemas/KitchenAllDayRow'
+        expo:
+          type: array
+          description: >
+            Ready items waiting at the pass, by order: from the stations that
+            hand to the shown `expo` stations, or every ready item when no
+            station is chosen. Items leave once served or after two hours.
+          items:
+            $ref: '#/components/schemas/KitchenExpoOrder'
+    KitchenAllDayRow:
+      type: object
+      additionalProperties: false
+      required: [key, name, modifiers, quantity, oldest_sent_at, item_ids]
+      properties:
+        key:
+          type: string
+          description: Names the dish and its options; send it to the all-day bump.
+        name:
+          type: string
+        modifiers:
+          type: array
+          items:
+            $ref: '#/components/schemas/KitchenTicketItemModifier'
+        quantity:
+          type: string
+        oldest_sent_at:
+          type: string
+          format: date-time
+        item_ids:
+          type: array
+          description: The open items of this dish, first sent first; a bump takes them in this order.
+          items:
+            type: string
+    KitchenTicketItemModifier:
+      type: object
+      additionalProperties: true
+      required: [name, quantity]
+      properties:
+        name:
+          type: string
+        group_name:
+          type: [string, 'null']
+        quantity:
+          type: integer
+    KitchenExpoOrder:
+      type: object
+      additionalProperties: false
+      required: [workspace_id, header, service_mode, ready_since, items]
+      properties:
+        workspace_id:
+          type: string
+        header:
+          type: object
+          additionalProperties: true
+          description: The ticket header (table, call number…), as on KitchenTicket.
+        service_mode:
+          type: string
+        ready_since:
+          type: [string, 'null']
+          format: date-time
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/KitchenExpoItem'
+    KitchenExpoItem:
+      type: object
+      additionalProperties: false
+      required: [item, kitchen_ticket_id, station_name]
+      properties:
+        item:
+          $ref: '#/components/schemas/KitchenTicketItem'
+        kitchen_ticket_id:
+          type: string
+        station_name:
+          type: string
+    KitchenAllDayBumpInput:
+      type: object
+      required: [key]
+      properties:
+        branch_id:
+          type: string
+          description: Required on the staff API.
+        station_ids:
+          type: array
+          description: The stations of the board; none for the device's own station or every station.
+          items:
+            type: string
+        key:
+          type: string
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 99
+          description: Units to make ready, oldest items first; an item counts whole. Defaults to 1.
+    KitchenTicketList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/KitchenTicket'
+    ReadyFeed:
+      type: object
+      additionalProperties: false
+      required: [branch_id, server_now, area_id, items]
+      properties:
+        branch_id:
+          type: string
+        server_now:
+          type: string
+          format: date-time
+        area_id:
+          type: [string, 'null']
+        items:
+          type: array
+          description: Newest first, at most 100.
+          items:
+            $ref: '#/components/schemas/ReadyFeedItem'
+    ReadyFeedItem:
+      type: object
+      additionalProperties: false
+      required: [id, name, quantity, modifiers, status, ready_at, served_at, station_name, workspace_id, table_label, resource_id, table_name]
+      properties:
+        id:
+          type: string
+          description: The kitchen ticket item.
+        name:
+          type: string
+        quantity:
+          type: string
+        modifiers:
+          type: array
+          items:
+            $ref: '#/components/schemas/KitchenTicketItemModifier'
+        status:
+          type: string
+          enum: [ready, served]
+        ready_at:
+          type: [string, 'null']
+          format: date-time
+        served_at:
+          type: [string, 'null']
+          format: date-time
+        station_name:
+          type: string
+        workspace_id:
+          type: string
+        table_label:
+          type: [string, 'null']
+        resource_id:
+          type: string
+        table_name:
+          type: string
+    ReadyFeedResult:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/ReadyFeed'
+    TablePins:
+      type: object
+      additionalProperties: false
+      required: [pinned, serving]
+      properties:
+        pinned:
+          type: array
+          description: Tables the device follows.
+          items:
+            type: string
+        serving:
+          type: array
+          description: Tables with an open order the signed-in person added to.
+          items:
+            type: string
+    TablePinsResult:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/TablePins'
+    TablePinInput:
+      type: object
+      required: [resource_id]
+      properties:
+        resource_id:
+          type: string
+    ChecklistInput:
+      type: object
+      properties:
+        printer_id:
+          type: string
+          description: A printer of the branch set up for `checklist`; without it nothing is queued.
+    ChecklistOutcome:
+      type: object
+      required: [document]
+      properties:
+        document:
+          $ref: '#/components/schemas/PrintDocument'
+        print_job:
+          $ref: '#/components/schemas/PrintJob'
+    ChecklistResult:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/ChecklistOutcome'
+    LeaseClaimInput:
+      type: object
+      required: [editor_id]
+      properties:
+        editor_id:
+          type: string
+          description: This screen's editor id; move and merge send it back with the lease generation.
+        takeover:
+          type: boolean
+    LineKitchenStatus:
+      type: object
+      additionalProperties: false
+      description: Sent quantity of a table order line by kitchen status; absent statuses have none.
+      properties:
+        new:
+          type: string
+        preparing:
+          type: string
+        ready:
+          type: string
+        served:
+          type: string
     KitchenBoardResult:
       type: object
       required: [data]

@@ -14,6 +14,10 @@ part 'kitchen_ticket_item.g.dart';
 /// KitchenTicketItem
 ///
 /// Properties:
+/// * [recalledAt] - The last time the item was called back to the kitchen.
+/// * [recallCount]
+/// * [prepSeconds] - From the send to ready, written when the item became ready.
+/// * [late_] - It took longer than its station's red threshold.
 /// * [id]
 /// * [saleLineId] - Null once the line was voided off the order; the ticket keeps what it said.
 /// * [name] - The item and its size, as sold.
@@ -29,6 +33,21 @@ part 'kitchen_ticket_item.g.dart';
 @BuiltValue()
 abstract class KitchenTicketItem
     implements Built<KitchenTicketItem, KitchenTicketItemBuilder> {
+  /// The last time the item was called back to the kitchen.
+  @BuiltValueField(wireName: r'recalled_at')
+  DateTime? get recalledAt;
+
+  @BuiltValueField(wireName: r'recall_count')
+  int get recallCount;
+
+  /// From the send to ready, written when the item became ready.
+  @BuiltValueField(wireName: r'prep_seconds')
+  int? get prepSeconds;
+
+  /// It took longer than its station's red threshold.
+  @BuiltValueField(wireName: r'late')
+  bool get late_;
+
   @BuiltValueField(wireName: r'id')
   String get id;
 
@@ -95,6 +114,30 @@ class _$KitchenTicketItemSerializer
     KitchenTicketItem object, {
     FullType specifiedType = FullType.unspecified,
   }) sync* {
+    yield r'recalled_at';
+    yield object.recalledAt == null
+        ? null
+        : serializers.serialize(
+            object.recalledAt,
+            specifiedType: const FullType.nullable(DateTime),
+          );
+    yield r'recall_count';
+    yield serializers.serialize(
+      object.recallCount,
+      specifiedType: const FullType(int),
+    );
+    yield r'prep_seconds';
+    yield object.prepSeconds == null
+        ? null
+        : serializers.serialize(
+            object.prepSeconds,
+            specifiedType: const FullType.nullable(int),
+          );
+    yield r'late';
+    yield serializers.serialize(
+      object.late_,
+      specifiedType: const FullType(bool),
+    );
     yield r'id';
     yield serializers.serialize(
       object.id,
@@ -194,6 +237,36 @@ class _$KitchenTicketItemSerializer
       final key = serializedList[i] as String;
       final value = serializedList[i + 1];
       switch (key) {
+        case r'recalled_at':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(DateTime),
+          ) as DateTime?;
+          if (valueDes == null) continue;
+          result.recalledAt = valueDes;
+          break;
+        case r'recall_count':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(int),
+          ) as int;
+          result.recallCount = valueDes;
+          break;
+        case r'prep_seconds':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(int),
+          ) as int?;
+          if (valueDes == null) continue;
+          result.prepSeconds = valueDes;
+          break;
+        case r'late':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(bool),
+          ) as bool;
+          result.late_ = valueDes;
+          break;
         case r'id':
           final valueDes = serializers.deserialize(
             value,

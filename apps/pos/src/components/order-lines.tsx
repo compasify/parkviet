@@ -7,7 +7,7 @@ import {
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCupLabelReprint } from '../hooks/use-kitchen';
-import { kitchenSent } from '../lib/kitchen';
+import { kitchenSent, kitchenStates } from '../lib/kitchen';
 import { linePicks, toSelections } from '../lib/menu-selection';
 import type {
   PosLineItem,
@@ -220,6 +220,16 @@ export function OrderLines({
                       {sent > 0 ? (
                         <span className="basket-line-kitchen" title={sentTitle}>
                           <PosIcon name="check" /> {t('kitchenSentBadge', { count: sent })}
+                        </span>
+                      ) : null}
+                      {kitchenStates(line).length > 0 ? (
+                        <span
+                          className="basket-line-kitchen-states"
+                          data-testid="line-kitchen-states"
+                        >
+                          {kitchenStates(line)
+                            .map((row) => t(`kitchenLineState_${row.state}`, { count: row.count }))
+                            .join(' · ')}
                         </span>
                       ) : null}
                       {line.kind === 'menu' && line.sale_line_id

@@ -8,6 +8,7 @@ module Spree
           # Sold out at a branch for today, or back on sale.
           class MenuAvailabilitiesController < BaseController
             scoped_resource :pos_orders
+            self.pos_machine_devices = true
             pos_permissions update: %w[write_pos_orders write_pos_topology]
 
             def update

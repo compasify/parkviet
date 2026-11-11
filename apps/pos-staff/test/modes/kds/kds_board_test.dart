@@ -37,7 +37,7 @@ void main() {
         itemJson('i2', name: 'Trà đá', status: 'preparing'),
       ]),
     ]));
-    final controller = KdsController(api: api, stationId: 'poskstation_1')..start(status: live);
+    final controller = KdsController(api: api, stationIds: ['poskstation_1'])..start(status: live);
     addTearDown(controller.dispose);
     await tester.pumpWidget(app(controller));
     await tester.pumpAndSettle();
@@ -82,7 +82,7 @@ void main() {
         itemJson('r1', name: 'Bún chả', status: 'ready', readyAt: '2026-11-11T12:05:00.000+07:00'),
       ]),
     ]));
-    final controller = KdsController(api: api, stationId: 'poskstation_1')..start(status: live);
+    final controller = KdsController(api: api, stationIds: ['poskstation_1'])..start(status: live);
     addTearDown(controller.dispose);
     await tester.pumpWidget(app(controller));
     await tester.pumpAndSettle();
@@ -111,7 +111,7 @@ void main() {
         itemJson('d1', name: 'Trà sữa', status: 'ready', readyAt: '2026-11-11T12:05:00.000+07:00'),
       ]),
     ]));
-    final controller = KdsController(api: api, stationId: 'poskstation_1')..start(status: live);
+    final controller = KdsController(api: api, stationIds: ['poskstation_1'])..start(status: live);
     addTearDown(controller.dispose);
     await tester.pumpWidget(app(controller));
     await tester.pumpAndSettle();
@@ -134,9 +134,10 @@ void main() {
     await tester.tap(find.byKey(const Key('serve-order-t5')));
     await tester.pumpAndSettle();
     expect(api.calls, contains('serveOrder:posws_aaaa1111'));
-    // Nothing ready is left on the order: no hand-over, no recall.
+    // Nothing ready is left on the order: no hand-over; a served dish can
+    // still be called back for 30 minutes.
     expect(find.byKey(const Key('serve-order-t5')), findsNothing);
-    expect(find.byKey(const Key('item-recall-d1')), findsNothing);
+    expect(find.byKey(const Key('item-recall-d1')), findsOneWidget);
   });
 
   testWidgets('marks a delivery platform order with the platform and the pickup code', (tester) async {
@@ -152,7 +153,7 @@ void main() {
     final api = FakeKitchenApi(board(serverNow: now, open: [
       ticketJson('t7', sentAt: '2026-11-11T12:08:00.000+07:00', header: header),
     ]));
-    final controller = KdsController(api: api, stationId: 'poskstation_1')..start(status: live);
+    final controller = KdsController(api: api, stationIds: ['poskstation_1'])..start(status: live);
     addTearDown(controller.dispose);
     await tester.pumpWidget(app(controller));
     await tester.pumpAndSettle();
@@ -170,8 +171,10 @@ void main() {
       ticketJson('t1', sentAt: '2026-11-11T12:00:00.000+07:00', items: [itemJson('a', name: 'Cơm tấm')]),
       ticketJson('t2', sequence: 2, workspaceId: 'posws_bbbb2222', sentAt: '2026-11-11T12:02:00.000+07:00',
           header: {'service_mode': 'takeaway', 'customer_name': 'Chị Lan'}, items: [itemJson('b', name: 'Cơm tấm')]),
+    ], allDay: [
+      allDayJson('k1', name: 'Cơm tấm', quantity: '2.0', itemIds: ['a', 'b']),
     ]));
-    final controller = KdsController(api: api, stationId: 'poskstation_1')..start(status: live);
+    final controller = KdsController(api: api, stationIds: ['poskstation_1'])..start(status: live);
     addTearDown(controller.dispose);
     await tester.pumpWidget(app(controller));
     await tester.pumpAndSettle();
@@ -179,7 +182,12 @@ void main() {
     await tester.tap(find.byKey(const Key('kds-tab-items')));
     await tester.pumpAndSettle();
     expect(find.text('2 x Cơm tấm'), findsOneWidget);
-    expect(find.textContaining('#1, #2'), findsOneWidget);
+    // One unit of the oldest ticket, then the whole batch, first sent first.
+    await tester.tap(find.byKey(const Key('all-day-one-0')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('all-day-all-0')));
+    await tester.pumpAndSettle();
+    expect(api.calls, containsAllInOrder(['allDay:k1:1', 'allDay:k1:2']));
 
     await tester.tap(find.byKey(const Key('kds-tab-orders')));
     await tester.pumpAndSettle();
@@ -189,7 +197,7 @@ void main() {
 
   testWidgets('shows when the board was last updated while offline', (tester) async {
     final api = FakeKitchenApi(board(serverNow: now))..boardFailures.add(const AppFailure.unreachable());
-    final controller = KdsController(api: api, stationId: 'poskstation_1')..start();
+    final controller = KdsController(api: api, stationIds: ['poskstation_1'])..start();
     await tester.pumpWidget(app(controller));
     await tester.pump();
     expect(find.text('Mất kết nối · chưa tải được bếp'), findsOneWidget);

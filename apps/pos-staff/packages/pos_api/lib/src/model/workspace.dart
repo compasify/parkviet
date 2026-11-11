@@ -23,6 +23,7 @@ part 'workspace.g.dart';
 /// Properties:
 /// * [id]
 /// * [revision]
+/// * [leaseGeneration] - Sent back with commands that need the editing lease (move, merge).
 /// * [operationalStatus]
 /// * [serviceMode]
 /// * [businessDate]
@@ -44,6 +45,10 @@ abstract class Workspace implements Built<Workspace, WorkspaceBuilder> {
 
   @BuiltValueField(wireName: r'revision')
   int get revision;
+
+  /// Sent back with commands that need the editing lease (move, merge).
+  @BuiltValueField(wireName: r'lease_generation')
+  int? get leaseGeneration;
 
   @BuiltValueField(wireName: r'operational_status')
   String get operationalStatus;
@@ -129,6 +134,13 @@ class _$WorkspaceSerializer implements PrimitiveSerializer<Workspace> {
       object.revision,
       specifiedType: const FullType(int),
     );
+    if (object.leaseGeneration != null) {
+      yield r'lease_generation';
+      yield serializers.serialize(
+        object.leaseGeneration,
+        specifiedType: const FullType(int),
+      );
+    }
     yield r'operational_status';
     yield serializers.serialize(
       object.operationalStatus,
@@ -258,6 +270,14 @@ class _$WorkspaceSerializer implements PrimitiveSerializer<Workspace> {
             specifiedType: const FullType(int),
           ) as int;
           result.revision = valueDes;
+          break;
+        case r'lease_generation':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(int),
+          ) as int?;
+          if (valueDes == null) continue;
+          result.leaseGeneration = valueDes;
           break;
         case r'operational_status':
           final valueDes = serializers.deserialize(

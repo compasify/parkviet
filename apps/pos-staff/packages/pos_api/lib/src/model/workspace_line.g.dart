@@ -120,6 +120,8 @@ class _$WorkspaceLine extends WorkspaceLine {
   final int? rowVersion;
   @override
   final StaffRef? addedBy;
+  @override
+  final LineKitchenStatus? kitchenStatus;
 
   factory _$WorkspaceLine([void Function(WorkspaceLineBuilder)? updates]) =>
       (WorkspaceLineBuilder()..update(updates))._build();
@@ -140,7 +142,8 @@ class _$WorkspaceLine extends WorkspaceLine {
       this.kitchenSentQuantity,
       this.pendingKitchenQuantity,
       this.rowVersion,
-      this.addedBy})
+      this.addedBy,
+      this.kitchenStatus})
       : super._();
   @override
   WorkspaceLine rebuild(void Function(WorkspaceLineBuilder) updates) =>
@@ -168,7 +171,8 @@ class _$WorkspaceLine extends WorkspaceLine {
         kitchenSentQuantity == other.kitchenSentQuantity &&
         pendingKitchenQuantity == other.pendingKitchenQuantity &&
         rowVersion == other.rowVersion &&
-        addedBy == other.addedBy;
+        addedBy == other.addedBy &&
+        kitchenStatus == other.kitchenStatus;
   }
 
   @override
@@ -190,6 +194,7 @@ class _$WorkspaceLine extends WorkspaceLine {
     _$hash = $jc(_$hash, pendingKitchenQuantity.hashCode);
     _$hash = $jc(_$hash, rowVersion.hashCode);
     _$hash = $jc(_$hash, addedBy.hashCode);
+    _$hash = $jc(_$hash, kitchenStatus.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -212,7 +217,8 @@ class _$WorkspaceLine extends WorkspaceLine {
           ..add('kitchenSentQuantity', kitchenSentQuantity)
           ..add('pendingKitchenQuantity', pendingKitchenQuantity)
           ..add('rowVersion', rowVersion)
-          ..add('addedBy', addedBy))
+          ..add('addedBy', addedBy)
+          ..add('kitchenStatus', kitchenStatus))
         .toString();
   }
 }
@@ -291,6 +297,12 @@ class WorkspaceLineBuilder
   StaffRefBuilder get addedBy => _$this._addedBy ??= StaffRefBuilder();
   set addedBy(StaffRefBuilder? addedBy) => _$this._addedBy = addedBy;
 
+  LineKitchenStatusBuilder? _kitchenStatus;
+  LineKitchenStatusBuilder get kitchenStatus =>
+      _$this._kitchenStatus ??= LineKitchenStatusBuilder();
+  set kitchenStatus(LineKitchenStatusBuilder? kitchenStatus) =>
+      _$this._kitchenStatus = kitchenStatus;
+
   WorkspaceLineBuilder() {
     WorkspaceLine._defaults(this);
   }
@@ -314,6 +326,7 @@ class WorkspaceLineBuilder
       _pendingKitchenQuantity = $v.pendingKitchenQuantity;
       _rowVersion = $v.rowVersion;
       _addedBy = $v.addedBy?.toBuilder();
+      _kitchenStatus = $v.kitchenStatus?.toBuilder();
       _$v = null;
     }
     return this;
@@ -359,6 +372,7 @@ class WorkspaceLineBuilder
             pendingKitchenQuantity: pendingKitchenQuantity,
             rowVersion: rowVersion,
             addedBy: _addedBy?.build(),
+            kitchenStatus: _kitchenStatus?.build(),
           );
     } catch (_) {
       late String _$failedField;
@@ -370,6 +384,8 @@ class WorkspaceLineBuilder
 
         _$failedField = 'addedBy';
         _addedBy?.build();
+        _$failedField = 'kitchenStatus';
+        _kitchenStatus?.build();
       } catch (e) {
         throw BuiltValueNestedFieldError(
             r'WorkspaceLine', _$failedField, e.toString());

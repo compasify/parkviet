@@ -883,6 +883,696 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Giao hàng'**
   String get kdsModeDelivery;
+
+  /// No description provided for @kdsDoneHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giữ một món để gọi lại món đã xong hoặc đã ra.'**
+  String get kdsDoneHint;
+
+  /// No description provided for @kdsRecalled.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gọi lại {count} lần'**
+  String kdsRecalled(int count);
+
+  /// No description provided for @kdsAllDayOne.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xong 1'**
+  String get kdsAllDayOne;
+
+  /// No description provided for @kdsAllDayAll.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xong hết ({count})'**
+  String kdsAllDayAll(int count);
+
+  /// No description provided for @kdsServiceModeAll.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mọi kiểu phục vụ'**
+  String get kdsServiceModeAll;
+
+  /// No description provided for @kdsServiceModeFilter.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lọc theo kiểu phục vụ'**
+  String get kdsServiceModeFilter;
+
+  /// No description provided for @kdsStationExpo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trạm ra món (expo)'**
+  String get kdsStationExpo;
+
+  /// No description provided for @kdsStationPickHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn một hoặc nhiều trạm. Lựa chọn được giữ trên máy này.'**
+  String get kdsStationPickHint;
+
+  /// No description provided for @kdsStationShow.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hiện {count} trạm'**
+  String kdsStationShow(int count);
+
+  /// No description provided for @expoNothingReady.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có món nào chờ ra.'**
+  String get expoNothingReady;
+
+  /// No description provided for @expoServeAll.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ra cả đơn'**
+  String get expoServeAll;
+
+  /// No description provided for @modifierVariant.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cỡ / loại'**
+  String get modifierVariant;
+
+  /// No description provided for @modifierNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ghi chú cho bếp'**
+  String get modifierNote;
+
+  /// No description provided for @modifierAdd.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm · {amount}'**
+  String modifierAdd(String amount);
+
+  /// No description provided for @modifierPickExactly.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn {count}'**
+  String modifierPickExactly(int count);
+
+  /// No description provided for @modifierPickBetween.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn từ {min} đến {max}'**
+  String modifierPickBetween(int min, int max);
+
+  /// No description provided for @modifierPickUpTo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn tối đa {max}'**
+  String modifierPickUpTo(int max);
+
+  /// No description provided for @voidReasonChangedMind.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách đổi ý'**
+  String get voidReasonChangedMind;
+
+  /// No description provided for @voidReasonSoldOut.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hết món'**
+  String get voidReasonSoldOut;
+
+  /// No description provided for @voidReasonMistake.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập nhầm'**
+  String get voidReasonMistake;
+
+  /// No description provided for @voidReasonSpoiled.
+  ///
+  /// In vi, this message translates to:
+  /// **'Làm hỏng'**
+  String get voidReasonSpoiled;
+
+  /// No description provided for @voidReasonOther.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khác (ghi lý do)'**
+  String get voidReasonOther;
+
+  /// No description provided for @waiterAllAreas.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mọi khu'**
+  String get waiterAllAreas;
+
+  /// No description provided for @waiterFilterAll.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tất cả'**
+  String get waiterFilterAll;
+
+  /// No description provided for @waiterFilterFree.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trống'**
+  String get waiterFilterFree;
+
+  /// No description provided for @waiterFilterSeated.
+  ///
+  /// In vi, this message translates to:
+  /// **'Có khách'**
+  String get waiterFilterSeated;
+
+  /// No description provided for @waiterFilterWaiting.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ món'**
+  String get waiterFilterWaiting;
+
+  /// No description provided for @waiterFilterPayment.
+  ///
+  /// In vi, this message translates to:
+  /// **'Yêu cầu thanh toán'**
+  String get waiterFilterPayment;
+
+  /// No description provided for @waiterFilterMine.
+  ///
+  /// In vi, this message translates to:
+  /// **'Của tôi'**
+  String get waiterFilterMine;
+
+  /// No description provided for @waiterNoTables.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không có bàn nào.'**
+  String get waiterNoTables;
+
+  /// No description provided for @waiterStateFree.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trống'**
+  String get waiterStateFree;
+
+  /// No description provided for @waiterStateSeated.
+  ///
+  /// In vi, this message translates to:
+  /// **'Có khách'**
+  String get waiterStateSeated;
+
+  /// No description provided for @waiterStateOrdered.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang phục vụ'**
+  String get waiterStateOrdered;
+
+  /// No description provided for @waiterStateWaitingLong.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ lâu'**
+  String get waiterStateWaitingLong;
+
+  /// No description provided for @waiterStatePayment.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gọi thanh toán'**
+  String get waiterStatePayment;
+
+  /// No description provided for @waiterStatePrebilled.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã in tạm tính'**
+  String get waiterStatePrebilled;
+
+  /// No description provided for @waiterStateCleaning.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang dọn'**
+  String get waiterStateCleaning;
+
+  /// No description provided for @waiterStateOut.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngưng phục vụ'**
+  String get waiterStateOut;
+
+  /// No description provided for @waiterGuests.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} khách'**
+  String waiterGuests(int count);
+
+  /// No description provided for @waiterSeatedMinutes.
+  ///
+  /// In vi, this message translates to:
+  /// **'{minutes} phút'**
+  String waiterSeatedMinutes(int minutes);
+
+  /// No description provided for @waiterPendingItems.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} món chờ'**
+  String waiterPendingItems(int count);
+
+  /// No description provided for @waiterPaymentRequested.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã gọi thanh toán'**
+  String get waiterPaymentRequested;
+
+  /// No description provided for @waiterOrders.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} đơn'**
+  String waiterOrders(int count);
+
+  /// No description provided for @waiterPickOrder.
+  ///
+  /// In vi, this message translates to:
+  /// **'{table}: chọn đơn'**
+  String waiterPickOrder(String table);
+
+  /// No description provided for @waiterOrderLetter.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đơn {letter}'**
+  String waiterOrderLetter(String letter);
+
+  /// No description provided for @waiterSecondOrder.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mở thêm đơn trên bàn này'**
+  String get waiterSecondOrder;
+
+  /// No description provided for @waiterPin.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ghim bàn (nhận báo món xong)'**
+  String get waiterPin;
+
+  /// No description provided for @waiterUnpin.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ ghim bàn'**
+  String get waiterUnpin;
+
+  /// No description provided for @waiterFollowTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhận báo món xong'**
+  String get waiterFollowTitle;
+
+  /// No description provided for @waiterFollowHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mặc định: bàn bạn gọi món và bàn đã ghim.'**
+  String get waiterFollowHint;
+
+  /// No description provided for @waiterFollowMine.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉ bàn của tôi'**
+  String get waiterFollowMine;
+
+  /// No description provided for @waiterFollowArea.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mọi bàn trong khu {area}'**
+  String waiterFollowArea(String area);
+
+  /// No description provided for @waiterReadyCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'Có {count} món đã xong, chạm để mở bàn'**
+  String waiterReadyCount(int count);
+
+  /// No description provided for @waiterReadyNotice.
+  ///
+  /// In vi, this message translates to:
+  /// **'{table}: {name} ×{quantity} đã xong'**
+  String waiterReadyNotice(String table, String name, String quantity);
+
+  /// No description provided for @waiterClose.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đóng'**
+  String get waiterClose;
+
+  /// No description provided for @waiterGuestsFor.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số khách · {table}'**
+  String waiterGuestsFor(String table);
+
+  /// No description provided for @waiterCapacity.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bàn {count} chỗ'**
+  String waiterCapacity(int count);
+
+  /// No description provided for @waiterOpenTable.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mở bàn'**
+  String get waiterOpenTable;
+
+  /// No description provided for @waiterOrderFor.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gọi món · {table}'**
+  String waiterOrderFor(String table);
+
+  /// No description provided for @waiterSearch.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tìm món'**
+  String get waiterSearch;
+
+  /// No description provided for @waiterAllCategories.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tất cả'**
+  String get waiterAllCategories;
+
+  /// No description provided for @waiterNoDishes.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không có món nào.'**
+  String get waiterNoDishes;
+
+  /// No description provided for @waiterSoldOutLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hết món'**
+  String get waiterSoldOutLabel;
+
+  /// No description provided for @waiterCart.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} món · {amount}'**
+  String waiterCart(int count, String amount);
+
+  /// No description provided for @waiterAddToOrder.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm vào đơn'**
+  String get waiterAddToOrder;
+
+  /// No description provided for @waiterAddAndSend.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm và báo bếp'**
+  String get waiterAddAndSend;
+
+  /// No description provided for @waiterAdded.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã thêm vào đơn.'**
+  String get waiterAdded;
+
+  /// No description provided for @waiterAddedAndSent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã thêm và báo bếp.'**
+  String get waiterAddedAndSent;
+
+  /// No description provided for @waiterSent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã báo bếp.'**
+  String get waiterSent;
+
+  /// No description provided for @waiterOrderDishes.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gọi món'**
+  String get waiterOrderDishes;
+
+  /// No description provided for @waiterSend.
+  ///
+  /// In vi, this message translates to:
+  /// **'Báo bếp'**
+  String get waiterSend;
+
+  /// No description provided for @waiterSendCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'Báo bếp ({count})'**
+  String waiterSendCount(int count);
+
+  /// No description provided for @waiterSubtotal.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tạm tính {amount}'**
+  String waiterSubtotal(String amount);
+
+  /// No description provided for @waiterEmptyOrder.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có món nào. Bấm \"Gọi món\".'**
+  String get waiterEmptyOrder;
+
+  /// No description provided for @waiterLineUnsent.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} chưa báo bếp'**
+  String waiterLineUnsent(String count);
+
+  /// No description provided for @waiterLineNew.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} mới'**
+  String waiterLineNew(String count);
+
+  /// No description provided for @waiterLinePreparing.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} đang làm'**
+  String waiterLinePreparing(String count);
+
+  /// No description provided for @waiterLineReady.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} xong'**
+  String waiterLineReady(String count);
+
+  /// No description provided for @waiterLineServed.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} đã ra'**
+  String waiterLineServed(String count);
+
+  /// No description provided for @waiterVoidSent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hủy món đã báo bếp'**
+  String get waiterVoidSent;
+
+  /// No description provided for @waiterRemoveUnsent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xóa món chưa báo bếp'**
+  String get waiterRemoveUnsent;
+
+  /// No description provided for @waiterVoided.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã hủy món.'**
+  String get waiterVoided;
+
+  /// No description provided for @waiterVoidTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hủy {name}'**
+  String waiterVoidTitle(String name);
+
+  /// No description provided for @waiterVoidSentCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bếp đã nhận {count}.'**
+  String waiterVoidSentCount(int count);
+
+  /// No description provided for @waiterVoidNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ghi chú'**
+  String get waiterVoidNote;
+
+  /// No description provided for @waiterVoidNoteRequired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lý do (bắt buộc)'**
+  String get waiterVoidNoteRequired;
+
+  /// No description provided for @waiterVoidConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hủy món'**
+  String get waiterVoidConfirm;
+
+  /// No description provided for @waiterWaitingApproval.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ quản lý duyệt. Quản lý cấp mã duyệt cho đơn này, mã sẽ tự điền khi có, hoặc nhập mã bên dưới.'**
+  String get waiterWaitingApproval;
+
+  /// No description provided for @waiterApprovalCode.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mã duyệt'**
+  String get waiterApprovalCode;
+
+  /// No description provided for @waiterRequestPayment.
+  ///
+  /// In vi, this message translates to:
+  /// **'Yêu cầu thanh toán'**
+  String get waiterRequestPayment;
+
+  /// No description provided for @waiterPaymentRequestSent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã báo thu ngân.'**
+  String get waiterPaymentRequestSent;
+
+  /// No description provided for @waiterMove.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chuyển bàn'**
+  String get waiterMove;
+
+  /// No description provided for @waiterMerge.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gộp bàn'**
+  String get waiterMerge;
+
+  /// No description provided for @waiterMoveTo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chuyển sang bàn trống'**
+  String get waiterMoveTo;
+
+  /// No description provided for @waiterMergeInto.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gộp vào đơn của bàn'**
+  String get waiterMergeInto;
+
+  /// No description provided for @waiterMoved.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã chuyển bàn.'**
+  String get waiterMoved;
+
+  /// No description provided for @waiterMerged.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã gộp bàn.'**
+  String get waiterMerged;
+
+  /// No description provided for @waiterChecklist.
+  ///
+  /// In vi, this message translates to:
+  /// **'In phiếu kiểm đồ'**
+  String get waiterChecklist;
+
+  /// No description provided for @waiterPrebill.
+  ///
+  /// In vi, this message translates to:
+  /// **'In tạm tính'**
+  String get waiterPrebill;
+
+  /// No description provided for @waiterPrintQueued.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã gửi in tới {printer}.'**
+  String waiterPrintQueued(String printer);
+
+  /// No description provided for @waiterPrinted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã in trên {printer}.'**
+  String waiterPrinted(String printer);
+
+  /// No description provided for @waiterPrintFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không in được: {error}'**
+  String waiterPrintFailed(String error);
+
+  /// No description provided for @waiterNoPrinter.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có máy in cho phiếu này'**
+  String get waiterNoPrinter;
+
+  /// No description provided for @waiterLineChanged.
+  ///
+  /// In vi, this message translates to:
+  /// **'Món này vừa được người khác sửa. Đã tải lại đơn.'**
+  String get waiterLineChanged;
+
+  /// No description provided for @waiterSnapshotLocked.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đơn đang chờ thanh toán nên không đổi được. Đã tải lại đơn.'**
+  String get waiterSnapshotLocked;
+
+  /// No description provided for @waiterLeaseBusy.
+  ///
+  /// In vi, this message translates to:
+  /// **'Máy khác đang sửa đơn này. Thử lại sau ít phút.'**
+  String get waiterLeaseBusy;
+
+  /// No description provided for @waiterWorkspaceClosed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đơn đã đóng.'**
+  String get waiterWorkspaceClosed;
+
+  /// No description provided for @waiterSoldOut.
+  ///
+  /// In vi, this message translates to:
+  /// **'Món này đã hết.'**
+  String get waiterSoldOut;
+
+  /// No description provided for @waiterTableOccupied.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bàn đã có khách.'**
+  String get waiterTableOccupied;
+
+  /// No description provided for @waiterTableUnavailable.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bàn không phục vụ lúc này.'**
+  String get waiterTableUnavailable;
+
+  /// No description provided for @waiterGuestCountInvalid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số khách không hợp lệ cho bàn này.'**
+  String get waiterGuestCountInvalid;
+
+  /// No description provided for @waiterModifierInvalid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lựa chọn của món không hợp lệ. Mở lại món để chọn.'**
+  String get waiterModifierInvalid;
+
+  /// No description provided for @waiterVoidQuantityInvalid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số lượng hủy không hợp lệ.'**
+  String get waiterVoidQuantityInvalid;
+
+  /// No description provided for @waiterVoidReasonInvalid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn lý do hủy, hoặc ghi lý do khi chọn \"Khác\".'**
+  String get waiterVoidReasonInvalid;
+
+  /// No description provided for @waiterForbidden.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn không có quyền làm việc này trên máy phục vụ.'**
+  String get waiterForbidden;
 }
 
 class _AppLocalizationsDelegate

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { kitchenSent, unsentKitchenQuantity } from './kitchen';
+import { kitchenSent, kitchenStates, unsentKitchenQuantity } from './kitchen';
 import type { PosLineItem, PosWorkspace } from './pos-context';
 
 const line = (overrides: Partial<PosLineItem>): PosLineItem =>
@@ -22,5 +22,15 @@ describe('kitchen quantities', () => {
     expect(kitchenSent(line({}))).toBe(0);
     expect(kitchenSent(line({ kitchen_sent_quantity: 'x' }))).toBe(0);
     expect(kitchenSent(line({ kitchen_sent_quantity: '1.5' }))).toBe(1.5);
+  });
+
+  it('lists the kitchen states of a table line in order, without the empty ones', () => {
+    expect(
+      kitchenStates(line({ kitchen_status: { served: '1.0', new: '2.0', ready: '0' } })),
+    ).toEqual([
+      { state: 'new', count: 2 },
+      { state: 'served', count: 1 },
+    ]);
+    expect(kitchenStates(line({}))).toEqual([]);
   });
 });

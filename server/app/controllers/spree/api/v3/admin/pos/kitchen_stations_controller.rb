@@ -62,7 +62,7 @@ module Spree
             end
 
             def attributes
-              params.permit(*Spree::Pos::Kitchen::Setup::STATION_FIELDS, :printer_id).to_h
+              params.permit(*Spree::Pos::Kitchen::Setup::STATION_FIELDS, :printer_id, :expo_station_id).to_h
             end
           end
         end

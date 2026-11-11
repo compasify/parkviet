@@ -454,4 +454,423 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get kdsModeDelivery => 'Delivery';
+
+  @override
+  String get kdsDoneHint =>
+      'Hold an item to call back a dish that is ready or served.';
+
+  @override
+  String kdsRecalled(int count) {
+    return 'Recalled $count×';
+  }
+
+  @override
+  String get kdsAllDayOne => 'Ready 1';
+
+  @override
+  String kdsAllDayAll(int count) {
+    return 'All ready ($count)';
+  }
+
+  @override
+  String get kdsServiceModeAll => 'Every service';
+
+  @override
+  String get kdsServiceModeFilter => 'Filter by service';
+
+  @override
+  String get kdsStationExpo => 'Pass (expo)';
+
+  @override
+  String get kdsStationPickHint =>
+      'Pick one or more stations. The choice stays on this device.';
+
+  @override
+  String kdsStationShow(int count) {
+    return 'Show $count stations';
+  }
+
+  @override
+  String get expoNothingReady => 'Nothing is waiting at the pass.';
+
+  @override
+  String get expoServeAll => 'Serve whole order';
+
+  @override
+  String get modifierVariant => 'Size / kind';
+
+  @override
+  String get modifierNote => 'Note for the kitchen';
+
+  @override
+  String modifierAdd(String amount) {
+    return 'Add · $amount';
+  }
+
+  @override
+  String modifierPickExactly(int count) {
+    return 'Pick $count';
+  }
+
+  @override
+  String modifierPickBetween(int min, int max) {
+    return 'Pick $min to $max';
+  }
+
+  @override
+  String modifierPickUpTo(int max) {
+    return 'Pick up to $max';
+  }
+
+  @override
+  String get voidReasonChangedMind => 'Guest changed their mind';
+
+  @override
+  String get voidReasonSoldOut => 'Sold out';
+
+  @override
+  String get voidReasonMistake => 'Entered by mistake';
+
+  @override
+  String get voidReasonSpoiled => 'Spoiled';
+
+  @override
+  String get voidReasonOther => 'Other (say why)';
+
+  @override
+  String get waiterAllAreas => 'All areas';
+
+  @override
+  String get waiterFilterAll => 'All';
+
+  @override
+  String get waiterFilterFree => 'Free';
+
+  @override
+  String get waiterFilterSeated => 'Seated';
+
+  @override
+  String get waiterFilterWaiting => 'Waiting for dishes';
+
+  @override
+  String get waiterFilterPayment => 'Payment requested';
+
+  @override
+  String get waiterFilterMine => 'Mine';
+
+  @override
+  String get waiterNoTables => 'No tables.';
+
+  @override
+  String get waiterStateFree => 'Free';
+
+  @override
+  String get waiterStateSeated => 'Seated';
+
+  @override
+  String get waiterStateOrdered => 'Ordered';
+
+  @override
+  String get waiterStateWaitingLong => 'Waiting long';
+
+  @override
+  String get waiterStatePayment => 'Payment requested';
+
+  @override
+  String get waiterStatePrebilled => 'Prebill printed';
+
+  @override
+  String get waiterStateCleaning => 'Cleaning';
+
+  @override
+  String get waiterStateOut => 'Out of service';
+
+  @override
+  String waiterGuests(int count) {
+    return '$count guests';
+  }
+
+  @override
+  String waiterSeatedMinutes(int minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String waiterPendingItems(int count) {
+    return '$count dishes waiting';
+  }
+
+  @override
+  String get waiterPaymentRequested => 'Payment requested';
+
+  @override
+  String waiterOrders(int count) {
+    return '$count orders';
+  }
+
+  @override
+  String waiterPickOrder(String table) {
+    return '$table: pick an order';
+  }
+
+  @override
+  String waiterOrderLetter(String letter) {
+    return 'Order $letter';
+  }
+
+  @override
+  String get waiterSecondOrder => 'Open another order on this table';
+
+  @override
+  String get waiterPin => 'Pin table (hear when dishes are ready)';
+
+  @override
+  String get waiterUnpin => 'Unpin table';
+
+  @override
+  String get waiterFollowTitle => 'Ready alerts';
+
+  @override
+  String get waiterFollowHint =>
+      'By default: tables you ordered for and tables you pinned.';
+
+  @override
+  String get waiterFollowMine => 'Only my tables';
+
+  @override
+  String waiterFollowArea(String area) {
+    return 'Every table in $area';
+  }
+
+  @override
+  String waiterReadyCount(int count) {
+    return '$count dishes ready, tap to open the table';
+  }
+
+  @override
+  String waiterReadyNotice(String table, String name, String quantity) {
+    return '$table: $name ×$quantity is ready';
+  }
+
+  @override
+  String get waiterClose => 'Close';
+
+  @override
+  String waiterGuestsFor(String table) {
+    return 'Guests · $table';
+  }
+
+  @override
+  String waiterCapacity(int count) {
+    return 'Seats $count';
+  }
+
+  @override
+  String get waiterOpenTable => 'Open';
+
+  @override
+  String waiterOrderFor(String table) {
+    return 'Order · $table';
+  }
+
+  @override
+  String get waiterSearch => 'Search dishes';
+
+  @override
+  String get waiterAllCategories => 'All';
+
+  @override
+  String get waiterNoDishes => 'No dishes.';
+
+  @override
+  String get waiterSoldOutLabel => 'Sold out';
+
+  @override
+  String waiterCart(int count, String amount) {
+    return '$count items · $amount';
+  }
+
+  @override
+  String get waiterAddToOrder => 'Add to order';
+
+  @override
+  String get waiterAddAndSend => 'Add and send';
+
+  @override
+  String get waiterAdded => 'Added to the order.';
+
+  @override
+  String get waiterAddedAndSent => 'Added and sent to the kitchen.';
+
+  @override
+  String get waiterSent => 'Sent to the kitchen.';
+
+  @override
+  String get waiterOrderDishes => 'Order';
+
+  @override
+  String get waiterSend => 'Send';
+
+  @override
+  String waiterSendCount(int count) {
+    return 'Send ($count)';
+  }
+
+  @override
+  String waiterSubtotal(String amount) {
+    return 'Subtotal $amount';
+  }
+
+  @override
+  String get waiterEmptyOrder => 'No dishes yet. Tap \"Order\".';
+
+  @override
+  String waiterLineUnsent(String count) {
+    return '$count not sent';
+  }
+
+  @override
+  String waiterLineNew(String count) {
+    return '$count new';
+  }
+
+  @override
+  String waiterLinePreparing(String count) {
+    return '$count cooking';
+  }
+
+  @override
+  String waiterLineReady(String count) {
+    return '$count ready';
+  }
+
+  @override
+  String waiterLineServed(String count) {
+    return '$count served';
+  }
+
+  @override
+  String get waiterVoidSent => 'Void sent dishes';
+
+  @override
+  String get waiterRemoveUnsent => 'Remove (not sent)';
+
+  @override
+  String get waiterVoided => 'Dish voided.';
+
+  @override
+  String waiterVoidTitle(String name) {
+    return 'Void $name';
+  }
+
+  @override
+  String waiterVoidSentCount(int count) {
+    return 'The kitchen has $count.';
+  }
+
+  @override
+  String get waiterVoidNote => 'Note';
+
+  @override
+  String get waiterVoidNoteRequired => 'Reason (required)';
+
+  @override
+  String get waiterVoidConfirm => 'Void';
+
+  @override
+  String get waiterWaitingApproval =>
+      'Waiting for a manager. The code fills in when a manager approves this order, or type it below.';
+
+  @override
+  String get waiterApprovalCode => 'Approval code';
+
+  @override
+  String get waiterRequestPayment => 'Request payment';
+
+  @override
+  String get waiterPaymentRequestSent => 'The cashier is told.';
+
+  @override
+  String get waiterMove => 'Move table';
+
+  @override
+  String get waiterMerge => 'Merge tables';
+
+  @override
+  String get waiterMoveTo => 'Move to a free table';
+
+  @override
+  String get waiterMergeInto => 'Merge into the order of';
+
+  @override
+  String get waiterMoved => 'Table moved.';
+
+  @override
+  String get waiterMerged => 'Tables merged.';
+
+  @override
+  String get waiterChecklist => 'Print checklist';
+
+  @override
+  String get waiterPrebill => 'Print prebill';
+
+  @override
+  String waiterPrintQueued(String printer) {
+    return 'Sent to $printer.';
+  }
+
+  @override
+  String waiterPrinted(String printer) {
+    return 'Printed on $printer.';
+  }
+
+  @override
+  String waiterPrintFailed(String error) {
+    return 'Could not print: $error';
+  }
+
+  @override
+  String get waiterNoPrinter => 'No printer for this document';
+
+  @override
+  String get waiterLineChanged =>
+      'Someone else just changed this dish. The order is reloaded.';
+
+  @override
+  String get waiterSnapshotLocked =>
+      'The order is being paid and cannot change. The order is reloaded.';
+
+  @override
+  String get waiterLeaseBusy =>
+      'Another device is editing this order. Try again shortly.';
+
+  @override
+  String get waiterWorkspaceClosed => 'The order is closed.';
+
+  @override
+  String get waiterSoldOut => 'This dish is sold out.';
+
+  @override
+  String get waiterTableOccupied => 'The table is taken.';
+
+  @override
+  String get waiterTableUnavailable => 'The table is not in service.';
+
+  @override
+  String get waiterGuestCountInvalid =>
+      'That guest count does not fit this table.';
+
+  @override
+  String get waiterModifierInvalid =>
+      'The options are not valid. Open the dish again.';
+
+  @override
+  String get waiterVoidQuantityInvalid => 'The quantity to void is not valid.';
+
+  @override
+  String get waiterVoidReasonInvalid =>
+      'Pick a reason, or write one for \"Other\".';
+
+  @override
+  String get waiterForbidden => 'You may not do that on the waiter device.';
 }

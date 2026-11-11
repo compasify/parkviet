@@ -16,6 +16,8 @@ module Spree
       belongs_to :store, class_name: 'Spree::Store'
       belongs_to :branch, class_name: 'Spree::Pos::Branch'
       belongs_to :printer, class_name: 'Spree::Pos::Printer', optional: true
+      # The pass this station hands its finished items to.
+      belongs_to :expo_station, class_name: 'Spree::Pos::KitchenStation', optional: true
       has_many :station_routes, class_name: 'Spree::Pos::StationRoute', dependent: :delete_all
       has_many :kitchen_tickets, class_name: 'Spree::Pos::KitchenTicket', dependent: :restrict_with_error
 
@@ -35,7 +37,8 @@ module Spree
         {
           id: prefixed_id, branch_id: branch.prefixed_id, name: name, kind: kind, printer_id: printer&.prefixed_id,
           printer_name: printer&.name, kds_enabled: kds_enabled, is_default: is_default,
-          warn_after_minutes: warn_after_minutes, late_after_minutes: late_after_minutes, position: position, active: active
+          warn_after_minutes: warn_after_minutes, late_after_minutes: late_after_minutes, position: position, active: active,
+          expo_station_id: expo_station&.prefixed_id
         }
       end
 
@@ -50,6 +53,9 @@ module Spree
       def same_branch
         errors.add(:branch, :invalid) if branch && branch.store_id != store_id
         errors.add(:printer, :invalid) if printer && printer.branch_id != branch_id
+        return if expo_station.nil?
+
+        errors.add(:expo_station, :invalid) if expo_station.branch_id != branch_id || expo_station.kind != 'expo' || expo_station_id == id
       end
     end
   end

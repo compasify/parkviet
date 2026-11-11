@@ -20,7 +20,9 @@ module Spree
                 branch = guard.branch!(current_store, params[:branch_id])
                 guard.operate!(current_store, current_user, branch)
                 station = params[:station_id].present? ? guard.station!(branch, params[:station_id]) : nil
-                render json: { data: Spree::Pos::Kitchen::Board.call(branch: branch, station: station) }
+                stations = guard.stations!(branch, params[:station_ids])
+                render json: { data: Spree::Pos::Kitchen::Board.call(branch: branch, station: station, stations: stations,
+                                                                     service_mode: guard.service_mode!(params[:service_mode])) }
               end
             end
           end

@@ -68,6 +68,8 @@ class _$KitchenStationKindEnumSerializer
 
 class _$KitchenStation extends KitchenStation {
   @override
+  final String? expoStationId;
+  @override
   final String id;
   @override
   final String branchId;
@@ -96,7 +98,8 @@ class _$KitchenStation extends KitchenStation {
       (KitchenStationBuilder()..update(updates))._build();
 
   _$KitchenStation._(
-      {required this.id,
+      {this.expoStationId,
+      required this.id,
       required this.branchId,
       required this.name,
       required this.kind,
@@ -120,6 +123,7 @@ class _$KitchenStation extends KitchenStation {
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
     return other is KitchenStation &&
+        expoStationId == other.expoStationId &&
         id == other.id &&
         branchId == other.branchId &&
         name == other.name &&
@@ -137,6 +141,7 @@ class _$KitchenStation extends KitchenStation {
   @override
   int get hashCode {
     var _$hash = 0;
+    _$hash = $jc(_$hash, expoStationId.hashCode);
     _$hash = $jc(_$hash, id.hashCode);
     _$hash = $jc(_$hash, branchId.hashCode);
     _$hash = $jc(_$hash, name.hashCode);
@@ -156,6 +161,7 @@ class _$KitchenStation extends KitchenStation {
   @override
   String toString() {
     return (newBuiltValueToStringHelper(r'KitchenStation')
+          ..add('expoStationId', expoStationId)
           ..add('id', id)
           ..add('branchId', branchId)
           ..add('name', name)
@@ -175,6 +181,11 @@ class _$KitchenStation extends KitchenStation {
 class KitchenStationBuilder
     implements Builder<KitchenStation, KitchenStationBuilder> {
   _$KitchenStation? _$v;
+
+  String? _expoStationId;
+  String? get expoStationId => _$this._expoStationId;
+  set expoStationId(String? expoStationId) =>
+      _$this._expoStationId = expoStationId;
 
   String? _id;
   String? get id => _$this._id;
@@ -233,6 +244,7 @@ class KitchenStationBuilder
   KitchenStationBuilder get _$this {
     final $v = _$v;
     if ($v != null) {
+      _expoStationId = $v.expoStationId;
       _id = $v.id;
       _branchId = $v.branchId;
       _name = $v.name;
@@ -266,6 +278,7 @@ class KitchenStationBuilder
   _$KitchenStation _build() {
     final _$result = _$v ??
         _$KitchenStation._(
+          expoStationId: expoStationId,
           id: BuiltValueNullFieldError.checkNotNull(
               id, r'KitchenStation', 'id'),
           branchId: BuiltValueNullFieldError.checkNotNull(

@@ -85,6 +85,14 @@ class _$KitchenTicketItemStatusEnumSerializer
 
 class _$KitchenTicketItem extends KitchenTicketItem {
   @override
+  final DateTime? recalledAt;
+  @override
+  final int recallCount;
+  @override
+  final int? prepSeconds;
+  @override
+  final bool late_;
+  @override
   final String id;
   @override
   final String? saleLineId;
@@ -114,7 +122,11 @@ class _$KitchenTicketItem extends KitchenTicketItem {
       (KitchenTicketItemBuilder()..update(updates))._build();
 
   _$KitchenTicketItem._(
-      {required this.id,
+      {this.recalledAt,
+      required this.recallCount,
+      this.prepSeconds,
+      required this.late_,
+      required this.id,
       this.saleLineId,
       required this.name,
       required this.modifiers,
@@ -139,6 +151,10 @@ class _$KitchenTicketItem extends KitchenTicketItem {
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
     return other is KitchenTicketItem &&
+        recalledAt == other.recalledAt &&
+        recallCount == other.recallCount &&
+        prepSeconds == other.prepSeconds &&
+        late_ == other.late_ &&
         id == other.id &&
         saleLineId == other.saleLineId &&
         name == other.name &&
@@ -156,6 +172,10 @@ class _$KitchenTicketItem extends KitchenTicketItem {
   @override
   int get hashCode {
     var _$hash = 0;
+    _$hash = $jc(_$hash, recalledAt.hashCode);
+    _$hash = $jc(_$hash, recallCount.hashCode);
+    _$hash = $jc(_$hash, prepSeconds.hashCode);
+    _$hash = $jc(_$hash, late_.hashCode);
     _$hash = $jc(_$hash, id.hashCode);
     _$hash = $jc(_$hash, saleLineId.hashCode);
     _$hash = $jc(_$hash, name.hashCode);
@@ -175,6 +195,10 @@ class _$KitchenTicketItem extends KitchenTicketItem {
   @override
   String toString() {
     return (newBuiltValueToStringHelper(r'KitchenTicketItem')
+          ..add('recalledAt', recalledAt)
+          ..add('recallCount', recallCount)
+          ..add('prepSeconds', prepSeconds)
+          ..add('late_', late_)
           ..add('id', id)
           ..add('saleLineId', saleLineId)
           ..add('name', name)
@@ -194,6 +218,22 @@ class _$KitchenTicketItem extends KitchenTicketItem {
 class KitchenTicketItemBuilder
     implements Builder<KitchenTicketItem, KitchenTicketItemBuilder> {
   _$KitchenTicketItem? _$v;
+
+  DateTime? _recalledAt;
+  DateTime? get recalledAt => _$this._recalledAt;
+  set recalledAt(DateTime? recalledAt) => _$this._recalledAt = recalledAt;
+
+  int? _recallCount;
+  int? get recallCount => _$this._recallCount;
+  set recallCount(int? recallCount) => _$this._recallCount = recallCount;
+
+  int? _prepSeconds;
+  int? get prepSeconds => _$this._prepSeconds;
+  set prepSeconds(int? prepSeconds) => _$this._prepSeconds = prepSeconds;
+
+  bool? _late_;
+  bool? get late_ => _$this._late_;
+  set late_(bool? late_) => _$this._late_ = late_;
 
   String? _id;
   String? get id => _$this._id;
@@ -254,6 +294,10 @@ class KitchenTicketItemBuilder
   KitchenTicketItemBuilder get _$this {
     final $v = _$v;
     if ($v != null) {
+      _recalledAt = $v.recalledAt;
+      _recallCount = $v.recallCount;
+      _prepSeconds = $v.prepSeconds;
+      _late_ = $v.late_;
       _id = $v.id;
       _saleLineId = $v.saleLineId;
       _name = $v.name;
@@ -289,6 +333,12 @@ class KitchenTicketItemBuilder
     try {
       _$result = _$v ??
           _$KitchenTicketItem._(
+            recalledAt: recalledAt,
+            recallCount: BuiltValueNullFieldError.checkNotNull(
+                recallCount, r'KitchenTicketItem', 'recallCount'),
+            prepSeconds: prepSeconds,
+            late_: BuiltValueNullFieldError.checkNotNull(
+                late_, r'KitchenTicketItem', 'late_'),
             id: BuiltValueNullFieldError.checkNotNull(
                 id, r'KitchenTicketItem', 'id'),
             saleLineId: saleLineId,

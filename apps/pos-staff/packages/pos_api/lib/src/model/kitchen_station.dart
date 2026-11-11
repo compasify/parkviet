@@ -12,6 +12,7 @@ part 'kitchen_station.g.dart';
 /// KitchenStation
 ///
 /// Properties:
+/// * [expoStationId] - The pass (an `expo` station of the branch) this station hands its finished items to.
 /// * [id]
 /// * [branchId]
 /// * [name]
@@ -27,6 +28,10 @@ part 'kitchen_station.g.dart';
 @BuiltValue()
 abstract class KitchenStation
     implements Built<KitchenStation, KitchenStationBuilder> {
+  /// The pass (an `expo` station of the branch) this station hands its finished items to.
+  @BuiltValueField(wireName: r'expo_station_id')
+  String? get expoStationId;
+
   @BuiltValueField(wireName: r'id')
   String get id;
 
@@ -91,6 +96,13 @@ class _$KitchenStationSerializer
     KitchenStation object, {
     FullType specifiedType = FullType.unspecified,
   }) sync* {
+    yield r'expo_station_id';
+    yield object.expoStationId == null
+        ? null
+        : serializers.serialize(
+            object.expoStationId,
+            specifiedType: const FullType.nullable(String),
+          );
     yield r'id';
     yield serializers.serialize(
       object.id,
@@ -180,6 +192,14 @@ class _$KitchenStationSerializer
       final key = serializedList[i] as String;
       final value = serializedList[i + 1];
       switch (key) {
+        case r'expo_station_id':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.expoStationId = valueDes;
+          break;
         case r'id':
           final valueDes = serializers.deserialize(
             value,

@@ -39,6 +39,11 @@ String modifiersLabel(KitchenTicketItem item) => item.modifiers
     .map((modifier) => modifier.quantity > 1 ? '${modifier.name} x${modifier.quantity}' : modifier.name)
     .join(', ');
 
+/// The options of an all-day row, read the same way.
+String allDayModifiersLabel(KitchenAllDayRow row) => row.modifiers
+    .map((modifier) => modifier.quantity > 1 ? '${modifier.name} x${modifier.quantity}' : modifier.name)
+    .join(', ');
+
 /// One dish across every open ticket: what to make in a batch.
 class ItemTally {
   ItemTally({required this.name, required this.options});
@@ -82,9 +87,13 @@ class OrderGroup {
   final tickets = <KitchenTicket>[];
 }
 
-String? orderLabel(KitchenTicket ticket) {
+String? orderLabel(KitchenTicket ticket) => headerLabel((key) => ticket.header[key]?.value);
+
+/// The table, call number or customer a ticket header names, or null.
+/// [field] reads one header field.
+String? headerLabel(Object? Function(String key) field) {
   for (final key in ['table', 'order_number', 'customer_name']) {
-    final value = ticket.header[key]?.value;
+    final value = field(key);
     if (value is String && value.isNotEmpty) return value;
     if (value is num) return '$value';
   }

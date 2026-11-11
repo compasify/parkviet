@@ -59,6 +59,70 @@ RSpec.describe Spree::Pos::Kitchen::ChangeItemStatus do
     expect { move(first, 'recall') }.to raise_error(Spree::Pos::Conflict) { |error| expect(error.reason).to eq('kitchen_recall_expired') }
   end
 
+  it 'calls a served item back, counts it and names a person in the audit log' do
+    cook = credit_staff(store, branch, [Spree::Pos::Capabilities::OPERATE_KITCHEN])
+    move(first, 'ready')
+    move(first, 'serve')
+    described_class.call(item: first, action: 'recall', actor: cook)
+    expect(first.reload).to have_attributes(status: 'preparing', ready_at: nil, served_at: nil, recall_count: 1, changed_by: cook)
+    expect(first.recalled_at).to be_present
+    audit = Spree::Pos::AuditEntry.where(action: 'kitchen.recall').sole
+    expect(audit).to have_attributes(actor: cook, subject_id: first.id)
+    expect(audit.metadata).to include('recall_count' => 1)
+
+    # A kitchen screen is not a person: the item keeps who moved it instead.
+    move(first, 'ready')
+    expect(move(first, 'recall')).to have_attributes(recall_count: 2, changed_by: screen)
+    expect(Spree::Pos::AuditEntry.where(action: 'kitchen.recall').count).to eq(1)
+  end
+
+  it 'refuses to recall a served item more than 30 minutes after it went out' do
+    move(first, 'ready')
+    move(first, 'serve')
+    allow(Spree::Pos::Workspace).to receive(:database_now).and_return(first.served_at + 31.minutes)
+    expect { move(first, 'recall') }.to raise_error(Spree::Pos::Conflict) { |error| expect(error.reason).to eq('kitchen_recall_expired') }
+  end
+
+  it 'keeps how long an item took and whether it passed the red threshold' do
+    sent = ticket.sent_at
+    allow(Spree::Pos::Workspace).to receive(:database_now).and_return(sent + 5.minutes)
+    expect(move(first, 'ready')).to have_attributes(prep_seconds: 300, late: false)
+
+    allow(Spree::Pos::Workspace).to receive(:database_now).and_return(sent + 16.minutes)
+    second = ticket.items.second
+    expect(move(second, 'ready')).to have_attributes(prep_seconds: 960, late: true)
+
+    move(second, 'recall')
+    expect(second.reload).to have_attributes(prep_seconds: nil, late: false)
+  end
+
+  it 'bumps one dish on the all-day view oldest first, a whole item at a time' do
+    soup = size(item)
+    kitchen_station!(branch, name: 'Bếp', default: true)
+    add_menu(sale, soup, quantity: 2)
+    kitchen_send(sale)
+    later = menu_sale(store, branch)
+    add_menu(later, soup)
+    kitchen_send(later)
+    old_item = tickets_of(sale).sole.items.sole
+    new_item = tickets_of(later).sole.items.sole
+    key = Spree::Pos::Kitchen::Board.all_day_key(new_item)
+    expect(Spree::Pos::Kitchen::Board.all_day_key(old_item)).to eq(key)
+    stations = Spree::Pos::KitchenStation.where(branch_id: branch.id).to_a
+
+    moved = described_class.bump_all_day(stations: stations, key: key, actor: screen)
+    expect(moved.map(&:id)).to eq([old_item.kitchen_ticket_id])
+    expect(old_item.reload.status).to eq('ready')
+    expect(new_item.reload.status).to eq('new')
+
+    described_class.bump_all_day(stations: stations, key: key, actor: screen)
+    expect(new_item.reload.status).to eq('ready')
+    expect { described_class.bump_all_day(stations: stations, key: key, actor: screen) }.
+      to raise_error(Spree::Pos::Conflict) { |error| expect(error.reason).to eq('kitchen_all_day_empty') }
+    expect { described_class.bump_all_day(stations: stations, key: key, quantity: 0, actor: screen) }.
+      to raise_error(Spree::Pos::Conflict) { |error| expect(error.reason).to eq('kitchen_all_day_invalid') }
+  end
+
   it 'bumps every open item of the ticket to ready and announces the ticket' do
     move(first, 'start')
     expect do

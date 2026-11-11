@@ -75,6 +75,7 @@ Class | Method | HTTP request | Description
 [*DefaultApi*](doc/DefaultApi.md) | [**posCupLabelSettings**](doc/DefaultApi.md#poscuplabelsettings) | **GET** /api/v3/admin/pos/cup_label_settings | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posCupLabelSettingsUpdate**](doc/DefaultApi.md#poscuplabelsettingsupdate) | **PUT** /api/v3/admin/pos/cup_label_settings | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posCupLabelTest**](doc/DefaultApi.md#poscuplabeltest) | **POST** /api/v3/admin/pos/cup_label_settings/test | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posDeviceKitchenAllDayBump**](doc/DefaultApi.md#posdevicekitchenalldaybump) | **POST** /api/v3/pos_device/kitchen/all_day/bump | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posDeviceKitchenBoard**](doc/DefaultApi.md#posdevicekitchenboard) | **GET** /api/v3/pos_device/kitchen/board | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posDeviceKitchenItemReady**](doc/DefaultApi.md#posdevicekitchenitemready) | **POST** /api/v3/pos_device/kitchen/items/{id}/ready | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posDeviceKitchenItemRecall**](doc/DefaultApi.md#posdevicekitchenitemrecall) | **POST** /api/v3/pos_device/kitchen/items/{id}/recall | 
@@ -89,9 +90,13 @@ Class | Method | HTTP request | Description
 [*DefaultApi*](doc/DefaultApi.md) | [**posDevicePair**](doc/DefaultApi.md#posdevicepair) | **POST** /api/v3/pos_device/pair | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posDevicePrintClaim**](doc/DefaultApi.md#posdeviceprintclaim) | **POST** /api/v3/pos_device/print_jobs/claim | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posDevicePrintReport**](doc/DefaultApi.md#posdeviceprintreport) | **POST** /api/v3/pos_device/print_jobs/{id}/report | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posDeviceReadyFeed**](doc/DefaultApi.md#posdevicereadyfeed) | **GET** /api/v3/admin/pos/devices/current/ready_feed | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posDeviceStaff**](doc/DefaultApi.md#posdevicestaff) | **GET** /api/v3/pos_device/staff | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posDeviceStaffSignIn**](doc/DefaultApi.md#posdevicestaffsignin) | **POST** /api/v3/pos_device/staff_sessions | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posDeviceStaffSignOut**](doc/DefaultApi.md#posdevicestaffsignout) | **DELETE** /api/v3/pos_device/staff_sessions | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posDeviceTablePin**](doc/DefaultApi.md#posdevicetablepin) | **POST** /api/v3/admin/pos/devices/current/table_pins | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posDeviceTablePins**](doc/DefaultApi.md#posdevicetablepins) | **GET** /api/v3/admin/pos/devices/current/table_pins | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posDeviceTableUnpin**](doc/DefaultApi.md#posdevicetableunpin) | **DELETE** /api/v3/admin/pos/devices/current/table_pins/{resource_id} | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posEinvoice**](doc/DefaultApi.md#poseinvoice) | **GET** /api/v3/admin/pos/einvoices/{id} | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posEinvoiceBuyer**](doc/DefaultApi.md#poseinvoicebuyer) | **PUT** /api/v3/admin/pos/einvoices/{id}/buyer | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posEinvoiceCancel**](doc/DefaultApi.md#poseinvoicecancel) | **POST** /api/v3/admin/pos/einvoices/{id}/cancel | 
@@ -103,6 +108,7 @@ Class | Method | HTTP request | Description
 [*DefaultApi*](doc/DefaultApi.md) | [**posEinvoiceSummary**](doc/DefaultApi.md#poseinvoicesummary) | **GET** /api/v3/admin/pos/einvoices/summary | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posEinvoices**](doc/DefaultApi.md#poseinvoices) | **GET** /api/v3/admin/pos/einvoices | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posHardwareStatus**](doc/DefaultApi.md#poshardwarestatus) | **GET** /api/v3/admin/pos/hardware_status | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posKitchenAllDayBump**](doc/DefaultApi.md#poskitchenalldaybump) | **POST** /api/v3/admin/pos/kitchen/all_day/bump | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posKitchenBoard**](doc/DefaultApi.md#poskitchenboard) | **GET** /api/v3/admin/pos/kitchen/board | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posKitchenItemReady**](doc/DefaultApi.md#poskitchenitemready) | **POST** /api/v3/admin/pos/kitchen/items/{id}/ready | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posKitchenItemRecall**](doc/DefaultApi.md#poskitchenitemrecall) | **POST** /api/v3/admin/pos/kitchen/items/{id}/recall | 
@@ -176,6 +182,8 @@ Class | Method | HTTP request | Description
 [*DefaultApi*](doc/DefaultApi.md) | [**posTableSplit**](doc/DefaultApi.md#postablesplit) | **POST** /api/v3/admin/pos/workspaces/{workspace_id}/split | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posWorkspaceAddItem**](doc/DefaultApi.md#posworkspaceadditem) | **POST** /api/v3/admin/pos/workspaces/{id}/items | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posWorkspaceAppendItems**](doc/DefaultApi.md#posworkspaceappenditems) | **POST** /api/v3/admin/pos/workspaces/{workspace_id}/items/append | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posWorkspaceChecklist**](doc/DefaultApi.md#posworkspacechecklist) | **POST** /api/v3/admin/pos/workspaces/{workspace_id}/checklist | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posWorkspaceClaimLease**](doc/DefaultApi.md#posworkspaceclaimlease) | **POST** /api/v3/admin/pos/workspaces/{id}/lease | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posWorkspaceCreate**](doc/DefaultApi.md#posworkspacecreate) | **POST** /api/v3/admin/pos/workspaces | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posWorkspaceCupLabelsReprint**](doc/DefaultApi.md#posworkspacecuplabelsreprint) | **POST** /api/v3/admin/pos/workspaces/{workspace_id}/cup_labels | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posWorkspaceEditUnsentLine**](doc/DefaultApi.md#posworkspaceeditunsentline) | **PATCH** /api/v3/admin/pos/workspaces/{workspace_id}/sale_lines/{id} | 
@@ -203,6 +211,9 @@ Class | Method | HTTP request | Description
  - [CallBoardPreparingInner](doc/CallBoardPreparingInner.md)
  - [CallBoardReadyInner](doc/CallBoardReadyInner.md)
  - [CatalogItem](doc/CatalogItem.md)
+ - [ChecklistInput](doc/ChecklistInput.md)
+ - [ChecklistOutcome](doc/ChecklistOutcome.md)
+ - [ChecklistResult](doc/ChecklistResult.md)
  - [Context](doc/Context.md)
  - [ContextAdministration](doc/ContextAdministration.md)
  - [ContextStaff](doc/ContextStaff.md)
@@ -243,8 +254,12 @@ Class | Method | HTTP request | Description
  - [HardwareStation](doc/HardwareStation.md)
  - [HardwareStatus](doc/HardwareStatus.md)
  - [IngredientUsageRow](doc/IngredientUsageRow.md)
+ - [KitchenAllDayBumpInput](doc/KitchenAllDayBumpInput.md)
+ - [KitchenAllDayRow](doc/KitchenAllDayRow.md)
  - [KitchenBoard](doc/KitchenBoard.md)
  - [KitchenBoardResult](doc/KitchenBoardResult.md)
+ - [KitchenExpoItem](doc/KitchenExpoItem.md)
+ - [KitchenExpoOrder](doc/KitchenExpoOrder.md)
  - [KitchenHistory](doc/KitchenHistory.md)
  - [KitchenHistoryEntry](doc/KitchenHistoryEntry.md)
  - [KitchenHistoryItem](doc/KitchenHistoryItem.md)
@@ -264,13 +279,17 @@ Class | Method | HTTP request | Description
  - [KitchenTicket](doc/KitchenTicket.md)
  - [KitchenTicketItem](doc/KitchenTicketItem.md)
  - [KitchenTicketItemComponentsInner](doc/KitchenTicketItemComponentsInner.md)
+ - [KitchenTicketItemModifier](doc/KitchenTicketItemModifier.md)
  - [KitchenTicketItemModifiersInner](doc/KitchenTicketItemModifiersInner.md)
+ - [KitchenTicketList](doc/KitchenTicketList.md)
  - [KitchenTicketResult](doc/KitchenTicketResult.md)
  - [KitchenVoid](doc/KitchenVoid.md)
  - [KitchenVoidInput](doc/KitchenVoidInput.md)
  - [KitchenVoidMeta](doc/KitchenVoidMeta.md)
  - [KitchenVoidResult](doc/KitchenVoidResult.md)
+ - [LeaseClaimInput](doc/LeaseClaimInput.md)
  - [LineComponent](doc/LineComponent.md)
+ - [LineKitchenStatus](doc/LineKitchenStatus.md)
  - [LineModifier](doc/LineModifier.md)
  - [Menu](doc/Menu.md)
  - [MenuAvailability](doc/MenuAvailability.md)
@@ -417,6 +436,9 @@ Class | Method | HTTP request | Description
  - [PrintPayQr](doc/PrintPayQr.md)
  - [PrintRow](doc/PrintRow.md)
  - [Printer](doc/Printer.md)
+ - [ReadyFeed](doc/ReadyFeed.md)
+ - [ReadyFeedItem](doc/ReadyFeedItem.md)
+ - [ReadyFeedResult](doc/ReadyFeedResult.md)
  - [RealtimeEvent](doc/RealtimeEvent.md)
  - [Recipe](doc/Recipe.md)
  - [RecipeIngredientsInner](doc/RecipeIngredientsInner.md)
@@ -451,6 +473,9 @@ Class | Method | HTTP request | Description
  - [TableMergeInput](doc/TableMergeInput.md)
  - [TableMoveInput](doc/TableMoveInput.md)
  - [TableOpenInput](doc/TableOpenInput.md)
+ - [TablePinInput](doc/TablePinInput.md)
+ - [TablePins](doc/TablePins.md)
+ - [TablePinsResult](doc/TablePinsResult.md)
  - [TableSettings](doc/TableSettings.md)
  - [TableSettingsInput](doc/TableSettingsInput.md)
  - [TableSettingsResult](doc/TableSettingsResult.md)

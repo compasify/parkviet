@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_11_230100) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_12_000200) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -2705,6 +2705,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_230100) do
     t.index ["token_digest"], name: "index_spree_pos_device_staff_sessions_on_token_digest", unique: true
   end
 
+  create_table "spree_pos_device_table_pins", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "device_id", null: false
+    t.bigint "resource_id", null: false
+    t.bigint "staff_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["device_id", "resource_id"], name: "idx_pos_device_table_pins_pair", unique: true
+    t.index ["resource_id"], name: "index_spree_pos_device_table_pins_on_resource_id"
+    t.index ["staff_id"], name: "index_spree_pos_device_table_pins_on_staff_id"
+  end
+
   create_table "spree_pos_devices", force: :cascade do |t|
     t.bigint "store_id", null: false
     t.bigint "branch_id", null: false
@@ -3035,11 +3047,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_230100) do
     t.boolean "active", default: true, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "expo_station_id"
     t.index ["branch_id", "name"], name: "idx_pos_kitchen_stations_name", unique: true
     t.index ["branch_id"], name: "idx_pos_kitchen_stations_default", unique: true, where: "is_default"
     t.index ["branch_id"], name: "index_spree_pos_kitchen_stations_on_branch_id"
+    t.index ["expo_station_id"], name: "index_spree_pos_kitchen_stations_on_expo_station_id"
     t.index ["printer_id"], name: "index_spree_pos_kitchen_stations_on_printer_id"
     t.index ["store_id"], name: "index_spree_pos_kitchen_stations_on_store_id"
+    t.check_constraint "expo_station_id IS NULL OR expo_station_id <> id", name: "chk_pos_kitchen_stations_expo"
     t.check_constraint "kind::text = ANY (ARRAY['prep'::character varying, 'bar'::character varying, 'expo'::character varying]::text[])", name: "chk_pos_kitchen_stations_kind"
     t.check_constraint "warn_after_minutes > 0 AND late_after_minutes >= warn_after_minutes AND late_after_minutes <= 240", name: "chk_pos_kitchen_stations_minutes"
   end
@@ -3061,9 +3076,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_230100) do
     t.bigint "changed_by_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.datetime "recalled_at"
+    t.integer "recall_count", default: 0, null: false
+    t.integer "prep_seconds"
+    t.boolean "late", default: false, null: false
+    t.index ["kitchen_ticket_id", "status"], name: "idx_pos_kitchen_ticket_items_status"
     t.index ["kitchen_ticket_id"], name: "index_spree_pos_kitchen_ticket_items_on_kitchen_ticket_id"
+    t.index ["ready_at"], name: "idx_pos_kitchen_ticket_items_ready", where: "(ready_at IS NOT NULL)"
     t.index ["sale_line_id"], name: "index_spree_pos_kitchen_ticket_items_on_sale_line_id"
     t.check_constraint "quantity > 0::numeric", name: "chk_pos_kitchen_ticket_items_qty"
+    t.check_constraint "recall_count >= 0 AND (prep_seconds IS NULL OR prep_seconds >= 0)", name: "chk_pos_kitchen_ticket_items_timing"
     t.check_constraint "status::text = ANY (ARRAY['new'::character varying, 'preparing'::character varying, 'ready'::character varying, 'served'::character varying, 'voided'::character varying]::text[])", name: "chk_pos_kitchen_ticket_items_status"
   end
 
@@ -6193,6 +6215,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_230100) do
   add_foreign_key "spree_pos_device_pin_failures", "spree_pos_staff_memberships", column: "staff_membership_id"
   add_foreign_key "spree_pos_device_staff_sessions", "spree_admin_users", column: "staff_id"
   add_foreign_key "spree_pos_device_staff_sessions", "spree_pos_devices", column: "device_id"
+  add_foreign_key "spree_pos_device_table_pins", "spree_admin_users", column: "staff_id"
+  add_foreign_key "spree_pos_device_table_pins", "spree_pos_devices", column: "device_id", on_delete: :cascade
+  add_foreign_key "spree_pos_device_table_pins", "spree_pos_resources", column: "resource_id", on_delete: :cascade
+  add_foreign_key "spree_pos_device_table_pins", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_devices", "spree_admin_users", column: "paired_by_id"
   add_foreign_key "spree_pos_devices", "spree_admin_users", column: "revoked_by_id"
   add_foreign_key "spree_pos_devices", "spree_pos_branches", column: "branch_id"
@@ -6241,6 +6267,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_230100) do
   add_foreign_key "spree_pos_kitchen_sends", "spree_pos_devices", column: "device_id"
   add_foreign_key "spree_pos_kitchen_sends", "spree_pos_workspaces", column: "workspace_id"
   add_foreign_key "spree_pos_kitchen_stations", "spree_pos_branches", column: "branch_id"
+  add_foreign_key "spree_pos_kitchen_stations", "spree_pos_kitchen_stations", column: "expo_station_id", on_delete: :nullify
   add_foreign_key "spree_pos_kitchen_stations", "spree_pos_printers", column: "printer_id", on_delete: :nullify
   add_foreign_key "spree_pos_kitchen_stations", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_kitchen_ticket_items", "spree_pos_kitchen_tickets", column: "kitchen_ticket_id", on_delete: :cascade

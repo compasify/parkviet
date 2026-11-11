@@ -74,6 +74,8 @@ test('two tabs add to one table without the lease, then send the difference to t
   await expect.poll(() => world.sheets.get('ws_t1')?.kitchenSends?.length).toBe(1);
   expect(world.sheets.get('ws_t1')?.kitchenSends?.[0].items).toBe(3);
   await expect(cashier.locator('.basket-line-kitchen').first()).toContainText('Đã báo bếp ×');
+  // Each line shows what the kitchen does with it, as the waiter's phone does.
+  await expect(cashier.getByTestId('line-kitchen-states').first()).toContainText('Mới');
   await expect(send).toBeDisabled();
 
   // The waiter's tab learns of the send; nothing is left to send there.

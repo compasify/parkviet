@@ -28,6 +28,9 @@ import 'package:pos_api/src/model/call_board.dart';
 import 'package:pos_api/src/model/call_board_preparing_inner.dart';
 import 'package:pos_api/src/model/call_board_ready_inner.dart';
 import 'package:pos_api/src/model/catalog_item.dart';
+import 'package:pos_api/src/model/checklist_input.dart';
+import 'package:pos_api/src/model/checklist_outcome.dart';
+import 'package:pos_api/src/model/checklist_result.dart';
 import 'package:pos_api/src/model/context.dart';
 import 'package:pos_api/src/model/context_administration.dart';
 import 'package:pos_api/src/model/context_staff.dart';
@@ -68,8 +71,12 @@ import 'package:pos_api/src/model/hardware_server.dart';
 import 'package:pos_api/src/model/hardware_station.dart';
 import 'package:pos_api/src/model/hardware_status.dart';
 import 'package:pos_api/src/model/ingredient_usage_row.dart';
+import 'package:pos_api/src/model/kitchen_all_day_bump_input.dart';
+import 'package:pos_api/src/model/kitchen_all_day_row.dart';
 import 'package:pos_api/src/model/kitchen_board.dart';
 import 'package:pos_api/src/model/kitchen_board_result.dart';
+import 'package:pos_api/src/model/kitchen_expo_item.dart';
+import 'package:pos_api/src/model/kitchen_expo_order.dart';
 import 'package:pos_api/src/model/kitchen_history.dart';
 import 'package:pos_api/src/model/kitchen_history_entry.dart';
 import 'package:pos_api/src/model/kitchen_history_item.dart';
@@ -89,13 +96,17 @@ import 'package:pos_api/src/model/kitchen_station_result.dart';
 import 'package:pos_api/src/model/kitchen_ticket.dart';
 import 'package:pos_api/src/model/kitchen_ticket_item.dart';
 import 'package:pos_api/src/model/kitchen_ticket_item_components_inner.dart';
+import 'package:pos_api/src/model/kitchen_ticket_item_modifier.dart';
 import 'package:pos_api/src/model/kitchen_ticket_item_modifiers_inner.dart';
+import 'package:pos_api/src/model/kitchen_ticket_list.dart';
 import 'package:pos_api/src/model/kitchen_ticket_result.dart';
 import 'package:pos_api/src/model/kitchen_void.dart';
 import 'package:pos_api/src/model/kitchen_void_input.dart';
 import 'package:pos_api/src/model/kitchen_void_meta.dart';
 import 'package:pos_api/src/model/kitchen_void_result.dart';
+import 'package:pos_api/src/model/lease_claim_input.dart';
 import 'package:pos_api/src/model/line_component.dart';
+import 'package:pos_api/src/model/line_kitchen_status.dart';
 import 'package:pos_api/src/model/line_modifier.dart';
 import 'package:pos_api/src/model/menu.dart';
 import 'package:pos_api/src/model/menu_availability.dart';
@@ -242,6 +253,9 @@ import 'package:pos_api/src/model/print_page_label.dart';
 import 'package:pos_api/src/model/print_pay_qr.dart';
 import 'package:pos_api/src/model/print_row.dart';
 import 'package:pos_api/src/model/printer.dart';
+import 'package:pos_api/src/model/ready_feed.dart';
+import 'package:pos_api/src/model/ready_feed_item.dart';
+import 'package:pos_api/src/model/ready_feed_result.dart';
 import 'package:pos_api/src/model/realtime_event.dart';
 import 'package:pos_api/src/model/recipe.dart';
 import 'package:pos_api/src/model/recipe_ingredients_inner.dart';
@@ -276,6 +290,9 @@ import 'package:pos_api/src/model/system_status_vietqr.dart';
 import 'package:pos_api/src/model/table_merge_input.dart';
 import 'package:pos_api/src/model/table_move_input.dart';
 import 'package:pos_api/src/model/table_open_input.dart';
+import 'package:pos_api/src/model/table_pin_input.dart';
+import 'package:pos_api/src/model/table_pins.dart';
+import 'package:pos_api/src/model/table_pins_result.dart';
 import 'package:pos_api/src/model/table_settings.dart';
 import 'package:pos_api/src/model/table_settings_input.dart';
 import 'package:pos_api/src/model/table_settings_result.dart';
@@ -308,6 +325,9 @@ part 'serializers.g.dart';
   CallBoardPreparingInner,
   CallBoardReadyInner,
   CatalogItem,
+  ChecklistInput,
+  ChecklistOutcome,
+  ChecklistResult,
   Context,
   ContextAdministration,
   ContextStaff,
@@ -348,8 +368,12 @@ part 'serializers.g.dart';
   HardwareStation,
   HardwareStatus,
   IngredientUsageRow,
+  KitchenAllDayBumpInput,
+  KitchenAllDayRow,
   KitchenBoard,
   KitchenBoardResult,
+  KitchenExpoItem,
+  KitchenExpoOrder,
   KitchenHistory,
   KitchenHistoryEntry,
   KitchenHistoryItem,
@@ -370,13 +394,17 @@ part 'serializers.g.dart';
   KitchenTicket,
   KitchenTicketItem,
   KitchenTicketItemComponentsInner,
+  KitchenTicketItemModifier,
   KitchenTicketItemModifiersInner,
+  KitchenTicketList,
   KitchenTicketResult,
   KitchenVoid,
   KitchenVoidInput,
   KitchenVoidMeta,
   KitchenVoidResult,
+  LeaseClaimInput,
   LineComponent,
+  LineKitchenStatus,
   LineModifier,
   Menu,
   MenuAvailability,
@@ -524,6 +552,9 @@ part 'serializers.g.dart';
   PrintPayQr,
   PrintRow,
   Printer,
+  ReadyFeed,
+  ReadyFeedItem,
+  ReadyFeedResult,
   RealtimeEvent,
   Recipe,
   RecipeIngredientsInner,
@@ -559,6 +590,9 @@ part 'serializers.g.dart';
   TableMergeInput,
   TableMoveInput,
   TableOpenInput,
+  TablePinInput,
+  TablePins,
+  TablePinsResult,
   TableSettings,
   TableSettingsInput,
   TableSettingsResult,
@@ -663,8 +697,16 @@ Serializers serializers = (_$serializers.toBuilder()
         () => ListBuilder<EinvoiceTotalsTaxesInner>(),
       )
       ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(ReadyFeedItem)]),
+        () => ListBuilder<ReadyFeedItem>(),
+      )
+      ..addBuilderFactory(
         const FullType(BuiltList, [FullType(PrintLinesOneOf1ColumnsInner)]),
         () => ListBuilder<PrintLinesOneOf1ColumnsInner>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(KitchenTicketItemModifier)]),
+        () => ListBuilder<KitchenTicketItemModifier>(),
       )
       ..addBuilderFactory(
         const FullType(
@@ -816,6 +858,10 @@ Serializers serializers = (_$serializers.toBuilder()
         () => ListBuilder<CallBoardReadyInner>(),
       )
       ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(KitchenExpoItem)]),
+        () => ListBuilder<KitchenExpoItem>(),
+      )
+      ..addBuilderFactory(
         const FullType(BuiltList, [FullType(EinvoiceSetting)]),
         () => ListBuilder<EinvoiceSetting>(),
       )
@@ -841,8 +887,16 @@ Serializers serializers = (_$serializers.toBuilder()
         () => MapBuilder<String, JsonObject?>(),
       )
       ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(KitchenExpoOrder)]),
+        () => ListBuilder<KitchenExpoOrder>(),
+      )
+      ..addBuilderFactory(
         const FullType(BuiltList, [FullType(PlatformSetting)]),
         () => ListBuilder<PlatformSetting>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(KitchenAllDayRow)]),
+        () => ListBuilder<KitchenAllDayRow>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(String)]),

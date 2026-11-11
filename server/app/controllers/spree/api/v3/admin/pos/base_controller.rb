@@ -11,6 +11,11 @@ module Spree
             PAGE_MAX = 100
 
             class_attribute :pos_action_permissions, instance_accessor: false, default: {}
+            # A device that works as the machine (kitchen screen, pass, print
+            # station…) opens a staff session only to sign one thing, so it
+            # reaches the few controllers that say so; a waiter's or an
+            # owner's device reaches all of them.
+            class_attribute :pos_machine_devices, instance_accessor: false, default: false
 
             # Per-action role permissions for this controller, e.g.
             #   pos_permissions index: %w[read_pos_orders read_pos_topology],
@@ -39,6 +44,12 @@ module Spree
                 render_error(code: Spree::Api::V3::ErrorHandler::ERROR_CODES[:access_denied],
                              message: 'This device needs a staff session.', status: :forbidden,
                              details: { reason: 'device_staff_required' })
+                return false
+              end
+
+              if device.mode.in?(Spree::Pos::Device::MACHINE_MODES) && !self.class.pos_machine_devices
+                render_error(code: Spree::Api::V3::ErrorHandler::ERROR_CODES[:access_denied], message: 'This device mode cannot call that.',
+                             status: :forbidden, details: { reason: 'device_mode_forbidden' })
                 return false
               end
 

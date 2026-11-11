@@ -453,4 +453,421 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get kdsModeDelivery => 'Giao hàng';
+
+  @override
+  String get kdsDoneHint => 'Giữ một món để gọi lại món đã xong hoặc đã ra.';
+
+  @override
+  String kdsRecalled(int count) {
+    return 'Gọi lại $count lần';
+  }
+
+  @override
+  String get kdsAllDayOne => 'Xong 1';
+
+  @override
+  String kdsAllDayAll(int count) {
+    return 'Xong hết ($count)';
+  }
+
+  @override
+  String get kdsServiceModeAll => 'Mọi kiểu phục vụ';
+
+  @override
+  String get kdsServiceModeFilter => 'Lọc theo kiểu phục vụ';
+
+  @override
+  String get kdsStationExpo => 'Trạm ra món (expo)';
+
+  @override
+  String get kdsStationPickHint =>
+      'Chọn một hoặc nhiều trạm. Lựa chọn được giữ trên máy này.';
+
+  @override
+  String kdsStationShow(int count) {
+    return 'Hiện $count trạm';
+  }
+
+  @override
+  String get expoNothingReady => 'Chưa có món nào chờ ra.';
+
+  @override
+  String get expoServeAll => 'Ra cả đơn';
+
+  @override
+  String get modifierVariant => 'Cỡ / loại';
+
+  @override
+  String get modifierNote => 'Ghi chú cho bếp';
+
+  @override
+  String modifierAdd(String amount) {
+    return 'Thêm · $amount';
+  }
+
+  @override
+  String modifierPickExactly(int count) {
+    return 'Chọn $count';
+  }
+
+  @override
+  String modifierPickBetween(int min, int max) {
+    return 'Chọn từ $min đến $max';
+  }
+
+  @override
+  String modifierPickUpTo(int max) {
+    return 'Chọn tối đa $max';
+  }
+
+  @override
+  String get voidReasonChangedMind => 'Khách đổi ý';
+
+  @override
+  String get voidReasonSoldOut => 'Hết món';
+
+  @override
+  String get voidReasonMistake => 'Nhập nhầm';
+
+  @override
+  String get voidReasonSpoiled => 'Làm hỏng';
+
+  @override
+  String get voidReasonOther => 'Khác (ghi lý do)';
+
+  @override
+  String get waiterAllAreas => 'Mọi khu';
+
+  @override
+  String get waiterFilterAll => 'Tất cả';
+
+  @override
+  String get waiterFilterFree => 'Trống';
+
+  @override
+  String get waiterFilterSeated => 'Có khách';
+
+  @override
+  String get waiterFilterWaiting => 'Chờ món';
+
+  @override
+  String get waiterFilterPayment => 'Yêu cầu thanh toán';
+
+  @override
+  String get waiterFilterMine => 'Của tôi';
+
+  @override
+  String get waiterNoTables => 'Không có bàn nào.';
+
+  @override
+  String get waiterStateFree => 'Trống';
+
+  @override
+  String get waiterStateSeated => 'Có khách';
+
+  @override
+  String get waiterStateOrdered => 'Đang phục vụ';
+
+  @override
+  String get waiterStateWaitingLong => 'Chờ lâu';
+
+  @override
+  String get waiterStatePayment => 'Gọi thanh toán';
+
+  @override
+  String get waiterStatePrebilled => 'Đã in tạm tính';
+
+  @override
+  String get waiterStateCleaning => 'Đang dọn';
+
+  @override
+  String get waiterStateOut => 'Ngưng phục vụ';
+
+  @override
+  String waiterGuests(int count) {
+    return '$count khách';
+  }
+
+  @override
+  String waiterSeatedMinutes(int minutes) {
+    return '$minutes phút';
+  }
+
+  @override
+  String waiterPendingItems(int count) {
+    return '$count món chờ';
+  }
+
+  @override
+  String get waiterPaymentRequested => 'Đã gọi thanh toán';
+
+  @override
+  String waiterOrders(int count) {
+    return '$count đơn';
+  }
+
+  @override
+  String waiterPickOrder(String table) {
+    return '$table: chọn đơn';
+  }
+
+  @override
+  String waiterOrderLetter(String letter) {
+    return 'Đơn $letter';
+  }
+
+  @override
+  String get waiterSecondOrder => 'Mở thêm đơn trên bàn này';
+
+  @override
+  String get waiterPin => 'Ghim bàn (nhận báo món xong)';
+
+  @override
+  String get waiterUnpin => 'Bỏ ghim bàn';
+
+  @override
+  String get waiterFollowTitle => 'Nhận báo món xong';
+
+  @override
+  String get waiterFollowHint => 'Mặc định: bàn bạn gọi món và bàn đã ghim.';
+
+  @override
+  String get waiterFollowMine => 'Chỉ bàn của tôi';
+
+  @override
+  String waiterFollowArea(String area) {
+    return 'Mọi bàn trong khu $area';
+  }
+
+  @override
+  String waiterReadyCount(int count) {
+    return 'Có $count món đã xong, chạm để mở bàn';
+  }
+
+  @override
+  String waiterReadyNotice(String table, String name, String quantity) {
+    return '$table: $name ×$quantity đã xong';
+  }
+
+  @override
+  String get waiterClose => 'Đóng';
+
+  @override
+  String waiterGuestsFor(String table) {
+    return 'Số khách · $table';
+  }
+
+  @override
+  String waiterCapacity(int count) {
+    return 'Bàn $count chỗ';
+  }
+
+  @override
+  String get waiterOpenTable => 'Mở bàn';
+
+  @override
+  String waiterOrderFor(String table) {
+    return 'Gọi món · $table';
+  }
+
+  @override
+  String get waiterSearch => 'Tìm món';
+
+  @override
+  String get waiterAllCategories => 'Tất cả';
+
+  @override
+  String get waiterNoDishes => 'Không có món nào.';
+
+  @override
+  String get waiterSoldOutLabel => 'Hết món';
+
+  @override
+  String waiterCart(int count, String amount) {
+    return '$count món · $amount';
+  }
+
+  @override
+  String get waiterAddToOrder => 'Thêm vào đơn';
+
+  @override
+  String get waiterAddAndSend => 'Thêm và báo bếp';
+
+  @override
+  String get waiterAdded => 'Đã thêm vào đơn.';
+
+  @override
+  String get waiterAddedAndSent => 'Đã thêm và báo bếp.';
+
+  @override
+  String get waiterSent => 'Đã báo bếp.';
+
+  @override
+  String get waiterOrderDishes => 'Gọi món';
+
+  @override
+  String get waiterSend => 'Báo bếp';
+
+  @override
+  String waiterSendCount(int count) {
+    return 'Báo bếp ($count)';
+  }
+
+  @override
+  String waiterSubtotal(String amount) {
+    return 'Tạm tính $amount';
+  }
+
+  @override
+  String get waiterEmptyOrder => 'Chưa có món nào. Bấm \"Gọi món\".';
+
+  @override
+  String waiterLineUnsent(String count) {
+    return '$count chưa báo bếp';
+  }
+
+  @override
+  String waiterLineNew(String count) {
+    return '$count mới';
+  }
+
+  @override
+  String waiterLinePreparing(String count) {
+    return '$count đang làm';
+  }
+
+  @override
+  String waiterLineReady(String count) {
+    return '$count xong';
+  }
+
+  @override
+  String waiterLineServed(String count) {
+    return '$count đã ra';
+  }
+
+  @override
+  String get waiterVoidSent => 'Hủy món đã báo bếp';
+
+  @override
+  String get waiterRemoveUnsent => 'Xóa món chưa báo bếp';
+
+  @override
+  String get waiterVoided => 'Đã hủy món.';
+
+  @override
+  String waiterVoidTitle(String name) {
+    return 'Hủy $name';
+  }
+
+  @override
+  String waiterVoidSentCount(int count) {
+    return 'Bếp đã nhận $count.';
+  }
+
+  @override
+  String get waiterVoidNote => 'Ghi chú';
+
+  @override
+  String get waiterVoidNoteRequired => 'Lý do (bắt buộc)';
+
+  @override
+  String get waiterVoidConfirm => 'Hủy món';
+
+  @override
+  String get waiterWaitingApproval =>
+      'Chờ quản lý duyệt. Quản lý cấp mã duyệt cho đơn này, mã sẽ tự điền khi có, hoặc nhập mã bên dưới.';
+
+  @override
+  String get waiterApprovalCode => 'Mã duyệt';
+
+  @override
+  String get waiterRequestPayment => 'Yêu cầu thanh toán';
+
+  @override
+  String get waiterPaymentRequestSent => 'Đã báo thu ngân.';
+
+  @override
+  String get waiterMove => 'Chuyển bàn';
+
+  @override
+  String get waiterMerge => 'Gộp bàn';
+
+  @override
+  String get waiterMoveTo => 'Chuyển sang bàn trống';
+
+  @override
+  String get waiterMergeInto => 'Gộp vào đơn của bàn';
+
+  @override
+  String get waiterMoved => 'Đã chuyển bàn.';
+
+  @override
+  String get waiterMerged => 'Đã gộp bàn.';
+
+  @override
+  String get waiterChecklist => 'In phiếu kiểm đồ';
+
+  @override
+  String get waiterPrebill => 'In tạm tính';
+
+  @override
+  String waiterPrintQueued(String printer) {
+    return 'Đã gửi in tới $printer.';
+  }
+
+  @override
+  String waiterPrinted(String printer) {
+    return 'Đã in trên $printer.';
+  }
+
+  @override
+  String waiterPrintFailed(String error) {
+    return 'Không in được: $error';
+  }
+
+  @override
+  String get waiterNoPrinter => 'Chưa có máy in cho phiếu này';
+
+  @override
+  String get waiterLineChanged =>
+      'Món này vừa được người khác sửa. Đã tải lại đơn.';
+
+  @override
+  String get waiterSnapshotLocked =>
+      'Đơn đang chờ thanh toán nên không đổi được. Đã tải lại đơn.';
+
+  @override
+  String get waiterLeaseBusy =>
+      'Máy khác đang sửa đơn này. Thử lại sau ít phút.';
+
+  @override
+  String get waiterWorkspaceClosed => 'Đơn đã đóng.';
+
+  @override
+  String get waiterSoldOut => 'Món này đã hết.';
+
+  @override
+  String get waiterTableOccupied => 'Bàn đã có khách.';
+
+  @override
+  String get waiterTableUnavailable => 'Bàn không phục vụ lúc này.';
+
+  @override
+  String get waiterGuestCountInvalid => 'Số khách không hợp lệ cho bàn này.';
+
+  @override
+  String get waiterModifierInvalid =>
+      'Lựa chọn của món không hợp lệ. Mở lại món để chọn.';
+
+  @override
+  String get waiterVoidQuantityInvalid => 'Số lượng hủy không hợp lệ.';
+
+  @override
+  String get waiterVoidReasonInvalid =>
+      'Chọn lý do hủy, hoặc ghi lý do khi chọn \"Khác\".';
+
+  @override
+  String get waiterForbidden =>
+      'Bạn không có quyền làm việc này trên máy phục vụ.';
 }

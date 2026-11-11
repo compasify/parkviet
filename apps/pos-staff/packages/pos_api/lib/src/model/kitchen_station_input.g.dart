@@ -81,6 +81,9 @@ abstract class KitchenStationInputBuilder {
   String? get printerId;
   set printerId(String? printerId);
 
+  String? get expoStationId;
+  set expoStationId(String? expoStationId);
+
   bool? get kdsEnabled;
   set kdsEnabled(bool? kdsEnabled);
 
@@ -108,6 +111,8 @@ class _$$KitchenStationInput extends $KitchenStationInput {
   @override
   final String? printerId;
   @override
+  final String? expoStationId;
+  @override
   final bool? kdsEnabled;
   @override
   final bool? isDefault;
@@ -128,6 +133,7 @@ class _$$KitchenStationInput extends $KitchenStationInput {
       {this.name,
       this.kind,
       this.printerId,
+      this.expoStationId,
       this.kdsEnabled,
       this.isDefault,
       this.warnAfterMinutes,
@@ -151,6 +157,7 @@ class _$$KitchenStationInput extends $KitchenStationInput {
         name == other.name &&
         kind == other.kind &&
         printerId == other.printerId &&
+        expoStationId == other.expoStationId &&
         kdsEnabled == other.kdsEnabled &&
         isDefault == other.isDefault &&
         warnAfterMinutes == other.warnAfterMinutes &&
@@ -165,6 +172,7 @@ class _$$KitchenStationInput extends $KitchenStationInput {
     _$hash = $jc(_$hash, name.hashCode);
     _$hash = $jc(_$hash, kind.hashCode);
     _$hash = $jc(_$hash, printerId.hashCode);
+    _$hash = $jc(_$hash, expoStationId.hashCode);
     _$hash = $jc(_$hash, kdsEnabled.hashCode);
     _$hash = $jc(_$hash, isDefault.hashCode);
     _$hash = $jc(_$hash, warnAfterMinutes.hashCode);
@@ -181,6 +189,7 @@ class _$$KitchenStationInput extends $KitchenStationInput {
           ..add('name', name)
           ..add('kind', kind)
           ..add('printerId', printerId)
+          ..add('expoStationId', expoStationId)
           ..add('kdsEnabled', kdsEnabled)
           ..add('isDefault', isDefault)
           ..add('warnAfterMinutes', warnAfterMinutes)
@@ -208,6 +217,11 @@ class $KitchenStationInputBuilder
   String? _printerId;
   String? get printerId => _$this._printerId;
   set printerId(covariant String? printerId) => _$this._printerId = printerId;
+
+  String? _expoStationId;
+  String? get expoStationId => _$this._expoStationId;
+  set expoStationId(covariant String? expoStationId) =>
+      _$this._expoStationId = expoStationId;
 
   bool? _kdsEnabled;
   bool? get kdsEnabled => _$this._kdsEnabled;
@@ -245,6 +259,7 @@ class $KitchenStationInputBuilder
       _name = $v.name;
       _kind = $v.kind;
       _printerId = $v.printerId;
+      _expoStationId = $v.expoStationId;
       _kdsEnabled = $v.kdsEnabled;
       _isDefault = $v.isDefault;
       _warnAfterMinutes = $v.warnAfterMinutes;
@@ -275,6 +290,7 @@ class $KitchenStationInputBuilder
           name: name,
           kind: kind,
           printerId: printerId,
+          expoStationId: expoStationId,
           kdsEnabled: kdsEnabled,
           isDefault: isDefault,
           warnAfterMinutes: warnAfterMinutes,

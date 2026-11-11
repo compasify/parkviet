@@ -15,6 +15,7 @@ part 'kitchen_station_input.g.dart';
 /// * [name]
 /// * [kind]
 /// * [printerId]
+/// * [expoStationId] - An `expo` station of the same branch; null hands nothing to a pass.
 /// * [kdsEnabled]
 /// * [isDefault]
 /// * [warnAfterMinutes]
@@ -32,6 +33,10 @@ abstract class KitchenStationInput {
 
   @BuiltValueField(wireName: r'printer_id')
   String? get printerId;
+
+  /// An `expo` station of the same branch; null hands nothing to a pass.
+  @BuiltValueField(wireName: r'expo_station_id')
+  String? get expoStationId;
 
   @BuiltValueField(wireName: r'kds_enabled')
   bool? get kdsEnabled;
@@ -87,6 +92,13 @@ class _$KitchenStationInputSerializer
       yield r'printer_id';
       yield serializers.serialize(
         object.printerId,
+        specifiedType: const FullType.nullable(String),
+      );
+    }
+    if (object.expoStationId != null) {
+      yield r'expo_station_id';
+      yield serializers.serialize(
+        object.expoStationId,
         specifiedType: const FullType.nullable(String),
       );
     }
@@ -232,6 +244,14 @@ class _$$KitchenStationInputSerializer
           ) as String?;
           if (valueDes == null) continue;
           result.printerId = valueDes;
+          break;
+        case r'expo_station_id':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.expoStationId = valueDes;
           break;
         case r'kds_enabled':
           final valueDes = serializers.deserialize(

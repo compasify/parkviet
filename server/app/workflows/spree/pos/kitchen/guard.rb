@@ -63,6 +63,24 @@ module Spree
           KitchenStation.locate(KitchenStation.where(branch_id: branch.id), station_id) || raise(ActiveRecord::RecordNotFound)
         end
 
+        # Several stations of a branch, from an array or a comma list; none
+        # named means none chosen (the whole branch).
+        def stations!(branch, ids)
+          list = (ids.is_a?(Array) ? ids : ids.to_s.split(',')).map(&:to_s).map(&:strip).reject(&:empty?).uniq
+          raise Conflict.new('Choose at most 20 stations.', reason: 'kitchen_stations_invalid') if list.size > 20
+
+          list.map { |id| station!(branch, id) }
+        end
+
+        # A board narrowed to one way of serving; blank for all.
+        def service_mode!(value)
+          mode = value.to_s.presence
+          return if mode.nil?
+          raise Conflict.new('The service mode is unknown.', reason: 'service_mode_invalid') unless Workspace::SERVICE_MODES.include?(mode)
+
+          mode
+        end
+
         def item!(branch, item_id)
           scope = KitchenTicketItem.joins(:kitchen_ticket).where(spree_pos_kitchen_tickets: { branch_id: branch.id })
           KitchenTicketItem.locate(scope, item_id) || raise(ActiveRecord::RecordNotFound)

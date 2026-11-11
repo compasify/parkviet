@@ -211,3 +211,14 @@ export function describeMenuFailure(error: unknown, translate: (key: string) => 
 export function addsInOneTap(menu: PosMenu, item: PosMenuItem): boolean {
   return item.variants.length === 1 && itemGroups(menu, item).length === 0;
 }
+
+// The variants of the dishes sold out today, so a catalogue search can dim
+// them as the menu grid does. The server still refuses them.
+export function soldOutVariantIds(menu: PosMenu | null | undefined): ReadonlySet<string> {
+  const ids = new Set<string>();
+  for (const item of menu?.items ?? []) {
+    if (!item.sold_out) continue;
+    for (const variant of item.variants) ids.add(variant.id);
+  }
+  return ids;
+}

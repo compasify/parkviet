@@ -14,11 +14,17 @@ class _$KitchenBoard extends KitchenBoard {
   @override
   final BuiltList<KitchenStation> stations;
   @override
+  final String? serviceMode;
+  @override
   final DateTime serverNow;
   @override
   final BuiltList<KitchenTicket> open;
   @override
   final BuiltList<KitchenTicket> done;
+  @override
+  final BuiltList<KitchenAllDayRow> allDay;
+  @override
+  final BuiltList<KitchenExpoOrder> expo;
 
   factory _$KitchenBoard([void Function(KitchenBoardBuilder)? updates]) =>
       (KitchenBoardBuilder()..update(updates))._build();
@@ -27,9 +33,12 @@ class _$KitchenBoard extends KitchenBoard {
       {required this.branchId,
       this.station,
       required this.stations,
+      this.serviceMode,
       required this.serverNow,
       required this.open,
-      required this.done})
+      required this.done,
+      required this.allDay,
+      required this.expo})
       : super._();
   @override
   KitchenBoard rebuild(void Function(KitchenBoardBuilder) updates) =>
@@ -45,9 +54,12 @@ class _$KitchenBoard extends KitchenBoard {
         branchId == other.branchId &&
         station == other.station &&
         stations == other.stations &&
+        serviceMode == other.serviceMode &&
         serverNow == other.serverNow &&
         open == other.open &&
-        done == other.done;
+        done == other.done &&
+        allDay == other.allDay &&
+        expo == other.expo;
   }
 
   @override
@@ -56,9 +68,12 @@ class _$KitchenBoard extends KitchenBoard {
     _$hash = $jc(_$hash, branchId.hashCode);
     _$hash = $jc(_$hash, station.hashCode);
     _$hash = $jc(_$hash, stations.hashCode);
+    _$hash = $jc(_$hash, serviceMode.hashCode);
     _$hash = $jc(_$hash, serverNow.hashCode);
     _$hash = $jc(_$hash, open.hashCode);
     _$hash = $jc(_$hash, done.hashCode);
+    _$hash = $jc(_$hash, allDay.hashCode);
+    _$hash = $jc(_$hash, expo.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -69,9 +84,12 @@ class _$KitchenBoard extends KitchenBoard {
           ..add('branchId', branchId)
           ..add('station', station)
           ..add('stations', stations)
+          ..add('serviceMode', serviceMode)
           ..add('serverNow', serverNow)
           ..add('open', open)
-          ..add('done', done))
+          ..add('done', done)
+          ..add('allDay', allDay)
+          ..add('expo', expo))
         .toString();
   }
 }
@@ -95,6 +113,10 @@ class KitchenBoardBuilder
   set stations(ListBuilder<KitchenStation>? stations) =>
       _$this._stations = stations;
 
+  String? _serviceMode;
+  String? get serviceMode => _$this._serviceMode;
+  set serviceMode(String? serviceMode) => _$this._serviceMode = serviceMode;
+
   DateTime? _serverNow;
   DateTime? get serverNow => _$this._serverNow;
   set serverNow(DateTime? serverNow) => _$this._serverNow = serverNow;
@@ -109,6 +131,16 @@ class KitchenBoardBuilder
       _$this._done ??= ListBuilder<KitchenTicket>();
   set done(ListBuilder<KitchenTicket>? done) => _$this._done = done;
 
+  ListBuilder<KitchenAllDayRow>? _allDay;
+  ListBuilder<KitchenAllDayRow> get allDay =>
+      _$this._allDay ??= ListBuilder<KitchenAllDayRow>();
+  set allDay(ListBuilder<KitchenAllDayRow>? allDay) => _$this._allDay = allDay;
+
+  ListBuilder<KitchenExpoOrder>? _expo;
+  ListBuilder<KitchenExpoOrder> get expo =>
+      _$this._expo ??= ListBuilder<KitchenExpoOrder>();
+  set expo(ListBuilder<KitchenExpoOrder>? expo) => _$this._expo = expo;
+
   KitchenBoardBuilder() {
     KitchenBoard._defaults(this);
   }
@@ -119,9 +151,12 @@ class KitchenBoardBuilder
       _branchId = $v.branchId;
       _station = $v.station?.toBuilder();
       _stations = $v.stations.toBuilder();
+      _serviceMode = $v.serviceMode;
       _serverNow = $v.serverNow;
       _open = $v.open.toBuilder();
       _done = $v.done.toBuilder();
+      _allDay = $v.allDay.toBuilder();
+      _expo = $v.expo.toBuilder();
       _$v = null;
     }
     return this;
@@ -149,10 +184,13 @@ class KitchenBoardBuilder
                 branchId, r'KitchenBoard', 'branchId'),
             station: _station?.build(),
             stations: stations.build(),
+            serviceMode: serviceMode,
             serverNow: BuiltValueNullFieldError.checkNotNull(
                 serverNow, r'KitchenBoard', 'serverNow'),
             open: open.build(),
             done: done.build(),
+            allDay: allDay.build(),
+            expo: expo.build(),
           );
     } catch (_) {
       late String _$failedField;
@@ -166,6 +204,10 @@ class KitchenBoardBuilder
         open.build();
         _$failedField = 'done';
         done.build();
+        _$failedField = 'allDay';
+        allDay.build();
+        _$failedField = 'expo';
+        expo.build();
       } catch (e) {
         throw BuiltValueNestedFieldError(
             r'KitchenBoard', _$failedField, e.toString());

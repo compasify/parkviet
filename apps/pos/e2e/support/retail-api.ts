@@ -496,6 +496,8 @@ export function serialize(world: World, sheet: Sheet) {
               pending_kitchen_quantity: money(Math.max(line.quantity - (line.sent ?? 0), 0)),
               row_version: line.version ?? 0,
               added_by: null,
+              // A table line tells what the kitchen does with it; sent dishes start as new.
+              ...(sheet.table ? { kitchen_status: line.sent ? { new: money(line.sent) } : {} } : {}),
             }
           : {}),
       };

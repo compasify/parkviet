@@ -8,6 +8,7 @@ import {
   itemGroups,
   linePicks,
   picksReady,
+  soldOutVariantIds,
   stepPick,
   togglePick,
   toSelections,
@@ -208,5 +209,14 @@ describe('menu tiles', () => {
     const data = menu([tea, coffee]);
     expect(addsInOneTap(data, coffee)).toBe(true);
     expect(addsInOneTap(data, tea)).toBe(false);
+  });
+});
+
+describe('sold-out dishes in the catalogue', () => {
+  it('names the variants of every dish sold out today', () => {
+    const soldOut = item({ id: 'posmenuitem_9', sold_out: true });
+    const ids = soldOutVariantIds(menu([item(), soldOut]));
+    expect([...ids]).toEqual(soldOut.variants.map((variant) => variant.id));
+    expect(soldOutVariantIds(null).size).toBe(0);
   });
 });

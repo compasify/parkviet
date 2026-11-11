@@ -102,6 +102,9 @@ module Spree
         def save_station!(station, branch, attributes)
           station.assign_attributes(attributes.slice(*STATION_FIELDS))
           station.printer = printer!(branch, attributes['printer_id']) if attributes.key?('printer_id')
+          if attributes.key?('expo_station_id')
+            station.expo_station = attributes['expo_station_id'].present? ? Guard.station!(branch, attributes['expo_station_id']) : nil
+          end
           if station.is_default && station.will_save_change_to_is_default?
             KitchenStation.where(branch_id: branch.id, is_default: true).where.not(id: station.id).update_all(is_default: false, updated_at: Time.current)
           end

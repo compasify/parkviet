@@ -4,6 +4,7 @@
 
 // ignore_for_file: unused_element
 import 'package:pos_api/src/model/line_component.dart';
+import 'package:pos_api/src/model/line_kitchen_status.dart';
 import 'package:pos_api/src/model/line_modifier.dart';
 import 'package:built_collection/built_collection.dart';
 import 'package:pos_api/src/model/staff_ref.dart';
@@ -32,6 +33,7 @@ part 'workspace_line.g.dart';
 /// * [pendingKitchenQuantity] - What the next kitchen send would send of a menu line.
 /// * [rowVersion] - Moves on every change of the line; unsent-line edits send it back.
 /// * [addedBy] - Who added the line.
+/// * [kitchenStatus] - Table orders only, how far the kitchen got with what was sent of the line.
 @BuiltValue()
 abstract class WorkspaceLine
     implements Built<WorkspaceLine, WorkspaceLineBuilder> {
@@ -87,6 +89,10 @@ abstract class WorkspaceLine
   /// Who added the line.
   @BuiltValueField(wireName: r'added_by')
   StaffRef? get addedBy;
+
+  /// Table orders only, how far the kitchen got with what was sent of the line.
+  @BuiltValueField(wireName: r'kitchen_status')
+  LineKitchenStatus? get kitchenStatus;
 
   WorkspaceLine._();
 
@@ -211,6 +217,13 @@ class _$WorkspaceLineSerializer implements PrimitiveSerializer<WorkspaceLine> {
       yield serializers.serialize(
         object.addedBy,
         specifiedType: const FullType.nullable(StaffRef),
+      );
+    }
+    if (object.kitchenStatus != null) {
+      yield r'kitchen_status';
+      yield serializers.serialize(
+        object.kitchenStatus,
+        specifiedType: const FullType(LineKitchenStatus),
       );
     }
   }
@@ -361,6 +374,14 @@ class _$WorkspaceLineSerializer implements PrimitiveSerializer<WorkspaceLine> {
           ) as StaffRef?;
           if (valueDes == null) continue;
           result.addedBy.replace(valueDes);
+          break;
+        case r'kitchen_status':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(LineKitchenStatus),
+          ) as LineKitchenStatus?;
+          if (valueDes == null) continue;
+          result.kitchenStatus.replace(valueDes);
           break;
         default:
           unhandled.add(key);

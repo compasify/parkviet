@@ -20,7 +20,7 @@ void main() {
 
   KdsController controller({Duration poll = const Duration(seconds: 5), DateTime Function()? deviceNow}) => KdsController(
         api: api,
-        stationId: 'poskstation_1',
+        stationIds: ['poskstation_1'],
         pollInterval: poll,
         onNewTicket: () => chimes++,
         deviceNow: deviceNow,

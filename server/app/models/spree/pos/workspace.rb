@@ -131,6 +131,8 @@ module Spree
         coupon_amount = discounts.select { |row| row.kind == 'promotion' && (coupon_promo.nil? || row.promotion_id == coupon_promo.id) }.sum(&:amount)
         now = self.class.database_now
         memo = {}
+        # How far the kitchen got with each line of a table order, one query.
+        kitchen = resource_id ? kitchen_status_by_line : {}
         traces = sale_lines.values.to_h do |sale|
           [sale.prefixed_id, Spree::Pos::Inventory::AllocateTraceability.line_trace(sale, branch, now: now, memo: memo,
                                                                                                  completed: operational_status == 'completed')]
@@ -165,7 +167,12 @@ module Spree
               value: explicit_item ? line_intent.value : (single_percent ? money(item_promotions.first.value) : money(item_amount.abs)),
               labels: item_promotions.map(&:label)
             }
-            sale ? core.merge(sale.to_pos(line)).merge(trace: traces[sale.prefixed_id]) : core.merge(sale_line_id: nil, trace: nil)
+            if sale
+              row = core.merge(sale.to_pos(line)).merge(trace: traces[sale.prefixed_id])
+              resource_id ? row.merge(kitchen_status: kitchen.fetch(sale.id, {})) : row
+            else
+              core.merge(sale_line_id: nil, trace: nil)
+            end
           end,
           discount: intent && {
             id: intent.prefixed_id, value_type: intent.value_type, value: intent.value,
@@ -192,6 +199,16 @@ module Spree
           },
           financial: financial_pos
         )
+      end
+
+      # Sent quantity of each sale line by kitchen status (new, preparing,
+      # ready, served), from the fire tickets of this order.
+      def kitchen_status_by_line
+        KitchenTicketItem.joins(:kitchen_ticket).where(spree_pos_kitchen_tickets: { workspace_id: id, kind: 'fire' }).
+          where(status: %w[new preparing ready served]).where.not(sale_line_id: nil).
+          group(:sale_line_id, :status).sum(:quantity).each_with_object({}) do |((line_id, status), quantity), rows|
+            (rows[line_id] ||= {})[status] = quantity.to_s('F')
+          end
       end
 
       # The latest pre-bill; `stale` once the order changed after it was printed.

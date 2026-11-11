@@ -28,6 +28,27 @@ class PrinterProfile {
     );
   }
 
+  /// A printer of the branch list, for a device that prints a document it
+  /// was answered itself (a Bluetooth printer kept by a waiter's phone).
+  factory PrinterProfile.fromPrinter(Printer printer) {
+    final settings = printer.settings.value;
+    return PrinterProfile(
+      id: printer.id,
+      name: printer.name,
+      connection: switch (printer.connection) {
+        PrinterConnectionEnum.escposLan => lan,
+        PrinterConnectionEnum.escposBluetooth => bluetooth,
+        PrinterConnectionEnum.sunmiBuiltin => sunmi,
+        final other => other.name,
+      },
+      address: printer.address,
+      bluetoothId: printer.bluetoothId,
+      paper: printer.paper == PrinterPaperEnum.n58mm ? '58mm' : '80mm',
+      commandLanguage: printer.commandLanguage == PrinterCommandLanguageEnum.tspl ? 'tspl' : 'escpos',
+      settings: settings is Map ? settings.cast<String, Object?>() : const {},
+    );
+  }
+
   static const lan = 'escpos_lan';
   static const bluetooth = 'escpos_bluetooth';
   static const sunmi = 'sunmi_builtin';

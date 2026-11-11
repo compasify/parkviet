@@ -94,6 +94,8 @@ class _$Workspace extends Workspace {
   @override
   final int revision;
   @override
+  final int? leaseGeneration;
+  @override
   final String operationalStatus;
   @override
   final WorkspaceServiceModeEnum serviceMode;
@@ -128,6 +130,7 @@ class _$Workspace extends Workspace {
   _$Workspace._(
       {required this.id,
       required this.revision,
+      this.leaseGeneration,
       required this.operationalStatus,
       required this.serviceMode,
       required this.businessDate,
@@ -156,6 +159,7 @@ class _$Workspace extends Workspace {
     return other is Workspace &&
         id == other.id &&
         revision == other.revision &&
+        leaseGeneration == other.leaseGeneration &&
         operationalStatus == other.operationalStatus &&
         serviceMode == other.serviceMode &&
         businessDate == other.businessDate &&
@@ -177,6 +181,7 @@ class _$Workspace extends Workspace {
     var _$hash = 0;
     _$hash = $jc(_$hash, id.hashCode);
     _$hash = $jc(_$hash, revision.hashCode);
+    _$hash = $jc(_$hash, leaseGeneration.hashCode);
     _$hash = $jc(_$hash, operationalStatus.hashCode);
     _$hash = $jc(_$hash, serviceMode.hashCode);
     _$hash = $jc(_$hash, businessDate.hashCode);
@@ -200,6 +205,7 @@ class _$Workspace extends Workspace {
     return (newBuiltValueToStringHelper(r'Workspace')
           ..add('id', id)
           ..add('revision', revision)
+          ..add('leaseGeneration', leaseGeneration)
           ..add('operationalStatus', operationalStatus)
           ..add('serviceMode', serviceMode)
           ..add('businessDate', businessDate)
@@ -228,6 +234,11 @@ class WorkspaceBuilder implements Builder<Workspace, WorkspaceBuilder> {
   int? _revision;
   int? get revision => _$this._revision;
   set revision(int? revision) => _$this._revision = revision;
+
+  int? _leaseGeneration;
+  int? get leaseGeneration => _$this._leaseGeneration;
+  set leaseGeneration(int? leaseGeneration) =>
+      _$this._leaseGeneration = leaseGeneration;
 
   String? _operationalStatus;
   String? get operationalStatus => _$this._operationalStatus;
@@ -306,6 +317,7 @@ class WorkspaceBuilder implements Builder<Workspace, WorkspaceBuilder> {
     if ($v != null) {
       _id = $v.id;
       _revision = $v.revision;
+      _leaseGeneration = $v.leaseGeneration;
       _operationalStatus = $v.operationalStatus;
       _serviceMode = $v.serviceMode;
       _businessDate = $v.businessDate;
@@ -346,6 +358,7 @@ class WorkspaceBuilder implements Builder<Workspace, WorkspaceBuilder> {
             id: BuiltValueNullFieldError.checkNotNull(id, r'Workspace', 'id'),
             revision: BuiltValueNullFieldError.checkNotNull(
                 revision, r'Workspace', 'revision'),
+            leaseGeneration: leaseGeneration,
             operationalStatus: BuiltValueNullFieldError.checkNotNull(
                 operationalStatus, r'Workspace', 'operationalStatus'),
             serviceMode: BuiltValueNullFieldError.checkNotNull(

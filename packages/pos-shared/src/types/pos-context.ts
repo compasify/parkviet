@@ -294,6 +294,8 @@ export type PosLineItem = {
   kitchen_sent_quantity?: string;
   // Units of a menu line the kitchen has not been told about yet.
   pending_kitchen_quantity?: string;
+  // A table line's units in the kitchen by state, as the waiter's phone shows them.
+  kitchen_status?: Partial<Record<KitchenLineState, string>>;
   // Bumped on every change; an unsent table line is edited by its version.
   row_version?: number;
   added_by?: { id: string; name: string } | null;
@@ -647,3 +649,5 @@ export type PosMembership = {
   staff_role?: { id: string; name: string } | null;
   status: string;
 };
+
+export type KitchenLineState = 'new' | 'preparing' | 'ready' | 'served';

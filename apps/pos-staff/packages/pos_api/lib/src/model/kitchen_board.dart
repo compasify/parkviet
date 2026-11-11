@@ -3,9 +3,11 @@
 //
 
 // ignore_for_file: unused_element
+import 'package:pos_api/src/model/kitchen_expo_order.dart';
 import 'package:built_collection/built_collection.dart';
 import 'package:pos_api/src/model/kitchen_ticket.dart';
 import 'package:pos_api/src/model/kitchen_station.dart';
+import 'package:pos_api/src/model/kitchen_all_day_row.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
 
@@ -15,34 +17,51 @@ part 'kitchen_board.g.dart';
 ///
 /// Properties:
 /// * [branchId]
-/// * [station]
-/// * [stations]
+/// * [station] - The one station shown; null for several or every station.
+/// * [stations] - The stations shown.
+/// * [serviceMode] - The way of serving the board is narrowed to; null for all.
 /// * [serverNow] - The database clock; screens run their timers from it.
-/// * [open] - Tickets with an item still to make, oldest first.
+/// * [open] - Tickets with an item still to make: tickets past their station's red threshold first, then the oldest.
 /// * [done] - Tickets finished in the last 30 minutes, newest first.
+/// * [allDay] - The open items added up by dish and options, in the order the oldest of each was sent.
+/// * [expo] - Ready items waiting at the pass, by order: from the stations that hand to the shown `expo` stations, or every ready item when no station is chosen. Items leave once served or after two hours.
 @BuiltValue()
 abstract class KitchenBoard
     implements Built<KitchenBoard, KitchenBoardBuilder> {
   @BuiltValueField(wireName: r'branch_id')
   String get branchId;
 
+  /// The one station shown; null for several or every station.
   @BuiltValueField(wireName: r'station')
   KitchenStation? get station;
 
+  /// The stations shown.
   @BuiltValueField(wireName: r'stations')
   BuiltList<KitchenStation> get stations;
+
+  /// The way of serving the board is narrowed to; null for all.
+  @BuiltValueField(wireName: r'service_mode')
+  String? get serviceMode;
 
   /// The database clock; screens run their timers from it.
   @BuiltValueField(wireName: r'server_now')
   DateTime get serverNow;
 
-  /// Tickets with an item still to make, oldest first.
+  /// Tickets with an item still to make: tickets past their station's red threshold first, then the oldest.
   @BuiltValueField(wireName: r'open')
   BuiltList<KitchenTicket> get open;
 
   /// Tickets finished in the last 30 minutes, newest first.
   @BuiltValueField(wireName: r'done')
   BuiltList<KitchenTicket> get done;
+
+  /// The open items added up by dish and options, in the order the oldest of each was sent.
+  @BuiltValueField(wireName: r'all_day')
+  BuiltList<KitchenAllDayRow> get allDay;
+
+  /// Ready items waiting at the pass, by order: from the stations that hand to the shown `expo` stations, or every ready item when no station is chosen. Items leave once served or after two hours.
+  @BuiltValueField(wireName: r'expo')
+  BuiltList<KitchenExpoOrder> get expo;
 
   KitchenBoard._();
 
@@ -84,6 +103,13 @@ class _$KitchenBoardSerializer implements PrimitiveSerializer<KitchenBoard> {
       object.stations,
       specifiedType: const FullType(BuiltList, [FullType(KitchenStation)]),
     );
+    yield r'service_mode';
+    yield object.serviceMode == null
+        ? null
+        : serializers.serialize(
+            object.serviceMode,
+            specifiedType: const FullType.nullable(String),
+          );
     yield r'server_now';
     yield serializers.serialize(
       object.serverNow,
@@ -98,6 +124,16 @@ class _$KitchenBoardSerializer implements PrimitiveSerializer<KitchenBoard> {
     yield serializers.serialize(
       object.done,
       specifiedType: const FullType(BuiltList, [FullType(KitchenTicket)]),
+    );
+    yield r'all_day';
+    yield serializers.serialize(
+      object.allDay,
+      specifiedType: const FullType(BuiltList, [FullType(KitchenAllDayRow)]),
+    );
+    yield r'expo';
+    yield serializers.serialize(
+      object.expo,
+      specifiedType: const FullType(BuiltList, [FullType(KitchenExpoOrder)]),
     );
   }
 
@@ -147,6 +183,14 @@ class _$KitchenBoardSerializer implements PrimitiveSerializer<KitchenBoard> {
           ) as BuiltList<KitchenStation>;
           result.stations.replace(valueDes);
           break;
+        case r'service_mode':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.serviceMode = valueDes;
+          break;
         case r'server_now':
           final valueDes = serializers.deserialize(
             value,
@@ -167,6 +211,22 @@ class _$KitchenBoardSerializer implements PrimitiveSerializer<KitchenBoard> {
             specifiedType: const FullType(BuiltList, [FullType(KitchenTicket)]),
           ) as BuiltList<KitchenTicket>;
           result.done.replace(valueDes);
+          break;
+        case r'all_day':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType:
+                const FullType(BuiltList, [FullType(KitchenAllDayRow)]),
+          ) as BuiltList<KitchenAllDayRow>;
+          result.allDay.replace(valueDes);
+          break;
+        case r'expo':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType:
+                const FullType(BuiltList, [FullType(KitchenExpoOrder)]),
+          ) as BuiltList<KitchenExpoOrder>;
+          result.expo.replace(valueDes);
           break;
         default:
           unhandled.add(key);

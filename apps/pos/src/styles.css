@@ -326,6 +326,7 @@ kbd { padding: var(--pos-s1); border: 1px solid var(--pos-border); border-radius
 .kitchen-unsent { min-width: 22px; padding: 0 6px; border-radius: 11px; background: var(--pos-danger, #c0392b); color: #fff; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; }
 .kitchen-tickets { margin: 0; padding-left: var(--pos-s4); font-size: var(--pos-small); display: grid; gap: var(--pos-s2); }
 .kitchen-tickets ul { margin: var(--pos-s1, 4px) 0 0; padding-left: var(--pos-s4); }
+.basket-line-kitchen-states { display: block; font-size: var(--pos-small); color: var(--pos-muted); }
 .basket-line-kitchen { display: inline-flex; gap: 4px; align-items: center; font-size: var(--pos-small); color: var(--pos-success, #1e8449); }
 .basket-line-kitchen .pos-icon { width: 14px; height: 14px; }
 .payment-panel { display: flex; flex-direction: column; gap: var(--pos-s3); padding-top: var(--pos-s4); margin-top: var(--pos-s3); border-top: 1px solid var(--pos-border); }
@@ -784,6 +785,8 @@ kbd { padding: var(--pos-s1); border: 1px solid var(--pos-border); border-radius
 .menu-tile-schedule { color: var(--pos-success); font-size: var(--pos-small); }
 .menu-tile[data-sold-out="true"] .menu-tile-pick { opacity: .6; }
 .menu-tile-sold-out { position: absolute; top: var(--pos-s2); right: var(--pos-s2); background: var(--pos-danger); color: #fff; border-radius: var(--pos-radius); padding: 2px 8px; font-weight: 700; font-size: var(--pos-small); }
+.catalog-results li[data-sold-out="true"] .catalog-product { opacity: .5; }
+.catalog-sold-out { margin-inline-start: var(--pos-s2); color: var(--pos-danger); font-weight: 700; font-size: var(--pos-small); }
 .menu-tile-sold-out-toggle { min-height: 32px; font-size: var(--pos-small); }
 .modifier-sheet { width: min(560px, 96vw); max-height: 92vh; overflow-y: auto; }
 .modifier-sheet-body { display: grid; gap: var(--pos-s3); }

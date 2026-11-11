@@ -219,6 +219,7 @@ Rails.application.routes.draw do
             post 'kitchen/items/:id/serve', to: 'kitchen/items#serve'
             post 'kitchen/items/:id/recall', to: 'kitchen/items#recall'
             post 'kitchen/tickets/:id/bump', to: 'kitchen/tickets#bump'
+            post 'kitchen/all_day/bump', to: 'kitchen/tickets#bump_all_day'
             # Call numbers waiting at the counter, and handing an order over.
             get 'kitchen/orders', to: 'kitchen/orders#index'
             post 'kitchen/orders/:workspace_id/serve', to: 'kitchen/orders#serve'
@@ -299,6 +300,11 @@ Rails.application.routes.draw do
                 post :reopen
               end
             end
+            # A waiter's own device: the dishes ready at its tables, and the tables it follows.
+            get 'devices/current/ready_feed', to: 'current_devices#ready_feed'
+            get 'devices/current/table_pins', to: 'current_devices#table_pins'
+            post 'devices/current/table_pins', to: 'current_devices#pin'
+            delete 'devices/current/table_pins/:resource_id', to: 'current_devices#unpin'
             resources :devices, only: [:index, :update] do
               collection do
                 post :pairing, to: 'devices#create_pairing'
@@ -369,6 +375,7 @@ Rails.application.routes.draw do
               post 'payment_request', to: 'payment_requests#create'
               post 'payment_request/resolve', to: 'payment_requests#resolve'
               post 'service_charge', to: 'workspaces/service_charges#update'
+              post 'checklist', to: 'workspaces/checklists#create'
               member do
                 post 'discount/clear', to: 'workspaces/discounts#clear'
                 post :park
@@ -416,6 +423,7 @@ Rails.application.routes.draw do
     post 'items/:id/serve', action: :serve
     post 'items/:id/recall', action: :recall
     post 'tickets/:id/bump', action: :bump
+    post 'all_day/bump', action: :bump_all_day
     post 'orders/:workspace_id/serve', action: :serve_order
   end
 

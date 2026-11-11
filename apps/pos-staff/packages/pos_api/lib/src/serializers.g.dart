@@ -25,6 +25,9 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(CallBoardPreparingInner.serializer)
       ..add(CallBoardReadyInner.serializer)
       ..add(CatalogItem.serializer)
+      ..add(ChecklistInput.serializer)
+      ..add(ChecklistOutcome.serializer)
+      ..add(ChecklistResult.serializer)
       ..add(Context.serializer)
       ..add(ContextAdministration.serializer)
       ..add(ContextEinvoiceTypeEnum.serializer)
@@ -85,8 +88,12 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(HardwareStationKindEnum.serializer)
       ..add(HardwareStatus.serializer)
       ..add(IngredientUsageRow.serializer)
+      ..add(KitchenAllDayBumpInput.serializer)
+      ..add(KitchenAllDayRow.serializer)
       ..add(KitchenBoard.serializer)
       ..add(KitchenBoardResult.serializer)
+      ..add(KitchenExpoItem.serializer)
+      ..add(KitchenExpoOrder.serializer)
       ..add(KitchenHistory.serializer)
       ..add(KitchenHistoryEntry.serializer)
       ..add(KitchenHistoryEntryKindEnum.serializer)
@@ -109,16 +116,20 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(KitchenTicket.serializer)
       ..add(KitchenTicketItem.serializer)
       ..add(KitchenTicketItemComponentsInner.serializer)
+      ..add(KitchenTicketItemModifier.serializer)
       ..add(KitchenTicketItemModifiersInner.serializer)
       ..add(KitchenTicketItemStatusEnum.serializer)
       ..add(KitchenTicketKindEnum.serializer)
+      ..add(KitchenTicketList.serializer)
       ..add(KitchenTicketResult.serializer)
       ..add(KitchenTicketStationKindEnum.serializer)
       ..add(KitchenVoid.serializer)
       ..add(KitchenVoidInput.serializer)
       ..add(KitchenVoidMeta.serializer)
       ..add(KitchenVoidResult.serializer)
+      ..add(LeaseClaimInput.serializer)
       ..add(LineComponent.serializer)
+      ..add(LineKitchenStatus.serializer)
       ..add(LineModifier.serializer)
       ..add(Menu.serializer)
       ..add(MenuAvailability.serializer)
@@ -309,6 +320,10 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(PrinterPaperEnum.serializer)
       ..add(PrinterRolesEnum.serializer)
       ..add(PrinterStatusEnum.serializer)
+      ..add(ReadyFeed.serializer)
+      ..add(ReadyFeedItem.serializer)
+      ..add(ReadyFeedItemStatusEnum.serializer)
+      ..add(ReadyFeedResult.serializer)
       ..add(RealtimeEvent.serializer)
       ..add(RealtimeEventEventEnum.serializer)
       ..add(Recipe.serializer)
@@ -358,6 +373,9 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(TableMergeInput.serializer)
       ..add(TableMoveInput.serializer)
       ..add(TableOpenInput.serializer)
+      ..add(TablePinInput.serializer)
+      ..add(TablePins.serializer)
+      ..add(TablePinsResult.serializer)
       ..add(TableSettings.serializer)
       ..add(TableSettingsInput.serializer)
       ..add(TableSettingsInputServiceChargeAppliesToEnum.serializer)
@@ -476,6 +494,15 @@ Serializers _$serializers = (Serializers().toBuilder()
           const FullType(BuiltList, const [const FullType(KitchenTicket)]),
           () => ListBuilder<KitchenTicket>())
       ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(KitchenAllDayRow)]),
+          () => ListBuilder<KitchenAllDayRow>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(KitchenExpoOrder)]),
+          () => ListBuilder<KitchenExpoOrder>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(KitchenTicket)]),
+          () => ListBuilder<KitchenTicket>())
+      ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(KitchenTicket)]),
           () => ListBuilder<KitchenTicket>())
       ..addBuilderFactory(
@@ -484,6 +511,17 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(KitchenTicket)]),
           () => ListBuilder<KitchenTicket>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(KitchenTicketItemModifier)]),
+          () => ListBuilder<KitchenTicketItemModifier>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(KitchenTicketItemModifier)]),
+          () => ListBuilder<KitchenTicketItemModifier>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList,
               const [const FullType(KitchenTicketItemModifiersInner)]),
@@ -620,6 +658,9 @@ Serializers _$serializers = (Serializers().toBuilder()
           const FullType(BuiltList, const [const FullType(PrinterRolesEnum)]),
           () => ListBuilder<PrinterRolesEnum>())
       ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(ReadyFeedItem)]),
+          () => ListBuilder<ReadyFeedItem>())
+      ..addBuilderFactory(
           const FullType(
               BuiltList, const [const FullType(RecipeIngredientsInner)]),
           () => ListBuilder<RecipeIngredientsInner>())
@@ -700,9 +741,18 @@ Serializers _$serializers = (Serializers().toBuilder()
           const FullType(BuiltList, const [const FullType(String)]),
           () => ListBuilder<String>())
       ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
           const FullType(
               BuiltList, const [const FullType(MenuItemConfigComponentsInner)]),
           () => ListBuilder<MenuItemConfigComponentsInner>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
           () => ListBuilder<String>())
@@ -734,6 +784,15 @@ Serializers _$serializers = (Serializers().toBuilder()
           const FullType(
               BuiltMap, const [const FullType(String), const FullType(int)]),
           () => MapBuilder<String, int>())
+      ..addBuilderFactory(
+          const FullType(BuiltMap, const [
+            const FullType(String),
+            const FullType.nullable(JsonObject)
+          ]),
+          () => MapBuilder<String, JsonObject?>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(KitchenExpoItem)]),
+          () => ListBuilder<KitchenExpoItem>())
       ..addBuilderFactory(
           const FullType(BuiltMap, const [
             const FullType(String),

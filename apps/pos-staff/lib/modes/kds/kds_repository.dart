@@ -14,17 +14,22 @@ enum KitchenAction { start, ready, serve, recall }
 
 /// What the kitchen screen asks of the server, as the device itself.
 abstract interface class KitchenApi {
-  /// The board of [stationId]; null for every station of the branch.
-  Future<KitchenBoard> board(String? stationId);
+  /// The board of [stationIds]; null for every station of the branch.
+  /// [serviceMode] narrows it to one way of serving.
+  Future<KitchenBoard> board(List<String>? stationIds, {String? serviceMode});
 
   Future<List<KitchenStation>> stations();
 
-  /// Remembers the station this screen shows; null for every station.
+  /// Remembers the home station of this screen; null for every station.
   Future<Device> selectStation(String? stationId);
 
   Future<KitchenTicket> item(String itemId, KitchenAction action);
 
   Future<KitchenTicket> bump(String ticketId);
+
+  /// Makes the oldest open items of one dish of the all-day view ready,
+  /// first sent first, until [quantity] units are covered.
+  Future<List<KitchenTicket>> allDayBump(List<String>? stationIds, String key, int quantity);
 
   /// Hands an order over at the counter: every ready item of the order is
   /// served. Answers the tickets that changed, none when nothing was ready.
@@ -52,8 +57,15 @@ class ApiKitchenApi implements KitchenApi {
   // An empty station id asks for every station; absent would mean the
   // station stored on the device, which the screen already passes itself.
   @override
-  Future<KitchenBoard> board(String? stationId) async =>
-      (await client.call((api) => api.posDeviceKitchenBoard(stationId: stationId ?? ''))).data;
+  Future<KitchenBoard> board(List<String>? stationIds, {String? serviceMode}) async {
+    final several = stationIds != null && stationIds.length > 1;
+    final response = await client.call((api) => api.posDeviceKitchenBoard(
+          stationId: several ? null : (stationIds?.single ?? ''),
+          stationIds: several ? stationIds.join(',') : null,
+          serviceMode: serviceMode,
+        ));
+    return response.data;
+  }
 
   @override
   Future<List<KitchenStation>> stations() async =>
@@ -79,6 +91,19 @@ class ApiKitchenApi implements KitchenApi {
   @override
   Future<KitchenTicket> bump(String ticketId) async =>
       (await client.call((api) => api.posDeviceKitchenTicketBump(id: ticketId))).data;
+
+  @override
+  Future<List<KitchenTicket>> allDayBump(List<String>? stationIds, String key, int quantity) async {
+    final response = await client.call((api) => api.posDeviceKitchenAllDayBump(
+          kitchenAllDayBumpInput: KitchenAllDayBumpInput((b) {
+            b
+              ..key = key
+              ..quantity = quantity;
+            if (stationIds != null) b.stationIds.replace(stationIds);
+          }),
+        ));
+    return response.data.toList();
+  }
 
   @override
   Future<List<KitchenTicket>> serveOrder(String workspaceId) async =>
@@ -142,11 +167,13 @@ class KdsState {
 class KdsController {
   KdsController({
     required this.api,
-    required String? stationId,
+    required List<String>? stationIds,
+    String? serviceMode,
     this.pollInterval = const Duration(seconds: 5),
     this.onNewTicket,
     DateTime Function()? deviceNow,
-  })  : _stationId = stationId,
+  })  : _stationIds = stationIds,
+        _serviceMode = serviceMode,
         _deviceNow = deviceNow ?? DateTime.now;
 
   final KitchenApi api;
@@ -160,8 +187,16 @@ class KdsController {
   final state = ValueNotifier(const KdsState());
   ServerClock clock = ServerClock.zero;
 
-  String? _stationId;
-  String? get stationId => _stationId;
+  List<String>? _stationIds;
+
+  /// The stations shown; null for every station.
+  List<String>? get stationIds => _stationIds;
+
+  /// The one station shown, or null for several or every station.
+  String? get stationId => _stationIds?.length == 1 ? _stationIds!.single : null;
+
+  String? _serviceMode;
+  String? get serviceMode => _serviceMode;
 
   final _seen = <String>{};
   bool _loadedOnce = false;
@@ -198,15 +233,28 @@ class KdsController {
     state.value = state.value.copyWith(live: _socketUp && state.value.failure == null);
   }
 
-  /// Shows another station; null for every station. Remembered on the
-  /// server for this device.
-  Future<void> selectStation(String? stationId) async {
-    await api.selectStation(stationId);
-    _stationId = stationId;
+  /// Shows other stations; null for every station. The first one is
+  /// remembered on the server as this device's station; the screen keeps
+  /// the whole choice on the device.
+  Future<void> selectStations(List<String>? stationIds) async {
+    final chosen = stationIds == null || stationIds.isEmpty ? null : List<String>.unmodifiable(stationIds);
+    await api.selectStation(chosen?.first);
+    _stationIds = chosen;
+    _restart();
+    await refresh();
+  }
+
+  /// Shows only one way of serving; null for all of them.
+  Future<void> setServiceMode(String? serviceMode) {
+    _serviceMode = serviceMode;
+    _restart();
+    return refresh();
+  }
+
+  void _restart() {
     _seen.clear();
     _loadedOnce = false;
     state.value = const KdsState().copyWith(live: _socketUp);
-    await refresh();
   }
 
   /// Fetches the board. Calls that arrive during a fetch share one more
@@ -228,7 +276,7 @@ class KdsController {
   Future<void> _load() async {
     final sentAt = _deviceNow();
     try {
-      final board = await api.board(_stationId);
+      final board = await api.board(_stationIds, serviceMode: _serviceMode);
       final receivedAt = _deviceNow();
       clock = ServerClock.measure(serverTime: board.serverNow, sentAt: sentAt, receivedAt: receivedAt);
       _announce(board);
@@ -253,8 +301,12 @@ class KdsController {
   /// Marks every open item of the ticket ready.
   Future<AppFailure?> bump(KitchenTicket ticket) => _change(() async => [await api.bump(ticket.id)]);
 
-  /// Hands the ticket's order over: every ready item of it is served.
-  Future<AppFailure?> serveOrder(KitchenTicket ticket) => _change(() => api.serveOrder(ticket.workspaceId));
+  /// Marks the oldest [quantity] units of one all-day dish ready.
+  Future<AppFailure?> bumpAllDay(KitchenAllDayRow row, int quantity) =>
+      _change(() => api.allDayBump(_stationIds, row.key, quantity));
+
+  /// Hands the order over: every ready item of it is served.
+  Future<AppFailure?> serveOrder(String workspaceId) => _change(() => api.serveOrder(workspaceId));
 
   Future<AppFailure?> _change(Future<List<KitchenTicket>> Function() request) async {
     try {

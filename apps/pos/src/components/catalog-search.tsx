@@ -30,6 +30,7 @@ export function CatalogSearch({
   scanNotice,
   addDisabled,
   addDisabledReason,
+  soldOutVariantIds,
 }: {
   storeId: string | null;
   branchId: string | null;
@@ -47,6 +48,9 @@ export function CatalogSearch({
   scanNotice?: ScanNotice | null;
   addDisabled?: boolean;
   addDisabledReason?: string;
+  // Dishes sold out today (`menu.sold_out`): dimmed and not added. The
+  // server refuses them too.
+  soldOutVariantIds?: ReadonlySet<string>;
 }) {
   const { t } = useTranslation();
   const [input, setInput] = useState('');
@@ -181,79 +185,91 @@ export function CatalogSearch({
               className={`catalog-results catalog-results--${view}`}
               aria-label={t('catalogResults')}
             >
-              {result.data.data.map((item) => (
-                <li key={item.id}>
-                  <button
-                    type="button"
-                    className="catalog-product"
-                    aria-label={t('addItemNamed', { name: item.name })}
-                    title={addDisabled && addDisabledReason ? addDisabledReason : item.name}
-                    disabled={!onAdd || addDisabled || item.price === null}
-                    onClick={() => onAdd?.(item.id)}
-                  >
-                    <div className="catalog-image" aria-hidden="true">
-                      <PosIcon name="box" />
-                    </div>
-                    <span className="catalog-product-info">
-                      <strong title={item.name}>{item.name}</strong>
-                      <span className="catalog-meta">
-                        <span className="catalog-sku">{item.sku}</span>
-                        <span className="catalog-meta-sep" aria-hidden="true">
-                          {' · '}
-                        </span>
-                        <span
-                          className={
-                            item.stock_on_hand === null
-                              ? 'stock-unknown'
-                              : item.stock_on_hand <= 3
-                                ? 'stock-low'
-                                : 'catalog-stock'
-                          }
-                        >
-                          {t('catalogOnHand')}: {item.stock_on_hand ?? t('catalogStockUnknown')}
-                        </span>
-                      </span>
-                      <span className="catalog-price">
-                        {item.price !== null
-                          ? formatMoney(item.price, item.currency)
-                          : t('catalogNoPrice')}
-                        {item.price !== null &&
-                        item.compare_at_price !== null &&
-                        Number(item.compare_at_price) > Number(item.price) ? (
-                          <del> {formatMoney(item.compare_at_price, item.currency)}</del>
-                        ) : null}
-                      </span>
-                    </span>
-                  </button>
-                  {/* Stays mounted while a command runs, so a refusal stays readable. */}
-                  {onAddForm ? (
-                    <details
-                      className="catalog-advanced"
-                      onToggle={(event) => {
-                        const open = event.currentTarget.open;
-                        setAdvancedIds((current) => ({ ...current, [item.id]: open }));
-                      }}
+              {result.data.data.map((item) => {
+                const soldOut = soldOutVariantIds?.has(item.id) === true;
+                return (
+                  <li key={item.id} data-sold-out={soldOut}>
+                    <button
+                      type="button"
+                      className="catalog-product"
+                      aria-label={t('addItemNamed', { name: item.name })}
+                      title={
+                        soldOut
+                          ? t('menuSoldOut')
+                          : addDisabled && addDisabledReason
+                            ? addDisabledReason
+                            : item.name
+                      }
+                      disabled={!onAdd || addDisabled || item.price === null || soldOut}
+                      onClick={() => onAdd?.(item.id)}
                     >
-                      <summary title={t('catalogAdvanced')}>
-                        <span className="visually-hidden">
-                          {t('catalogAdvanced')} · {item.name}
+                      <div className="catalog-image" aria-hidden="true">
+                        <PosIcon name="box" />
+                      </div>
+                      <span className="catalog-product-info">
+                        <strong title={item.name}>{item.name}</strong>
+                        {soldOut ? (
+                          <span className="catalog-sold-out">{t('menuSoldOutShort')}</span>
+                        ) : null}
+                        <span className="catalog-meta">
+                          <span className="catalog-sku">{item.sku}</span>
+                          <span className="catalog-meta-sep" aria-hidden="true">
+                            {' · '}
+                          </span>
+                          <span
+                            className={
+                              item.stock_on_hand === null
+                                ? 'stock-unknown'
+                                : item.stock_on_hand <= 3
+                                  ? 'stock-low'
+                                  : 'catalog-stock'
+                            }
+                          >
+                            {t('catalogOnHand')}: {item.stock_on_hand ?? t('catalogStockUnknown')}
+                          </span>
                         </span>
-                        <PosIcon name="chevron" />
-                      </summary>
-                      {advancedIds[item.id] ? (
-                        <AddItemForm
-                          storeId={storeId}
-                          branchId={branchId}
-                          variantId={item.id}
-                          disabled={Boolean(addDisabled)}
-                          disabledReason={addDisabledReason}
-                          onAdd={onAddForm}
-                        />
-                      ) : null}
-                    </details>
-                  ) : null}
-                </li>
-              ))}
+                        <span className="catalog-price">
+                          {item.price !== null
+                            ? formatMoney(item.price, item.currency)
+                            : t('catalogNoPrice')}
+                          {item.price !== null &&
+                          item.compare_at_price !== null &&
+                          Number(item.compare_at_price) > Number(item.price) ? (
+                            <del> {formatMoney(item.compare_at_price, item.currency)}</del>
+                          ) : null}
+                        </span>
+                      </span>
+                    </button>
+                    {/* Stays mounted while a command runs, so a refusal stays readable. */}
+                    {onAddForm ? (
+                      <details
+                        className="catalog-advanced"
+                        onToggle={(event) => {
+                          const open = event.currentTarget.open;
+                          setAdvancedIds((current) => ({ ...current, [item.id]: open }));
+                        }}
+                      >
+                        <summary title={t('catalogAdvanced')}>
+                          <span className="visually-hidden">
+                            {t('catalogAdvanced')} · {item.name}
+                          </span>
+                          <PosIcon name="chevron" />
+                        </summary>
+                        {advancedIds[item.id] ? (
+                          <AddItemForm
+                            storeId={storeId}
+                            branchId={branchId}
+                            variantId={item.id}
+                            disabled={Boolean(addDisabled)}
+                            disabledReason={addDisabledReason}
+                            onAdd={onAddForm}
+                          />
+                        ) : null}
+                      </details>
+                    ) : null}
+                  </li>
+                );
+              })}
             </ul>
           </div>
           {result.data.meta.pages > 1 ? (

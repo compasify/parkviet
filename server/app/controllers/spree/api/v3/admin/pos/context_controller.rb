@@ -9,6 +9,7 @@ module Spree
           # Selling, stock and payment capabilities are not granted here.
           class ContextController < BaseController
             scoped_resource :pos_orders
+            self.pos_machine_devices = true
             pos_permissions show: %w[read_pos_orders read_pos_topology write_pos_topology]
 
             def show

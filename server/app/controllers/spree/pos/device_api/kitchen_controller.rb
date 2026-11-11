@@ -29,9 +29,24 @@ module Spree
           render json: { data: @device.to_pos }
         end
 
+        # One station (the device's own unless named), several
+        # (station_ids, a screen that watches more than one), or every
+        # station (an empty station_id).
         def board
-          station = station_param
-          render json: { data: Kitchen::Board.call(branch: @device.branch, station: station) }
+          stations = Kitchen::Guard.stations!(@device.branch, params[:station_ids])
+          station = stations.empty? ? station_param : nil
+          render json: { data: Kitchen::Board.call(branch: @device.branch, station: station, stations: stations,
+                                                   service_mode: Kitchen::Guard.service_mode!(params[:service_mode])) }
+        end
+
+        # The oldest open items of one dish on the "by dish" tab become ready.
+        def bump_all_day
+          stations = Kitchen::Guard.stations!(@device.branch, params[:station_ids])
+          stations = Array(station_param) if stations.empty?
+          stations = KitchenStation.where(branch_id: @device.branch_id).active.to_a if stations.empty?
+          tickets = Kitchen::ChangeItemStatus.bump_all_day(stations: stations, key: params[:key], quantity: params[:quantity] || 1,
+                                                           actor: @device)
+          render json: { data: tickets.map(&:to_pos) }
         end
 
         def start = change('start')

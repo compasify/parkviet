@@ -27,7 +27,8 @@ module Spree
         {
           id: prefixed_id, sale_line_id: sale_line&.prefixed_id, name: name, modifiers: modifiers, components: components,
           note: note, quantity: quantity.to_s('F'), status: status, started_at: started_at&.iso8601(3),
-          ready_at: ready_at&.iso8601(3), served_at: served_at&.iso8601(3), voided_at: voided_at&.iso8601(3)
+          ready_at: ready_at&.iso8601(3), served_at: served_at&.iso8601(3), voided_at: voided_at&.iso8601(3),
+          recalled_at: recalled_at&.iso8601(3), recall_count: recall_count, prep_seconds: prep_seconds, late: late
         }
       end
 

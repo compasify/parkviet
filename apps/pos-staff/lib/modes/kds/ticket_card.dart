@@ -10,6 +10,13 @@ const kdsButtonHeight = 56.0;
 
 typedef ItemActionCallback = void Function(KitchenTicketItem item, KitchenAction action);
 
+/// Opens "Hết món" for the dish of an item.
+typedef ItemSoldOutCallback = void Function(KitchenTicketItem item);
+
+/// A finished item can be called back to the kitchen.
+bool canRecall(KitchenTicketItem item) =>
+    item.status == KitchenTicketItemStatusEnum.ready || item.status == KitchenTicketItemStatusEnum.served;
+
 String serviceModeLabel(AppLocalizations l10n, String mode) => switch (mode) {
       'counter' => l10n.kdsModeCounter,
       'dine_in' => l10n.kdsModeDineIn,
@@ -53,9 +60,12 @@ class TicketCard extends StatelessWidget {
     required this.onAction,
     this.onBump,
     this.onServeOrder,
+    this.onSoldOut,
     this.showStation = false,
     this.recall = false,
   });
+
+  final ItemSoldOutCallback? onSoldOut;
 
   final KitchenTicket ticket;
   final KitchenStation? station;
@@ -139,8 +149,8 @@ class TicketCard extends StatelessWidget {
             if (note != null) _NoteBand(text: l10n.kdsNote(note)),
             const Divider(),
             for (final item in ticket.items)
-              if (!recall || item.status == KitchenTicketItemStatusEnum.ready || isOpen(item))
-                ItemView(item: item, recall: recall, onAction: onAction),
+              if (!recall || canRecall(item) || isOpen(item))
+                ItemView(item: item, recall: recall, onAction: onAction, onSoldOut: onSoldOut),
             if (!recall && onBump != null && ticket.items.any(isOpen)) ...[
               const SizedBox(height: 8),
               SizedBox(
@@ -172,67 +182,126 @@ class TicketCard extends StatelessWidget {
   }
 }
 
-/// One item: quantity and name large, options, combo parts, the line note
-/// white on black, and its next step.
+/// One item: quantity and name large, options in bold, combo parts, the
+/// line note white on black, and its next step. A voided item is struck
+/// through in red. Holding an item offers recall (once it is ready or
+/// served) and "Hết món" for its dish.
 class ItemView extends StatelessWidget {
-  const ItemView({super.key, required this.item, required this.onAction, this.recall = false});
+  const ItemView({super.key, required this.item, required this.onAction, this.onSoldOut, this.recall = false});
 
   final KitchenTicketItem item;
   final ItemActionCallback onAction;
+  final ItemSoldOutCallback? onSoldOut;
   final bool recall;
+
+  Future<void> _hold(BuildContext context) async {
+    final l10n = AppLocalizations.of(context);
+    final recallable = canRecall(item);
+    if (!recallable && onSoldOut == null) return;
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      builder: (sheet) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(title: Text('${quantityLabel(item.quantity)} x ${item.name}', style: const TextStyle(fontSize: 20))),
+            if (recallable)
+              ListTile(
+                key: Key('hold-recall-${item.id}'),
+                minTileHeight: kdsButtonHeight,
+                leading: const Icon(Icons.undo),
+                title: Text(l10n.kdsRecall, style: const TextStyle(fontSize: 18)),
+                onTap: () => Navigator.of(sheet).pop('recall'),
+              ),
+            if (onSoldOut != null)
+              ListTile(
+                key: Key('hold-sold-out-${item.id}'),
+                minTileHeight: kdsButtonHeight,
+                leading: const Icon(Icons.block),
+                title: Text(l10n.kdsSoldOut, style: const TextStyle(fontSize: 18)),
+                onTap: () => Navigator.of(sheet).pop('sold_out'),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (choice == 'recall') onAction(item, KitchenAction.recall);
+    if (choice == 'sold_out') onSoldOut?.call(item);
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final action = recall
-        ? (item.status == KitchenTicketItemStatusEnum.ready ? KitchenAction.recall : null)
-        : nextAction(item);
+    final action = recall ? (canRecall(item) ? KitchenAction.recall : null) : nextAction(item);
+    final voided = item.status == KitchenTicketItemStatusEnum.voided;
     final finished = !isOpen(item);
     final options = modifiersLabel(item);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${quantityLabel(item.quantity)} x ${item.name}',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 20,
-                    decoration: finished && !recall ? TextDecoration.lineThrough : null,
-                  ),
-                ),
-                if (options.isNotEmpty) Text('+ $options', style: theme.textTheme.bodyLarge),
-                for (final part in item.components)
-                  Text('- ${part.name} x${quantityLabel(part.quantity)}', style: theme.textTheme.bodyLarge),
-                if (item.note != null && item.note!.isNotEmpty) _NoteBand(text: l10n.kdsNote(item.note!)),
-                Text(statusLabel(l10n, item.status), style: theme.textTheme.labelMedium),
-              ],
-            ),
-          ),
-          if (action != null) ...[
-            const SizedBox(width: 8),
-            SizedBox(
-              height: kdsButtonHeight,
-              child: action == KitchenAction.recall || action == KitchenAction.serve
-                  ? OutlinedButton(
-                      key: Key('item-${action.name}-${item.id}'),
-                      onPressed: () => onAction(item, action),
-                      child: Text(actionLabel(l10n, action), style: const TextStyle(fontSize: 18)),
-                    )
-                  : FilledButton.tonal(
-                      key: Key('item-${action.name}-${item.id}'),
-                      onPressed: () => onAction(item, action),
-                      child: Text(actionLabel(l10n, action), style: const TextStyle(fontSize: 18)),
+    final struck = voided || (finished && !recall);
+    return InkWell(
+      key: Key('item-${item.id}'),
+      onLongPress: () => _hold(context),
+        child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${quantityLabel(item.quantity)} x ${item.name}',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 20,
+                      color: voided ? theme.colorScheme.error : null,
+                      decoration: struck ? TextDecoration.lineThrough : null,
+                      decorationColor: voided ? theme.colorScheme.error : null,
+                      decorationThickness: voided ? 3 : null,
                     ),
+                  ),
+                  if (options.isNotEmpty)
+                    Text(
+                      '+ $options',
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: voided ? theme.colorScheme.error : null,
+                        decoration: voided ? TextDecoration.lineThrough : null,
+                      ),
+                    ),
+                  for (final part in item.components)
+                    Text('- ${part.name} x${quantityLabel(part.quantity)}', style: theme.textTheme.bodyLarge),
+                  if (item.note != null && item.note!.isNotEmpty) _NoteBand(text: l10n.kdsNote(item.note!)),
+                  Text(
+                    [
+                      statusLabel(l10n, item.status),
+                      if (item.recallCount > 0) l10n.kdsRecalled(item.recallCount),
+                    ].join(' · '),
+                    style: theme.textTheme.labelMedium?.copyWith(color: voided ? theme.colorScheme.error : null),
+                  ),
+                ],
+              ),
             ),
+            if (action != null) ...[
+              const SizedBox(width: 8),
+              SizedBox(
+                height: kdsButtonHeight,
+                child: action == KitchenAction.recall || action == KitchenAction.serve
+                    ? OutlinedButton(
+                        key: Key('item-${action.name}-${item.id}'),
+                        onPressed: () => onAction(item, action),
+                        child: Text(actionLabel(l10n, action), style: const TextStyle(fontSize: 18)),
+                      )
+                    : FilledButton.tonal(
+                        key: Key('item-${action.name}-${item.id}'),
+                        onPressed: () => onAction(item, action),
+                        child: Text(actionLabel(l10n, action), style: const TextStyle(fontSize: 18)),
+                      ),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

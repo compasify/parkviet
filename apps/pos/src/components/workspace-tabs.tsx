@@ -12,6 +12,7 @@ import { useMenu } from '../hooks/use-menu';
 import { DraftReplayRefused, useWorkspaces } from '../hooks/use-workspaces';
 import { commandQueue } from '../lib/command-queue';
 import { resolveScan, type ScanOutcome } from '../lib/measured-label';
+import { soldOutVariantIds } from '../lib/menu-selection';
 import { type PosLineItem, type PosWorkspace, writesLocked } from '../lib/pos-context';
 import {
   describeFailure,
@@ -196,7 +197,9 @@ export function WorkspaceTabs() {
   const lockReason = active?.payments ? t('editLockedPayments') : undefined;
   // A branch running the menu sells from picture tiles unless its profile asks for the catalogue.
   const menuSurface = sellingSurfaceOf(data) === 'menu_grid';
-  const menu = useMenu(selection.branchId, menuSurface);
+  // The catalogue of a branch running the menu still dims sold-out dishes.
+  const menu = useMenu(selection.branchId, menuSurface || data?.modules?.['fnb.menu'] === true);
+  const soldOut = useMemo(() => soldOutVariantIds(menu.data), [menu.data]);
   // Counter service: call numbers per business day and cup labels.
   const callNumbers = data?.modules?.['fnb.order_number'] === true;
   const cupLabels = data?.modules?.['fnb.cup_label'] === true;
@@ -1026,6 +1029,7 @@ export function WorkspaceTabs() {
                   addDisabled={quickAddDisabled}
                   addDisabledReason={lockReason}
                   scanNotice={scanNotice}
+                  soldOutVariantIds={soldOut}
                   onScan={
                     editable && !channelUnavailable
                       ? (code) => enqueueScan.current(code)
