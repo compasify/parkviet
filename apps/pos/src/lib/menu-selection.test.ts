@@ -68,7 +68,7 @@ function item(overrides: Partial<PosMenuItem> = {}): PosMenuItem {
     kind: 'single',
     menu_category_id: 'posmenucat_1',
     kitchen_category: null,
-    cup_label: null,
+    cup_label: false,
     show_components_on_kds: false,
     position: 0,
     active: true,

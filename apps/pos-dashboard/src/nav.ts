@@ -40,6 +40,11 @@ const groups: { key: string; labelKey: string; icon: NavEntry['icon']; children:
     children: [
       { key: 'funds', labelKey: 'fundsNav', path: '/funds' },
       { key: 'shifts', labelKey: 'shiftsNav', path: '/shifts' },
+      {
+        key: 'platform-settlement',
+        labelKey: 'platformSettlement.title',
+        path: '/platform-settlement',
+      },
     ],
   },
   {

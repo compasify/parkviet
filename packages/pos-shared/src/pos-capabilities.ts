@@ -22,6 +22,8 @@ export const posCapabilities = [
   ['pos.menu.manage', 'capabilityMenuManage'],
   ['pos.menu.sold_out', 'capabilityMenuSoldOut'],
   ['pos.einvoice.manage', 'capabilityEinvoiceManage'],
+  ['pos.kitchen.operate', 'capabilityKitchenOperate'],
+  ['pos.kitchen.manage', 'capabilityKitchenManage'],
 ] as const;
 
 export const sensitiveCapabilities = [
@@ -44,4 +46,5 @@ export const sensitiveCapabilities = [
   'pos.printer.manage',
   'pos.menu.manage',
   'pos.einvoice.manage',
+  'pos.kitchen.manage',
 ];

@@ -2,9 +2,15 @@ import type { PosFeatureFlags } from '../pos-features';
 import type { PosBranchProfile, PosModules, PosModuleUsage, PosOnboarding } from '../pos-modules';
 import type { LotSelection, SaleLineTrace, WorkspaceTrace } from '../traceability';
 
-// Where a sale came from. A fixed list, kept in step with the server's ORDER_SOURCES.
-export const ORDER_SOURCES = ['counter', 'facebook', 'zalo', 'other'] as const;
+// Where a sale came from. A fixed list, kept in step with the server's ORDER_SOURCES:
+// the sources a cashier picks, then the delivery platforms, which only an entered
+// platform order carries.
+export const PICKABLE_ORDER_SOURCES = ['counter', 'facebook', 'zalo', 'other'] as const;
+export const PLATFORM_ORDER_SOURCES = ['grabfood', 'shopeefood'] as const;
+export const ORDER_SOURCES = [...PICKABLE_ORDER_SOURCES, ...PLATFORM_ORDER_SOURCES] as const;
 export type OrderSource = (typeof ORDER_SOURCES)[number];
+export type PickableOrderSource = (typeof PICKABLE_ORDER_SOURCES)[number];
+export type PlatformOrderSource = (typeof PLATFORM_ORDER_SOURCES)[number];
 
 export const SERVICE_MODES = [
   'counter',
@@ -39,6 +45,8 @@ export type PosBranch = {
   // Wall-clock time the business day rolls, HH:MM. Missing means 04:00.
   business_day_cutoff?: string;
   staff_session_idle_minutes?: number;
+  // When menu lines reach the kitchen: as the sale completes, or on "send".
+  kitchen_send_trigger?: 'on_complete' | 'manual';
 };
 
 export type PosRegister = {
@@ -224,7 +232,8 @@ export type PosMenuItem = {
   kind: 'single' | 'combo';
   menu_category_id: string | null;
   kitchen_category: string | null;
-  cup_label: string | null;
+  // Prints one cup label per unit when the branch runs cup labels.
+  cup_label: boolean;
   show_components_on_kds: boolean;
   position: number;
   active: boolean;
@@ -278,6 +287,9 @@ export type PosLineItem = {
   modifiers?: PosLineModifier[];
   components?: PosLineComponent[];
   sale_quantity?: string;
+  // The part of a menu line already sent to the kitchen; the line cannot
+  // go below it or change its options.
+  kitchen_sent_quantity?: string;
   base_quantity?: number;
   sale_unit?: string;
   base_unit?: string;
@@ -521,7 +533,7 @@ export type PosReceivedFunds = {
   branch_id: string;
   shift_id: string;
   tender_attempt_id: string | null;
-  kind: 'cash' | 'bank_manual';
+  kind: 'cash' | 'bank_manual' | 'platform_receivable';
   status: 'received' | 'attention';
   handed_amount: string;
   applied_amount: string;
@@ -586,6 +598,10 @@ export type PosWorkspace = {
   service_mode?: ServiceMode;
   // Stamped once when the draft is created. Missing on older payloads.
   business_date?: string;
+  // Counter service (`fnb.order_number`): the number the order is called by,
+  // given at its first kitchen send or at completion, and the guest's name.
+  order_number?: number | null;
+  guest_name?: string | null;
   customer?: PosCustomer | null;
   line_items?: PosLineItem[];
   discount?: PosDiscount | null;

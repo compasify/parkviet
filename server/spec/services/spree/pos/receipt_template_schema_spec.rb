@@ -38,6 +38,7 @@ RSpec.describe Spree::Pos::ReceiptTemplateSchema do
   it 'points at unknown blocks, keys and variables' do
     config = config_for('sale')
     config['header'] << { 'type' => 'html', 'value' => '<b>x</b>' }
+    html = config['header'].size - 1
     config['footer'] = [
       { 'type' => 'text', 'value' => 'Hotline {store.phone} {store.secret}' },
       { 'type' => 'divider', 'style' => 'dotted', 'color' => 'red' }
@@ -45,7 +46,7 @@ RSpec.describe Spree::Pos::ReceiptTemplateSchema do
     config['extra'] = true
     errors = errors_of(config)
     expect(errors).to include(
-      { pointer: '/config/header/3/type', code: 'unknown_block', message: 'Block type "html" is not supported.' },
+      { pointer: "/config/header/#{html}/type", code: 'unknown_block', message: 'Block type "html" is not supported.' },
       { pointer: '/config/footer/0/value', code: 'unknown_variable', message: '{store.secret} is not a known variable.' },
       hash_including(pointer: '/config/footer/1/style', code: 'invalid_value'),
       hash_including(pointer: '/config/footer/1/color', code: 'unknown_key'),
@@ -90,10 +91,11 @@ RSpec.describe Spree::Pos::ReceiptTemplateSchema do
   it 'keeps the title in the header once and payment method labels fixed' do
     config = config_for('sale')
     config['header'] << { 'type' => 'title' }
+    title = config['header'].size - 1
     config['footer'] = [{ 'type' => 'title' }]
     config['payments']['labels'] = { 'methods' => 'Thanh toán' }
     expect(errors_of(config).map { |error| [error[:pointer], error[:code]] }).to contain_exactly(
-      ['/config/header/3', 'duplicate'], ['/config/footer/0', 'misplaced'], ['/config/payments/labels/methods', 'field_unavailable']
+      ["/config/header/#{title}", 'duplicate'], ['/config/footer/0', 'misplaced'], ['/config/payments/labels/methods', 'field_unavailable']
     )
   end
 

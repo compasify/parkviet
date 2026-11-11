@@ -7,27 +7,49 @@ import 'printer_profile.dart';
 
 enum PrintAlign { left, center, right }
 
+/// The size of a die-cut label, in millimetres.
+typedef LabelSize = ({int widthMm, int heightMm});
+
+/// The label size a document asks for in `page.label`, or null.
+LabelSize? documentLabel(Map<String, Object?> document) {
+  final page = document['page'];
+  final label = page is Map ? page['label'] : null;
+  if (label is! Map) return null;
+  final width = label['width_mm'];
+  final height = label['height_mm'];
+  if (width is! num || height is! num || width <= 0 || height <= 0) return null;
+  return (widthMm: width.round(), heightMm: height.round());
+}
+
 sealed class PrintCommand {
   const PrintCommand();
 }
 
 class TextCommand extends PrintCommand {
-  const TextCommand(this.text, {this.align = PrintAlign.left, this.bold = false, this.large = false});
+  const TextCommand(this.text, {this.align = PrintAlign.left, this.bold = false, this.large = false, this.invert = false});
 
   final String text;
   final PrintAlign align;
   final bool bold;
   final bool large;
 
+  /// White on black, for what the kitchen must not miss (a line's note).
+  final bool invert;
+
   @override
   bool operator ==(Object other) =>
-      other is TextCommand && other.text == text && other.align == align && other.bold == bold && other.large == large;
+      other is TextCommand &&
+      other.text == text &&
+      other.align == align &&
+      other.bold == bold &&
+      other.large == large &&
+      other.invert == invert;
 
   @override
-  int get hashCode => Object.hash(text, align, bold, large);
+  int get hashCode => Object.hash(text, align, bold, large, invert);
 
   @override
-  String toString() => 'TextCommand($text, $align, bold: $bold, large: $large)';
+  String toString() => 'TextCommand($text, $align, bold: $bold, large: $large, invert: $invert)';
 }
 
 class FeedCommand extends PrintCommand {
@@ -112,15 +134,24 @@ String? _string(Object? value) => value is String ? value : null;
 /// The commands for one document on one printer. [document] is the JSON of
 /// the document as the server sent it.
 List<PrintCommand> documentCommands(Map<String, Object?> document, PrinterProfile printer) {
-  final width = printer.columns;
+  // A die-cut label is narrower than the printer's roll: wrap to the label,
+  // 12 dots a character at 8 dots a millimetre.
+  final label = printer.isTspl ? documentLabel(document) : null;
+  final width = label == null ? printer.columns : label.widthMm * 8 ~/ 12;
   final commands = <PrintCommand>[];
 
-  void text(String line, {PrintAlign align = PrintAlign.left, bool bold = false, bool large = false}) =>
-      commands.add(TextCommand(line, align: align, bold: bold, large: large));
+  void text(String line, {PrintAlign align = PrintAlign.left, bool bold = false, bool large = false, bool invert = false}) =>
+      commands.add(TextCommand(line, align: align, bold: bold, large: large, invert: invert));
 
-  void wrapped(String value, {PrintAlign align = PrintAlign.left, bool bold = false, bool large = false}) {
+  void wrapped(
+    String value, {
+    PrintAlign align = PrintAlign.left,
+    bool bold = false,
+    bool large = false,
+    bool invert = false,
+  }) {
     for (final line in wrapText(value, large ? width ~/ 2 : width)) {
-      text(line, align: align, bold: bold, large: large);
+      text(line, align: align, bold: bold, large: large, invert: invert);
     }
   }
 
@@ -138,7 +169,7 @@ List<PrintCommand> documentCommands(Map<String, Object?> document, PrinterProfil
     switch (item['kind']) {
       case 'text':
         for (final line in _strings(item['lines'])) {
-          wrapped(line, align: align, bold: item['bold'] == true, large: item['size'] == 'l');
+          wrapped(line, align: align, bold: item['bold'] == true, large: item['size'] == 'l', invert: item['invert'] == true);
         }
       case 'title':
         wrapped('${item['title'] ?? ''}', align: PrintAlign.center, bold: true, large: true);

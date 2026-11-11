@@ -125,6 +125,7 @@ describe('server print document contract', () => {
       font_size: true,
       line_spacing: true,
       copies: true,
+      label: true,
     };
     const row: Record<keyof PrintRow, true> = { label: true, value: true, strong: true };
     const qr: Record<keyof PrintPayQr, true> = { value: true, caption: true, lines: true };

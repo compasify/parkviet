@@ -105,6 +105,13 @@ export function invalidationsFor(
     // The menu of the branch: sold-out marks show on the tiles at once.
     case 'menu.sold_out':
       return [{ queryKey: ['pos', 'menu', scope.generation] }];
+    // A ticket sent or worked in the kitchen: the order's kitchen history and
+    // the counter's pickup queue.
+    case 'kitchen_ticket.updated':
+      return [
+        { queryKey: ['pos', 'kitchen-tickets', scope.generation] },
+        { queryKey: ['pos', 'kitchen-orders', scope.generation] },
+      ];
     // Claims, prints and cancels of a job; other resources announce through
     // this event too and do not concern the queue.
     case 'resource.updated':

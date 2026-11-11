@@ -122,6 +122,8 @@ module Spree
           'customer' => customer(workspace.pos_customer),
           'lines' => lines,
           'business_date' => workspace.business_date&.iso8601,
+          # Counter service: the number the order is called by, and the name.
+          'call_number' => workspace.order_number&.to_s, 'guest_name' => workspace.guest_name.presence,
           'taxes' => TaxBreakdown.for(order).map { |row| row.transform_keys(&:to_s) },
           'totals' => {
             'item_total' => money(order.item_total), 'discount_total' => money(order.discounts.sum(:amount)),

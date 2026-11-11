@@ -84,6 +84,8 @@ describe('POS permission gates', () => {
       'features',
       'payments',
       'printing',
+      'kitchen',
+      'platforms',
     ])
     const manager = {
       permissionKeys: [],
@@ -92,7 +94,7 @@ describe('POS permission gates', () => {
         capabilities: ['pos.topology.manage'],
       } as PosContext,
     }
-    expect(tabs(manager)).toEqual(['overview', 'features'])
+    expect(tabs(manager)).toEqual(['overview', 'features', 'platforms'])
     expect(routeAllowed('branch', manager)).toBe(true)
     expect(visibleNav('branch', manager)).toBe(true)
     expect(visibleNav('branch', { permissionKeys: ['read_pos_topology'] })).toBe(false)
@@ -108,8 +110,37 @@ describe('POS permission gates', () => {
       context: { ...manager.context, capabilities: ['pos.printer.manage'] },
     }
     expect(tabs(printerManager)).toEqual(['overview', 'printing'])
+    const kitchenManager = {
+      ...manager,
+      context: { ...manager.context, capabilities: ['pos.kitchen.manage'] },
+    }
+    expect(tabs(kitchenManager)).toEqual(['overview', 'kitchen'])
+    expect(routeAllowed('branch', kitchenManager)).toBe(true)
+    const cook = {
+      ...manager,
+      context: { ...manager.context, capabilities: ['pos.kitchen.operate'] },
+    }
+    expect(tabs(cook)).toEqual([])
     expect(routeAllowed('branch-printing', printerManager)).toBe(true)
     expect(routeAllowed('branch-payments', printerManager)).toBe(false)
+  })
+  it('offers platform settlement to resolvers while the branch takes platform orders', () => {
+    const resolver = (modules: Record<string, boolean>) => ({
+      permissionKeys: [],
+      context: {
+        selection: { branch_id: 'b', register_id: null },
+        capabilities: ['pos.payment.resolve'],
+        modules,
+      } as unknown as PosContext,
+    })
+    expect(visibleNav('platform-settlement', resolver({ 'fnb.delivery_platforms': true }))).toBe(
+      true,
+    )
+    expect(visibleNav('platform-settlement', resolver({}))).toBe(false)
+    expect(routeAllowed('platform-settlement', resolver({}))).toBe(true)
+    const cashier = resolver({ 'fnb.delivery_platforms': true })
+    cashier.context.capabilities = ['pos.shift.open']
+    expect(routeAllowed('platform-settlement', cashier)).toBe(false)
   })
   it('opens orders to branch staff and deliveries to sellers or collectors', () => {
     const staff = (capabilities: string[], delivery?: boolean) => ({

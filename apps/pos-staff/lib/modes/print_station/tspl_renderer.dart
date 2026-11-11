@@ -4,8 +4,9 @@ import 'print_commands.dart';
 import 'printer_profile.dart';
 import 'vietnamese_text.dart';
 
-/// Print commands as TSPL for label printers, sized to the content. Uses
-/// the built-in 12×20 dot font, so text is ASCII without marks.
+/// Print commands as TSPL for label printers: sized to the content, or to
+/// [LabelSize] when the document names its label (a cup label). Uses the
+/// built-in 12×20 dot font, so text is ASCII without marks.
 class TsplRenderer {
   const TsplRenderer();
 
@@ -16,8 +17,8 @@ class TsplRenderer {
   static const _qrModule = 4;
   static const _barcodeHeight = 64;
 
-  List<int> render(List<PrintCommand> commands, PrinterProfile printer) {
-    final width = printer.dots;
+  List<int> render(List<PrintCommand> commands, PrinterProfile printer, {LabelSize? label}) {
+    final width = label == null ? printer.dots : label.widthMm * _dotsPerMm;
     final body = <String>[];
     var y = _margin;
 
@@ -49,8 +50,8 @@ class TsplRenderer {
       }
     }
 
-    final widthMm = (width / _dotsPerMm).ceil();
-    final heightMm = ((y + _margin) / _dotsPerMm).ceil();
+    final widthMm = label?.widthMm ?? (width / _dotsPerMm).ceil();
+    final heightMm = label?.heightMm ?? ((y + _margin) / _dotsPerMm).ceil();
     final program = [
       'SIZE $widthMm mm,$heightMm mm',
       'GAP 2 mm,0 mm',

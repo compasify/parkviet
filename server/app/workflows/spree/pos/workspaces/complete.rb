@@ -76,6 +76,15 @@ module Spree
             # Ingredients of menu recipes leave the shelf with the sale; a
             # short shelf is recorded, never a reason to refuse it.
             Recipes::Consume.call(workspace: workspace, actor: staff)
+            # A counter-service order has its call number by the time it is
+            # paid: from its first kitchen send, or now.
+            OrderNumbers.assign!(workspace)
+            # Paid means sent: the kitchen tickets are written with the sale,
+            # and they print after it commits.
+            Kitchen::Send.on_complete(workspace: workspace, actor: staff)
+            # One label per cup of the order, printed after the sale commits;
+            # labels the kitchen send already printed are not printed again.
+            CupLabels::Issue.after_commit(workspace: workspace, actor: staff, upto: :sold)
 
             workspace.update!(revision: workspace.revision + 1, operational_status: 'completed')
             AuditEntry.record!(store: workspace.store, actor: staff, subject: workspace, action: audit_action(entry, zero_total),

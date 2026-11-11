@@ -138,6 +138,8 @@ class _$PrintBlockOneOf extends PrintBlockOneOf {
   final bool bold;
   @override
   final PrintBlockOneOfSizeEnum size;
+  @override
+  final bool? invert;
 
   factory _$PrintBlockOneOf([void Function(PrintBlockOneOfBuilder)? updates]) =>
       (PrintBlockOneOfBuilder()..update(updates))._build();
@@ -147,7 +149,8 @@ class _$PrintBlockOneOf extends PrintBlockOneOf {
       required this.lines,
       required this.align,
       required this.bold,
-      required this.size})
+      required this.size,
+      this.invert})
       : super._();
   @override
   PrintBlockOneOf rebuild(void Function(PrintBlockOneOfBuilder) updates) =>
@@ -164,7 +167,8 @@ class _$PrintBlockOneOf extends PrintBlockOneOf {
         lines == other.lines &&
         align == other.align &&
         bold == other.bold &&
-        size == other.size;
+        size == other.size &&
+        invert == other.invert;
   }
 
   @override
@@ -175,6 +179,7 @@ class _$PrintBlockOneOf extends PrintBlockOneOf {
     _$hash = $jc(_$hash, align.hashCode);
     _$hash = $jc(_$hash, bold.hashCode);
     _$hash = $jc(_$hash, size.hashCode);
+    _$hash = $jc(_$hash, invert.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -186,7 +191,8 @@ class _$PrintBlockOneOf extends PrintBlockOneOf {
           ..add('lines', lines)
           ..add('align', align)
           ..add('bold', bold)
-          ..add('size', size))
+          ..add('size', size)
+          ..add('invert', invert))
         .toString();
   }
 }
@@ -215,6 +221,10 @@ class PrintBlockOneOfBuilder
   PrintBlockOneOfSizeEnum? get size => _$this._size;
   set size(PrintBlockOneOfSizeEnum? size) => _$this._size = size;
 
+  bool? _invert;
+  bool? get invert => _$this._invert;
+  set invert(bool? invert) => _$this._invert = invert;
+
   PrintBlockOneOfBuilder() {
     PrintBlockOneOf._defaults(this);
   }
@@ -227,6 +237,7 @@ class PrintBlockOneOfBuilder
       _align = $v.align;
       _bold = $v.bold;
       _size = $v.size;
+      _invert = $v.invert;
       _$v = null;
     }
     return this;
@@ -258,6 +269,7 @@ class PrintBlockOneOfBuilder
                 bold, r'PrintBlockOneOf', 'bold'),
             size: BuiltValueNullFieldError.checkNotNull(
                 size, r'PrintBlockOneOf', 'size'),
+            invert: invert,
           );
     } catch (_) {
       late String _$failedField;

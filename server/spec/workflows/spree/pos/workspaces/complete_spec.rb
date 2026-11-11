@@ -3,6 +3,7 @@
 require 'rails_helper'
 require_relative '../../../../support/pos_recipe_helpers'
 require_relative '../../../../support/pos_return_helpers'
+require_relative '../../../../support/pos_kitchen_helpers'
 
 # Completing a sale at a branch running recipes takes the ingredients of
 # every line off the shelf, once, in stock units; a short shelf never stops
@@ -122,5 +123,66 @@ RSpec.describe Spree::Pos::Workspaces::Complete do
       return_and_receive(store, returner, branch, retail, quantity: 1)
       expect(on_hand(branch, product)).to eq(5)
     end
+  end
+end
+
+# A paid order of an `on_complete` branch reaches the kitchen in the
+# transaction that places it; printing follows the commit and can never undo
+# the sale.
+RSpec.describe Spree::Pos::Workspaces::Complete, 'kitchen tickets' do
+  include PosKitchenHelpers
+  include PosRecipeHelpers
+
+  let(:store) { menu_store }
+  let(:branch) { kitchen_branch(store) }
+  let(:item) { menu_item!(store, branch, name: 'Cà phê sữa', price: 25_000) }
+  let(:sale) { menu_sale(store, branch) }
+  let!(:bar) { kitchen_station!(branch, name: 'Bar', kind: 'bar', default: true) }
+
+  it 'writes the tickets of a completed order once, even when completion is replayed' do
+    add_menu(sale, size(item), quantity: 2)
+    take_tender(sale, 'cash', 50_000)
+    args = editing_args(sale)
+    described_class.call(**args)
+    described_class.call(**args)
+
+    ticket = tickets_of(sale).sole
+    expect(ticket).to have_attributes(kitchen_station: bar, send_key: "complete:#{sale.workspace.prefixed_id}")
+    expect(ticket.items.sole.quantity).to eq(2)
+    expect(menu_lines(sale).sole.kitchen_sent_quantity).to eq(2)
+  end
+
+  it 'sends only what the cashier has not sent already' do
+    add_menu(sale, size(item))
+    kitchen_send(sale)
+    add_menu(sale, size(item))
+    pay_and_complete(sale)
+
+    expect(tickets_of(sale).map { |ticket| ticket.items.sum(&:quantity) }).to eq([1, 1])
+  end
+
+  it 'writes no ticket when the kitchen is off or the branch sends by hand' do
+    set_pos_module(branch, 'fnb.kitchen', false)
+    add_menu(sale, size(item))
+    pay_and_complete(sale)
+    expect(tickets_of(sale)).to be_empty
+
+    set_pos_module(branch, 'fnb.kitchen', true)
+    branch.update!(kitchen_send_trigger: 'manual')
+    other = menu_sale(store, branch)
+    add_menu(other, size(item))
+    pay_and_complete(other)
+    expect(tickets_of(other)).to be_empty
+  end
+
+  it 'completes the sale when the kitchen printer fails' do
+    bar.update!(printer: kitchen_printer!(branch))
+    allow(Spree::Pos::PrintJobs::Enqueue).to receive(:call).and_raise(Spree::Pos::Conflict.new('down', reason: 'printer_disabled'))
+    add_menu(sale, size(item))
+    pay_and_complete(sale)
+
+    expect(sale.workspace.reload.operational_status).to eq('completed')
+    expect(tickets_of(sale).size).to eq(1)
+    expect(Spree::Pos::PrintJobs::Enqueue).to have_received(:call).once
   end
 end

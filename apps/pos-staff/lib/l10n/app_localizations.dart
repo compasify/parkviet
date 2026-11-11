@@ -637,6 +637,252 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Đang nhận việc in'**
   String get stationForegroundText;
+
+  /// No description provided for @kdsTabPriority.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ưu tiên'**
+  String get kdsTabPriority;
+
+  /// No description provided for @kdsTabByItem.
+  ///
+  /// In vi, this message translates to:
+  /// **'Theo món'**
+  String get kdsTabByItem;
+
+  /// No description provided for @kdsTabByOrder.
+  ///
+  /// In vi, this message translates to:
+  /// **'Theo bàn / số gọi'**
+  String get kdsTabByOrder;
+
+  /// No description provided for @kdsDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã xong (30 phút gần nhất)'**
+  String get kdsDone;
+
+  /// No description provided for @kdsNothingOpen.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có món nào cần làm.'**
+  String get kdsNothingOpen;
+
+  /// No description provided for @kdsNothingDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có phiếu nào xong.'**
+  String get kdsNothingDone;
+
+  /// No description provided for @kdsStart.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bắt đầu'**
+  String get kdsStart;
+
+  /// No description provided for @kdsReady.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xong'**
+  String get kdsReady;
+
+  /// No description provided for @kdsServe.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã ra món'**
+  String get kdsServe;
+
+  /// No description provided for @kdsRecall.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gọi lại'**
+  String get kdsRecall;
+
+  /// No description provided for @kdsBump.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xong cả phiếu'**
+  String get kdsBump;
+
+  /// No description provided for @kdsServeOrder.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã giao'**
+  String get kdsServeOrder;
+
+  /// No description provided for @kdsGuest.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách: {name}'**
+  String kdsGuest(String name);
+
+  /// No description provided for @kdsPlatformGrabfood.
+  ///
+  /// In vi, this message translates to:
+  /// **'GRABFOOD'**
+  String get kdsPlatformGrabfood;
+
+  /// No description provided for @kdsPlatformShopeefood.
+  ///
+  /// In vi, this message translates to:
+  /// **'SHOPEEFOOD'**
+  String get kdsPlatformShopeefood;
+
+  /// No description provided for @kdsPickupCode.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mã lấy: {code}'**
+  String kdsPickupCode(String code);
+
+  /// No description provided for @kdsTicketNumber.
+  ///
+  /// In vi, this message translates to:
+  /// **'Phiếu #{number}'**
+  String kdsTicketNumber(int number);
+
+  /// No description provided for @kdsOrder.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đơn {id}'**
+  String kdsOrder(String id);
+
+  /// No description provided for @kdsTickets.
+  ///
+  /// In vi, this message translates to:
+  /// **'Phiếu {numbers}'**
+  String kdsTickets(String numbers);
+
+  /// No description provided for @kdsNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ghi chú: {note}'**
+  String kdsNote(String note);
+
+  /// No description provided for @kdsOffline.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mất kết nối · cập nhật lúc {time}'**
+  String kdsOffline(String time);
+
+  /// No description provided for @kdsOfflineNever.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mất kết nối · chưa tải được bếp'**
+  String get kdsOfflineNever;
+
+  /// No description provided for @kdsActionFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không đổi được món: {message}'**
+  String kdsActionFailed(String message);
+
+  /// No description provided for @kdsStationPick.
+  ///
+  /// In vi, this message translates to:
+  /// **'Màn này hiện trạm nào?'**
+  String get kdsStationPick;
+
+  /// No description provided for @kdsAllStations.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tất cả trạm'**
+  String get kdsAllStations;
+
+  /// No description provided for @kdsChangeStation.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đổi trạm'**
+  String get kdsChangeStation;
+
+  /// No description provided for @kdsNoStations.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chi nhánh chưa có trạm bếp. Thêm trạm trên trang quản trị, mục Bếp & bar.'**
+  String get kdsNoStations;
+
+  /// No description provided for @kdsSoldOut.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hết món'**
+  String get kdsSoldOut;
+
+  /// No description provided for @kdsSoldOutTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hết món hôm nay'**
+  String get kdsSoldOutTitle;
+
+  /// No description provided for @kdsSoldOutWho.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ai báo hết món?'**
+  String get kdsSoldOutWho;
+
+  /// No description provided for @kdsPinFor.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mã PIN của {name}'**
+  String kdsPinFor(String name);
+
+  /// No description provided for @kdsConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác nhận'**
+  String get kdsConfirm;
+
+  /// No description provided for @kdsStatusNew.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mới'**
+  String get kdsStatusNew;
+
+  /// No description provided for @kdsStatusPreparing.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang làm'**
+  String get kdsStatusPreparing;
+
+  /// No description provided for @kdsStatusReady.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã xong'**
+  String get kdsStatusReady;
+
+  /// No description provided for @kdsStatusServed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã ra'**
+  String get kdsStatusServed;
+
+  /// No description provided for @kdsStatusVoided.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã hủy'**
+  String get kdsStatusVoided;
+
+  /// No description provided for @kdsModeCounter.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tại quầy'**
+  String get kdsModeCounter;
+
+  /// No description provided for @kdsModeDineIn.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tại bàn'**
+  String get kdsModeDineIn;
+
+  /// No description provided for @kdsModeTakeaway.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mang đi'**
+  String get kdsModeTakeaway;
+
+  /// No description provided for @kdsModeDelivery.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giao hàng'**
+  String get kdsModeDelivery;
 }
 
 class _AppLocalizationsDelegate

@@ -144,9 +144,10 @@ module Spree
             raise Conflict, 'Received transfer is less than the tender amount.' if actual < attempt.amount
 
             { handed: actual, applied: attempt.amount, change: BigDecimal('0'), net: actual }
-          when 'vietqr'
+          when 'vietqr', PosPaymentMethod::PLATFORM_KIND
             # The QR asks for the exact amount; any excess the bank reports is
             # handled by spree_vietqr (store credit), never as POS liability.
+            # A platform owes exactly the order's amount.
             { handed: attempt.amount, applied: attempt.amount, change: BigDecimal('0'), net: attempt.amount }
           else
             raise Conflict, 'Unsupported tender kind.'
@@ -172,6 +173,13 @@ module Spree
             end
 
             evidence_kind.to_s
+          when PosPaymentMethod::PLATFORM_KIND
+            # The platform's order is the evidence: what it owes for.
+            unless evidence_kind.to_s == 'platform_order' && reference.present?
+              raise Conflict, 'Platform order evidence is required.'
+            end
+
+            'platform_order'
           else
             raise Conflict, 'Unsupported tender kind.'
           end

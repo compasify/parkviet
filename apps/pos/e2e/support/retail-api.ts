@@ -119,6 +119,9 @@ export type Sheet = {
   creditRequested: boolean;
   creditApproved: boolean;
   orderId: string | null;
+  // Counter service: the call number of the business day and the guest's name.
+  orderNumber?: number | null;
+  guestName?: string | null;
 };
 
 type Funds = {
@@ -426,6 +429,8 @@ export function serialize(world: World, sheet: Sheet) {
     operational_status: sheet.status,
     payments: sheet.attempts.some((attempt) => attempt.status !== 'canceled'),
     note: null,
+    order_number: sheet.orderNumber ?? null,
+    guest_name: sheet.guestName ?? null,
     customer: sheet.customer && {
       ...sheet.customer, email: null, customer_id: null, has_account: false,
     },

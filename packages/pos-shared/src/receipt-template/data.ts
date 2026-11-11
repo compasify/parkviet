@@ -76,6 +76,9 @@ export type TemplateData = {
   cashier: string | null;
   time: string;
   businessDate: string;
+  // Counter service: the number the order is called by, and the name.
+  callNumber?: string | null;
+  guestName?: string | null;
   taxesText: string;
   customerName: string | null;
   customerPhone?: string | null;
@@ -192,7 +195,13 @@ function signatureLabels(t: Translate): TemplateData['signatureLabels'] {
 }
 
 const methodLabel = (kind: string | null, t: Translate) =>
-  kind === 'cash' ? t('receiptCash') : kind === 'vietqr' ? t('receiptVietqr') : t('receiptBank');
+  kind === 'cash'
+    ? t('receiptCash')
+    : kind === 'vietqr'
+      ? t('receiptVietqr')
+      : kind === 'platform_receivable'
+        ? t('receiptPlatform')
+        : t('receiptBank');
 
 function emptyLine(name: string): LineData {
   return {
@@ -688,6 +697,8 @@ export function snapshotData(receipt: ReceiptSnapshot, t: Translate): TemplateDa
     cashier,
     time,
     businessDate,
+    callNumber: str(document.call_number),
+    guestName: str(document.guest_name),
     taxesText,
     customerName: str(customer?.name),
     customerPhone: str(customer?.phone),
@@ -804,6 +815,8 @@ export function prebillData(
     cashier: null,
     time,
     businessDate: formatBusinessDate(workspace.business_date ?? null),
+    callNumber: workspace.order_number == null ? null : String(workspace.order_number),
+    guestName: workspace.guest_name || null,
     taxesText: taxesSummary(workspace.totals?.taxes, currency, t),
     customerName: workspace.customer?.name || null,
     customerPhone: workspace.customer?.phone || null,
@@ -934,6 +947,8 @@ export function paymentTicketData(
     cashier: names.cashier || null,
     time,
     businessDate: formatBusinessDate(workspace.business_date ?? null),
+    callNumber: workspace.order_number == null ? null : String(workspace.order_number),
+    guestName: workspace.guest_name || null,
     taxesText: taxesSummary(workspace.totals?.taxes, currency, t),
     customerName: workspace.customer?.name || null,
     customerPhone: workspace.customer?.phone || null,

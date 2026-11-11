@@ -11,10 +11,14 @@ import 'mode_names.dart';
 /// The frame every mode shares: its name (hold it for management), the
 /// realtime state and, for a signed-in person, sign-out.
 class ModeScaffold extends ConsumerWidget {
-  const ModeScaffold({super.key, required this.mode, required this.body});
+  const ModeScaffold({super.key, required this.mode, required this.body, this.actions = const [], this.bottom});
 
   final AppMode mode;
   final Widget body;
+
+  /// The mode's own buttons, before the realtime state.
+  final List<Widget> actions;
+  final PreferredSizeWidget? bottom;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -25,7 +29,9 @@ class ModeScaffold extends ConsumerWidget {
         title: ManagerHoldArea(
           child: Text(staff?.name == null ? modeName(l10n, mode) : '${modeName(l10n, mode)} · ${staff!.name}'),
         ),
+        bottom: bottom,
         actions: [
+          ...actions,
           const RealtimeStatusView(),
           if (staff != null)
             IconButton(

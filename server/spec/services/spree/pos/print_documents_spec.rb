@@ -94,6 +94,10 @@ RSpec.describe Spree::Pos::PrintDocuments do
       footer = [{ 'type' => 'text', 'value' => "Mã tra cứu: {einvoice.lookup_code}\nTra cứu tại {einvoice.lookup_url}\n{einvoice.buyer_qr}" }]
       [receipt['sale', sale_document].merge('einvoice' => einvoice), nil, default_config['sale'].merge('footer' => footer)]
     },
+    'sale-call-number' => lambda {
+      footer = [{ 'type' => 'text', 'value' => 'Mời {order.guest_name} nhận món' }]
+      [receipt['sale', sale_document.merge('call_number' => '12', 'guest_name' => 'Chị Lan')], nil, default_config['sale'].merge('footer' => footer)]
+    },
     'return-default' => -> { [receipt['return', return_document, number: 'RT1'], nil, default_config['return']] },
     'return-pending' => lambda {
       [receipt['return_supplement', return_document.merge('entitlement_posted' => false), number: 'RT2'], nil, default_config['return']]
@@ -165,6 +169,19 @@ RSpec.describe Spree::Pos::PrintDocuments do
   it 'stamps a reprint once' do
     twice = described_class.reprint(described_class.reprint({ 'banners' => ['A'] }))
     expect(twice['banners']).to eq(['A', described_class::REPRINT_BANNER])
+  end
+
+  it 'builds cup labels that pass the schema' do
+    document = YAML.safe_load_file(Rails.root.join('openapi/pos-staff.yaml'), aliases: true)
+    schema = document.dig('components', 'schemas', 'PrintDocument').merge('components' => document['components'])
+    branch = instance_double(Spree::Pos::Branch, timezone: zone, store: instance_double(Spree::Store, name: 'Quán'))
+    settings = Spree::Pos::CupLabels::Settings::FIELDS.then { |fields| { 'size' => '58x40', 'fields' => fields, 'pickup_minutes' => 15 } }
+
+    label = Spree::Pos::CupLabels::Document.sample(branch: branch, settings: settings, at: now).as_json
+    expect(JSONSchemer.schema(schema).validate(label).to_a.map { |error| error['error'] }).to eq([])
+    expect(label['page']['label']).to eq('width_mm' => 58, 'height_mm' => 40)
+    expect(label['header'].flat_map { |block| block['lines'] }).
+      to eq(['Số 1 · 1/1', 'Trà sữa (L)', '+ Ít đá', '+ Trân châu', 'Ghi chú: Ít ngọt', 'Lan', '11/11/2026 10:04 · Quán'])
   end
 
   it 'builds a test page that passes the schema' do

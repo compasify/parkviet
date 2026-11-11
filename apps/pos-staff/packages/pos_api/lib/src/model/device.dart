@@ -19,6 +19,7 @@ part 'device.g.dart';
 /// * [status]
 /// * [branchId]
 /// * [platform]
+/// * [kitchenStationId] - The station a kitchen screen shows; null for every station.
 /// * [lastSeenAt]
 @BuiltValue()
 abstract class Device implements Built<Device, DeviceBuilder> {
@@ -41,6 +42,10 @@ abstract class Device implements Built<Device, DeviceBuilder> {
 
   @BuiltValueField(wireName: r'platform')
   String? get platform;
+
+  /// The station a kitchen screen shows; null for every station.
+  @BuiltValueField(wireName: r'kitchen_station_id')
+  String? get kitchenStationId;
 
   @BuiltValueField(wireName: r'last_seen_at')
   String? get lastSeenAt;
@@ -98,6 +103,13 @@ class _$DeviceSerializer implements PrimitiveSerializer<Device> {
       yield serializers.serialize(
         object.platform,
         specifiedType: const FullType(String),
+      );
+    }
+    if (object.kitchenStationId != null) {
+      yield r'kitchen_station_id';
+      yield serializers.serialize(
+        object.kitchenStationId,
+        specifiedType: const FullType.nullable(String),
       );
     }
     if (object.lastSeenAt != null) {
@@ -174,6 +186,14 @@ class _$DeviceSerializer implements PrimitiveSerializer<Device> {
           ) as String?;
           if (valueDes == null) continue;
           result.platform = valueDes;
+          break;
+        case r'kitchen_station_id':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.kitchenStationId = valueDes;
           break;
         case r'last_seen_at':
           final valueDes = serializers.deserialize(

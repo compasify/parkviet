@@ -61,6 +61,18 @@ module Spree
               render json: { data: data }
             end
 
+            # One pinned order, or the branch's call numbers.
+            def mode
+              return if channel_rejected?
+
+              key = idempotency_key
+              return if key.nil?
+
+              data = Spree::Pos::Displays::Pin.set_mode(store: current_store, staff: current_user, key: key, session_id: params[:id],
+                                                        expected_generation: params[:expected_generation], mode: params[:mode])
+              render json: { data: data }
+            end
+
             # A short single-use code to pair a separate device; the display
             # token itself is never shown on the cashier screen.
             def pairing_code

@@ -9,16 +9,22 @@ export const REPORT_TYPES = [
   'closures',
   'ingredient_usage',
   'menu_margin',
+  'platforms',
 ] as const;
 export type ReportType = (typeof REPORT_TYPES)[number];
 
 // Reports read from recipe consumptions, listed while the branch runs recipes.
 export const RECIPE_REPORT_TYPES: readonly ReportType[] = ['ingredient_usage', 'menu_margin'];
 
+// Delivery platform orders, listed while the branch takes them.
+export const PLATFORM_REPORT_TYPES: readonly ReportType[] = ['platforms'];
+
 export function reportTypesFor(modules: Record<string, boolean> | null | undefined): ReportType[] {
-  return REPORT_TYPES.filter(
-    (type) => !RECIPE_REPORT_TYPES.includes(type) || modules?.['fnb.recipes'] === true,
-  );
+  return REPORT_TYPES.filter((type) => {
+    if (RECIPE_REPORT_TYPES.includes(type)) return modules?.['fnb.recipes'] === true;
+    if (PLATFORM_REPORT_TYPES.includes(type)) return modules?.['fnb.delivery_platforms'] === true;
+    return true;
+  });
 }
 
 export type ReportRow = Record<string, string | number | boolean | null>;

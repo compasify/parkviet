@@ -129,6 +129,8 @@ class _$PrintPage extends PrintPage {
   final num lineSpacing;
   @override
   final int? copies;
+  @override
+  final PrintPageLabel? label;
 
   factory _$PrintPage([void Function(PrintPageBuilder)? updates]) =>
       (PrintPageBuilder()..update(updates))._build();
@@ -138,7 +140,8 @@ class _$PrintPage extends PrintPage {
       required this.font,
       required this.fontSize,
       required this.lineSpacing,
-      this.copies})
+      this.copies,
+      this.label})
       : super._();
   @override
   PrintPage rebuild(void Function(PrintPageBuilder) updates) =>
@@ -155,7 +158,8 @@ class _$PrintPage extends PrintPage {
         font == other.font &&
         fontSize == other.fontSize &&
         lineSpacing == other.lineSpacing &&
-        copies == other.copies;
+        copies == other.copies &&
+        label == other.label;
   }
 
   @override
@@ -166,6 +170,7 @@ class _$PrintPage extends PrintPage {
     _$hash = $jc(_$hash, fontSize.hashCode);
     _$hash = $jc(_$hash, lineSpacing.hashCode);
     _$hash = $jc(_$hash, copies.hashCode);
+    _$hash = $jc(_$hash, label.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -177,7 +182,8 @@ class _$PrintPage extends PrintPage {
           ..add('font', font)
           ..add('fontSize', fontSize)
           ..add('lineSpacing', lineSpacing)
-          ..add('copies', copies))
+          ..add('copies', copies)
+          ..add('label', label))
         .toString();
   }
 }
@@ -205,6 +211,10 @@ class PrintPageBuilder implements Builder<PrintPage, PrintPageBuilder> {
   int? get copies => _$this._copies;
   set copies(int? copies) => _$this._copies = copies;
 
+  PrintPageLabelBuilder? _label;
+  PrintPageLabelBuilder get label => _$this._label ??= PrintPageLabelBuilder();
+  set label(PrintPageLabelBuilder? label) => _$this._label = label;
+
   PrintPageBuilder() {
     PrintPage._defaults(this);
   }
@@ -217,6 +227,7 @@ class PrintPageBuilder implements Builder<PrintPage, PrintPageBuilder> {
       _fontSize = $v.fontSize;
       _lineSpacing = $v.lineSpacing;
       _copies = $v.copies;
+      _label = $v.label?.toBuilder();
       _$v = null;
     }
     return this;
@@ -236,18 +247,32 @@ class PrintPageBuilder implements Builder<PrintPage, PrintPageBuilder> {
   PrintPage build() => _build();
 
   _$PrintPage _build() {
-    final _$result = _$v ??
-        _$PrintPage._(
-          marginMm: BuiltValueNullFieldError.checkNotNull(
-              marginMm, r'PrintPage', 'marginMm'),
-          font:
-              BuiltValueNullFieldError.checkNotNull(font, r'PrintPage', 'font'),
-          fontSize: BuiltValueNullFieldError.checkNotNull(
-              fontSize, r'PrintPage', 'fontSize'),
-          lineSpacing: BuiltValueNullFieldError.checkNotNull(
-              lineSpacing, r'PrintPage', 'lineSpacing'),
-          copies: copies,
-        );
+    _$PrintPage _$result;
+    try {
+      _$result = _$v ??
+          _$PrintPage._(
+            marginMm: BuiltValueNullFieldError.checkNotNull(
+                marginMm, r'PrintPage', 'marginMm'),
+            font: BuiltValueNullFieldError.checkNotNull(
+                font, r'PrintPage', 'font'),
+            fontSize: BuiltValueNullFieldError.checkNotNull(
+                fontSize, r'PrintPage', 'fontSize'),
+            lineSpacing: BuiltValueNullFieldError.checkNotNull(
+                lineSpacing, r'PrintPage', 'lineSpacing'),
+            copies: copies,
+            label: _label?.build(),
+          );
+    } catch (_) {
+      late String _$failedField;
+      try {
+        _$failedField = 'label';
+        _label?.build();
+      } catch (e) {
+        throw BuiltValueNestedFieldError(
+            r'PrintPage', _$failedField, e.toString());
+      }
+      rethrow;
+    }
     replace(_$result);
     return _$result;
   }

@@ -8,9 +8,14 @@ module Spree
 
       LEASE_TTL = 120.seconds
       # Where the sale came from; `counter` unless the cashier picks another.
-      ORDER_SOURCES = %w[counter facebook zalo other].freeze
+      # Delivery platforms are set only by entering a platform order.
+      PLATFORM_SOURCES = %w[grabfood shopeefood].freeze
+      PICKABLE_SOURCES = %w[counter facebook zalo other].freeze
+      ORDER_SOURCES = (PICKABLE_SOURCES + PLATFORM_SOURCES).freeze
       # How the sale is served. Retail stays `counter`; F&B modules read the value.
       SERVICE_MODES = %w[counter dine_in takeaway delivery tab timed].freeze
+      # The name the counter calls out with the call number.
+      GUEST_NAME_MAX = 60
 
       belongs_to :store, class_name: 'Spree::Store'
       belongs_to :branch, class_name: 'Spree::Pos::Branch'
@@ -25,7 +30,10 @@ module Spree
       validates :order_source, inclusion: { in: ORDER_SOURCES }
       validates :service_mode, inclusion: { in: SERVICE_MODES }
       validates :business_date, presence: true
+      validates :guest_name, length: { maximum: GUEST_NAME_MAX }
+      validates :order_number, numericality: { only_integer: true, greater_than: 0 }, allow_nil: true
       validate :source_is_immutable
+      validate :order_number_is_kept
       validate :business_date_is_fixed
       before_validation :assign_business_date, on: :create
 
@@ -82,7 +90,9 @@ module Spree
           note: note,
           order_source: order_source,
           service_mode: service_mode,
-          business_date: business_date&.iso8601
+          business_date: business_date&.iso8601,
+          order_number: order_number,
+          guest_name: guest_name
         }
       end
 
@@ -225,6 +235,13 @@ module Spree
         return if new_record?
 
         errors.add(:business_date, :invalid) if will_save_change_to_business_date?
+      end
+
+      # A call number, once handed out, belongs to this order for good.
+      def order_number_is_kept
+        return if new_record? || order_number_was.nil?
+
+        errors.add(:order_number, :invalid) if will_save_change_to_order_number?
       end
 
       def source_is_immutable

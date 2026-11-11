@@ -51,7 +51,12 @@ import { type ReportSearch, reportSearchSchema } from '../schemas/report-search'
 import { hiddenTimestamps } from '../tables/columns'
 
 type Row = ReportRow & { id: string }
-const BUSINESS_DATED = new Set<ReportType>(['sales', 'ingredient_usage', 'menu_margin'])
+const BUSINESS_DATED = new Set<ReportType>([
+  'sales',
+  'ingredient_usage',
+  'menu_margin',
+  'platforms',
+])
 type Notice = { text: string; failed: boolean } | null
 
 // "Báo cáo": sales, receipts, drawer cash, receivables and closures of the

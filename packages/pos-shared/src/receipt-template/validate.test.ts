@@ -89,7 +89,7 @@ describe('template validation mirrors the server', () => {
     config.header = [...config.header, { type: 'title' }];
     config.footer = [{ type: 'title' }, { type: 'spacer', mm: 20 }, { type: 'logo', width_pct: 5 }];
     expect(codes(config)).toEqual([
-      '/config/header/3 duplicate',
+      `/config/header/${config.header.length - 1} duplicate`,
       '/config/footer/0 misplaced',
       '/config/footer/1/mm invalid_value',
       '/config/footer/2/width_pct invalid_value',

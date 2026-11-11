@@ -167,6 +167,7 @@ module Spree
             'branch.return_window_days' => data[:branch][:return_window_days]&.to_s, 'register.name' => data[:register],
             'cashier' => data[:cashier], 'document.number' => data[:number], 'document.time' => data[:time],
             'document.business_date' => data[:business_date], 'document.taxes' => data[:taxes_text],
+            'order.call_number' => data[:call_number], 'order.guest_name' => data[:guest_name],
             'customer.name' => data[:customer_name], 'customer.phone' => data[:customer_phone], 'customer.address' => data[:customer_address],
             'einvoice.lookup_code' => data[:einvoice_lookup_code], 'einvoice.lookup_url' => data[:einvoice_lookup_url],
             'einvoice.buyer_qr' => data[:einvoice_buyer_url] }

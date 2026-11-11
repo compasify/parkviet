@@ -21,6 +21,8 @@ module Spree
       DEFAULT_FRESHNESS = 15
       LEASE_PURPOSE = 'pos_display_lease'
       REVOKE_REASONS = %w[ended unresponsive].freeze
+      # order shows the pinned order; call_board the branch's call numbers.
+      MODES = %w[order call_board].freeze
 
       belongs_to :store, class_name: 'Spree::Store'
       belongs_to :branch, class_name: 'Spree::Pos::Branch'
@@ -32,6 +34,7 @@ module Spree
 
       validates :token_digest, presence: true
       validates :revoke_reason, inclusion: { in: REVOKE_REASONS }, allow_nil: true
+      validates :mode, inclusion: { in: MODES }
 
       scope :for_store, ->(store) { where(store_id: store.id) }
       scope :live, -> { where(revoked_at: nil) }
@@ -116,7 +119,7 @@ module Spree
         now = Time.current
         {
           id: prefixed_id, branch_id: branch.prefixed_id, register_id: register&.prefixed_id, shift_id: shift.prefixed_id,
-          status: status, generation: generation, freshness_ttl_seconds: freshness_seconds,
+          status: status, mode: mode, generation: generation, freshness_ttl_seconds: freshness_seconds,
           token_expires_at: token_expires_at.iso8601,
           pinned_workspace_id: pinned_workspace&.prefixed_id, pinned_order_number: pinned_workspace&.order&.number,
           pinned_tender_attempt_id: pinned_tender_attempt&.prefixed_id, pinned_at: pinned_at&.iso8601,

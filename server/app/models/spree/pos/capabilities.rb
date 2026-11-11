@@ -45,10 +45,15 @@ module Spree
       # unsent one and request a replacement. Provider settings stay with
       # store administrators.
       EINVOICE_MANAGE = 'pos.einvoice.manage'
+      # Working a kitchen screen as a person: start, finish, bump, recall
+      # and serve kitchen items. A paired kitchen screen needs no grant.
+      OPERATE_KITCHEN = 'pos.kitchen.operate'
+      # A branch's kitchen setup: stations, routes and when orders are sent.
+      MANAGE_KITCHEN = 'pos.kitchen.manage'
       ASSIGNABLE = [MANAGE, OPEN_SHIFT, DISCOUNT, PRICE_OVERRIDE, CUSTOMER, PAYMENT, RESOLVE, RECOVER, APPROVE, TAKEOVER,
                     CREDIT_MANAGE, CREDIT_SELL, RETURN, CASH_MOVE, REPORT_READ, REPORT_EXPORT,
                     INVENTORY_MANAGE, INVENTORY_TRACE, DEVICE_MANAGE, PRINTER_MANAGE, MANAGE_MENU, SET_SOLD_OUT,
-                    EINVOICE_MANAGE].freeze
+                    EINVOICE_MANAGE, OPERATE_KITCHEN, MANAGE_KITCHEN].freeze
 
       def self.sanitize(values)
         Array(values).map(&:to_s).uniq

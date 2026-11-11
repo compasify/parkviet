@@ -35,11 +35,15 @@ import { CustomerPanel } from './customer-panel';
 import { DeliveryForm } from './delivery-form';
 import { DiscountForm } from './discount-form';
 import { DisplayPinControl } from './display-pin-control';
+import { GuestNameField } from './guest-name-field';
+import { KitchenHistory } from './kitchen-history';
 import { MenuGrid } from './menu-grid';
 import { NoteForm } from './note-form';
 import { OrderLines } from './order-lines';
 import { OrderSourcePicker } from './order-source-picker';
 import { PaymentPanel } from './payment-panel';
+import { PickupQueue } from './pickup-queue';
+import { PlatformOrderTray } from './platform-order-tray';
 import { PosIcon } from './pos-icon';
 import { usePosSelection } from './pos-selection';
 import { PrebillDialog } from './prebill-dialog';
@@ -174,6 +178,11 @@ export function WorkspaceTabs() {
   // A branch running the menu sells from picture tiles; others search the catalogue.
   const menuSurface = data?.modules?.['fnb.menu'] === true;
   const menu = useMenu(selection.branchId, menuSurface);
+  // Counter service: call numbers per business day and cup labels.
+  const callNumbers = data?.modules?.['fnb.order_number'] === true;
+  const cupLabels = data?.modules?.['fnb.cup_label'] === true;
+  // Delivery platform orders typed in at the counter; they keep to their own tray.
+  const platformOrders = data?.modules?.['fnb.delivery_platforms'] === true;
   const tablist = useRef<HTMLDivElement>(null);
   const discountDetailsRef = useRef<HTMLDetailsElement>(null);
   const noteDetailsRef = useRef<HTMLDetailsElement>(null);
@@ -664,6 +673,12 @@ export function WorkspaceTabs() {
                   }}
                 >
                   <strong>{t('invoiceTab', { number: tabNumbers[workspace.id] })}</strong>
+                  {/* The call number the counter calls out, once the order has one. */}
+                  {workspace.order_number != null ? (
+                    <span className="workspace-call-number" data-testid="tab-call-number">
+                      {t('callNumberShort', { number: workspace.order_number })}
+                    </span>
+                  ) : null}
                   {/* Selling is the default; only a state that changes what to do is badged. */}
                   {phase === 'editing' ? null : (
                     <span className={`workspace-phase workspace-phase-${phase}`} aria-hidden="true">
@@ -836,6 +851,17 @@ export function WorkspaceTabs() {
             </button>
           )}
         </div>
+      ) : null}
+      {platformOrders && selectionComplete ? (
+        <PlatformOrderTray
+          key={`${storeId}:${selection.branchId}`}
+          branchId={selection.branchId}
+          registerId={selection.registerId}
+          canEnter={Boolean(
+            data?.shift && data.shift.owner_id === data.staff.id && !locked && !channelUnavailable,
+          )}
+          canCollect={Boolean(data?.capabilities.includes('pos.payment.collect'))}
+        />
       ) : null}
       <nav className="sale-panel-nav" aria-label={t('sellingArea')}>
         {[
@@ -1023,6 +1049,28 @@ export function WorkspaceTabs() {
           </div>
           {active ? (
             <article className="draft-detail">
+              {active.order_number != null ? (
+                <p
+                  className={`call-number-banner${
+                    active.operational_status === 'completed' ? ' call-number-banner-done' : ''
+                  }`}
+                  data-testid="call-number"
+                >
+                  {t('callNumber', { number: active.order_number })}
+                  {active.guest_name ? <small> · {active.guest_name}</small> : null}
+                </p>
+              ) : null}
+              {callNumbers || cupLabels ? (
+                <GuestNameField
+                  key={`:guest:${active.guest_name ?? ''}`}
+                  workspace={active}
+                  disabled={sourceDisabled}
+                  disabledReason={lockReason}
+                  onSave={(guestName) =>
+                    command(active, (current) => workspaces.setGuestName(current, guestName))
+                  }
+                />
+              ) : null}
               <OrderLines
                 key={active.id}
                 workspace={active}
@@ -1058,6 +1106,7 @@ export function WorkspaceTabs() {
                     workspaces.addItem(current, variantId, 1, { ...input, merge: true }),
                   )
                 }
+                cupLabels={cupLabels}
               />
               {lockReason && isEditor ? (
                 <p className="workspace-hint" role="status">
@@ -1255,6 +1304,21 @@ export function WorkspaceTabs() {
                 )}
               </section>
               {active.note ? <p className="checkout-note-preview">{active.note}</p> : null}
+              {data?.modules?.['fnb.kitchen'] === true ? (
+                <KitchenHistory
+                  workspace={active}
+                  manual={
+                    data.branches.find((row) => row.id === active.branch_id)
+                      ?.kitchen_send_trigger === 'manual'
+                  }
+                  disabled={editDisabled || !isEditor}
+                  disabledReason={lockReason}
+                  onSend={() =>
+                    run(() => command(active, (current) => workspaces.sendToKitchen(current)))
+                  }
+                />
+              ) : null}
+              {callNumbers ? <PickupQueue branchId={active.branch_id} /> : null}
               <PaymentPanel
                 workspace={active}
                 staffId={staffId}
@@ -1296,6 +1360,7 @@ export function WorkspaceTabs() {
                 shiftId={data?.shift?.id ?? null}
                 ownsShift={Boolean(data?.shift && data.shift.owner_id === data.staff.id)}
                 enabled={contextFeature(data, 'customer_display')}
+                callBoard={callNumbers}
                 workspace={active}
               />
             </div>

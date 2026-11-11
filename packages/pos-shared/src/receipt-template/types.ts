@@ -130,6 +130,8 @@ export type PageSettings = {
   line_spacing: number;
   // Sale receipts only: the original and up to two copies with one press.
   copies?: number;
+  // Label stock of a server-built label (cup labels); templates never set it.
+  label?: { width_mm: number; height_mm: number };
 };
 
 // Schema 1. A section a document type has no data for (lines of a shift
@@ -150,7 +152,8 @@ export type TemplateConfig = {
 export type PrintRow = { label: string; value: string; strong?: boolean };
 
 export type PrintBlock =
-  | { kind: 'text'; lines: string[]; align: Align; bold: boolean; size: TextSize }
+  // `invert`: white on black, set by the server on kitchen ticket notes.
+  | { kind: 'text'; lines: string[]; align: Align; bold: boolean; size: TextSize; invert?: boolean }
   | {
       kind: 'image';
       src: string;

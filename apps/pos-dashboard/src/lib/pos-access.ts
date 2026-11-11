@@ -30,6 +30,9 @@ export type PosPage =
   | 'business-model'
   | 'branch-payments'
   | 'branch-printing'
+  | 'branch-kitchen'
+  | 'branch-platforms'
+  | 'platform-settlement'
   | 'payment-methods'
   | 'units'
   | 'staff-roles'
@@ -67,6 +70,9 @@ export function canManageBranch(
 export const hasCapability = (access: PosAccess, capability: string) =>
   Boolean(access.context?.capabilities.includes(capability))
 export const canManagePrinters = (access: PosAccess) => hasCapability(access, 'pos.printer.manage')
+// A branch's kitchen setup: stations, routes and the send trigger.
+export const canManageKitchen = (access: PosAccess) =>
+  canAdminister(access, true) || hasCapability(access, 'pos.kitchen.manage')
 // Order history is read by any staff member of the branch.
 export const canReadOrders = (access: PosAccess) => (access.context?.capabilities.length ?? 0) > 0
 // The received-funds ledger is read by collectors and resolvers; only
@@ -123,9 +129,19 @@ export const canManageEinvoices = (access: PosAccess) =>
   canAdminister(access, true) || hasCapability(access, 'pos.einvoice.manage')
 const canReadEinvoices = (access: PosAccess) => canAdminister(access) || canManageEinvoices(access)
 const issuesEinvoices = (access: PosAccess) => (access.context?.einvoice_type ?? 'none') !== 'none'
+// Delivery platform orders: branch setup sets the platforms and their rates;
+// money reconciliation (or store administration) records what they paid. The
+// settlement entry is offered while the selected branch takes platform orders.
+const takesPlatformOrders = (access: PosAccess) =>
+  access.context?.modules?.['fnb.delivery_platforms'] === true
+export const canSettlePlatforms = (access: PosAccess) =>
+  canAdminister(access, true) || hasCapability(access, 'pos.payment.resolve')
 export function visibleNav(page: PosPage, access: PosAccess) {
   if (page === 'einvoices') return issuesEinvoices(access) && canReadEinvoices(access)
   if (page === 'einvoice-settings') return canAdminister(access, true)
+  if (page === 'platform-settlement')
+    return takesPlatformOrders(access) && canSettlePlatforms(access)
+  if (page === 'branch-platforms') return canAdminister(access) || canManageBranch(access)
   if (page === 'stock-alerts') return runsRecipes(access) && canReadStockAlerts(access)
   if (page === 'receivables') return canReadDebts(access)
   if (page === 'credit-accounts') return canManageCredit(access)
@@ -148,8 +164,12 @@ export function visibleNav(page: PosPage, access: PosAccess) {
   // Administrators reach a branch from the branch list; a branch manager
   // without store administration gets a direct entry to their own branch.
   if (page === 'branch')
-    return !canAdminister(access) && (canManageBranch(access) || canManagePrinters(access))
+    return (
+      !canAdminister(access) &&
+      (canManageBranch(access) || canManagePrinters(access) || canManageKitchen(access))
+    )
   if (page === 'branch-printing') return canAdminister(access) || canManagePrinters(access)
+  if (page === 'branch-kitchen') return canAdminister(access) || canManageKitchen(access)
   if (page === 'features' || page === 'business-model')
     return canAdminister(access) || canManageBranch(access)
   if (page === 'setup' || page === 'store-model') return canAdminister(access, true)
@@ -166,7 +186,12 @@ export function visibleNav(page: PosPage, access: PosAccess) {
 export function routeAllowed(page: PosPage, access: PosAccess) {
   if (page === 'setup') return canAdminister(access)
   if (page === 'branch')
-    return canAdminister(access) || canManageBranch(access) || canManagePrinters(access)
+    return (
+      canAdminister(access) ||
+      canManageBranch(access) ||
+      canManagePrinters(access) ||
+      canManageKitchen(access)
+    )
   if (page === 'deliveries') return canHandleDeliveries(access.context?.capabilities)
   if (page === 'inventory') return canOpenStock(access)
   // Store administrators prepare the menu before a branch turns it on.
@@ -174,6 +199,8 @@ export function routeAllowed(page: PosPage, access: PosAccess) {
   if (page === 'stock-alerts') return canReadStockAlerts(access)
   // Invoices already made stay reachable after the store stops issuing.
   if (page === 'einvoices') return canReadEinvoices(access)
+  // Orders already completed are settled after the branch stops taking them.
+  if (page === 'platform-settlement') return canSettlePlatforms(access)
   return visibleNav(page, access)
 }
 
@@ -186,6 +213,8 @@ export const BRANCH_TABS = [
   { key: 'features', page: 'features', path: '/features' },
   { key: 'payments', page: 'branch-payments', path: '/payments' },
   { key: 'printing', page: 'branch-printing', path: '/printing' },
+  { key: 'kitchen', page: 'branch-kitchen', path: '/kitchen' },
+  { key: 'platforms', page: 'branch-platforms', path: '/platforms' },
 ] as const satisfies readonly { key: string; page: PosPage; path: string }[]
 export type BranchTab = (typeof BRANCH_TABS)[number]['key']
 // The tabs open to this reader at the selected branch.

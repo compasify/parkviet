@@ -20,6 +20,8 @@ module Spree
       belongs_to :store, class_name: 'Spree::Store'
       belongs_to :branch, class_name: 'Spree::Pos::Branch'
       belongs_to :register, class_name: 'Spree::Pos::Register', optional: true
+      # The station a kitchen screen shows; none means every station.
+      belongs_to :kitchen_station, class_name: 'Spree::Pos::KitchenStation', optional: true
       belongs_to :paired_by, class_name: staff_class_name, optional: true
       belongs_to :revoked_by, class_name: staff_class_name, optional: true
       has_many :pairings, class_name: 'Spree::Pos::DevicePairing', dependent: :restrict_with_error
@@ -82,7 +84,7 @@ module Spree
         {
           id: prefixed_id, branch_id: branch.prefixed_id, name: name, mode: mode, platform: platform,
           app_version: app_version, status: status, generation: generation,
-          register_id: register&.prefixed_id, kitchen_station_id: kitchen_station_id,
+          register_id: register&.prefixed_id, kitchen_station_id: kitchen_station&.prefixed_id,
           last_seen_at: last_seen_at&.iso8601, revoked_at: revoked_at&.iso8601
         }
       end

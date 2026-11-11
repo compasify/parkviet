@@ -60,7 +60,10 @@ RSpec.describe Spree::Pos::BusinessProfiles do
       data = described_class.to_pos
       expect(data[:modules]).to include({ key: 'retail.measured', group: 'retail', status: 'available', depends_on: ['retail.units'] },
                                         include(key: 'fnb.menu', status: 'available'),
-                                        include(key: 'fnb.kitchen', status: 'planned'))
+                                        include(key: 'fnb.kitchen', status: 'available'),
+                                        include(key: 'fnb.order_number', status: 'available'),
+                                        include(key: 'fnb.cup_label', status: 'available', depends_on: ['fnb.menu']),
+                                        include(key: 'fnb.tables', status: 'planned'))
       expect(data[:profiles].first.keys).
         to eq(%i[key group order status modules branch_defaults display recommended_features sample_units])
     end
@@ -123,7 +126,12 @@ RSpec.describe Spree::Pos::BusinessProfiles do
     end
 
     it 'counts a profile with a planned module as coming soon' do
-      built = described_class.build(catalog({ 'quan_an' => profile(group: 'fnb', modules: ['fnb.order_number', 'retail.units']) }))
+      built = described_class.build(catalog({ 'quan_an' => profile(group: 'retail', modules: ['fnb.tables', 'retail.units']) }))
+      expect(built.profiles.first.status).to eq('coming_soon')
+    end
+
+    it 'keeps an F&B profile coming soon while its group is not open, even with every module available' do
+      built = described_class.build(catalog({ 'quan_an' => profile(group: 'fnb', modules: %w[fnb.menu fnb.order_number]) }))
       expect(built.profiles.first.status).to eq('coming_soon')
     end
   end
@@ -139,12 +147,13 @@ RSpec.describe Spree::Pos::BusinessProfiles do
     end
 
     it 'registers the three retail modules, the menu, recipes, the planned F&B names, and freezes the registry' do
-      expect(described_class.available_keys).to eq(%w[retail.units retail.measured retail.traceability fnb.menu fnb.recipes])
+      expect(described_class.available_keys).to eq(%w[retail.units retail.measured retail.traceability fnb.menu fnb.recipes fnb.kitchen fnb.order_number fnb.cup_label fnb.delivery_platforms])
       expect(described_class.find('fnb.recipes').depends_on).to eq(%w[fnb.menu retail.units])
       expect(described_class.find('retail.measured').depends_on).to eq(['retail.units'])
       expect(described_class.available?('fnb.menu')).to be(true)
-      expect(described_class.known?('fnb.order_number')).to be(true)
-      expect(described_class.available?('fnb.order_number')).to be(false)
+      expect(described_class.known?('fnb.tables')).to be(true)
+      expect(described_class.available?('fnb.tables')).to be(false)
+      expect(described_class.find('fnb.kitchen').depends_on).to eq(['fnb.menu'])
       expect(described_class.all).to all(be_frozen)
       expect { described_class.send(:registry)['retail.extra'] = nil }.to raise_error(FrozenError)
     end

@@ -28,7 +28,7 @@ module Spree
               return if channel_rejected?
 
               kind = params[:kind].to_s
-              return invalid!("Kind must be one of #{Row::KINDS.join(', ')}.") unless Row::KINDS.include?(kind)
+              return invalid!("Kind must be one of #{Row::COUNTER_KINDS.join(', ')}.") unless Row::COUNTER_KINDS.include?(kind)
 
               core = core_attributes(kind)
               return if core.nil?
@@ -90,7 +90,7 @@ module Spree
             end
 
             def method!
-              row = Row.locate(Row.for_store(current_store), params[:id])
+              row = Row.locate(Row.for_store(current_store).counter, params[:id])
               raise ActiveRecord::RecordNotFound if row.nil?
 
               row

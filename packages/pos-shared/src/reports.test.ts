@@ -25,6 +25,7 @@ describe('report access', () => {
       'closures',
       'ingredient_usage',
       'menu_margin',
+      'platforms',
     ]);
   });
 
@@ -37,7 +38,15 @@ describe('report access', () => {
       'closures',
     ]);
     expect(reportTypesFor(undefined)).not.toContain('menu_margin');
-    expect(reportTypesFor({ 'fnb.recipes': true })).toEqual(REPORT_TYPES);
+    expect(reportTypesFor({ 'fnb.recipes': true })).not.toContain('platforms');
+    expect(reportTypesFor({ 'fnb.recipes': true, 'fnb.delivery_platforms': true })).toEqual(
+      REPORT_TYPES,
+    );
+  });
+
+  it('lists the platform report only while the branch takes platform orders', () => {
+    expect(reportTypesFor({ 'fnb.delivery_platforms': true })).toContain('platforms');
+    expect(reportTypesFor({ 'fnb.delivery_platforms': false })).not.toContain('platforms');
   });
 });
 

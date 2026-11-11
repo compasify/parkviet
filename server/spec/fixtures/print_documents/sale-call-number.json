@@ -1,0 +1,405 @@
+{
+  "input": {
+    "receipt": {
+      "source_type": "sale",
+      "number": "R100",
+      "issued_at": "2026-11-10T02:00:00Z",
+      "issued_late": false,
+      "disclaimer": "Không phải hóa đơn",
+      "document": {
+        "title": "PHIẾU BÁN HÀNG",
+        "currency": "VND",
+        "timezone": "Asia/Ho_Chi_Minh",
+        "at": "2026-11-10T02:00:00Z",
+        "business_date": "2026-11-10",
+        "cashier": "Thu Ngân",
+        "register": "Quầy 1",
+        "order_number": "R100",
+        "store": {
+          "name": "Cửa hàng <A&B>",
+          "address": "1 Lê Lợi",
+          "contact_phone": "0281234567",
+          "customer_support_email": "a@b.vn",
+          "url": "shop.example.test",
+          "facebook": "@shopvn",
+          "instagram": "https://instagram.com/shopvn"
+        },
+        "branch": {
+          "name": "Chi nhánh 1",
+          "code": "CN1",
+          "return_window_days": 7
+        },
+        "customer": {
+          "name": "Chị <Lan>",
+          "phone": "090***567",
+          "address": "2 Hai Bà Trưng"
+        },
+        "delivery": {
+          "deliverer": "Anh Giao",
+          "fee": "15000.0"
+        },
+        "lines": [
+          {
+            "name": "Trà & Sữa",
+            "sku": "TS-1",
+            "quantity": 2,
+            "sale_quantity": "1.5",
+            "sale_unit": "lon",
+            "unit_price": "45000.0",
+            "discount": "5000.0",
+            "net_amount": "85000.0",
+            "conversion": "1 lon = 6 chai",
+            "trace": [
+              {
+                "serial": "S1",
+                "lot_code": "L1",
+                "expiry_on": "2027-01-02"
+              },
+              {}
+            ]
+          },
+          {
+            "name": "Bánh",
+            "quantity": 1,
+            "unit_price": "1234.50",
+            "discount": "0.0",
+            "amount": "1234.50"
+          }
+        ],
+        "totals": {
+          "item_total": "90000.0",
+          "discount_total": "5000.0",
+          "additional_tax_total": "0.0",
+          "included_tax_total": "100.0",
+          "total": "100000.0"
+        },
+        "taxes": [
+          {
+            "label": "VAT",
+            "rate": "0.08",
+            "amount": "8000.0"
+          },
+          {
+            "amount": "0.0"
+          }
+        ],
+        "receipts": [
+          {
+            "method": "cash",
+            "amount": "50000.0",
+            "handed": "60000.0",
+            "change": "10000.0"
+          },
+          {
+            "method": "vietqr",
+            "amount": "20000.0",
+            "reference": "FT1"
+          },
+          {
+            "method": "bank",
+            "amount": "1.0"
+          }
+        ],
+        "paid_total": "70001.0",
+        "credit": {
+          "debt": "29999.0",
+          "due_on": "2026-12-01",
+          "pay_qr": {
+            "amount": "29999.0",
+            "currency": "VND",
+            "transfer_content": "TNR100",
+            "bank_name": "VCB",
+            "account_number": "123",
+            "account_name": "SHOP",
+            "payload": "000201"
+          }
+        },
+        "note": "Ít đá <nhé>",
+        "call_number": "12",
+        "guest_name": "Chị Lan"
+      }
+    },
+    "print": null,
+    "config": {
+      "schema": 1,
+      "page": {
+        "margin_mm": 3,
+        "font": "sans",
+        "font_size": "m",
+        "line_spacing": 1.35
+      },
+      "header": [
+        {
+          "type": "business",
+          "fields": [
+            "name",
+            "address",
+            "phone",
+            "branch"
+          ],
+          "align": "center"
+        },
+        {
+          "type": "text",
+          "value": "{register.name}",
+          "align": "center"
+        },
+        {
+          "type": "title"
+        },
+        {
+          "type": "text",
+          "value": "Số gọi {order.call_number}",
+          "align": "center",
+          "bold": true,
+          "size": "l"
+        }
+      ],
+      "meta": {
+        "fields": [
+          "time",
+          "cashier",
+          "order_number",
+          "return_number",
+          "customer"
+        ],
+        "labels": {}
+      },
+      "lines": {
+        "layout": "stacked",
+        "columns": [
+          "name",
+          "sku",
+          "unit",
+          "qty",
+          "price",
+          "discount",
+          "amount"
+        ],
+        "show_trace": true,
+        "show_conversion": true
+      },
+      "totals": {
+        "fields": [
+          "item_total",
+          "discount",
+          "tax",
+          "included_tax",
+          "total"
+        ],
+        "labels": {}
+      },
+      "payments": {
+        "fields": [
+          "methods",
+          "handed",
+          "change",
+          "reference",
+          "paid_total",
+          "debt",
+          "due_on",
+          "pay_qr"
+        ],
+        "labels": {}
+      },
+      "footer": [
+        {
+          "type": "text",
+          "value": "Mời {order.guest_name} nhận món"
+        }
+      ]
+    }
+  },
+  "document": {
+    "version": 1,
+    "kind": "receipt",
+    "documentType": "sale",
+    "page": {
+      "margin_mm": 3,
+      "font": "sans",
+      "font_size": "m",
+      "line_spacing": 1.35
+    },
+    "banners": [],
+    "header": [
+      {
+        "kind": "text",
+        "lines": [
+          "Cửa hàng <A&B>",
+          "1 Lê Lợi",
+          "0281234567",
+          "Chi nhánh 1"
+        ],
+        "align": "center",
+        "bold": false,
+        "size": "m"
+      },
+      {
+        "kind": "text",
+        "lines": [
+          "Quầy 1"
+        ],
+        "align": "center",
+        "bold": false,
+        "size": "m"
+      },
+      {
+        "kind": "title",
+        "title": "PHIẾU BÁN HÀNG",
+        "number": "R100"
+      },
+      {
+        "kind": "text",
+        "lines": [
+          "Số gọi 12"
+        ],
+        "align": "center",
+        "bold": true,
+        "size": "l"
+      }
+    ],
+    "meta": [
+      {
+        "label": "Thời gian",
+        "value": "10/11/2026 09:00"
+      },
+      {
+        "label": "Ngày kinh doanh",
+        "value": "10/11/2026"
+      },
+      {
+        "label": "Thu ngân",
+        "value": "Thu Ngân"
+      },
+      {
+        "label": "Đơn gốc",
+        "value": "R100"
+      },
+      {
+        "label": "Khách hàng",
+        "value": "Chị <Lan> · 090***567"
+      },
+      {
+        "label": "Giao đến",
+        "value": "2 Hai Bà Trưng",
+        "strong": true
+      },
+      {
+        "label": "Giao hàng",
+        "value": "Anh Giao",
+        "strong": true
+      }
+    ],
+    "lines": {
+      "layout": "stacked",
+      "items": [
+        {
+          "index": null,
+          "name": "Trà & Sữa (TS-1)",
+          "amount": "85.000 ₫",
+          "details": [
+            "1,5 lon × 45.000 ₫",
+            "1 lon = 6 chai",
+            "Giảm 5.000 ₫",
+            "Serial/IMEI: S1 · Lô: L1 · HSD: 02/01/2027"
+          ]
+        },
+        {
+          "index": null,
+          "name": "Bánh",
+          "amount": "1.234,5 ₫",
+          "details": [
+            "1 × 1.234,5 ₫"
+          ]
+        }
+      ]
+    },
+    "totals": [
+      {
+        "label": "Tổng tiền hàng",
+        "value": "90.000 ₫"
+      },
+      {
+        "label": "Giảm giá",
+        "value": "5.000 ₫"
+      },
+      {
+        "label": "VAT (8%)",
+        "value": "8.000 ₫"
+      },
+      {
+        "label": "Phí giao hàng",
+        "value": "15.000 ₫"
+      },
+      {
+        "label": "Tổng cộng",
+        "value": "100.000 ₫",
+        "strong": true
+      }
+    ],
+    "payments": [
+      {
+        "label": "Tiền mặt",
+        "value": "50.000 ₫"
+      },
+      {
+        "label": "Khách đưa",
+        "value": "60.000 ₫"
+      },
+      {
+        "label": "Tiền thừa trả khách",
+        "value": "10.000 ₫"
+      },
+      {
+        "label": "Chuyển khoản VietQR",
+        "value": "20.000 ₫"
+      },
+      {
+        "label": "Mã giao dịch",
+        "value": "FT1"
+      },
+      {
+        "label": "Chuyển khoản",
+        "value": "1 ₫"
+      },
+      {
+        "label": "Đã thanh toán",
+        "value": "70.001 ₫",
+        "strong": true
+      },
+      {
+        "label": "Ghi nợ được duyệt",
+        "value": "29.999 ₫",
+        "strong": true
+      },
+      {
+        "label": "Hạn thanh toán",
+        "value": "01/12/2026"
+      }
+    ],
+    "payQr": {
+      "value": "000201",
+      "caption": "Quét mã để chuyển khoản trả nợ",
+      "lines": [
+        "Số tiền: 29.999 ₫",
+        "VCB · 123 · SHOP",
+        "Nội dung CK: TNR100"
+      ]
+    },
+    "notes": [
+      "Ít đá <nhé>"
+    ],
+    "footer": [
+      {
+        "kind": "text",
+        "lines": [
+          "Mời Chị Lan nhận món"
+        ],
+        "align": "center",
+        "bold": false,
+        "size": "m"
+      }
+    ],
+    "disclaimer": "Không phải hóa đơn"
+  }
+}

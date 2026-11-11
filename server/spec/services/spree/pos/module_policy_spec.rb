@@ -24,16 +24,17 @@ RSpec.describe Spree::Pos::ModulePolicy, pos_modules: :default do
 
   it 'reports every available module, off without a row, on only with an enabled row' do
     expect(described_class.for_branch(branch)).to eq('retail.units' => false, 'retail.measured' => false, 'retail.traceability' => false,
-                                                     'fnb.menu' => false, 'fnb.recipes' => false)
+                                                     'fnb.menu' => false, 'fnb.recipes' => false, 'fnb.kitchen' => false, 'fnb.order_number' => false, 'fnb.cup_label' => false, 'fnb.delivery_platforms' => false)
     turn(branch, 'retail.units', true)
     turn(branch, 'retail.traceability', false)
     expect(described_class.for_branch(branch)).to eq('retail.units' => true, 'retail.measured' => false, 'retail.traceability' => false,
-                                                     'fnb.menu' => false, 'fnb.recipes' => false)
+                                                     'fnb.menu' => false, 'fnb.recipes' => false, 'fnb.kitchen' => false, 'fnb.order_number' => false, 'fnb.cup_label' => false, 'fnb.delivery_platforms' => false)
     expect(described_class.for_branch(nil)).to eq({})
     expect(described_class.enabled?(branch, 'retail.units')).to be(true)
     expect(described_class.enabled?(branch, :'retail.traceability')).to be(false)
     expect(described_class.enabled?(branch, 'fnb.menu')).to be(false)
     expect(described_class.enabled?(branch, 'fnb.order_number')).to be(false)
+    expect(described_class.enabled?(branch, 'fnb.tables')).to be(false)
   end
 
   it 'reads a branch in one query' do
@@ -62,7 +63,7 @@ RSpec.describe Spree::Pos::ModulePolicy, pos_modules: :default do
     expect_disabled('retail.units') { described_class.require!(branch, 'retail.units') }
     expect_disabled('retail.traceability') { described_class.require_store!(store, 'retail.traceability') }
     expect_disabled('fnb.menu') { described_class.require!(branch, 'fnb.menu') }
-    expect_disabled('fnb.order_number') { described_class.require!(branch, 'fnb.order_number') }
+    expect_disabled('fnb.tables') { described_class.require!(branch, 'fnb.tables') }
 
     turn(branch, 'retail.units', true)
     expect { described_class.require!(branch, 'retail.units') }.not_to raise_error
@@ -74,7 +75,7 @@ RSpec.describe Spree::Pos::ModulePolicy, pos_modules: :default do
   end
 
   it 'stores only available modules, once per branch, within the branch store' do
-    expect(Spree::Pos::BranchModule.new(store: store, branch: branch, module_key: 'fnb.order_number', enabled: true)).not_to be_valid
+    expect(Spree::Pos::BranchModule.new(store: store, branch: branch, module_key: 'fnb.tables', enabled: true)).not_to be_valid
     turn(branch, 'retail.units', true)
     expect(Spree::Pos::BranchModule.new(store: store, branch: branch, module_key: 'retail.units', enabled: false)).not_to be_valid
     foreign = create(:store)

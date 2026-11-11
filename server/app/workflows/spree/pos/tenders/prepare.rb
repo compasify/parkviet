@@ -37,6 +37,11 @@ module Spree
             row, core_method = resolver.resolve!(payment_method_id, branch: workspace.branch)
             raise Conflict, 'Payment method is not available for this store.' if core_method.nil?
 
+            # A platform order is paid on the platform, and nothing else is.
+            if row.platform? != Workspace::PLATFORM_SOURCES.include?(workspace.order_source)
+              raise Conflict.new('Platform orders are settled only with the platform receivable.', reason: 'platform_tender')
+            end
+
             if row.kind == 'vietqr'
               FeaturePolicy.require!(workspace.branch, :vietqr)
               # One QR at a time: a second one would void the first payment.

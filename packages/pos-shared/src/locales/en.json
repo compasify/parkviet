@@ -69,6 +69,8 @@
   "capabilityMenuManage": "Manage the menu",
   "capabilityMenuSoldOut": "Mark items sold out",
   "capabilityEinvoiceManage": "Manage e-invoices",
+  "capabilityKitchenOperate": "Work the kitchen screen",
+  "capabilityKitchenManage": "Set up the kitchen and bar",
   "receiptCopyBanner": "COPY – no. {{number}}",
   "capabilityShift": "Open shift",
   "capabilityRecover": "Recover",
@@ -318,6 +320,7 @@
       "gio": "Basket"
     }
   },
+  "receiptPlatform": "Delivery platform",
   "receiptVietqr": "VietQR transfer",
   "featureDisabled_vietqr": "VietQR was just switched off at the branch; no QR was created.",
   "receiptDeliveryAddress": "Deliver to",

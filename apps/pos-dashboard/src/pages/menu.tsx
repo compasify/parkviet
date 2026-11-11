@@ -707,7 +707,7 @@ function ItemDialog({
   const [kind, setKind] = useState<'single' | 'combo'>(item?.kind ?? 'single')
   const [categoryId, setCategoryId] = useState(item?.menu_category_id ?? '')
   const [kitchen, setKitchen] = useState(item?.kitchen_category ?? '')
-  const [cupLabel, setCupLabel] = useState(item?.cup_label ?? '')
+  const [cupLabel, setCupLabel] = useState(item?.cup_label === true)
   const [active, setActive] = useState(item?.active ?? true)
   const [groupIds, setGroupIds] = useState<string[]>(item?.modifier_group_ids ?? [])
   const [components, setComponents] = useState(
@@ -738,7 +738,7 @@ function ItemDialog({
                 kind,
                 menu_category_id: categoryId || null,
                 kitchen_category: kitchen.trim() || null,
-                cup_label: cupLabel.trim() || null,
+                cup_label: cupLabel,
                 active,
                 modifier_group_ids: kind === 'single' ? groupIds : [],
                 ...(kind === 'combo'
@@ -802,13 +802,8 @@ function ItemDialog({
               onChange={setKitchen}
               maxLength={40}
             />
-            <TextField
-              label={t('menuAdmin.cupLabel')}
-              value={cupLabel}
-              onChange={setCupLabel}
-              maxLength={40}
-            />
           </div>
+          <CheckField label={t('menuAdmin.cupLabel')} checked={cupLabel} onChange={setCupLabel} />
           {kind === 'single' ? (
             <fieldset className="space-y-2">
               <legend className="text-sm font-medium">{t('menuAdmin.groups')}</legend>

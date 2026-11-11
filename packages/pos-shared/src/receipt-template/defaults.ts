@@ -25,7 +25,18 @@ export const DEFAULT_TEMPLATES: Readonly<Record<DocumentType, TemplateConfig>> =
   sale: {
     schema: 1,
     page: PAGE,
-    header: HEADER,
+    // A counter-service sale prints its call number large; the line is
+    // left out when the order has none.
+    header: [
+      ...HEADER,
+      {
+        type: 'text',
+        value: 'Số gọi {order.call_number}',
+        align: 'center',
+        bold: true,
+        size: 'l',
+      },
+    ],
     meta: POSTED_META,
     lines: {
       layout: 'stacked',

@@ -4,12 +4,23 @@ import {
   ORDER_SOURCES,
   orderSourceOf,
   orderSourceRows,
+  PICKABLE_ORDER_SOURCES,
   rangePreset,
 } from './order-source';
 
 describe('order sources', () => {
   it('keeps the fixed list and falls back to counter', () => {
-    expect(ORDER_SOURCES).toEqual(['counter', 'facebook', 'zalo', 'other']);
+    expect(ORDER_SOURCES).toEqual([
+      'counter',
+      'facebook',
+      'zalo',
+      'other',
+      'grabfood',
+      'shopeefood',
+    ]);
+    // The platforms come only with an entered platform order; the cashier never picks them.
+    expect(PICKABLE_ORDER_SOURCES).toEqual(['counter', 'facebook', 'zalo', 'other']);
+    expect(orderSourceOf('grabfood')).toBe('grabfood');
     expect(orderSourceOf('zalo')).toBe('zalo');
     expect(orderSourceOf(undefined)).toBe('counter');
     expect(orderSourceOf('tiktok')).toBe('counter');
@@ -22,7 +33,14 @@ describe('order sources', () => {
       'junk',
       null,
     ]);
-    expect(rows.map((row) => row.order_source)).toEqual(['counter', 'facebook', 'zalo', 'other']);
+    expect(rows.map((row) => row.order_source)).toEqual([
+      'counter',
+      'facebook',
+      'zalo',
+      'other',
+      'grabfood',
+      'shopeefood',
+    ]);
     expect(rows[0]).toEqual({ order_source: 'counter', orders: 0, sales_total: '0', owed: '0' });
     expect(rows[2]).toEqual({
       order_source: 'zalo',
@@ -30,7 +48,7 @@ describe('order sources', () => {
       sales_total: '60000.0',
       owed: '10000.0',
     });
-    expect(orderSourceRows(undefined)).toHaveLength(4);
+    expect(orderSourceRows(undefined)).toHaveLength(6);
   });
 });
 

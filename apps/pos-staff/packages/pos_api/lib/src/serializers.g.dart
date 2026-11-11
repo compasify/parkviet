@@ -7,15 +7,23 @@ part of 'serializers.dart';
 // **************************************************************************
 
 Serializers _$serializers = (Serializers().toBuilder()
+      ..add($KitchenStationInput.serializer)
       ..add($MenuItemConfig.serializer)
+      ..add($StationRouteInput.serializer)
       ..add(Approval.serializer)
       ..add(ApprovalRevision.serializer)
+      ..add(CallBoard.serializer)
+      ..add(CallBoardPreparingInner.serializer)
+      ..add(CallBoardReadyInner.serializer)
       ..add(CatalogItem.serializer)
       ..add(Context.serializer)
       ..add(ContextAdministration.serializer)
       ..add(ContextEinvoiceTypeEnum.serializer)
       ..add(ContextStaff.serializer)
       ..add(ContextStore.serializer)
+      ..add(CupLabelSettings.serializer)
+      ..add(CupLabelSettingsFieldsEnum.serializer)
+      ..add(CupLabelSettingsSizeEnum.serializer)
       ..add(Device.serializer)
       ..add(DeviceModeEnum.serializer)
       ..add(DevicePairResult.serializer)
@@ -54,6 +62,26 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(ErrorResponseError.serializer)
       ..add(ErrorResponseErrorDetails.serializer)
       ..add(IngredientUsageRow.serializer)
+      ..add(KitchenBoard.serializer)
+      ..add(KitchenBoardResult.serializer)
+      ..add(KitchenMenuItem.serializer)
+      ..add(KitchenOrderServedResult.serializer)
+      ..add(KitchenOrderServedResultData.serializer)
+      ..add(KitchenSettings.serializer)
+      ..add(KitchenSettingsKitchenSendTriggerEnum.serializer)
+      ..add(KitchenStation.serializer)
+      ..add(KitchenStationInputKindEnum.serializer)
+      ..add(KitchenStationKindEnum.serializer)
+      ..add(KitchenStationList.serializer)
+      ..add(KitchenStationResult.serializer)
+      ..add(KitchenTicket.serializer)
+      ..add(KitchenTicketItem.serializer)
+      ..add(KitchenTicketItemComponentsInner.serializer)
+      ..add(KitchenTicketItemModifiersInner.serializer)
+      ..add(KitchenTicketItemStatusEnum.serializer)
+      ..add(KitchenTicketKindEnum.serializer)
+      ..add(KitchenTicketResult.serializer)
+      ..add(KitchenTicketStationKindEnum.serializer)
       ..add(LineComponent.serializer)
       ..add(LineModifier.serializer)
       ..add(Menu.serializer)
@@ -68,8 +96,42 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(ModifierGroup.serializer)
       ..add(ModifierGroupOptionsInner.serializer)
       ..add(ModifierSelection.serializer)
+      ..add(PlatformOrder.serializer)
+      ..add(PlatformOrderCancelInput.serializer)
+      ..add(PlatformOrderEditor.serializer)
+      ..add(PlatformOrderInput.serializer)
+      ..add(PlatformOrderInputPlatformEnum.serializer)
+      ..add(PlatformOrderItem.serializer)
+      ..add(PlatformOrderLineInput.serializer)
+      ..add(PlatformOrderList.serializer)
+      ..add(PlatformOrderPlatformEnum.serializer)
+      ..add(PlatformOrderResult.serializer)
+      ..add(PlatformOrderSettled.serializer)
+      ..add(PlatformOrderStatusEnum.serializer)
+      ..add(PlatformReportRow.serializer)
+      ..add(PlatformReportRowPlatformEnum.serializer)
+      ..add(PlatformReportRows.serializer)
+      ..add(PlatformSetting.serializer)
+      ..add(PlatformSettingInput.serializer)
+      ..add(PlatformSettingInputPlatformEnum.serializer)
+      ..add(PlatformSettingInputStatusEnum.serializer)
+      ..add(PlatformSettingPlatformEnum.serializer)
+      ..add(PlatformSettingResult.serializer)
+      ..add(PlatformSettingStatusEnum.serializer)
+      ..add(PlatformSettings.serializer)
+      ..add(PlatformSettingsResult.serializer)
+      ..add(PlatformSettleInput.serializer)
+      ..add(PlatformSettleOrderInput.serializer)
       ..add(PosApprovalCreate201Response.serializer)
       ..add(PosCatalog200Response.serializer)
+      ..add(PosCupLabelSettings200Response.serializer)
+      ..add(PosCupLabelSettingsUpdateRequest.serializer)
+      ..add(PosCupLabelSettingsUpdateRequestFieldsEnum.serializer)
+      ..add(PosCupLabelSettingsUpdateRequestSizeEnum.serializer)
+      ..add(PosCupLabelTestRequest.serializer)
+      ..add(PosDeviceKitchenMenuItems200Response.serializer)
+      ..add(PosDeviceKitchenSelectStation200Response.serializer)
+      ..add(PosDeviceKitchenSelectStationRequest.serializer)
       ..add(PosDeviceMe200Response.serializer)
       ..add(PosDevicePair201Response.serializer)
       ..add(PosDevicePairRequest.serializer)
@@ -94,6 +156,14 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(PosEinvoiceSettingsSaveRequestEinvoiceTypeEnum.serializer)
       ..add(PosEinvoiceSummary200Response.serializer)
       ..add(PosEinvoices200Response.serializer)
+      ..add(PosKitchenOrders200Response.serializer)
+      ..add(PosKitchenSend201Response.serializer)
+      ..add(PosKitchenSend201ResponseMeta.serializer)
+      ..add(PosKitchenSendRequest.serializer)
+      ..add(PosKitchenSettings200Response.serializer)
+      ..add(PosKitchenSettingsUpdateRequest.serializer)
+      ..add(PosKitchenSettingsUpdateRequestKitchenSendTriggerEnum.serializer)
+      ..add(PosKitchenStationCreateRequest.serializer)
       ..add(PosMenu200Response.serializer)
       ..add(PosMenuCategories200Response.serializer)
       ..add(PosMenuFavorites200Response.serializer)
@@ -136,10 +206,18 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(PosRecipeSaveRequestIngredientsInner.serializer)
       ..add(PosReportIngredientUsage200Response.serializer)
       ..add(PosReportMenuMargin200Response.serializer)
+      ..add(PosStationRouteCreate201Response.serializer)
+      ..add(PosStationRouteCreateRequest.serializer)
+      ..add(PosStationRoutes200Response.serializer)
       ..add(PosStockAlertSetRequest.serializer)
       ..add(PosStockAlerts200Response.serializer)
       ..add(PosSystemStatus200Response.serializer)
       ..add(PosWorkspaceCreate201Response.serializer)
+      ..add(PosWorkspaceCupLabelsReprint201Response.serializer)
+      ..add(PosWorkspaceCupLabelsReprint201ResponseData.serializer)
+      ..add(PosWorkspaceCupLabelsReprintRequest.serializer)
+      ..add(PosWorkspaceGuestNameRequest.serializer)
+      ..add(PosWorkspaceKitchenTickets200Response.serializer)
       ..add(PosWorkspaceLineModifiersRequest.serializer)
       ..add(PrintBlock.serializer)
       ..add(PrintBlockOneOf.serializer)
@@ -176,6 +254,7 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(PrintPage.serializer)
       ..add(PrintPageFontEnum.serializer)
       ..add(PrintPageFontSizeEnum.serializer)
+      ..add(PrintPageLabel.serializer)
       ..add(PrintPayQr.serializer)
       ..add(PrintRow.serializer)
       ..add(Printer.serializer)
@@ -191,6 +270,7 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(RecipeOwner.serializer)
       ..add(RecipeOwnerOwnerTypeEnum.serializer)
       ..add(RecipeOwnerVersionsInner.serializer)
+      ..add(StationRoute.serializer)
       ..add(StockAlert.serializer)
       ..add(SystemStatus.serializer)
       ..add(SystemStatusBackup.serializer)
@@ -211,8 +291,26 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(WorkspaceTotals.serializer)
       ..add(WorkspaceTotalsTaxesInner.serializer)
       ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(CallBoardPreparingInner)]),
+          () => ListBuilder<CallBoardPreparingInner>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(CallBoardReadyInner)]),
+          () => ListBuilder<CallBoardReadyInner>())
+      ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(CatalogItem)]),
           () => ListBuilder<CatalogItem>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(CupLabelSettingsFieldsEnum)]),
+          () => ListBuilder<CupLabelSettingsFieldsEnum>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(DeviceStaffMember)]),
           () => ListBuilder<DeviceStaffMember>())
@@ -236,6 +334,38 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(IngredientUsageRow)]),
           () => ListBuilder<IngredientUsageRow>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(KitchenMenuItem)]),
+          () => ListBuilder<KitchenMenuItem>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(KitchenStation)]),
+          () => ListBuilder<KitchenStation>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(KitchenStation)]),
+          () => ListBuilder<KitchenStation>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(KitchenTicket)]),
+          () => ListBuilder<KitchenTicket>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(KitchenTicket)]),
+          () => ListBuilder<KitchenTicket>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(KitchenTicket)]),
+          () => ListBuilder<KitchenTicket>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(KitchenTicket)]),
+          () => ListBuilder<KitchenTicket>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(KitchenTicket)]),
+          () => ListBuilder<KitchenTicket>())
+      ..addBuilderFactory(
+          const FullType(BuiltList,
+              const [const FullType(KitchenTicketItemModifiersInner)]),
+          () => ListBuilder<KitchenTicketItemModifiersInner>())
+      ..addBuilderFactory(
+          const FullType(BuiltList,
+              const [const FullType(KitchenTicketItemComponentsInner)]),
+          () => ListBuilder<KitchenTicketItemComponentsInner>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(LineModifier)]),
           () => ListBuilder<LineModifier>())
@@ -288,6 +418,43 @@ Serializers _$serializers = (Serializers().toBuilder()
           const FullType(BuiltList, const [const FullType(ModifierSelection)]),
           () => ListBuilder<ModifierSelection>())
       ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(ModifierSelection)]),
+          () => ListBuilder<ModifierSelection>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(PlatformOrder)]),
+          () => ListBuilder<PlatformOrder>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(PlatformOrder)]),
+          () => ListBuilder<PlatformOrder>())
+      ..addBuilderFactory(
+          const FullType(BuiltMap, const [
+            const FullType(String),
+            const FullType.nullable(JsonObject)
+          ]),
+          () => MapBuilder<String, JsonObject?>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(PlatformOrderItem)]),
+          () => ListBuilder<PlatformOrderItem>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(PlatformOrderLineInput)]),
+          () => ListBuilder<PlatformOrderLineInput>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(PlatformReportRow)]),
+          () => ListBuilder<PlatformReportRow>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(PlatformSetting)]),
+          () => ListBuilder<PlatformSetting>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(PlatformSettleOrderInput)]),
+          () => ListBuilder<PlatformSettleOrderInput>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [
+            const FullType(PosCupLabelSettingsUpdateRequestFieldsEnum)
+          ]),
+          () => ListBuilder<PosCupLabelSettingsUpdateRequestFieldsEnum>())
+      ..addBuilderFactory(
           const FullType(BuiltList,
               const [const FullType(PosPrinterStations200ResponseDataInner)]),
           () => ListBuilder<PosPrinterStations200ResponseDataInner>())
@@ -299,6 +466,9 @@ Serializers _$serializers = (Serializers().toBuilder()
           const FullType(
               BuiltList, const [const FullType(PrintBlockOneOf4PartiesInner)]),
           () => ListBuilder<PrintBlockOneOf4PartiesInner>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(PrintJob)]),
+          () => ListBuilder<PrintJob>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(PrintJob)]),
           () => ListBuilder<PrintJob>())
@@ -329,8 +499,14 @@ Serializers _$serializers = (Serializers().toBuilder()
               BuiltList, const [const FullType(RecipeOwnerVersionsInner)]),
           () => ListBuilder<RecipeOwnerVersionsInner>())
       ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(StationRoute)]),
+          () => ListBuilder<StationRoute>())
+      ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(StockAlert)]),
           () => ListBuilder<StockAlert>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
           () => ListBuilder<String>())
@@ -398,7 +574,16 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..addBuilderFactory(
           const FullType(
               BuiltMap, const [const FullType(String), const FullType(int)]),
-          () => MapBuilder<String, int>()))
+          () => MapBuilder<String, int>())
+      ..addBuilderFactory(
+          const FullType(BuiltMap, const [
+            const FullType(String),
+            const FullType.nullable(JsonObject)
+          ]),
+          () => MapBuilder<String, JsonObject?>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(KitchenTicketItem)]),
+          () => ListBuilder<KitchenTicketItem>()))
     .build();
 
 // ignore_for_file: deprecated_member_use_from_same_package,type=lint

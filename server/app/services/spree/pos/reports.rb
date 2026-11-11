@@ -6,10 +6,10 @@ module Spree
     # by the order's completed time, returns by when goods came back, receipts
     # by when money actually arrived (booked time shown separately), the
     # cashbook by shift, receivables as of today from the ledger, closures by
-    # close time; recipe usage and menu margin by the sale's business date.
-    # Dates are days in the branch's timezone.
+    # close time; recipe usage, menu margin and delivery platforms by the
+    # sale's business date. Dates are days in the branch's timezone.
     module Reports
-      TYPES = %w[sales receipts cashbook receivables closures ingredient_usage menu_margin].freeze
+      TYPES = %w[sales receipts cashbook receivables closures ingredient_usage menu_margin platforms].freeze
 
       def self.klass(type)
         case type.to_s
@@ -20,6 +20,7 @@ module Spree
         when 'closures' then Closures
         when 'ingredient_usage' then IngredientUsage
         when 'menu_margin' then MenuMargin
+        when 'platforms' then Platforms
         else raise ActiveRecord::RecordNotFound
         end
       end

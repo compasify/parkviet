@@ -15,6 +15,8 @@ module Spree
       belongs_to :store, class_name: 'Spree::Store'
       belongs_to :stock_location, class_name: 'Spree::StockLocation'
       belongs_to :receiving_stock_location, class_name: 'Spree::StockLocation', optional: true
+      # Where cup labels print (CupLabels::Issue); size and fields in `cup_label_settings`.
+      belongs_to :cup_label_printer, class_name: 'Spree::Pos::Printer', optional: true
       has_many :registers, class_name: 'Spree::Pos::Register', dependent: :restrict_with_error
       has_many :memberships, class_name: 'Spree::Pos::StaffMembership', dependent: :restrict_with_error
 
@@ -42,6 +44,9 @@ module Spree
       validates :timezone, format: { with: /\A[A-Za-z0-9_+\-\/]{1,64}\z/ }
       validates :business_day_cutoff, presence: true
       validates :staff_session_idle_minutes, numericality: { only_integer: true, in: 5..240 }
+      # When orders reach the kitchen: as the sale completes, or when the
+      # cashier sends them (Kitchen::Send).
+      validates :kitchen_send_trigger, inclusion: { in: %w[on_complete manual] }
       validate :locations_belong_to_store
       validate :stock_location_fixed_for_open_drafts, on: :update
 
@@ -72,7 +77,8 @@ module Spree
           lot_selection: lot_selection, adjustment_approval_threshold: adjustment_approval_threshold,
           profile_key: profile_key, profile_version: profile_version,
           business_day_cutoff: cutoff_label,
-          staff_session_idle_minutes: staff_session_idle_minutes
+          staff_session_idle_minutes: staff_session_idle_minutes,
+          kitchen_send_trigger: kitchen_send_trigger
         }
       end
 

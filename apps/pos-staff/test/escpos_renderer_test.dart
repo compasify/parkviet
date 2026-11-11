@@ -80,6 +80,7 @@ const escInit = [0x1b, 0x40];
 const gsCut = [0x1d, 0x56];
 const gsQrStore = [0x1d, 0x28, 0x6b];
 const gsRaster = [0x1d, 0x76, 0x30];
+const gsReverseOn = [0x1d, 0x42, 0x01];
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -113,6 +114,14 @@ void main() {
         .toList();
     final bytes = await EscPosRenderer(profile: renderer.escPos.profile).render(commands, escpos());
     expect(bytes.where((byte) => byte > 0x7f), isEmpty);
+  });
+
+  test('prints an inverted line in reverse and only that line', () async {
+    final escPos = EscPosRenderer(profile: renderer.escPos.profile);
+    final inverted = await escPos.render(const [TextCommand('Ghi chu', invert: true)], escpos());
+    final plain = await escPos.render(const [TextCommand('Ghi chu')], escpos());
+    expect(containsSequence(inverted, gsReverseOn), isTrue);
+    expect(containsSequence(plain, gsReverseOn), isFalse);
   });
 
   test('leaves the cut out for a printer without a cutter', () async {

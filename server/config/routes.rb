@@ -172,7 +172,7 @@ Rails.application.routes.draw do
             get 'shift_closures/open', to: 'shifts/closures#open'
             get 'cash_reconciliations/candidates', to: 'cash_reconciliations#candidates'
             resources :cash_reconciliations, only: [:index, :create]
-            get 'reports/:report', to: 'reports#show', as: :report, constraints: { report: /sales|receipts|cashbook|receivables|closures|ingredient_usage|menu_margin/ }
+            get 'reports/:report', to: 'reports#show', as: :report, constraints: { report: /sales|receipts|cashbook|receivables|closures|ingredient_usage|menu_margin|platforms/ }
             resources :exports, only: [:index, :show, :create] do
               member do
                 post :download_link
@@ -206,6 +206,37 @@ Rails.application.routes.draw do
             put 'recipes', to: 'recipes#update'
             get 'stock_alerts', to: 'stock_alerts#index'
             put 'stock_alerts', to: 'stock_alerts#update'
+            # Kitchen and bar: a branch's stations, routes and send trigger,
+            # and the board people work from.
+            resources :kitchen_stations, only: [:index, :create, :update, :destroy]
+            resources :station_routes, only: [:index, :create, :update, :destroy]
+            get 'kitchen_settings', to: 'kitchen_settings#show'
+            put 'kitchen_settings', to: 'kitchen_settings#update'
+            get 'kitchen/board', to: 'kitchen/board#show'
+            post 'kitchen/items/:id/start', to: 'kitchen/items#start'
+            post 'kitchen/items/:id/ready', to: 'kitchen/items#ready'
+            post 'kitchen/items/:id/serve', to: 'kitchen/items#serve'
+            post 'kitchen/items/:id/recall', to: 'kitchen/items#recall'
+            post 'kitchen/tickets/:id/bump', to: 'kitchen/tickets#bump'
+            # Call numbers waiting at the counter, and handing an order over.
+            get 'kitchen/orders', to: 'kitchen/orders#index'
+            post 'kitchen/orders/:workspace_id/serve', to: 'kitchen/orders#serve'
+            # Cup labels: a branch's printer, size and fields, and a test label.
+            get 'cup_label_settings', to: 'cup_label_settings#show'
+            put 'cup_label_settings', to: 'cup_label_settings#update'
+            post 'cup_label_settings/test', to: 'cup_label_settings#test'
+            # Delivery platform orders typed in at the counter, and the
+            # branch's platforms and commission rates.
+            post 'platform_orders/settle', to: 'platform_orders#settle'
+            resources :platform_orders, only: [:index, :create] do
+              member do
+                post :ready
+                post :complete
+                post :cancel
+              end
+            end
+            get 'platform_settings', to: 'platform_settings#show'
+            put 'platform_settings', to: 'platform_settings#update'
             # E-invoices of completed orders and the store's provider settings.
             get 'einvoices/summary', to: 'einvoices#summary'
             post 'einvoices/retry', to: 'einvoices#retry_issue'
@@ -239,6 +270,7 @@ Rails.application.routes.draw do
               member do
                 post :pin
                 post :clear
+                post :mode
                 post :revoke
                 post :pairing_code
               end
@@ -301,6 +333,10 @@ Rails.application.routes.draw do
               post 'delivery/clear', to: 'workspaces/deliveries#clear'
               post 'order_source', to: 'workspaces/order_sources#assign'
               patch 'service_mode', to: 'workspaces/service_modes#update'
+              post 'kitchen_sends', to: 'workspaces/kitchen_sends#create'
+              get 'kitchen_tickets', to: 'workspaces/kitchen_tickets#index'
+              post 'guest_name', to: 'workspaces/guest_names#update'
+              post 'cup_labels', to: 'workspaces/cup_labels#create'
               member do
                 post 'discount/clear', to: 'workspaces/discounts#clear'
                 post :park
@@ -338,6 +374,18 @@ Rails.application.routes.draw do
   delete 'api/v3/pos_device/staff_sessions', to: 'spree/pos/device_api/staff_sessions#destroy', defaults: { format: 'json' }
   post 'api/v3/pos_device/print_jobs/claim', to: 'spree/pos/device_api/print_jobs#claim', defaults: { format: 'json' }
   post 'api/v3/pos_device/print_jobs/:id/report', to: 'spree/pos/device_api/print_jobs#report', defaults: { format: 'json' }
+  scope 'api/v3/pos_device/kitchen', controller: 'spree/pos/device_api/kitchen', defaults: { format: 'json' } do
+    get 'stations', action: :stations
+    put 'station', action: :select_station
+    get 'board', action: :board
+    get 'menu_items', action: :menu_items
+    post 'items/:id/start', action: :start
+    post 'items/:id/ready', action: :ready
+    post 'items/:id/serve', action: :serve
+    post 'items/:id/recall', action: :recall
+    post 'tickets/:id/bump', action: :bump
+    post 'orders/:workspace_id/serve', action: :serve_order
+  end
 
   # The counter app and POS administration built into the production image,
   # same origin as the API. Declared before the Spree engine mount so no

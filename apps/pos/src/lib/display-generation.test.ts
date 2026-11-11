@@ -189,3 +189,24 @@ describe('pinning the next customer', () => {
     expect(pinDecision(null, 'ws_a')).toEqual({ allowed: false, reason: 'inactive' });
   });
 });
+
+describe('call board state', () => {
+  const board = (overrides: Partial<DisplayState> = {}) =>
+    state({
+      state: 'call_board',
+      order: null,
+      payment: null,
+      preparing: [{ number: 3 }],
+      ready: [{ number: 1, guest_name: 'Lan', ready_at: '2026-11-11T10:05:00.000+07:00' }],
+      ...overrides,
+    });
+
+  it('accepts the call numbers and never an order or a payment', () => {
+    expect(readDisplayState(board())?.ready?.[0]?.guest_name).toBe('Lan');
+    expect(readDisplayState(board({ preparing: [], ready: [] }))).not.toBeNull();
+    expect(readDisplayState(board({ order: state().order }))).toBeNull();
+    expect(readDisplayState(board({ payment: state().payment }))).toBeNull();
+    expect(readDisplayState({ ...board(), ready: undefined })).toBeNull();
+    expect(readDisplayState({ ...board(), preparing: [{ number: '3' }] })).toBeNull();
+  });
+});

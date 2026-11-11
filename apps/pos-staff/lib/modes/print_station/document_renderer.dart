@@ -12,6 +12,8 @@ class DocumentRenderer {
 
   Future<List<int>> render(Map<String, Object?> document, PrinterProfile printer) async {
     final commands = documentCommands(document, printer);
-    return printer.isTspl ? tspl.render(commands, printer) : escPos.render(commands, printer);
+    return printer.isTspl
+        ? tspl.render(commands, printer, label: documentLabel(document))
+        : escPos.render(commands, printer);
   }
 }

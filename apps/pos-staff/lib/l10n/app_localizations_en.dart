@@ -312,4 +312,146 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get stationForegroundText => 'Receiving print jobs';
+
+  @override
+  String get kdsTabPriority => 'Priority';
+
+  @override
+  String get kdsTabByItem => 'By item';
+
+  @override
+  String get kdsTabByOrder => 'By table / number';
+
+  @override
+  String get kdsDone => 'Done (last 30 minutes)';
+
+  @override
+  String get kdsNothingOpen => 'Nothing to make.';
+
+  @override
+  String get kdsNothingDone => 'No ticket finished yet.';
+
+  @override
+  String get kdsStart => 'Start';
+
+  @override
+  String get kdsReady => 'Ready';
+
+  @override
+  String get kdsServe => 'Served';
+
+  @override
+  String get kdsRecall => 'Recall';
+
+  @override
+  String get kdsBump => 'Bump ticket';
+
+  @override
+  String get kdsServeOrder => 'Handed over';
+
+  @override
+  String kdsGuest(String name) {
+    return 'Guest: $name';
+  }
+
+  @override
+  String get kdsPlatformGrabfood => 'GRABFOOD';
+
+  @override
+  String get kdsPlatformShopeefood => 'SHOPEEFOOD';
+
+  @override
+  String kdsPickupCode(String code) {
+    return 'Pickup: $code';
+  }
+
+  @override
+  String kdsTicketNumber(int number) {
+    return 'Ticket #$number';
+  }
+
+  @override
+  String kdsOrder(String id) {
+    return 'Order $id';
+  }
+
+  @override
+  String kdsTickets(String numbers) {
+    return 'Tickets $numbers';
+  }
+
+  @override
+  String kdsNote(String note) {
+    return 'Note: $note';
+  }
+
+  @override
+  String kdsOffline(String time) {
+    return 'Offline · last update $time';
+  }
+
+  @override
+  String get kdsOfflineNever => 'Offline · board not loaded yet';
+
+  @override
+  String kdsActionFailed(String message) {
+    return 'Could not change the item: $message';
+  }
+
+  @override
+  String get kdsStationPick => 'Which station does this screen show?';
+
+  @override
+  String get kdsAllStations => 'All stations';
+
+  @override
+  String get kdsChangeStation => 'Change station';
+
+  @override
+  String get kdsNoStations =>
+      'This branch has no kitchen station yet. Add one in the admin dashboard, Kitchen & bar.';
+
+  @override
+  String get kdsSoldOut => 'Sold out';
+
+  @override
+  String get kdsSoldOutTitle => 'Sold out today';
+
+  @override
+  String get kdsSoldOutWho => 'Who is marking it?';
+
+  @override
+  String kdsPinFor(String name) {
+    return 'PIN for $name';
+  }
+
+  @override
+  String get kdsConfirm => 'Confirm';
+
+  @override
+  String get kdsStatusNew => 'New';
+
+  @override
+  String get kdsStatusPreparing => 'Preparing';
+
+  @override
+  String get kdsStatusReady => 'Ready';
+
+  @override
+  String get kdsStatusServed => 'Served';
+
+  @override
+  String get kdsStatusVoided => 'Voided';
+
+  @override
+  String get kdsModeCounter => 'Counter';
+
+  @override
+  String get kdsModeDineIn => 'Dine in';
+
+  @override
+  String get kdsModeTakeaway => 'Takeaway';
+
+  @override
+  String get kdsModeDelivery => 'Delivery';
 }

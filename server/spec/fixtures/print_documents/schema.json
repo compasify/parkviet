@@ -144,6 +144,23 @@
       },
       "copies": {
         "type": "integer"
+      },
+      "label": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "width_mm",
+          "height_mm"
+        ],
+        "description": "Label stock a label printer feeds (cup labels); absent for a roll.",
+        "properties": {
+          "width_mm": {
+            "type": "integer"
+          },
+          "height_mm": {
+            "type": "integer"
+          }
+        }
       }
     }
   },
@@ -227,6 +244,10 @@
               "m",
               "l"
             ]
+          },
+          "invert": {
+            "type": "boolean",
+            "description": "White on black (a kitchen note). Absent means false."
           }
         }
       },

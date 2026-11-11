@@ -23,6 +23,10 @@ module Spree
           run(store, staff, key, session, payload, expected_generation) do
             # Clearing stays open when the display is switched off.
             FeaturePolicy.require!(session.branch, :customer_display)
+            if session.mode == 'call_board'
+              raise Conflict.new('This display shows call numbers.', reason: 'display_call_board')
+            end
+
             workspace = Workspace.locate(Workspace.for_store(store).where(shift_id: session.shift_id), workspace_id)
             raise ActiveRecord::RecordNotFound if workspace.nil?
             raise Conflict.new('Only an open order can be shown to the customer.', reason: 'display_order_closed') unless
@@ -47,6 +51,27 @@ module Spree
                       'expected_generation' => expected_generation.to_s }
           run(store, staff, key, session, payload, expected_generation) do
             session.update!(generation: session.generation + 1, pinned_workspace: nil, pinned_tender_attempt: nil, pinned_at: nil)
+            session.to_pos
+          end
+        end
+
+        # Switches the screen between one pinned order (`order`) and the
+        # branch's call numbers (`call_board`, needs `fnb.order_number`).
+        # Either way the pin is dropped and a new generation starts, so the
+        # screen never keeps an order from before the switch.
+        def self.set_mode(store:, staff:, key:, session_id:, expected_generation:, mode:)
+          session = Guard.session!(store, staff, session_id)
+          value = mode.to_s
+          payload = { 'command' => 'display.mode', 'session_id' => session.prefixed_id, 'mode' => value,
+                      'expected_generation' => expected_generation.to_s }
+          run(store, staff, key, session, payload, expected_generation) do
+            raise Conflict.new('The display mode is invalid.', reason: 'display_mode_invalid') unless DisplaySession::MODES.include?(value)
+
+            if session.mode != value
+              ModulePolicy.require!(session.branch, OrderNumbers::MODULE) if value == 'call_board'
+              session.update!(mode: value, generation: session.generation + 1, pinned_workspace: nil, pinned_tender_attempt: nil,
+                              pinned_at: nil)
+            end
             session.to_pos
           end
         end

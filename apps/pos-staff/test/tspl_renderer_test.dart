@@ -40,6 +40,24 @@ void main() {
     expect(program, contains('TEXT 180,16,"2",0,1,1,"AB"'));
   });
 
+  test('prints a cup label on the label size the document names', () {
+    const document = {
+      'page': {'paper': '58mm', 'label': {'width_mm': 40, 'height_mm': 30}},
+    };
+    final size = documentLabel(document);
+    expect(size, (widthMm: 40, heightMm: 30));
+    expect(documentLabel(const {'page': {'paper': '58mm'}}), isNull);
+
+    final program = ascii.decode(const TsplRenderer().render(const [
+      TextCommand('So 1 · 1/2', align: PrintAlign.center, large: true),
+      TextCommand('AB', align: PrintAlign.center),
+    ], label, label: size));
+    final lines = program.split('\r\n');
+    expect(lines.first, 'SIZE 40 mm,30 mm');
+    // Centred on the 320 dots of a 40 mm label, not the printer's 384.
+    expect(program, contains('TEXT 148,64,"2",0,1,1,"AB"'));
+  });
+
   test('skips an empty barcode', () {
     final program = ascii.decode(const TsplRenderer().render(const [BarcodeCommand('', PrintAlign.left)], label));
     expect(program, isNot(contains('BARCODE')));

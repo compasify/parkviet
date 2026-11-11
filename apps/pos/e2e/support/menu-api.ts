@@ -85,7 +85,7 @@ export function menuBody(menu: MenuWorld) {
     ],
     items: menu.items.map((item, position) => ({
       id: item.id, product_id: `p_${item.variantId}`, name: item.name, kind: 'single', menu_category_id: item.categoryId,
-      kitchen_category: null, cup_label: null, show_components_on_kds: false, position, active: true, tax_category_id: null,
+      kitchen_category: null, cup_label: false, show_components_on_kds: false, position, active: true, tax_category_id: null,
       modifier_group_ids: item.groupIds, components: [], image_url: null, sold_out: menu.soldOut.has(item.id),
       variants: [{
         id: item.variantId, name: null, sku: item.id.toUpperCase(), barcode: null,

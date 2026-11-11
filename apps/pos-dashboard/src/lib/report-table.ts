@@ -63,6 +63,17 @@ export const REPORT_COLUMNS: Record<ReportType, string[]> = {
     'cost_missing',
   ],
   menu_margin: ['menu_item', 'quantity', 'revenue', 'cost', 'margin', 'margin_rate', 'costed'],
+  platforms: [
+    'business_date',
+    'platform',
+    'orders',
+    'gross',
+    'commission',
+    'net',
+    'unsettled',
+    'commission_estimated',
+    'commission_actual',
+  ],
 }
 
 export const RETURN_COLUMNS = [
@@ -95,6 +106,12 @@ export const MONEY_COLUMNS = new Set([
   'cost',
   'revenue',
   'margin',
+  'gross',
+  'commission',
+  'net',
+  'unsettled',
+  'commission_estimated',
+  'commission_actual',
 ])
 
 // Percent figures (one decimal) of rows and summaries.
@@ -120,6 +137,7 @@ export const CODE_COLUMNS: Record<string, string> = {
   order_source: 'orderSource_',
   cost_missing: 'reportYesNo_',
   costed: 'reportYesNo_',
+  platform: 'platform_',
 }
 
 export function reportColumns(type: ReportType, section?: string): string[] {

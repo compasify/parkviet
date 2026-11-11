@@ -22,6 +22,9 @@ module Spree
             sale_line = items.send(:sale_line!, workspace, sale_line_id)
             raise Conflict.new('Only a menu line has options.', reason: 'modifier_unknown') unless sale_line.kind == SaleLineKinds::Menu::KIND
 
+            # The kitchen is already making it with these options.
+            items.kitchen_sent!(workspace, sale_line, 0)
+
             item = MenuItem.for_variant(workspace.store, sale_line.variant)
             raise Conflict.new('This item is not on the menu.', reason: 'modifier_unknown') if item.nil?
 

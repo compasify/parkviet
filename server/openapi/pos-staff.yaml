@@ -527,6 +527,30 @@ paths:
                       $ref: '#/components/schemas/MenuMarginRow'
                   meta:
                     type: object
+  /api/v3/admin/pos/reports/platforms:
+    get:
+      operationId: posReportPlatforms
+      description: >
+        Completed delivery platform orders by business date and platform:
+        gross, commission, what the platform pays (net) and the part not paid
+        yet, with estimated and settled commission apart.
+      parameters:
+        - $ref: '#/components/parameters/ReportBranch'
+        - $ref: '#/components/parameters/ReportFrom'
+        - $ref: '#/components/parameters/ReportTo'
+        - name: platform
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [grabfood, shopeefood]
+      responses:
+        '200':
+          description: One page of rows
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlatformReportRows'
   /api/v3/admin/pos/einvoice_settings:
     get:
       operationId: posEinvoiceSettings
@@ -1503,6 +1527,957 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/kitchen_stations:
+    get:
+      operationId: posKitchenStations
+      description: The kitchen and bar stations of a branch.
+      parameters:
+        - $ref: '#/components/parameters/ReportBranch'
+      responses:
+        '200':
+          description: Stations by position
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KitchenStationList'
+    post:
+      operationId: posKitchenStationCreate
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+      description: Adds a station. Needs `pos.kitchen.manage` and `fnb.kitchen` on at the branch.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/KitchenStationInput'
+                - type: object
+                  required: [branch_id, name]
+                  properties:
+                    branch_id:
+                      type: string
+      responses:
+        '201':
+          description: The station
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KitchenStationResult'
+        '409':
+          description: Refused; `error.details.reason` says why
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/kitchen_stations/{id}:
+    patch:
+      operationId: posKitchenStationUpdate
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/Id'
+      description: Changes a station. Naming a default clears the previous default of the branch.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KitchenStationInput'
+      responses:
+        '200':
+          description: The station
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KitchenStationResult'
+    delete:
+      operationId: posKitchenStationDestroy
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/Id'
+      description: Removes a station without tickets; one with tickets answers `kitchen_station_in_use` (switch it off instead).
+      responses:
+        '200':
+          description: Removed
+        '409':
+          description: Refused; `error.details.reason` says why
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/station_routes:
+    get:
+      operationId: posStationRoutes
+      description: Which station makes what at a branch.
+      parameters:
+        - $ref: '#/components/parameters/ReportBranch'
+      responses:
+        '200':
+          description: Routes
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/StationRoute'
+    post:
+      operationId: posStationRouteCreate
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+      description: >
+        Sends a product, or every menu item of a kitchen category, to a station,
+        for one service mode or (without one) every mode. One of `product_id` and
+        `kitchen_category`. A second route for the same target and mode answers
+        `station_route_taken`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/StationRouteInput'
+                - type: object
+                  required: [branch_id, kitchen_station_id]
+                  properties:
+                    branch_id:
+                      type: string
+      responses:
+        '201':
+          description: The route
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/StationRoute'
+        '409':
+          description: Refused; `error.details.reason` says why
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/station_routes/{id}:
+    patch:
+      operationId: posStationRouteUpdate
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StationRouteInput'
+      responses:
+        '200':
+          description: The route
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/StationRoute'
+    delete:
+      operationId: posStationRouteDestroy
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Removed
+  /api/v3/admin/pos/kitchen_settings:
+    get:
+      operationId: posKitchenSettings
+      parameters:
+        - $ref: '#/components/parameters/ReportBranch'
+      responses:
+        '200':
+          description: When the branch sends orders to the kitchen
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/KitchenSettings'
+    put:
+      operationId: posKitchenSettingsUpdate
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [branch_id, kitchen_send_trigger]
+              properties:
+                branch_id:
+                  type: string
+                kitchen_send_trigger:
+                  type: string
+                  enum: [on_complete, manual]
+      responses:
+        '200':
+          description: The settings
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/KitchenSettings'
+  /api/v3/admin/pos/kitchen/board:
+    get:
+      operationId: posKitchenBoard
+      description: >
+        Open tickets of a station (oldest first) and those finished in the last
+        30 minutes. Without `station_id`, every station of the branch. Needs
+        `pos.kitchen.operate`; a kitchen screen uses /pos_device/kitchen/board.
+      parameters:
+        - $ref: '#/components/parameters/ReportBranch'
+        - name: station_id
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The board
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KitchenBoardResult'
+  /api/v3/admin/pos/kitchen/items/{id}/start:
+    post:
+      operationId: posKitchenItemStart
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          $ref: '#/components/responses/KitchenTicketChanged'
+        '409':
+          $ref: '#/components/responses/KitchenRefused'
+  /api/v3/admin/pos/kitchen/items/{id}/ready:
+    post:
+      operationId: posKitchenItemReady
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          $ref: '#/components/responses/KitchenTicketChanged'
+        '409':
+          $ref: '#/components/responses/KitchenRefused'
+  /api/v3/admin/pos/kitchen/items/{id}/serve:
+    post:
+      operationId: posKitchenItemServe
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          $ref: '#/components/responses/KitchenTicketChanged'
+        '409':
+          $ref: '#/components/responses/KitchenRefused'
+  /api/v3/admin/pos/kitchen/items/{id}/recall:
+    post:
+      operationId: posKitchenItemRecall
+      description: A ready item back to preparing, within 30 minutes of being ready.
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          $ref: '#/components/responses/KitchenTicketChanged'
+        '409':
+          $ref: '#/components/responses/KitchenRefused'
+  /api/v3/admin/pos/kitchen/tickets/{id}/bump:
+    post:
+      operationId: posKitchenTicketBump
+      description: Every new or preparing item of the ticket becomes ready.
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          $ref: '#/components/responses/KitchenTicketChanged'
+  /api/v3/admin/pos/kitchen/orders:
+    get:
+      operationId: posKitchenOrders
+      description: >
+        The counter's pickup queue: call numbers of today's business date still
+        being made, and those ready to hand over (newest first). Needs
+        `pos.kitchen.operate` or the cashier's `pos.payment.collect`.
+      parameters:
+        - $ref: '#/components/parameters/ReportBranch'
+      responses:
+        '200':
+          description: The queue
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CallBoard'
+  /api/v3/admin/pos/kitchen/orders/{workspace_id}/serve:
+    post:
+      operationId: posKitchenOrderServe
+      description: >
+        "Handed over": every ready item of the order becomes served and its
+        call number leaves the board. Repeating it changes nothing.
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+      responses:
+        '200':
+          $ref: '#/components/responses/KitchenOrderServed'
+  /api/v3/admin/pos/cup_label_settings:
+    get:
+      operationId: posCupLabelSettings
+      parameters:
+        - $ref: '#/components/parameters/ReportBranch'
+      responses:
+        '200':
+          description: The branch's cup label setup
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CupLabelSettings'
+    put:
+      operationId: posCupLabelSettingsUpdate
+      description: Fields left out keep their value; a blank `printer_id` removes the printer.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [branch_id]
+              properties:
+                branch_id:
+                  type: string
+                printer_id:
+                  type: [string, 'null']
+                size:
+                  type: string
+                  enum: ['40x30', '50x30', '58x40']
+                fields:
+                  type: array
+                  items:
+                    type: string
+                    enum: [call_number, options, note, guest_name, time, store_name]
+                pickup_minutes:
+                  type: integer
+                  minimum: 1
+                  maximum: 120
+      responses:
+        '200':
+          description: The settings
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CupLabelSettings'
+        '409':
+          description: Refused; `error.details.reason` is `cup_label_settings_invalid` or `printer_not_queued`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/cup_label_settings/test:
+    post:
+      operationId: posCupLabelTest
+      description: A sample label on the branch's cup label printer.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [branch_id]
+              properties:
+                branch_id:
+                  type: string
+      responses:
+        '201':
+          description: The queued job
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PrintJob'
+        '409':
+          description: Refused; `error.details.reason` is `cup_label_printer_missing` or a printer reason
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/platform_orders:
+    get:
+      operationId: posPlatformOrders
+      description: >
+        Delivery platform orders of a branch. `open` (the default) lists
+        accepted and ready orders oldest first for the counter; the others
+        list newest first. Dates are the sale's business date, both ends
+        included.
+      parameters:
+        - $ref: '#/components/parameters/ReportBranch'
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [open, completed, canceled, unsettled]
+        - name: platform
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [grabfood, shopeefood]
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: One page of orders
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlatformOrderList'
+        '422':
+          description: An unknown filter value
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      operationId: posPlatformOrderEnter
+      description: >
+        Enters a platform order read off the platform's tablet: a delivery
+        sale on the cashier's open shift with the platform as its order
+        source, menu lines only, each at the platform's price when given
+        (audited as a price override with the reason `platform_price`). It
+        gets its call number and goes to the kitchen at once. Needs
+        `fnb.delivery_platforms` and the platform turned on at the branch.
+        One order per platform code at a branch.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlatformOrderInput'
+      responses:
+        '201':
+          description: The order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlatformOrderResult'
+        '409':
+          description: >
+            Refused; `error.details.reason` is `platform_disabled`,
+            `platform_order_duplicate` (with `platform_order_id`),
+            `platform_item_not_menu`, `platform_price_invalid`,
+            `platform_order_ref_invalid`, `platform_order_empty`,
+            `module_disabled` or a workspace reason
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/platform_orders/{id}/ready:
+    post:
+      operationId: posPlatformOrderReady
+      description: >
+        Marks the order ready for the driver by hand. The kitchen marks it
+        ready by itself when its last item is ready; a second tap changes
+        nothing.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: The order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlatformOrderResult'
+        '409':
+          description: Refused; `error.details.reason` is `platform_order_completed` or `platform_order_canceled`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/platform_orders/{id}/complete:
+    post:
+      operationId: posPlatformOrderComplete
+      description: >
+        The driver took the order. The sale is paid with one
+        `platform_receivable` tender for its total (received funds with the
+        platform order as evidence, no drawer movement) and completed, which
+        issues the receipt. Shift owner with `pos.payment.collect`.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlatformOrderEditor'
+      responses:
+        '200':
+          description: The order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlatformOrderResult'
+        '409':
+          description: Refused; `error.details.reason` is `platform_order_completed`, `platform_order_canceled` or a tender reason
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/platform_orders/{id}/cancel:
+    post:
+      operationId: posPlatformOrderCancel
+      description: >
+        The platform canceled the order. Items the kitchen still has are
+        voided with the reason `platform_canceled`, which needs an approval
+        (`approval_id`) or a cashier with `pos.approve`; then the sale is
+        canceled.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlatformOrderCancelInput'
+      responses:
+        '200':
+          description: The order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlatformOrderResult'
+        '409':
+          description: >
+            Refused; `error.details.reason` is `approval_required`,
+            `platform_order_completed` or `platform_order_canceled`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/platform_orders/settle:
+    post:
+      operationId: posPlatformOrdersSettle
+      description: >
+        Records that the platform paid for completed orders, with the
+        commission it actually kept where it differs from the estimate. Only
+        the platform orders change; the sales and their receipts do not.
+        Store administration or `pos.discrepancy.resolve`.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlatformSettleInput'
+      responses:
+        '200':
+          description: The settled orders
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlatformOrderSettled'
+        '409':
+          description: >
+            Refused; `error.details.reason` is `platform_order_open`,
+            `platform_order_settled`, `platform_commission_invalid` or
+            `platform_settle_empty`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/platform_settings:
+    get:
+      operationId: posPlatformSettings
+      parameters:
+        - $ref: '#/components/parameters/ReportBranch'
+      responses:
+        '200':
+          description: Every platform of the branch, configured or not
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlatformSettingsResult'
+    put:
+      operationId: posPlatformSettingUpdate
+      description: >
+        Turns one platform on or off at the branch and sets the percent it
+        keeps. Entered orders keep the rate they were entered with. Turning
+        one on needs `fnb.delivery_platforms`. Audited as
+        `platform_setting.change`.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlatformSettingInput'
+      responses:
+        '200':
+          description: The platform's setting
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlatformSettingResult'
+        '409':
+          description: Refused; `error.details.reason` is `platform_invalid`, `platform_rate_invalid` or `module_disabled`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/workspaces/{workspace_id}/guest_name:
+    post:
+      operationId: posWorkspaceGuestName
+      description: >
+        The name called out with the call number. Same editor rules as the
+        order source; it moves no money, so it can change while a payment is
+        under way. Blank clears it. Needs `fnb.order_number` or `fnb.cup_label`.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/WorkspaceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [expected_revision, lease_generation, editor_id, guest_name]
+              properties:
+                expected_revision:
+                  type: integer
+                lease_generation:
+                  type: integer
+                editor_id:
+                  type: string
+                guest_name:
+                  type: [string, 'null']
+                  maxLength: 60
+      responses:
+        '200':
+          description: The workspace
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Workspace'
+        '409':
+          description: Refused; `error.details.reason` says why
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/workspaces/{workspace_id}/cup_labels:
+    post:
+      operationId: posWorkspaceCupLabelsReprint
+      description: >
+        Prints the cup labels of one line (`sale_line_id`), or of the whole
+        order, again: only cups that already had a label. Needs
+        `pos.payment.collect`; audited as `cup_label.reprint`.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/WorkspaceId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sale_line_id:
+                  type: string
+      responses:
+        '201':
+          description: The queued jobs, one per cup
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [jobs]
+                    properties:
+                      jobs:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/PrintJob'
+        '409':
+          description: >
+            Refused; `error.details.reason` is `cup_label_printer_missing`,
+            `cup_label_nothing`, `workspace_canceled` or a printer reason
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/workspaces/{workspace_id}/kitchen_sends:
+    post:
+      operationId: posKitchenSend
+      description: >
+        "Send to kitchen": one ticket per station for the part of every menu
+        line not sent yet. Same editor rules as other draft commands. Answers
+        the workspace, with the tickets of this send in `meta.tickets` (empty
+        when nothing was left to send).
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - name: workspace_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [expected_revision, lease_generation, editor_id]
+              properties:
+                expected_revision:
+                  type: integer
+                lease_generation:
+                  type: integer
+                editor_id:
+                  type: string
+      responses:
+        '201':
+          description: The workspace after the send
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Workspace'
+                  meta:
+                    type: object
+                    required: [tickets]
+                    properties:
+                      tickets:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/KitchenTicket'
+        '409':
+          description: Refused; `error.details.reason` says why
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/workspaces/{workspace_id}/kitchen_tickets:
+    get:
+      operationId: posWorkspaceKitchenTickets
+      description: What the kitchen was told about an order, send by send.
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Tickets by sequence
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/KitchenTicket'
+  /api/v3/pos_device/kitchen/stations:
+    get:
+      operationId: posDeviceKitchenStations
+      description: Active stations of the screen's branch. Device modes `kds` and `expo`.
+      responses:
+        '200':
+          description: Stations by position
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KitchenStationList'
+  /api/v3/pos_device/kitchen/station:
+    put:
+      operationId: posDeviceKitchenSelectStation
+      description: The station this screen shows; blank or absent `station_id` for every station.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                station_id:
+                  type: [string, 'null']
+      responses:
+        '200':
+          description: The device
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Device'
+  /api/v3/pos_device/kitchen/board:
+    get:
+      operationId: posDeviceKitchenBoard
+      description: >
+        The board of the screen's station (or `station_id`; empty for every
+        station). Poll it when the socket is down.
+      parameters:
+        - name: station_id
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The board
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KitchenBoardResult'
+  /api/v3/pos_device/kitchen/menu_items:
+    get:
+      operationId: posDeviceKitchenMenuItems
+      description: >
+        Menu items the station makes and whether each is sold out today. Marking
+        one sold out names a person: PUT /admin/pos/menu_availabilities with a
+        staff session on the device.
+      parameters:
+        - name: station_id
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Items
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/KitchenMenuItem'
+  /api/v3/pos_device/kitchen/items/{id}/start:
+    post:
+      operationId: posDeviceKitchenItemStart
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          $ref: '#/components/responses/KitchenTicketChanged'
+        '409':
+          $ref: '#/components/responses/KitchenRefused'
+  /api/v3/pos_device/kitchen/items/{id}/ready:
+    post:
+      operationId: posDeviceKitchenItemReady
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          $ref: '#/components/responses/KitchenTicketChanged'
+        '409':
+          $ref: '#/components/responses/KitchenRefused'
+  /api/v3/pos_device/kitchen/items/{id}/serve:
+    post:
+      operationId: posDeviceKitchenItemServe
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          $ref: '#/components/responses/KitchenTicketChanged'
+        '409':
+          $ref: '#/components/responses/KitchenRefused'
+  /api/v3/pos_device/kitchen/items/{id}/recall:
+    post:
+      operationId: posDeviceKitchenItemRecall
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          $ref: '#/components/responses/KitchenTicketChanged'
+        '409':
+          $ref: '#/components/responses/KitchenRefused'
+  /api/v3/pos_device/kitchen/tickets/{id}/bump:
+    post:
+      operationId: posDeviceKitchenTicketBump
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          $ref: '#/components/responses/KitchenTicketChanged'
+  /api/v3/pos_device/kitchen/orders/{workspace_id}/serve:
+    post:
+      operationId: posDeviceKitchenOrderServe
+      description: >
+        "Handed over" from the finished tickets: every ready item of the order
+        becomes served and its call number leaves the board.
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+      responses:
+        '200':
+          $ref: '#/components/responses/KitchenOrderServed'
   /api/v3/admin/pos/system_status:
     get:
       operationId: posSystemStatus
@@ -1540,6 +2515,19 @@ components:
       required: true
       schema:
         type: string
+    WorkspaceId:
+      name: workspace_id
+      in: path
+      required: true
+      schema:
+        type: string
+    KitchenIdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        maxLength: 200
     ReportFrom:
       name: from
       in: query
@@ -1554,6 +2542,27 @@ components:
       schema:
         type: string
         format: date
+  responses:
+    KitchenTicketChanged:
+      description: The ticket after the change; repeating a change answers the same ticket
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/KitchenTicketResult'
+    KitchenOrderServed:
+      description: The tickets whose items were served; empty when nothing was ready
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/KitchenOrderServedResult'
+    KitchenRefused:
+      description: >
+        Refused; `error.details.reason` is `kitchen_status_invalid`,
+        `kitchen_action_invalid` or `kitchen_recall_expired`
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
   schemas:
     RealtimeEvent:
       type: object
@@ -1665,6 +2674,15 @@ components:
         business_date:
           type: string
           format: date
+        order_number:
+          type: [integer, 'null']
+          description: >
+            Call number (`fnb.order_number`), 1, 2, 3… per branch and business
+            date, given at the first kitchen send or at completion and kept.
+        guest_name:
+          type: [string, 'null']
+          maxLength: 60
+          description: The name the counter calls out with the call number.
         line_items:
           type: array
           items:
@@ -1721,6 +2739,9 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/LineComponent'
+        kitchen_sent_quantity:
+          type: string
+          description: How much of the line the kitchen has been told about. The line cannot go lower.
     LineModifier:
       type: object
       additionalProperties: false
@@ -2011,6 +3032,9 @@ components:
           type: string
         platform:
           type: string
+        kitchen_station_id:
+          type: [string, 'null']
+          description: The station a kitchen screen shows; null for every station.
         last_seen_at:
           type: [string, 'null']
     DevicePairing:
@@ -2872,6 +3896,16 @@ components:
           type: number
         copies:
           type: integer
+        label:
+          type: object
+          additionalProperties: false
+          required: [width_mm, height_mm]
+          description: Label stock a label printer feeds (cup labels); absent for a roll.
+          properties:
+            width_mm:
+              type: integer
+            height_mm:
+              type: integer
     PrintRow:
       type: object
       additionalProperties: false
@@ -2914,6 +3948,9 @@ components:
               type: boolean
             size:
               enum: [s, m, l]
+            invert:
+              type: boolean
+              description: White on black (a kitchen note). Absent means false.
         - type: object
           additionalProperties: false
           required: [kind, src, alt, widthPct, align, monochrome]
@@ -3065,6 +4102,660 @@ components:
                     type: array
                     items:
                       type: string
+    KitchenStation:
+      type: object
+      additionalProperties: false
+      required: [id, branch_id, name, kind, printer_id, printer_name, kds_enabled, is_default, warn_after_minutes, late_after_minutes, position, active]
+      properties:
+        id:
+          type: string
+        branch_id:
+          type: string
+        name:
+          type: string
+        kind:
+          type: string
+          enum: [prep, bar, expo]
+        printer_id:
+          type: [string, 'null']
+        printer_name:
+          type: [string, 'null']
+        kds_enabled:
+          type: boolean
+        is_default:
+          type: boolean
+          description: Where a menu item goes when no route names it.
+        warn_after_minutes:
+          type: integer
+        late_after_minutes:
+          type: integer
+        position:
+          type: integer
+        active:
+          type: boolean
+    KitchenStationInput:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 80
+        kind:
+          type: string
+          enum: [prep, bar, expo]
+        printer_id:
+          type: [string, 'null']
+        kds_enabled:
+          type: boolean
+        is_default:
+          type: boolean
+        warn_after_minutes:
+          type: integer
+          minimum: 1
+          maximum: 240
+        late_after_minutes:
+          type: integer
+          minimum: 1
+          maximum: 240
+        position:
+          type: integer
+          minimum: 0
+        active:
+          type: boolean
+    KitchenStationList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/KitchenStation'
+    KitchenStationResult:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/KitchenStation'
+    StationRoute:
+      type: object
+      additionalProperties: false
+      required: [id, branch_id, kitchen_station_id, product_id, product_name, kitchen_category, service_mode]
+      properties:
+        id:
+          type: string
+        branch_id:
+          type: string
+        kitchen_station_id:
+          type: string
+        product_id:
+          type: [string, 'null']
+        product_name:
+          type: [string, 'null']
+        kitchen_category:
+          type: [string, 'null']
+        service_mode:
+          type: [string, 'null']
+          description: Null for every service mode.
+    StationRouteInput:
+      type: object
+      properties:
+        kitchen_station_id:
+          type: string
+        product_id:
+          type: [string, 'null']
+        kitchen_category:
+          type: [string, 'null']
+        service_mode:
+          type: [string, 'null']
+    KitchenSettings:
+      type: object
+      additionalProperties: false
+      required: [branch_id, kitchen_send_trigger, module_enabled]
+      properties:
+        branch_id:
+          type: string
+        kitchen_send_trigger:
+          type: string
+          enum: [on_complete, manual]
+          description: >
+            `on_complete` sends what is left as the sale completes; `manual`
+            waits for "send to kitchen".
+        module_enabled:
+          type: boolean
+          description: Whether `fnb.kitchen` is on at the branch.
+    CallBoard:
+      type: object
+      additionalProperties: false
+      required: [preparing, ready]
+      description: >
+        Call numbers of the business day. A number is preparing while any item
+        is new or being made, and ready once every item is ready or served with
+        some still waiting; it leaves when served or `pickup_minutes` after it
+        became ready.
+      properties:
+        preparing:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [number, workspace_id]
+            properties:
+              number:
+                type: integer
+              workspace_id:
+                type: string
+        ready:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [number, workspace_id, guest_name, ready_at]
+            properties:
+              number:
+                type: integer
+              workspace_id:
+                type: string
+              guest_name:
+                type: [string, 'null']
+              ready_at:
+                type: string
+                format: date-time
+    CupLabelSettings:
+      type: object
+      additionalProperties: false
+      required: [branch_id, printer_id, size, fields, pickup_minutes, module_enabled, sizes, available_fields]
+      properties:
+        branch_id:
+          type: string
+        printer_id:
+          type: [string, 'null']
+        size:
+          type: string
+          enum: ['40x30', '50x30', '58x40']
+          description: Label size in millimetres, width x height.
+        fields:
+          type: array
+          description: Optional fields that print; the item and "n/N" always print.
+          items:
+            type: string
+            enum: [call_number, options, note, guest_name, time, store_name]
+        pickup_minutes:
+          type: integer
+          description: How long a ready call number stays on the call board.
+        module_enabled:
+          type: boolean
+          description: Whether `fnb.cup_label` is on at the branch.
+        sizes:
+          type: array
+          items:
+            type: string
+        available_fields:
+          type: array
+          items:
+            type: string
+    KitchenTicketItem:
+      type: object
+      additionalProperties: false
+      required: [id, sale_line_id, name, modifiers, components, note, quantity, status, started_at, ready_at, served_at, voided_at]
+      properties:
+        id:
+          type: string
+        sale_line_id:
+          type: string
+        name:
+          type: string
+          description: The item and its size, as sold.
+        modifiers:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+            required: [name, quantity]
+            properties:
+              name:
+                type: string
+              group_name:
+                type: [string, 'null']
+              quantity:
+                type: integer
+        components:
+          type: array
+          description: The parts of a combo, when the combo shows them on the kitchen screen.
+          items:
+            type: object
+            additionalProperties: true
+            required: [name, quantity]
+            properties:
+              name:
+                type: string
+              quantity:
+                type: string
+        note:
+          type: [string, 'null']
+        quantity:
+          type: string
+        status:
+          type: string
+          enum: [new, preparing, ready, served, voided]
+        started_at:
+          type: [string, 'null']
+          format: date-time
+        ready_at:
+          type: [string, 'null']
+          format: date-time
+        served_at:
+          type: [string, 'null']
+          format: date-time
+        voided_at:
+          type: [string, 'null']
+          format: date-time
+    KitchenTicket:
+      type: object
+      additionalProperties: false
+      description: What one send told one station. Written once; only item statuses move.
+      required: [id, workspace_id, branch_id, kitchen_station_id, station_name, station_kind, sequence, kind, service_mode, business_date, header, sent_at, done, done_at, items]
+      properties:
+        id:
+          type: string
+        workspace_id:
+          type: string
+        branch_id:
+          type: string
+        kitchen_station_id:
+          type: string
+        station_name:
+          type: string
+        station_kind:
+          type: string
+          enum: [prep, bar, expo]
+        sequence:
+          type: integer
+          description: 1, 2, 3 … within the order.
+        kind:
+          type: string
+          enum: [fire, void]
+        service_mode:
+          type: string
+        business_date:
+          type: string
+          format: date
+        header:
+          type: object
+          additionalProperties: true
+          description: >
+            Copied at the send - service mode, order source, customer name,
+            note, register, and for counter service the call number
+            (`order_number`) and the guest's name (`guest_name`). A delivery
+            platform's order (`order_source` grabfood or shopeefood) adds the
+            platform's order code (`platform_order_ref`) and the driver's
+            pickup code (`pickup_code`).
+        sent_at:
+          type: string
+          format: date-time
+        done:
+          type: boolean
+        done_at:
+          type: [string, 'null']
+          format: date-time
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/KitchenTicketItem'
+    KitchenTicketResult:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/KitchenTicket'
+    KitchenOrderServedResult:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [workspace_id, tickets]
+          properties:
+            workspace_id:
+              type: string
+            tickets:
+              type: array
+              items:
+                $ref: '#/components/schemas/KitchenTicket'
+    KitchenBoard:
+      type: object
+      additionalProperties: false
+      required: [branch_id, station, stations, server_now, open, done]
+      properties:
+        branch_id:
+          type: string
+        station:
+          oneOf:
+            - $ref: '#/components/schemas/KitchenStation'
+            - type: 'null'
+        stations:
+          type: array
+          items:
+            $ref: '#/components/schemas/KitchenStation'
+        server_now:
+          type: string
+          format: date-time
+          description: The database clock; screens run their timers from it.
+        open:
+          type: array
+          description: Tickets with an item still to make, oldest first.
+          items:
+            $ref: '#/components/schemas/KitchenTicket'
+        done:
+          type: array
+          description: Tickets finished in the last 30 minutes, newest first.
+          items:
+            $ref: '#/components/schemas/KitchenTicket'
+    KitchenBoardResult:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/KitchenBoard'
+    KitchenMenuItem:
+      type: object
+      additionalProperties: false
+      required: [id, name, kitchen_category, sold_out]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        kitchen_category:
+          type: [string, 'null']
+        sold_out:
+          type: boolean
+    PlatformOrderItem:
+      type: object
+      additionalProperties: false
+      required: [name, quantity, modifiers, note]
+      properties:
+        name:
+          type: string
+        quantity:
+          type: string
+        modifiers:
+          type: array
+          items:
+            type: string
+        note:
+          type: [string, 'null']
+    PlatformOrder:
+      type: object
+      additionalProperties: false
+      description: >
+        A delivery platform's order and what the platform owes for it. The
+        commission is the branch rate's estimate until the order is settled,
+        then the platform's figure; net is gross less commission.
+      required: [id, workspace_id, order_id, order_number, business_date, platform, platform_order_ref, pickup_code, status,
+                 gross_amount, commission_rate, commission_amount, net_amount, currency, entered_at, ready_at, completed_at,
+                 canceled_at, cancel_reason, settled_at, settlement_reference, items]
+      properties:
+        id:
+          type: string
+        workspace_id:
+          type: string
+        order_id:
+          type: string
+        order_number:
+          type: [integer, 'null']
+        business_date:
+          type: [string, 'null']
+          format: date
+        platform:
+          type: string
+          enum: [grabfood, shopeefood]
+        platform_order_ref:
+          type: string
+        pickup_code:
+          type: [string, 'null']
+        status:
+          type: string
+          enum: [accepted, ready, completed, canceled]
+        gross_amount:
+          type: string
+        commission_rate:
+          type: string
+          description: Percent the platform keeps, as entered with the order.
+        commission_amount:
+          type: string
+        net_amount:
+          type: string
+        currency:
+          type: string
+        entered_at:
+          type: [string, 'null']
+          format: date-time
+        ready_at:
+          type: [string, 'null']
+          format: date-time
+        completed_at:
+          type: [string, 'null']
+          format: date-time
+        canceled_at:
+          type: [string, 'null']
+          format: date-time
+        cancel_reason:
+          type: [string, 'null']
+        settled_at:
+          type: [string, 'null']
+          format: date-time
+        settlement_reference:
+          type: [string, 'null']
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlatformOrderItem'
+    PlatformOrderResult:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/PlatformOrder'
+    PlatformOrderList:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlatformOrder'
+        meta:
+          type: object
+          additionalProperties: true
+    PlatformOrderSettled:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlatformOrder'
+    PlatformOrderLineInput:
+      type: object
+      required: [variant_id, quantity]
+      properties:
+        variant_id:
+          type: string
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 100
+        platform_price:
+          type: [string, 'null']
+          description: The platform's price for one unit, options included. Absent keeps the menu price.
+        note:
+          type: [string, 'null']
+        modifiers:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModifierSelection'
+    PlatformOrderInput:
+      type: object
+      required: [editor_id, platform, platform_order_ref, lines]
+      properties:
+        editor_id:
+          type: string
+        register_id:
+          type: [string, 'null']
+        branch_id:
+          type: [string, 'null']
+          description: For a register-less branch.
+        platform:
+          type: string
+          enum: [grabfood, shopeefood]
+        platform_order_ref:
+          type: string
+          maxLength: 64
+        pickup_code:
+          type: [string, 'null']
+          maxLength: 32
+        note:
+          type: [string, 'null']
+          maxLength: 1000
+        lines:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/PlatformOrderLineInput'
+    PlatformOrderEditor:
+      type: object
+      required: [editor_id]
+      properties:
+        editor_id:
+          type: string
+    PlatformOrderCancelInput:
+      type: object
+      required: [editor_id]
+      properties:
+        editor_id:
+          type: string
+        reason:
+          type: [string, 'null']
+          maxLength: 200
+        approval_id:
+          type: [string, 'null']
+    PlatformSettleOrderInput:
+      type: object
+      required: [id]
+      properties:
+        id:
+          type: string
+        commission_amount:
+          type: [string, 'null']
+          description: What the platform actually kept. Absent keeps the estimate.
+    PlatformSettleInput:
+      type: object
+      required: [branch_id, orders]
+      properties:
+        branch_id:
+          type: string
+        reference:
+          type: [string, 'null']
+          maxLength: 120
+        orders:
+          type: array
+          minItems: 1
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/PlatformSettleOrderInput'
+    PlatformSetting:
+      type: object
+      additionalProperties: false
+      required: [platform, status, commission_rate, updated_at]
+      properties:
+        platform:
+          type: string
+          enum: [grabfood, shopeefood]
+        status:
+          type: string
+          enum: [active, disabled]
+        commission_rate:
+          type: string
+          description: Percent the platform keeps, 0 to 100.
+        updated_at:
+          type: [string, 'null']
+          format: date-time
+    PlatformSettings:
+      type: object
+      additionalProperties: false
+      required: [module_enabled, platforms]
+      properties:
+        module_enabled:
+          type: boolean
+          description: Whether `fnb.delivery_platforms` is on at the branch.
+        platforms:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlatformSetting'
+    PlatformSettingsResult:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/PlatformSettings'
+    PlatformSettingResult:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/PlatformSetting'
+    PlatformSettingInput:
+      type: object
+      required: [branch_id, platform, status, commission_rate]
+      properties:
+        branch_id:
+          type: string
+        platform:
+          type: string
+          enum: [grabfood, shopeefood]
+        status:
+          type: string
+          enum: [active, disabled]
+        commission_rate:
+          type: string
+    PlatformReportRow:
+      type: object
+      additionalProperties: false
+      required: [business_date, platform, orders, gross, commission, net, unsettled, commission_estimated, commission_actual]
+      properties:
+        business_date:
+          type: string
+          format: date
+        platform:
+          type: string
+          enum: [grabfood, shopeefood]
+        orders:
+          type: integer
+        gross:
+          type: string
+        commission:
+          type: string
+        net:
+          type: string
+        unsettled:
+          type: string
+          description: Net of the orders not settled yet.
+        commission_estimated:
+          type: string
+          description: Commission of unsettled orders, at the branch rate.
+        commission_actual:
+          type: string
+          description: Commission of settled orders, as the platform kept it.
+    PlatformReportRows:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlatformReportRow'
+        meta:
+          type: object
     SystemStatus:
       type: object
       additionalProperties: false

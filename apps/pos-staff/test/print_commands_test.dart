@@ -77,6 +77,27 @@ void main() {
     expect(printer(settings: {'char_width': 42}).columns, 42);
   });
 
+  test('wraps a cup label to the label width on a label printer', () {
+    const cup = <String, Object?>{
+      'page': {'paper': '58mm', 'label': {'width_mm': 40, 'height_mm': 30}},
+      'header': [
+        {'kind': 'text', 'lines': ['Trà sữa trân châu đường đen size lớn'], 'align': 'left'},
+      ],
+    };
+    const tspl = PrinterProfile(
+      id: 'posprn_2',
+      name: 'Tem',
+      connection: PrinterProfile.lan,
+      address: '10.0.0.6',
+      paper: '58mm',
+      commandLanguage: 'tspl',
+    );
+    final lines = documentCommands(cup, tspl).whereType<TextCommand>().map((command) => command.text).toList();
+    // 40 mm at 8 dots a millimetre is 320 dots: 26 characters of 12 dots.
+    expect(lines.take(2), ['Trà sữa trân châu đường', 'đen size lớn']);
+    expect(lines.every((line) => line.runes.length <= 26), isTrue);
+  });
+
   test('wraps by words and breaks words longer than the line', () {
     expect(wrapText('một hai ba', 7), ['một hai', 'ba']);
     expect(wrapText('abcdefgh', 3), ['abc', 'def', 'gh']);
@@ -123,6 +144,21 @@ void main() {
     final codes = commands.where((command) => command is QrCommand || command is BarcodeCommand).toList();
     expect(codes.map((code) => code is QrCommand ? code.value : (code as BarcodeCommand).value),
         ['QR&<', 'https://a.test/?a=1&b=2', 'R{1']);
+  });
+
+  test('prints an inverted text block white on black', () {
+    final note = documentCommands({
+      'header': [
+        {
+          'kind': 'text',
+          'lines': ['Ghi chú: Không hành'],
+          'bold': true,
+          'invert': true,
+        },
+      ],
+    }, printer());
+    expect(note.first, const TextCommand('Ghi chú: Không hành', bold: true, invert: true));
+    expect(commands.whereType<TextCommand>().where((line) => line.invert), isEmpty);
   });
 
   test('ignores a block kind it does not know', () {

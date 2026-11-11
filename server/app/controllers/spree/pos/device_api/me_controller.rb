@@ -10,7 +10,7 @@ module Spree
               device: @device.to_pos,
               branch: { id: @device.branch.prefixed_id, name: @device.branch.name, timezone: @device.branch.timezone },
               register_id: @device.register&.prefixed_id,
-              kitchen_station_id: @device.kitchen_station_id,
+              kitchen_station_id: @device.kitchen_station&.prefixed_id,
               staff: staff_payload,
               server_time: Time.current.iso8601
             }

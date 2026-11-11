@@ -20,7 +20,11 @@ module Spree
       has_many :cash_movements, class_name: 'Spree::Pos::CashMovement', foreign_key: :received_funds_id, dependent: :restrict_with_error
       has_one :collection, class_name: 'Spree::Pos::Collection', foreign_key: :received_funds_id, dependent: :restrict_with_error
 
-      validates :kind, inclusion: { in: %w[cash bank_manual] }
+      # `platform_receivable`: an order its customer paid on a delivery platform;
+      # the platform owes it (PlatformOrder) and it never enters a drawer.
+      KINDS = %w[cash bank_manual platform_receivable].freeze
+
+      validates :kind, inclusion: { in: KINDS }
       validates :status, inclusion: { in: %w[received attention] }
       validates :custody, inclusion: { in: %w[drawer held] }
       validates :currency, presence: true

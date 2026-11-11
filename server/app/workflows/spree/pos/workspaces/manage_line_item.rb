@@ -132,6 +132,7 @@ module Spree
                 raise Conflict, 'Unit configuration changed; remove and re-add this line.'
               end
               sale_qty, base_quantity, _kind = resolve_quantities(variant_unit, quantity, sale_quantity, sale_line.lot_code, sale_line.serial_codes)
+              kitchen_sent!(workspace, sale_line, sale_qty)
               if base_quantity > sale_line.base_quantity
                 SalesChannel.validate_order!(workspace)
                 sellable_variant!(branch: workspace.branch, variant: sale_line.variant)
@@ -152,6 +153,7 @@ module Spree
             execute(workspace:, staff:, key:, payload:) do
               validate_command!(workspace, staff, revision, lease_generation, editor_id)
               sale_line = sale_line!(workspace, sale_line_id)
+              kitchen_sent!(workspace, sale_line, 0)
               sale_id = sale_line.prefixed_id
               Inventory::AllocateTraceability.release_line!(sale_line)
               sale_line.line_item.destroy!
@@ -187,6 +189,16 @@ module Spree
 
           def check_note!(note)
             raise Conflict.new('The note is too long.', reason: 'note_too_long') if note.to_s.length > 200
+          end
+
+          # What the kitchen was told stays on the order: a line goes no lower
+          # than its sent quantity, and a sent line keeps its options. Taking
+          # back a sent item is a void (an approval), not an edit.
+          def kitchen_sent!(workspace, sale_line, sale_quantity)
+            return unless sale_line.kitchen_sent_quantity.positive? && sale_quantity < sale_line.kitchen_sent_quantity
+
+            raise Conflict.new('This item was already sent to the kitchen.', revision: workspace.revision, reason: 'kitchen_sent',
+                                                                            details: { kitchen_sent_quantity: sale_line.kitchen_sent_quantity.to_s('F') })
           end
 
           private

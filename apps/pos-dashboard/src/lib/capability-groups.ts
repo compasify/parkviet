@@ -38,7 +38,15 @@ const GROUPS: { key: string; capabilities: Capability[] }[] = [
   },
   { key: 'reports', capabilities: ['pos.report.read', 'pos.report.export'] },
   { key: 'stock', capabilities: ['pos.inventory.manage', 'pos.inventory.trace'] },
-  { key: 'menu', capabilities: ['pos.menu.manage', 'pos.menu.sold_out'] },
+  {
+    key: 'menu',
+    capabilities: [
+      'pos.menu.manage',
+      'pos.menu.sold_out',
+      'pos.kitchen.operate',
+      'pos.kitchen.manage',
+    ],
+  },
 ]
 const labels = new Map<string, string>(posCapabilities)
 export const capabilityLabel = (value: string) => labels.get(value) ?? 'adminUnknownPermission'

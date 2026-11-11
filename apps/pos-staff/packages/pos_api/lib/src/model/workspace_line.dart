@@ -27,6 +27,7 @@ part 'workspace_line.g.dart';
 /// * [note]
 /// * [modifiers]
 /// * [components]
+/// * [kitchenSentQuantity] - How much of the line the kitchen has been told about. The line cannot go lower.
 @BuiltValue()
 abstract class WorkspaceLine
     implements Built<WorkspaceLine, WorkspaceLineBuilder> {
@@ -66,6 +67,10 @@ abstract class WorkspaceLine
 
   @BuiltValueField(wireName: r'components')
   BuiltList<LineComponent>? get components;
+
+  /// How much of the line the kitchen has been told about. The line cannot go lower.
+  @BuiltValueField(wireName: r'kitchen_sent_quantity')
+  String? get kitchenSentQuantity;
 
   WorkspaceLine._();
 
@@ -162,6 +167,13 @@ class _$WorkspaceLineSerializer implements PrimitiveSerializer<WorkspaceLine> {
       yield serializers.serialize(
         object.components,
         specifiedType: const FullType(BuiltList, [FullType(LineComponent)]),
+      );
+    }
+    if (object.kitchenSentQuantity != null) {
+      yield r'kitchen_sent_quantity';
+      yield serializers.serialize(
+        object.kitchenSentQuantity,
+        specifiedType: const FullType(String),
       );
     }
   }
@@ -280,6 +292,14 @@ class _$WorkspaceLineSerializer implements PrimitiveSerializer<WorkspaceLine> {
           ) as BuiltList<LineComponent>?;
           if (valueDes == null) continue;
           result.components.replace(valueDes);
+          break;
+        case r'kitchen_sent_quantity':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.kitchenSentQuantity = valueDes;
           break;
         default:
           unhandled.add(key);

@@ -1,13 +1,15 @@
 import { useTranslation } from 'react-i18next';
 import {
-  ORDER_SOURCES,
+  isPlatformSource,
   type OrderSource,
   orderSourceKey,
   orderSourceOf,
+  PICKABLE_ORDER_SOURCES,
 } from '../lib/order-source';
 
 // One tap tags where the sale came from: Tại quầy (default), Facebook, Zalo
-// or Khác. It moves no money, so it stays open while a payment is taken.
+// or Khác. It moves no money, so it stays open while a payment is taken. A
+// delivery platform's order keeps its platform: it shows, and cannot change.
 export function OrderSourcePicker({
   value,
   disabled,
@@ -19,10 +21,16 @@ export function OrderSourcePicker({
 }) {
   const { t } = useTranslation();
   const current = orderSourceOf(value);
+  if (isPlatformSource(current))
+    return (
+      <p className="order-source-picker" data-source={current}>
+        {t(orderSourceKey(current))}
+      </p>
+    );
   return (
     <fieldset className="order-source-picker" disabled={disabled}>
       <legend className="visually-hidden">{t('orderSourceTitle')}</legend>
-      {ORDER_SOURCES.map((source) => (
+      {PICKABLE_ORDER_SOURCES.map((source) => (
         <button
           key={source}
           type="button"

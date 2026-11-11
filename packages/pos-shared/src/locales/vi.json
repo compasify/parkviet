@@ -69,6 +69,8 @@
   "capabilityMenuManage": "Quản lý thực đơn",
   "capabilityMenuSoldOut": "Báo hết món",
   "capabilityEinvoiceManage": "Quản lý hóa đơn điện tử",
+  "capabilityKitchenOperate": "Làm bếp (màn bếp)",
+  "capabilityKitchenManage": "Cài đặt bếp & bar",
   "receiptCopyBanner": "BẢN SAO – lần {{number}}",
   "capabilityShift": "Mở ca",
   "capabilityRecover": "Khôi phục",
@@ -318,6 +320,7 @@
       "gio": "Giỏ"
     }
   },
+  "receiptPlatform": "Nền tảng giao hàng",
   "receiptVietqr": "Chuyển khoản VietQR",
   "featureDisabled_vietqr": "VietQR vừa bị tắt ở chi nhánh; máy chủ không tạo mã QR.",
   "receiptDeliveryAddress": "Giao đến",

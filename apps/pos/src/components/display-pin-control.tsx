@@ -15,6 +15,7 @@ import { FeatureOffNote } from './feature-off-note';
 const DISPLAY_REASONS = [
   'display_ack_required',
   'display_busy',
+  'display_call_board',
   'display_inactive',
   'generation_stale',
 ];
@@ -28,11 +29,14 @@ export function DisplayPinControl({
   shiftId,
   ownsShift,
   enabled = true,
+  callBoard = false,
   workspace,
 }: {
   shiftId: string | null;
   ownsShift: boolean;
   enabled?: boolean;
+  // The branch hands out call numbers: the display can show the call board.
+  callBoard?: boolean;
   workspace: PosWorkspace | null;
 }) {
   const { t } = useTranslation();
@@ -51,6 +55,7 @@ export function DisplayPinControl({
     display.pin.isPending ||
     display.clear.isPending ||
     display.revoke.isPending ||
+    display.mode.isPending ||
     display.pairing.isPending;
   if (!ownsShift || !shiftId) return null;
 
@@ -80,7 +85,8 @@ export function DisplayPinControl({
       (attempt.kind === 'bank_manual' || attempt.kind === 'vietqr') &&
       attempt.status === 'prepared',
   );
-  const pinnable = enabled && workspace?.operational_status === 'editing';
+  const boardMode = session?.mode === 'call_board';
+  const pinnable = enabled && !boardMode && workspace?.operational_status === 'editing';
   const freshness = !session
     ? null
     : session.ack_current && session.acked_generation === session.generation
@@ -107,14 +113,34 @@ export function DisplayPinControl({
       ) : (
         <>
           <p className="display-status" role="status" data-freshness={freshness}>
-            {session.pinned_order_number
-              ? t('displayShowing', { number: session.pinned_order_number })
-              : t('displayShowingNothing')}
+            {boardMode
+              ? t('displayShowingCallBoard')
+              : session.pinned_order_number
+                ? t('displayShowing', { number: session.pinned_order_number })
+                : t('displayShowingNothing')}
             {' · '}
             {t(freshness === 'confirmed' ? 'displayConfirmed' : 'displayUnconfirmed', {
               generation: session.generation,
             })}
           </p>
+          {enabled && (callBoard || boardMode) ? (
+            <fieldset className="display-mode" disabled={busy}>
+              <legend>{t('displayMode')}</legend>
+              {(['order', 'call_board'] as const).map((value) => (
+                <label key={value}>
+                  <input
+                    type="radio"
+                    name="display-mode"
+                    value={value}
+                    checked={(session.mode ?? 'order') === value}
+                    disabled={value === 'call_board' && !callBoard}
+                    onChange={() => act(() => display.mode.mutateAsync({ session, mode: value }))}
+                  />
+                  {t(`displayMode_${value}`)}
+                </label>
+              ))}
+            </fieldset>
+          ) : null}
           {workspace && pinnable ? (
             <div className="row">
               <button

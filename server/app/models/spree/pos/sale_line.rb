@@ -53,7 +53,8 @@ module Spree
             value: line_discount_intent.value, reason: line_discount_intent.reason,
             amount: line_discount_intent.allocations.joins(:discount).sum('spree_discounts.amount').to_s('F')
           },
-          note: note, modifiers: line_modifiers.map(&:to_pos), components: line_components.map(&:to_pos)
+          note: note, modifiers: line_modifiers.map(&:to_pos), components: line_components.map(&:to_pos),
+          kitchen_sent_quantity: kitchen_sent_quantity.to_s('F')
         }
       end
 

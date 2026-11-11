@@ -52,7 +52,7 @@ class EscPosRenderer {
     final size = line.large ? PosTextSize.size2 : PosTextSize.size1;
     return generator.text(
       foldToAscii(line.text),
-      styles: PosStyles(align: _posAlign(line.align), bold: line.bold, height: size, width: size),
+      styles: PosStyles(align: _posAlign(line.align), bold: line.bold, reverse: line.invert, height: size, width: size),
       maxCharsPerLine: printer.columns,
     );
   }

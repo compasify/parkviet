@@ -6,6 +6,8 @@ import {
 } from '@parkviet/pos-shared/traceability';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useCupLabelReprint } from '../hooks/use-kitchen';
+import { kitchenSent } from '../lib/kitchen';
 import { linePicks, toSelections } from '../lib/menu-selection';
 import type {
   PosLineItem,
@@ -35,6 +37,7 @@ export function OrderLines({
   menu = null,
   onUpdateModifiers,
   onAddSame,
+  cupLabels = false,
 }: {
   workspace: PosWorkspace;
   disabled: boolean;
@@ -70,11 +73,16 @@ export function OrderLines({
     variantId: string,
     input: { modifiers: PosModifierSelection[]; note?: string },
   ) => Promise<PosWorkspace>;
+  // The branch prints cup labels: a line already sent or sold can print its
+  // labels again.
+  cupLabels?: boolean;
 }) {
   const { t } = useTranslation();
   const [quantities, setQuantities] = useState<Record<string, string>>({});
   const [editing, setEditing] = useState<{ line: PosLineItem; item: PosMenuItem } | null>(null);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+  const reprint = useCupLabelReprint();
   const lines = workspace.line_items ?? [];
   const currency = workspace.totals?.currency ?? 'VND';
 
@@ -133,6 +141,9 @@ export function OrderLines({
               // Each unit of a serial line is one scanned serial: re-add to change it.
               const serialLine = line.trace?.mode === 'serial';
               const quantityLocked = disabled || labelled || serialLine;
+              // The kitchen has made this much already: the line may grow, not shrink.
+              const sent = kitchenSent(line);
+              const sentTitle = sent > 0 ? t('kitchenSentLocked', { count: sent }) : undefined;
               const quantityTitle = labelled
                 ? t('saleLineLabelLocked')
                 : serialLine
@@ -144,7 +155,9 @@ export function OrderLines({
                 (measured ? (line.sale_quantity ?? '') : String(line.quantity));
               const measuredQuantity = measured ? parseMeasuredQuantity(inputValue) : null;
               const countQuantity = measured ? null : parseCountQuantity(inputValue);
-              const validQuantity = measured ? measuredQuantity !== null : countQuantity !== null;
+              const validQuantity = measured
+                ? measuredQuantity !== null
+                : countQuantity !== null && countQuantity >= sent;
               const saveQuantity = () => {
                 if (quantityLocked) return;
                 if (measuredQuantity !== null)
@@ -176,17 +189,26 @@ export function OrderLines({
                       ) : null}
                       <LineTrace line={line} />
                       <MenuLineDetail line={line} />
+                      {sent > 0 ? (
+                        <span className="basket-line-kitchen" title={sentTitle}>
+                          <PosIcon name="check" /> {t('kitchenSentBadge', { count: sent })}
+                        </span>
+                      ) : null}
                       {line.kind === 'menu' && line.sale_line_id
                         ? (() => {
                             const item = menuItemOf(menu, line);
                             const same = sameSelections(line);
+                            const printsLabels =
+                              cupLabels &&
+                              item?.cup_label === true &&
+                              (sent > 0 || workspace.operational_status === 'completed');
                             return (
                               <span className="basket-line-actions">
                                 {item && onUpdateModifiers ? (
                                   <button
                                     type="button"
-                                    disabled={disabled}
-                                    title={disabledReason}
+                                    disabled={disabled || sent > 0}
+                                    title={sentTitle ?? disabledReason}
                                     onClick={() => setEditing({ line, item })}
                                   >
                                     {t('menuEditOptions')}
@@ -209,6 +231,32 @@ export function OrderLines({
                                     {t('menuAddSame')}
                                   </button>
                                 ) : null}
+                                {printsLabels ? (
+                                  <button
+                                    type="button"
+                                    disabled={reprint.isPending}
+                                    data-testid="cup-label-reprint"
+                                    onClick={() => {
+                                      setError('');
+                                      setNotice('');
+                                      reprint
+                                        .mutateAsync({
+                                          workspaceId: workspace.id,
+                                          saleLineId: line.sale_line_id ?? undefined,
+                                        })
+                                        .then((result) =>
+                                          setNotice(
+                                            t('cupLabelReprinted', { count: result.jobs.length }),
+                                          ),
+                                        )
+                                        .catch((failure: unknown) =>
+                                          setError(describeTraceFailure(failure, t)),
+                                        );
+                                    }}
+                                  >
+                                    {t('cupLabelReprint')}
+                                  </button>
+                                ) : null}
                               </span>
                             );
                           })()
@@ -221,8 +269,8 @@ export function OrderLines({
                         <button
                           type="button"
                           aria-label={t('decreaseQuantity', { name: line.name })}
-                          disabled={quantityLocked || line.quantity <= 1}
-                          title={quantityTitle}
+                          disabled={quantityLocked || line.quantity <= Math.max(1, sent)}
+                          title={line.quantity <= sent ? sentTitle : quantityTitle}
                           onClick={() =>
                             void run(line.id, () =>
                               onUpdate(targetId, { quantity: line.quantity - 1 }),
@@ -352,9 +400,9 @@ export function OrderLines({
                       <button
                         className="remove-line"
                         type="button"
-                        title={disabledReason ?? t('removeItem')}
+                        title={sentTitle ?? disabledReason ?? t('removeItem')}
                         aria-label={`${t('removeItem')} ${line.name}`}
-                        disabled={disabled}
+                        disabled={disabled || sent > 0}
                         onClick={() => void run(line.id, () => onRemove(targetId))}
                       >
                         <PosIcon name="trash" />
@@ -370,6 +418,11 @@ export function OrderLines({
       {error ? (
         <p className="error" role="alert">
           {error}
+        </p>
+      ) : null}
+      {notice ? (
+        <p className="muted" role="status">
+          {notice}
         </p>
       ) : null}
       {editing && menu && onUpdateModifiers && editing.line.sale_line_id ? (

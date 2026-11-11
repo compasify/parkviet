@@ -311,4 +311,146 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get stationForegroundText => 'Đang nhận việc in';
+
+  @override
+  String get kdsTabPriority => 'Ưu tiên';
+
+  @override
+  String get kdsTabByItem => 'Theo món';
+
+  @override
+  String get kdsTabByOrder => 'Theo bàn / số gọi';
+
+  @override
+  String get kdsDone => 'Đã xong (30 phút gần nhất)';
+
+  @override
+  String get kdsNothingOpen => 'Chưa có món nào cần làm.';
+
+  @override
+  String get kdsNothingDone => 'Chưa có phiếu nào xong.';
+
+  @override
+  String get kdsStart => 'Bắt đầu';
+
+  @override
+  String get kdsReady => 'Xong';
+
+  @override
+  String get kdsServe => 'Đã ra món';
+
+  @override
+  String get kdsRecall => 'Gọi lại';
+
+  @override
+  String get kdsBump => 'Xong cả phiếu';
+
+  @override
+  String get kdsServeOrder => 'Đã giao';
+
+  @override
+  String kdsGuest(String name) {
+    return 'Khách: $name';
+  }
+
+  @override
+  String get kdsPlatformGrabfood => 'GRABFOOD';
+
+  @override
+  String get kdsPlatformShopeefood => 'SHOPEEFOOD';
+
+  @override
+  String kdsPickupCode(String code) {
+    return 'Mã lấy: $code';
+  }
+
+  @override
+  String kdsTicketNumber(int number) {
+    return 'Phiếu #$number';
+  }
+
+  @override
+  String kdsOrder(String id) {
+    return 'Đơn $id';
+  }
+
+  @override
+  String kdsTickets(String numbers) {
+    return 'Phiếu $numbers';
+  }
+
+  @override
+  String kdsNote(String note) {
+    return 'Ghi chú: $note';
+  }
+
+  @override
+  String kdsOffline(String time) {
+    return 'Mất kết nối · cập nhật lúc $time';
+  }
+
+  @override
+  String get kdsOfflineNever => 'Mất kết nối · chưa tải được bếp';
+
+  @override
+  String kdsActionFailed(String message) {
+    return 'Không đổi được món: $message';
+  }
+
+  @override
+  String get kdsStationPick => 'Màn này hiện trạm nào?';
+
+  @override
+  String get kdsAllStations => 'Tất cả trạm';
+
+  @override
+  String get kdsChangeStation => 'Đổi trạm';
+
+  @override
+  String get kdsNoStations =>
+      'Chi nhánh chưa có trạm bếp. Thêm trạm trên trang quản trị, mục Bếp & bar.';
+
+  @override
+  String get kdsSoldOut => 'Hết món';
+
+  @override
+  String get kdsSoldOutTitle => 'Hết món hôm nay';
+
+  @override
+  String get kdsSoldOutWho => 'Ai báo hết món?';
+
+  @override
+  String kdsPinFor(String name) {
+    return 'Mã PIN của $name';
+  }
+
+  @override
+  String get kdsConfirm => 'Xác nhận';
+
+  @override
+  String get kdsStatusNew => 'Mới';
+
+  @override
+  String get kdsStatusPreparing => 'Đang làm';
+
+  @override
+  String get kdsStatusReady => 'Đã xong';
+
+  @override
+  String get kdsStatusServed => 'Đã ra';
+
+  @override
+  String get kdsStatusVoided => 'Đã hủy';
+
+  @override
+  String get kdsModeCounter => 'Tại quầy';
+
+  @override
+  String get kdsModeDineIn => 'Tại bàn';
+
+  @override
+  String get kdsModeTakeaway => 'Mang đi';
+
+  @override
+  String get kdsModeDelivery => 'Giao hàng';
 }

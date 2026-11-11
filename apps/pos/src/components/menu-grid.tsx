@@ -8,14 +8,14 @@ import {
   favoriteItems,
   visibleItems,
 } from '../lib/menu-selection';
-import type { PosMenu, PosMenuItem, PosModifierSelection, PosWorkspace } from '../lib/pos-context';
+import type { PosMenu, PosMenuItem, PosModifierSelection } from '../lib/pos-context';
 import { ModifierSheet } from './modifier-sheet';
 import { PosIcon } from './pos-icon';
 
 export type MenuAdd = (
   variantId: string,
   extra: { modifiers?: PosModifierSelection[]; note?: string; merge: boolean },
-) => Promise<PosWorkspace>;
+) => Promise<unknown>;
 
 // Favourites answer the number keys 1-9 while no field has focus.
 const FAVORITE_KEYS = 9;

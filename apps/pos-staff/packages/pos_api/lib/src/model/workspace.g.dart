@@ -100,6 +100,10 @@ class _$Workspace extends Workspace {
   @override
   final Date businessDate;
   @override
+  final int? orderNumber;
+  @override
+  final String? guestName;
+  @override
   final BuiltList<WorkspaceLine>? lineItems;
   @override
   final WorkspaceTotals totals;
@@ -113,6 +117,8 @@ class _$Workspace extends Workspace {
       required this.operationalStatus,
       required this.serviceMode,
       required this.businessDate,
+      this.orderNumber,
+      this.guestName,
       this.lineItems,
       required this.totals})
       : super._();
@@ -132,6 +138,8 @@ class _$Workspace extends Workspace {
         operationalStatus == other.operationalStatus &&
         serviceMode == other.serviceMode &&
         businessDate == other.businessDate &&
+        orderNumber == other.orderNumber &&
+        guestName == other.guestName &&
         lineItems == other.lineItems &&
         totals == other.totals;
   }
@@ -144,6 +152,8 @@ class _$Workspace extends Workspace {
     _$hash = $jc(_$hash, operationalStatus.hashCode);
     _$hash = $jc(_$hash, serviceMode.hashCode);
     _$hash = $jc(_$hash, businessDate.hashCode);
+    _$hash = $jc(_$hash, orderNumber.hashCode);
+    _$hash = $jc(_$hash, guestName.hashCode);
     _$hash = $jc(_$hash, lineItems.hashCode);
     _$hash = $jc(_$hash, totals.hashCode);
     _$hash = $jf(_$hash);
@@ -158,6 +168,8 @@ class _$Workspace extends Workspace {
           ..add('operationalStatus', operationalStatus)
           ..add('serviceMode', serviceMode)
           ..add('businessDate', businessDate)
+          ..add('orderNumber', orderNumber)
+          ..add('guestName', guestName)
           ..add('lineItems', lineItems)
           ..add('totals', totals))
         .toString();
@@ -189,6 +201,14 @@ class WorkspaceBuilder implements Builder<Workspace, WorkspaceBuilder> {
   Date? get businessDate => _$this._businessDate;
   set businessDate(Date? businessDate) => _$this._businessDate = businessDate;
 
+  int? _orderNumber;
+  int? get orderNumber => _$this._orderNumber;
+  set orderNumber(int? orderNumber) => _$this._orderNumber = orderNumber;
+
+  String? _guestName;
+  String? get guestName => _$this._guestName;
+  set guestName(String? guestName) => _$this._guestName = guestName;
+
   ListBuilder<WorkspaceLine>? _lineItems;
   ListBuilder<WorkspaceLine> get lineItems =>
       _$this._lineItems ??= ListBuilder<WorkspaceLine>();
@@ -212,6 +232,8 @@ class WorkspaceBuilder implements Builder<Workspace, WorkspaceBuilder> {
       _operationalStatus = $v.operationalStatus;
       _serviceMode = $v.serviceMode;
       _businessDate = $v.businessDate;
+      _orderNumber = $v.orderNumber;
+      _guestName = $v.guestName;
       _lineItems = $v.lineItems?.toBuilder();
       _totals = $v.totals.toBuilder();
       _$v = null;
@@ -246,6 +268,8 @@ class WorkspaceBuilder implements Builder<Workspace, WorkspaceBuilder> {
                 serviceMode, r'Workspace', 'serviceMode'),
             businessDate: BuiltValueNullFieldError.checkNotNull(
                 businessDate, r'Workspace', 'businessDate'),
+            orderNumber: orderNumber,
+            guestName: guestName,
             lineItems: _lineItems?.build(),
             totals: totals.build(),
           );

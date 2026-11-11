@@ -112,6 +112,8 @@ class _$WorkspaceLine extends WorkspaceLine {
   final BuiltList<LineModifier>? modifiers;
   @override
   final BuiltList<LineComponent>? components;
+  @override
+  final String? kitchenSentQuantity;
 
   factory _$WorkspaceLine([void Function(WorkspaceLineBuilder)? updates]) =>
       (WorkspaceLineBuilder()..update(updates))._build();
@@ -128,7 +130,8 @@ class _$WorkspaceLine extends WorkspaceLine {
       this.unitPrice,
       this.note,
       this.modifiers,
-      this.components})
+      this.components,
+      this.kitchenSentQuantity})
       : super._();
   @override
   WorkspaceLine rebuild(void Function(WorkspaceLineBuilder) updates) =>
@@ -152,7 +155,8 @@ class _$WorkspaceLine extends WorkspaceLine {
         unitPrice == other.unitPrice &&
         note == other.note &&
         modifiers == other.modifiers &&
-        components == other.components;
+        components == other.components &&
+        kitchenSentQuantity == other.kitchenSentQuantity;
   }
 
   @override
@@ -170,6 +174,7 @@ class _$WorkspaceLine extends WorkspaceLine {
     _$hash = $jc(_$hash, note.hashCode);
     _$hash = $jc(_$hash, modifiers.hashCode);
     _$hash = $jc(_$hash, components.hashCode);
+    _$hash = $jc(_$hash, kitchenSentQuantity.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -188,7 +193,8 @@ class _$WorkspaceLine extends WorkspaceLine {
           ..add('unitPrice', unitPrice)
           ..add('note', note)
           ..add('modifiers', modifiers)
-          ..add('components', components))
+          ..add('components', components)
+          ..add('kitchenSentQuantity', kitchenSentQuantity))
         .toString();
   }
 }
@@ -249,6 +255,11 @@ class WorkspaceLineBuilder
   set components(ListBuilder<LineComponent>? components) =>
       _$this._components = components;
 
+  String? _kitchenSentQuantity;
+  String? get kitchenSentQuantity => _$this._kitchenSentQuantity;
+  set kitchenSentQuantity(String? kitchenSentQuantity) =>
+      _$this._kitchenSentQuantity = kitchenSentQuantity;
+
   WorkspaceLineBuilder() {
     WorkspaceLine._defaults(this);
   }
@@ -268,6 +279,7 @@ class WorkspaceLineBuilder
       _note = $v.note;
       _modifiers = $v.modifiers?.toBuilder();
       _components = $v.components?.toBuilder();
+      _kitchenSentQuantity = $v.kitchenSentQuantity;
       _$v = null;
     }
     return this;
@@ -309,6 +321,7 @@ class WorkspaceLineBuilder
             note: note,
             modifiers: _modifiers?.build(),
             components: _components?.build(),
+            kitchenSentQuantity: kitchenSentQuantity,
           );
     } catch (_) {
       late String _$failedField;

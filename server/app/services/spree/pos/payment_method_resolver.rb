@@ -12,6 +12,7 @@ module Spree
       CASH_CODE = 'cash'
       BANK_CODE = 'bank_transfer'
       VIETQR_CODE = 'vietqr'
+      PLATFORM_CODE = 'platform_receivable'
       VIETQR_TYPE = 'Spree::PaymentMethod::Vietqr'
 
       def initialize(store:)
@@ -23,7 +24,7 @@ module Spree
       # turns the built-in one off too). With a branch, only the methods
       # it offers (see #offered_at?).
       def available(branch: nil)
-        rows = PosPaymentMethod.for_store(store).order(:position, :id).to_a
+        rows = PosPaymentMethod.for_store(store).counter.order(:position, :id).to_a
         kinds = rows.map(&:kind).uniq
         result = rows.select { |row| row.status == 'active' && %w[cash bank_manual].include?(row.kind) }
         result << default_cash unless kinds.include?('cash')
@@ -49,6 +50,9 @@ module Spree
         row = PosPaymentMethod.locate(PosPaymentMethod.for_store(store), prefixed_id) if prefixed_id.present?
         if row
           raise Conflict, 'Payment method is disabled.' unless row.status == 'active'
+          # A platform's debt follows the branch's platform settings, not its
+          # choice of counter tenders.
+          return [row, core_for(row)] if row.platform?
 
           return [offered!(row, branch), core_for(row)]
         end
@@ -79,7 +83,7 @@ module Spree
         rescue ActiveRecord::RecordNotUnique
           next
         end
-        PosPaymentMethod.for_store(store).order(:position, :id).to_a
+        PosPaymentMethod.for_store(store).counter.order(:position, :id).to_a
       end
 
       # The core method a row may settle on: a manual one for cash and bank
@@ -100,11 +104,24 @@ module Spree
         return manual_methods.find_by(id: row.payment_method_id) if row.payment_method_id
 
         case row.kind
-        when 'cash'
+        when 'cash', PosPaymentMethod::PLATFORM_KIND
           manual_methods.where('type ILIKE ?', '%Check%').first
         when 'bank_manual'
           core_bank_method || manual_methods.where('type ILIKE ?', '%Check%').first
         end
+      end
+
+      # The store's one `platform_receivable` row, saved on first use. Its
+      # core Payment sits on a manual method, like cash.
+      def platform_method!
+        row = PosPaymentMethod.for_store(store).find_by(kind: PosPaymentMethod::PLATFORM_KIND)
+        return row if row
+
+        core = manual_methods.where('type ILIKE ?', '%Check%').first
+        PosPaymentMethod.create!(store: store, code: PLATFORM_CODE, name: 'Delivery platform', kind: PosPaymentMethod::PLATFORM_KIND,
+                                 status: 'active', position: 100, payment_method_id: core&.id, payment_method_type: core&.type)
+      rescue ActiveRecord::RecordNotUnique
+        PosPaymentMethod.for_store(store).find_by!(kind: PosPaymentMethod::PLATFORM_KIND)
       end
 
       # The VietQR core method a vietqr row settles on; nil when it is gone or

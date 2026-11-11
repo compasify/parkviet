@@ -21,6 +21,8 @@ part 'workspace.g.dart';
 /// * [operationalStatus]
 /// * [serviceMode]
 /// * [businessDate]
+/// * [orderNumber] - Call number (`fnb.order_number`), 1, 2, 3… per branch and business date, given at the first kitchen send or at completion and kept.
+/// * [guestName] - The name the counter calls out with the call number.
 /// * [lineItems]
 /// * [totals]
 @BuiltValue()
@@ -40,6 +42,14 @@ abstract class Workspace implements Built<Workspace, WorkspaceBuilder> {
 
   @BuiltValueField(wireName: r'business_date')
   Date get businessDate;
+
+  /// Call number (`fnb.order_number`), 1, 2, 3… per branch and business date, given at the first kitchen send or at completion and kept.
+  @BuiltValueField(wireName: r'order_number')
+  int? get orderNumber;
+
+  /// The name the counter calls out with the call number.
+  @BuiltValueField(wireName: r'guest_name')
+  String? get guestName;
 
   @BuiltValueField(wireName: r'line_items')
   BuiltList<WorkspaceLine>? get lineItems;
@@ -95,6 +105,20 @@ class _$WorkspaceSerializer implements PrimitiveSerializer<Workspace> {
       object.businessDate,
       specifiedType: const FullType(Date),
     );
+    if (object.orderNumber != null) {
+      yield r'order_number';
+      yield serializers.serialize(
+        object.orderNumber,
+        specifiedType: const FullType.nullable(int),
+      );
+    }
+    if (object.guestName != null) {
+      yield r'guest_name';
+      yield serializers.serialize(
+        object.guestName,
+        specifiedType: const FullType.nullable(String),
+      );
+    }
     if (object.lineItems != null) {
       yield r'line_items';
       yield serializers.serialize(
@@ -166,6 +190,22 @@ class _$WorkspaceSerializer implements PrimitiveSerializer<Workspace> {
             specifiedType: const FullType(Date),
           ) as Date;
           result.businessDate = valueDes;
+          break;
+        case r'order_number':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(int),
+          ) as int?;
+          if (valueDes == null) continue;
+          result.orderNumber = valueDes;
+          break;
+        case r'guest_name':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.guestName = valueDes;
           break;
         case r'line_items':
           final valueDes = serializers.deserialize(

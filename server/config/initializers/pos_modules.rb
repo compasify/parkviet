@@ -17,10 +17,19 @@ Rails.application.config.to_prepare do
                      entrypoints: ['Spree::Api::V3::Admin::Pos::MenuController', 'Spree::Pos::Menu::Pricing'])
     modules.register(key: 'fnb.recipes', group: 'fnb', depends_on: ['fnb.menu', 'retail.units'],
                      entrypoints: ['Spree::Api::V3::Admin::Pos::RecipesController', 'Spree::Pos::Recipes::Consume'])
+    modules.register(key: 'fnb.kitchen', group: 'fnb', depends_on: ['fnb.menu'],
+                     entrypoints: ['Spree::Api::V3::Admin::Pos::KitchenStationsController', 'Spree::Pos::Kitchen::Send'])
+    modules.register(key: 'fnb.order_number', group: 'fnb', depends_on: [],
+                     entrypoints: ['Spree::Pos::OrderNumbers', 'Spree::Pos::CallBoard'])
+    modules.register(key: 'fnb.cup_label', group: 'fnb', depends_on: ['fnb.menu'],
+                     entrypoints: ['Spree::Api::V3::Admin::Pos::Workspaces::CupLabelsController', 'Spree::Pos::CupLabels::Issue'])
+    # GrabFood / ShopeeFood orders typed in at the counter.
+    modules.register(key: 'fnb.delivery_platforms', group: 'fnb', depends_on: ['fnb.menu'],
+                     entrypoints: ['Spree::Api::V3::Admin::Pos::PlatformOrdersController', 'Spree::Pos::PlatformOrders::Enter'])
 
     # Names only, so "coming soon" profiles can refer to them. No code, and
     # no branch can turn them on.
-    modules.planned 'fnb.kitchen', 'fnb.order_number', 'resources', 'fnb.tables',
+    modules.planned 'resources', 'fnb.tables',
                     'fnb.postpay', 'fnb.service_charge', 'timed_billing', group: 'fnb'
   end
 

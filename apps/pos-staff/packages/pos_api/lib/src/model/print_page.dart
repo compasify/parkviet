@@ -4,6 +4,7 @@
 
 // ignore_for_file: unused_element
 import 'package:built_collection/built_collection.dart';
+import 'package:pos_api/src/model/print_page_label.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
 
@@ -17,6 +18,7 @@ part 'print_page.g.dart';
 /// * [fontSize]
 /// * [lineSpacing]
 /// * [copies]
+/// * [label]
 @BuiltValue()
 abstract class PrintPage implements Built<PrintPage, PrintPageBuilder> {
   @BuiltValueField(wireName: r'margin_mm')
@@ -35,6 +37,9 @@ abstract class PrintPage implements Built<PrintPage, PrintPageBuilder> {
 
   @BuiltValueField(wireName: r'copies')
   int? get copies;
+
+  @BuiltValueField(wireName: r'label')
+  PrintPageLabel? get label;
 
   PrintPage._();
 
@@ -84,6 +89,13 @@ class _$PrintPageSerializer implements PrimitiveSerializer<PrintPage> {
       yield serializers.serialize(
         object.copies,
         specifiedType: const FullType(int),
+      );
+    }
+    if (object.label != null) {
+      yield r'label';
+      yield serializers.serialize(
+        object.label,
+        specifiedType: const FullType(PrintPageLabel),
       );
     }
   }
@@ -146,6 +158,14 @@ class _$PrintPageSerializer implements PrimitiveSerializer<PrintPage> {
           ) as int?;
           if (valueDes == null) continue;
           result.copies = valueDes;
+          break;
+        case r'label':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(PrintPageLabel),
+          ) as PrintPageLabel?;
+          if (valueDes == null) continue;
+          result.label.replace(valueDes);
           break;
         default:
           unhandled.add(key);

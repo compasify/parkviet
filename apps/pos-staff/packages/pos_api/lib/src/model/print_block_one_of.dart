@@ -18,6 +18,7 @@ part 'print_block_one_of.g.dart';
 /// * [align]
 /// * [bold]
 /// * [size]
+/// * [invert] - White on black (a kitchen note). Absent means false.
 @BuiltValue()
 abstract class PrintBlockOneOf
     implements Built<PrintBlockOneOf, PrintBlockOneOfBuilder> {
@@ -37,6 +38,10 @@ abstract class PrintBlockOneOf
   @BuiltValueField(wireName: r'size')
   PrintBlockOneOfSizeEnum get size;
   // enum sizeEnum {  s,  m,  l,  };
+
+  /// White on black (a kitchen note). Absent means false.
+  @BuiltValueField(wireName: r'invert')
+  bool? get invert;
 
   PrintBlockOneOf._();
 
@@ -91,6 +96,13 @@ class _$PrintBlockOneOfSerializer
       object.size,
       specifiedType: const FullType(PrintBlockOneOfSizeEnum),
     );
+    if (object.invert != null) {
+      yield r'invert';
+      yield serializers.serialize(
+        object.invert,
+        specifiedType: const FullType(bool),
+      );
+    }
   }
 
   @override
@@ -151,6 +163,14 @@ class _$PrintBlockOneOfSerializer
             specifiedType: const FullType(PrintBlockOneOfSizeEnum),
           ) as PrintBlockOneOfSizeEnum;
           result.size = valueDes;
+          break;
+        case r'invert':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(bool),
+          ) as bool?;
+          if (valueDes == null) continue;
+          result.invert = valueDes;
           break;
         default:
           unhandled.add(key);

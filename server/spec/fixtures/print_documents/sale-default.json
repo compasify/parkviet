@@ -147,6 +147,13 @@
         },
         {
           "type": "title"
+        },
+        {
+          "type": "text",
+          "value": "Số gọi {order.call_number}",
+          "align": "center",
+          "bold": true,
+          "size": "l"
         }
       ],
       "meta": {

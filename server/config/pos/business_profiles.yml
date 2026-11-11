@@ -9,8 +9,9 @@
 # profile key. Labels are not here: clients translate `profiles.<key>.label`
 # and `profiles.<key>.description`.
 #
-# `status` is computed: available when every module is available, otherwise
-# coming_soon (F&B profiles today).
+# `status` is computed: available when every module is available and the
+# group is open (BusinessProfiles::OPEN_GROUPS; F&B is not open yet),
+# otherwise coming_soon.
 #
 # Fields
 #   group                 retail | fnb
@@ -149,7 +150,7 @@ profiles:
   quan_an:
     group: fnb
     order: 14
-    modules: [fnb.menu, fnb.kitchen]
+    modules: [fnb.menu, fnb.kitchen, fnb.order_number]
     branch_defaults: {}
     display: {}
     recommended_features: []

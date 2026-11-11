@@ -10,7 +10,12 @@ import {
   PairingRefused,
   postDisplayAck,
 } from '../hooks/use-display';
-import { createDisplayFreshness, type DisplayState } from '../lib/display-generation';
+import {
+  type CallBoardNumber,
+  type CallBoardReady,
+  createDisplayFreshness,
+  type DisplayState,
+} from '../lib/display-generation';
 import { formatQuantity } from '../lib/print-adapter';
 
 // The customer-facing screen. It holds no staff session: only the read-only
@@ -22,6 +27,11 @@ const TOKEN_KEY = 'parkviet-pos:display-token';
 const TICK_MS = 250;
 const DEFAULT_TTL_SECONDS = 15;
 const MAX_REQUEST_MS = 5000;
+// The call board follows the kitchen closely: a number called out should
+// appear within a couple of seconds.
+const CALL_BOARD_POLL_MS = 2000;
+// How long a newly ready number flashes.
+const FLASH_MS = 8000;
 
 function storedToken(): string | null {
   try {
@@ -74,6 +84,7 @@ export function CustomerDisplayPage() {
     // The last window the server gave; recovery polling keeps using it after
     // the screen was hidden.
     let ttl = DEFAULT_TTL_SECONDS;
+    let boardMode = false;
     const online = () => globalThis.navigator?.onLine !== false;
     const render = () => {
       if (stopped) return;
@@ -99,7 +110,9 @@ export function CustomerDisplayPage() {
         const body = await fetchDisplayState(token, controller.signal);
         if (stopped) return;
         if (freshness.accept(ticket, body) === 'applied') {
-          ttl = freshness.snapshot().state?.freshness_ttl_seconds ?? ttl;
+          const applied = freshness.snapshot().state;
+          ttl = applied?.freshness_ttl_seconds ?? ttl;
+          boardMode = applied?.state === 'call_board';
           render();
           ack = online() ? freshness.ackFor() : null;
         }
@@ -150,7 +163,10 @@ export function CustomerDisplayPage() {
       if (hidden || !online()) render();
       if (hidden === 'resumed') void refresh(true);
       // Poll a few times per window so a healthy display never goes stale.
-      const interval = Math.max(500, Math.min(5000, (ttl * 1000) / 3));
+      const interval = Math.max(
+        500,
+        Math.min(boardMode ? CALL_BOARD_POLL_MS : 5000, (ttl * 1000) / 3),
+      );
       const now = performance.now();
       if (now - lastPoll >= interval && document.visibilityState !== 'hidden') {
         lastPoll = now;
@@ -183,6 +199,8 @@ export function CustomerDisplayPage() {
         <p className="customer-display-stale" data-testid="display-stale">
           {t('customerDisplayUpdating')}
         </p>
+      ) : state.state === 'call_board' ? (
+        <CallBoard preparing={state.preparing ?? []} ready={state.ready ?? []} />
       ) : state.state === 'idle' ? (
         <h1 className="customer-display-welcome">
           {t('customerDisplayWelcome', { branch: state.branch_name })}
@@ -258,6 +276,94 @@ export function CustomerDisplayPage() {
         </section>
       ) : null}
     </main>
+  );
+}
+
+// A short chime for a newly ready number. Browsers may refuse sound before
+// anyone touched the screen; the flash still shows.
+function chime() {
+  try {
+    const AudioContextClass =
+      window.AudioContext ??
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const context = new AudioContextClass();
+    const tone = context.createOscillator();
+    const gain = context.createGain();
+    tone.frequency.value = 880;
+    gain.gain.setValueAtTime(0.2, context.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + 0.6);
+    tone.connect(gain).connect(context.destination);
+    tone.start();
+    tone.stop(context.currentTime + 0.6);
+    tone.onended = () => void context.close();
+  } catch {
+    // No sound on this device.
+  }
+}
+
+// Two large columns: the numbers being made, and those ready to collect,
+// with the guest's name. A number that just became ready flashes and chimes.
+function CallBoard({
+  preparing,
+  ready,
+}: {
+  preparing: CallBoardNumber[];
+  ready: CallBoardReady[];
+}) {
+  const { t } = useTranslation();
+  const seen = useRef<Set<number> | null>(null);
+  const [flashing, setFlashing] = useState<Record<number, number>>({});
+  const readyKey = ready.map((row) => row.number).join(',');
+
+  useEffect(() => {
+    const numbers = readyKey ? readyKey.split(',').map(Number) : [];
+    // The first board after loading is not news.
+    if (seen.current === null) {
+      seen.current = new Set(numbers);
+      return;
+    }
+    const fresh = numbers.filter((number) => !seen.current?.has(number));
+    seen.current = new Set(numbers);
+    if (fresh.length === 0) return;
+    chime();
+    const until = Date.now() + FLASH_MS;
+    setFlashing((current) => ({
+      ...current,
+      ...Object.fromEntries(fresh.map((number) => [number, until])),
+    }));
+    const timer = window.setTimeout(
+      () =>
+        setFlashing((current) =>
+          Object.fromEntries(Object.entries(current).filter(([, end]) => end > Date.now())),
+        ),
+      FLASH_MS + 50,
+    );
+    return () => window.clearTimeout(timer);
+  }, [readyKey]);
+
+  return (
+    <section className="call-board" data-testid="call-board">
+      <div className="call-board-column">
+        <h1>{t('callBoardPreparing')}</h1>
+        <ul data-testid="call-board-preparing">
+          {preparing.map((row) => (
+            <li key={row.number}>{row.number}</li>
+          ))}
+        </ul>
+      </div>
+      <div className="call-board-column call-board-ready">
+        <h1>{t('callBoardReady')}</h1>
+        <ul data-testid="call-board-ready">
+          {ready.map((row) => (
+            <li key={row.number} className={flashing[row.number] ? 'call-board-new' : undefined}>
+              <strong>{row.number}</strong>
+              {row.guest_name ? <span>{row.guest_name}</span> : null}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
   );
 }
 

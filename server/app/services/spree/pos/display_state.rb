@@ -6,7 +6,9 @@ module Spree
     # lines, totals and amount still due and, for a pinned bank transfer that
     # is still waiting, the amount, the transfer note and the receiving
     # account text configured on the store's bank payment method. It never
-    # carries staff, customer, debt or balance data.
+    # carries staff, customer, debt or balance data. In `call_board` mode it
+    # shows the branch's call numbers instead (CallBoard), with the name the
+    # guest gave for the call.
     #
     # Each read takes the next per-session sequence number, so the display
     # can refuse a cached or reordered response, and a signed lease the
@@ -46,6 +48,11 @@ module Spree
       end
 
       def content
+        # The call board shows the branch's call numbers, never an order.
+        if session.mode == 'call_board'
+          return { state: 'call_board', order: nil, payment: nil }.merge(CallBoard.call(branch: session.branch))
+        end
+
         workspace = session.pinned_workspace
         return { state: 'idle', order: nil, payment: nil } if workspace.nil? || workspace.operational_status == 'canceled'
 

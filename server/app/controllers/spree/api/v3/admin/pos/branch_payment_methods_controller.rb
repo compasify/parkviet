@@ -73,7 +73,7 @@ module Spree
                 return nil
               end
               ids.map do |prefixed|
-                row = Spree::Pos::PosPaymentMethod.locate(Spree::Pos::PosPaymentMethod.for_store(current_store), prefixed)
+                row = Spree::Pos::PosPaymentMethod.locate(Spree::Pos::PosPaymentMethod.for_store(current_store).counter, prefixed)
                 raise ActiveRecord::RecordNotFound if row.nil?
                 raise Spree::Pos::Conflict, 'A disabled payment method cannot be offered.' unless row.active?
 

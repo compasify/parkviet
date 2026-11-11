@@ -57,6 +57,15 @@ export type DisplayPayment =
 
 const DISPLAY_PAYMENT_KINDS = ['bank_manual', 'vietqr'];
 
+// Call board mode: the branch's call numbers instead of an order.
+export type CallBoardNumber = { number: number };
+export type CallBoardReady = CallBoardNumber & { guest_name: string | null; ready_at: string };
+
+const DISPLAY_STATES = ['idle', 'order', 'completed', 'call_board'];
+
+const isNumberRow = (row: unknown) =>
+  typeof row === 'object' && row !== null && Number.isInteger((row as { number?: unknown }).number);
+
 export type DisplayState = {
   session_id: string;
   generation: number;
@@ -66,9 +75,11 @@ export type DisplayState = {
   freshness_ttl_seconds: number;
   token_expires_at: string;
   branch_name: string;
-  state: 'idle' | 'order' | 'completed';
+  state: 'idle' | 'order' | 'completed' | 'call_board';
   order: DisplayOrder | null;
   payment: DisplayPayment | null;
+  preparing?: CallBoardNumber[];
+  ready?: CallBoardReady[];
 };
 
 export type HideReason = 'initial' | 'offline' | 'hidden' | 'resumed' | 'expired' | 'disconnected';
@@ -108,7 +119,17 @@ export function readDisplayState(data: unknown): DisplayState | null {
     typeof ttl !== 'number' ||
     ttl < MIN_TTL_SECONDS ||
     ttl > MAX_TTL_SECONDS ||
-    (body.state !== 'idle' && body.state !== 'order' && body.state !== 'completed')
+    !DISPLAY_STATES.includes(body.state as string)
+  )
+    return null;
+  if (
+    body.state === 'call_board' &&
+    (!Array.isArray(body.preparing) ||
+      !Array.isArray(body.ready) ||
+      !body.preparing.every(isNumberRow) ||
+      !body.ready.every(isNumberRow) ||
+      body.order != null ||
+      body.payment != null)
   )
     return null;
   const payment = body.payment as Record<string, unknown> | null | undefined;
@@ -226,6 +247,8 @@ export type DisplaySession = {
   status: 'active' | 'revoked' | 'expired' | 'ended';
   generation: number;
   freshness_ttl_seconds: number;
+  // order shows the pinned order; call_board the branch's call numbers.
+  mode?: 'order' | 'call_board';
   pinned_workspace_id: string | null;
   pinned_order_number: string | null;
   pinned_tender_attempt_id: string | null;

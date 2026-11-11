@@ -157,6 +157,19 @@ export function useDisplaySession(shiftId: string | null, enabled: boolean) {
     onSuccess: store,
     onError: () => void query.refetch(),
   });
+  // Switches what the display shows: the pinned order, or the branch's call
+  // numbers. Switching empties the display.
+  const mode = useMutation({
+    mutationFn: async (input: { session: DisplaySession; mode: 'order' | 'call_board' }) =>
+      (
+        await command(`/pos/display_sessions/${input.session.id}/mode`, {
+          mode: input.mode,
+          expected_generation: input.session.generation,
+        })
+      ).data,
+    onSuccess: store,
+    onError: () => void query.refetch(),
+  });
   const pairing = useMutation({
     mutationFn: async (sessionId: string) =>
       (await call<{ data: PairingCode }>('POST', `/pos/display_sessions/${sessionId}/pairing_code`))
@@ -174,7 +187,7 @@ export function useDisplaySession(shiftId: string | null, enabled: boolean) {
     },
     onSuccess: store,
   });
-  return { query, bind, pin, clear, pairing, revoke };
+  return { query, bind, pin, clear, mode, pairing, revoke };
 }
 
 // Display side: the public channel. Reads and acknowledgements carry the

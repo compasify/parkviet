@@ -8,7 +8,7 @@ module Spree
       # booked when attested. Sale tenders, debt collections and unsolicited
       # receipts are kept apart; held cash is shown but is not drawer cash.
       class Receipts < Base
-        ENUMS = { 'kind' => %w[cash bank_manual], 'source' => %w[sale collection unsolicited] }.freeze
+        ENUMS = { 'kind' => ReceivedFunds::KINDS, 'source' => %w[sale collection unsolicited] }.freeze
         COLUMNS = %w[funds_id received_at booked_at kind source custody status received_net handed_amount change_amount
                      currency order_number reference shift_id register cashier].freeze
 

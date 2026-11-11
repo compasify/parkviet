@@ -39,6 +39,7 @@ module Spree
           case kind
           when 'cash' then t('receiptCash')
           when 'vietqr' then t('receiptVietqr')
+          when 'platform_receivable' then t('receiptPlatform')
           else t('receiptBank')
           end
         end
@@ -224,6 +225,7 @@ module Spree
             branch: { name: str(branch&.dig('name')), code: str(branch&.dig('code')),
                       return_window_days: branch&.dig('return_window_days').is_a?(Integer) ? branch['return_window_days'] : nil },
             register: str(document['register']), cashier: cashier, time: time, business_date: business_date,
+            call_number: str(document['call_number']), guest_name: str(document['guest_name']),
             taxes_text: taxes_summary(document['taxes'], currency),
             customer_name: str(customer&.dig('name')), customer_phone: str(customer&.dig('phone')), customer_address: str(customer&.dig('address')),
             meta: meta, line_labels: line_labels, signature_labels: signature_labels, disclaimer: receipt['disclaimer'],
@@ -312,6 +314,7 @@ module Spree
             branch: { name: str(place['branchName']), code: str(place['branchCode']), return_window_days: place['returnWindowDays'] },
             register: str(place['registerName']), cashier: nil, time: time,
             business_date: Text.business_date(workspace['business_date']),
+            call_number: workspace['order_number']&.to_s, guest_name: str(workspace['guest_name']),
             taxes_text: taxes_summary(totals&.dig('taxes'), currency),
             customer_name: customer&.dig(:name), customer_phone: customer&.dig(:phone), customer_address: customer&.dig(:address),
             meta: [row('time', t('receiptTime'), time), *customer_rows(customer), *delivery_meta_rows(delivery)],

@@ -68,6 +68,8 @@ export function useWorkspaces(
             // while it is the selected tab (see `selectedQuery`) and is reviewed
             // from the orders page afterwards; it never comes back as a tab.
             status: 'editing,parked',
+            // Delivery platform orders are worked from their own tray.
+            platform: 'exclude',
           },
         });
       } catch (error) {
@@ -519,6 +521,28 @@ export function useWorkspaces(
         order_source: orderSource,
       };
       return (await sendIntent(workspace.id, body, `/pos/workspaces/${workspace.id}/order_source`))
+        .workspace;
+    },
+    // The name the guest gives at the counter, called out and printed on the
+    // cup labels; blank clears it.
+    async setGuestName(workspace: PosWorkspace, guestName: string) {
+      const body = {
+        expected_revision: workspace.revision,
+        lease_generation: workspace.lease_generation,
+        editor_id: editorId,
+        guest_name: guestName,
+      };
+      return (await sendIntent(workspace.id, body, `/pos/workspaces/${workspace.id}/guest_name`))
+        .workspace;
+    },
+    // "Báo bếp": the part of every menu line the kitchen has not heard yet.
+    async sendToKitchen(workspace: PosWorkspace) {
+      const body = {
+        expected_revision: workspace.revision,
+        lease_generation: workspace.lease_generation,
+        editor_id: editorId,
+      };
+      return (await sendIntent(workspace.id, body, `/pos/workspaces/${workspace.id}/kitchen_sends`))
         .workspace;
     },
     async clearDelivery(workspace: PosWorkspace) {

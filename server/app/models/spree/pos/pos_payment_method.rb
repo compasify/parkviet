@@ -9,7 +9,13 @@ module Spree
       self.table_name = 'spree_pos_payment_methods'
       has_prefix_id :pospaymethod
 
-      KINDS = %w[cash bank_manual vietqr].freeze
+      # Tenders the counter offers and the store configures.
+      COUNTER_KINDS = %w[cash bank_manual vietqr].freeze
+      # What a delivery platform owes for an order its customer paid on the
+      # platform: only a platform order is settled with it, and the store
+      # gets one built-in row (PaymentMethodResolver#platform_method!).
+      PLATFORM_KIND = 'platform_receivable'
+      KINDS = (COUNTER_KINDS + [PLATFORM_KIND]).freeze
       CODE_FORMAT = /\A[a-z0-9][a-z0-9_]{0,31}\z/
 
       belongs_to :store, class_name: 'Spree::Store'
@@ -25,9 +31,14 @@ module Spree
 
       scope :for_store, ->(store) { where(store_id: store.id) }
       scope :active_now, -> { where(status: 'active').order(:position, :id) }
+      scope :counter, -> { where(kind: COUNTER_KINDS) }
 
       def active?
         status == 'active'
+      end
+
+      def platform?
+        kind == PLATFORM_KIND
       end
 
       def to_pos

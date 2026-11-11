@@ -28,6 +28,7 @@ part 'print_block.g.dart';
 /// * [align]
 /// * [bold]
 /// * [size]
+/// * [invert] - White on black (a kitchen note). Absent means false.
 /// * [src]
 /// * [alt]
 /// * [widthPct]

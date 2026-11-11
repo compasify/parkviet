@@ -1,6 +1,23 @@
-import { ORDER_SOURCES, type OrderSource } from './types/pos-context';
+import {
+  ORDER_SOURCES,
+  type OrderSource,
+  PLATFORM_ORDER_SOURCES,
+  type PlatformOrderSource,
+} from './types/pos-context';
 
-export { ORDER_SOURCES, type OrderSource } from './types/pos-context';
+export {
+  ORDER_SOURCES,
+  type OrderSource,
+  PICKABLE_ORDER_SOURCES,
+  type PickableOrderSource,
+  PLATFORM_ORDER_SOURCES,
+  type PlatformOrderSource,
+} from './types/pos-context';
+
+// A delivery platform's order: its source is fixed and its payment is the platform's.
+export function isPlatformSource(value: unknown): value is PlatformOrderSource {
+  return PLATFORM_ORDER_SOURCES.includes(value as PlatformOrderSource);
+}
 
 // What the server sent, or counter when it is missing (older payloads) or unknown.
 export function orderSourceOf(value: unknown): OrderSource {

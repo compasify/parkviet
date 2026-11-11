@@ -17,6 +17,10 @@ module Spree
       COMING_SOON = 'coming_soon'
       UNKNOWN = 'profile_unknown'
       GROUPS = %w[retail fnb].freeze
+      # Groups whose profiles can be picked once their modules are available.
+      # F&B profiles open with their own onboarding step; until then they stay
+      # coming soon even when every module they list has code.
+      OPEN_GROUPS = %w[retail].freeze
       FIELDS = %w[group order modules branch_defaults display recommended_features sample_units].freeze
       BRANCH_DEFAULT_FIELDS = %w[return_window_days lot_selection variance_threshold adjustment_approval_threshold].freeze
       DISPLAY_FIELDS = %w[catalog_view].freeze
@@ -26,7 +30,7 @@ module Spree
       Profile = Data.define(:key, :group, :order, :modules, :branch_defaults, :display, :recommended_features, :sample_units) do
         # Computed from the module registry, never written by hand.
         def status
-          modules.all? { |key| Modules.available?(key) } ? AVAILABLE : COMING_SOON
+          OPEN_GROUPS.include?(group) && modules.all? { |key| Modules.available?(key) } ? AVAILABLE : COMING_SOON
         end
 
         def available?

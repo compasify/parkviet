@@ -154,6 +154,8 @@ class _$Device extends Device {
   @override
   final String? platform;
   @override
+  final String? kitchenStationId;
+  @override
   final String? lastSeenAt;
 
   factory _$Device([void Function(DeviceBuilder)? updates]) =>
@@ -166,6 +168,7 @@ class _$Device extends Device {
       required this.status,
       required this.branchId,
       this.platform,
+      this.kitchenStationId,
       this.lastSeenAt})
       : super._();
   @override
@@ -185,6 +188,7 @@ class _$Device extends Device {
         status == other.status &&
         branchId == other.branchId &&
         platform == other.platform &&
+        kitchenStationId == other.kitchenStationId &&
         lastSeenAt == other.lastSeenAt;
   }
 
@@ -197,6 +201,7 @@ class _$Device extends Device {
     _$hash = $jc(_$hash, status.hashCode);
     _$hash = $jc(_$hash, branchId.hashCode);
     _$hash = $jc(_$hash, platform.hashCode);
+    _$hash = $jc(_$hash, kitchenStationId.hashCode);
     _$hash = $jc(_$hash, lastSeenAt.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
@@ -211,6 +216,7 @@ class _$Device extends Device {
           ..add('status', status)
           ..add('branchId', branchId)
           ..add('platform', platform)
+          ..add('kitchenStationId', kitchenStationId)
           ..add('lastSeenAt', lastSeenAt))
         .toString();
   }
@@ -243,6 +249,11 @@ class DeviceBuilder implements Builder<Device, DeviceBuilder> {
   String? get platform => _$this._platform;
   set platform(String? platform) => _$this._platform = platform;
 
+  String? _kitchenStationId;
+  String? get kitchenStationId => _$this._kitchenStationId;
+  set kitchenStationId(String? kitchenStationId) =>
+      _$this._kitchenStationId = kitchenStationId;
+
   String? _lastSeenAt;
   String? get lastSeenAt => _$this._lastSeenAt;
   set lastSeenAt(String? lastSeenAt) => _$this._lastSeenAt = lastSeenAt;
@@ -260,6 +271,7 @@ class DeviceBuilder implements Builder<Device, DeviceBuilder> {
       _status = $v.status;
       _branchId = $v.branchId;
       _platform = $v.platform;
+      _kitchenStationId = $v.kitchenStationId;
       _lastSeenAt = $v.lastSeenAt;
       _$v = null;
     }
@@ -290,6 +302,7 @@ class DeviceBuilder implements Builder<Device, DeviceBuilder> {
           branchId: BuiltValueNullFieldError.checkNotNull(
               branchId, r'Device', 'branchId'),
           platform: platform,
+          kitchenStationId: kitchenStationId,
           lastSeenAt: lastSeenAt,
         );
     replace(_$result);
