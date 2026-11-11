@@ -25,10 +25,11 @@ module Spree
         request.authorization.to_s.split(' ', 2).first == SCHEME
       end
 
-      # Address embedded in a pairing QR. Phase 6 sets POS_PUBLIC_BASE_URL;
-      # until then the request's own origin is the address the device can reach.
+      # Address embedded in a pairing QR: the deployment's POS_PUBLIC_BASE_URL
+      # (validated at boot by config/initializers/pos_public_url.rb), else the
+      # request's own origin, which the manager's browser just reached.
       def self.public_base_url(request)
-        ENV['POS_PUBLIC_BASE_URL'].presence || request.base_url
+        Parkviet::PosPublicUrl.base_url || request.base_url
       end
 
       def self.qr_payload(url, code)

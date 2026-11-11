@@ -1,0 +1,84 @@
+  void _deserializeProperties(
+    Serializers serializers,
+    Object serialized, {
+    FullType specifiedType = FullType.unspecified,
+    required List<Object?> serializedList,
+    required {{classname}}Builder result,
+    required List<Object?> unhandled,
+  }) {
+    for (var i = 0; i < serializedList.length; i += 2) {
+      final key = serializedList[i] as String;
+      final value = serializedList[i + 1];
+      switch (key) {
+        {{#vendorExtensions.x-self-and-ancestor-only-props}}
+        case r'{{baseName}}':
+          {{#vendorExtensions.x-is-optional}}
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const {{>serialization/built_value/variable_serializer_type}},
+          ) as {{{vendorExtensions.x-unwrapped-datatype-nullable}}};
+          result.{{{name}}} = Optional.present(valueDes);
+          {{/vendorExtensions.x-is-optional}}
+          {{^vendorExtensions.x-is-optional}}
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType{{#isNullable}}.nullable{{/isNullable}}{{^isNullable}}{{^required}}.nullable{{/required}}{{/isNullable}}({{#isContainer}}{{baseType}}, [{{#isMap}}FullType(String), {{/isMap}}{{#items}}{{>serialization/built_value/variable_serializer_type}}{{/items}}]{{/isContainer}}{{^isContainer}}{{{datatypeWithEnum}}}{{/isContainer}}),
+          ) as {{#isContainer}}{{baseType}}<{{#isMap}}String, {{/isMap}}{{#items}}{{>serialization/built_value/variable_type}}{{/items}}>{{/isContainer}}{{^isContainer}}{{{datatypeWithEnum}}}{{/isContainer}}{{#isNullable}}?{{/isNullable}}{{^isNullable}}{{^required}}?{{/required}}{{/isNullable}};
+          {{#isNullable}}
+          if (valueDes == null) continue;
+          {{/isNullable}}
+          {{^isNullable}}
+          {{^required}}
+          if (valueDes == null) continue;
+          {{/required}}
+          {{/isNullable}}
+          {{#isContainer}}
+          result.{{{name}}}.replace(valueDes);
+          {{/isContainer}}
+          {{^isContainer}}
+          {{#isEnum}}
+          result.{{{name}}} = valueDes;
+          {{/isEnum}}
+          {{^isEnum}}
+          {{#isModel}}
+          {{#isPrimitiveType}}
+          {{! These are models that have been manually marked as primitive via generator param. }}
+          result.{{{name}}} = valueDes;
+          {{/isPrimitiveType}}
+          {{^isPrimitiveType}}
+          {{#vendorExtensions.x-is-parent}}
+          result.{{{name}}} = valueDes;
+          {{/vendorExtensions.x-is-parent}}
+          {{^vendorExtensions.x-is-parent}}
+          result.{{{name}}}.replace(valueDes);
+          {{/vendorExtensions.x-is-parent}}
+          {{/isPrimitiveType}}
+          {{/isModel}}
+          {{^isModel}}
+          {{! The generator does not flag a $ref to an object schema with
+              additionalProperties: true as a model, yet generates it as a
+              built value, whose builder field is a nested builder. }}
+          {{#ref}}
+          {{#vendorExtensions.x-is-parent}}
+          result.{{{name}}} = valueDes;
+          {{/vendorExtensions.x-is-parent}}
+          {{^vendorExtensions.x-is-parent}}
+          result.{{{name}}}.replace(valueDes);
+          {{/vendorExtensions.x-is-parent}}
+          {{/ref}}
+          {{^ref}}
+          result.{{{name}}} = valueDes;
+          {{/ref}}
+          {{/isModel}}
+          {{/isEnum}}
+          {{/isContainer}}
+          {{/vendorExtensions.x-is-optional}}
+          break;
+        {{/vendorExtensions.x-self-and-ancestor-only-props}}
+        default:
+          unhandled.add(key);
+          unhandled.add(value);
+          break;
+      }
+    }
+  }

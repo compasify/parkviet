@@ -1,0 +1,24 @@
+# Settings for tool/gen_api.sh. The generator version is pinned in
+# ../openapitools.json.
+generatorName: dart-dio
+# Overrides of the generator's own templates; each file says what it fixes.
+templateDir: tool/templates
+additionalProperties:
+  pubName: pos_api
+  pubLibrary: pos_api
+  pubDescription: Parkviet POS staff and device API client, generated from server/openapi/pos-staff.yaml
+  serializationLibrary: built_value
+globalProperties:
+  apiTests: false
+  modelTests: false
+  apiDocs: false
+  modelDocs: false
+# The print document's blocks and lines are a oneOf without a discriminator.
+# The generator cannot tell a barcode block from a QR block that way, so the
+# document stays JSON and lib/modes/print_station reads it by the schema.
+typeMappings:
+  PrintDocument: JsonObject
+schemaMappings:
+  PrintDocument: JsonObject
+importMappings:
+  JsonObject: package:built_value/json_object.dart

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  A shop server on the LAN runs plain HTTP on a private IP or a .local name
+  (docs/deploy/pos-lan-vps.md). Android cannot allow cleartext by address
+  range, so cleartext is allowed here and the pairing check
+  (lib/pairing/pairing_payload.dart, isPrivateHost) refuses http:// to any
+  other host. HTTPS keeps trusting only the system CAs, plus a CA the user
+  installed on the device for Caddy's `tls internal` mode.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

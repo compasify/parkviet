@@ -1,0 +1,100 @@
+name: Staff app CI
+
+# Every branch, whenever the app or its contract changes.
+on:
+  push:
+    paths:
+      - apps/pos-staff/**
+      - server/openapi/pos-staff.yaml
+      - server/spec/fixtures/print_documents/**
+      - .github/workflows/pos-staff-ci.yml
+  pull_request:
+    paths:
+      - apps/pos-staff/**
+      - server/openapi/pos-staff.yaml
+      - server/spec/fixtures/print_documents/**
+      - .github/workflows/pos-staff-ci.yml
+
+permissions:
+  contents: read
+
+env:
+  # The SDK the app's package versions are resolved against.
+  FLUTTER_VERSION: 3.32.5
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/pos-staff
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      # The generator runs on Java and is fetched with npx.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Client matches the contract
+        run: |
+          bash tool/gen_api.sh
+          git diff --exit-code -- packages/pos_api
+          test -z "$(git status --porcelain -- packages/pos_api)"
+
+      - run: flutter pub get --enforce-lockfile
+      - name: Generated app code is current
+        run: |
+          dart run build_runner build
+          git diff --exit-code -- lib
+      - run: flutter analyze
+      # Renders the server's print document fixtures against the goldens.
+      - run: flutter test
+
+  android:
+    needs: test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/pos-staff
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter pub get --enforce-lockfile
+      # Signed with the debug key here: the release keystore never leaves the
+      # machine that publishes (see apps/pos-staff/README.md).
+      - run: flutter build apk --release
+
+  ios:
+    needs: test
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: apps/pos-staff
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter pub get --enforce-lockfile
+      - run: flutter build ios --release --no-codesign

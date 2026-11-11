@@ -57,6 +57,7 @@ import { Route as AuthenticatedStoreIdSettingsIndexRouteImport } from './routes/
 import { Route as AuthenticatedStoreIdSettingsBusinessModelRouteImport } from './routes/_authenticated/$storeId/settings/business-model'
 import { Route as AuthenticatedStoreIdSettingsReceiptTemplatesRouteImport } from './routes/_authenticated/$storeId/settings/receipt-templates'
 import { Route as AuthenticatedStoreIdSettingsSetupRouteImport } from './routes/_authenticated/$storeId/settings/setup'
+import { Route as AuthenticatedStoreIdSettingsSystemRouteImport } from './routes/_authenticated/$storeId/settings/system'
 import { Route as AuthenticatedStoreIdShiftsIndexRouteImport } from './routes/_authenticated/$storeId/shifts/index'
 import { Route as AuthenticatedStoreIdShiftsClosuresRouteImport } from './routes/_authenticated/$storeId/shifts/closures'
 import { Route as AuthenticatedStoreIdShiftsLateCashRouteImport } from './routes/_authenticated/$storeId/shifts/late-cash'
@@ -354,6 +355,12 @@ const AuthenticatedStoreIdSettingsSetupRoute =
     path: '/setup',
     getParentRoute: () => AuthenticatedStoreIdSettingsRoute,
   } as any)
+const AuthenticatedStoreIdSettingsSystemRoute =
+  AuthenticatedStoreIdSettingsSystemRouteImport.update({
+    id: '/system',
+    path: '/system',
+    getParentRoute: () => AuthenticatedStoreIdSettingsRoute,
+  } as any)
 const AuthenticatedStoreIdShiftsIndexRoute =
   AuthenticatedStoreIdShiftsIndexRouteImport.update({
     id: '/',
@@ -480,6 +487,7 @@ export interface FileRoutesByFullPath {
   '/$storeId/settings/business-model': typeof AuthenticatedStoreIdSettingsBusinessModelRoute
   '/$storeId/settings/receipt-templates': typeof AuthenticatedStoreIdSettingsReceiptTemplatesRouteWithChildren
   '/$storeId/settings/setup': typeof AuthenticatedStoreIdSettingsSetupRoute
+  '/$storeId/settings/system': typeof AuthenticatedStoreIdSettingsSystemRoute
   '/$storeId/shifts/closures': typeof AuthenticatedStoreIdShiftsClosuresRoute
   '/$storeId/shifts/late-cash': typeof AuthenticatedStoreIdShiftsLateCashRoute
   '/$storeId/branches/': typeof AuthenticatedStoreIdBranchesIndexRoute
@@ -532,6 +540,7 @@ export interface FileRoutesByTo {
   '/$storeId/reports/receivables': typeof AuthenticatedStoreIdReportsReceivablesRoute
   '/$storeId/settings/business-model': typeof AuthenticatedStoreIdSettingsBusinessModelRoute
   '/$storeId/settings/setup': typeof AuthenticatedStoreIdSettingsSetupRoute
+  '/$storeId/settings/system': typeof AuthenticatedStoreIdSettingsSystemRoute
   '/$storeId/shifts/closures': typeof AuthenticatedStoreIdShiftsClosuresRoute
   '/$storeId/shifts/late-cash': typeof AuthenticatedStoreIdShiftsLateCashRoute
   '/$storeId/branches': typeof AuthenticatedStoreIdBranchesIndexRoute
@@ -597,6 +606,7 @@ export interface FileRoutesById {
   '/_authenticated/$storeId/settings/business-model': typeof AuthenticatedStoreIdSettingsBusinessModelRoute
   '/_authenticated/$storeId/settings/receipt-templates': typeof AuthenticatedStoreIdSettingsReceiptTemplatesRouteWithChildren
   '/_authenticated/$storeId/settings/setup': typeof AuthenticatedStoreIdSettingsSetupRoute
+  '/_authenticated/$storeId/settings/system': typeof AuthenticatedStoreIdSettingsSystemRoute
   '/_authenticated/$storeId/shifts/closures': typeof AuthenticatedStoreIdShiftsClosuresRoute
   '/_authenticated/$storeId/shifts/late-cash': typeof AuthenticatedStoreIdShiftsLateCashRoute
   '/_authenticated/$storeId/branches/': typeof AuthenticatedStoreIdBranchesIndexRoute
@@ -662,6 +672,7 @@ export interface FileRouteTypes {
     | '/$storeId/settings/business-model'
     | '/$storeId/settings/receipt-templates'
     | '/$storeId/settings/setup'
+    | '/$storeId/settings/system'
     | '/$storeId/shifts/closures'
     | '/$storeId/shifts/late-cash'
     | '/$storeId/branches/'
@@ -714,6 +725,7 @@ export interface FileRouteTypes {
     | '/$storeId/reports/receivables'
     | '/$storeId/settings/business-model'
     | '/$storeId/settings/setup'
+    | '/$storeId/settings/system'
     | '/$storeId/shifts/closures'
     | '/$storeId/shifts/late-cash'
     | '/$storeId/branches'
@@ -778,6 +790,7 @@ export interface FileRouteTypes {
     | '/_authenticated/$storeId/settings/business-model'
     | '/_authenticated/$storeId/settings/receipt-templates'
     | '/_authenticated/$storeId/settings/setup'
+    | '/_authenticated/$storeId/settings/system'
     | '/_authenticated/$storeId/shifts/closures'
     | '/_authenticated/$storeId/shifts/late-cash'
     | '/_authenticated/$storeId/branches/'
@@ -1145,6 +1158,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStoreIdSettingsSetupRouteImport
       parentRoute: typeof AuthenticatedStoreIdSettingsRoute
     }
+    '/_authenticated/$storeId/settings/system': {
+      id: '/_authenticated/$storeId/settings/system'
+      path: '/system'
+      fullPath: '/$storeId/settings/system'
+      preLoaderRoute: typeof AuthenticatedStoreIdSettingsSystemRouteImport
+      parentRoute: typeof AuthenticatedStoreIdSettingsRoute
+    }
     '/_authenticated/$storeId/shifts/': {
       id: '/_authenticated/$storeId/shifts/'
       path: '/'
@@ -1422,6 +1442,7 @@ interface AuthenticatedStoreIdSettingsRouteChildren {
   AuthenticatedStoreIdSettingsBusinessModelRoute: typeof AuthenticatedStoreIdSettingsBusinessModelRoute
   AuthenticatedStoreIdSettingsReceiptTemplatesRoute: typeof AuthenticatedStoreIdSettingsReceiptTemplatesRouteWithChildren
   AuthenticatedStoreIdSettingsSetupRoute: typeof AuthenticatedStoreIdSettingsSetupRoute
+  AuthenticatedStoreIdSettingsSystemRoute: typeof AuthenticatedStoreIdSettingsSystemRoute
   AuthenticatedStoreIdSettingsIndexRoute: typeof AuthenticatedStoreIdSettingsIndexRoute
 }
 
@@ -1433,6 +1454,8 @@ const AuthenticatedStoreIdSettingsRouteChildren: AuthenticatedStoreIdSettingsRou
       AuthenticatedStoreIdSettingsReceiptTemplatesRouteWithChildren,
     AuthenticatedStoreIdSettingsSetupRoute:
       AuthenticatedStoreIdSettingsSetupRoute,
+    AuthenticatedStoreIdSettingsSystemRoute:
+      AuthenticatedStoreIdSettingsSystemRoute,
     AuthenticatedStoreIdSettingsIndexRoute:
       AuthenticatedStoreIdSettingsIndexRoute,
   }

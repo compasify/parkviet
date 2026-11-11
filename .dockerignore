@@ -9,3 +9,18 @@ server/log
 server/tmp
 server/storage
 server/.env*
+# Never in a build context: local secrets and the production env file.
+.env
+**/.env.local
+deploy/.env*
+# Tunnel credentials (and the example config, which the image never reads).
+deploy/cloudflared/
+# Not part of the server image: the Flutter app, build output, test output,
+# local backups and planning notes.
+apps/pos-staff
+apps/*/dist
+apps/*/.tanstack
+apps/*/test-results
+backups
+**/backups
+plans

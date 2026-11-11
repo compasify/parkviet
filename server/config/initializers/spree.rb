@@ -47,7 +47,18 @@ Rails.application.config.after_initialize do
 
   # Stock splitters and adjusters
   # Spree.stock_splitters << Spree::Stock::Splitters::SecretLogicSplitter
-  if ActiveRecord::Base.connection.table_exists?(:spree_pos_discount_intents)
+  # Image builds precompile assets with no database (SECRET_KEY_BASE_DUMMY is
+  # set there); only then is a missing database skipped. A running app that
+  # cannot reach its database fails the boot here instead of starting without
+  # the POS adjusters.
+  pos_discounts_ready = begin
+    ActiveRecord::Base.connection.table_exists?(:spree_pos_discount_intents)
+  rescue ActiveRecord::ConnectionNotEstablished, ActiveRecord::NoDatabaseError
+    raise if ENV["SECRET_KEY_BASE_DUMMY"].blank?
+
+    false
+  end
+  if pos_discounts_ready
     Spree.adjusters = Spree.adjusters.map { |adjuster| adjuster == Spree::Adjusters::Promotion ? Spree::Pos::Adjusters::Promotion : adjuster }
     Spree.adjusters << Spree::Pos::Adjusters::ManualDiscount unless Spree.adjusters.include?(Spree::Pos::Adjusters::ManualDiscount)
   end

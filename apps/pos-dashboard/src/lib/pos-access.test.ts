@@ -201,4 +201,16 @@ describe('POS permission gates', () => {
     expect(visibleNav('reports', staff(['pos.shift.open']))).toBe(true)
     expect(visibleNav('reports', staff([]))).toBe(false)
   })
+  it('shows server information to store administrators only', () => {
+    expect(routeAllowed('system', { permissionKeys: ['read_pos_topology'] })).toBe(true)
+    expect(visibleNav('system', { permissionKeys: ['write_pos_topology'] })).toBe(true)
+    const manager = {
+      permissionKeys: [],
+      context: {
+        selection: { branch_id: 'b', register_id: null },
+        capabilities: ['pos.topology.manage', 'pos.device.manage'],
+      } as PosContext,
+    }
+    expect(routeAllowed('system', manager)).toBe(false)
+  })
 })

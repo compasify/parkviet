@@ -1,0 +1,24 @@
+# Cloudflare Tunnel for a shop server: the bank's VietQR notifications reach
+# the app without opening a port on the shop router. Only the webhook path
+# goes through; every other request through the tunnel gets 404, so the POS,
+# the dashboards and the API stay on the shop network.
+#
+# 1. cloudflared tunnel login && cloudflared tunnel create parkviet-<shop>
+#    (on any machine; it writes <tunnel-id>.json, the tunnel credentials).
+# 2. cloudflared tunnel route dns parkviet-<shop> pay.<shop-domain>
+# 3. Copy this file to deploy/cloudflared/config.yml and the credentials JSON
+#    next to it (both gitignored), then fill in the two placeholders.
+# 4. Add pay.<shop-domain> to POS_EXTRA_HOSTS in .env.prod, and start the
+#    stack with `--profile tunnel`.
+# 5. In SePay / PayOS, set the webhook URL to
+#    https://pay.<shop-domain>/webhooks/payments/sepay (or .../payos).
+#    The app checks each provider's signature or API key on every call.
+
+tunnel: <tunnel-id>
+credentials-file: /etc/cloudflared/<tunnel-id>.json
+
+ingress:
+  - hostname: pay.<shop-domain>
+    path: ^/webhooks/payments/(sepay|payos)$
+    service: http://web:3000
+  - service: http_status:404

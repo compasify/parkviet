@@ -1,0 +1,250 @@
+//
+// AUTO-GENERATED FILE, DO NOT MODIFY!
+//
+
+// ignore_for_file: unused_element
+import 'package:built_collection/built_collection.dart';
+import 'package:built_value/built_value.dart';
+import 'package:built_value/serializer.dart';
+
+part 'realtime_event.g.dart';
+
+/// RealtimeEvent
+///
+/// Properties:
+/// * [event]
+/// * [id]
+/// * [branchId]
+/// * [revision]
+/// * [leaseGeneration]
+/// * [at]
+/// * [refs]
+@BuiltValue()
+abstract class RealtimeEvent
+    implements Built<RealtimeEvent, RealtimeEventBuilder> {
+  @BuiltValueField(wireName: r'event')
+  RealtimeEventEventEnum get event;
+  // enum eventEnum {  workspace.updated,  kitchen_ticket.updated,  menu.sold_out,  payment.requested,  print_job.created,  resource.updated,  approval.requested,  };
+
+  @BuiltValueField(wireName: r'id')
+  String get id;
+
+  @BuiltValueField(wireName: r'branch_id')
+  String get branchId;
+
+  @BuiltValueField(wireName: r'revision')
+  int? get revision;
+
+  @BuiltValueField(wireName: r'lease_generation')
+  int? get leaseGeneration;
+
+  @BuiltValueField(wireName: r'at')
+  DateTime get at;
+
+  @BuiltValueField(wireName: r'refs')
+  BuiltMap<String, String> get refs;
+
+  RealtimeEvent._();
+
+  factory RealtimeEvent([void updates(RealtimeEventBuilder b)]) =
+      _$RealtimeEvent;
+
+  @BuiltValueHook(initializeBuilder: true)
+  static void _defaults(RealtimeEventBuilder b) => b;
+
+  @BuiltValueSerializer(custom: true)
+  static Serializer<RealtimeEvent> get serializer =>
+      _$RealtimeEventSerializer();
+}
+
+class _$RealtimeEventSerializer implements PrimitiveSerializer<RealtimeEvent> {
+  @override
+  final Iterable<Type> types = const [RealtimeEvent, _$RealtimeEvent];
+
+  @override
+  final String wireName = r'RealtimeEvent';
+
+  Iterable<Object?> _serializeProperties(
+    Serializers serializers,
+    RealtimeEvent object, {
+    FullType specifiedType = FullType.unspecified,
+  }) sync* {
+    yield r'event';
+    yield serializers.serialize(
+      object.event,
+      specifiedType: const FullType(RealtimeEventEventEnum),
+    );
+    yield r'id';
+    yield serializers.serialize(
+      object.id,
+      specifiedType: const FullType(String),
+    );
+    yield r'branch_id';
+    yield serializers.serialize(
+      object.branchId,
+      specifiedType: const FullType(String),
+    );
+    if (object.revision != null) {
+      yield r'revision';
+      yield serializers.serialize(
+        object.revision,
+        specifiedType: const FullType(int),
+      );
+    }
+    if (object.leaseGeneration != null) {
+      yield r'lease_generation';
+      yield serializers.serialize(
+        object.leaseGeneration,
+        specifiedType: const FullType(int),
+      );
+    }
+    yield r'at';
+    yield serializers.serialize(
+      object.at,
+      specifiedType: const FullType(DateTime),
+    );
+    yield r'refs';
+    yield serializers.serialize(
+      object.refs,
+      specifiedType:
+          const FullType(BuiltMap, [FullType(String), FullType(String)]),
+    );
+  }
+
+  @override
+  Object serialize(
+    Serializers serializers,
+    RealtimeEvent object, {
+    FullType specifiedType = FullType.unspecified,
+  }) {
+    return _serializeProperties(serializers, object,
+            specifiedType: specifiedType)
+        .toList();
+  }
+
+  void _deserializeProperties(
+    Serializers serializers,
+    Object serialized, {
+    FullType specifiedType = FullType.unspecified,
+    required List<Object?> serializedList,
+    required RealtimeEventBuilder result,
+    required List<Object?> unhandled,
+  }) {
+    for (var i = 0; i < serializedList.length; i += 2) {
+      final key = serializedList[i] as String;
+      final value = serializedList[i + 1];
+      switch (key) {
+        case r'event':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(RealtimeEventEventEnum),
+          ) as RealtimeEventEventEnum;
+          result.event = valueDes;
+          break;
+        case r'id':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(String),
+          ) as String;
+          result.id = valueDes;
+          break;
+        case r'branch_id':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(String),
+          ) as String;
+          result.branchId = valueDes;
+          break;
+        case r'revision':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(int),
+          ) as int?;
+          if (valueDes == null) continue;
+          result.revision = valueDes;
+          break;
+        case r'lease_generation':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(int),
+          ) as int?;
+          if (valueDes == null) continue;
+          result.leaseGeneration = valueDes;
+          break;
+        case r'at':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(DateTime),
+          ) as DateTime;
+          result.at = valueDes;
+          break;
+        case r'refs':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType:
+                const FullType(BuiltMap, [FullType(String), FullType(String)]),
+          ) as BuiltMap<String, String>;
+          result.refs.replace(valueDes);
+          break;
+        default:
+          unhandled.add(key);
+          unhandled.add(value);
+          break;
+      }
+    }
+  }
+
+  @override
+  RealtimeEvent deserialize(
+    Serializers serializers,
+    Object serialized, {
+    FullType specifiedType = FullType.unspecified,
+  }) {
+    final result = RealtimeEventBuilder();
+    final serializedList = (serialized as Iterable<Object?>).toList();
+    final unhandled = <Object?>[];
+    _deserializeProperties(
+      serializers,
+      serialized,
+      specifiedType: specifiedType,
+      serializedList: serializedList,
+      unhandled: unhandled,
+      result: result,
+    );
+    return result.build();
+  }
+}
+
+class RealtimeEventEventEnum extends EnumClass {
+  @BuiltValueEnumConst(wireName: r'workspace.updated')
+  static const RealtimeEventEventEnum workspacePeriodUpdated =
+      _$realtimeEventEventEnum_workspacePeriodUpdated;
+  @BuiltValueEnumConst(wireName: r'kitchen_ticket.updated')
+  static const RealtimeEventEventEnum kitchenTicketPeriodUpdated =
+      _$realtimeEventEventEnum_kitchenTicketPeriodUpdated;
+  @BuiltValueEnumConst(wireName: r'menu.sold_out')
+  static const RealtimeEventEventEnum menuPeriodSoldOut =
+      _$realtimeEventEventEnum_menuPeriodSoldOut;
+  @BuiltValueEnumConst(wireName: r'payment.requested')
+  static const RealtimeEventEventEnum paymentPeriodRequested =
+      _$realtimeEventEventEnum_paymentPeriodRequested;
+  @BuiltValueEnumConst(wireName: r'print_job.created')
+  static const RealtimeEventEventEnum printJobPeriodCreated =
+      _$realtimeEventEventEnum_printJobPeriodCreated;
+  @BuiltValueEnumConst(wireName: r'resource.updated')
+  static const RealtimeEventEventEnum resourcePeriodUpdated =
+      _$realtimeEventEventEnum_resourcePeriodUpdated;
+  @BuiltValueEnumConst(wireName: r'approval.requested')
+  static const RealtimeEventEventEnum approvalPeriodRequested =
+      _$realtimeEventEventEnum_approvalPeriodRequested;
+
+  static Serializer<RealtimeEventEventEnum> get serializer =>
+      _$realtimeEventEventEnumSerializer;
+
+  const RealtimeEventEventEnum._(String name) : super(name);
+
+  static BuiltSet<RealtimeEventEventEnum> get values =>
+      _$realtimeEventEventEnumValues;
+  static RealtimeEventEventEnum valueOf(String name) =>
+      _$realtimeEventEventEnumValueOf(name);
+}

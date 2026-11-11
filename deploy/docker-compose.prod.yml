@@ -1,0 +1,148 @@
+# ParkViet production stack: one shop server (mini PC on the shop LAN) or one
+# VPS. Same file for both; .env.prod picks the mode. Guide:
+# docs/deploy/pos-lan-vps.md.
+#
+#   cp .env.prod.example .env.prod      # then fill it in (install-lan.sh does this)
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+#
+# Optional services sit behind profiles:
+#   --profile tunnel    cloudflared, for the VietQR webhook path only
+#   --profile offsite   rclone, copies backups/ to S3-compatible storage
+#
+# Only Caddy publishes ports. Postgres and the app are reachable from the
+# compose network alone (see "Published ports and firewalls" in the Spree
+# Docker guide): never add a `ports:` entry to them.
+
+name: parkviet
+
+x-app-env: &app-env
+  DATABASE_URL: postgres://parkviet:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.prod}@postgres:5432/parkviet_production
+  # Backups land in ./backups; the app reads it to show the last one.
+  POS_BACKUP_DIR: /backups
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: parkviet
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.prod}
+      POSTGRES_DB: parkviet_production
+      PGDATA: /var/lib/postgresql/18/docker
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: pg_isready -h 127.0.0.1 -U parkviet -d parkviet_production
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # API, /dashboard, /pos (counter) and /pos-admin (POS administration) in
+  # one container; Solid Queue runs inside Puma. Migrations run on boot.
+  web:
+    image: ${PARKVIET_IMAGE:-parkviet-spree:latest}
+    build:
+      context: ..
+      dockerfile: server/Dockerfile
+      args:
+        PARKVIET_VERSION: ${PARKVIET_VERSION:-development}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file: .env.prod
+    environment:
+      <<: *app-env
+    volumes:
+      - storage_data:/rails/storage
+      - ./backups:/backups:ro
+    healthcheck:
+      test: curl -fsS http://localhost:3000/up || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+  # Reverse proxy and TLS. POS_CADDY_SITE and POS_TLS_MODE choose plain HTTP
+  # on the LAN, Caddy's own CA on the LAN, or Let's Encrypt on a VPS.
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      web:
+        condition: service_healthy
+    environment:
+      POS_CADDY_SITE: ${POS_CADDY_SITE:-http://}
+      POS_TLS_MODE: ${POS_TLS_MODE:-none}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+  # Nightly pg_dump into ./backups, newest 14 kept (scripts/backup.sh).
+  backup:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "/scripts/backup.sh", "loop"]
+    environment:
+      PGHOST: postgres
+      PGUSER: parkviet
+      PGPASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.prod}
+      PGDATABASE: parkviet_production
+      BACKUP_DIR: /backups
+      BACKUP_KEEP: ${BACKUP_KEEP:-14}
+      BACKUP_AT: ${BACKUP_AT:-0230}
+      # POSIX TZ string, no tzdata needed. Vietnam has no daylight saving.
+      TZ: ${BACKUP_TZ:-ICT-7}
+    volumes:
+      - ./backups:/backups
+      - ./scripts/backup.sh:/scripts/backup.sh:ro
+
+  # Webhook tunnel. Its ingress (cloudflared/config.yml) forwards only
+  # POST /webhooks/payments/<provider> to the app; everything else is 404.
+  cloudflared:
+    image: cloudflare/cloudflared:2026.10.7
+    profiles: [tunnel]
+    restart: unless-stopped
+    depends_on:
+      web:
+        condition: service_healthy
+    command: ["tunnel", "--no-autoupdate", "--config", "/etc/cloudflared/config.yml", "run"]
+    volumes:
+      - ./cloudflared:/etc/cloudflared:ro
+
+  # Off-site copy of ./backups whenever the internet is up.
+  offsite:
+    image: rclone/rclone:1.75.2
+    profiles: [offsite]
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >
+        while true; do
+          rclone copy /backups "$${RCLONE_DESTINATION:?set RCLONE_DESTINATION}" --include 'parkviet-*.dump' --max-age 3d || true;
+          sleep 3600;
+        done
+    # Only the rclone settings, not the app's secrets. A remote that needs
+    # more RCLONE_CONFIG_OFFSITE_* keys (region, ACL) gets them added here.
+    environment:
+      RCLONE_DESTINATION: ${RCLONE_DESTINATION:-}
+      RCLONE_CONFIG_OFFSITE_TYPE: ${RCLONE_CONFIG_OFFSITE_TYPE:-}
+      RCLONE_CONFIG_OFFSITE_PROVIDER: ${RCLONE_CONFIG_OFFSITE_PROVIDER:-}
+      RCLONE_CONFIG_OFFSITE_ENDPOINT: ${RCLONE_CONFIG_OFFSITE_ENDPOINT:-}
+      RCLONE_CONFIG_OFFSITE_ACCESS_KEY_ID: ${RCLONE_CONFIG_OFFSITE_ACCESS_KEY_ID:-}
+      RCLONE_CONFIG_OFFSITE_SECRET_ACCESS_KEY: ${RCLONE_CONFIG_OFFSITE_SECRET_ACCESS_KEY:-}
+    volumes:
+      - ./backups:/backups:ro
+
+volumes:
+  postgres_data:
+  storage_data:
+  caddy_data:
+  caddy_config:

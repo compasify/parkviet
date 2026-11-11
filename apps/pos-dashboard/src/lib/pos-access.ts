@@ -37,6 +37,8 @@ export type PosPage =
   | 'setup'
   | 'store-model'
   | 'devices'
+  // Server information: store administrators (the default branch below).
+  | 'system'
 export function canAdminister(access: PosAccess, write = false) {
   return (
     access.permissionKeys.includes('write_pos_topology') ||

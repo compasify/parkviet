@@ -17,6 +17,21 @@ describe('POS dashboard links', () => {
     ).toBe('https://admin.example.test/pos-admin/store%20%2F1/features?branch=branch+%2F2');
   });
 
+  it('resolves a path-only base against the server this app is served from', () => {
+    const location = { baseUrl: '/pos-admin/', origin: 'http://192.168.1.10' };
+    expect(posDashboardUrl('store_1', '/settings/system', null, location)).toBe(
+      'http://192.168.1.10/pos-admin/store_1/settings/system',
+    );
+    expect(posDashboardHomeUrl(location)).toBe('http://192.168.1.10/pos-admin/');
+    expect(posDashboardUrl('store_1', '', null, { baseUrl: '/pos-admin/' })).toBeNull();
+    expect(
+      posDashboardUrl('store_1', '', null, {
+        baseUrl: '//other.test/',
+        origin: 'http://192.168.1.10',
+      }),
+    ).toBeNull();
+  });
+
   it('links to receipt settings without carrying a sale or session token', () => {
     expect(
       posDashboardUrl('store_1', '/settings/receipt-templates', null, {

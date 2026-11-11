@@ -1,0 +1,58 @@
+name: parkviet_staff
+description: "Parkviet staff app: waiter, kitchen, runner, kiosk, owner, bridge and print station modes on one paired device."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.8.1
+
+# Versions are the newest that resolve on the Flutter SDK the project builds
+# with (3.32, Dart 3.8). Raise them with the SDK.
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  pos_api:
+    path: packages/pos_api
+
+  built_value: ^8.12.0
+  device_info_plus: ^12.4.0
+  dio: ^5.11.1
+  esc_pos_utils_plus: ^2.0.4
+  # 2.x needs a paid licence for commercial use; 1.x is BSD-3-Clause.
+  flutter_blue_plus: '>=1.35.0 <2.0.0'
+  flutter_foreground_task: ^9.2.2
+  flutter_riverpod: 3.0.3
+  flutter_secure_storage: ^10.3.4
+  freezed_annotation: ^3.1.0
+  go_router: ^17.0.0
+  image: ^4.12.0
+  intl: ^0.20.2
+  json_annotation: ^4.9.0
+  mobile_scanner: ^7.5.0
+  package_info_plus: ^9.0.1
+  riverpod_annotation: 3.0.3
+  shared_preferences: ^2.5.3
+  sunmi_printer_plus: ^4.1.1
+  uuid: ^4.6.0
+  wakelock_plus: ^1.4.0
+  web_socket_channel: ^3.0.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  integration_test:
+    sdk: flutter
+
+  build_runner: ^2.7.1
+  flutter_lints: ^5.0.0
+  freezed: ^3.2.3
+  json_serializable: ^6.11.2
+  riverpod_generator: 3.0.3
+
+flutter:
+  uses-material-design: true
+  generate: true

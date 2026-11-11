@@ -30,6 +30,16 @@ paths:
   /api/v3/admin/pos/context:
     get:
       operationId: posContext
+      parameters:
+        - name: branch_id
+          in: query
+          description: The branch whose capabilities to list.
+          schema:
+            type: string
+        - name: register_id
+          in: query
+          schema:
+            type: string
       responses:
         '200':
           description: Staff context
@@ -70,6 +80,8 @@ paths:
   /api/v3/admin/pos/workspaces/{id}:
     get:
       operationId: posWorkspaceShow
+      parameters:
+        - $ref: '#/components/parameters/Id'
       responses:
         '200':
           description: Workspace
@@ -84,6 +96,8 @@ paths:
   /api/v3/admin/pos/workspaces/{id}/items:
     post:
       operationId: posWorkspaceAddItem
+      parameters:
+        - $ref: '#/components/parameters/Id'
       responses:
         '200':
           description: Workspace after the line change
@@ -112,9 +126,51 @@ paths:
   /api/v3/pos_device/pair:
     post:
       operationId: posDevicePair
+      description: >
+        Exchanges a single-use pairing code. Unauthenticated and rate limited
+        per client address; an unknown or expired code answers 404
+        `pairing_invalid`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code, platform, name]
+              properties:
+                code:
+                  type: string
+                platform:
+                  type: string
+                  enum: [android, ios, web]
+                name:
+                  type: string
+                  maxLength: 80
+                app_version:
+                  type: string
       responses:
         '201':
           description: Device token, shown once
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/DevicePairResult'
+        '404':
+          description: The code is invalid or expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Too many attempts from this address
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/v3/pos_device/me:
     get:
       operationId: posDeviceMe
@@ -135,12 +191,59 @@ paths:
       responses:
         '200':
           description: Names at the branch
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DeviceStaffMember'
   /api/v3/pos_device/staff_sessions:
     post:
       operationId: posDeviceStaffSignIn
+      description: >
+        Five wrong PINs in 15 minutes lock that person on this device (429
+        `pin_locked`); the device as a whole has a cap (429 `pin_rate_limited`).
+        A wrong PIN answers 401 `pin_incorrect`, a person without a PIN 401
+        `pin_not_set`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [membership_id, pin]
+              properties:
+                membership_id:
+                  type: string
+                pin:
+                  type: string
       responses:
         '201':
           description: Staff session token, shown once
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/DeviceStaffSignIn'
+        '401':
+          description: Refused; `error.code` says why
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Locked; `error.code` says why
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     delete:
       operationId: posDeviceStaffSignOut
       responses:
@@ -260,6 +363,7 @@ paths:
     patch:
       operationId: posPrinterUpdate
       parameters:
+        - $ref: '#/components/parameters/Id'
         - name: Idempotency-Key
           in: header
           required: true
@@ -318,6 +422,7 @@ paths:
       operationId: posPrinterDelete
       description: Refused with `printer_in_use` once the printer has print jobs; disable it instead.
       parameters:
+        - $ref: '#/components/parameters/Id'
         - name: Idempotency-Key
           in: header
           required: true
@@ -348,6 +453,7 @@ paths:
         A print station printer gets a queued test job. A printer the browser
         drives gets the test document back, to print from the browser.
       parameters:
+        - $ref: '#/components/parameters/Id'
         - name: Idempotency-Key
           in: header
           required: true
@@ -482,6 +588,7 @@ paths:
         `workspace.reprint_prebill` bound to the workspace and its revision,
         and answers `approval_required` without one.
       parameters:
+        - $ref: '#/components/parameters/Id'
         - name: Idempotency-Key
           in: header
           required: true
@@ -514,6 +621,7 @@ paths:
     post:
       operationId: posPrintJobCancel
       parameters:
+        - $ref: '#/components/parameters/Id'
         - name: Idempotency-Key
           in: header
           required: true
@@ -540,6 +648,12 @@ paths:
         Takes back the caller's latest print recorded for a LAN printer, when
         delivery certainly failed, so it does not count as printed.
       parameters:
+        - $ref: '#/components/parameters/Id'
+        - name: print_id
+          in: path
+          required: true
+          schema:
+            type: string
         - name: Idempotency-Key
           in: header
           required: true
@@ -601,6 +715,8 @@ paths:
   /api/v3/pos_device/print_jobs/{id}/report:
     post:
       operationId: posDevicePrintReport
+      parameters:
+        - $ref: '#/components/parameters/Id'
       description: >
         How one attempt ended. Repeating the same report is safe. A report for
         an attempt that is no longer current answers `print_claim_stale`.
@@ -634,7 +750,41 @@ paths:
                     $ref: '#/components/schemas/PrintJob'
         '409':
           description: Refused; `error.details.reason` says why
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/system_status:
+    get:
+      operationId: posSystemStatus
+      description: >
+        Server health for store administrators (`read_pos_topology` or
+        `write_pos_topology`). Store-wide counts, ages and timestamps only.
+      responses:
+        '200':
+          description: The server's address, TLS mode and health
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/SystemStatus'
+        '403':
+          description: Not a store administrator
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 components:
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
   schemas:
     RealtimeEvent:
       type: object
@@ -669,8 +819,13 @@ components:
     Context:
       type: object
       additionalProperties: true
-      required: [staff, store, administration]
+      required: [staff, store, administration, capabilities]
       properties:
+        capabilities:
+          type: array
+          description: What the signed-in person may do at the selected branch, such as `pos.device.manage`.
+          items:
+            type: string
         staff:
           type: object
           additionalProperties: true
@@ -834,8 +989,101 @@ components:
       properties:
         device:
           $ref: '#/components/schemas/Device'
+        branch:
+          type: object
+          additionalProperties: true
+          required: [id, name]
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+            timezone:
+              type: [string, 'null']
+        register_id:
+          type: [string, 'null']
+        kitchen_station_id:
+          type: [string, 'null']
+        staff:
+          description: The signed-in person, when the request carries a staff session.
+          oneOf:
+            - type: object
+              additionalProperties: true
+              required: [id]
+              properties:
+                id:
+                  type: string
+                name:
+                  type: [string, 'null']
+            - type: 'null'
         server_time:
           type: string
+          format: date-time
+          description: Shows clock skew for timers; a device never sends its own clock as data.
+    DevicePairResult:
+      type: object
+      additionalProperties: true
+      required: [device, token]
+      properties:
+        device:
+          $ref: '#/components/schemas/Device'
+        token:
+          type: string
+          description: 'Send as `Authorization: Device <token>`. Shown once.'
+    DeviceStaffMember:
+      type: object
+      additionalProperties: true
+      required: [id, name, pin_set]
+      properties:
+        id:
+          type: string
+          description: Staff membership id, sent back as `membership_id`.
+        name:
+          type: string
+        pin_set:
+          type: boolean
+    DeviceStaffSignIn:
+      type: object
+      additionalProperties: true
+      required: [token, expires_at, staff_id]
+      properties:
+        token:
+          type: string
+          description: Send as `X-Pos-Staff-Session`. Shown once.
+        expires_at:
+          type: string
+          format: date-time
+        staff_id:
+          type: string
+        name:
+          type: [string, 'null']
+    ErrorResponse:
+      type: object
+      additionalProperties: true
+      required: [error]
+      properties:
+        error:
+          type: object
+          additionalProperties: true
+          required: [code, message]
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: object
+              additionalProperties: true
+              description: >
+                A 409 carries `reason` and, for a stale revision,
+                `current_revision`.
+              properties:
+                reason:
+                  type: string
+                current_revision:
+                  type: integer
+                retry_after_seconds:
+                  type: integer
     Printer:
       type: object
       additionalProperties: false
@@ -1242,3 +1490,124 @@ components:
                     type: array
                     items:
                       type: string
+    SystemStatus:
+      type: object
+      additionalProperties: false
+      required: [generated_at, version, server, database, jobs, realtime, printing, outbound, vietqr, backup]
+      properties:
+        generated_at:
+          type: string
+          format: date-time
+        version:
+          type: object
+          additionalProperties: false
+          required: [app, spree, rails]
+          properties:
+            app:
+              type: string
+              description: PARKVIET_VERSION baked into the image, `development` otherwise
+            spree:
+              type: string
+            rails:
+              type: string
+        server:
+          type: object
+          additionalProperties: false
+          required: [public_base_url, tls_mode]
+          properties:
+            public_base_url:
+              type: [string, 'null']
+              description: POS_PUBLIC_BASE_URL, the address in pairing QRs. Null when the QR uses the request origin.
+            tls_mode:
+              type: string
+              enum: [none, internal, public, unset]
+        database:
+          type: object
+          additionalProperties: false
+          required: [ok, latency_ms]
+          properties:
+            ok:
+              type: boolean
+            latency_ms:
+              type: [number, 'null']
+        jobs:
+          type: object
+          additionalProperties: false
+          required: [ok, in_puma, processes, ready, oldest_ready_age_seconds, failed]
+          properties:
+            ok:
+              type: boolean
+              description: A Solid Queue process heartbeated recently
+            in_puma:
+              type: [boolean, 'null']
+            processes:
+              type: [integer, 'null']
+            ready:
+              type: [integer, 'null']
+            oldest_ready_age_seconds:
+              type: [integer, 'null']
+            failed:
+              type: [integer, 'null']
+        realtime:
+          type: object
+          additionalProperties: false
+          required: [ok, adapter, probe_ms, measured_at]
+          properties:
+            ok:
+              type: boolean
+            adapter:
+              type: string
+            probe_ms:
+              type: [number, 'null']
+              description: One message through the pub/sub adapter, broadcast to delivery on the server. Excludes the hop to a device.
+            measured_at:
+              type: string
+              format: date-time
+        printing:
+          type: object
+          additionalProperties: false
+          required: [pending, oldest_pending_age_seconds, failed_last_24h, failed_window_hours]
+          properties:
+            pending:
+              type: integer
+            oldest_pending_age_seconds:
+              type: [integer, 'null']
+            failed_last_24h:
+              type: integer
+            failed_window_hours:
+              type: integer
+        outbound:
+          type: object
+          additionalProperties: false
+          required: [pending, failed, oldest_pending_age_seconds]
+          description: Work waiting to leave the server (the outbox)
+          properties:
+            pending:
+              type: integer
+            failed:
+              type: integer
+            oldest_pending_age_seconds:
+              type: [integer, 'null']
+        vietqr:
+          type: object
+          additionalProperties: false
+          required: [last_received_at, unmatched]
+          properties:
+            last_received_at:
+              type: [string, 'null']
+              format: date-time
+            unmatched:
+              type: integer
+        backup:
+          type: object
+          additionalProperties: false
+          required: [configured, last_at, count]
+          properties:
+            configured:
+              type: boolean
+              description: POS_BACKUP_DIR is set and mounted
+            last_at:
+              type: [string, 'null']
+              format: date-time
+            count:
+              type: integer

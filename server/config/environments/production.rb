@@ -1,6 +1,11 @@
 require "active_support/core_ext/integer/time"
+require_relative "../../lib/parkviet/pos_public_url"
 
 Rails.application.configure do
+  # POS deployments (deploy/docker-compose.prod.yml) name the address devices
+  # use and where TLS ends; both are validated here, before anything binds.
+  pos_deployment = Parkviet::PosPublicUrl.configuration
+
   # Settings specified here will take precedence over those in config/application.rb.
 
   # Code is not reloaded between requests.
@@ -34,10 +39,29 @@ Rails.application.configure do
   end
 
   # Assume all access to the app is happening through a SSL-terminating reverse proxy.
-  config.assume_ssl = ENV["RAILS_ASSUME_SSL"] != "false"
-
   # Force all access to the app over SSL, use Strict-Transport-Security, and use secure cookies.
-  config.force_ssl = ENV["RAILS_FORCE_SSL"] != "false"
+  # POS_TLS_MODE, when set, decides both: `none` is plain HTTP on the shop
+  # network, `internal` and `public` mean Caddy terminates TLS in front.
+  # Without it, the scheme of POS_PUBLIC_BASE_URL picks `none` or `public`.
+  if pos_deployment.tls_mode
+    config.assume_ssl = pos_deployment.tls?
+    config.force_ssl = pos_deployment.tls?
+    # Caddy's internal CA is a shop-network choice that may be switched back
+    # to plain HTTP; HSTS would then lock browsers out of the server.
+    config.ssl_options = (config.ssl_options || {}).merge(hsts: false) if pos_deployment.tls_mode == "internal"
+  else
+    config.assume_ssl = ENV["RAILS_ASSUME_SSL"] != "false"
+    config.force_ssl = ENV["RAILS_FORCE_SSL"] != "false"
+  end
+
+  # Host authorization, only once a POS deployment names its address: the
+  # shop network accepts private IPv4 addresses and `.local` names (see
+  # Parkviet::PosPublicUrl.allowed_hosts). Health checks come from Docker and
+  # Caddy by container name, so /up is exempt.
+  if (pos_hosts = Parkviet::PosPublicUrl.allowed_hosts)
+    config.hosts.concat(pos_hosts)
+    config.host_authorization = { exclude: ->(request) { request.path == "/up" } }
+  end
 
   # Canonical public host for all generated URLs — Active Storage attachment
   # URLs in API payloads, links in emails, and any URL built outside a request
@@ -47,9 +71,9 @@ Rails.application.configure do
   # platform-provided external hostname is used unless SPREE_HOST is set.
   # RAILS_HOST is the former name and still works.
   public_host = ENV["SPREE_HOST"].presence || ENV["RAILS_HOST"].presence ||
-                ENV["RENDER_EXTERNAL_HOSTNAME"].presence
+                ENV["RENDER_EXTERNAL_HOSTNAME"].presence || pos_deployment.host_with_port
   if public_host
-    no_ssl = ENV["RAILS_ASSUME_SSL"] == "false" && ENV["RAILS_FORCE_SSL"] == "false"
+    no_ssl = !config.assume_ssl && !config.force_ssl
     routes.default_url_options = { host: public_host, protocol: no_ssl ? "http" : "https" }
   end
 

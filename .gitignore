@@ -9,3 +9,15 @@ node_modules/
 # Local database dumps
 backups/
 .pi
+
+# Flutter staff app: build output and Android signing stay local
+apps/pos-staff/build/
+apps/pos-staff/**/.dart_tool/
+*.jks
+*.keystore
+key.properties
+
+# Production stack on a shop server or VPS: real secrets and tunnel credentials
+deploy/.env.prod
+deploy/cloudflared/config.yml
+deploy/cloudflared/*.json

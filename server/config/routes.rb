@@ -133,6 +133,7 @@ Rails.application.routes.draw do
             resource :store_profile, only: [:show, :update]
             post 'onboarding', to: 'onboarding#create'
             get 'operations/metrics', to: 'operational_metrics#show'
+            get 'system_status', to: 'system_status#show'
             resources :branches, only: [:index, :show, :create, :update] do
               member do
                 post :disable
@@ -305,6 +306,15 @@ Rails.application.routes.draw do
   delete 'api/v3/pos_device/staff_sessions', to: 'spree/pos/device_api/staff_sessions#destroy', defaults: { format: 'json' }
   post 'api/v3/pos_device/print_jobs/claim', to: 'spree/pos/device_api/print_jobs#claim', defaults: { format: 'json' }
   post 'api/v3/pos_device/print_jobs/:id/report', to: 'spree/pos/device_api/print_jobs#report', defaults: { format: 'json' }
+
+  # The counter app and POS administration built into the production image,
+  # same origin as the API. Declared before the Spree engine mount so no
+  # engine route takes their deep links; `format: false` keeps asset
+  # extensions inside the splat.
+  get '/pos', to: 'spree/pos/selling_app#show', as: :pos_selling_app
+  get '/pos/*path', to: 'spree/pos/selling_app#show', format: false
+  get '/pos-admin', to: 'spree/pos/admin_app#show', as: :pos_admin_app
+  get '/pos-admin/*path', to: 'spree/pos/admin_app#show', format: false
 
   root to: redirect(status: 302) { Spree::Stores::DashboardUrl.call.presence || '/dashboard' }
 

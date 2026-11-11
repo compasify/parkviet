@@ -1,22 +1,29 @@
 type DashboardLocation = {
   baseUrl?: string;
   development?: boolean;
+  // Where this app runs; a path-only base (`/pos-admin/`) is resolved against it.
+  origin?: string;
 };
 
 const currentLocation = (): DashboardLocation => ({
   baseUrl: import.meta.env.VITE_POS_DASHBOARD_URL,
   development: import.meta.env.DEV,
+  origin: globalThis.location?.origin,
 });
 
 // Origins are deployment configuration, not account state. Never put a token
 // in these URLs: the dashboard establishes its own admin session at its origin.
 // A production build without configuration must not send staff to localhost.
+// A path-only base means the dashboard is served by the same server (the
+// production image puts it at /pos-admin/), so one build works on any address.
 function dashboardBase(location: DashboardLocation): URL | null {
   const configured = location.baseUrl?.trim();
   const base = configured || (location.development ? 'http://localhost:5176' : null);
   if (!base) return null;
+  const sameOrigin = base.startsWith('/') && !base.startsWith('//');
+  if (sameOrigin && !location.origin) return null;
   try {
-    const url = new URL(base);
+    const url = sameOrigin ? new URL(base, location.origin) : new URL(base);
     if (url.protocol !== 'https:' && url.protocol !== 'http:') return null;
     if (url.username || url.password) return null;
     url.search = '';

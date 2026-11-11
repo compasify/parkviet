@@ -1,0 +1,42 @@
+# Reverse proxy in front of the ParkViet app (deploy/docker-compose.prod.yml).
+# Values come from .env.prod:
+#
+#   POS_TLS_MODE=none      POS_CADDY_SITE=http://
+#     Shop LAN, plain HTTP on any address of the mini PC (default).
+#   POS_TLS_MODE=internal  POS_CADDY_SITE=https://192.168.1.10, https://pos.local
+#     Shop LAN, HTTPS signed by Caddy's own CA. Every device must trust that CA
+#     (docs/deploy/pos-lan-vps.md, "HTTPS trên LAN").
+#   POS_TLS_MODE=public    POS_CADDY_SITE=pos.quan-a.vn
+#     VPS with a domain pointing at it: Caddy gets a Let's Encrypt
+#     certificate and redirects HTTP to HTTPS.
+#
+# POS_TLS_MODE must match the scheme of POS_PUBLIC_BASE_URL; the app refuses
+# to boot otherwise.
+
+(tls-none) {
+}
+
+(tls-internal) {
+	tls internal
+}
+
+(tls-public) {
+}
+
+{$POS_CADDY_SITE:http://} {
+	import tls-{$POS_TLS_MODE:none}
+
+	encode zstd gzip
+
+	# The app answers /up itself; Caddy only forwards. Realtime (/cable) is a
+	# WebSocket, which reverse_proxy passes through as is.
+	reverse_proxy web:3000 {
+		# Long-lived realtime sockets survive a reload of this config.
+		stream_close_delay 5m
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}

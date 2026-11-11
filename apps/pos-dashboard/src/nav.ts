@@ -4,6 +4,7 @@ import {
   HandCoins,
   ListChecks,
   Package,
+  Server,
   Settings,
   Settings2,
   ShoppingCart,
@@ -92,6 +93,7 @@ const settings = [
     path: '/settings/business-model',
     icon: Store,
   },
+  { key: 'system', labelKey: 'systemStatus.title', path: '/settings/system', icon: Server },
 ] satisfies { key: PosPage; labelKey: string; path: string; icon: typeof Settings }[]
 settingsNav.addGroup({ key: 'pos', labelKey: 'posDashboard.title' })
 const keys = ['home', ...groups.map((group) => group.key), 'pos-settings']
