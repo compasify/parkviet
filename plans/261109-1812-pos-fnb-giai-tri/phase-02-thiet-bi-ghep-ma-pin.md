@@ -1,7 +1,7 @@
 ---
 phase: 2
 title: "Thiết bị, ghép mã, PIN nhân viên"
-status: pending
+status: in-progress
 effort: "5 ngày"
 dependsOn: []
 ---
@@ -149,3 +149,9 @@ Migration: `create_pos_devices`, `create_pos_device_pairings`, `create_pos_devic
 - [x] Request từ thiết bị + session nhân viên đi qua đúng kiểm tra quyền hiện có.
 - [x] Trang Thiết bị trên web chạy được; OpenAPI có đủ endpoint.
 - [ ] Spec POS và e2e web xanh.
+
+## Review 11/11/2026
+
+Đã review và sửa. Spec POS xanh 629/629; e2e `apps/pos-dashboard` xanh sau khi cập nhật spec cũ. Ô cuối còn mở vì e2e `apps/pos` chưa ổn định: lần chạy đầy đủ còn vài test fail, chủ yếu timeout khi máy tải nặng, và chưa có lần nào xanh trọn bộ.
+
+Trang Thiết bị nằm ở `apps/pos-dashboard`, không ở `apps/pos` như mục Client web ghi. Danh sách PIN lấy từ `GET /pos/staff_pins`.

@@ -1,7 +1,7 @@
 ---
 title: "POS F&B và giải trí: 6 ngành, thu ngân web + app Flutter nhiều chế độ"
 description: "Làm toàn bộ tính năng của báo cáo research F&B: nền thiết bị, realtime, in, app Flutter (phục vụ, bếp, chạy bàn, kiosk, trạm in, chủ quán), rồi mở 6 ngành theo 5 đợt."
-status: pending
+status: in-progress
 priority: P1
 effort: "~167 ngày công"
 branch: "v2"

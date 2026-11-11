@@ -1,7 +1,7 @@
 ---
 phase: 1
 title: "ADR và nền đơn hàng F&B"
-status: pending
+status: in-progress
 effort: "6 ngày"
 dependsOn: []
 ---
@@ -132,3 +132,7 @@ Migration: `add_service_mode_and_business_date_to_pos_workspaces`, `add_business
 - [x] Một đơn có hai thuế suất in ra đúng bảng thuế; đổi rate bằng dữ liệu, không sửa code.
 - [x] `pos-staff.yaml` có các endpoint lõi; request spec của các endpoint đó kiểm schema.
 - [ ] Toàn bộ spec POS và e2e web xanh.
+
+## Review 11/11/2026
+
+Đã review và sửa. Spec POS xanh 629/629; e2e `apps/pos-dashboard` xanh sau khi cập nhật spec cũ. Ô cuối còn mở vì e2e `apps/pos` chưa ổn định: lần chạy đầy đủ còn vài test fail, chủ yếu timeout khi máy tải nặng, và chưa có lần nào xanh trọn bộ.
