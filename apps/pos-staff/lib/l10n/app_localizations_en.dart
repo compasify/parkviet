@@ -873,4 +873,54 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get waiterForbidden => 'You may not do that on the waiter device.';
+
+  @override
+  String get checklistTitle => 'Device paired';
+
+  @override
+  String checklistIntro(String branch) {
+    return 'This device is paired with $branch. Check the items below before using it.';
+  }
+
+  @override
+  String get checklistStation => 'Kitchen station';
+
+  @override
+  String checklistStationOk(String name) {
+    return 'Chosen: $name';
+  }
+
+  @override
+  String get checklistStationMissing =>
+      'No station chosen yet. Pick one on the kitchen screen after starting.';
+
+  @override
+  String get checklistPrinter => 'Station printer';
+
+  @override
+  String checklistPrinterOk(String name) {
+    return 'Received: $name';
+  }
+
+  @override
+  String get checklistPrinterMissing =>
+      'The station has no printer; tickets only show on screen. Assign one on the branch page, Kitchen & bar tab.';
+
+  @override
+  String get checklistStaff => 'Staff with a PIN';
+
+  @override
+  String checklistStaffOk(int count) {
+    return '$count people can sign in with a PIN';
+  }
+
+  @override
+  String get checklistStaffMissing =>
+      'Nobody has a PIN yet. A manager sets staff PINs on the admin site.';
+
+  @override
+  String get checklistNothing => 'This mode needs nothing else set up.';
+
+  @override
+  String get checklistStart => 'Start';
 }

@@ -9,11 +9,12 @@ import 'package:built_value/serializer.dart';
 
 part 'pos_kitchen_settings_update_request.g.dart';
 
-/// PosKitchenSettingsUpdateRequest
+/// One change per call; `void_reasons` when sent, else `kitchen_send_trigger`.
 ///
 /// Properties:
 /// * [branchId]
 /// * [kitchenSendTrigger]
+/// * [voidReasons]
 @BuiltValue()
 abstract class PosKitchenSettingsUpdateRequest
     implements
@@ -23,8 +24,11 @@ abstract class PosKitchenSettingsUpdateRequest
   String get branchId;
 
   @BuiltValueField(wireName: r'kitchen_send_trigger')
-  PosKitchenSettingsUpdateRequestKitchenSendTriggerEnum get kitchenSendTrigger;
+  PosKitchenSettingsUpdateRequestKitchenSendTriggerEnum? get kitchenSendTrigger;
   // enum kitchenSendTriggerEnum {  on_complete,  manual,  };
+
+  @BuiltValueField(wireName: r'void_reasons')
+  BuiltList<String>? get voidReasons;
 
   PosKitchenSettingsUpdateRequest._();
 
@@ -61,12 +65,21 @@ class _$PosKitchenSettingsUpdateRequestSerializer
       object.branchId,
       specifiedType: const FullType(String),
     );
-    yield r'kitchen_send_trigger';
-    yield serializers.serialize(
-      object.kitchenSendTrigger,
-      specifiedType:
-          const FullType(PosKitchenSettingsUpdateRequestKitchenSendTriggerEnum),
-    );
+    if (object.kitchenSendTrigger != null) {
+      yield r'kitchen_send_trigger';
+      yield serializers.serialize(
+        object.kitchenSendTrigger,
+        specifiedType: const FullType(
+            PosKitchenSettingsUpdateRequestKitchenSendTriggerEnum),
+      );
+    }
+    if (object.voidReasons != null) {
+      yield r'void_reasons';
+      yield serializers.serialize(
+        object.voidReasons,
+        specifiedType: const FullType(BuiltList, [FullType(String)]),
+      );
+    }
   }
 
   @override
@@ -102,10 +115,20 @@ class _$PosKitchenSettingsUpdateRequestSerializer
         case r'kitchen_send_trigger':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType: const FullType(
+            specifiedType: const FullType.nullable(
                 PosKitchenSettingsUpdateRequestKitchenSendTriggerEnum),
-          ) as PosKitchenSettingsUpdateRequestKitchenSendTriggerEnum;
+          ) as PosKitchenSettingsUpdateRequestKitchenSendTriggerEnum?;
+          if (valueDes == null) continue;
           result.kitchenSendTrigger = valueDes;
+          break;
+        case r'void_reasons':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType:
+                const FullType.nullable(BuiltList, [FullType(String)]),
+          ) as BuiltList<String>?;
+          if (valueDes == null) continue;
+          result.voidReasons.replace(valueDes);
           break;
         default:
           unhandled.add(key);

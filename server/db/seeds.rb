@@ -10,3 +10,5 @@
 
 Spree::Core::Engine.load_seed if defined?(Spree::Core)
 load Rails.root.join('db/seeds/pos_tax_categories.rb')
+# Demo restaurant for table service, development only: POS_FNB_DEMO=1 pnpm spree seed
+load Rails.root.join('db/seeds/pos_fnb_demo.rb')

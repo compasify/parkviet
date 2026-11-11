@@ -1744,13 +1744,20 @@ paths:
           application/json:
             schema:
               type: object
-              required: [branch_id, kitchen_send_trigger]
+              description: One change per call; `void_reasons` when sent, else `kitchen_send_trigger`.
+              required: [branch_id]
               properties:
                 branch_id:
                   type: string
                 kitchen_send_trigger:
                   type: string
                   enum: [on_complete, manual]
+                void_reasons:
+                  type: array
+                  maxItems: 20
+                  items:
+                    type: string
+                    pattern: '^[a-z0-9_]{1,40}$'
       responses:
         '200':
           description: The settings
@@ -3555,6 +3562,25 @@ components:
           type: string
           enum: [none, cash_register, coded]
           description: E-invoice the store issues for completed orders; the counter offers buyer details unless it is none.
+        branches:
+          type: array
+          description: Branches this person may see, with what their screens need.
+          items:
+            $ref: '#/components/schemas/ContextBranch'
+    ContextBranch:
+      type: object
+      additionalProperties: true
+      required: [id, name]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        void_reasons:
+          type: array
+          description: Reasons a sent item may be voided for; `khac` with a note is always offered.
+          items:
+            type: string
     CatalogItem:
       type: object
       additionalProperties: true
@@ -5213,7 +5239,7 @@ components:
     KitchenSettings:
       type: object
       additionalProperties: false
-      required: [branch_id, kitchen_send_trigger, module_enabled]
+      required: [branch_id, kitchen_send_trigger, module_enabled, void_reasons]
       properties:
         branch_id:
           type: string
@@ -5226,6 +5252,11 @@ components:
         module_enabled:
           type: boolean
           description: Whether `fnb.kitchen` is on at the branch.
+        void_reasons:
+          type: array
+          description: Reasons a sent item may be voided for, in order; `khac` with a note is always offered.
+          items:
+            type: string
     MenuItemsMeta:
       type: object
       additionalProperties: false
@@ -6712,7 +6743,8 @@ components:
     TableSettings:
       type: object
       additionalProperties: false
-      required: [branch_id, table_register_id, service_charge_rate, service_charge_applies_to, service_charge_tax_category_id]
+      required: [branch_id, table_register_id, service_charge_rate, service_charge_applies_to, service_charge_tax_category_id,
+                 tax_categories]
       properties:
         branch_id:
           type: string
@@ -6729,6 +6761,24 @@ components:
             enum: [counter, dine_in, takeaway, delivery, tab, timed]
         service_charge_tax_category_id:
           type: [string, 'null']
+        tax_categories:
+          type: array
+          description: The store's tax categories, to choose the service charge's.
+          items:
+            $ref: '#/components/schemas/TableTaxCategory'
+    TableTaxCategory:
+      type: object
+      additionalProperties: false
+      required: [id, name, tax_code, is_default]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        tax_code:
+          type: [string, 'null']
+        is_default:
+          type: boolean
     TableSettingsInput:
       type: object
       required: [branch_id]

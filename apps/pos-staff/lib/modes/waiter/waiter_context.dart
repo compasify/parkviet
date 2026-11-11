@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:pos_api/pos_api.dart';
 
 import '../../core/errors.dart';
+import 'void_reasons.dart';
 import 'waiter_api.dart';
 
 /// What every waiter screen shares: the API, the branch, this phone as an
@@ -31,6 +32,18 @@ class WaiterContext {
   final Stream<Map<String, Object?>> events;
   final MenuCache menu;
 
+  /// Why a sent dish may be voided here: the defaults until the branch's
+  /// own are read, and still the defaults when they cannot be.
+  final voidReasons = ValueNotifier<List<String>>(voidReasonChoices(null));
+
+  Future<void> loadVoidReasons() async {
+    try {
+      voidReasons.value = voidReasonChoices(await api.voidReasons(branchId));
+    } on AppFailure {
+      // The server checks the reason anyway; the defaults stay.
+    }
+  }
+
   /// Events about one order.
   Stream<void> workspaceEvents(String workspaceId) => events.where((event) {
         final refs = event['refs'];
@@ -46,7 +59,10 @@ class WaiterContext {
     return '$base${url.startsWith('/') ? '' : '/'}$url';
   }
 
-  void dispose() => menu.dispose();
+  void dispose() {
+    menu.dispose();
+    voidReasons.dispose();
+  }
 }
 
 /// The branch menu, read once and again whenever a dish is marked sold out

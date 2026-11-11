@@ -89,6 +89,9 @@ module Spree
             CupLabels::Issue.after_commit(workspace: workspace, actor: staff, upto: :sold)
 
             workspace.update!(revision: workspace.revision + 1, operational_status: 'completed')
+            # The bill the table asked for is paid: its request is done.
+            PaymentRequest.open.where(workspace_id: workspace.id).update_all(status: 'done', resolved_by_id: staff.id,
+                                                                             resolved_at: Time.current, updated_at: Time.current)
             AuditEntry.record!(store: workspace.store, actor: staff, subject: workspace, action: audit_action(entry, zero_total),
                                metadata: { order_id: order.prefixed_id, total: order.total.to_s('F'),
                                            receivable_id: entry&.prefixed_id, debt: debt.to_s('F') })

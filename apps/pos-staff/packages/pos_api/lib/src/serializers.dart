@@ -33,6 +33,7 @@ import 'package:pos_api/src/model/checklist_outcome.dart';
 import 'package:pos_api/src/model/checklist_result.dart';
 import 'package:pos_api/src/model/context.dart';
 import 'package:pos_api/src/model/context_administration.dart';
+import 'package:pos_api/src/model/context_branch.dart';
 import 'package:pos_api/src/model/context_staff.dart';
 import 'package:pos_api/src/model/context_store.dart';
 import 'package:pos_api/src/model/cup_label_settings.dart';
@@ -299,6 +300,7 @@ import 'package:pos_api/src/model/table_settings_result.dart';
 import 'package:pos_api/src/model/table_split_input.dart';
 import 'package:pos_api/src/model/table_split_orders.dart';
 import 'package:pos_api/src/model/table_split_result.dart';
+import 'package:pos_api/src/model/table_tax_category.dart';
 import 'package:pos_api/src/model/tax_row.dart';
 import 'package:pos_api/src/model/workspace.dart';
 import 'package:pos_api/src/model/workspace_line.dart';
@@ -330,6 +332,7 @@ part 'serializers.g.dart';
   ChecklistResult,
   Context,
   ContextAdministration,
+  ContextBranch,
   ContextStaff,
   ContextStore,
   CupLabelSettings,
@@ -599,6 +602,7 @@ part 'serializers.g.dart';
   TableSplitInput,
   TableSplitOrders,
   TableSplitResult,
+  TableTaxCategory,
   TaxRow,
   Workspace,
   WorkspaceLine,
@@ -746,6 +750,10 @@ Serializers serializers = (_$serializers.toBuilder()
         () => ListBuilder<Resource>(),
       )
       ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(TableTaxCategory)]),
+        () => ListBuilder<TableTaxCategory>(),
+      )
+      ..addBuilderFactory(
         const FullType(BuiltList, [FullType(ModifierSelection)]),
         () => ListBuilder<ModifierSelection>(),
       )
@@ -812,6 +820,10 @@ Serializers serializers = (_$serializers.toBuilder()
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(RecipeOwnerVersionsInner)]),
         () => ListBuilder<RecipeOwnerVersionsInner>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(ContextBranch)]),
+        () => ListBuilder<ContextBranch>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(LineModifier)]),

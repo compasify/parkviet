@@ -109,6 +109,28 @@ RSpec.describe 'POS kitchen setup API', type: :request do
     expect(branch.reload.kitchen_send_trigger).to eq('manual')
   end
 
+  it 'reads and changes the void reasons of the branch, audited' do
+    get '/api/v3/admin/pos/kitchen_settings', headers: bearer(cook), params: { branch_id: branch.prefixed_id }
+    expect(response.parsed_body.dig('data', 'void_reasons')).to eq(%w[khach_doi_y het_mon nhap_nham lam_hong])
+
+    body = write(:put, '/api/v3/admin/pos/kitchen_settings', manager, branch_id: branch.prefixed_id, void_reasons: %w[het_mon do_nguoi])
+    expect(response).to have_http_status(:ok)
+    expect_pos_schema!(response, 'KitchenSettings')
+    expect(body['data']['void_reasons']).to eq(%w[het_mon do_nguoi])
+    expect(branch.reload.void_reasons).to eq(%w[het_mon do_nguoi])
+    expect(branch.kitchen_send_trigger).to eq('on_complete')
+    audit = Spree::Pos::AuditEntry.find_by!(action: 'kitchen.void_reasons')
+    expect(audit.metadata).to include('after' => %w[het_mon do_nguoi])
+
+    [%w[khac], %w[Hết món], %w[a a]].each do |reasons|
+      body = write(:put, '/api/v3/admin/pos/kitchen_settings', manager, branch_id: branch.prefixed_id, void_reasons: reasons)
+      expect(body.dig('error', 'details', 'reason')).to eq('void_reasons_invalid')
+    end
+    write(:put, '/api/v3/admin/pos/kitchen_settings', cook, branch_id: branch.prefixed_id, void_reasons: [])
+    expect(response).to have_http_status(:forbidden)
+    expect(branch.reload.void_reasons).to eq(%w[het_mon do_nguoi])
+  end
+
   it 'needs pos.kitchen.manage to change the setup and the kitchen on to add stations' do
     write(:post, '/api/v3/admin/pos/kitchen_stations', cook, branch_id: branch.prefixed_id, name: 'Bếp')
     expect(response).to have_http_status(:forbidden)

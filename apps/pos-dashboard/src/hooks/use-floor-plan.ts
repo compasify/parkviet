@@ -18,6 +18,9 @@ export type TableSettings = {
   service_charge_rate: string | null
   service_charge_applies_to: ServiceMode[]
   service_charge_tax_category_id: string | null
+  // The store's tax categories, sent with the settings so a branch manager
+  // without the store's tax settings can still choose the charge's.
+  tax_categories: TaxCategoryOption[]
 }
 
 export type TaxCategoryOption = { id: string; name: string }
@@ -70,28 +73,14 @@ export const useTableSettings = (branchId: string) =>
         (mode): mode is ServiceMode => (SERVICE_MODES as readonly unknown[]).includes(mode),
       ),
       service_charge_tax_category_id: textOrNull(source.service_charge_tax_category_id),
-    }
-  })
-
-// The store's tax categories (`GET /tax_categories` of the Admin API). Staff
-// without the store's tax settings get a refusal; the form then keeps the
-// category already chosen.
-export function useTaxCategories(enabled: boolean) {
-  const { storeId } = useSession()
-  return useQuery({
-    queryKey: posKey(storeId, 'floor-plan', 'tax-categories'),
-    enabled,
-    retry: false,
-    staleTime: 300_000,
-    queryFn: async (): Promise<TaxCategoryOption[]> =>
-      rows(await getData('/tax_categories', { limit: '100' })).flatMap((row) => {
+      tax_categories: rows(source.tax_categories).flatMap((row) => {
         const item = row as { id?: unknown; name?: unknown }
         return typeof item.id === 'string' && typeof item.name === 'string'
           ? [{ id: item.id, name: item.name }]
           : []
       }),
+    }
   })
-}
 
 // Every floor plan write is a command with its own idempotency key.
 export function useFloorPlanWrite() {

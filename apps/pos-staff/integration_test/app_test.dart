@@ -48,6 +48,9 @@ Future<void> pairByCode(WidgetTester tester, String code) async {
   await tester.enterText(find.byKey(const Key('manual-code')), code);
   await tester.tap(find.byKey(const Key('manual-submit')));
   await pumpFor(tester, const Duration(seconds: 3));
+  // Just paired, the device shows its checklist first.
+  await tester.tap(find.byKey(const Key('checklist-start')));
+  await pumpFor(tester);
 }
 
 /// Screens show spinners while they wait, so pumpAndSettle would not end.

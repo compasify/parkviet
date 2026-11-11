@@ -60,6 +60,9 @@ void main() {
     await tester.enterText(find.byKey(const Key('manual-code')), waiterCode);
     await tester.tap(find.byKey(const Key('manual-submit')));
     await pumpFor(tester, const Duration(seconds: 3));
+    // Just paired, the device shows its checklist first.
+    await tester.tap(find.byKey(const Key('checklist-start')));
+    await pumpFor(tester);
 
     // A waiter device asks who is working, then their PIN.
     await tapFirst(tester, 'staff-');

@@ -23,6 +23,7 @@ import {
   shopDefaults,
   stepProblems,
   suggestedRetailProfile,
+  tablesOn,
   validBranchCode,
 } from './setup-wizard';
 
@@ -38,6 +39,7 @@ function profile(key: string, extra: Partial<BusinessProfile> = {}): BusinessPro
     recommended_features: [],
     sample_units: [],
     kitchen_stations: [],
+    optional_modules: [],
     ...extra,
   };
 }
@@ -521,6 +523,7 @@ describe('setup and business model texts', () => {
       'station-name',
       'station-duplicate',
       'tax',
+      'table-register',
     ])
       expect(setup).toHaveProperty([`problem_${problem}`]);
     const units = setup.unit as Record<string, string>;
@@ -638,5 +641,49 @@ describe('the F&B shop step', () => {
     expect(onboardingPayload(run([choose('nha_thuoc')], state), pharmacy)).not.toHaveProperty(
       'fnb_setup',
     );
+  });
+});
+
+describe('table service at setup', () => {
+  const eatery = profile('quan_an', {
+    group: 'fnb',
+    modules: ['fnb.menu', 'fnb.kitchen'],
+    optional_modules: ['resources', 'fnb.tables', 'fnb.postpay', 'fnb.service_charge'],
+  });
+  const restaurant = profile('nha_hang', {
+    group: 'fnb',
+    modules: ['fnb.menu', 'fnb.kitchen', 'resources', 'fnb.tables', 'fnb.postpay'],
+  });
+  const cafe = PROFILES.find((item) => item.key === 'cafe_tra_sua') as BusinessProfile;
+  const profiles = [...PROFILES, eatery, restaurant];
+  const options = { profiles, locationIds: ['sloc_1'] };
+  const ready = (key: string, extra: SetupAction[] = []) =>
+    run([
+      { type: 'choose', key, profiles },
+      { type: 'branch-name', value: 'Quán 1' },
+      { type: 'stock-location', value: 'sloc_1' },
+      ...extra,
+    ]);
+
+  it('asks an eatery and sends the answer; a restaurant always serves tables', () => {
+    const plain = ready('quan_an');
+    expect(tablesOn(plain, eatery)).toBe(false);
+    expect(onboardingPayload(plain, eatery).answers).toEqual({ has_tables: false });
+    const tables = ready('quan_an', [{ type: 'has-tables', value: true }]);
+    expect(tablesOn(tables, eatery)).toBe(true);
+    expect(onboardingPayload(tables, eatery).answers).toEqual({ has_tables: true });
+    expect(tablesOn(ready('nha_hang'), restaurant)).toBe(true);
+    expect(onboardingPayload(ready('nha_hang'), restaurant)).not.toHaveProperty('answers');
+    expect(onboardingPayload(ready('cafe_tra_sua'), cafe)).not.toHaveProperty('answers');
+  });
+
+  it('needs a register for table orders', () => {
+    const blank: SetupAction = { type: 'register-name', value: ' ' };
+    expect(stepProblems(ready('quan_an', [blank]), 5, options)).toEqual([]);
+    expect(
+      stepProblems(ready('quan_an', [blank, { type: 'has-tables', value: true }]), 5, options),
+    ).toEqual(['table-register']);
+    expect(stepProblems(ready('nha_hang', [blank]), 6, options)).toEqual(['table-register']);
+    expect(stepProblems(ready('nha_hang'), 6, options)).toEqual([]);
   });
 });

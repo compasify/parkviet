@@ -25,8 +25,23 @@ module Spree
             modules: { enable: profile.modules - on, disable: disable, in_use: disable.index_with { |key| in_use(branch, key) } },
             defaults: defaults(branch, profile),
             sample_units: profile.sample_units - UnitDefinition.for_store(branch.store).where(code: profile.sample_units).pluck(:code),
-            recommended_features: profile.recommended_features.reject { |feature| features[feature] }
+            recommended_features: profile.recommended_features.reject { |feature| features[feature] },
+            tables: tables(branch, profile, on)
           }
+        end
+
+        # Table service the profile brings: whether it asks "does the shop
+        # serve tables?" (optional, with the modules a yes adds), whether
+        # the branch still lacks the register for table orders, and the
+        # stations the profile's kitchen would start with when the branch
+        # has none.
+        def tables(branch, profile, on)
+          always = profile.modules.include?(BusinessProfiles::TABLES_MODULE)
+          optional = profile.tables_optional?
+          kitchen = profile.modules.include?(Kitchen::Send::MODULE)
+          { always: always, optional: optional, optional_modules: profile.optional_modules - on,
+            register_needed: (always || optional) && branch.table_register_id.nil?,
+            default_stations: kitchen && !KitchenStation.where(branch_id: branch.id).exists? ? profile.kitchen_stations : [] }
         end
 
         # [{ field:, current:, profile: }] for every profile default that
@@ -42,7 +57,7 @@ module Spree
         def present(field, value)
           return nil if value.nil?
 
-          field == 'variance_threshold' ? BigDecimal(value.to_s).to_s('F') : value
+          %w[variance_threshold service_charge_rate].include?(field) ? BigDecimal(value.to_s).to_s('F') : value
         end
 
         # Configuration of the branch's assortment (and its stock) that the

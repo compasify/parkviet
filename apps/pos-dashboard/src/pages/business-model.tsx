@@ -71,6 +71,8 @@ function modelFailure(error: unknown, t: Translate) {
       'module_unavailable',
       'reason_required',
       'onboarding_required',
+      'table_register_missing',
+      'answers_invalid',
     ].includes(reason ?? '')
   )
     return t(`businessModel.failure_${reason}`)
@@ -193,6 +195,13 @@ function ChangeProfile({ branch, profiles }: { branch: PosBranch; profiles: Busi
   const [applyModules, setApplyModules] = useState(true)
   const [applyDefaults, setApplyDefaults] = useState<string[]>([])
   const [reason, setReason] = useState('')
+  const [hasTables, setHasTables] = useState(false)
+  const [tableRegister, setTableRegister] = useState('')
+  const [applyStations, setApplyStations] = useState(true)
+  const context = usePosContext()
+  const registers = (context.data?.registers ?? []).filter(
+    (row) => row.branch_id === branch.id && row.status === 'active',
+  )
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState<{ text: string; failed: boolean } | null>(null)
   async function loadPreview(key: string) {
@@ -201,6 +210,9 @@ function ChangeProfile({ branch, profiles }: { branch: PosBranch; profiles: Busi
       setPreview(await previewBranchProfile(branch.id, key))
       setApplyModules(true)
       setApplyDefaults([])
+      setHasTables(false)
+      setTableRegister('')
+      setApplyStations(true)
     } catch (error) {
       setPreview(null)
       setNotice({ text: modelFailure(error, t), failed: true })
@@ -208,10 +220,17 @@ function ChangeProfile({ branch, profiles }: { branch: PosBranch; profiles: Busi
       setBusy(false)
     }
   }
+  // Table service comes with the modules: always for a table profile, or as
+  // answered; a branch without a table register picks one first.
+  const tablesWanted =
+    applyModules &&
+    Boolean(preview && (preview.tables.always || (preview.tables.optional && hasTables)))
+  const registerMissing = tablesWanted && Boolean(preview?.tables.registerNeeded) && !tableRegister
+  const stationsOffered = applyModules && (preview?.tables.defaultStations.length ?? 0) > 0
   async function apply(event: FormEvent) {
     event.preventDefault()
     const note = reason.trim()
-    if (!preview || !note || busy) return
+    if (!preview || !note || busy || registerMissing) return
     setBusy(true)
     setNotice(null)
     try {
@@ -221,6 +240,11 @@ function ChangeProfile({ branch, profiles }: { branch: PosBranch; profiles: Busi
         apply_modules: applyModules,
         apply_defaults: applyDefaults,
         reason: note,
+        ...(preview.tables.optional ? { has_tables: hasTables } : {}),
+        ...(tablesWanted && preview.tables.registerNeeded
+          ? { table_register_id: tableRegister }
+          : {}),
+        ...(stationsOffered ? { apply_stations: applyStations } : {}),
       })
       setPreview(null)
       setTarget('')
@@ -306,6 +330,50 @@ function ChangeProfile({ branch, profiles }: { branch: PosBranch; profiles: Busi
               )
             }
           />
+          {applyModules && preview.tables.optional ? (
+            <ModelCheck
+              checked={hasTables}
+              disabled={busy}
+              onChange={setHasTables}
+              description={t('businessModel.tablesHint', {
+                list: preview.tables.optionalModules.map((key) => moduleName(t, key)).join(', '),
+              })}
+            >
+              {t('businessModel.tablesQuestion')}
+            </ModelCheck>
+          ) : null}
+          {tablesWanted && preview.tables.registerNeeded ? (
+            <ModelSelect
+              label={t('businessModel.tableRegister')}
+              value={tableRegister}
+              disabled={busy}
+              invalid={registerMissing}
+              hint={
+                registers.length
+                  ? t('businessModel.tableRegisterHint')
+                  : t('businessModel.noRegisters')
+              }
+              options={[
+                { value: '', label: t('businessModel.chooseRegister') },
+                ...registers.map((row) => ({ value: row.id, label: row.name })),
+              ]}
+              onChange={setTableRegister}
+            />
+          ) : null}
+          {stationsOffered ? (
+            <ModelCheck
+              checked={applyStations}
+              disabled={busy}
+              onChange={setApplyStations}
+              description={t('businessModel.stationsHint')}
+            >
+              {t('businessModel.applyStations', {
+                list: preview.tables.defaultStations
+                  .map((kind) => t(`branchKitchen.kind_${kind}`))
+                  .join(', '),
+              })}
+            </ModelCheck>
+          ) : null}
           <Label htmlFor="business-model-reason">{t('featureReason')}</Label>
           <Input
             id="business-model-reason"
@@ -317,7 +385,7 @@ function ChangeProfile({ branch, profiles }: { branch: PosBranch; profiles: Busi
             onChange={(event) => setReason(event.target.value)}
           />
           <div className="flex flex-wrap gap-2">
-            <Button type="submit" disabled={busy || !reason.trim()}>
+            <Button type="submit" disabled={busy || !reason.trim() || registerMissing}>
               {busy
                 ? t('waiting')
                 : t('businessModel.applyButton', { name: t(profileLabelKey(preview.to)) })}

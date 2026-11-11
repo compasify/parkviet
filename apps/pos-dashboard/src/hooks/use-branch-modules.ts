@@ -135,12 +135,25 @@ export type ProfilePreview = {
   defaults: ProfileDefaultChange[]
   sampleUnits: string[]
   recommendedFeatures: string[]
+  tables: ProfileTables
+}
+
+// Table service under the new profile: always on, or offered as a question;
+// whether the branch still lacks a register for table orders, and the
+// kitchen stations the profile would create at a branch that has none.
+export type ProfileTables = {
+  always: boolean
+  optional: boolean
+  optionalModules: string[]
+  registerNeeded: boolean
+  defaultStations: string[]
 }
 
 export function normalizePreview(value: unknown): ProfilePreview | null {
   const data = record(value)
   if (!data || typeof data.to !== 'string') return null
   const modules = record(data.modules) ?? {}
+  const tables = record(data.tables) ?? {}
   const inUse = Object.fromEntries(
     Object.entries(record(modules.in_use) ?? {}).map(([key, counts]) => [
       key,
@@ -166,6 +179,13 @@ export function normalizePreview(value: unknown): ProfilePreview | null {
     }),
     sampleUnits: strings(data.sample_units),
     recommendedFeatures: strings(data.recommended_features),
+    tables: {
+      always: tables.always === true,
+      optional: tables.optional === true,
+      optionalModules: strings(tables.optional_modules),
+      registerNeeded: tables.register_needed === true,
+      defaultStations: strings(tables.default_stations),
+    },
   }
 }
 
@@ -195,6 +215,9 @@ export async function applyBranchProfile(
     apply_modules: boolean
     apply_defaults: string[]
     reason: string
+    has_tables?: boolean
+    table_register_id?: string
+    apply_stations?: boolean
   },
 ) {
   return (

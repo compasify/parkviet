@@ -30,6 +30,7 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(ChecklistResult.serializer)
       ..add(Context.serializer)
       ..add(ContextAdministration.serializer)
+      ..add(ContextBranch.serializer)
       ..add(ContextEinvoiceTypeEnum.serializer)
       ..add(ContextStaff.serializer)
       ..add(ContextStore.serializer)
@@ -384,6 +385,7 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(TableSplitInput.serializer)
       ..add(TableSplitOrders.serializer)
       ..add(TableSplitResult.serializer)
+      ..add(TableTaxCategory.serializer)
       ..add(TaxRow.serializer)
       ..add(Workspace.serializer)
       ..add(WorkspaceLine.serializer)
@@ -744,6 +746,18 @@ Serializers _$serializers = (Serializers().toBuilder()
           const FullType(BuiltList, const [const FullType(String)]),
           () => ListBuilder<String>())
       ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(ContextBranch)]),
+          () => ListBuilder<ContextBranch>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
           const FullType(
               BuiltList, const [const FullType(MenuItemConfigComponentsInner)]),
           () => ListBuilder<MenuItemConfigComponentsInner>())
@@ -768,6 +782,9 @@ Serializers _$serializers = (Serializers().toBuilder()
           const FullType(BuiltList,
               const [const FullType(TableSettingsServiceChargeAppliesToEnum)]),
           () => ListBuilder<TableSettingsServiceChargeAppliesToEnum>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(TableTaxCategory)]),
+          () => ListBuilder<TableTaxCategory>())
       ..addBuilderFactory(
           const FullType(
               BuiltList, const [const FullType(WorkspaceTotalsTaxesInner)]),

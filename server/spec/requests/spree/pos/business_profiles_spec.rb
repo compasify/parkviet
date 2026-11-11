@@ -36,10 +36,14 @@ RSpec.describe 'POS business profiles', type: :request do
     it 'serves the catalog to any POS session, including cashiers without topology rights' do
       data = get_pos(staff_with(%w[read_pos_orders]), 'business_profiles')['data']
       expect(response).to have_http_status(:ok)
-      expect(data['version']).to eq(1)
+      expect(data['version']).to eq(2)
       expect(data['profiles'].size).to eq(19)
-      expect(data['profiles'].map { |row| row['status'] }.tally).to eq('available' => 16, 'coming_soon' => 3)
-      expect(data['profiles'].select { |row| row['status'] == 'coming_soon' }.pluck('key')).to contain_exactly('karaoke_bida', 'bar_pub_club', 'nha_hang')
+      expect(data['profiles'].map { |row| row['status'] }.tally).to eq('available' => 18, 'coming_soon' => 1)
+      expect(data['profiles'].select { |row| row['status'] == 'coming_soon' }.pluck('key')).to contain_exactly('karaoke_bida')
+      expect(data['profiles'].find { |row| row['key'] == 'quan_an' }['optional_modules']).
+        to eq(%w[resources fnb.tables fnb.postpay fnb.service_charge])
+      expect(data['profiles'].find { |row| row['key'] == 'nha_hang' }).
+        to include('display' => { 'surface' => 'floor_plan' }, 'branch_defaults' => { 'kitchen_send_trigger' => 'manual', 'service_charge_rate' => 5 })
       cafe = data['profiles'].find { |row| row['key'] == 'cafe_tra_sua' }
       expect(cafe).to include('display' => { 'surface' => 'menu_grid' }, 'branch_defaults' => { 'kitchen_send_trigger' => 'on_complete' },
                               'kitchen_stations' => %w[prep bar])
@@ -47,7 +51,8 @@ RSpec.describe 'POS business profiles', type: :request do
       pharmacy = data['profiles'].find { |row| row['key'] == 'nha_thuoc' }
       expect(pharmacy).to eq(
         'key' => 'nha_thuoc', 'group' => 'retail', 'order' => 6, 'status' => 'available',
-        'modules' => %w[retail.units retail.traceability], 'branch_defaults' => { 'return_window_days' => 7, 'lot_selection' => 'fefo' },
+        'modules' => %w[retail.units retail.traceability], 'optional_modules' => [],
+        'branch_defaults' => { 'return_window_days' => 7, 'lot_selection' => 'fefo' },
         'display' => { 'catalog_view' => 'list' }, 'recommended_features' => %w[traceability returns refunds],
         'sample_units' => %w[vien vi hop chai], 'kitchen_stations' => []
       )

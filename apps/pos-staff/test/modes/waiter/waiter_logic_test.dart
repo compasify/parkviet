@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parkviet_staff/core/menu/modifier_sheet.dart';
+import 'package:parkviet_staff/modes/waiter/void_reasons.dart';
 import 'package:parkviet_staff/modes/waiter/waiter_cart.dart';
 import 'package:parkviet_staff/modes/waiter/waiter_state.dart';
 import 'package:pos_api/pos_api.dart';
@@ -17,6 +18,14 @@ void main() {
       optionJson('o_jelly', name: 'Thạch', delta: '5000.0'),
     ])),
   ];
+
+  group('void reasons', () {
+    test('are the branch ones, or the defaults, once each, with "other" always last', () {
+      expect(voidReasonChoices(null), [...defaultVoidReasons, voidOther]);
+      expect(voidReasonChoices(['het_mon', 'khac', 'het_mon', 'mon_nguoi']), ['het_mon', 'mon_nguoi', voidOther]);
+      expect(voidReasonChoices(const []), [voidOther]);
+    });
+  });
 
   group('modifier rules', () {
     test('a required group takes at least one pick, as the server does', () {

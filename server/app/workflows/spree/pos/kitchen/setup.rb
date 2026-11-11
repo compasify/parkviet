@@ -87,9 +87,31 @@ module Spree
           end
         end
 
+        # The reasons a sent item may be voided for at the branch, in order.
+        # `khac` (with a note) is always offered and is not listed.
+        def set_void_reasons(store:, staff:, key:, branch:, reasons:)
+          values = reasons.is_a?(Array) ? reasons.map { |code| code.to_s.strip } : reasons
+          run(store, staff, key, branch, 'kitchen.void_reasons', 'void_reasons' => values) do
+            unless values.is_a?(Array) && !values.intersect?([KitchenVoid::OTHER, KitchenVoid::PLATFORM_CANCELED])
+              raise Conflict.new('The void reasons are invalid.', reason: 'void_reasons_invalid')
+            end
+
+            branch.lock!
+            before = branch.void_reasons
+            if before != values
+              branch.void_reasons = values
+              raise Conflict.new('The void reasons are invalid.', reason: 'void_reasons_invalid') unless branch.valid?
+
+              branch.save!
+              audit!(store, staff, 'kitchen.void_reasons', branch, 'before' => before, 'after' => values)
+            end
+            settings(branch)
+          end
+        end
+
         def settings(branch)
           { 'branch_id' => branch.prefixed_id, 'kitchen_send_trigger' => branch.kitchen_send_trigger,
-            'module_enabled' => ModulePolicy.enabled?(branch, Send::MODULE) }
+            'module_enabled' => ModulePolicy.enabled?(branch, Send::MODULE), 'void_reasons' => Array(branch.void_reasons) }
         end
 
         def run(store, staff, key, branch, command, attributes, &)

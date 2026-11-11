@@ -81,6 +81,7 @@ class _WaiterScreenState extends ConsumerState<WaiterScreen> {
       events: realtime?.events ?? const Stream.empty(),
     );
     unawaited(_context!.menu.load());
+    unawaited(_context!.loadVoidReasons());
     _ready = ReadyWatcher(api: api, onAnnounce: (_) => ref.read(waiterAlertProvider)());
     _startReady(realtime?.subscribed);
   }

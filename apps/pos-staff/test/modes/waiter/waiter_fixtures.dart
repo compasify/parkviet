@@ -310,6 +310,12 @@ class FakeWaiterApi implements WaiterApi {
 
   @override
   Future<List<Printer>> printers(String branchId) async => const [];
+
+  /// The branch's void reasons the fake answers; null as from an older server.
+  List<String>? branchVoidReasons;
+
+  @override
+  Future<List<String>?> voidReasons(String branchId) async => branchVoidReasons;
 }
 
 /// The app's localizations around a screen, in Vietnamese.

@@ -5,7 +5,9 @@ module Spree
     module Tables
       # A branch's table service settings: the register table orders are
       # booked on, and the service charge (rate, the service modes it applies
-      # to and its tax category). Changes are audited.
+      # to and its tax category). Changes are audited. The store's tax
+      # categories come along, so a branch manager without store permissions
+      # can choose the service charge's.
       module Settings
         module_function
 
@@ -13,7 +15,10 @@ module Spree
           { branch_id: branch.prefixed_id, table_register_id: branch.table_register&.prefixed_id,
             service_charge_rate: branch.service_charge_rate&.to_s('F'),
             service_charge_applies_to: Array(branch.service_charge_applies_to),
-            service_charge_tax_category_id: branch.service_charge_tax_category&.prefixed_id }
+            service_charge_tax_category_id: branch.service_charge_tax_category&.prefixed_id,
+            tax_categories: Spree::TaxCategory.where(store_id: branch.store_id).order(:name, :id).limit(100).map do |category|
+              { id: category.prefixed_id, name: category.name, tax_code: category.tax_code.presence, is_default: category.is_default == true }
+            end }
         end
 
         def manage!(store, staff, branch)
@@ -29,7 +34,7 @@ module Spree
           payload = { 'command' => 'table_settings.update', 'branch_id' => branch.prefixed_id, 'attributes' => values }
           CommandExecutor.call(store: store, actor: staff, key: key, payload: payload, authorize: -> { manage!(store, staff, branch) }) do
             branch.lock!
-            before = to_pos(branch)
+            before = to_pos(branch).except(:tax_categories)
             if values.key?('table_register_id')
               branch.table_register = values['table_register_id'].presence &&
                                       (Register.locate(Register.where(branch_id: branch.id), values['table_register_id']) || raise(ActiveRecord::RecordNotFound))
@@ -48,7 +53,8 @@ module Spree
             end
             branch.save!
             after = to_pos(branch)
-            AuditEntry.record!(store: store, actor: staff, action: 'table_settings.update', subject: branch, metadata: { before: before, after: after })
+            AuditEntry.record!(store: store, actor: staff, action: 'table_settings.update', subject: branch,
+                               metadata: { before: before, after: after.except(:tax_categories) })
             after
           end
         end

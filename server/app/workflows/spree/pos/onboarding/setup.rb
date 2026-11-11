@@ -24,12 +24,14 @@ module Spree
         ALREADY = 'already_onboarded'
         FNB_INVALID = 'fnb_setup_invalid'
         FNB_MODULE = 'fnb.menu'
+        ANSWERS_INVALID = 'answers_invalid'
+        REGISTER_MISSING = 'table_register_missing'
         MAX_STATIONS = 4
         BRANCH_FIELDS = %w[name code timezone stock_location_id receiving_stock_location_id receiving_note return_window_days
                            variance_threshold display_freshness_ttl_seconds lot_selection adjustment_approval_threshold].freeze
 
         def self.call(store:, actor:, key:, profile_key:, branch:, wholesale: false, interests: [], register: nil, grant_self: false,
-                      features: [], fnb_setup: nil)
+                      features: [], fnb_setup: nil, answers: nil)
           branch_params = slice(branch, BRANCH_FIELDS)
           register_params = register.nil? ? nil : slice(register, %w[name code])
           payload = {
@@ -38,6 +40,7 @@ module Spree
             'grant_self' => grant_self == true, 'features' => strings(features)
           }
           payload['fnb_setup'] = fnb_params(fnb_setup) unless fnb_setup.nil?
+          payload['answers'] = answer_params(answers) unless answers.nil?
           authorize = -> { raise CanCan::AccessDenied unless AccessPolicy.new(store: store, staff: actor).permission?(PERMISSION) }
           CommandExecutor.call(store: store, actor: actor, key: key, payload: payload, authorize: authorize) do
             # Two people setting up at once: the second waits, then sees the first.
@@ -46,6 +49,11 @@ module Spree
             profile = Branches::Create.available!(BusinessProfiles.fetch!(payload['profile_key']))
             fnb = payload['fnb_setup']
             fnb_valid!(profile, fnb) if fnb
+            has_tables = tables_answer!(profile, payload.dig('answers', 'has_tables'))
+            modules = profile.modules_for(has_tables: has_tables)
+            tables = modules.include?(BusinessProfiles::TABLES_MODULE)
+            raise Conflict.new('Table orders need a register to be booked on.', reason: REGISTER_MISSING) if tables && register_params.nil?
+
             store_profile = StoreProfile.create!(store: store, profile_key: profile.key, profile_version: BusinessProfiles.version,
                                                  wholesale: payload['wholesale'], interests: interests!(payload['interests']),
                                                  onboarded_at: Time.current, changed_by: actor)
@@ -54,14 +62,18 @@ module Spree
             attributes = Branches::Attributes.call(store: store, params: branch_params)
             attributes[:kitchen_send_trigger] = fnb['kitchen_send_trigger'] if fnb&.dig('kitchen_send_trigger')
             created = Branches::Create.call(store: store, actor: actor, profile_key: profile.key, attributes: attributes)
+            enable_optional!(created, profile, modules, actor) if has_tables
             drawer = register_params && create_register!(store, actor, created, register_params)
+            created.update!(table_register: drawer) if tables
             membership = payload['grant_self'] ? grant!(store, actor, created) : nil
             payload['features'].each do |feature|
               FeaturePolicy.set!(store: store, actor: actor, feature: feature, enabled: true, reason: "Thiết lập theo ngành: #{profile.key}")
             end
             fnb_result = fnb && fnb_setup!(store, actor, key, store_profile, created, fnb)
+            table_result = tables ? table_service!(store, actor, created, profile, modules) : nil
             { store_profile: store_profile.reload.to_pos, branch: created.to_pos, register: drawer&.to_pos, membership: membership&.to_pos,
-              features: FeaturePolicy.for_branch(store, created), modules: ModulePolicy.for_branch(created), fnb_setup: fnb_result }
+              features: FeaturePolicy.for_branch(store, created), modules: ModulePolicy.for_branch(created), fnb_setup: fnb_result,
+              table_service: table_result }
           end
         end
 
@@ -84,6 +96,44 @@ module Spree
                              metadata: { stations: stations.map { |row| row[:id] }, tax_categories: taxes,
                                          kitchen_send_trigger: branch.kitchen_send_trigger })
           result
+        end
+
+        # Optional modules in the profile's order, each through the module
+        # switch so it is audited.
+        def self.enable_optional!(branch, profile, modules, actor)
+          (modules - profile.modules).each do |key|
+            BranchModules::Set.write!(branch, key, true, actor: actor, reason: "profile:#{profile.key}",
+                                                         metadata: { profile_key: profile.key, answer: 'has_tables' })
+          end
+        end
+
+        # The register table orders are booked on, and the profile's
+        # stations and drink route unless the shop step made stations.
+        def self.table_service!(store, actor, branch, profile, modules)
+          kitchen = modules.include?(Kitchen::Send::MODULE)
+          stations = kitchen ? Kitchen::Defaults.stations!(store: store, actor: actor, branch: branch, kinds: profile.kitchen_stations) : []
+          routes = kitchen ? Kitchen::Defaults.routes!(store: store, actor: actor, branch: branch) : []
+          { table_register_id: branch.table_register&.prefixed_id, modules_enabled: modules - profile.modules,
+            stations: stations.map(&:to_pos), routes: routes.map(&:to_pos) }
+        end
+
+        # "Does the shop serve tables?" Only a profile with optional table
+        # modules asks it; a profile that always serves tables accepts yes.
+        def self.tables_answer!(profile, value)
+          return false unless value
+          return true if profile.tables_optional? || profile.modules.include?(BusinessProfiles::TABLES_MODULE)
+
+          raise Conflict.new("Profile #{profile.key} does not serve tables.", reason: ANSWERS_INVALID)
+        end
+
+        def self.answer_params(source)
+          hash = source.respond_to?(:to_unsafe_h) ? source.to_unsafe_h : source
+          raise Conflict.new('Answers must be an object.', reason: ANSWERS_INVALID) unless hash.is_a?(Hash)
+
+          value = hash.stringify_keys['has_tables']
+          raise Conflict.new('has_tables must be true or false.', reason: ANSWERS_INVALID) unless [true, false, nil, 'true', 'false'].include?(value)
+
+          { 'has_tables' => [true, 'true'].include?(value) }
         end
 
         # The step as strings, so the payload digest does not depend on JSON

@@ -259,5 +259,22 @@
   "waiterModifierInvalid": "The options are not valid. Open the dish again.",
   "waiterVoidQuantityInvalid": "The quantity to void is not valid.",
   "waiterVoidReasonInvalid": "Pick a reason, or write one for \"Other\".",
-  "waiterForbidden": "You may not do that on the waiter device."
+  "waiterForbidden": "You may not do that on the waiter device.",
+  "checklistTitle": "Device paired",
+  "checklistIntro": "This device is paired with {branch}. Check the items below before using it.",
+  "@checklistIntro": {"placeholders": {"branch": {"type": "String"}}},
+  "checklistStation": "Kitchen station",
+  "checklistStationOk": "Chosen: {name}",
+  "@checklistStationOk": {"placeholders": {"name": {"type": "String"}}},
+  "checklistStationMissing": "No station chosen yet. Pick one on the kitchen screen after starting.",
+  "checklistPrinter": "Station printer",
+  "checklistPrinterOk": "Received: {name}",
+  "@checklistPrinterOk": {"placeholders": {"name": {"type": "String"}}},
+  "checklistPrinterMissing": "The station has no printer; tickets only show on screen. Assign one on the branch page, Kitchen & bar tab.",
+  "checklistStaff": "Staff with a PIN",
+  "checklistStaffOk": "{count} people can sign in with a PIN",
+  "@checklistStaffOk": {"placeholders": {"count": {"type": "int"}}},
+  "checklistStaffMissing": "Nobody has a PIN yet. A manager sets staff PINs on the admin site.",
+  "checklistNothing": "This mode needs nothing else set up.",
+  "checklistStart": "Start"
 }

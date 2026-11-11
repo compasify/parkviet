@@ -112,6 +112,8 @@ class _$TableSettings extends TableSettings {
       serviceChargeAppliesTo;
   @override
   final String? serviceChargeTaxCategoryId;
+  @override
+  final BuiltList<TableTaxCategory> taxCategories;
 
   factory _$TableSettings([void Function(TableSettingsBuilder)? updates]) =>
       (TableSettingsBuilder()..update(updates))._build();
@@ -121,7 +123,8 @@ class _$TableSettings extends TableSettings {
       this.tableRegisterId,
       this.serviceChargeRate,
       required this.serviceChargeAppliesTo,
-      this.serviceChargeTaxCategoryId})
+      this.serviceChargeTaxCategoryId,
+      required this.taxCategories})
       : super._();
   @override
   TableSettings rebuild(void Function(TableSettingsBuilder) updates) =>
@@ -138,7 +141,8 @@ class _$TableSettings extends TableSettings {
         tableRegisterId == other.tableRegisterId &&
         serviceChargeRate == other.serviceChargeRate &&
         serviceChargeAppliesTo == other.serviceChargeAppliesTo &&
-        serviceChargeTaxCategoryId == other.serviceChargeTaxCategoryId;
+        serviceChargeTaxCategoryId == other.serviceChargeTaxCategoryId &&
+        taxCategories == other.taxCategories;
   }
 
   @override
@@ -149,6 +153,7 @@ class _$TableSettings extends TableSettings {
     _$hash = $jc(_$hash, serviceChargeRate.hashCode);
     _$hash = $jc(_$hash, serviceChargeAppliesTo.hashCode);
     _$hash = $jc(_$hash, serviceChargeTaxCategoryId.hashCode);
+    _$hash = $jc(_$hash, taxCategories.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -160,7 +165,8 @@ class _$TableSettings extends TableSettings {
           ..add('tableRegisterId', tableRegisterId)
           ..add('serviceChargeRate', serviceChargeRate)
           ..add('serviceChargeAppliesTo', serviceChargeAppliesTo)
-          ..add('serviceChargeTaxCategoryId', serviceChargeTaxCategoryId))
+          ..add('serviceChargeTaxCategoryId', serviceChargeTaxCategoryId)
+          ..add('taxCategories', taxCategories))
         .toString();
   }
 }
@@ -197,6 +203,12 @@ class TableSettingsBuilder
   set serviceChargeTaxCategoryId(String? serviceChargeTaxCategoryId) =>
       _$this._serviceChargeTaxCategoryId = serviceChargeTaxCategoryId;
 
+  ListBuilder<TableTaxCategory>? _taxCategories;
+  ListBuilder<TableTaxCategory> get taxCategories =>
+      _$this._taxCategories ??= ListBuilder<TableTaxCategory>();
+  set taxCategories(ListBuilder<TableTaxCategory>? taxCategories) =>
+      _$this._taxCategories = taxCategories;
+
   TableSettingsBuilder() {
     TableSettings._defaults(this);
   }
@@ -209,6 +221,7 @@ class TableSettingsBuilder
       _serviceChargeRate = $v.serviceChargeRate;
       _serviceChargeAppliesTo = $v.serviceChargeAppliesTo.toBuilder();
       _serviceChargeTaxCategoryId = $v.serviceChargeTaxCategoryId;
+      _taxCategories = $v.taxCategories.toBuilder();
       _$v = null;
     }
     return this;
@@ -238,12 +251,16 @@ class TableSettingsBuilder
             serviceChargeRate: serviceChargeRate,
             serviceChargeAppliesTo: serviceChargeAppliesTo.build(),
             serviceChargeTaxCategoryId: serviceChargeTaxCategoryId,
+            taxCategories: taxCategories.build(),
           );
     } catch (_) {
       late String _$failedField;
       try {
         _$failedField = 'serviceChargeAppliesTo';
         serviceChargeAppliesTo.build();
+
+        _$failedField = 'taxCategories';
+        taxCategories.build();
       } catch (e) {
         throw BuiltValueNestedFieldError(
             r'TableSettings', _$failedField, e.toString());

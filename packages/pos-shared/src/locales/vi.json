@@ -380,7 +380,8 @@
     },
     "problem_station-name": "Đặt tên cho mỗi khu bếp, tối đa 80 ký tự.",
     "problem_station-duplicate": "Hai khu bếp không được trùng tên.",
-    "problem_tax": "Chọn thuế suất cho món ăn và cho đồ uống có cồn."
+    "problem_tax": "Chọn thuế suất cho món ăn và cho đồ uống có cồn.",
+    "problem_table-register": "Quán phục vụ tại bàn cần một quầy để ghi đơn bàn: đặt tên quầy ở bước Chi nhánh."
   },
   "receiptPlatform": "Nền tảng giao hàng",
   "receiptVietqr": "Chuyển khoản VietQR",

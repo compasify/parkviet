@@ -49,8 +49,9 @@ void main() {
         AsyncData(AppSession.paired(serverUrl: 'http://pos.local', me: me(mode), clock: ServerClock.zero));
     final staff = StaffSession(staffId: 'u1', expiresAt: DateTime(2026, 11, 11, 18));
 
-    String? go(AsyncValue<AppSession> session, String location, {StaffSession? signedIn, bool manager = false}) =>
-        redirectFor(session: session, staff: signedIn, managerAccess: manager, location: location);
+    String? go(AsyncValue<AppSession> session, String location,
+            {StaffSession? signedIn, bool manager = false, bool checklist = false}) =>
+        redirectFor(session: session, staff: signedIn, managerAccess: manager, location: location, checklist: checklist);
 
     test('waits on the splash while the pairing loads', () {
       expect(go(const AsyncLoading(), '/'), isNull);
@@ -86,6 +87,14 @@ void main() {
       expect(go(paired('waiter'), '/staff/pin/m1'), isNull);
       expect(go(paired('waiter'), '/staff', signedIn: staff), '/mode/waiter');
       expect(go(paired('owner'), '/', signedIn: staff), '/mode/owner');
+    });
+
+    test('shows a just-paired device its checklist first, then its mode', () {
+      expect(go(paired('kds'), '/', checklist: true), '/checklist');
+      expect(go(paired('waiter'), '/staff', checklist: true), '/checklist');
+      expect(go(paired('kds'), '/checklist', checklist: true), isNull);
+      expect(go(paired('kds'), '/checklist'), '/mode/kds');
+      expect(go(paired('waiter'), '/checklist'), '/staff');
     });
 
     test('opens management only after a manager PIN', () {

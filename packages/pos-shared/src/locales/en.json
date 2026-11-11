@@ -380,7 +380,8 @@
     },
     "problem_station-name": "Name every station, at most 80 characters.",
     "problem_station-duplicate": "Two stations cannot share a name.",
-    "problem_tax": "Choose the tax rate for food and for alcoholic drinks."
+    "problem_tax": "Choose the tax rate for food and for alcoholic drinks.",
+    "problem_table-register": "A shop serving tables needs a register for table orders: name one on the Branch step."
   },
   "receiptPlatform": "Delivery platform",
   "receiptVietqr": "VietQR transfer",

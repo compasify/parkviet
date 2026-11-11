@@ -15,7 +15,9 @@ import {
   normalizeProfile,
   profileDescriptionKey,
   profileLabelKey,
+  profileModules,
   sellingSurfaceOf,
+  tablesOptional,
 } from './pos-modules';
 import { describeFailure, moduleDisabledText } from './request-failure';
 import { describeInventoryFailure, describeTraceFailure } from './traceability';
@@ -207,6 +209,26 @@ describe('business profile catalogue', () => {
     });
     expect(catalog.tax_categories).toEqual([{ code: 'vat_food', rate: '0.08' }]);
     expect(catalog.menu_tax_defaults).toEqual({ food: 'vat_food', alcohol: 'vat_special' });
+  });
+
+  it('adds the optional table modules only for a shop that serves tables', () => {
+    const catalog = normalizeBusinessProfiles({
+      profiles: [
+        {
+          key: 'quan_an',
+          modules: ['fnb.menu'],
+          optional_modules: ['fnb.tables', 'fnb.postpay', 9],
+        },
+        { key: 'thoi_trang', modules: ['retail.variants'] },
+      ],
+    });
+    const [eatery, fashion] = catalog.profiles;
+    expect(eatery.optional_modules).toEqual(['fnb.tables', 'fnb.postpay']);
+    expect(fashion.optional_modules).toEqual([]);
+    expect(tablesOptional(eatery)).toBe(true);
+    expect(tablesOptional(fashion)).toBe(false);
+    expect(profileModules(eatery, true)).toEqual(['fnb.menu', 'fnb.tables', 'fnb.postpay']);
+    expect(profileModules(eatery, false)).toEqual(['fnb.menu']);
   });
 
   it('sells from the menu only with fnb.menu on and no catalogue preference', () => {

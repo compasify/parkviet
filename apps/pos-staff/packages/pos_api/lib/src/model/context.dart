@@ -5,6 +5,7 @@
 // ignore_for_file: unused_element
 import 'package:pos_api/src/model/context_store.dart';
 import 'package:built_collection/built_collection.dart';
+import 'package:pos_api/src/model/context_branch.dart';
 import 'package:pos_api/src/model/context_staff.dart';
 import 'package:pos_api/src/model/context_administration.dart';
 import 'package:built_value/json_object.dart';
@@ -21,6 +22,7 @@ part 'context.g.dart';
 /// * [store]
 /// * [administration]
 /// * [einvoiceType] - E-invoice the store issues for completed orders; the counter offers buyer details unless it is none.
+/// * [branches] - Branches this person may see, with what their screens need.
 @BuiltValue()
 abstract class Context implements Built<Context, ContextBuilder> {
   /// What the signed-in person may do at the selected branch, such as `pos.device.manage`.
@@ -40,6 +42,10 @@ abstract class Context implements Built<Context, ContextBuilder> {
   @BuiltValueField(wireName: r'einvoice_type')
   ContextEinvoiceTypeEnum? get einvoiceType;
   // enum einvoiceTypeEnum {  none,  cash_register,  coded,  };
+
+  /// Branches this person may see, with what their screens need.
+  @BuiltValueField(wireName: r'branches')
+  BuiltList<ContextBranch>? get branches;
 
   Context._();
 
@@ -89,6 +95,13 @@ class _$ContextSerializer implements PrimitiveSerializer<Context> {
       yield serializers.serialize(
         object.einvoiceType,
         specifiedType: const FullType(ContextEinvoiceTypeEnum),
+      );
+    }
+    if (object.branches != null) {
+      yield r'branches';
+      yield serializers.serialize(
+        object.branches,
+        specifiedType: const FullType(BuiltList, [FullType(ContextBranch)]),
       );
     }
   }
@@ -151,6 +164,15 @@ class _$ContextSerializer implements PrimitiveSerializer<Context> {
           ) as ContextEinvoiceTypeEnum?;
           if (valueDes == null) continue;
           result.einvoiceType = valueDes;
+          break;
+        case r'branches':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType:
+                const FullType.nullable(BuiltList, [FullType(ContextBranch)]),
+          ) as BuiltList<ContextBranch>?;
+          if (valueDes == null) continue;
+          result.branches.replace(valueDes);
           break;
         default:
           unhandled.add(key);

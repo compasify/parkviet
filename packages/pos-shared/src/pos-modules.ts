@@ -191,6 +191,8 @@ export type BusinessProfile = {
   // `available` or `coming_soon`; other values are kept as sent.
   status: string;
   modules: string[];
+  // Modules switched on only when the shop answers that it serves tables.
+  optional_modules: string[];
   branch_defaults: Record<string, unknown>;
   display: PosProfileDisplay;
   recommended_features: string[];
@@ -201,6 +203,19 @@ export type BusinessProfile = {
 
 // A tax category the F&B setup step offers, by Spree tax code, with the rate
 // a new store is seeded with (a fraction: `0.08`).
+// The table module: a profile listing it among its optional modules asks
+// whether the shop serves tables.
+export const TABLES_MODULE = 'fnb.tables';
+
+// The modules a branch gets from a profile, with the optional ones when the
+// shop serves tables.
+export function profileModules(profile: BusinessProfile, hasTables: boolean): string[] {
+  return hasTables ? [...profile.modules, ...profile.optional_modules] : profile.modules;
+}
+
+export const tablesOptional = (profile: BusinessProfile) =>
+  profile.optional_modules.includes(TABLES_MODULE);
+
 export type BusinessTaxCategory = { code: string; rate: string };
 
 export type BusinessProfiles = {
@@ -248,6 +263,7 @@ export function normalizeBusinessProfiles(value: unknown): BusinessProfiles {
               : Number.MAX_SAFE_INTEGER,
           status: typeof item.status === 'string' ? item.status : '',
           modules: strings(item.modules),
+          optional_modules: strings(item.optional_modules),
           branch_defaults: record(item.branch_defaults) ?? {},
           display: normalizeDisplay(item.display),
           recommended_features: strings(item.recommended_features),

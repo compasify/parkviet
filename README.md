@@ -100,7 +100,7 @@ Những gì POS chưa làm được (thẻ, driver máy in, thử với thiết 
 
 ### Bán hàng F&B (cafe, quán ăn, căng tin)
 
-Ba ngành đầu tiên của ăn uống đã chọn được khi thiết lập cửa hàng: **Cafe, Trà sữa**, **Quán ăn** (trả tiền trước) và **Căng tin & Trạm dừng nghỉ**. Karaoke, bida, bar và nhà hàng vẫn là "Sắp hỗ trợ". Mọi màn quản trị dưới đây nằm trong bảng quản trị POS (`apps/pos-dashboard`).
+Năm ngành ăn uống chọn được khi thiết lập cửa hàng: **Cafe, Trà sữa**, **Quán ăn** (trả tiền trước, hoặc có bàn phục vụ), **Căng tin & Trạm dừng nghỉ**, **Nhà hàng** và **Bar, Pub & Club** (bán theo bàn). Karaoke, bida vẫn là "Sắp hỗ trợ". Sơ đồ bàn, máy phục vụ, trả tiền sau và phí phục vụ xem [Bán tại bàn và trả tiền sau](docs/pos/fnb-ban-va-tra-sau.md). Mọi màn quản trị dưới đây nằm trong bảng quản trị POS (`apps/pos-dashboard`).
 
 1. **Chọn ngành:** ở **Thiết lập cửa hàng**, chọn một trong ba ngành trên. Wizard thêm bước **Thiết lập quán**: đặt tên các khu bếp (Bếp, Quầy pha chế; căng tin chỉ có Bếp; tối đa 4 khu), chọn thuế suất cho đồ ăn, đồ uống và cho rượu, bia, chọn lúc gửi món xuống bếp (khi thanh toán xong, hoặc khi thu ngân bấm Gửi bếp). Chi nhánh đã có thì đổi ngành ở **Cấu hình → Chi nhánh → Mô hình kinh doanh**.
 2. **Thực đơn và tùy chọn:** nhập ở trang **Thực đơn**: nhóm món, món (gắn với sản phẩm), nhóm tùy chọn (đường, đá, topping…), giá theo khung giờ. Thu ngân đánh dấu món hết ngay trên lưới thực đơn. Món mới lấy thuế suất đồ ăn, đồ uống đã chọn trong wizard; đổi riêng từng món ở ô **Thuế suất**. Không có thực đơn mẫu.

@@ -307,5 +307,22 @@
   "waiterModifierInvalid": "Lựa chọn của món không hợp lệ. Mở lại món để chọn.",
   "waiterVoidQuantityInvalid": "Số lượng hủy không hợp lệ.",
   "waiterVoidReasonInvalid": "Chọn lý do hủy, hoặc ghi lý do khi chọn \"Khác\".",
-  "waiterForbidden": "Bạn không có quyền làm việc này trên máy phục vụ."
+  "waiterForbidden": "Bạn không có quyền làm việc này trên máy phục vụ.",
+  "checklistTitle": "Thiết bị đã ghép",
+  "checklistIntro": "Máy đã ghép vào {branch}. Kiểm tra các mục dưới đây trước khi dùng.",
+  "@checklistIntro": {"placeholders": {"branch": {"type": "String"}}},
+  "checklistStation": "Trạm bếp",
+  "checklistStationOk": "Đã chọn: {name}",
+  "@checklistStationOk": {"placeholders": {"name": {"type": "String"}}},
+  "checklistStationMissing": "Chưa chọn trạm. Chọn trạm trên màn bếp sau khi bắt đầu.",
+  "checklistPrinter": "Máy in của trạm",
+  "checklistPrinterOk": "Đã nhận: {name}",
+  "@checklistPrinterOk": {"placeholders": {"name": {"type": "String"}}},
+  "checklistPrinterMissing": "Trạm chưa có máy in; phiếu chỉ hiện trên màn hình. Gán máy in ở trang chi nhánh, tab Bếp & bar.",
+  "checklistStaff": "Nhân viên có PIN",
+  "checklistStaffOk": "{count} người đăng nhập được bằng PIN",
+  "@checklistStaffOk": {"placeholders": {"count": {"type": "int"}}},
+  "checklistStaffMissing": "Chưa ai có PIN. Quản lý đặt PIN cho nhân viên trên trang quản trị.",
+  "checklistNothing": "Chế độ này không cần chuẩn bị thêm.",
+  "checklistStart": "Bắt đầu dùng"
 }

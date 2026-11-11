@@ -870,4 +870,54 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get waiterForbidden =>
       'Bạn không có quyền làm việc này trên máy phục vụ.';
+
+  @override
+  String get checklistTitle => 'Thiết bị đã ghép';
+
+  @override
+  String checklistIntro(String branch) {
+    return 'Máy đã ghép vào $branch. Kiểm tra các mục dưới đây trước khi dùng.';
+  }
+
+  @override
+  String get checklistStation => 'Trạm bếp';
+
+  @override
+  String checklistStationOk(String name) {
+    return 'Đã chọn: $name';
+  }
+
+  @override
+  String get checklistStationMissing =>
+      'Chưa chọn trạm. Chọn trạm trên màn bếp sau khi bắt đầu.';
+
+  @override
+  String get checklistPrinter => 'Máy in của trạm';
+
+  @override
+  String checklistPrinterOk(String name) {
+    return 'Đã nhận: $name';
+  }
+
+  @override
+  String get checklistPrinterMissing =>
+      'Trạm chưa có máy in; phiếu chỉ hiện trên màn hình. Gán máy in ở trang chi nhánh, tab Bếp & bar.';
+
+  @override
+  String get checklistStaff => 'Nhân viên có PIN';
+
+  @override
+  String checklistStaffOk(int count) {
+    return '$count người đăng nhập được bằng PIN';
+  }
+
+  @override
+  String get checklistStaffMissing =>
+      'Chưa ai có PIN. Quản lý đặt PIN cho nhân viên trên trang quản trị.';
+
+  @override
+  String get checklistNothing => 'Chế độ này không cần chuẩn bị thêm.';
+
+  @override
+  String get checklistStart => 'Bắt đầu dùng';
 }

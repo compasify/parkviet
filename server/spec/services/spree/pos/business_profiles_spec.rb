@@ -19,16 +19,16 @@ RSpec.describe Spree::Pos::BusinessProfiles do
   end
 
   describe 'the shipped catalog' do
-    it 'offers 13 retail profiles and the three wave-one F&B profiles now, the other F&B profiles as coming soon' do
+    it 'offers 13 retail profiles and five F&B profiles, keeping karaoke and billiards coming soon' do
       profiles = described_class.all
-      expect(described_class.version).to eq(1)
+      expect(described_class.version).to eq(2)
       expect(profiles.size).to eq(19)
       expect(profiles.map(&:order)).to eq((1..19).to_a)
       expect(profiles.select { |item| item.group == 'retail' }.map(&:status)).to all(eq('available'))
       fnb = profiles.select { |item| item.group == 'fnb' }.to_h { |item| [item.key, item.status] }
       expect(fnb).to eq('quan_an' => 'available', 'cafe_tra_sua' => 'available', 'cang_tin_tram_dung' => 'available',
-                        'karaoke_bida' => 'coming_soon', 'bar_pub_club' => 'coming_soon', 'nha_hang' => 'coming_soon')
-      expect(profiles.count(&:available?)).to eq(16)
+                        'karaoke_bida' => 'coming_soon', 'bar_pub_club' => 'available', 'nha_hang' => 'available')
+      expect(profiles.count(&:available?)).to eq(18)
       expect(profiles.map(&:key)).to include('tap_hoa_sieu_thi', 'nha_thuoc', 'vat_lieu_xay_dung', 'khac', 'nha_hang')
     end
 
@@ -68,7 +68,7 @@ RSpec.describe Spree::Pos::BusinessProfiles do
                                         include(key: 'fnb.tables', status: 'available', depends_on: ['resources']),
                                         include(key: 'timed_billing', status: 'planned'))
       expect(data[:profiles].first.keys).
-        to eq(%i[key group order status modules branch_defaults display recommended_features sample_units kitchen_stations])
+        to eq(%i[key group order status modules optional_modules branch_defaults display recommended_features sample_units kitchen_stations])
       expect(data[:tax_categories].map { |row| row[:code] }).to eq(%w[vat_food vat_special])
       expect(data[:menu_tax_defaults]).to eq('food' => 'vat_food', 'alcohol' => 'vat_special')
     end
@@ -88,6 +88,25 @@ RSpec.describe Spree::Pos::BusinessProfiles do
         expect(item.display).to eq('surface' => 'menu_grid')
         expect(item.branch_defaults).to eq('kitchen_send_trigger' => 'on_complete')
       end
+      expect([cafe, canteen].map(&:optional_modules)).to all(eq([]))
+    end
+
+    it 'presets the wave-two table profiles as decided' do
+      quan_an = described_class.fetch!('quan_an')
+      expect(quan_an.optional_modules).to eq(%w[resources fnb.tables fnb.postpay fnb.service_charge])
+      expect(quan_an.tables_optional?).to be(true)
+      expect(quan_an.modules_for(has_tables: true)).to include('fnb.tables', 'fnb.postpay', 'fnb.service_charge', 'fnb.menu')
+      expect(quan_an.modules_for(has_tables: false)).not_to include('fnb.tables')
+      restaurant = described_class.fetch!('nha_hang')
+      expect(restaurant.display).to eq('surface' => 'floor_plan')
+      expect(restaurant.branch_defaults).to eq('kitchen_send_trigger' => 'manual', 'service_charge_rate' => 5)
+      expect(restaurant.kitchen_stations).to eq(%w[prep bar])
+      bar = described_class.fetch!('bar_pub_club')
+      expect(bar.modules).to include('resources', 'fnb.tables', 'fnb.postpay')
+      expect(bar.display).to eq('surface' => 'table_grid')
+      expect(bar.branch_defaults).not_to have_key('service_charge_rate')
+      [restaurant, bar].each { |item| expect(item.recommended_features).to eq(%w[vietqr customer_display]) }
+      expect(described_class.fetch!('karaoke_bida').status).to eq('coming_soon')
     end
     it 'refuses an unknown profile' do
       expect { described_class.fetch!('teleport') }.to raise_error(Spree::Pos::Conflict) { |error| expect(error.reason).to eq('profile_unknown') }
@@ -142,7 +161,9 @@ RSpec.describe Spree::Pos::BusinessProfiles do
       expect(errors_of('nha_thuoc' => profile(display: { 'surface' => 'floor_plan' }))).
         to eq(['nha_thuoc.display.surface: floor_plan needs fnb.tables.'])
       expect(errors_of('nha_thuoc' => profile(display: { 'surface' => 'kiosk' }))).
-        to eq(['nha_thuoc.display.surface: "kiosk" must be one of catalog, menu_grid, table_grid, floor_plan.'])
+        to eq(['nha_thuoc.display.surface: "kiosk" must be one of catalog, menu_grid, table_grid, floor_plan, resource_board, tab_list.'])
+      expect(errors_of('nha_thuoc' => profile(display: { 'surface' => 'resource_board' }))).
+        to eq(['nha_thuoc.display.surface: resource_board needs resources.'])
       expect(errors_of('quan_an' => profile(group: 'fnb', modules: %w[resources fnb.tables], display: { 'surface' => 'table_grid' }))).to eq([])
       expect(errors_of('nha_thuoc' => profile(display: { 'surface' => 'catalog', 'catalog_view' => 'cards' }))).to eq([])
       expect(errors_of('quan_an' => profile(group: 'fnb', modules: ['fnb.menu'], display: { 'surface' => 'menu_grid' }))).to eq([])
@@ -177,9 +198,28 @@ RSpec.describe Spree::Pos::BusinessProfiles do
       expect(built.profiles.first.status).to eq('coming_soon')
     end
 
-    it 'keeps a profile that lists the table service modules coming soon' do
+    it 'offers a profile that lists the table service modules' do
       built = described_class.build(catalog({ 'quan_an' => profile(group: 'fnb', modules: %w[fnb.menu resources fnb.tables]) }))
-      expect(built.profiles.first.status).to eq('coming_soon')
+      expect(built.profiles.first.status).to eq('available')
+    end
+
+    it 'checks optional modules and leaves the status to the required ones' do
+      expect(errors_of('quan_an' => profile(optional_modules: %w[resources fnb.tables]))).to eq([])
+      expect(errors_of('quan_an' => profile(optional_modules: %w[fnb.tables teleport retail.units fnb.tables]))).
+        to contain_exactly('quan_an.optional_modules: lists a module more than once.',
+                           'quan_an.optional_modules: fnb.tables needs resources.',
+                           'quan_an.optional_modules: unknown module "teleport".',
+                           'quan_an.optional_modules: retail.units is already in modules.')
+      expect(errors_of('quan_an' => profile(optional_modules: 'fnb.tables'))).to eq(['quan_an.optional_modules: must be a list.'])
+      built = described_class.build(catalog({ 'quan_an' => profile(optional_modules: ['timed_billing']) }))
+      expect(built.profiles.first.status).to eq('available')
+    end
+
+    it 'checks the suggested service charge rate' do
+      expect(errors_of('nha_hang' => profile(branch_defaults: { 'service_charge_rate' => 5 }))).to eq([])
+      expect(errors_of('nha_hang' => profile(branch_defaults: { 'service_charge_rate' => '7.5' }))).to eq([])
+      expect(errors_of('nha_hang' => profile(branch_defaults: { 'service_charge_rate' => 60 }))).
+        to eq(['nha_hang.branch_defaults.service_charge_rate: 60 must be empty or a percent above 0 and at most 50.'])
     end
 
     it 'keeps an F&B profile coming soon while its group is closed, even with every module available' do

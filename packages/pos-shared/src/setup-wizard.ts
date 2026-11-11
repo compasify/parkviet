@@ -8,7 +8,13 @@
 // permission at the new branch is ticked, and can be unticked.
 
 import { isPosFeature, type PosFeature } from './pos-features';
-import type { BusinessProfile, BusinessProfiles } from './pos-modules';
+import {
+  type BusinessProfile,
+  type BusinessProfiles,
+  profileModules,
+  TABLES_MODULE,
+  tablesOptional,
+} from './pos-modules';
 
 // 1 industry, 2 wholesale, 3 branch, 4 preview, 5 shop setup (profiles with
 // the menu only), 6 summary.
@@ -117,6 +123,8 @@ export type SetupState = {
   defaults: SetupDefaults;
   features: PosFeature[];
   shop: ShopSetup | null;
+  // The answer to "do you serve tables?" for a profile whose table service is optional.
+  hasTables: boolean;
 };
 
 export const DEFAULT_REGISTER_NAME = 'Quầy 1';
@@ -149,6 +157,7 @@ export function initialSetup(timezone?: string | null): SetupState {
     defaults: { ...BLANK_DEFAULTS },
     features: [],
     shop: null,
+    hasTables: false,
   };
 }
 
@@ -254,6 +263,7 @@ export type SetupAction =
   | { type: 'station-remove'; index: number }
   | { type: 'shop-tax'; role: 'food' | 'alcohol'; value: string }
   | { type: 'shop-trigger'; value: KitchenSendTrigger }
+  | { type: 'has-tables'; value: boolean }
   | { type: 'go'; step: SetupStep };
 
 function withProfile(state: SetupState, key: string, profiles: BusinessProfile[]): SetupState {
@@ -383,6 +393,8 @@ export function setupReducer(state: SetupState, action: SetupAction): SetupState
       );
     case 'shop-trigger':
       return withShop(state, (shop) => ({ ...shop, trigger: action.value }));
+    case 'has-tables':
+      return { ...state, hasTables: action.value };
     case 'go':
       return { ...state, step: action.step };
   }
@@ -400,7 +412,8 @@ export type SetupProblem =
   | 'adjustment'
   | 'station-name'
   | 'station-duplicate'
-  | 'tax';
+  | 'tax'
+  | 'table-register';
 
 // What keeps a step from moving on, in the order the fields appear.
 export function stepProblems(
@@ -423,7 +436,18 @@ export function stepProblems(
   if (!validCount(state.defaults.adjustment_approval_threshold)) problems.push('adjustment');
   if (step === 4 || !hasShopStep(profile)) return problems;
   problems.push(...shopProblems(state.shop));
+  // Table orders are booked to a register, so a shop serving tables needs one.
+  if (tablesOn(state, profile) && !state.registerName.trim()) problems.push('table-register');
   return problems;
+}
+
+// Whether the branch will serve tables: always for a table profile, or as
+// the owner answered when the profile offers it.
+export function tablesOn(state: SetupState, profile: BusinessProfile | undefined): boolean {
+  if (!profile) return false;
+  return profileModules(profile, tablesOptional(profile) && state.hasTables).includes(
+    TABLES_MODULE,
+  );
 }
 
 // Station names filled, short enough and distinct; both tax choices made.
@@ -459,6 +483,7 @@ export type OnboardingPayload = {
   register?: { name: string };
   grant_self: boolean;
   features: PosFeature[];
+  answers?: { has_tables: boolean };
   fnb_setup?: {
     stations: { name: string; kind: ShopStationKind }[];
     tax_categories: { food: string; alcohol: string };
@@ -496,6 +521,7 @@ export function onboardingPayload(state: SetupState, profile: BusinessProfile): 
     grant_self: state.grantSelf,
     // Only what the owner ticked, and only among what the industry recommends.
     features: state.features.filter((feature) => recommended.includes(feature)),
+    ...(tablesOptional(profile) ? { answers: { has_tables: state.hasTables } } : {}),
     ...shopPayload(state, profile),
   };
 }

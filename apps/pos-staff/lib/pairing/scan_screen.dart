@@ -4,6 +4,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../core/session.dart';
 import '../l10n/app_localizations.dart';
+import 'device_checklist.dart';
 import 'pairing_errors.dart';
 import 'pairing_payload.dart';
 
@@ -37,6 +38,8 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     });
     try {
       final payload = PairingPayload.parse(raw);
+      // The first screen once paired is the device's checklist.
+      ref.read(deviceChecklistPendingProvider.notifier).open();
       await ref.read(sessionProvider.notifier).pair(serverUrl: payload.url, code: payload.code);
     } on Object catch (error) {
       if (!mounted) return;

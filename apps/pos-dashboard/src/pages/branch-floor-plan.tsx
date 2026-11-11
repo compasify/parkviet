@@ -33,7 +33,6 @@ import {
   useFloorPlanWrite,
   useResources,
   useTableSettings,
-  useTaxCategories,
 } from '../hooks/use-floor-plan'
 import { usePosSession } from '../hooks/use-pos-session'
 import {
@@ -757,7 +756,6 @@ function TableSettingsCard({ write }: { write: boolean }) {
   const { context } = usePosSession()
   const settings = useTableSettings(branch.id)
   const serviceCharge = modules?.['fnb.service_charge'] === true
-  const taxes = useTaxCategories(serviceCharge)
   const mutation = useFloorPlanWrite()
   const { notice, attempt } = useAttempt(t)
   const [draft, setDraft] = useState<SettingsDraft | null>(null)
@@ -808,7 +806,7 @@ function TableSettingsCard({ write }: { write: boolean }) {
     registerOptions.push({ value: current.register, label: t('floorPlan.registerOther') })
   const taxOptions = [
     { value: '', label: t('floorPlan.taxUnset') },
-    ...(taxes.data ?? []).map((row) => ({ value: row.id, label: row.name })),
+    ...(loaded?.tax_categories ?? []).map((row) => ({ value: row.id, label: row.name })),
   ]
   if (current?.tax && !taxOptions.some((row) => row.value === current.tax))
     taxOptions.push({ value: current.tax, label: t('floorPlan.taxCurrent') })
@@ -866,11 +864,7 @@ function TableSettingsCard({ write }: { write: boolean }) {
                   label={t('floorPlan.serviceChargeTax')}
                   value={current.tax}
                   disabled={!write}
-                  hint={t(
-                    taxes.isError
-                      ? 'floorPlan.serviceChargeTaxUnreadable'
-                      : 'floorPlan.serviceChargeTaxHint',
-                  )}
+                  hint={t('floorPlan.serviceChargeTaxHint')}
                   options={taxOptions}
                   onChange={(tax) => edit({ tax })}
                 />

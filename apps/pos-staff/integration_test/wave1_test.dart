@@ -88,6 +88,9 @@ void main() {
     await tester.enterText(find.byKey(const Key('manual-code')), stationCode);
     await tester.tap(find.byKey(const Key('manual-submit')));
     await pumpFor(tester, const Duration(seconds: 3));
+    // Just paired, the device shows its checklist first.
+    await tester.tap(find.byKey(const Key('checklist-start')));
+    await pumpFor(tester);
 
     final testPrint = find.byKey(const Key('test-print-$printerId'));
     await pumpUntil(tester, () => testPrint.evaluate().isNotEmpty);

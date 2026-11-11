@@ -58,6 +58,10 @@ abstract interface class WaiterApi {
   Future<TablePins> pin(String resourceId, {required bool pinned});
 
   Future<List<Printer>> printers(String branchId);
+
+  /// The branch's reasons for voiding a sent dish, from the device's
+  /// context; null when the server does not list them.
+  Future<List<String>?> voidReasons(String branchId);
 }
 
 /// [WaiterApi] over the generated client.
@@ -227,4 +231,10 @@ class ApiWaiterApi implements WaiterApi {
   @override
   Future<List<Printer>> printers(String branchId) async =>
       (await client.call((api) => api.posPrinters(branchId: branchId))).data.toList();
+
+  @override
+  Future<List<String>?> voidReasons(String branchId) async {
+    final context = await client.call((api) => api.posContext(branchId: branchId));
+    return context.branches?.where((branch) => branch.id == branchId).firstOrNull?.voidReasons?.toList();
+  }
 }

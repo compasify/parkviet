@@ -52,12 +52,12 @@ RSpec.describe 'POS onboarding', type: :request, pos_modules: :default, pos_feat
     expect(response).to have_http_status(:created)
 
     profile = Spree::Pos::StoreProfile.find_by!(store: store)
-    expect(profile).to have_attributes(profile_key: 'nha_thuoc', profile_version: 1, wholesale: true, interests: ['karaoke_bida'],
+    expect(profile).to have_attributes(profile_key: 'nha_thuoc', profile_version: 2, wholesale: true, interests: ['karaoke_bida'],
                                        changed_by_id: owner.id)
     expect(profile.onboarded_at).to be_present
     branch = Spree::Pos::Branch.find_by!(store: store, code: 'q1')
     # The profile's defaults fill what the request left out.
-    expect(branch).to have_attributes(profile_key: 'nha_thuoc', profile_version: 1, return_window_days: 7, lot_selection: 'fefo',
+    expect(branch).to have_attributes(profile_key: 'nha_thuoc', profile_version: 2, return_window_days: 7, lot_selection: 'fefo',
                                       status: 'active', stock_location_id: location.id)
     expect(Spree::Pos::BranchModule.where(branch: branch).pluck(:module_key, :enabled, :reason)).
       to contain_exactly(['retail.units', true, 'profile:nha_thuoc'], ['retail.traceability', true, 'profile:nha_thuoc'])
@@ -128,7 +128,7 @@ RSpec.describe 'POS onboarding', type: :request, pos_modules: :default, pos_feat
 
   it 'refuses coming-soon profiles as the industry and accepts them only as interests' do
     owner = staff_with(%w[write_pos_topology])
-    expect(reason_of(setup!(owner, body(profile_key: 'nha_hang')))).to eq('profile_unavailable')
+    expect(reason_of(setup!(owner, body(profile_key: 'karaoke_bida')))).to eq('profile_unavailable')
     expect(response).to have_http_status(:conflict)
     expect(reason_of(setup!(owner, body(profile_key: 'tiem_vang')))).to eq('profile_unknown')
     expect(reason_of(setup!(owner, body(interests: ['thoi_trang'])))).to eq('interest_invalid')
@@ -136,9 +136,10 @@ RSpec.describe 'POS onboarding', type: :request, pos_modules: :default, pos_feat
     expect(Spree::Pos::StoreProfile.where(store: store)).to be_empty
     expect(Spree::Pos::Branch.for_store(store)).to be_empty
 
-    setup!(owner, body(interests: %w[karaoke_bida nha_hang]))
+    expect(reason_of(setup!(owner, body(interests: %w[karaoke_bida nha_hang])))).to eq('interest_invalid')
+    setup!(owner, body(interests: %w[karaoke_bida]))
     expect(response).to have_http_status(:created)
-    expect(Spree::Pos::StoreProfile.find_by!(store: store).interests).to eq(%w[karaoke_bida nha_hang])
+    expect(Spree::Pos::StoreProfile.find_by!(store: store).interests).to eq(%w[karaoke_bida])
   end
 
   it 'is only for store topology managers, and only before the store runs' do
@@ -243,6 +244,83 @@ RSpec.describe 'POS onboarding', type: :request, pos_modules: :default, pos_feat
       expect(response).to have_http_status(:created)
       expect(Spree::Pos::AuditEntry.where(store: store, action: 'onboarding.fnb_setup')).to be_empty
       expect(response.parsed_body.dig('data', 'fnb_setup')).to be_nil
+      expect(response.parsed_body.dig('data', 'table_service')).to be_nil
+    end
+  end
+
+  describe 'table service' do
+    let(:fnb_setup) do
+      { stations: [{ name: 'Bếp', kind: 'prep' }, { name: 'Quầy pha chế', kind: 'bar' }],
+        tax_categories: { food: 'vat_food', alcohol: 'vat_special' } }
+    end
+
+    def shop(profile_key, **overrides)
+      body(**{ profile_key: profile_key, wholesale: false, interests: [], features: [],
+               branch: { name: 'Quán Q1', code: 'quan-q1', timezone: 'Asia/Ho_Chi_Minh', stock_location_id: location.prefixed_id },
+               fnb_setup: fnb_setup }.merge(overrides))
+    end
+
+    it 'turns the optional table modules on for an eatery that serves tables, books table orders on the register, routes drinks to the bar' do
+      owner = staff_with(%w[write_pos_topology])
+      key = SecureRandom.uuid
+      data = setup!(owner, shop('quan_an', answers: { has_tables: true }), key: key)['data']
+      expect(response).to have_http_status(:created)
+
+      branch = Spree::Pos::Branch.find_by!(store: store, code: 'quan-q1')
+      register = Spree::Pos::Register.find_by!(branch: branch)
+      expect(branch.table_register).to eq(register)
+      expect(data['modules']).to include('resources' => true, 'fnb.tables' => true, 'fnb.postpay' => true, 'fnb.service_charge' => true,
+                                         'fnb.menu' => true)
+      switched = Spree::Pos::AuditEntry.where(store: store, action: 'branch_module.change').map { |row| row.metadata['module'] }
+      expect(switched).to eq(%w[resources fnb.tables fnb.postpay fnb.service_charge])
+      stations = Spree::Pos::KitchenStation.where(branch: branch).order(:position)
+      expect(stations.pluck(:name)).to eq(['Bếp', 'Quầy pha chế'])
+      route = Spree::Pos::StationRoute.find_by!(branch: branch)
+      expect(route).to have_attributes(kitchen_category: 'do_uong', kitchen_station_id: stations.last.id)
+      expect(data['table_service']).to include('table_register_id' => register.prefixed_id,
+                                               'modules_enabled' => %w[resources fnb.tables fnb.postpay fnb.service_charge],
+                                               'stations' => [])
+      expect(data['table_service']['routes'].pluck('kitchen_category')).to eq(['do_uong'])
+      expect(Spree::Pos::AuditEntry.where(store: store, action: 'station_route.create').count).to eq(1)
+
+      first_body = response.parsed_body
+      setup!(owner, shop('quan_an', answers: { has_tables: true }), key: key)
+      expect(response.parsed_body).to eq(first_body)
+      expect(Spree::Pos::StationRoute.where(branch: branch).count).to eq(1)
+    end
+
+    it 'keeps an eatery without tables as wave one set it up' do
+      owner = staff_with(%w[write_pos_topology])
+      data = setup!(owner, shop('quan_an', answers: { has_tables: false }))['data']
+      expect(response).to have_http_status(:created)
+      expect(data['modules']).to include('fnb.tables' => false, 'resources' => false, 'fnb.menu' => true)
+      expect(data['table_service']).to be_nil
+      branch = Spree::Pos::Branch.find_by_prefix_id!(data.dig('branch', 'id'))
+      expect(branch.table_register).to be_nil
+      expect(Spree::Pos::StationRoute.where(branch: branch)).to be_empty
+    end
+
+    it 'sets a restaurant up with tables, the suggested service charge and the default kitchen without the shop step' do
+      owner = staff_with(%w[write_pos_topology])
+      data = setup!(owner, shop('nha_hang', fnb_setup: nil))['data']
+      expect(response).to have_http_status(:created)
+      branch = Spree::Pos::Branch.find_by_prefix_id!(data.dig('branch', 'id'))
+      expect(branch).to have_attributes(profile_key: 'nha_hang', kitchen_send_trigger: 'manual', service_charge_rate: 5)
+      expect(branch.table_register).to be_present
+      expect(Spree::Pos::KitchenStation.where(branch: branch).order(:position).pluck(:name, :kind, :is_default)).
+        to eq([['Bếp', 'prep', true], ['Bar', 'bar', false]])
+      expect(data['table_service']['stations'].pluck('name')).to eq(%w[Bếp Bar])
+      expect(data['modules']).to include('fnb.tables' => true, 'fnb.service_charge' => true)
+    end
+
+    it 'needs a register for table orders and refuses a tables answer the profile cannot take' do
+      owner = staff_with(%w[write_pos_topology])
+      expect(reason_of(setup!(owner, shop('bar_pub_club', register: nil)))).to eq('table_register_missing')
+      expect(reason_of(setup!(owner, shop('quan_an', register: nil, answers: { has_tables: true })))).to eq('table_register_missing')
+      expect(reason_of(setup!(owner, shop('cafe_tra_sua', answers: { has_tables: true })))).to eq('answers_invalid')
+      expect(reason_of(setup!(owner, shop('quan_an', answers: { has_tables: 'often' })))).to eq('answers_invalid')
+      expect(response).to have_http_status(:conflict)
+      expect(Spree::Pos::Branch.for_store(store)).to be_empty
     end
   end
 end

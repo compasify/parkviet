@@ -21,39 +21,51 @@ module Spree
       # Rolling F&B back closes its group (or moves its modules back to
       # planned): branches keep their data and keep selling.
       OPEN_GROUPS = %w[retail fnb].freeze
-      # Modules a branch can turn on but no profile offers yet: a profile
-      # needing one stays coming soon until setup can choose the register
-      # that table orders are booked on.
-      PROFILE_HELD_MODULES = %w[resources fnb.tables fnb.postpay fnb.service_charge].freeze
-      FIELDS = %w[group order modules branch_defaults display recommended_features sample_units kitchen_stations].freeze
+      FIELDS = %w[group order modules optional_modules branch_defaults display recommended_features sample_units
+                  kitchen_stations].freeze
       BRANCH_DEFAULT_FIELDS = %w[return_window_days lot_selection variance_threshold adjustment_approval_threshold
-                                 kitchen_send_trigger].freeze
+                                 kitchen_send_trigger service_charge_rate].freeze
       DISPLAY_FIELDS = %w[catalog_view surface].freeze
       CATALOG_VIEWS = %w[cards list].freeze
       # The selling screen. A surface is only a hint: the client still needs
       # the module (menu_grid shows nothing without fnb.menu).
-      SURFACES = { 'catalog' => nil, 'menu_grid' => 'fnb.menu', 'table_grid' => 'fnb.tables', 'floor_plan' => 'fnb.tables' }.freeze
+      SURFACES = { 'catalog' => nil, 'menu_grid' => 'fnb.menu', 'table_grid' => 'fnb.tables', 'floor_plan' => 'fnb.tables',
+                   'resource_board' => 'resources', 'tab_list' => 'fnb.postpay' }.freeze
       # Stations the F&B setup step proposes; expo is set up by hand.
       STATION_KINDS = %w[prep bar].freeze
       KITCHEN_MODULE = 'fnb.kitchen'
+      # Answering "the shop serves tables" turns these on with the profile.
+      TABLES_MODULE = 'fnb.tables'
       DECIMAL = /\A\d{1,15}(\.\d{1,4})?\z/
 
-      Profile = Data.define(:key, :group, :order, :modules, :branch_defaults, :display, :recommended_features, :sample_units,
-                            :kitchen_stations) do
-        # Computed from the module registry, never written by hand.
+      Profile = Data.define(:key, :group, :order, :modules, :optional_modules, :branch_defaults, :display,
+                            :recommended_features, :sample_units, :kitchen_stations) do
+        # Computed from the module registry, never written by hand. Optional
+        # modules never change it.
         def status
-          open = OPEN_GROUPS.include?(group) && (modules & PROFILE_HELD_MODULES).empty?
-          open && modules.all? { |key| Modules.available?(key) } ? AVAILABLE : COMING_SOON
+          OPEN_GROUPS.include?(group) && modules.all? { |key| Modules.available?(key) } ? AVAILABLE : COMING_SOON
         end
 
         def available?
           status == AVAILABLE
         end
 
+        # The modules a branch gets: the profile's, plus its optional ones
+        # when the owner said the shop serves tables.
+        def modules_for(has_tables: false)
+          has_tables ? modules + (optional_modules - modules) : modules
+        end
+
+        # Whether the shop can serve tables with this profile, and whether
+        # it always does.
+        def tables_optional?
+          optional_modules.include?(TABLES_MODULE)
+        end
+
         def to_pos
-          { key: key, group: group, order: order, status: status, modules: modules, branch_defaults: branch_defaults,
-            display: display, recommended_features: recommended_features, sample_units: sample_units,
-            kitchen_stations: kitchen_stations }
+          { key: key, group: group, order: order, status: status, modules: modules, optional_modules: optional_modules,
+            branch_defaults: branch_defaults, display: display, recommended_features: recommended_features,
+            sample_units: sample_units, kitchen_stations: kitchen_stations }
         end
       end
 
@@ -91,6 +103,7 @@ module Spree
           profiles = data['profiles'].map do |key, attrs|
             Profile.new(key: key.to_s, group: attrs['group'], order: attrs['order'],
                         modules: Array(attrs['modules']).map(&:to_s).freeze,
+                        optional_modules: Array(attrs['optional_modules']).map(&:to_s).freeze,
                         branch_defaults: (attrs['branch_defaults'] || {}).to_h.transform_keys(&:to_s).freeze,
                         display: (attrs['display'] || {}).to_h.transform_keys(&:to_s).freeze,
                         recommended_features: Array(attrs['recommended_features']).map(&:to_s).freeze,
@@ -152,6 +165,7 @@ module Spree
           errors << "#{key}.group: must be one of #{GROUPS.join(', ')}." unless GROUPS.include?(attrs['group'])
           errors << "#{key}.order: must be a positive integer." unless attrs['order'].is_a?(Integer) && attrs['order'].positive?
           errors.concat(module_errors(key, attrs['modules']))
+          errors.concat(optional_module_errors(key, attrs['optional_modules'], attrs['modules']))
           errors.concat(branch_default_errors(key, attrs['branch_defaults']))
           errors.concat(display_errors(key, attrs['display'], attrs['modules']))
           errors.concat(list_errors(key, 'recommended_features', attrs['recommended_features'], FeatureFlag::FEATURES, 'feature'))
@@ -188,6 +202,29 @@ module Spree
           errors
         end
 
+        # Registered, listed once, not already in `modules`, and with their
+        # dependencies among the profile's modules or the optional ones.
+        def optional_module_errors(key, optional, modules)
+          return [] if optional.nil?
+          return ["#{key}.optional_modules: must be a list."] unless optional.is_a?(Array)
+
+          names = optional.map(&:to_s)
+          base = Array(modules).map(&:to_s)
+          errors = []
+          errors << "#{key}.optional_modules: lists a module more than once." if names.uniq.size != names.size
+          names.uniq.each do |name|
+            definition = Modules.find(name)
+            if definition.nil?
+              errors << "#{key}.optional_modules: unknown module #{name.inspect}."
+              next
+            end
+            errors << "#{key}.optional_modules: #{name} is already in modules." if base.include?(name)
+            missing = definition.depends_on - base - names
+            errors << "#{key}.optional_modules: #{name} needs #{missing.join(', ')}." if missing.any?
+          end
+          errors
+        end
+
         def branch_default_errors(key, defaults)
           return [] if defaults.nil?
           return ["#{key}.branch_defaults: must be a mapping."] unless defaults.is_a?(Hash)
@@ -199,6 +236,13 @@ module Spree
             problem = branch_default_problem(field.to_s, value)
             "#{where}: #{value.inspect} #{problem}." if problem
           end
+        end
+
+        def service_charge_percent?(value)
+          number = if value.is_a?(Numeric) then value
+                   elsif value.is_a?(String) && value.match?(DECIMAL) then BigDecimal(value)
+                   end
+          number&.positive? && number <= 50
         end
 
         # The same rules as Spree::Pos::Branch, without touching the database.
@@ -215,6 +259,8 @@ module Spree
             'must be empty or a whole number of zero or more' unless value.nil? || (value.is_a?(Integer) && value >= 0)
           when 'kitchen_send_trigger'
             "must be one of #{Kitchen::Send::TRIGGERS.join(', ')}" unless Kitchen::Send::TRIGGERS.include?(value)
+          when 'service_charge_rate'
+            'must be empty or a percent above 0 and at most 50' unless value.nil? || service_charge_percent?(value)
           end
         end
 

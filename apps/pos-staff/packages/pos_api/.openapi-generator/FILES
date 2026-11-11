@@ -29,6 +29,7 @@ lib/src/model/checklist_outcome.dart
 lib/src/model/checklist_result.dart
 lib/src/model/context.dart
 lib/src/model/context_administration.dart
+lib/src/model/context_branch.dart
 lib/src/model/context_staff.dart
 lib/src/model/context_store.dart
 lib/src/model/cup_label_settings.dart
@@ -296,6 +297,7 @@ lib/src/model/table_settings_result.dart
 lib/src/model/table_split_input.dart
 lib/src/model/table_split_orders.dart
 lib/src/model/table_split_result.dart
+lib/src/model/table_tax_category.dart
 lib/src/model/tax_row.dart
 lib/src/model/workspace.dart
 lib/src/model/workspace_line.dart

@@ -4,6 +4,7 @@
 
 // ignore_for_file: unused_element
 import 'package:built_collection/built_collection.dart';
+import 'package:pos_api/src/model/table_tax_category.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
 
@@ -17,6 +18,7 @@ part 'table_settings.g.dart';
 /// * [serviceChargeRate] - Percent of the items after discounts; none when null.
 /// * [serviceChargeAppliesTo]
 /// * [serviceChargeTaxCategoryId]
+/// * [taxCategories] - The store's tax categories, to choose the service charge's.
 @BuiltValue()
 abstract class TableSettings
     implements Built<TableSettings, TableSettingsBuilder> {
@@ -37,6 +39,10 @@ abstract class TableSettings
 
   @BuiltValueField(wireName: r'service_charge_tax_category_id')
   String? get serviceChargeTaxCategoryId;
+
+  /// The store's tax categories, to choose the service charge's.
+  @BuiltValueField(wireName: r'tax_categories')
+  BuiltList<TableTaxCategory> get taxCategories;
 
   TableSettings._();
 
@@ -95,6 +101,11 @@ class _$TableSettingsSerializer implements PrimitiveSerializer<TableSettings> {
             object.serviceChargeTaxCategoryId,
             specifiedType: const FullType.nullable(String),
           );
+    yield r'tax_categories';
+    yield serializers.serialize(
+      object.taxCategories,
+      specifiedType: const FullType(BuiltList, [FullType(TableTaxCategory)]),
+    );
   }
 
   @override
@@ -158,6 +169,14 @@ class _$TableSettingsSerializer implements PrimitiveSerializer<TableSettings> {
           ) as String?;
           if (valueDes == null) continue;
           result.serviceChargeTaxCategoryId = valueDes;
+          break;
+        case r'tax_categories':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType:
+                const FullType(BuiltList, [FullType(TableTaxCategory)]),
+          ) as BuiltList<TableTaxCategory>;
+          result.taxCategories.replace(valueDes);
           break;
         default:
           unhandled.add(key);

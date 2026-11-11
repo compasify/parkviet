@@ -163,7 +163,7 @@ RSpec.describe 'POS topology', type: :request do
     # No store profile: `khac`, all three modules, no defaults (returns stay off).
     data = create_branch.call('q1')['data']
     expect(response).to have_http_status(:created)
-    expect(data).to include('profile_key' => 'khac', 'profile_version' => 1, 'return_window_days' => nil, 'lot_selection' => 'fefo')
+    expect(data).to include('profile_key' => 'khac', 'profile_version' => 2, 'return_window_days' => nil, 'lot_selection' => 'fefo')
     first = Spree::Pos::Branch.find_by_prefix_id!(data['id'])
     expect(Spree::Pos::BranchModule.where(branch: first).pluck(:module_key, :enabled, :reason)).to contain_exactly(
       ['retail.units', true, 'profile:khac'], ['retail.measured', true, 'profile:khac'], ['retail.traceability', true, 'profile:khac']
@@ -184,7 +184,7 @@ RSpec.describe 'POS topology', type: :request do
     expect(data).to include('profile_key' => 'thoi_trang', 'return_window_days' => nil)
     expect(Spree::Pos::BranchModule.where(branch: Spree::Pos::Branch.find_by_prefix_id!(data['id']))).to be_empty
 
-    expect(create_branch.call('q4', profile_key: 'nha_hang').dig('error', 'details', 'reason')).to eq('profile_unavailable')
+    expect(create_branch.call('q4', profile_key: 'karaoke_bida').dig('error', 'details', 'reason')).to eq('profile_unavailable')
     expect(response).to have_http_status(:conflict)
     expect(create_branch.call('q4', profile_key: 'tiem_vang').dig('error', 'details', 'reason')).to eq('profile_unknown')
     expect(Spree::Pos::Branch.for_store(store).where(code: 'q4')).to be_empty

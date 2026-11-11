@@ -1573,6 +1573,84 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Bạn không có quyền làm việc này trên máy phục vụ.'**
   String get waiterForbidden;
+
+  /// No description provided for @checklistTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thiết bị đã ghép'**
+  String get checklistTitle;
+
+  /// No description provided for @checklistIntro.
+  ///
+  /// In vi, this message translates to:
+  /// **'Máy đã ghép vào {branch}. Kiểm tra các mục dưới đây trước khi dùng.'**
+  String checklistIntro(String branch);
+
+  /// No description provided for @checklistStation.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trạm bếp'**
+  String get checklistStation;
+
+  /// No description provided for @checklistStationOk.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã chọn: {name}'**
+  String checklistStationOk(String name);
+
+  /// No description provided for @checklistStationMissing.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa chọn trạm. Chọn trạm trên màn bếp sau khi bắt đầu.'**
+  String get checklistStationMissing;
+
+  /// No description provided for @checklistPrinter.
+  ///
+  /// In vi, this message translates to:
+  /// **'Máy in của trạm'**
+  String get checklistPrinter;
+
+  /// No description provided for @checklistPrinterOk.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã nhận: {name}'**
+  String checklistPrinterOk(String name);
+
+  /// No description provided for @checklistPrinterMissing.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trạm chưa có máy in; phiếu chỉ hiện trên màn hình. Gán máy in ở trang chi nhánh, tab Bếp & bar.'**
+  String get checklistPrinterMissing;
+
+  /// No description provided for @checklistStaff.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhân viên có PIN'**
+  String get checklistStaff;
+
+  /// No description provided for @checklistStaffOk.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} người đăng nhập được bằng PIN'**
+  String checklistStaffOk(int count);
+
+  /// No description provided for @checklistStaffMissing.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa ai có PIN. Quản lý đặt PIN cho nhân viên trên trang quản trị.'**
+  String get checklistStaffMissing;
+
+  /// No description provided for @checklistNothing.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chế độ này không cần chuẩn bị thêm.'**
+  String get checklistNothing;
+
+  /// No description provided for @checklistStart.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bắt đầu dùng'**
+  String get checklistStart;
 }
 
 class _AppLocalizationsDelegate

@@ -56,6 +56,9 @@ void main() {
     await tester.enterText(find.byKey(const Key('manual-code')), kdsCode);
     await tester.tap(find.byKey(const Key('manual-submit')));
     await pumpFor(tester, const Duration(seconds: 3));
+    // Just paired, the device shows its checklist first.
+    await tester.tap(find.byKey(const Key('checklist-start')));
+    await pumpFor(tester);
 
     // A new kitchen screen asks which station it shows.
     await tapFirst(tester, 'pick-poskstation');

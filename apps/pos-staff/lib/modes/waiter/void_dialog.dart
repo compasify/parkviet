@@ -6,23 +6,13 @@ import 'package:pos_api/pos_api.dart';
 import '../../core/errors.dart';
 import '../../l10n/app_localizations.dart';
 import 'table_order_screen.dart';
+import 'void_reasons.dart';
 import 'waiter_context.dart';
 import 'waiter_messages.dart';
-
-/// The branch's default void reasons; "khac" needs a note.
-const voidReasons = ['khach_doi_y', 'het_mon', 'nhap_nham', 'lam_hong', voidOther];
-const voidOther = 'khac';
 
 /// The most characters of a void note.
 const voidNoteMax = 200;
 
-String voidReasonLabel(AppLocalizations l10n, String code) => switch (code) {
-      'khach_doi_y' => l10n.voidReasonChangedMind,
-      'het_mon' => l10n.voidReasonSoldOut,
-      'nhap_nham' => l10n.voidReasonMistake,
-      'lam_hong' => l10n.voidReasonSpoiled,
-      _ => l10n.voidReasonOther,
-    };
 
 /// Takes back dishes the kitchen has. Answers the order after the void,
 /// or null when closed.
@@ -55,7 +45,9 @@ class VoidDialog extends StatefulWidget {
 class _VoidDialogState extends State<VoidDialog> {
   late final int _sent = sentQuantity(widget.line);
   int _quantity = 1;
-  String _reason = voidReasons.first;
+  // The branch's reasons as the phone last read them.
+  late final List<String> _reasons = widget.waiter.voidReasons.value;
+  late String _reason = _reasons.first;
   final _note = TextEditingController();
   final _approval = TextEditingController();
   bool _needsApproval = false;
@@ -152,7 +144,7 @@ class _VoidDialogState extends State<VoidDialog> {
                 ),
               ],
             ),
-            for (final code in voidReasons)
+            for (final code in _reasons)
               RadioListTile<String>(
                 key: Key('void-reason-$code'),
                 contentPadding: EdgeInsets.zero,

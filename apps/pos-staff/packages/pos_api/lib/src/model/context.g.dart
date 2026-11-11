@@ -78,6 +78,8 @@ class _$Context extends Context {
   final ContextAdministration administration;
   @override
   final ContextEinvoiceTypeEnum? einvoiceType;
+  @override
+  final BuiltList<ContextBranch>? branches;
 
   factory _$Context([void Function(ContextBuilder)? updates]) =>
       (ContextBuilder()..update(updates))._build();
@@ -87,7 +89,8 @@ class _$Context extends Context {
       required this.staff,
       required this.store,
       required this.administration,
-      this.einvoiceType})
+      this.einvoiceType,
+      this.branches})
       : super._();
   @override
   Context rebuild(void Function(ContextBuilder) updates) =>
@@ -104,7 +107,8 @@ class _$Context extends Context {
         staff == other.staff &&
         store == other.store &&
         administration == other.administration &&
-        einvoiceType == other.einvoiceType;
+        einvoiceType == other.einvoiceType &&
+        branches == other.branches;
   }
 
   @override
@@ -115,6 +119,7 @@ class _$Context extends Context {
     _$hash = $jc(_$hash, store.hashCode);
     _$hash = $jc(_$hash, administration.hashCode);
     _$hash = $jc(_$hash, einvoiceType.hashCode);
+    _$hash = $jc(_$hash, branches.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -126,7 +131,8 @@ class _$Context extends Context {
           ..add('staff', staff)
           ..add('store', store)
           ..add('administration', administration)
-          ..add('einvoiceType', einvoiceType))
+          ..add('einvoiceType', einvoiceType)
+          ..add('branches', branches))
         .toString();
   }
 }
@@ -159,6 +165,12 @@ class ContextBuilder implements Builder<Context, ContextBuilder> {
   set einvoiceType(ContextEinvoiceTypeEnum? einvoiceType) =>
       _$this._einvoiceType = einvoiceType;
 
+  ListBuilder<ContextBranch>? _branches;
+  ListBuilder<ContextBranch> get branches =>
+      _$this._branches ??= ListBuilder<ContextBranch>();
+  set branches(ListBuilder<ContextBranch>? branches) =>
+      _$this._branches = branches;
+
   ContextBuilder() {
     Context._defaults(this);
   }
@@ -171,6 +183,7 @@ class ContextBuilder implements Builder<Context, ContextBuilder> {
       _store = $v.store.toBuilder();
       _administration = $v.administration.toBuilder();
       _einvoiceType = $v.einvoiceType;
+      _branches = $v.branches?.toBuilder();
       _$v = null;
     }
     return this;
@@ -199,6 +212,7 @@ class ContextBuilder implements Builder<Context, ContextBuilder> {
             store: store.build(),
             administration: administration.build(),
             einvoiceType: einvoiceType,
+            branches: _branches?.build(),
           );
     } catch (_) {
       late String _$failedField;
@@ -211,6 +225,9 @@ class ContextBuilder implements Builder<Context, ContextBuilder> {
         store.build();
         _$failedField = 'administration';
         administration.build();
+
+        _$failedField = 'branches';
+        _branches?.build();
       } catch (e) {
         throw BuiltValueNestedFieldError(
             r'Context', _$failedField, e.toString());

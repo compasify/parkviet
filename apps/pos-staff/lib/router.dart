@@ -16,6 +16,7 @@ import 'modes/kiosk/kiosk_screen.dart' deferred as kiosk;
 import 'modes/owner/owner_screen.dart' deferred as owner;
 import 'modes/print_station/print_station_screen.dart' deferred as print_station;
 import 'modes/waiter/waiter_screen.dart' deferred as waiter;
+import 'pairing/device_checklist.dart';
 import 'pairing/manual_pair_screen.dart';
 import 'pairing/offline_screen.dart';
 import 'pairing/scan_screen.dart';
@@ -28,6 +29,7 @@ String? redirectFor({
   required StaffSession? staff,
   required bool managerAccess,
   required String location,
+  bool checklist = false,
 }) {
   final current = session.value;
   if (current == null) return location == '/' ? null : '/';
@@ -39,6 +41,8 @@ String? redirectFor({
       return location == '/offline' ? null : '/offline';
     case Paired(:final me):
       final mode = AppMode.of(me.device.mode);
+      // Just paired: its checklist comes before anything else.
+      if (checklist) return location == '/checklist' ? null : '/checklist';
       final home = mode.staffSignIn && staff == null ? '/staff' : '/mode/${mode.path}';
       if (location == '/manage') return managerAccess ? null : home;
       if (location.startsWith('/manage/')) return null;
@@ -55,6 +59,7 @@ class _RouterRefresh extends ChangeNotifier {
     ref.listen(sessionProvider, (_, _) => notifyListeners());
     ref.listen(staffSessionControllerProvider, (_, _) => notifyListeners());
     ref.listen(managerAccessProvider, (_, _) => notifyListeners());
+    ref.listen(deviceChecklistPendingProvider, (_, _) => notifyListeners());
   }
 }
 
@@ -67,6 +72,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       staff: ref.read(staffSessionControllerProvider),
       managerAccess: ref.read(managerAccessProvider),
       location: state.matchedLocation,
+      checklist: ref.read(deviceChecklistPendingProvider),
     ),
     routes: [
       GoRoute(path: '/', builder: (_, _) => const _Splash()),
@@ -74,6 +80,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/pair/scan', builder: (_, _) => const ScanScreen()),
       GoRoute(path: '/pair/manual', builder: (_, _) => const ManualPairScreen()),
       GoRoute(path: '/offline', builder: (_, _) => const OfflineScreen()),
+      GoRoute(path: '/checklist', builder: (_, _) => const DeviceChecklistScreen()),
       GoRoute(path: '/staff', builder: (_, _) => const StaffPickerScreen(purpose: PinPurpose.signIn)),
       GoRoute(
         path: '/staff/pin/:id',

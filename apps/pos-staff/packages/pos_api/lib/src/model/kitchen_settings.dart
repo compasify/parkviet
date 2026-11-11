@@ -15,6 +15,7 @@ part 'kitchen_settings.g.dart';
 /// * [branchId]
 /// * [kitchenSendTrigger] - `on_complete` sends what is left as the sale completes; `manual` waits for \"send to kitchen\".
 /// * [moduleEnabled] - Whether `fnb.kitchen` is on at the branch.
+/// * [voidReasons] - Reasons a sent item may be voided for, in order; `khac` with a note is always offered.
 @BuiltValue()
 abstract class KitchenSettings
     implements Built<KitchenSettings, KitchenSettingsBuilder> {
@@ -29,6 +30,10 @@ abstract class KitchenSettings
   /// Whether `fnb.kitchen` is on at the branch.
   @BuiltValueField(wireName: r'module_enabled')
   bool get moduleEnabled;
+
+  /// Reasons a sent item may be voided for, in order; `khac` with a note is always offered.
+  @BuiltValueField(wireName: r'void_reasons')
+  BuiltList<String> get voidReasons;
 
   KitchenSettings._();
 
@@ -70,6 +75,11 @@ class _$KitchenSettingsSerializer
     yield serializers.serialize(
       object.moduleEnabled,
       specifiedType: const FullType(bool),
+    );
+    yield r'void_reasons';
+    yield serializers.serialize(
+      object.voidReasons,
+      specifiedType: const FullType(BuiltList, [FullType(String)]),
     );
   }
 
@@ -117,6 +127,13 @@ class _$KitchenSettingsSerializer
             specifiedType: const FullType(bool),
           ) as bool;
           result.moduleEnabled = valueDes;
+          break;
+        case r'void_reasons':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(BuiltList, [FullType(String)]),
+          ) as BuiltList<String>;
+          result.voidReasons.replace(valueDes);
           break;
         default:
           unhandled.add(key);

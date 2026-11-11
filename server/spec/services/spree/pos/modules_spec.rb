@@ -33,9 +33,9 @@ RSpec.describe Spree::Pos::Modules do
     end
   end
 
-  it 'opens the three first-wave profiles and keeps the others coming soon' do
+  it 'opens the first- and second-wave profiles and keeps karaoke and billiards coming soon' do
     profiles = Spree::Pos::BusinessProfiles
-    expect(%w[cafe_tra_sua quan_an cang_tin_tram_dung].map { |key| profiles.fetch!(key).status }).to all(eq('available'))
-    expect(%w[nha_hang bar_pub_club karaoke_bida].map { |key| profiles.fetch!(key).status }).to all(eq('coming_soon'))
+    expect(%w[cafe_tra_sua quan_an cang_tin_tram_dung nha_hang bar_pub_club].map { |key| profiles.fetch!(key).status }).to all(eq('available'))
+    expect(profiles.fetch!('karaoke_bida').status).to eq('coming_soon')
   end
 end

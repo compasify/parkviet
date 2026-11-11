@@ -1,4 +1,4 @@
-import { profileLabelKey } from '@parkviet/pos-shared/pos-modules'
+import { profileLabelKey, profileModules, tablesOptional } from '@parkviet/pos-shared/pos-modules'
 import {
   conflictReason,
   describeFailure,
@@ -21,6 +21,7 @@ import {
   setupSteps,
   shopDefaults,
   stepProblems,
+  tablesOn,
 } from '@parkviet/pos-shared/setup-wizard'
 import { Button, Label, RadioGroup, RadioGroupItem, Wizard } from '@spree/dashboard-ui'
 import { useMutation } from '@tanstack/react-query'
@@ -284,6 +285,8 @@ function SetupWizard({ onDone }: { onDone: () => void }) {
               <SetupFnbStep
                 profile={profile}
                 shop={state.shop}
+                hasTables={state.hasTables}
+                registerName={state.registerName}
                 taxes={taxes}
                 dispatch={dispatch}
                 problems={visibleProblems}
@@ -295,7 +298,8 @@ function SetupWizard({ onDone }: { onDone: () => void }) {
                 shop={hasShopStep(profile) ? state.shop : null}
                 taxLabel={(code) => taxLabel(t, taxes, code)}
                 profileName={t(profileLabelKey(profile.key))}
-                modules={profile.modules}
+                modules={profileModules(profile, tablesOptional(profile) && state.hasTables)}
+                tables={tablesOn(state, profile)}
                 units={profile.sample_units.map((code) => unitLabel(t, code))}
                 location={
                   activeLocations.find((row) => row.id === state.branch.stockLocationId)?.name ?? ''
@@ -343,6 +347,7 @@ function SetupSummary({
   taxLabel,
   profileName,
   modules,
+  tables,
   units,
   location,
 }: {
@@ -351,6 +356,7 @@ function SetupSummary({
   taxLabel: (code: string) => string
   profileName: string
   modules: string[]
+  tables: boolean
   units: string[]
   location: string
 }) {
@@ -378,6 +384,12 @@ function SetupSummary({
         <dd>{location || none}</dd>
         <dt>{t('setup.summaryRegister')}</dt>
         <dd>{state.registerName.trim() || t('setup.summaryNoRegister')}</dd>
+        <dt>{t('setup.summaryTables')}</dt>
+        <dd>
+          {tables
+            ? t('setup.summaryTablesYes', { register: state.registerName.trim() })
+            : t('setup.summaryTablesNo')}
+        </dd>
         <dt>{t('setup.summaryModules')}</dt>
         <dd>
           {modules.length

@@ -77,15 +77,17 @@ class _$PosKitchenSettingsUpdateRequest
   @override
   final String branchId;
   @override
-  final PosKitchenSettingsUpdateRequestKitchenSendTriggerEnum
+  final PosKitchenSettingsUpdateRequestKitchenSendTriggerEnum?
       kitchenSendTrigger;
+  @override
+  final BuiltList<String>? voidReasons;
 
   factory _$PosKitchenSettingsUpdateRequest(
           [void Function(PosKitchenSettingsUpdateRequestBuilder)? updates]) =>
       (PosKitchenSettingsUpdateRequestBuilder()..update(updates))._build();
 
   _$PosKitchenSettingsUpdateRequest._(
-      {required this.branchId, required this.kitchenSendTrigger})
+      {required this.branchId, this.kitchenSendTrigger, this.voidReasons})
       : super._();
   @override
   PosKitchenSettingsUpdateRequest rebuild(
@@ -101,7 +103,8 @@ class _$PosKitchenSettingsUpdateRequest
     if (identical(other, this)) return true;
     return other is PosKitchenSettingsUpdateRequest &&
         branchId == other.branchId &&
-        kitchenSendTrigger == other.kitchenSendTrigger;
+        kitchenSendTrigger == other.kitchenSendTrigger &&
+        voidReasons == other.voidReasons;
   }
 
   @override
@@ -109,6 +112,7 @@ class _$PosKitchenSettingsUpdateRequest
     var _$hash = 0;
     _$hash = $jc(_$hash, branchId.hashCode);
     _$hash = $jc(_$hash, kitchenSendTrigger.hashCode);
+    _$hash = $jc(_$hash, voidReasons.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -117,7 +121,8 @@ class _$PosKitchenSettingsUpdateRequest
   String toString() {
     return (newBuiltValueToStringHelper(r'PosKitchenSettingsUpdateRequest')
           ..add('branchId', branchId)
-          ..add('kitchenSendTrigger', kitchenSendTrigger))
+          ..add('kitchenSendTrigger', kitchenSendTrigger)
+          ..add('voidReasons', voidReasons))
         .toString();
   }
 }
@@ -140,6 +145,12 @@ class PosKitchenSettingsUpdateRequestBuilder
               kitchenSendTrigger) =>
       _$this._kitchenSendTrigger = kitchenSendTrigger;
 
+  ListBuilder<String>? _voidReasons;
+  ListBuilder<String> get voidReasons =>
+      _$this._voidReasons ??= ListBuilder<String>();
+  set voidReasons(ListBuilder<String>? voidReasons) =>
+      _$this._voidReasons = voidReasons;
+
   PosKitchenSettingsUpdateRequestBuilder() {
     PosKitchenSettingsUpdateRequest._defaults(this);
   }
@@ -149,6 +160,7 @@ class PosKitchenSettingsUpdateRequestBuilder
     if ($v != null) {
       _branchId = $v.branchId;
       _kitchenSendTrigger = $v.kitchenSendTrigger;
+      _voidReasons = $v.voidReasons?.toBuilder();
       _$v = null;
     }
     return this;
@@ -168,15 +180,26 @@ class PosKitchenSettingsUpdateRequestBuilder
   PosKitchenSettingsUpdateRequest build() => _build();
 
   _$PosKitchenSettingsUpdateRequest _build() {
-    final _$result = _$v ??
-        _$PosKitchenSettingsUpdateRequest._(
-          branchId: BuiltValueNullFieldError.checkNotNull(
-              branchId, r'PosKitchenSettingsUpdateRequest', 'branchId'),
-          kitchenSendTrigger: BuiltValueNullFieldError.checkNotNull(
-              kitchenSendTrigger,
-              r'PosKitchenSettingsUpdateRequest',
-              'kitchenSendTrigger'),
-        );
+    _$PosKitchenSettingsUpdateRequest _$result;
+    try {
+      _$result = _$v ??
+          _$PosKitchenSettingsUpdateRequest._(
+            branchId: BuiltValueNullFieldError.checkNotNull(
+                branchId, r'PosKitchenSettingsUpdateRequest', 'branchId'),
+            kitchenSendTrigger: kitchenSendTrigger,
+            voidReasons: _voidReasons?.build(),
+          );
+    } catch (_) {
+      late String _$failedField;
+      try {
+        _$failedField = 'voidReasons';
+        _voidReasons?.build();
+      } catch (e) {
+        throw BuiltValueNestedFieldError(
+            r'PosKitchenSettingsUpdateRequest', _$failedField, e.toString());
+      }
+      rethrow;
+    }
     replace(_$result);
     return _$result;
   }

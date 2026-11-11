@@ -75,6 +75,8 @@ class _$KitchenSettings extends KitchenSettings {
   final KitchenSettingsKitchenSendTriggerEnum kitchenSendTrigger;
   @override
   final bool moduleEnabled;
+  @override
+  final BuiltList<String> voidReasons;
 
   factory _$KitchenSettings([void Function(KitchenSettingsBuilder)? updates]) =>
       (KitchenSettingsBuilder()..update(updates))._build();
@@ -82,7 +84,8 @@ class _$KitchenSettings extends KitchenSettings {
   _$KitchenSettings._(
       {required this.branchId,
       required this.kitchenSendTrigger,
-      required this.moduleEnabled})
+      required this.moduleEnabled,
+      required this.voidReasons})
       : super._();
   @override
   KitchenSettings rebuild(void Function(KitchenSettingsBuilder) updates) =>
@@ -97,7 +100,8 @@ class _$KitchenSettings extends KitchenSettings {
     return other is KitchenSettings &&
         branchId == other.branchId &&
         kitchenSendTrigger == other.kitchenSendTrigger &&
-        moduleEnabled == other.moduleEnabled;
+        moduleEnabled == other.moduleEnabled &&
+        voidReasons == other.voidReasons;
   }
 
   @override
@@ -106,6 +110,7 @@ class _$KitchenSettings extends KitchenSettings {
     _$hash = $jc(_$hash, branchId.hashCode);
     _$hash = $jc(_$hash, kitchenSendTrigger.hashCode);
     _$hash = $jc(_$hash, moduleEnabled.hashCode);
+    _$hash = $jc(_$hash, voidReasons.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -115,7 +120,8 @@ class _$KitchenSettings extends KitchenSettings {
     return (newBuiltValueToStringHelper(r'KitchenSettings')
           ..add('branchId', branchId)
           ..add('kitchenSendTrigger', kitchenSendTrigger)
-          ..add('moduleEnabled', moduleEnabled))
+          ..add('moduleEnabled', moduleEnabled)
+          ..add('voidReasons', voidReasons))
         .toString();
   }
 }
@@ -140,6 +146,12 @@ class KitchenSettingsBuilder
   set moduleEnabled(bool? moduleEnabled) =>
       _$this._moduleEnabled = moduleEnabled;
 
+  ListBuilder<String>? _voidReasons;
+  ListBuilder<String> get voidReasons =>
+      _$this._voidReasons ??= ListBuilder<String>();
+  set voidReasons(ListBuilder<String>? voidReasons) =>
+      _$this._voidReasons = voidReasons;
+
   KitchenSettingsBuilder() {
     KitchenSettings._defaults(this);
   }
@@ -150,6 +162,7 @@ class KitchenSettingsBuilder
       _branchId = $v.branchId;
       _kitchenSendTrigger = $v.kitchenSendTrigger;
       _moduleEnabled = $v.moduleEnabled;
+      _voidReasons = $v.voidReasons.toBuilder();
       _$v = null;
     }
     return this;
@@ -169,15 +182,29 @@ class KitchenSettingsBuilder
   KitchenSettings build() => _build();
 
   _$KitchenSettings _build() {
-    final _$result = _$v ??
-        _$KitchenSettings._(
-          branchId: BuiltValueNullFieldError.checkNotNull(
-              branchId, r'KitchenSettings', 'branchId'),
-          kitchenSendTrigger: BuiltValueNullFieldError.checkNotNull(
-              kitchenSendTrigger, r'KitchenSettings', 'kitchenSendTrigger'),
-          moduleEnabled: BuiltValueNullFieldError.checkNotNull(
-              moduleEnabled, r'KitchenSettings', 'moduleEnabled'),
-        );
+    _$KitchenSettings _$result;
+    try {
+      _$result = _$v ??
+          _$KitchenSettings._(
+            branchId: BuiltValueNullFieldError.checkNotNull(
+                branchId, r'KitchenSettings', 'branchId'),
+            kitchenSendTrigger: BuiltValueNullFieldError.checkNotNull(
+                kitchenSendTrigger, r'KitchenSettings', 'kitchenSendTrigger'),
+            moduleEnabled: BuiltValueNullFieldError.checkNotNull(
+                moduleEnabled, r'KitchenSettings', 'moduleEnabled'),
+            voidReasons: voidReasons.build(),
+          );
+    } catch (_) {
+      late String _$failedField;
+      try {
+        _$failedField = 'voidReasons';
+        voidReasons.build();
+      } catch (e) {
+        throw BuiltValueNestedFieldError(
+            r'KitchenSettings', _$failedField, e.toString());
+      }
+      rethrow;
+    }
     replace(_$result);
     return _$result;
   }

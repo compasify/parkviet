@@ -1,4 +1,9 @@
-import type { BusinessProfile, BusinessTaxCategory } from '@parkviet/pos-shared/pos-modules'
+import {
+  type BusinessProfile,
+  type BusinessTaxCategory,
+  TABLES_MODULE,
+  tablesOptional,
+} from '@parkviet/pos-shared/pos-modules'
 import {
   hasKitchen,
   MAX_STATIONS,
@@ -11,7 +16,7 @@ import {
 import { Button, Input, Label } from '@spree/dashboard-ui'
 import type { Dispatch } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ModelSelect } from './model-ui'
+import { ModelCheck, ModelSelect } from './model-ui'
 
 type T = (key: string, options?: Record<string, unknown>) => string
 
@@ -33,16 +38,21 @@ export const stationName = (t: T) => (kind: ShopStationKind) => t(`setup.shopSta
 
 // The F&B "set up the shop" step: kitchen stations (named, removable, up to
 // four), the tax rates new menu items start with, and when orders reach the
-// kitchen. The menu itself is entered later under Menu.
+// kitchen, and whether the shop serves tables when the industry leaves it
+// open. The menu itself is entered later under Menu.
 export function SetupFnbStep({
   profile,
   shop,
+  hasTables,
+  registerName,
   taxes,
   dispatch,
   problems,
 }: {
   profile: BusinessProfile
   shop: ShopSetup
+  hasTables: boolean
+  registerName: string
   taxes: BusinessTaxCategory[]
   dispatch: Dispatch<SetupAction>
   problems: SetupProblem[]
@@ -53,6 +63,35 @@ export function SetupFnbStep({
   return (
     <div className="flex flex-col gap-6" data-testid="setup-shop">
       <p className="text-sm text-muted-foreground">{t('setup.shopIntro')}</p>
+      {tablesOptional(profile) || profile.modules.includes(TABLES_MODULE) ? (
+        <section aria-labelledby="setup-tables-heading" className="space-y-3">
+          <h3 id="setup-tables-heading" className="font-semibold">
+            {t('setup.shopTablesTitle')}
+          </h3>
+          {tablesOptional(profile) ? (
+            <ModelCheck
+              checked={hasTables}
+              onChange={(value) => dispatch({ type: 'has-tables', value })}
+              description={t('setup.shopTablesHint')}
+            >
+              {t('setup.shopTablesQuestion')}
+            </ModelCheck>
+          ) : null}
+          {hasTables || !tablesOptional(profile) ? (
+            <p
+              className={
+                problems.includes('table-register')
+                  ? 'text-sm text-destructive'
+                  : 'text-sm text-muted-foreground'
+              }
+            >
+              {registerName.trim()
+                ? t('setup.shopTablesRegister', { register: registerName.trim() })
+                : t('setup.problem_table-register')}
+            </p>
+          ) : null}
+        </section>
+      ) : null}
       {kitchen ? (
         <section aria-labelledby="setup-stations-heading" className="space-y-3">
           <h3 id="setup-stations-heading" className="font-semibold">

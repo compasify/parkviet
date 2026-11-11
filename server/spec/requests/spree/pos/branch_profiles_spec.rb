@@ -59,7 +59,7 @@ RSpec.describe 'POS branch profiles', type: :request, pos_modules: :default do
     tracked_product
     data = preview(manager, 'nha_thuoc')['data']
     expect(response).to have_http_status(:ok)
-    expect(data).to include('branch_id' => branch.prefixed_id, 'from' => 'khac', 'to' => 'nha_thuoc', 'profile_version' => 1)
+    expect(data).to include('branch_id' => branch.prefixed_id, 'from' => 'khac', 'to' => 'nha_thuoc', 'profile_version' => 2)
     expect(data['modules']).to eq('enable' => [], 'disable' => ['retail.measured'],
                                   'in_use' => { 'retail.measured' => { 'measured_variants' => 0, 'labelled_variants' => 0, 'label_formats' => 0 } })
     # return_window_days 30 differs from 7, lot_selection cashier_pick from fefo.
@@ -86,16 +86,47 @@ RSpec.describe 'POS branch profiles', type: :request, pos_modules: :default do
     expect(response).to have_http_status(:forbidden)
   end
 
+  it 'previews and applies table service: the optional modules on a yes, the register, the default kitchen' do
+    data = preview(manager, 'quan_an')['data']
+    expect(data['tables']).to eq('always' => false, 'optional' => true,
+                                 'optional_modules' => %w[resources fnb.tables fnb.postpay fnb.service_charge],
+                                 'register_needed' => true, 'default_stations' => %w[prep bar])
+    expect(preview(manager, 'nha_thuoc')['data']['tables']).to include('always' => false, 'optional' => false, 'register_needed' => false,
+                                                                       'default_stations' => [])
+
+    expect(apply(manager, 'quan_an', apply_modules: true, has_tables: true).dig('error', 'details', 'reason')).to eq('table_register_missing')
+    expect(apply(manager, 'nha_thuoc', has_tables: true).dig('error', 'details', 'reason')).to eq('answers_invalid')
+    expect(branch.reload.profile_key).to eq('khac')
+
+    register = Spree::Pos::Register.create!(store: store, branch: branch, name: 'Quầy 1', code: 'tbl-1', status: 'active')
+    data = apply(manager, 'quan_an', apply_modules: true, has_tables: true, table_register_id: register.prefixed_id,
+                                     apply_stations: true)['data']
+    expect(response).to have_http_status(:ok)
+    expect(data['modules']).to include('fnb.tables' => true, 'resources' => true, 'fnb.postpay' => true, 'fnb.kitchen' => true)
+    expect(data['applied']['table_register_id']).to eq(register.prefixed_id)
+    expect(data['applied']['kitchen']['stations'].pluck('name')).to eq(%w[Bếp Bar])
+    expect(data['applied']['kitchen']['routes'].pluck('kitchen_category')).to eq(['do_uong'])
+    expect(branch.reload.table_register).to eq(register)
+    expect(Spree::Pos::AuditEntry.find_by!(action: 'branch_profile.change').metadata).
+      to include('table_register_id' => register.prefixed_id, 'stations' => data['applied']['kitchen']['stations'].pluck('id'))
+
+    # Stations exist now: applying again adds none. Without the yes the table modules go off.
+    data = apply(manager, 'quan_an', expected: 'quan_an', apply_modules: true, apply_stations: true)['data']
+    expect(data['applied']['kitchen']).to eq('stations' => [], 'routes' => [])
+    expect(data['modules']).to include('fnb.tables' => false, 'resources' => false, 'fnb.menu' => true)
+    expect(Spree::Pos::KitchenStation.where(branch: branch).count).to eq(2)
+  end
+
   it 'applies only the picked defaults and, when asked, the profile modules' do
     tracked_product
     data = apply(manager, 'nha_thuoc', apply_modules: true, apply_defaults: ['lot_selection'])['data']
     expect(response).to have_http_status(:ok)
-    expect(branch.reload).to have_attributes(profile_key: 'nha_thuoc', profile_version: 1, lot_selection: 'fefo', return_window_days: 30)
+    expect(branch.reload).to have_attributes(profile_key: 'nha_thuoc', profile_version: 2, lot_selection: 'fefo', return_window_days: 30)
     expect(data['modules']).to eq('retail.units' => true, 'retail.measured' => false, 'retail.traceability' => true, 'fnb.menu' => false, 'fnb.recipes' => false, 'fnb.kitchen' => false, 'fnb.order_number' => false, 'fnb.cup_label' => false, 'fnb.delivery_platforms' => false, 'resources' => false, 'fnb.tables' => false, 'fnb.postpay' => false, 'fnb.service_charge' => false)
     expect(data['applied']).to eq(
       'modules' => { 'enabled' => [], 'disabled' => ['retail.measured'] },
       'defaults' => [{ 'field' => 'lot_selection', 'from' => 'cashier_pick', 'to' => 'fefo' }],
-      'sample_units' => %w[vien vi hop]
+      'sample_units' => %w[vien vi hop], 'kitchen' => nil, 'table_register_id' => nil
     )
     expect(Spree::Pos::UnitDefinition.for_store(store).pluck(:code)).to include('vien', 'vi', 'hop', 'chai')
     audit = Spree::Pos::AuditEntry.find_by!(action: 'branch_profile.change')
@@ -129,7 +160,7 @@ RSpec.describe 'POS branch profiles', type: :request, pos_modules: :default do
   it 'refuses unknown defaults, coming-soon profiles, a missing reason and non-managers' do
     expect(apply(manager, 'nha_thuoc', apply_defaults: ['variance_threshold']).dig('error', 'details', 'reason')).to eq('default_invalid')
     expect(apply(manager, 'nha_thuoc', apply_defaults: ['name']).dig('error', 'details', 'reason')).to eq('default_invalid')
-    expect(apply(manager, 'bar_pub_club').dig('error', 'details', 'reason')).to eq('profile_unavailable')
+    expect(apply(manager, 'karaoke_bida').dig('error', 'details', 'reason')).to eq('profile_unavailable')
     expect(apply(manager, 'nha_thuoc', reason: '').dig('error', 'details', 'reason')).to eq('reason_required')
     expect(apply(manager, 'nha_thuoc', expected: nil).dig('error', 'details', 'reason')).to eq('profile_conflict')
     expect(branch.reload.profile_key).to eq('khac')
@@ -151,9 +182,9 @@ RSpec.describe 'POS branch profiles', type: :request, pos_modules: :default do
       branch
       Spree::Pos::StoreProfile.create!(store: store, profile_key: 'khac', onboarded_at: 1.day.ago)
       modules_before = Spree::Pos::ModulePolicy.for_branch(branch)
-      data = call(manager, :put, 'store_profile', profile_key: 'nha_thuoc', wholesale: true, interests: ['bar_pub_club'], reason: 'Đổi ngành')['data']
+      data = call(manager, :put, 'store_profile', profile_key: 'nha_thuoc', wholesale: true, interests: ['karaoke_bida'], reason: 'Đổi ngành')['data']
       expect(response).to have_http_status(:ok)
-      expect(data).to include('profile_key' => 'nha_thuoc', 'wholesale' => true, 'interests' => ['bar_pub_club'], 'changed_by_id' => manager.prefixed_id)
+      expect(data).to include('profile_key' => 'nha_thuoc', 'wholesale' => true, 'interests' => ['karaoke_bida'], 'changed_by_id' => manager.prefixed_id)
       expect(branch.reload.profile_key).to eq('khac')
       expect(Spree::Pos::ModulePolicy.for_branch(branch)).to eq(modules_before)
       audit = Spree::Pos::AuditEntry.find_by!(action: 'store_profile.change')
@@ -207,7 +238,7 @@ RSpec.describe 'POS branch profiles', type: :request, pos_modules: :default do
                                         'reason' => 'Bỏ hết')
 
       # An explicit `null` clears too (the key is there); only leaving it out keeps them.
-      call(manager, :put, 'store_profile', profile_key: 'khac', interests: %w[bar_pub_club], reason: 'Lại')
+      call(manager, :put, 'store_profile', profile_key: 'khac', interests: %w[karaoke_bida], reason: 'Lại')
       data = call(manager, :put, 'store_profile', profile_key: 'khac', interests: nil, reason: 'Null')['data']
       expect(data['interests']).to eq([])
     end

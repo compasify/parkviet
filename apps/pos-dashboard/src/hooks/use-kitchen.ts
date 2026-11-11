@@ -20,6 +20,7 @@ export type KitchenStation = {
   late_after_minutes: number
   position: number
   active: boolean
+  expo_station_id: string | null
 }
 
 export type StationRoute = {
@@ -36,6 +37,8 @@ export type KitchenSettings = {
   branch_id: string
   kitchen_send_trigger: KitchenSendTrigger
   module_enabled: boolean
+  // Codes a waiter picks when voiding a sent dish; `khac` (other) is always offered.
+  void_reasons: string[]
 }
 
 export type CupLabelSize = '40x30' | '50x30' | '58x40'

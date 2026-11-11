@@ -32,6 +32,7 @@ import {
 import { usePosSession } from '../hooks/use-pos-session'
 import { usePrinters } from '../hooks/use-printers'
 import { canManageKitchen } from '../lib/pos-access'
+import { KNOWN_VOID_REASONS, RESERVED_VOID_REASONS, voidReasonCode } from '../lib/void-reasons'
 
 const KINDS: readonly KitchenStationKind[] = ['prep', 'bar', 'expo']
 const MODES = ['counter', 'dine_in', 'takeaway', 'delivery'] as const
@@ -42,6 +43,7 @@ const REFUSALS = [
   'cup_label_printer_missing',
   'cup_label_settings_invalid',
   'printer_not_queued',
+  'void_reasons_invalid',
 ] as const
 
 type Notice = { text: string; failed: boolean } | null
@@ -66,6 +68,13 @@ export function BranchKitchenTab() {
   return (
     <div className="space-y-6">
       <TriggerCard settings={settings.data} loading={settings.isPending} write={write} />
+      {settings.data ? (
+        <VoidReasonsCard
+          key={settings.data.void_reasons.join()}
+          settings={settings.data}
+          write={write}
+        />
+      ) : null}
       <StationsCard write={write} />
       {stations.data && stations.data.length > 0 ? (
         <RoutesCard stations={stations.data} write={write} />
@@ -131,6 +140,98 @@ function TriggerCard({
   )
 }
 
+// Why a waiter may void a dish the kitchen already has: the known reasons
+// and the branch's own; "other" is always offered on the device.
+function VoidReasonsCard({ settings, write }: { settings: KitchenSettings; write: boolean }) {
+  const { t, i18n } = useTranslation()
+  const { branch } = useBranchScope()
+  const mutation = useKitchenWrite()
+  const [reasons, setReasons] = useState<string[]>(settings.void_reasons)
+  const [typed, setTyped] = useState('')
+  const [notice, setNotice] = useState<Notice>(null)
+  const custom = reasons.filter((code) => !(KNOWN_VOID_REASONS as readonly string[]).includes(code))
+  const label = (code: string) => {
+    const key = `branchKitchen.voidReason_${code}`
+    return i18n.exists(key) ? t(key) : code.replace(/_/g, ' ')
+  }
+  const toggle = (code: string, on: boolean) =>
+    setReasons((current) => (on ? [...current, code] : current.filter((row) => row !== code)))
+  const typedCode = voidReasonCode(typed)
+  const canAdd =
+    typedCode.length > 0 &&
+    !reasons.includes(typedCode) &&
+    !RESERVED_VOID_REASONS.includes(typedCode) &&
+    reasons.length < 20
+  const changed = reasons.join() !== settings.void_reasons.join()
+
+  async function save(event: FormEvent) {
+    event.preventDefault()
+    if (mutation.isPending) return
+    setNotice(null)
+    try {
+      await mutation.mutateAsync({
+        method: 'PUT',
+        path: '/pos/kitchen_settings',
+        body: { branch_id: branch.id, void_reasons: reasons },
+      })
+      setNotice({ text: t('saved'), failed: false })
+    } catch (failure) {
+      setNotice({ text: kitchenFailure(failure, t), failed: true })
+    }
+  }
+
+  return (
+    <ModelCard title={t('branchKitchen.voidReasons')} id="branch-void-reasons">
+      <p className="text-sm text-muted-foreground">{t('branchKitchen.voidReasonsIntro')}</p>
+      <ModelNotice notice={notice} />
+      <form className="space-y-4" onSubmit={(event) => void save(event)}>
+        <fieldset className="space-y-2">
+          <legend className="sr-only">{t('branchKitchen.voidReasons')}</legend>
+          {[...KNOWN_VOID_REASONS, ...custom].map((code) => (
+            <ModelCheck
+              key={code}
+              checked={reasons.includes(code)}
+              disabled={!write}
+              onChange={(on) => toggle(code, on)}
+            >
+              {label(code)}
+            </ModelCheck>
+          ))}
+          <p className="text-sm text-muted-foreground">{t('branchKitchen.voidReasonOther')}</p>
+        </fieldset>
+        {write ? (
+          <>
+            <div className="flex flex-wrap items-end gap-2">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="void-reason-new">{t('branchKitchen.voidReasonNew')}</Label>
+                <Input
+                  id="void-reason-new"
+                  maxLength={60}
+                  value={typed}
+                  onChange={(event) => setTyped(event.target.value)}
+                />
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={!canAdd}
+                onClick={() => {
+                  toggle(typedCode, true)
+                  setTyped('')
+                }}
+              >
+                {t('branchKitchen.voidReasonAdd')}
+              </Button>
+            </div>
+            <Button type="submit" disabled={mutation.isPending || !changed}>
+              {t('save')}
+            </Button>
+          </>
+        ) : null}
+      </form>
+    </ModelCard>
+  )
+}
 type StationDraft = {
   id?: string
   name: string
@@ -142,6 +243,7 @@ type StationDraft = {
   late_after_minutes: string
   position: string
   active: boolean
+  expo_station_id: string
 }
 
 const blankStation = (position: number): StationDraft => ({
@@ -154,6 +256,7 @@ const blankStation = (position: number): StationDraft => ({
   late_after_minutes: '15',
   position: String(position),
   active: true,
+  expo_station_id: '',
 })
 
 const draftOf = (row: KitchenStation): StationDraft => ({
@@ -167,6 +270,7 @@ const draftOf = (row: KitchenStation): StationDraft => ({
   late_after_minutes: String(row.late_after_minutes),
   position: String(row.position),
   active: row.active,
+  expo_station_id: row.expo_station_id ?? '',
 })
 
 function StationsCard({ write }: { write: boolean }) {
@@ -201,6 +305,8 @@ function StationsCard({ write }: { write: boolean }) {
       late_after_minutes: Number(draft.late_after_minutes),
       position: Number(draft.position),
       active: draft.active,
+      // An expo station never hands to another one.
+      expo_station_id: draft.kind === 'expo' ? null : draft.expo_station_id || null,
     }
     void attempt(async () => {
       await (draft.id
@@ -234,6 +340,12 @@ function StationsCard({ write }: { write: boolean }) {
     { value: '', label: t('branchKitchen.noPrinter') },
     ...(printers.data ?? [])
       .filter((row) => row.status === 'active')
+      .map((row) => ({ value: row.id, label: row.name })),
+  ]
+  const expoOptions = [
+    { value: '', label: t('branchKitchen.noExpo') },
+    ...(stations.data ?? [])
+      .filter((row) => row.kind === 'expo' && row.id !== draft?.id)
       .map((row) => ({ value: row.id, label: row.name })),
   ]
 
@@ -331,6 +443,15 @@ function StationsCard({ write }: { write: boolean }) {
               hint={t('branchKitchen.printerHint')}
               onChange={(value) => edit({ printer_id: value })}
             />
+            {draft.kind === 'expo' ? null : (
+              <ModelSelect
+                label={t('branchKitchen.expoStation')}
+                value={draft.expo_station_id}
+                options={expoOptions}
+                hint={t('branchKitchen.expoStationHint')}
+                onChange={(value) => edit({ expo_station_id: value })}
+              />
+            )}
             <div className="flex flex-col gap-2">
               <Label htmlFor="kitchen-station-position">{t('branchKitchen.position')}</Label>
               <Input

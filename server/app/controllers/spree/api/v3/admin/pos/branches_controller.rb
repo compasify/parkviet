@@ -57,7 +57,8 @@ module Spree
               data = Spree::Pos::Profiles::Apply.call(
                 store: current_store, actor: current_user, branch: branch!(params[:id]), profile_key: params[:profile_key],
                 expected_profile_key: params[:expected_profile_key], reason: params[:reason],
-                apply_modules: params[:apply_modules], apply_defaults: params.key?(:apply_defaults) ? params[:apply_defaults] : []
+                apply_modules: params[:apply_modules], apply_defaults: params.key?(:apply_defaults) ? params[:apply_defaults] : [],
+                has_tables: params[:has_tables], table_register_id: params[:table_register_id], apply_stations: params[:apply_stations]
               )
               render json: { data: data }
             end

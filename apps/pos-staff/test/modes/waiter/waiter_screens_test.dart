@@ -150,6 +150,27 @@ void main() {
     expect(find.text('Đã hủy món.'), findsOneWidget);
   });
 
+  testWidgets('offers the branch void reasons it read, with "other" last and its own codes as words', (tester) async {
+    final api = FakeWaiterApi(workspace: workspace(lines: [lineJson('l1', sent: '1', pending: '0')]))
+      ..branchVoidReasons = ['het_mon', 'mon_nguoi'];
+    final waiter = contextFor(api);
+    addTearDown(waiter.dispose);
+    await waiter.loadVoidReasons();
+    await tester.pumpWidget(localized(TableOrderScreen(waiter: waiter, workspaceId: 'posws_1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('line-l1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('line-void-l1')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('void-reason-khach_doi_y')), findsNothing);
+    expect(find.text('Hết món'), findsOneWidget);
+    expect(find.text('Mon nguoi'), findsOneWidget);
+    expect(find.byKey(const Key('void-reason-khac')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('void-confirm')));
+    await tester.pumpAndSettle();
+    expect(api.calls.last, 'void:possline_l1:1:het_mon:-');
+  });
   testWidgets('a line changed by someone else says so and reads the order again', (tester) async {
     final api = FakeWaiterApi(workspace: workspace(lines: [lineJson('l2', name: 'Trà đá', quantity: 1, pending: '1')]));
     final waiter = contextFor(api);

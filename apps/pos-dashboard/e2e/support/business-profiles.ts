@@ -1,6 +1,6 @@
 // `GET /pos/business_profiles` as the server sends it (server/config/pos/
-// business_profiles.yml, the table approved in plan 261108-1830 phase 1):
-// 13 retail profiles and 3 food & drink profiles available, 3 "coming soon".
+// business_profiles.yml, version 2): 13 retail profiles and 5 food & drink
+// profiles available, karaoke "coming soon".
 
 const ALL = ['retail.units', 'retail.measured', 'retail.traceability'];
 
@@ -13,10 +13,13 @@ type Row = {
   recommended_features?: string[];
   sample_units?: string[];
   kitchen_stations?: string[];
+  optional_modules?: string[];
+  surface?: 'menu_grid' | 'table_grid' | 'floor_plan';
 };
 
 const SHOP = { kitchen_send_trigger: 'on_complete' };
-const COMING_SOON = ['karaoke_bida', 'bar_pub_club', 'nha_hang'];
+const COMING_SOON = ['karaoke_bida'];
+const TABLES = ['resources', 'fnb.tables', 'fnb.postpay', 'fnb.service_charge'];
 const AVAILABLE_FNB = ['fnb.menu', 'fnb.kitchen', 'fnb.order_number', 'fnb.cup_label', 'fnb.recipes', 'fnb.delivery_platforms'];
 
 const ROWS: Row[] = [
@@ -33,26 +36,28 @@ const ROWS: Row[] = [
   { key: 'sach_van_phong_pham', group: 'retail', modules: ['retail.units'], branch_defaults: { return_window_days: 7 }, view: 'list', recommended_features: ['credit'], sample_units: ['quyen', 'ram', 'hop'] },
   { key: 'hoa_qua_tang', group: 'retail', modules: [], view: 'cards', recommended_features: ['vietqr'], sample_units: ['bo_hoa', 'gio'] },
   { key: 'khac', group: 'retail', modules: ALL, view: 'cards' },
-  { key: 'quan_an', group: 'fnb', modules: ['retail.units', 'retail.measured', 'fnb.menu', 'fnb.kitchen', 'fnb.order_number', 'fnb.recipes', 'fnb.delivery_platforms'], branch_defaults: SHOP, recommended_features: ['vietqr', 'credit', 'delivery'], kitchen_stations: ['prep', 'bar'] },
+  { key: 'quan_an', group: 'fnb', modules: ['retail.units', 'retail.measured', 'fnb.menu', 'fnb.kitchen', 'fnb.order_number', 'fnb.recipes', 'fnb.delivery_platforms'], branch_defaults: SHOP, recommended_features: ['vietqr', 'credit', 'delivery'], kitchen_stations: ['prep', 'bar'], optional_modules: TABLES },
   { key: 'cafe_tra_sua', group: 'fnb', modules: ['retail.units', 'fnb.menu', 'fnb.kitchen', 'fnb.order_number', 'fnb.cup_label', 'fnb.recipes', 'fnb.delivery_platforms'], branch_defaults: SHOP, recommended_features: ['vietqr', 'customer_display'], kitchen_stations: ['prep', 'bar'] },
   { key: 'karaoke_bida', group: 'fnb', modules: ['resources', 'timed_billing', 'fnb.menu', 'fnb.postpay'] },
-  { key: 'bar_pub_club', group: 'fnb', modules: ['fnb.menu', 'fnb.kitchen', 'fnb.postpay', 'fnb.service_charge'] },
+  { key: 'bar_pub_club', group: 'fnb', modules: ['fnb.menu', 'fnb.kitchen', ...TABLES], branch_defaults: { kitchen_send_trigger: 'manual' }, surface: 'table_grid', recommended_features: ['vietqr', 'customer_display'], kitchen_stations: ['prep', 'bar'] },
   { key: 'cang_tin_tram_dung', group: 'fnb', modules: ['fnb.menu', 'fnb.kitchen', 'fnb.order_number', 'retail.units'], branch_defaults: SHOP, recommended_features: ['vietqr', 'customer_display'], kitchen_stations: ['prep'] },
-  { key: 'nha_hang', group: 'fnb', modules: ['fnb.menu', 'fnb.kitchen', 'resources', 'fnb.tables', 'fnb.postpay', 'fnb.service_charge'] },
+  { key: 'nha_hang', group: 'fnb', modules: ['fnb.menu', 'fnb.kitchen', ...TABLES], branch_defaults: { kitchen_send_trigger: 'manual', service_charge_rate: 5 }, surface: 'floor_plan', recommended_features: ['vietqr', 'customer_display'], kitchen_stations: ['prep', 'bar'] },
 ];
 
 export const PROFILE_MODULES: Record<string, string[]> = Object.fromEntries(ROWS.map((row) => [row.key, row.modules]));
 
 export const BUSINESS_PROFILES = {
-  version: 1,
+  version: 2,
   modules: [
     { key: 'retail.units', group: 'retail', status: 'available', depends_on: [] },
     { key: 'retail.measured', group: 'retail', status: 'available', depends_on: ['retail.units'] },
     { key: 'retail.traceability', group: 'retail', status: 'available', depends_on: [] },
     ...AVAILABLE_FNB.map((key) => ({ key, group: 'fnb', status: 'available', depends_on: [] })),
-    ...['resources', 'fnb.tables', 'fnb.postpay', 'fnb.service_charge', 'timed_billing'].map(
-      (key) => ({ key, group: 'fnb', status: 'planned', depends_on: [] }),
-    ),
+    { key: 'resources', group: 'fnb', status: 'available', depends_on: [] },
+    { key: 'fnb.tables', group: 'fnb', status: 'available', depends_on: ['resources'] },
+    { key: 'fnb.postpay', group: 'fnb', status: 'available', depends_on: [] },
+    { key: 'fnb.service_charge', group: 'fnb', status: 'available', depends_on: [] },
+    { key: 'timed_billing', group: 'fnb', status: 'planned', depends_on: [] },
   ],
   profiles: ROWS.map((row, index) => ({
     key: row.key,
@@ -60,8 +65,9 @@ export const BUSINESS_PROFILES = {
     order: index + 1,
     status: COMING_SOON.includes(row.key) ? 'coming_soon' : 'available',
     modules: row.modules,
+    optional_modules: row.optional_modules ?? [],
     branch_defaults: row.branch_defaults ?? {},
-    display: row.group === 'fnb' ? { surface: 'menu_grid' } : row.view ? { catalog_view: row.view } : {},
+    display: row.group === 'fnb' ? (row.key === 'karaoke_bida' ? {} : { surface: row.surface ?? 'menu_grid' }) : row.view ? { catalog_view: row.view } : {},
     recommended_features: row.recommended_features ?? [],
     sample_units: row.sample_units ?? [],
     kitchen_stations: row.kitchen_stations ?? [],

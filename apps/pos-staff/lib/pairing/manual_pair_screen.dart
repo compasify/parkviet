@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/session.dart';
 import '../l10n/app_localizations.dart';
+import 'device_checklist.dart';
 import 'pairing_errors.dart';
 
 /// Pairs with a typed server address and the code from the manager's screen.
@@ -43,6 +44,8 @@ class _ManualPairScreenState extends ConsumerState<ManualPairScreen> {
       _error = null;
     });
     try {
+      // The first screen once paired is the device's checklist.
+      ref.read(deviceChecklistPendingProvider.notifier).open();
       await ref.read(sessionProvider.notifier).pair(serverUrl: _server.text, code: _code.text, name: _name.text);
     } on Object catch (error) {
       if (mounted) setState(() => _error = pairingErrorMessage(l10n, error));
