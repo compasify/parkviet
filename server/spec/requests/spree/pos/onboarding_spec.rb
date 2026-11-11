@@ -35,7 +35,7 @@ RSpec.describe 'POS onboarding', type: :request, pos_modules: :default, pos_feat
 
   def body(**overrides)
     {
-      profile_key: 'nha_thuoc', wholesale: true, interests: ['cafe_tra_sua'],
+      profile_key: 'nha_thuoc', wholesale: true, interests: ['karaoke_bida'],
       branch: { name: 'Nhà thuốc Q1', code: 'q1', timezone: 'Asia/Ho_Chi_Minh', stock_location_id: location.prefixed_id },
       register: { name: 'Quầy 1' }, grant_self: true, features: %w[traceability returns]
     }.merge(overrides)
@@ -52,7 +52,7 @@ RSpec.describe 'POS onboarding', type: :request, pos_modules: :default, pos_feat
     expect(response).to have_http_status(:created)
 
     profile = Spree::Pos::StoreProfile.find_by!(store: store)
-    expect(profile).to have_attributes(profile_key: 'nha_thuoc', profile_version: 1, wholesale: true, interests: ['cafe_tra_sua'],
+    expect(profile).to have_attributes(profile_key: 'nha_thuoc', profile_version: 1, wholesale: true, interests: ['karaoke_bida'],
                                        changed_by_id: owner.id)
     expect(profile.onboarded_at).to be_present
     branch = Spree::Pos::Branch.find_by!(store: store, code: 'q1')
@@ -128,7 +128,7 @@ RSpec.describe 'POS onboarding', type: :request, pos_modules: :default, pos_feat
 
   it 'refuses coming-soon profiles as the industry and accepts them only as interests' do
     owner = staff_with(%w[write_pos_topology])
-    expect(reason_of(setup!(owner, body(profile_key: 'cafe_tra_sua')))).to eq('profile_unavailable')
+    expect(reason_of(setup!(owner, body(profile_key: 'nha_hang')))).to eq('profile_unavailable')
     expect(response).to have_http_status(:conflict)
     expect(reason_of(setup!(owner, body(profile_key: 'tiem_vang')))).to eq('profile_unknown')
     expect(reason_of(setup!(owner, body(interests: ['thoi_trang'])))).to eq('interest_invalid')
@@ -136,9 +136,9 @@ RSpec.describe 'POS onboarding', type: :request, pos_modules: :default, pos_feat
     expect(Spree::Pos::StoreProfile.where(store: store)).to be_empty
     expect(Spree::Pos::Branch.for_store(store)).to be_empty
 
-    setup!(owner, body(interests: %w[cafe_tra_sua quan_an]))
+    setup!(owner, body(interests: %w[karaoke_bida nha_hang]))
     expect(response).to have_http_status(:created)
-    expect(Spree::Pos::StoreProfile.find_by!(store: store).interests).to eq(%w[cafe_tra_sua quan_an])
+    expect(Spree::Pos::StoreProfile.find_by!(store: store).interests).to eq(%w[karaoke_bida nha_hang])
   end
 
   it 'is only for store topology managers, and only before the store runs' do
@@ -156,5 +156,93 @@ RSpec.describe 'POS onboarding', type: :request, pos_modules: :default, pos_feat
     create(:pos_branch, store: store)
     expect(reason_of(setup!(owner, body))).to eq('already_onboarded')
     expect(Spree::Pos::StoreProfile.where(store: store)).to be_empty
+  end
+
+  describe 'the F&B shop setup step' do
+    let(:fnb_setup) do
+      { stations: [{ name: 'Bếp', kind: 'prep' }, { name: 'Bar', kind: 'bar' }],
+        tax_categories: { food: 'vat_food', alcohol: 'vat_special' }, kitchen_send_trigger: 'manual' }
+    end
+
+    def cafe(**overrides)
+      body(**{ profile_key: 'cafe_tra_sua', wholesale: false, interests: [], features: [],
+               branch: { name: 'Cà phê Q1', code: 'cafe-q1', timezone: 'Asia/Ho_Chi_Minh', stock_location_id: location.prefixed_id },
+               fnb_setup: fnb_setup }.merge(overrides))
+    end
+
+    it 'creates the stations, the menu tax defaults and the send trigger once, audited' do
+      owner = staff_with(%w[write_pos_topology])
+      key = SecureRandom.uuid
+      data = setup!(owner, cafe, key: key)['data']
+      expect(response).to have_http_status(:created)
+
+      branch = Spree::Pos::Branch.find_by!(store: store, code: 'cafe-q1')
+      expect(branch).to have_attributes(profile_key: 'cafe_tra_sua', kitchen_send_trigger: 'manual')
+      expect(Spree::Pos::BranchModule.where(branch: branch, enabled: true).pluck(:module_key)).
+        to include('fnb.menu', 'fnb.kitchen', 'fnb.order_number', 'fnb.cup_label', 'fnb.recipes', 'fnb.delivery_platforms')
+      stations = Spree::Pos::KitchenStation.where(branch: branch).order(:position)
+      expect(stations.pluck(:name, :kind, :is_default)).to eq([['Bếp', 'prep', true], ['Bar', 'bar', false]])
+      food = Spree::TaxCategory.find_by!(store_id: store.id, tax_code: 'vat_food')
+      alcohol = Spree::TaxCategory.find_by!(store_id: store.id, tax_code: 'vat_special')
+      profile = Spree::Pos::StoreProfile.find_by!(store: store)
+      expect(profile).to have_attributes(food_tax_category_id: food.id, alcohol_tax_category_id: alcohol.id)
+
+      expect(data['fnb_setup']).to include('kitchen_send_trigger' => 'manual',
+                                           'tax_defaults' => { 'food' => food.prefixed_id, 'alcohol' => alcohol.prefixed_id })
+      expect(data['fnb_setup']['stations'].pluck('id')).to eq(stations.map(&:prefixed_id))
+      expect(data['store_profile']['tax_defaults']).to eq('food' => food.prefixed_id, 'alcohol' => alcohol.prefixed_id)
+      audit = Spree::Pos::AuditEntry.find_by!(store: store, action: 'onboarding.fnb_setup')
+      expect(audit.metadata).to include('stations' => stations.map(&:prefixed_id), 'kitchen_send_trigger' => 'manual',
+                                        'tax_categories' => { 'food' => 'vat_food', 'alcohol' => 'vat_special' })
+      expect(Spree::Pos::AuditEntry.where(store: store, action: 'kitchen_station.create').count).to eq(2)
+
+      first_body = response.parsed_body
+      setup!(owner, cafe, key: key)
+      expect(response.parsed_body).to eq(first_body)
+      expect(Spree::Pos::KitchenStation.where(branch: branch).count).to eq(2)
+      expect(Spree::Pos::AuditEntry.where(store: store, action: 'onboarding.fnb_setup').count).to eq(1)
+    end
+
+    it 'keeps the profile trigger without the step, and a canteen gets one station' do
+      owner = staff_with(%w[write_pos_topology])
+      data = setup!(owner, cafe(profile_key: 'cang_tin_tram_dung', features: [],
+                                fnb_setup: { stations: [{ name: 'Bếp', kind: 'prep' }] }))['data']
+      expect(response).to have_http_status(:created)
+      branch = Spree::Pos::Branch.find_by_prefix_id!(data.dig('branch', 'id'))
+      expect(branch.kitchen_send_trigger).to eq('on_complete')
+      expect(Spree::Pos::KitchenStation.where(branch: branch).pluck(:name)).to eq(['Bếp'])
+      expect(Spree::Pos::StoreProfile.find_by!(store: store).food_tax_category_id).to be_nil
+    end
+
+    it 'gives new menu items the food tax default' do
+      owner = staff_with(%w[write_pos_topology write_pos_orders])
+      setup!(owner, cafe)
+      product = create(:product, store: store)
+      post '/api/v3/admin/pos/menu_items', headers: { 'Authorization' => "Bearer #{token_for(owner)}", 'Idempotency-Key' => SecureRandom.uuid },
+                                           params: { product_id: product.prefixed_id, kind: 'single' }, as: :json
+      expect(response).to have_http_status(:created)
+      food = Spree::Pos::StoreProfile.find_by!(store: store).food_tax_category
+      expect(product.reload.tax_category).to eq(food)
+      get '/api/v3/admin/pos/menu_items', headers: { 'Authorization' => "Bearer #{token_for(owner)}" }
+      expect(response.parsed_body.dig('meta', 'tax_defaults', 'food')).to eq(food.prefixed_id)
+    end
+
+    it 'skips the step for retail profiles and refuses a malformed step' do
+      owner = staff_with(%w[write_pos_topology])
+      expect(reason_of(setup!(owner, body(fnb_setup: fnb_setup)))).to eq('fnb_setup_invalid')
+      expect(reason_of(setup!(owner, cafe(fnb_setup: fnb_setup.merge(stations: [{ name: 'Pass', kind: 'expo' }]))))).to eq('fnb_setup_invalid')
+      expect(reason_of(setup!(owner, cafe(fnb_setup: fnb_setup.merge(stations: [{ name: 'Bếp', kind: 'prep' }, { name: 'bếp', kind: 'bar' }]))))).
+        to eq('fnb_setup_invalid')
+      expect(reason_of(setup!(owner, cafe(fnb_setup: fnb_setup.merge(tax_categories: { food: 'vat_zero', alcohol: 'vat_special' }))))).
+        to eq('fnb_setup_invalid')
+      expect(reason_of(setup!(owner, cafe(fnb_setup: fnb_setup.merge(kitchen_send_trigger: 'later'))))).to eq('fnb_setup_invalid')
+      expect(response).to have_http_status(:conflict)
+      expect(Spree::Pos::StoreProfile.where(store: store)).to be_empty
+
+      setup!(owner, body)
+      expect(response).to have_http_status(:created)
+      expect(Spree::Pos::AuditEntry.where(store: store, action: 'onboarding.fnb_setup')).to be_empty
+      expect(response.parsed_body.dig('data', 'fnb_setup')).to be_nil
+    end
   end
 end

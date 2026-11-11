@@ -11,8 +11,18 @@ module Spree
       FOOD_RATE = BigDecimal('0.08')
       SPECIAL_RATE = BigDecimal('0.10')
       FOOD_BECOMES_STANDARD_ON = Date.new(2027, 1, 1)
+      CODES = [FOOD, SPECIAL].freeze
+      # What the F&B setup step proposes for new menu items, by role.
+      MENU_DEFAULTS = { 'food' => FOOD, 'alcohol' => SPECIAL }.freeze
 
       module_function
+
+      # The categories the F&B setup step offers, with the rate a new store
+      # is seeded with on `on`. Constants only, no query.
+      def options(on: Date.current)
+        food_rate = on >= FOOD_BECOMES_STANDARD_ON ? SPECIAL_RATE : FOOD_RATE
+        [{ code: FOOD, rate: food_rate.to_s('F') }, { code: SPECIAL, rate: SPECIAL_RATE.to_s('F') }]
+      end
 
       def seed!(store)
         food = category!(store, FOOD, 'VAT thực phẩm')

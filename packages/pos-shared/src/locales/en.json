@@ -207,6 +207,30 @@
       "description": "Recipes for each size and option, ingredients taken off stock when a sale completes, low-stock alerts and gross margin by item.",
       "off": "This branch has not turned on Recipes, so completed sales take no ingredients off stock and no low-stock threshold can be set. Items still sell as usual.",
       "disabled": "This branch has not turned on Recipes; the server did not record the recipe or the threshold. Selling is not affected."
+    },
+    "fnb_kitchen": {
+      "label": "Kitchen and bar",
+      "description": "Send items to kitchen and bar stations; kitchen screens (KDS) and kitchen tickets.",
+      "off": "Kitchen and bar is off at this branch, so orders are not sent to the kitchen and no new station can be added. Items still sell as usual.",
+      "disabled": "Kitchen and bar is off at this branch; the server records no new station or route. Selling is not affected."
+    },
+    "fnb_order_number": {
+      "label": "Call numbers",
+      "description": "Each order gets a call number 1, 2, 3… per business day, printed on the receipt and shown on the call board.",
+      "off": "Call numbers are off at this branch, so new orders get no call number.",
+      "disabled": "Call numbers are off at this branch; the server gives no call number. Selling is not affected."
+    },
+    "fnb_cup_label": {
+      "label": "Cup labels",
+      "description": "Print one label per cup: call number, item, options, note and guest name.",
+      "off": "Cup labels are off at this branch, so no label is printed for items.",
+      "disabled": "Cup labels are off at this branch; the server prints no label. Selling is not affected."
+    },
+    "fnb_delivery_platforms": {
+      "label": "Grab and Shopee orders",
+      "description": "Type in GrabFood and ShopeeFood orders, send them to the kitchen, follow them and settle what the platform pays.",
+      "off": "Grab and Shopee orders are off at this branch, so no platform order can be entered.",
+      "disabled": "Grab and Shopee orders are off at this branch; the server takes no platform order. Selling is not affected."
     }
   },
   "profiles": {
@@ -288,7 +312,7 @@
     }
   },
   "setup": {
-    "problem_profile": "Choose a retail business.",
+    "problem_profile": "Choose a business the POS supports.",
     "problem_name": "Enter the branch name.",
     "problem_code": "The branch code takes lowercase a-z, digits, hyphen or underscore, up to 32 characters.",
     "problem_timezone": "Enter the time zone.",
@@ -318,7 +342,10 @@
       "bo": "Set",
       "bo_hoa": "Bunch",
       "gio": "Basket"
-    }
+    },
+    "problem_station-name": "Name every station, at most 80 characters.",
+    "problem_station-duplicate": "Two stations cannot share a name.",
+    "problem_tax": "Choose the tax rate for food and for alcoholic drinks."
   },
   "receiptPlatform": "Delivery platform",
   "receiptVietqr": "VietQR transfer",

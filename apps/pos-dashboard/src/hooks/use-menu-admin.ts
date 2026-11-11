@@ -48,8 +48,29 @@ function useMenuQuery<T>(resource: MenuResource, enabled: boolean) {
 
 export const useMenuCategories = (enabled: boolean) =>
   useMenuQuery<PosMenuCategory>('menu_categories', enabled)
-export const useMenuItems = (enabled: boolean) =>
-  useMenuQuery<MenuItemConfig>('menu_items', enabled)
+// Tax categories new items start with (chosen in the F&B setup step): ids, or
+// null when the store never chose one.
+export type MenuTaxDefaults = { food: string | null; alcohol: string | null }
+
+type MenuItemsBody = { data: MenuItemConfig[]; meta?: { tax_defaults?: MenuTaxDefaults } }
+
+// Items and the tax defaults come in one answer; both hooks share it.
+function useMenuItemsBody<T>(enabled: boolean, select: (body: MenuItemsBody) => T) {
+  const { storeId } = useSession()
+  return useQuery({
+    queryKey: posKey(storeId, 'menu-admin', 'menu_items'),
+    enabled,
+    queryFn: () => posRequest<MenuItemsBody>('GET', '/pos/menu_items'),
+    select,
+  })
+}
+
+export const useMenuItems = (enabled: boolean) => useMenuItemsBody(enabled, (body) => body.data)
+export const useMenuTaxDefaults = (enabled: boolean) =>
+  useMenuItemsBody(
+    enabled,
+    (body): MenuTaxDefaults => body.meta?.tax_defaults ?? { food: null, alcohol: null },
+  )
 export const useModifierGroups = (enabled: boolean) =>
   useMenuQuery<PosMenuModifierGroup>('modifier_groups', enabled)
 export const useMenuSchedules = (enabled: boolean) =>

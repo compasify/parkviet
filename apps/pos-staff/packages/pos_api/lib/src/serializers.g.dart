@@ -61,6 +61,19 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(ErrorResponse.serializer)
       ..add(ErrorResponseError.serializer)
       ..add(ErrorResponseErrorDetails.serializer)
+      ..add(HardwareCheck.serializer)
+      ..add(HardwareCheckKeyEnum.serializer)
+      ..add(HardwareCheckStatusEnum.serializer)
+      ..add(HardwareDevice.serializer)
+      ..add(HardwareDeviceModeEnum.serializer)
+      ..add(HardwareDisplays.serializer)
+      ..add(HardwareEinvoice.serializer)
+      ..add(HardwareEinvoiceTypeEnum.serializer)
+      ..add(HardwarePrinter.serializer)
+      ..add(HardwareServer.serializer)
+      ..add(HardwareStation.serializer)
+      ..add(HardwareStationKindEnum.serializer)
+      ..add(HardwareStatus.serializer)
       ..add(IngredientUsageRow.serializer)
       ..add(KitchenBoard.serializer)
       ..add(KitchenBoardResult.serializer)
@@ -91,8 +104,10 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(MenuItemAllOfVariants.serializer)
       ..add(MenuItemConfigComponentsInner.serializer)
       ..add(MenuItemConfigKindEnum.serializer)
+      ..add(MenuItemsMeta.serializer)
       ..add(MenuMarginRow.serializer)
       ..add(MenuSchedulesInner.serializer)
+      ..add(MenuTaxDefaults.serializer)
       ..add(ModifierGroup.serializer)
       ..add(ModifierGroupOptionsInner.serializer)
       ..add(ModifierSelection.serializer)
@@ -156,6 +171,7 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(PosEinvoiceSettingsSaveRequestEinvoiceTypeEnum.serializer)
       ..add(PosEinvoiceSummary200Response.serializer)
       ..add(PosEinvoices200Response.serializer)
+      ..add(PosHardwareStatus200Response.serializer)
       ..add(PosKitchenOrders200Response.serializer)
       ..add(PosKitchenSend201Response.serializer)
       ..add(PosKitchenSend201ResponseMeta.serializer)
@@ -332,6 +348,18 @@ Serializers _$serializers = (Serializers().toBuilder()
               BuiltList, const [const FullType(EinvoiceTotalsTaxesInner)]),
           () => ListBuilder<EinvoiceTotalsTaxesInner>())
       ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(HardwareCheck)]),
+          () => ListBuilder<HardwareCheck>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(HardwarePrinter)]),
+          () => ListBuilder<HardwarePrinter>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(HardwareStation)]),
+          () => ListBuilder<HardwareStation>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(HardwareDevice)]),
+          () => ListBuilder<HardwareDevice>())
+      ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(IngredientUsageRow)]),
           () => ListBuilder<IngredientUsageRow>())
       ..addBuilderFactory(
@@ -504,6 +532,12 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(StockAlert)]),
           () => ListBuilder<StockAlert>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
           () => ListBuilder<String>())

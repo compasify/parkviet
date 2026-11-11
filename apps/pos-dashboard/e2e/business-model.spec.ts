@@ -122,12 +122,12 @@ test('store main profile stores wholesale and coming-soon interests without chan
   const section = page.getByRole('region', { name: 'Hồ sơ chính của cửa hàng' });
   await choose(page, 'Ngành mặc định cho chi nhánh mới', 'Nhà thuốc');
   await section.getByRole('checkbox', { name: /Có bán sỉ/ }).check();
-  await section.getByRole('checkbox', { name: 'Cafe, Trà sữa', exact: true }).check();
+  await section.getByRole('checkbox', { name: 'Karaoke, Bida', exact: true }).check();
   await expect(section.getByRole('button', { name: 'Lưu hồ sơ cửa hàng' })).toBeDisabled();
   await section.getByLabel('Lý do (bắt buộc)').fill('Mở nhà thuốc');
   await section.getByRole('button', { name: 'Lưu hồ sơ cửa hàng' }).click();
   await expect(section.getByRole('status')).toBeVisible();
-  expect(state.stored).toEqual({ profile_key: 'nha_thuoc', wholesale: true, interests: ['cafe_tra_sua'] });
+  expect(state.stored).toEqual({ profile_key: 'nha_thuoc', wholesale: true, interests: ['karaoke_bida'] });
   expect(state.branch.profile_key).toBe('khac');
 });
 

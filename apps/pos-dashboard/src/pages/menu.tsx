@@ -26,10 +26,12 @@ import { Input, TopologyField, TopologySelect } from '../components/topology-fie
 import {
   type MenuItemConfig,
   type MenuSchedule,
+  type MenuTaxDefaults,
   useBranchMenu,
   useMenuCategories,
   useMenuItems,
   useMenuSchedules,
+  useMenuTaxDefaults,
   useMenuWrite,
   useModifierGroups,
 } from '../hooks/use-menu-admin'
@@ -708,6 +710,10 @@ function ItemDialog({
   const [categoryId, setCategoryId] = useState(item?.menu_category_id ?? '')
   const [kitchen, setKitchen] = useState(item?.kitchen_category ?? '')
   const [cupLabel, setCupLabel] = useState(item?.cup_label === true)
+  const taxDefaults = useMenuTaxDefaults(true).data
+  const initialTax = item?.tax_category_id ?? ''
+  const [tax, setTax] = useState(initialTax)
+  const taxOptions = taxChoices(t, taxDefaults, initialTax)
   const [active, setActive] = useState(item?.active ?? true)
   const [groupIds, setGroupIds] = useState<string[]>(item?.modifier_group_ids ?? [])
   const [components, setComponents] = useState(
@@ -739,6 +745,7 @@ function ItemDialog({
                 menu_category_id: categoryId || null,
                 kitchen_category: kitchen.trim() || null,
                 cup_label: cupLabel,
+                ...(tax !== initialTax ? { tax_category_id: tax || null } : {}),
                 active,
                 modifier_group_ids: kind === 'single' ? groupIds : [],
                 ...(kind === 'combo'
@@ -803,6 +810,13 @@ function ItemDialog({
               maxLength={40}
             />
           </div>
+          {taxOptions.length > 1 ? (
+            <TopologyField label={t('menuAdmin.tax')}>
+              {(id) => (
+                <TopologySelect id={id} value={tax} options={taxOptions} onChange={setTax} />
+              )}
+            </TopologyField>
+          ) : null}
           <CheckField label={t('menuAdmin.cupLabel')} checked={cupLabel} onChange={setCupLabel} />
           {kind === 'single' ? (
             <fieldset className="space-y-2">
@@ -1246,4 +1260,21 @@ function BranchMenu({
       })}
     </ul>
   )
+}
+
+// The tax choices of an item: the store's food and alcohol defaults from the
+// F&B setup, the item's own category when it is neither, and "not set" (a new
+// item then takes the food default).
+function taxChoices(
+  t: (key: string) => string,
+  defaults: MenuTaxDefaults | undefined,
+  current: string,
+) {
+  const options = [{ value: '', label: t('menuAdmin.taxUnset') }]
+  if (defaults?.food) options.push({ value: defaults.food, label: t('menuAdmin.taxFood') })
+  if (defaults?.alcohol && defaults.alcohol !== defaults.food)
+    options.push({ value: defaults.alcohol, label: t('menuAdmin.taxAlcohol') })
+  if (current && !options.some((row) => row.value === current))
+    options.push({ value: current, label: t('menuAdmin.taxOther') })
+  return options
 }

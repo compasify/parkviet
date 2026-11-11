@@ -32,6 +32,7 @@ export type PosPage =
   | 'branch-printing'
   | 'branch-kitchen'
   | 'branch-platforms'
+  | 'branch-hardware'
   | 'platform-settlement'
   | 'payment-methods'
   | 'units'
@@ -142,6 +143,8 @@ export function visibleNav(page: PosPage, access: PosAccess) {
   if (page === 'platform-settlement')
     return takesPlatformOrders(access) && canSettlePlatforms(access)
   if (page === 'branch-platforms') return canAdminister(access) || canManageBranch(access)
+  // The hardware checklist reads printers, devices and server health.
+  if (page === 'branch-hardware') return canAdminister(access) || canManageBranch(access)
   if (page === 'stock-alerts') return runsRecipes(access) && canReadStockAlerts(access)
   if (page === 'receivables') return canReadDebts(access)
   if (page === 'credit-accounts') return canManageCredit(access)
@@ -215,6 +218,7 @@ export const BRANCH_TABS = [
   { key: 'printing', page: 'branch-printing', path: '/printing' },
   { key: 'kitchen', page: 'branch-kitchen', path: '/kitchen' },
   { key: 'platforms', page: 'branch-platforms', path: '/platforms' },
+  { key: 'hardware', page: 'branch-hardware', path: '/hardware' },
 ] as const satisfies readonly { key: string; page: PosPage; path: string }[]
 export type BranchTab = (typeof BRANCH_TABS)[number]['key']
 // The tabs open to this reader at the selected branch.

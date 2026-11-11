@@ -307,12 +307,14 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [data]
+                required: [data, meta]
                 properties:
                   data:
                     type: array
                     items:
                       $ref: '#/components/schemas/MenuItemConfig'
+                  meta:
+                    $ref: '#/components/schemas/MenuItemsMeta'
   /api/v3/admin/pos/modifier_groups:
     get:
       operationId: posModifierGroups
@@ -1693,6 +1695,29 @@ paths:
       responses:
         '200':
           description: Removed
+  /api/v3/admin/pos/hardware_status:
+    get:
+      operationId: posHardwareStatus
+      description: >
+        The hardware checklist of a branch, read from what the server knows:
+        printers whose latest job printed, kitchen stations with a screen or
+        a printer, print stations seen in the last minutes, paired customer
+        displays, the server address and work waiting for the internet, and
+        the e-invoice settings. Needs `read_pos_topology`, or
+        `pos.topology.manage` at the branch.
+      parameters:
+        - $ref: '#/components/parameters/ReportBranch'
+      responses:
+        '200':
+          description: The checklist
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/HardwareStatus'
   /api/v3/admin/pos/kitchen_settings:
     get:
       operationId: posKitchenSettings
@@ -4222,6 +4247,192 @@ components:
         module_enabled:
           type: boolean
           description: Whether `fnb.kitchen` is on at the branch.
+    MenuItemsMeta:
+      type: object
+      additionalProperties: false
+      required: [tax_defaults]
+      properties:
+        tax_defaults:
+          $ref: '#/components/schemas/MenuTaxDefaults'
+    MenuTaxDefaults:
+      type: object
+      additionalProperties: false
+      required: [food, alcohol]
+      description: Tax categories new menu items start with, chosen in the F&B setup step.
+      properties:
+        food:
+          type: string
+          nullable: true
+        alcohol:
+          type: string
+          nullable: true
+    HardwareStatus:
+      type: object
+      additionalProperties: false
+      required: [branch_id, generated_at, checks, printers, stations, devices, customer_displays, server, einvoice]
+      properties:
+        branch_id:
+          type: string
+        generated_at:
+          type: string
+          format: date-time
+        checks:
+          type: array
+          items:
+            $ref: '#/components/schemas/HardwareCheck'
+        printers:
+          type: array
+          items:
+            $ref: '#/components/schemas/HardwarePrinter'
+        stations:
+          type: array
+          items:
+            $ref: '#/components/schemas/HardwareStation'
+        devices:
+          type: array
+          items:
+            $ref: '#/components/schemas/HardwareDevice'
+        customer_displays:
+          $ref: '#/components/schemas/HardwareDisplays'
+        server:
+          $ref: '#/components/schemas/HardwareServer'
+        einvoice:
+          $ref: '#/components/schemas/HardwareEinvoice'
+    HardwareCheck:
+      type: object
+      additionalProperties: false
+      required: [key, status]
+      properties:
+        key:
+          type: string
+          enum: [receipt_printer, kitchen_printer, cup_label_printer, kitchen_stations, print_station, customer_display,
+                 server, einvoice]
+        status:
+          type: string
+          enum: [ok, attention, not_needed]
+          description: >
+            `not_needed` when the branch does not use it (module or feature
+            off, no printer behind a print station, no e-invoices).
+    HardwarePrinter:
+      type: object
+      additionalProperties: false
+      required: [id, name, connection, roles, via_print_station, last_job_status, last_job_kind, last_job_at, last_error]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        connection:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+        via_print_station:
+          type: boolean
+        last_job_status:
+          type: string
+          nullable: true
+          description: queued, claimed, printed, failed or canceled; null before the first job.
+        last_job_kind:
+          type: string
+          nullable: true
+        last_job_at:
+          type: string
+          format: date-time
+          nullable: true
+        last_error:
+          type: string
+          nullable: true
+    HardwareStation:
+      type: object
+      additionalProperties: false
+      required: [id, name, kind, printer_id, kds_devices, ok]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        kind:
+          type: string
+          enum: [prep, bar, expo]
+        printer_id:
+          type: string
+          nullable: true
+          description: Its printer, when that printer is active.
+        kds_devices:
+          type: integer
+          description: Kitchen screens showing it (a screen with no station shows every station).
+        ok:
+          type: boolean
+    HardwareDevice:
+      type: object
+      additionalProperties: false
+      required: [id, name, mode, kitchen_station_id, last_seen_at, online]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        mode:
+          type: string
+          enum: [kds, expo, print_station]
+        kitchen_station_id:
+          type: string
+          nullable: true
+        last_seen_at:
+          type: string
+          format: date-time
+          nullable: true
+        online:
+          type: boolean
+    HardwareDisplays:
+      type: object
+      additionalProperties: false
+      required: [live]
+      properties:
+        live:
+          type: integer
+          description: Customer displays paired and not expired.
+    HardwareServer:
+      type: object
+      additionalProperties: false
+      required: [public_base_url, tls_mode, outbound_pending, outbound_failed, outbound_oldest_pending_age_seconds,
+                 vietqr_last_received_at]
+      properties:
+        public_base_url:
+          type: string
+          nullable: true
+        tls_mode:
+          type: string
+        outbound_pending:
+          type: integer
+        outbound_failed:
+          type: integer
+        outbound_oldest_pending_age_seconds:
+          type: integer
+          nullable: true
+        vietqr_last_received_at:
+          type: string
+          format: date-time
+          nullable: true
+    HardwareEinvoice:
+      type: object
+      additionalProperties: false
+      required: [type, provider, configured, missing_fields]
+      properties:
+        type:
+          type: string
+          enum: [none, cash_register, coded]
+        provider:
+          type: string
+          nullable: true
+        configured:
+          type: boolean
+        missing_fields:
+          type: array
+          items:
+            type: string
     CallBoard:
       type: object
       additionalProperties: false

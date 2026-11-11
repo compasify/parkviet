@@ -183,7 +183,7 @@ export type World = {
   // Store-wide data a module still has (`module_usage`), e.g. tracked SKUs.
   moduleUsage?: Record<string, boolean>;
   // Industry profile of the selected branch (`profile` in the context).
-  profile?: { key: string; version: number; display: { catalog_view?: 'cards' | 'list' } };
+  profile?: { key: string; version: number; display: { catalog_view?: 'cards' | 'list'; surface?: 'catalog' | 'menu_grid' } };
   administration?: { read: boolean; write: boolean };
   // The store's e-invoice (`einvoice_type` in the context); absent on older servers.
   einvoiceType?: 'none' | 'cash_register' | 'coded';

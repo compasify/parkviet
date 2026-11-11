@@ -19,14 +19,16 @@ RSpec.describe Spree::Pos::BusinessProfiles do
   end
 
   describe 'the shipped catalog' do
-    it 'offers 13 retail profiles now and 6 F&B profiles as coming soon, in picker order' do
+    it 'offers 13 retail profiles and the three wave-one F&B profiles now, the other F&B profiles as coming soon' do
       profiles = described_class.all
       expect(described_class.version).to eq(1)
       expect(profiles.size).to eq(19)
       expect(profiles.map(&:order)).to eq((1..19).to_a)
       expect(profiles.select { |item| item.group == 'retail' }.map(&:status)).to all(eq('available'))
-      expect(profiles.select { |item| item.group == 'fnb' }.map(&:status)).to all(eq('coming_soon'))
-      expect(profiles.count(&:available?)).to eq(13)
+      fnb = profiles.select { |item| item.group == 'fnb' }.to_h { |item| [item.key, item.status] }
+      expect(fnb).to eq('quan_an' => 'available', 'cafe_tra_sua' => 'available', 'cang_tin_tram_dung' => 'available',
+                        'karaoke_bida' => 'coming_soon', 'bar_pub_club' => 'coming_soon', 'nha_hang' => 'coming_soon')
+      expect(profiles.count(&:available?)).to eq(16)
       expect(profiles.map(&:key)).to include('tap_hoa_sieu_thi', 'nha_thuoc', 'vat_lieu_xay_dung', 'khac', 'nha_hang')
     end
 
@@ -65,9 +67,27 @@ RSpec.describe Spree::Pos::BusinessProfiles do
                                         include(key: 'fnb.cup_label', status: 'available', depends_on: ['fnb.menu']),
                                         include(key: 'fnb.tables', status: 'planned'))
       expect(data[:profiles].first.keys).
-        to eq(%i[key group order status modules branch_defaults display recommended_features sample_units])
+        to eq(%i[key group order status modules branch_defaults display recommended_features sample_units kitchen_stations])
+      expect(data[:tax_categories].map { |row| row[:code] }).to eq(%w[vat_food vat_special])
+      expect(data[:menu_tax_defaults]).to eq('food' => 'vat_food', 'alcohol' => 'vat_special')
     end
 
+    it 'presets the wave-one F&B profiles as decided' do
+      cafe = described_class.fetch!('cafe_tra_sua')
+      expect(cafe.modules).to include('fnb.menu', 'fnb.kitchen', 'fnb.order_number', 'fnb.cup_label', 'fnb.recipes', 'fnb.delivery_platforms')
+      expect(cafe.recommended_features).to eq(%w[vietqr customer_display])
+      expect(cafe.kitchen_stations).to eq(%w[prep bar])
+      quan_an = described_class.fetch!('quan_an')
+      expect(quan_an.modules).to include('fnb.menu', 'fnb.kitchen', 'fnb.order_number', 'fnb.recipes', 'retail.measured', 'fnb.delivery_platforms')
+      expect(quan_an.recommended_features).to eq(%w[vietqr credit delivery])
+      canteen = described_class.fetch!('cang_tin_tram_dung')
+      expect(canteen.modules).to contain_exactly('fnb.menu', 'fnb.kitchen', 'fnb.order_number', 'retail.units')
+      expect(canteen.kitchen_stations).to eq(['prep'])
+      [cafe, quan_an, canteen].each do |item|
+        expect(item.display).to eq('surface' => 'menu_grid')
+        expect(item.branch_defaults).to eq('kitchen_send_trigger' => 'on_complete')
+      end
+    end
     it 'refuses an unknown profile' do
       expect { described_class.fetch!('teleport') }.to raise_error(Spree::Pos::Conflict) { |error| expect(error.reason).to eq('profile_unknown') }
     end
@@ -115,8 +135,31 @@ RSpec.describe Spree::Pos::BusinessProfiles do
                                         'nha_thuoc.display.catalog_view: "grid" must be one of cards, list.')
     end
 
-    it 'names a duplicate order and a bad version' do
-      errors = described_class.errors_for(catalog({ 'nha_thuoc' => profile, 'my_pham' => profile }, version: 0))
+    it 'checks the selling surface and the module it needs' do
+      expect(errors_of('nha_thuoc' => profile(display: { 'surface' => 'menu_grid' }))).
+        to eq(['nha_thuoc.display.surface: menu_grid needs fnb.menu.'])
+      expect(errors_of('nha_thuoc' => profile(display: { 'surface' => 'floor_plan' }))).
+        to eq(['nha_thuoc.display.surface: "floor_plan" must be one of catalog, menu_grid.'])
+      expect(errors_of('nha_thuoc' => profile(display: { 'surface' => 'catalog', 'catalog_view' => 'cards' }))).to eq([])
+      expect(errors_of('quan_an' => profile(group: 'fnb', modules: ['fnb.menu'], display: { 'surface' => 'menu_grid' }))).to eq([])
+    end
+
+    it 'checks the kitchen send trigger default' do
+      expect(errors_of('quan_an' => profile(branch_defaults: { 'kitchen_send_trigger' => 'manual' }))).to eq([])
+      expect(errors_of('quan_an' => profile(branch_defaults: { 'kitchen_send_trigger' => 'later' }))).
+        to eq(['quan_an.branch_defaults.kitchen_send_trigger: "later" must be one of on_complete, manual.'])
+    end
+
+    it 'checks the proposed kitchen stations' do
+      kitchen = %w[fnb.menu fnb.kitchen]
+      expect(errors_of('quan_an' => profile(modules: kitchen, kitchen_stations: %w[prep bar]))).to eq([])
+      expect(errors_of('quan_an' => profile(modules: kitchen, kitchen_stations: %w[prep expo prep]))).
+        to contain_exactly('quan_an.kitchen_stations: "expo" must be one of prep, bar.',
+                           'quan_an.kitchen_stations: lists a kind more than once.')
+      expect(errors_of('quan_an' => profile(kitchen_stations: ['prep']))).to eq(['quan_an.kitchen_stations: needs fnb.kitchen.'])
+    end
+
+    it 'names a duplicate order and a bad version' do      errors = described_class.errors_for(catalog({ 'nha_thuoc' => profile, 'my_pham' => profile }, version: 0))
       expect(errors).to contain_exactly('version: must be a positive integer.', 'profiles: order 1 is used 2 times.')
     end
 
@@ -130,7 +173,8 @@ RSpec.describe Spree::Pos::BusinessProfiles do
       expect(built.profiles.first.status).to eq('coming_soon')
     end
 
-    it 'keeps an F&B profile coming soon while its group is not open, even with every module available' do
+    it 'keeps an F&B profile coming soon while its group is closed, even with every module available' do
+      stub_const('Spree::Pos::BusinessProfiles::OPEN_GROUPS', %w[retail])
       built = described_class.build(catalog({ 'quan_an' => profile(group: 'fnb', modules: %w[fnb.menu fnb.order_number]) }))
       expect(built.profiles.first.status).to eq('coming_soon')
     end

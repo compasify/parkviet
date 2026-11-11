@@ -1,5 +1,6 @@
 import { formatMoney } from '@parkviet/pos-shared/money';
 import { contextFeature } from '@parkviet/pos-shared/pos-features';
+import { sellingSurfaceOf } from '@parkviet/pos-shared/pos-modules';
 import { rateLabel } from '@parkviet/pos-shared/receipt-template/data';
 import { describeTraceFailure } from '@parkviet/pos-shared/traceability';
 import { useNavigate, useSearch } from '@tanstack/react-router';
@@ -175,8 +176,8 @@ export function WorkspaceTabs() {
   const quickAddDisabled =
     channelUnavailable || !editable || creating || (active ? active.id in blockedScans : false);
   const lockReason = active?.payments ? t('editLockedPayments') : undefined;
-  // A branch running the menu sells from picture tiles; others search the catalogue.
-  const menuSurface = data?.modules?.['fnb.menu'] === true;
+  // A branch running the menu sells from picture tiles unless its profile asks for the catalogue.
+  const menuSurface = sellingSurfaceOf(data) === 'menu_grid';
   const menu = useMenu(selection.branchId, menuSurface);
   // Counter service: call numbers per business day and cup labels.
   const callNumbers = data?.modules?.['fnb.order_number'] === true;

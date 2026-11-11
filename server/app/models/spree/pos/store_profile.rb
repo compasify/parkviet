@@ -21,6 +21,9 @@ module Spree
 
       belongs_to :store, class_name: 'Spree::Store'
       belongs_to :changed_by, class_name: staff_class_name, optional: true
+      # What new menu items are taxed at (Menu::Save), chosen in the F&B setup step.
+      belongs_to :food_tax_category, class_name: 'Spree::TaxCategory', optional: true
+      belongs_to :alcohol_tax_category, class_name: 'Spree::TaxCategory', optional: true
 
       validates :store_id, uniqueness: true
       validates :profile_key, format: { with: Branch::PROFILE_KEY_FORMAT }
@@ -34,7 +37,12 @@ module Spree
       def to_pos
         { id: prefixed_id, profile_key: profile_key, profile_version: profile_version, wholesale: wholesale,
           interests: Array(interests), onboarded_at: onboarded_at&.iso8601, changed_by_id: changed_by&.prefixed_id,
-          changed_by_name: StaffName.call(changed_by), updated_at: updated_at&.iso8601 }
+          changed_by_name: StaffName.call(changed_by), updated_at: updated_at&.iso8601,
+          tax_defaults: tax_defaults }
+      end
+
+      def tax_defaults
+        { food: food_tax_category&.prefixed_id, alcohol: alcohol_tax_category&.prefixed_id }
       end
 
       private

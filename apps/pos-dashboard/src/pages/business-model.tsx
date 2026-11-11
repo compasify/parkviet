@@ -17,6 +17,7 @@ import type { PosBranch } from '@parkviet/pos-shared/types/pos-context'
 import { useStore } from '@spree/dashboard-core'
 import { Button, Input, Label } from '@spree/dashboard-ui'
 import { useMutation } from '@tanstack/react-query'
+import { Link } from '@tanstack/react-router'
 import { type FormEvent, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ProfileDiff } from '../components/profile-diff'
@@ -152,6 +153,17 @@ export function BranchBusinessModel({
         ) : (
           <p>{t('businessModel.profileUnknown')}</p>
         )}
+        {storeId ? (
+          <p className="text-sm">
+            <Link
+              to={`/${storeId}/branches/${branch.id}/hardware` as string}
+              className="underline"
+              data-testid="business-model-hardware"
+            >
+              {t('businessModel.hardwareLink')}
+            </Link>
+          </p>
+        ) : null}
         {storeWrite && catalogue.data ? (
           <ChangeProfile branch={branch} profiles={profiles} />
         ) : null}

@@ -9,12 +9,15 @@ part of 'pos_menu_items200_response.dart';
 class _$PosMenuItems200Response extends PosMenuItems200Response {
   @override
   final BuiltList<MenuItemConfig> data;
+  @override
+  final MenuItemsMeta meta;
 
   factory _$PosMenuItems200Response(
           [void Function(PosMenuItems200ResponseBuilder)? updates]) =>
       (PosMenuItems200ResponseBuilder()..update(updates))._build();
 
-  _$PosMenuItems200Response._({required this.data}) : super._();
+  _$PosMenuItems200Response._({required this.data, required this.meta})
+      : super._();
   @override
   PosMenuItems200Response rebuild(
           void Function(PosMenuItems200ResponseBuilder) updates) =>
@@ -27,13 +30,16 @@ class _$PosMenuItems200Response extends PosMenuItems200Response {
   @override
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
-    return other is PosMenuItems200Response && data == other.data;
+    return other is PosMenuItems200Response &&
+        data == other.data &&
+        meta == other.meta;
   }
 
   @override
   int get hashCode {
     var _$hash = 0;
     _$hash = $jc(_$hash, data.hashCode);
+    _$hash = $jc(_$hash, meta.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -41,7 +47,8 @@ class _$PosMenuItems200Response extends PosMenuItems200Response {
   @override
   String toString() {
     return (newBuiltValueToStringHelper(r'PosMenuItems200Response')
-          ..add('data', data))
+          ..add('data', data)
+          ..add('meta', meta))
         .toString();
   }
 }
@@ -56,6 +63,10 @@ class PosMenuItems200ResponseBuilder
       _$this._data ??= ListBuilder<MenuItemConfig>();
   set data(ListBuilder<MenuItemConfig>? data) => _$this._data = data;
 
+  MenuItemsMetaBuilder? _meta;
+  MenuItemsMetaBuilder get meta => _$this._meta ??= MenuItemsMetaBuilder();
+  set meta(MenuItemsMetaBuilder? meta) => _$this._meta = meta;
+
   PosMenuItems200ResponseBuilder() {
     PosMenuItems200Response._defaults(this);
   }
@@ -64,6 +75,7 @@ class PosMenuItems200ResponseBuilder
     final $v = _$v;
     if ($v != null) {
       _data = $v.data.toBuilder();
+      _meta = $v.meta.toBuilder();
       _$v = null;
     }
     return this;
@@ -88,12 +100,15 @@ class PosMenuItems200ResponseBuilder
       _$result = _$v ??
           _$PosMenuItems200Response._(
             data: data.build(),
+            meta: meta.build(),
           );
     } catch (_) {
       late String _$failedField;
       try {
         _$failedField = 'data';
         data.build();
+        _$failedField = 'meta';
+        meta.build();
       } catch (e) {
         throw BuiltValueNestedFieldError(
             r'PosMenuItems200Response', _$failedField, e.toString());

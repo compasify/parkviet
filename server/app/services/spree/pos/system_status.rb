@@ -28,17 +28,40 @@ module Spree
         }
       end
 
+      # server, outbound and vietqr are also read by HardwareStatus.
+      def server
+        config = Parkviet::PosPublicUrl.configuration(env)
+        { public_base_url: config.base_url, tls_mode: config.tls_mode || 'unset' }
+      end
+
+      # The outbox is the queue for work that leaves this server (e-invoices,
+      # platform orders). It keeps filling while the internet is down and
+      # drains when it is back; selling never waits on it.
+      def outbound
+        rows = OutboxEntry.for_store(store)
+        pending = rows.where(status: %w[pending processing])
+        { pending: pending.count, failed: rows.where(status: 'failed').count,
+          oldest_pending_age_seconds: age(pending.minimum(:available_at)) }
+      end
+
+      # Bank notifications arrive from the internet (a tunnel on a shop
+      # server). The last arrival shows whether that path still works.
+      # Events link to a store only through their payment method; events
+      # rejected or unmatched before one was resolved belong to no store and
+      # count everywhere, as in the VietQR webhook events list.
+      def vietqr
+        events = SpreeVietqr::WebhookEvent
+        method_ids = Spree::PaymentMethod::Vietqr.where(store_id: store.id).select(:id)
+        events = events.where(payment_method_id: method_ids).or(events.where(payment_method_id: nil))
+        { last_received_at: events.maximum(:created_at)&.iso8601, unmatched: events.unmatched.count }
+      end
+
       private
 
       attr_reader :store, :now, :env
 
       def version
         { app: env['PARKVIET_VERSION'].presence || 'development', spree: Spree.version, rails: Rails.version }
-      end
-
-      def server
-        config = Parkviet::PosPublicUrl.configuration(env)
-        { public_base_url: config.base_url, tls_mode: config.tls_mode || 'unset' }
       end
 
       def database
@@ -107,28 +130,6 @@ module Spree
           failed_last_24h: prints.where(status: 'failed', updated_at: (now - FAILED_PRINT_WINDOW)..).count,
           failed_window_hours: FAILED_PRINT_WINDOW.in_hours.to_i
         }
-      end
-
-      # The outbox is the queue for work that leaves this server (e-invoices,
-      # platform orders). It keeps filling while the internet is down and
-      # drains when it is back; selling never waits on it.
-      def outbound
-        rows = OutboxEntry.for_store(store)
-        pending = rows.where(status: %w[pending processing])
-        { pending: pending.count, failed: rows.where(status: 'failed').count,
-          oldest_pending_age_seconds: age(pending.minimum(:available_at)) }
-      end
-
-      # Bank notifications arrive from the internet (a tunnel on a shop
-      # server). The last arrival shows whether that path still works.
-      # Events link to a store only through their payment method; events
-      # rejected or unmatched before one was resolved belong to no store and
-      # count everywhere, as in the VietQR webhook events list.
-      def vietqr
-        events = SpreeVietqr::WebhookEvent
-        method_ids = Spree::PaymentMethod::Vietqr.where(store_id: store.id).select(:id)
-        events = events.where(payment_method_id: method_ids).or(events.where(payment_method_id: nil))
-        { last_received_at: events.maximum(:created_at)&.iso8601, unmatched: events.unmatched.count }
       end
 
       def backup

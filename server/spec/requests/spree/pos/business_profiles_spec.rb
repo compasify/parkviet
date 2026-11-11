@@ -38,14 +38,18 @@ RSpec.describe 'POS business profiles', type: :request do
       expect(response).to have_http_status(:ok)
       expect(data['version']).to eq(1)
       expect(data['profiles'].size).to eq(19)
-      expect(data['profiles'].map { |row| row['status'] }.tally).to eq('available' => 13, 'coming_soon' => 6)
-      expect(data['profiles'].select { |row| row['group'] == 'fnb' }.map { |row| row['status'] }).to all(eq('coming_soon'))
+      expect(data['profiles'].map { |row| row['status'] }.tally).to eq('available' => 16, 'coming_soon' => 3)
+      expect(data['profiles'].select { |row| row['status'] == 'coming_soon' }.pluck('key')).to contain_exactly('karaoke_bida', 'bar_pub_club', 'nha_hang')
+      cafe = data['profiles'].find { |row| row['key'] == 'cafe_tra_sua' }
+      expect(cafe).to include('display' => { 'surface' => 'menu_grid' }, 'branch_defaults' => { 'kitchen_send_trigger' => 'on_complete' },
+                              'kitchen_stations' => %w[prep bar])
+      expect(data['tax_categories'].pluck('code')).to eq(%w[vat_food vat_special])
       pharmacy = data['profiles'].find { |row| row['key'] == 'nha_thuoc' }
       expect(pharmacy).to eq(
         'key' => 'nha_thuoc', 'group' => 'retail', 'order' => 6, 'status' => 'available',
         'modules' => %w[retail.units retail.traceability], 'branch_defaults' => { 'return_window_days' => 7, 'lot_selection' => 'fefo' },
         'display' => { 'catalog_view' => 'list' }, 'recommended_features' => %w[traceability returns refunds],
-        'sample_units' => %w[vien vi hop chai]
+        'sample_units' => %w[vien vi hop chai], 'kitchen_stations' => []
       )
       expect(data['modules']).to include(
         { 'key' => 'retail.measured', 'group' => 'retail', 'status' => 'available', 'depends_on' => ['retail.units'] },
@@ -74,11 +78,11 @@ RSpec.describe 'POS business profiles', type: :request do
       expect(response.body).not_to include(foreign.prefixed_id)
 
       writer = staff_with(%w[write_pos_topology])
-      own = Spree::Pos::StoreProfile.create!(store: store, profile_key: 'nha_thuoc', interests: ['cafe_tra_sua'],
+      own = Spree::Pos::StoreProfile.create!(store: store, profile_key: 'nha_thuoc', interests: ['karaoke_bida'],
                                              onboarded_at: Time.current, changed_by: writer)
       data = get_pos(writer, 'store_profile')['data']
       expect(data).to include('id' => own.prefixed_id, 'profile_key' => 'nha_thuoc', 'profile_version' => 1, 'wholesale' => false,
-                              'interests' => ['cafe_tra_sua'], 'changed_by_id' => writer.prefixed_id)
+                              'interests' => ['karaoke_bida'], 'changed_by_id' => writer.prefixed_id)
       expect(data['onboarded_at']).to be_present
       expect(get_pos(reader, 'store_profile').dig('data', 'id')).to eq(own.prefixed_id)
     end

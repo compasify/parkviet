@@ -120,8 +120,26 @@ export function SetupPreviewStep({
           ) : null}
         </div>
         <p className="text-sm text-muted-foreground">
-          {t(profile.display.catalog_view === 'list' ? 'setup.viewList' : 'setup.viewCards')}
+          {t(
+            profile.display.surface === 'menu_grid' && profile.modules.includes('fnb.menu')
+              ? 'setup.viewMenuGrid'
+              : profile.display.catalog_view === 'list'
+                ? 'setup.viewList'
+                : 'setup.viewCards',
+          )}
         </p>
+        {profile.modules.includes('fnb.kitchen') ? (
+          <p className="text-sm text-muted-foreground">
+            {t('setup.previewKitchen', {
+              trigger: t(
+                `setup.shopTrigger_${profile.branch_defaults.kitchen_send_trigger === 'manual' ? 'manual' : 'on_complete'}`,
+              ),
+              stations: profile.kitchen_stations
+                .map((kind) => t(`setup.shopStation_${kind}`))
+                .join(', '),
+            })}
+          </p>
+        ) : null}
       </section>
       <section aria-labelledby="setup-units-heading">
         <h3 id="setup-units-heading" className="font-semibold">

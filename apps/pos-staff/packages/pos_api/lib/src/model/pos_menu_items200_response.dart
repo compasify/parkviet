@@ -5,6 +5,7 @@
 // ignore_for_file: unused_element
 import 'package:pos_api/src/model/menu_item_config.dart';
 import 'package:built_collection/built_collection.dart';
+import 'package:pos_api/src/model/menu_items_meta.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
 
@@ -14,11 +15,15 @@ part 'pos_menu_items200_response.g.dart';
 ///
 /// Properties:
 /// * [data]
+/// * [meta]
 @BuiltValue()
 abstract class PosMenuItems200Response
     implements Built<PosMenuItems200Response, PosMenuItems200ResponseBuilder> {
   @BuiltValueField(wireName: r'data')
   BuiltList<MenuItemConfig> get data;
+
+  @BuiltValueField(wireName: r'meta')
+  MenuItemsMeta get meta;
 
   PosMenuItems200Response._();
 
@@ -55,6 +60,11 @@ class _$PosMenuItems200ResponseSerializer
       object.data,
       specifiedType: const FullType(BuiltList, [FullType(MenuItemConfig)]),
     );
+    yield r'meta';
+    yield serializers.serialize(
+      object.meta,
+      specifiedType: const FullType(MenuItemsMeta),
+    );
   }
 
   @override
@@ -87,6 +97,13 @@ class _$PosMenuItems200ResponseSerializer
                 const FullType(BuiltList, [FullType(MenuItemConfig)]),
           ) as BuiltList<MenuItemConfig>;
           result.data.replace(valueDes);
+          break;
+        case r'meta':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(MenuItemsMeta),
+          ) as MenuItemsMeta;
+          result.meta.replace(valueDes);
           break;
         default:
           unhandled.add(key);

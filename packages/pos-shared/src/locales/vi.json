@@ -207,6 +207,30 @@
       "description": "Công thức cho từng size và tùy chọn, trừ nguyên liệu khỏi kho khi hoàn tất đơn, cảnh báo sắp hết và lãi gộp theo món.",
       "off": "Chi nhánh chưa bật chức năng Công thức, nên đơn hoàn tất không trừ nguyên liệu và không đặt được ngưỡng cảnh báo. Món vẫn bán bình thường.",
       "disabled": "Chi nhánh chưa bật chức năng Công thức; máy chủ không ghi nhận công thức hay ngưỡng cảnh báo. Việc bán hàng không bị ảnh hưởng."
+    },
+    "fnb_kitchen": {
+      "label": "Bếp và bar",
+      "description": "Gửi món tới trạm bếp, bar; màn hình bếp (KDS) và phiếu in bếp.",
+      "off": "Chi nhánh chưa bật chức năng Bếp và bar, nên đơn không gửi tới bếp và không thêm được trạm mới. Món vẫn bán bình thường.",
+      "disabled": "Chi nhánh chưa bật chức năng Bếp và bar; máy chủ không ghi nhận trạm hay tuyến mới. Việc bán hàng không bị ảnh hưởng."
+    },
+    "fnb_order_number": {
+      "label": "Số gọi",
+      "description": "Mỗi đơn có số gọi 1, 2, 3… theo ngày kinh doanh, in trên hóa đơn và hiện ở màn gọi số.",
+      "off": "Chi nhánh chưa bật chức năng Số gọi, nên đơn mới không có số gọi.",
+      "disabled": "Chi nhánh chưa bật chức năng Số gọi; máy chủ không cấp số gọi. Việc bán hàng không bị ảnh hưởng."
+    },
+    "fnb_cup_label": {
+      "label": "Tem ly",
+      "description": "In một tem cho mỗi ly: số gọi, món, tùy chọn, ghi chú và tên khách.",
+      "off": "Chi nhánh chưa bật chức năng Tem ly, nên không in tem cho món.",
+      "disabled": "Chi nhánh chưa bật chức năng Tem ly; máy chủ không in tem. Việc bán hàng không bị ảnh hưởng."
+    },
+    "fnb_delivery_platforms": {
+      "label": "Đơn Grab, Shopee",
+      "description": "Nhập tay đơn GrabFood, ShopeeFood, gửi bếp, theo dõi và đối soát tiền nền tảng trả.",
+      "off": "Chi nhánh chưa bật chức năng Đơn Grab, Shopee, nên không nhập được đơn nền tảng.",
+      "disabled": "Chi nhánh chưa bật chức năng Đơn Grab, Shopee; máy chủ không nhận đơn nền tảng. Việc bán hàng không bị ảnh hưởng."
     }
   },
   "profiles": {
@@ -288,7 +312,7 @@
     }
   },
   "setup": {
-    "problem_profile": "Chọn một ngành bán lẻ.",
+    "problem_profile": "Chọn một ngành POS đang hỗ trợ.",
     "problem_name": "Nhập tên chi nhánh.",
     "problem_code": "Mã chi nhánh chỉ gồm chữ thường a-z, số, gạch ngang hoặc gạch dưới, tối đa 32 ký tự.",
     "problem_timezone": "Nhập múi giờ.",
@@ -318,7 +342,10 @@
       "bo": "Bộ",
       "bo_hoa": "Bó",
       "gio": "Giỏ"
-    }
+    },
+    "problem_station-name": "Đặt tên cho mỗi khu bếp, tối đa 80 ký tự.",
+    "problem_station-duplicate": "Hai khu bếp không được trùng tên.",
+    "problem_tax": "Chọn thuế suất cho món ăn và cho đồ uống có cồn."
   },
   "receiptPlatform": "Nền tảng giao hàng",
   "receiptVietqr": "Chuyển khoản VietQR",

@@ -15,6 +15,7 @@ import {
   normalizeProfile,
   profileDescriptionKey,
   profileLabelKey,
+  sellingSurfaceOf,
 } from './pos-modules';
 import { describeFailure, moduleDisabledText } from './request-failure';
 import { describeInventoryFailure, describeTraceFailure } from './traceability';
@@ -181,16 +182,54 @@ describe('business profile catalogue', () => {
       recommended_features: [],
       sample_units: ['pack'],
     });
-    expect(catalog.profiles[2]).toMatchObject({ status: 'coming_soon', display: {} });
+    expect(catalog.profiles[2]).toMatchObject({
+      status: 'coming_soon',
+      display: {},
+      kitchen_stations: [],
+    });
+  });
+
+  it('reads the selling surface, the proposed stations and the tax choices', () => {
+    const catalog = normalizeBusinessProfiles({
+      profiles: [
+        {
+          key: 'cafe_tra_sua',
+          display: { surface: 'menu_grid', catalog_view: 'tiles' },
+          kitchen_stations: ['prep', 'bar', 3],
+        },
+      ],
+      tax_categories: [{ code: 'vat_food', rate: '0.08' }, { code: 7 }],
+      menu_tax_defaults: { food: 'vat_food', alcohol: 'vat_special', other: 1 },
+    });
+    expect(catalog.profiles[0]).toMatchObject({
+      display: { surface: 'menu_grid' },
+      kitchen_stations: ['prep', 'bar'],
+    });
+    expect(catalog.tax_categories).toEqual([{ code: 'vat_food', rate: '0.08' }]);
+    expect(catalog.menu_tax_defaults).toEqual({ food: 'vat_food', alcohol: 'vat_special' });
+  });
+
+  it('sells from the menu only with fnb.menu on and no catalogue preference', () => {
+    const profile = (surface?: string) => normalizeProfile({ key: 'p', display: { surface } });
+    const on = { 'fnb.menu': true };
+    expect(sellingSurfaceOf({ modules: on, profile: profile('menu_grid') })).toBe('menu_grid');
+    expect(sellingSurfaceOf({ modules: on, profile: profile() })).toBe('menu_grid');
+    expect(sellingSurfaceOf({ modules: on, profile: profile('catalog') })).toBe('catalog');
+    expect(sellingSurfaceOf({ modules: {}, profile: profile('menu_grid') })).toBe('catalog');
+    expect(sellingSurfaceOf({ modules: null, profile: profile('menu_grid') })).toBe('catalog');
+    expect(sellingSurfaceOf(undefined)).toBe('catalog');
   });
 
   it('reads an empty catalogue from anything else', () => {
-    expect(normalizeBusinessProfiles(undefined)).toEqual({
+    const empty = {
       version: null,
       modules: [],
       profiles: [],
-    });
-    expect(normalizeBusinessProfiles([])).toEqual({ version: null, modules: [], profiles: [] });
+      tax_categories: [],
+      menu_tax_defaults: {},
+    };
+    expect(normalizeBusinessProfiles(undefined)).toEqual(empty);
+    expect(normalizeBusinessProfiles([])).toEqual(empty);
   });
 });
 

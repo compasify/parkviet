@@ -50,6 +50,14 @@ import 'package:pos_api/src/model/einvoice_totals_taxes_inner.dart';
 import 'package:pos_api/src/model/error_response.dart';
 import 'package:pos_api/src/model/error_response_error.dart';
 import 'package:pos_api/src/model/error_response_error_details.dart';
+import 'package:pos_api/src/model/hardware_check.dart';
+import 'package:pos_api/src/model/hardware_device.dart';
+import 'package:pos_api/src/model/hardware_displays.dart';
+import 'package:pos_api/src/model/hardware_einvoice.dart';
+import 'package:pos_api/src/model/hardware_printer.dart';
+import 'package:pos_api/src/model/hardware_server.dart';
+import 'package:pos_api/src/model/hardware_station.dart';
+import 'package:pos_api/src/model/hardware_status.dart';
 import 'package:pos_api/src/model/ingredient_usage_row.dart';
 import 'package:pos_api/src/model/kitchen_board.dart';
 import 'package:pos_api/src/model/kitchen_board_result.dart';
@@ -75,8 +83,10 @@ import 'package:pos_api/src/model/menu_item.dart';
 import 'package:pos_api/src/model/menu_item_all_of_variants.dart';
 import 'package:pos_api/src/model/menu_item_config.dart';
 import 'package:pos_api/src/model/menu_item_config_components_inner.dart';
+import 'package:pos_api/src/model/menu_items_meta.dart';
 import 'package:pos_api/src/model/menu_margin_row.dart';
 import 'package:pos_api/src/model/menu_schedules_inner.dart';
+import 'package:pos_api/src/model/menu_tax_defaults.dart';
 import 'package:pos_api/src/model/modifier_group.dart';
 import 'package:pos_api/src/model/modifier_group_options_inner.dart';
 import 'package:pos_api/src/model/modifier_selection.dart';
@@ -127,6 +137,7 @@ import 'package:pos_api/src/model/pos_einvoice_settings200_response.dart';
 import 'package:pos_api/src/model/pos_einvoice_settings_save_request.dart';
 import 'package:pos_api/src/model/pos_einvoice_summary200_response.dart';
 import 'package:pos_api/src/model/pos_einvoices200_response.dart';
+import 'package:pos_api/src/model/pos_hardware_status200_response.dart';
 import 'package:pos_api/src/model/pos_kitchen_orders200_response.dart';
 import 'package:pos_api/src/model/pos_kitchen_send201_response.dart';
 import 'package:pos_api/src/model/pos_kitchen_send201_response_meta.dart';
@@ -269,6 +280,14 @@ part 'serializers.g.dart';
   ErrorResponse,
   ErrorResponseError,
   ErrorResponseErrorDetails,
+  HardwareCheck,
+  HardwareDevice,
+  HardwareDisplays,
+  HardwareEinvoice,
+  HardwarePrinter,
+  HardwareServer,
+  HardwareStation,
+  HardwareStatus,
   IngredientUsageRow,
   KitchenBoard,
   KitchenBoardResult,
@@ -296,8 +315,10 @@ part 'serializers.g.dart';
   MenuItemConfig,
   $MenuItemConfig,
   MenuItemConfigComponentsInner,
+  MenuItemsMeta,
   MenuMarginRow,
   MenuSchedulesInner,
+  MenuTaxDefaults,
   ModifierGroup,
   ModifierGroupOptionsInner,
   ModifierSelection,
@@ -348,6 +369,7 @@ part 'serializers.g.dart';
   PosEinvoiceSettingsSaveRequest,
   PosEinvoiceSummary200Response,
   PosEinvoices200Response,
+  PosHardwareStatus200Response,
   PosKitchenOrders200Response,
   PosKitchenSend201Response,
   PosKitchenSend201ResponseMeta,
@@ -532,6 +554,10 @@ Serializers serializers = (_$serializers.toBuilder()
         () => ListBuilder<PosRecipeSaveRequestIngredientsInner>(),
       )
       ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(HardwareStation)]),
+        () => ListBuilder<HardwareStation>(),
+      )
+      ..addBuilderFactory(
         const FullType(BuiltList, [FullType(PlatformReportRow)]),
         () => ListBuilder<PlatformReportRow>(),
       )
@@ -616,8 +642,20 @@ Serializers serializers = (_$serializers.toBuilder()
         () => ListBuilder<Einvoice>(),
       )
       ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(HardwareDevice)]),
+        () => ListBuilder<HardwareDevice>(),
+      )
+      ..addBuilderFactory(
         const FullType(BuiltList, [FullType(KitchenTicketItemModifiersInner)]),
         () => ListBuilder<KitchenTicketItemModifiersInner>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(HardwarePrinter)]),
+        () => ListBuilder<HardwarePrinter>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(HardwareCheck)]),
+        () => ListBuilder<HardwareCheck>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(KitchenTicket)]),

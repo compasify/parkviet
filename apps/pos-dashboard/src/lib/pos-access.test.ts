@@ -86,6 +86,7 @@ describe('POS permission gates', () => {
       'printing',
       'kitchen',
       'platforms',
+      'hardware',
     ])
     const manager = {
       permissionKeys: [],
@@ -94,7 +95,7 @@ describe('POS permission gates', () => {
         capabilities: ['pos.topology.manage'],
       } as PosContext,
     }
-    expect(tabs(manager)).toEqual(['overview', 'features', 'platforms'])
+    expect(tabs(manager)).toEqual(['overview', 'features', 'platforms', 'hardware'])
     expect(routeAllowed('branch', manager)).toBe(true)
     expect(visibleNav('branch', manager)).toBe(true)
     expect(visibleNav('branch', { permissionKeys: ['read_pos_topology'] })).toBe(false)

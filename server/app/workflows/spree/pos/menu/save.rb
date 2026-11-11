@@ -35,7 +35,11 @@ module Spree
             record.assign_attributes(attributes.slice(*ITEM_FIELDS))
             record.kitchen_category = record.kitchen_category.presence
             record.menu_category = category!(store, attributes['menu_category_id']) if attributes.key?('menu_category_id')
-            assign_tax_category!(store, record.product, attributes['tax_category_id']) if attributes.key?('tax_category_id')
+            if attributes.key?('tax_category_id')
+              assign_tax_category!(store, record.product, attributes['tax_category_id'])
+            elsif record.new_record? && record.product.tax_category_id.nil?
+              default_tax_category!(store, record.product)
+            end
             new_item = record.new_record?
             record.save!
             replace_groups!(store, record, attributes['modifier_group_ids']) if attributes.key?('modifier_group_ids')
@@ -141,6 +145,13 @@ module Spree
           end
 
           product.update!(tax_category: category)
+        end
+
+        # A new item whose product has no tax category takes the store's
+        # food default from the F&B setup, if there is one.
+        def default_tax_category!(store, product)
+          category_id = StoreProfile.for_store(store).pick(:food_tax_category_id)
+          product.update!(tax_category_id: category_id) if category_id
         end
 
         def assign_branches!(store, product)

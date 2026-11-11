@@ -10,21 +10,25 @@
 # and `profiles.<key>.description`.
 #
 # `status` is computed: available when every module is available and the
-# group is open (BusinessProfiles::OPEN_GROUPS; F&B is not open yet),
-# otherwise coming_soon.
+# group is open (BusinessProfiles::OPEN_GROUPS), otherwise coming_soon.
 #
 # Fields
 #   group                 retail | fnb
 #   order                 position in the picker, unique
 #   modules               keys registered in config/initializers/pos_modules.rb
 #   branch_defaults       return_window_days | lot_selection | variance_threshold |
-#                         adjustment_approval_threshold, valid for Spree::Pos::Branch.
+#                         adjustment_approval_threshold | kitchen_send_trigger,
+#                         valid for Spree::Pos::Branch.
 #                         A field left out means the profile has no opinion: a new
 #                         branch keeps the column default (returns off,
 #                         lot_selection fefo) and a profile change proposes nothing.
 #   display               catalog_view: cards | list
+#                         surface: catalog | menu_grid, the selling screen
+#                         (menu_grid needs fnb.menu)
 #   recommended_features  Spree::Pos::FeatureFlag::FEATURES
 #   sample_units          default unit codes or codes in config/pos/sample_units.yml
+#   kitchen_stations      station kinds (prep | bar) the F&B setup step proposes;
+#                         needs fnb.kitchen. Clients name them by kind.
 #
 # Bump `version` when a change to a profile should be offered to branches
 # already set up with it.
@@ -147,23 +151,27 @@ profiles:
     recommended_features: []
     sample_units: []
 
+  # Pay first, then eat. Seafood sold by weight needs retail.measured;
+  # recipes and measured selling both need retail.units.
   quan_an:
     group: fnb
     order: 14
-    modules: [fnb.menu, fnb.kitchen, fnb.order_number]
-    branch_defaults: {}
-    display: {}
-    recommended_features: []
+    modules: [retail.units, retail.measured, fnb.menu, fnb.kitchen, fnb.order_number, fnb.recipes, fnb.delivery_platforms]
+    branch_defaults: { kitchen_send_trigger: on_complete }
+    display: { surface: menu_grid }
+    recommended_features: [vietqr, credit, delivery]
     sample_units: []
+    kitchen_stations: [prep, bar]
 
   cafe_tra_sua:
     group: fnb
     order: 15
-    modules: [fnb.menu, fnb.kitchen, fnb.order_number]
-    branch_defaults: {}
-    display: {}
-    recommended_features: []
+    modules: [retail.units, fnb.menu, fnb.kitchen, fnb.order_number, fnb.cup_label, fnb.recipes, fnb.delivery_platforms]
+    branch_defaults: { kitchen_send_trigger: on_complete }
+    display: { surface: menu_grid }
+    recommended_features: [vietqr, customer_display]
     sample_units: []
+    kitchen_stations: [prep, bar]
 
   karaoke_bida:
     group: fnb
@@ -187,10 +195,11 @@ profiles:
     group: fnb
     order: 18
     modules: [fnb.menu, fnb.kitchen, fnb.order_number, retail.units]
-    branch_defaults: {}
-    display: {}
-    recommended_features: []
+    branch_defaults: { kitchen_send_trigger: on_complete }
+    display: { surface: menu_grid }
+    recommended_features: [vietqr, customer_display]
     sample_units: []
+    kitchen_stations: [prep]
 
   nha_hang:
     group: fnb

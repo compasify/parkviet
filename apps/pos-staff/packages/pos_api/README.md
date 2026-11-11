@@ -98,6 +98,7 @@ Class | Method | HTTP request | Description
 [*DefaultApi*](doc/DefaultApi.md) | [**posEinvoiceSettingsSave**](doc/DefaultApi.md#poseinvoicesettingssave) | **PUT** /api/v3/admin/pos/einvoice_settings | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posEinvoiceSummary**](doc/DefaultApi.md#poseinvoicesummary) | **GET** /api/v3/admin/pos/einvoices/summary | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posEinvoices**](doc/DefaultApi.md#poseinvoices) | **GET** /api/v3/admin/pos/einvoices | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posHardwareStatus**](doc/DefaultApi.md#poshardwarestatus) | **GET** /api/v3/admin/pos/hardware_status | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posKitchenBoard**](doc/DefaultApi.md#poskitchenboard) | **GET** /api/v3/admin/pos/kitchen/board | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posKitchenItemReady**](doc/DefaultApi.md#poskitchenitemready) | **POST** /api/v3/admin/pos/kitchen/items/{id}/ready | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posKitchenItemRecall**](doc/DefaultApi.md#poskitchenitemrecall) | **POST** /api/v3/admin/pos/kitchen/items/{id}/recall | 
@@ -198,6 +199,14 @@ Class | Method | HTTP request | Description
  - [ErrorResponse](doc/ErrorResponse.md)
  - [ErrorResponseError](doc/ErrorResponseError.md)
  - [ErrorResponseErrorDetails](doc/ErrorResponseErrorDetails.md)
+ - [HardwareCheck](doc/HardwareCheck.md)
+ - [HardwareDevice](doc/HardwareDevice.md)
+ - [HardwareDisplays](doc/HardwareDisplays.md)
+ - [HardwareEinvoice](doc/HardwareEinvoice.md)
+ - [HardwarePrinter](doc/HardwarePrinter.md)
+ - [HardwareServer](doc/HardwareServer.md)
+ - [HardwareStation](doc/HardwareStation.md)
+ - [HardwareStatus](doc/HardwareStatus.md)
  - [IngredientUsageRow](doc/IngredientUsageRow.md)
  - [KitchenBoard](doc/KitchenBoard.md)
  - [KitchenBoardResult](doc/KitchenBoardResult.md)
@@ -223,8 +232,10 @@ Class | Method | HTTP request | Description
  - [MenuItemAllOfVariants](doc/MenuItemAllOfVariants.md)
  - [MenuItemConfig](doc/MenuItemConfig.md)
  - [MenuItemConfigComponentsInner](doc/MenuItemConfigComponentsInner.md)
+ - [MenuItemsMeta](doc/MenuItemsMeta.md)
  - [MenuMarginRow](doc/MenuMarginRow.md)
  - [MenuSchedulesInner](doc/MenuSchedulesInner.md)
+ - [MenuTaxDefaults](doc/MenuTaxDefaults.md)
  - [ModifierGroup](doc/ModifierGroup.md)
  - [ModifierGroupOptionsInner](doc/ModifierGroupOptionsInner.md)
  - [ModifierSelection](doc/ModifierSelection.md)
@@ -275,6 +286,7 @@ Class | Method | HTTP request | Description
  - [PosEinvoiceSettingsSaveRequest](doc/PosEinvoiceSettingsSaveRequest.md)
  - [PosEinvoiceSummary200Response](doc/PosEinvoiceSummary200Response.md)
  - [PosEinvoices200Response](doc/PosEinvoices200Response.md)
+ - [PosHardwareStatus200Response](doc/PosHardwareStatus200Response.md)
  - [PosKitchenOrders200Response](doc/PosKitchenOrders200Response.md)
  - [PosKitchenSend201Response](doc/PosKitchenSend201Response.md)
  - [PosKitchenSend201ResponseMeta](doc/PosKitchenSend201ResponseMeta.md)

@@ -16,7 +16,8 @@ module Spree
             def show
               return if channel_rejected?
 
-              render json: { data: Spree::Pos::StoreProfile.for_store(current_store).includes(:changed_by).first&.to_pos }
+              profile = Spree::Pos::StoreProfile.for_store(current_store).includes(:changed_by, :food_tax_category, :alcohol_tax_category).first
+              render json: { data: profile&.to_pos }
             end
 
             def update

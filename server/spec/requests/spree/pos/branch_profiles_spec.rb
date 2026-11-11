@@ -74,7 +74,7 @@ RSpec.describe 'POS branch profiles', type: :request, pos_modules: :default do
     expect(thoi_trang['modules']['in_use']['retail.traceability']).to eq('tracked_variants' => 1, 'open_lots' => 0, 'serials_in_stock' => 2)
     expect(thoi_trang['modules']['in_use']['retail.units']).to eq('converted_variants' => 0)
 
-    expect(preview(manager, 'cafe_tra_sua').dig('error', 'details', 'reason')).to eq('profile_unavailable')
+    expect(preview(manager, 'karaoke_bida').dig('error', 'details', 'reason')).to eq('profile_unavailable')
     expect(preview(manager, 'tiem_vang').dig('error', 'details', 'reason')).to eq('profile_unknown')
     expect(branch.reload).to have_attributes(profile_key: 'khac', lot_selection: 'cashier_pick', return_window_days: 30)
     expect(Spree::Pos::UnitDefinition.for_store(store).where(code: 'vien')).to be_empty
@@ -129,7 +129,7 @@ RSpec.describe 'POS branch profiles', type: :request, pos_modules: :default do
   it 'refuses unknown defaults, coming-soon profiles, a missing reason and non-managers' do
     expect(apply(manager, 'nha_thuoc', apply_defaults: ['variance_threshold']).dig('error', 'details', 'reason')).to eq('default_invalid')
     expect(apply(manager, 'nha_thuoc', apply_defaults: ['name']).dig('error', 'details', 'reason')).to eq('default_invalid')
-    expect(apply(manager, 'quan_an').dig('error', 'details', 'reason')).to eq('profile_unavailable')
+    expect(apply(manager, 'bar_pub_club').dig('error', 'details', 'reason')).to eq('profile_unavailable')
     expect(apply(manager, 'nha_thuoc', reason: '').dig('error', 'details', 'reason')).to eq('reason_required')
     expect(apply(manager, 'nha_thuoc', expected: nil).dig('error', 'details', 'reason')).to eq('profile_conflict')
     expect(branch.reload.profile_key).to eq('khac')
@@ -151,9 +151,9 @@ RSpec.describe 'POS branch profiles', type: :request, pos_modules: :default do
       branch
       Spree::Pos::StoreProfile.create!(store: store, profile_key: 'khac', onboarded_at: 1.day.ago)
       modules_before = Spree::Pos::ModulePolicy.for_branch(branch)
-      data = call(manager, :put, 'store_profile', profile_key: 'nha_thuoc', wholesale: true, interests: ['quan_an'], reason: 'Đổi ngành')['data']
+      data = call(manager, :put, 'store_profile', profile_key: 'nha_thuoc', wholesale: true, interests: ['bar_pub_club'], reason: 'Đổi ngành')['data']
       expect(response).to have_http_status(:ok)
-      expect(data).to include('profile_key' => 'nha_thuoc', 'wholesale' => true, 'interests' => ['quan_an'], 'changed_by_id' => manager.prefixed_id)
+      expect(data).to include('profile_key' => 'nha_thuoc', 'wholesale' => true, 'interests' => ['bar_pub_club'], 'changed_by_id' => manager.prefixed_id)
       expect(branch.reload.profile_key).to eq('khac')
       expect(Spree::Pos::ModulePolicy.for_branch(branch)).to eq(modules_before)
       audit = Spree::Pos::AuditEntry.find_by!(action: 'store_profile.change')
@@ -168,7 +168,7 @@ RSpec.describe 'POS branch profiles', type: :request, pos_modules: :default do
       created = call(manager, :post, 'branches', name: 'Mới', code: 'moi', timezone: 'Asia/Ho_Chi_Minh', stock_location_id: location.prefixed_id)
       expect(created['data']).to include('profile_key' => 'nha_thuoc', 'return_window_days' => 7, 'lot_selection' => 'fefo')
 
-      expect(call(manager, :put, 'store_profile', profile_key: 'cafe_tra_sua', reason: 'x').dig('error', 'details', 'reason')).
+      expect(call(manager, :put, 'store_profile', profile_key: 'karaoke_bida', reason: 'x').dig('error', 'details', 'reason')).
         to eq('profile_unavailable')
       expect(call(manager, :put, 'store_profile', profile_key: 'khac', interests: ['khac'], reason: 'x').dig('error', 'details', 'reason')).
         to eq('interest_invalid')
@@ -192,10 +192,10 @@ RSpec.describe 'POS branch profiles', type: :request, pos_modules: :default do
 
     it 'clears every interest with an empty list or null and keeps them when the field is left out' do
       branch
-      Spree::Pos::StoreProfile.create!(store: store, profile_key: 'khac', interests: %w[quan_an cafe_tra_sua], onboarded_at: 1.day.ago)
+      Spree::Pos::StoreProfile.create!(store: store, profile_key: 'khac', interests: %w[bar_pub_club karaoke_bida], onboarded_at: 1.day.ago)
 
       data = call(manager, :put, 'store_profile', profile_key: 'khac', reason: 'Giữ nguyên')['data']
-      expect(data['interests']).to eq(%w[quan_an cafe_tra_sua])
+      expect(data['interests']).to eq(%w[bar_pub_club karaoke_bida])
 
       # JSON `[]` must reach the workflow as an empty list, not as nil (left out).
       data = call(manager, :put, 'store_profile', profile_key: 'khac', interests: [], reason: 'Bỏ hết')['data']
@@ -203,11 +203,11 @@ RSpec.describe 'POS branch profiles', type: :request, pos_modules: :default do
       expect(data['interests']).to eq([])
       expect(Spree::Pos::StoreProfile.find_by!(store: store).interests).to eq([])
       audit = Spree::Pos::AuditEntry.where(action: 'store_profile.change').order(:id).last
-      expect(audit.metadata).to include('from' => include('interests' => %w[quan_an cafe_tra_sua]), 'to' => include('interests' => []),
+      expect(audit.metadata).to include('from' => include('interests' => %w[bar_pub_club karaoke_bida]), 'to' => include('interests' => []),
                                         'reason' => 'Bỏ hết')
 
       # An explicit `null` clears too (the key is there); only leaving it out keeps them.
-      call(manager, :put, 'store_profile', profile_key: 'khac', interests: %w[quan_an], reason: 'Lại')
+      call(manager, :put, 'store_profile', profile_key: 'khac', interests: %w[bar_pub_club], reason: 'Lại')
       data = call(manager, :put, 'store_profile', profile_key: 'khac', interests: nil, reason: 'Null')['data']
       expect(data['interests']).to eq([])
     end

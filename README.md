@@ -98,6 +98,20 @@ POS phục vụ nhiều chi nhánh, nhiều quầy, và cho mở nhiều đơn c
 
 Những gì POS chưa làm được (thẻ, driver máy in, thử với thiết bị thật…) nằm ở mục [Giới hạn hiện tại](apps/pos/README.md#giới-hạn-hiện-tại). Các tính năng rủi ro mặc định tắt; bật cho cả cửa hàng và tắt riêng được ở từng chi nhánh. Các công tắc mới (`quick_credit`, `delivery`) cũng vậy.
 
+### Bán hàng F&B (cafe, quán ăn, căng tin)
+
+Ba ngành đầu tiên của ăn uống đã chọn được khi thiết lập cửa hàng: **Cafe, Trà sữa**, **Quán ăn** (trả tiền trước) và **Căng tin & Trạm dừng nghỉ**. Karaoke, bida, bar và nhà hàng vẫn là "Sắp hỗ trợ". Mọi màn quản trị dưới đây nằm trong bảng quản trị POS (`apps/pos-dashboard`).
+
+1. **Chọn ngành:** ở **Thiết lập cửa hàng**, chọn một trong ba ngành trên. Wizard thêm bước **Thiết lập quán**: đặt tên các khu bếp (Bếp, Quầy pha chế; căng tin chỉ có Bếp; tối đa 4 khu), chọn thuế suất cho đồ ăn, đồ uống và cho rượu, bia, chọn lúc gửi món xuống bếp (khi thanh toán xong, hoặc khi thu ngân bấm Gửi bếp). Chi nhánh đã có thì đổi ngành ở **Cấu hình → Chi nhánh → Mô hình kinh doanh**.
+2. **Thực đơn và tùy chọn:** nhập ở trang **Thực đơn**: nhóm món, món (gắn với sản phẩm), nhóm tùy chọn (đường, đá, topping…), giá theo khung giờ. Thu ngân đánh dấu món hết ngay trên lưới thực đơn. Món mới lấy thuế suất đồ ăn, đồ uống đã chọn trong wizard; đổi riêng từng món ở ô **Thuế suất**. Không có thực đơn mẫu.
+3. **Khu bếp và máy in:** sửa khu bếp ở tab **Bếp & bar** của chi nhánh, khai báo máy in hóa đơn, máy in bếp, máy in tem ở tab **In ấn**.
+4. **Ghép màn bếp, trạm in, màn khách:** tạo thiết bị và mã ghép ở trang **Thiết bị**, rồi ghép app ParkViet Nhân viên ở mode màn bếp hoặc trạm in. Tab **Phần cứng** của chi nhánh (wizard mở thẳng tới đây sau khi tạo quán) đọc từ server xem từng máy in đã in thành công chưa, khu bếp nào chưa có màn hay máy in, trạm in còn liên lạc không, màn khách đã ghép chưa, server có ra được internet không và hóa đơn điện tử đã cấu hình chưa.
+5. **Số gọi và tem ly:** quầy bán từ lưới thực đơn; mỗi đơn có số gọi theo ngày kinh doanh (bắt đầu lại từ 1 khi qua giờ cắt ngày), màn khách hiện "Đang làm" / "Mời nhận". Cafe in tem ly cho các món bật **In tem ly**.
+6. **Công thức:** gắn nguyên liệu cho món trong trang **Thực đơn**; bán xong thì tồn nguyên liệu được trừ theo công thức.
+7. **Hóa đơn điện tử:** cấu hình ở **Cài đặt → Hóa đơn điện tử**. Món đồ ăn, đồ uống và món rượu, bia lên hóa đơn với thuế suất riêng của từng món.
+
+Lệnh và cấu hình kỹ thuật không chép lại ở đây: chạy app, sinh client và in qua LAN / Bluetooth / Sunmi xem [README của ParkViet Nhân viên](apps/pos-staff/README.md); cài server LAN, ghép app trên LAN, đường ra internet và xử lý khi mất mạng xem [Triển khai POS trên LAN hoặc VPS](docs/deploy/pos-lan-vps.md); nhà cung cấp hóa đơn điện tử xem [docs/einvoice-providers.md](docs/einvoice-providers.md).
+
 ### VietQR
 
 Gem [`spree_vietqr`](https://github.com/compasify/spree_vietqr) (bản 1.0.0 cho Spree 6, nhánh `master`) được gắn vào dự án dưới dạng git submodule tại `server/vendor/gems/spree_vietqr`. Bản cho Spree 5 vẫn giữ ở tag `v0.1.0-spree5` và nhánh `spree-5-stable`.

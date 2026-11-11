@@ -134,6 +134,7 @@ Rails.application.routes.draw do
             post 'onboarding', to: 'onboarding#create'
             get 'operations/metrics', to: 'operational_metrics#show'
             get 'system_status', to: 'system_status#show'
+            get 'hardware_status', to: 'hardware_status#show'
             resources :branches, only: [:index, :show, :create, :update] do
               member do
                 post :disable

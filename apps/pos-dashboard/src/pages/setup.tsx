@@ -5,14 +5,21 @@ import {
   posFailureKey,
 } from '@parkviet/pos-shared/request-failure'
 import {
+  hasShopStep,
   initialSetup,
+  nextStep,
   onboardingPayload,
   onboardingSelection,
-  SETUP_STEPS,
+  previousStep,
   type SetupProblem,
   type SetupState,
   type SetupStep,
+  SHOP_STEP,
+  type ShopSetup,
+  SUMMARY_STEP,
   setupReducer,
+  setupSteps,
+  shopDefaults,
   stepProblems,
 } from '@parkviet/pos-shared/setup-wizard'
 import { Button, Label, RadioGroup, RadioGroupItem, Wizard } from '@spree/dashboard-ui'
@@ -23,6 +30,7 @@ import { useTranslation } from 'react-i18next'
 import { ModelPage, ModelState } from '../components/setup/model-ui'
 import { ProfilePicker } from '../components/setup/profile-picker'
 import { SetupBranchStep } from '../components/setup/setup-branch-step'
+import { SetupFnbStep, stationName, taxLabel } from '../components/setup/setup-fnb-step'
 import { ModuleName, SetupPreviewStep, unitLabel } from '../components/setup-preview-step'
 import { useBranchSelection } from '../hooks/use-branch-selection'
 import { useBusinessProfiles } from '../hooks/use-business-profiles'
@@ -76,6 +84,8 @@ function SetupWizard({ onDone }: { onDone: () => void }) {
   const heading = useRef<HTMLHeadingElement>(null)
   const profiles = catalogue.data?.profiles ?? []
   const profile = profiles.find((item) => item.key === state.profileKey)
+  const taxes = catalogue.data?.tax_categories ?? []
+  const steps = setupSteps(profile)
   const activeLocations = (locations.data?.data ?? []).filter((location) => location.active)
   const locationIds = activeLocations.map((location) => location.id)
   const problems = stepProblems(state, state.step, { profiles, locationIds })
@@ -93,6 +103,9 @@ function SetupWizard({ onDone }: { onDone: () => void }) {
     if (locked || sending.current) return
     setShownProblems([])
     setFailure('')
+    // The shop step starts from the profile's proposal; edits stay while the profile does.
+    if (profile && catalogue.data && hasShopStep(profile) && step >= SHOP_STEP)
+      dispatch({ type: 'shop-init', value: shopDefaults(profile, catalogue.data, stationName(t)) })
     dispatch({ type: 'go', step })
   }
   async function finish(run: () => Promise<unknown>) {
@@ -105,6 +118,18 @@ function SetupWizard({ onDone }: { onDone: () => void }) {
       onDone()
       if (selection) setSelection(selection)
       await refreshBusinessModel(storeId)
+      // A new F&B branch opens on its hardware checklist: printers, kitchen
+      // screens and the print station come next.
+      if (selection && hasShopStep(profile)) {
+        await navigate({
+          to: '/$storeId/branches/$branchId/hardware',
+          params: {
+            storeId: storeId ?? context.data?.store.id ?? '',
+            branchId: selection.branchId,
+          },
+        })
+        return
+      }
       await navigate({
         to: '/$storeId',
         params: { storeId: storeId ?? context.data?.store.id ?? '' },
@@ -128,8 +153,8 @@ function SetupWizard({ onDone }: { onDone: () => void }) {
       setShownProblems(problems)
       return
     }
-    if (state.step < 5) {
-      go((state.step + 1) as SetupStep)
+    if (state.step !== SUMMARY_STEP) {
+      go(nextStep(state.step, profile))
       return
     }
     if (profile) void finish(() => onboarding.submit(onboardingPayload(state, profile)))
@@ -158,7 +183,7 @@ function SetupWizard({ onDone }: { onDone: () => void }) {
         }}
         title={t('setup.title')}
         subtitle={t('setup.intro')}
-        steps={SETUP_STEPS.map((step) => ({ key: String(step), label: t(`setup.step${step}`) }))}
+        steps={steps.map((step) => ({ key: String(step), label: t(`setup.step${step}`) }))}
         current={String(state.step)}
         onStepSelect={locked ? undefined : (key) => go(Number(key) as SetupStep)}
         onSubmit={(event) => {
@@ -171,14 +196,14 @@ function SetupWizard({ onDone }: { onDone: () => void }) {
             type="button"
             variant="outline"
             disabled={state.step === 1 || locked}
-            onClick={() => go((state.step - 1) as SetupStep)}
+            onClick={() => go(previousStep(state.step, profile))}
           >
             {t('setup.back')}
           </Button>
         }
         forward={
           <Button type="submit" disabled={locked}>
-            {state.step === 5
+            {state.step === SUMMARY_STEP
               ? onboarding.pending
                 ? t('waiting')
                 : t('setup.create')
@@ -199,7 +224,9 @@ function SetupWizard({ onDone }: { onDone: () => void }) {
           }}
         >
           <h2 id={headingId} ref={heading} tabIndex={-1} className="text-xl font-semibold">
-            <span className="sr-only">{t('setup.stepOf', { step: state.step, total: 5 })} </span>
+            <span className="sr-only">
+              {t('setup.stepOf', { step: steps.indexOf(state.step) + 1, total: steps.length })}{' '}
+            </span>
             {t(`setup.step${state.step}`)}
           </h2>
           <fieldset disabled={locked} className="min-w-0 space-y-5">
@@ -253,9 +280,20 @@ function SetupWizard({ onDone }: { onDone: () => void }) {
                 problems={visibleProblems}
               />
             ) : null}
-            {state.step === 5 && profile ? (
+            {state.step === SHOP_STEP && profile && state.shop ? (
+              <SetupFnbStep
+                profile={profile}
+                shop={state.shop}
+                taxes={taxes}
+                dispatch={dispatch}
+                problems={visibleProblems}
+              />
+            ) : null}
+            {state.step === SUMMARY_STEP && profile ? (
               <SetupSummary
                 state={state}
+                shop={hasShopStep(profile) ? state.shop : null}
+                taxLabel={(code) => taxLabel(t, taxes, code)}
                 profileName={t(profileLabelKey(profile.key))}
                 modules={profile.modules}
                 units={profile.sample_units.map((code) => unitLabel(t, code))}
@@ -301,12 +339,16 @@ function SetupWizard({ onDone }: { onDone: () => void }) {
 
 function SetupSummary({
   state,
+  shop,
+  taxLabel,
   profileName,
   modules,
   units,
   location,
 }: {
   state: SetupState
+  shop: ShopSetup | null
+  taxLabel: (code: string) => string
   profileName: string
   modules: string[]
   units: string[]
@@ -355,6 +397,25 @@ function SetupSummary({
             ? state.features.map((feature) => t(`featureName_${feature}`)).join(', ')
             : t('setup.summaryNoFeatures')}
         </dd>
+        {shop ? (
+          <>
+            <dt>{t('setup.summaryStations')}</dt>
+            <dd>{shop.stations.map((row) => row.name.trim()).join(', ') || none}</dd>
+            <dt>{t('setup.summaryTax')}</dt>
+            <dd>
+              {t('setup.summaryTaxValue', {
+                food: taxLabel(shop.foodTax),
+                alcohol: taxLabel(shop.alcoholTax),
+              })}
+            </dd>
+            {modules.includes('fnb.kitchen') ? (
+              <>
+                <dt>{t('setup.shopTrigger')}</dt>
+                <dd>{t(`setup.shopTrigger_${shop.trigger}`)}</dd>
+              </>
+            ) : null}
+          </>
+        ) : null}
         <dt>{t('setup.summaryGrant')}</dt>
         <dd>{t(state.grantSelf ? 'setup.summaryGrantYes' : 'setup.summaryGrantNo')}</dd>
       </dl>

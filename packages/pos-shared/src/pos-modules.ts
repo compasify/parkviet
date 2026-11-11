@@ -14,11 +14,16 @@ export type PosModuleUsage = Record<string, boolean>;
 
 export type PosCatalogView = 'cards' | 'list';
 
+// The selling screen a profile suggests. menu_grid still needs nb.menu.
+export type PosSellingSurface = 'catalog' | 'menu_grid';
+
+export type PosProfileDisplay = { catalog_view?: PosCatalogView; surface?: PosSellingSurface };
+
 // Industry profile of the selected branch, as the context sends it.
 export type PosBranchProfile = {
   key: string;
   version: number | null;
-  display: { catalog_view?: PosCatalogView };
+  display: PosProfileDisplay;
 };
 
 export type PosOnboarding = { required: boolean; can_setup: boolean };
@@ -31,6 +36,10 @@ export const LABELLED_MODULES = [
   'retail.traceability',
   'fnb.menu',
   'fnb.recipes',
+  'fnb.kitchen',
+  'fnb.order_number',
+  'fnb.cup_label',
+  'fnb.delivery_platforms',
 ] as const;
 
 function record(value: unknown): Record<string, unknown> | null {
@@ -83,13 +92,22 @@ export function moduleInUse(
 export function normalizeProfile(value: unknown): PosBranchProfile | null {
   const source = record(value);
   if (!source || typeof source.key !== 'string' || !source.key) return null;
-  const display = record(source.display);
-  const view = display?.catalog_view;
   return {
     key: source.key,
     version:
       typeof source.version === 'number' && Number.isFinite(source.version) ? source.version : null,
-    display: view === 'cards' || view === 'list' ? { catalog_view: view } : {},
+    display: normalizeDisplay(source.display),
+  };
+}
+
+// Known hints only; anything else reads as no opinion.
+export function normalizeDisplay(value: unknown): PosProfileDisplay {
+  const display = record(value);
+  const view = display?.catalog_view;
+  const surface = display?.surface;
+  return {
+    ...(view === 'cards' || view === 'list' ? { catalog_view: view } : {}),
+    ...(surface === 'catalog' || surface === 'menu_grid' ? { surface } : {}),
   };
 }
 
@@ -104,6 +122,16 @@ export function catalogViewOf(
   context: { profile?: PosBranchProfile | null } | undefined,
 ): PosCatalogView {
   return context?.profile?.display.catalog_view ?? 'cards';
+}
+
+// What the counter sells from: picture tiles of the menu when the branch runs
+// `fnb.menu` and its profile does not ask for the catalogue, else the catalogue.
+// The module decides; the profile only chooses between the two.
+export function sellingSurfaceOf(
+  context: { modules?: PosModules | null; profile?: PosBranchProfile | null } | undefined,
+): PosSellingSurface {
+  if (context?.modules?.['fnb.menu'] !== true) return 'catalog';
+  return context.profile?.display.surface === 'catalog' ? 'catalog' : 'menu_grid';
 }
 
 // i18n key fragment of a module: dots would read as nesting in i18next.
@@ -133,15 +161,24 @@ export type BusinessProfile = {
   status: string;
   modules: string[];
   branch_defaults: Record<string, unknown>;
-  display: { catalog_view?: PosCatalogView };
+  display: PosProfileDisplay;
   recommended_features: string[];
   sample_units: string[];
+  // Kitchen station kinds (`prep`, `bar`) the F&B setup step proposes.
+  kitchen_stations: string[];
 };
+
+// A tax category the F&B setup step offers, by Spree tax code, with the rate
+// a new store is seeded with (a fraction: `0.08`).
+export type BusinessTaxCategory = { code: string; rate: string };
 
 export type BusinessProfiles = {
   version: number | null;
   modules: BusinessModule[];
   profiles: BusinessProfile[];
+  tax_categories: BusinessTaxCategory[];
+  // Tax codes proposed for new menu items: `food` and `alcohol`.
+  menu_tax_defaults: Record<string, string>;
 };
 
 function strings(value: unknown): string[] {
@@ -170,7 +207,6 @@ export function normalizeBusinessProfiles(value: unknown): BusinessProfiles {
     .flatMap((row) => {
       const item = record(row);
       if (!item || typeof item.key !== 'string' || !item.key) return [];
-      const view = record(item.display)?.catalog_view;
       return [
         {
           key: item.key,
@@ -182,9 +218,10 @@ export function normalizeBusinessProfiles(value: unknown): BusinessProfiles {
           status: typeof item.status === 'string' ? item.status : '',
           modules: strings(item.modules),
           branch_defaults: record(item.branch_defaults) ?? {},
-          display: view === 'cards' || view === 'list' ? { catalog_view: view } : {},
+          display: normalizeDisplay(item.display),
           recommended_features: strings(item.recommended_features),
           sample_units: strings(item.sample_units),
+          kitchen_stations: strings(item.kitchen_stations),
         } satisfies BusinessProfile,
       ];
     })
@@ -194,6 +231,19 @@ export function normalizeBusinessProfiles(value: unknown): BusinessProfiles {
       typeof source.version === 'number' && Number.isFinite(source.version) ? source.version : null,
     modules,
     profiles,
+    tax_categories: (Array.isArray(source.tax_categories) ? source.tax_categories : []).flatMap(
+      (row) => {
+        const item = record(row);
+        return item && typeof item.code === 'string' && item.code && typeof item.rate === 'string'
+          ? [{ code: item.code, rate: item.rate }]
+          : [];
+      },
+    ),
+    menu_tax_defaults: Object.fromEntries(
+      Object.entries(record(source.menu_tax_defaults) ?? {}).filter(
+        (entry): entry is [string, string] => typeof entry[1] === 'string',
+      ),
+    ),
   };
 }
 

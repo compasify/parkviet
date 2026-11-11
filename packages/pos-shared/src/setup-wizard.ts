@@ -1,4 +1,4 @@
-// First-run setup of a store (`/setup`): five steps kept in memory only, sent
+// First-run setup of a store (`/setup`): steps kept in memory only, sent
 // to the server in one idempotent command at the last step
 // (`POST /pos/onboarding`). The profile catalogue comes from the server (D3);
 // nothing here lists industries.
@@ -8,11 +8,79 @@
 // permission at the new branch is ticked, and can be unticked.
 
 import { isPosFeature, type PosFeature } from './pos-features';
-import type { BusinessProfile } from './pos-modules';
+import type { BusinessProfile, BusinessProfiles } from './pos-modules';
 
-export type SetupStep = 1 | 2 | 3 | 4 | 5;
+// 1 industry, 2 wholesale, 3 branch, 4 preview, 5 shop setup (profiles with
+// the menu only), 6 summary.
+export type SetupStep = 1 | 2 | 3 | 4 | 5 | 6;
 
-export const SETUP_STEPS: readonly SetupStep[] = [1, 2, 3, 4, 5];
+export const SETUP_STEPS: readonly SetupStep[] = [1, 2, 3, 4, 5, 6];
+export const SHOP_STEP: SetupStep = 5;
+export const SUMMARY_STEP: SetupStep = 6;
+export const MAX_STATIONS = 4;
+export const STATION_NAME_MAX = 80;
+
+export type KitchenSendTrigger = 'on_complete' | 'manual';
+export type ShopStationKind = 'prep' | 'bar';
+
+// The F&B "set up the shop" step: kitchen stations to create, the tax
+// categories new menu items start with, and when orders reach the kitchen.
+export type ShopSetup = {
+  // The profile these defaults were made for; another profile starts over.
+  profileKey: string;
+  stations: { kind: ShopStationKind; name: string }[];
+  foodTax: string;
+  alcoholTax: string;
+  trigger: KitchenSendTrigger;
+};
+
+// Profiles running the menu get the shop step; retail profiles skip it.
+export function hasShopStep(profile: BusinessProfile | undefined): boolean {
+  return Boolean(profile?.modules.includes('fnb.menu'));
+}
+
+export function hasKitchen(profile: BusinessProfile | undefined): boolean {
+  return Boolean(profile?.modules.includes('fnb.kitchen'));
+}
+
+export function setupSteps(profile: BusinessProfile | undefined): SetupStep[] {
+  return SETUP_STEPS.filter((step) => step !== SHOP_STEP || hasShopStep(profile));
+}
+
+export function nextStep(step: SetupStep, profile: BusinessProfile | undefined): SetupStep {
+  const steps = setupSteps(profile);
+  return steps[Math.min(steps.indexOf(step) + 1, steps.length - 1)] ?? SUMMARY_STEP;
+}
+
+export function previousStep(step: SetupStep, profile: BusinessProfile | undefined): SetupStep {
+  const steps = setupSteps(profile);
+  return steps[Math.max(steps.indexOf(step) - 1, 0)] ?? 1;
+}
+
+// What the shop step proposes for a profile: its station kinds named by the
+// caller (translated), the catalogue's tax codes for food and alcohol, and
+// the profile's send trigger.
+export function shopDefaults(
+  profile: BusinessProfile,
+  catalogue: Pick<BusinessProfiles, 'tax_categories' | 'menu_tax_defaults'>,
+  stationName: (kind: ShopStationKind) => string,
+): ShopSetup {
+  const codes = catalogue.tax_categories.map((row) => row.code);
+  const pick = (code: string | undefined) =>
+    code && codes.includes(code) ? code : (codes[0] ?? '');
+  const kinds = hasKitchen(profile)
+    ? profile.kitchen_stations.filter(
+        (kind): kind is ShopStationKind => kind === 'prep' || kind === 'bar',
+      )
+    : [];
+  return {
+    profileKey: profile.key,
+    stations: kinds.map((kind) => ({ kind, name: stationName(kind) })),
+    foodTax: pick(catalogue.menu_tax_defaults.food),
+    alcoholTax: pick(catalogue.menu_tax_defaults.alcohol),
+    trigger: profile.branch_defaults.kitchen_send_trigger === 'manual' ? 'manual' : 'on_complete',
+  };
+}
 
 // Branch fields an industry profile may preset, as the editable text of the
 // form. `lot_selection` is `fefo` or `cashier_pick`; the others are digits or
@@ -48,6 +116,7 @@ export type SetupState = {
   grantSelf: boolean;
   defaults: SetupDefaults;
   features: PosFeature[];
+  shop: ShopSetup | null;
 };
 
 export const DEFAULT_REGISTER_NAME = 'Quầy 1';
@@ -79,6 +148,7 @@ export function initialSetup(timezone?: string | null): SetupState {
     grantSelf: true,
     defaults: { ...BLANK_DEFAULTS },
     features: [],
+    shop: null,
   };
 }
 
@@ -177,6 +247,13 @@ export type SetupAction =
   | { type: 'grant-self'; value: boolean }
   | { type: 'default'; field: keyof SetupDefaults; value: string }
   | { type: 'feature'; feature: PosFeature; value: boolean }
+  | { type: 'shop-init'; value: ShopSetup }
+  | { type: 'station-name'; index: number; value: string }
+  | { type: 'station-kind'; index: number; value: ShopStationKind }
+  | { type: 'station-add'; name: string }
+  | { type: 'station-remove'; index: number }
+  | { type: 'shop-tax'; role: 'food' | 'alcohol'; value: string }
+  | { type: 'shop-trigger'; value: KitchenSendTrigger }
   | { type: 'go'; step: SetupStep };
 
 function withProfile(state: SetupState, key: string, profiles: BusinessProfile[]): SetupState {
@@ -190,7 +267,23 @@ function withProfile(state: SetupState, key: string, profiles: BusinessProfile[]
     profileKey: key,
     defaults: defaultsFromProfile(profile),
     features: state.features.filter((feature) => recommended.includes(feature)),
+    shop: null,
   };
+}
+
+function withShop(state: SetupState, change: (shop: ShopSetup) => ShopSetup): SetupState {
+  return state.shop ? { ...state, shop: change(state.shop) } : state;
+}
+
+function editStation(
+  state: SetupState,
+  index: number,
+  change: Partial<ShopSetup['stations'][number]>,
+): SetupState {
+  return withShop(state, (shop) => ({
+    ...shop,
+    stations: shop.stations.map((row, at) => (at === index ? { ...row, ...change } : row)),
+  }));
 }
 
 export function setupReducer(state: SetupState, action: SetupAction): SetupState {
@@ -262,6 +355,34 @@ export function setupReducer(state: SetupState, action: SetupAction): SetupState
             : [...state.features, action.feature]
           : state.features.filter((feature) => feature !== action.feature),
       };
+    case 'shop-init':
+      // Kept while the profile stays the same, so going back keeps the edits.
+      return state.shop?.profileKey === action.value.profileKey
+        ? state
+        : { ...state, shop: action.value };
+    case 'station-name':
+      return editStation(state, action.index, { name: action.value });
+    case 'station-kind':
+      return editStation(state, action.index, { kind: action.value });
+    case 'station-add':
+      return withShop(state, (shop) =>
+        shop.stations.length >= MAX_STATIONS
+          ? shop
+          : { ...shop, stations: [...shop.stations, { kind: 'prep', name: action.name }] },
+      );
+    case 'station-remove':
+      return withShop(state, (shop) => ({
+        ...shop,
+        stations: shop.stations.filter((_, index) => index !== action.index),
+      }));
+    case 'shop-tax':
+      return withShop(state, (shop) =>
+        action.role === 'food'
+          ? { ...shop, foodTax: action.value }
+          : { ...shop, alcoholTax: action.value },
+      );
+    case 'shop-trigger':
+      return withShop(state, (shop) => ({ ...shop, trigger: action.value }));
     case 'go':
       return { ...state, step: action.step };
   }
@@ -276,7 +397,10 @@ export type SetupProblem =
   | 'no-locations'
   | 'return-window'
   | 'variance'
-  | 'adjustment';
+  | 'adjustment'
+  | 'station-name'
+  | 'station-duplicate'
+  | 'tax';
 
 // What keeps a step from moving on, in the order the fields appear.
 export function stepProblems(
@@ -297,6 +421,20 @@ export function stepProblems(
   if (!validDays(state.defaults.return_window_days)) problems.push('return-window');
   if (!validAmount(state.defaults.variance_threshold)) problems.push('variance');
   if (!validCount(state.defaults.adjustment_approval_threshold)) problems.push('adjustment');
+  if (step === 4 || !hasShopStep(profile)) return problems;
+  problems.push(...shopProblems(state.shop));
+  return problems;
+}
+
+// Station names filled, short enough and distinct; both tax choices made.
+export function shopProblems(shop: ShopSetup | null): SetupProblem[] {
+  if (!shop) return [];
+  const problems: SetupProblem[] = [];
+  const names = shop.stations.map((row) => row.name.trim());
+  if (names.some((name) => !name || name.length > STATION_NAME_MAX)) problems.push('station-name');
+  if (new Set(names.map((name) => name.toLowerCase())).size !== names.length)
+    problems.push('station-duplicate');
+  if (!shop.foodTax || !shop.alcoholTax) problems.push('tax');
   return problems;
 }
 
@@ -321,6 +459,11 @@ export type OnboardingPayload = {
   register?: { name: string };
   grant_self: boolean;
   features: PosFeature[];
+  fnb_setup?: {
+    stations: { name: string; kind: ShopStationKind }[];
+    tax_categories: { food: string; alcohol: string };
+    kitchen_send_trigger?: KitchenSendTrigger;
+  };
 };
 
 // The body of `POST /pos/onboarding`. Every branch default the preview showed
@@ -353,6 +496,27 @@ export function onboardingPayload(state: SetupState, profile: BusinessProfile): 
     grant_self: state.grantSelf,
     // Only what the owner ticked, and only among what the industry recommends.
     features: state.features.filter((feature) => recommended.includes(feature)),
+    ...shopPayload(state, profile),
+  };
+}
+
+// The shop step as `fnb_setup`, only for a profile with the menu and only
+// once the step was shown for it.
+function shopPayload(
+  state: SetupState,
+  profile: BusinessProfile,
+): Pick<OnboardingPayload, 'fnb_setup'> {
+  const shop = state.shop;
+  if (!hasShopStep(profile) || !shop || shop.profileKey !== profile.key) return {};
+  const kitchen = hasKitchen(profile);
+  return {
+    fnb_setup: {
+      stations: kitchen
+        ? shop.stations.map((row) => ({ name: row.name.trim(), kind: row.kind }))
+        : [],
+      tax_categories: { food: shop.foodTax, alcohol: shop.alcoholTax },
+      ...(kitchen ? { kitchen_send_trigger: shop.trigger } : {}),
+    },
   };
 }
 

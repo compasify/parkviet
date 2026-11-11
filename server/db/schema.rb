@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_11_200000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_11_210000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -4035,6 +4035,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_200000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "einvoice_type", limit: 16, default: "none", null: false
+    t.bigint "food_tax_category_id"
+    t.bigint "alcohol_tax_category_id"
     t.index ["store_id"], name: "index_spree_pos_store_profiles_on_store_id", unique: true
     t.check_constraint "einvoice_type::text = ANY (ARRAY['none'::character varying, 'cash_register'::character varying, 'coded'::character varying]::text[])", name: "chk_pos_store_profiles_einvoice_type"
     t.check_constraint "profile_version >= 1", name: "chk_pos_store_profiles_version"
@@ -6250,6 +6252,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_200000) do
   add_foreign_key "spree_pos_stock_discrepancies", "spree_variants", column: "variant_id"
   add_foreign_key "spree_pos_store_profiles", "spree_admin_users", column: "changed_by_id"
   add_foreign_key "spree_pos_store_profiles", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_store_profiles", "spree_tax_categories", column: "alcohol_tax_category_id"
+  add_foreign_key "spree_pos_store_profiles", "spree_tax_categories", column: "food_tax_category_id"
   add_foreign_key "spree_pos_tax_rate_schedules", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_tax_rate_schedules", "spree_tax_rates", column: "tax_rate_id"
   add_foreign_key "spree_pos_tender_attempts", "spree_admin_users", column: "actor_id"

@@ -18,16 +18,24 @@ module Spree
       UNKNOWN = 'profile_unknown'
       GROUPS = %w[retail fnb].freeze
       # Groups whose profiles can be picked once their modules are available.
-      # F&B profiles open with their own onboarding step; until then they stay
-      # coming soon even when every module they list has code.
-      OPEN_GROUPS = %w[retail].freeze
-      FIELDS = %w[group order modules branch_defaults display recommended_features sample_units].freeze
-      BRANCH_DEFAULT_FIELDS = %w[return_window_days lot_selection variance_threshold adjustment_approval_threshold].freeze
-      DISPLAY_FIELDS = %w[catalog_view].freeze
+      # Rolling F&B back closes its group (or moves its modules back to
+      # planned): branches keep their data and keep selling.
+      OPEN_GROUPS = %w[retail fnb].freeze
+      FIELDS = %w[group order modules branch_defaults display recommended_features sample_units kitchen_stations].freeze
+      BRANCH_DEFAULT_FIELDS = %w[return_window_days lot_selection variance_threshold adjustment_approval_threshold
+                                 kitchen_send_trigger].freeze
+      DISPLAY_FIELDS = %w[catalog_view surface].freeze
       CATALOG_VIEWS = %w[cards list].freeze
+      # The selling screen. A surface is only a hint: the client still needs
+      # the module (menu_grid shows nothing without fnb.menu).
+      SURFACES = { 'catalog' => nil, 'menu_grid' => 'fnb.menu' }.freeze
+      # Stations the F&B setup step proposes; expo is set up by hand.
+      STATION_KINDS = %w[prep bar].freeze
+      KITCHEN_MODULE = 'fnb.kitchen'
       DECIMAL = /\A\d{1,15}(\.\d{1,4})?\z/
 
-      Profile = Data.define(:key, :group, :order, :modules, :branch_defaults, :display, :recommended_features, :sample_units) do
+      Profile = Data.define(:key, :group, :order, :modules, :branch_defaults, :display, :recommended_features, :sample_units,
+                            :kitchen_stations) do
         # Computed from the module registry, never written by hand.
         def status
           OPEN_GROUPS.include?(group) && modules.all? { |key| Modules.available?(key) } ? AVAILABLE : COMING_SOON
@@ -39,7 +47,8 @@ module Spree
 
         def to_pos
           { key: key, group: group, order: order, status: status, modules: modules, branch_defaults: branch_defaults,
-            display: display, recommended_features: recommended_features, sample_units: sample_units }
+            display: display, recommended_features: recommended_features, sample_units: sample_units,
+            kitchen_stations: kitchen_stations }
         end
       end
 
@@ -80,7 +89,8 @@ module Spree
                         branch_defaults: (attrs['branch_defaults'] || {}).to_h.transform_keys(&:to_s).freeze,
                         display: (attrs['display'] || {}).to_h.transform_keys(&:to_s).freeze,
                         recommended_features: Array(attrs['recommended_features']).map(&:to_s).freeze,
-                        sample_units: Array(attrs['sample_units']).map(&:to_s).freeze)
+                        sample_units: Array(attrs['sample_units']).map(&:to_s).freeze,
+                        kitchen_stations: Array(attrs['kitchen_stations']).map(&:to_s).freeze)
           end
           Catalog.new(version: data['version'], profiles: profiles.sort_by(&:order).freeze)
         end
@@ -121,7 +131,8 @@ module Spree
         end
 
         def to_pos
-          { version: version, modules: Modules.all.map(&:to_pos), profiles: all.map(&:to_pos) }
+          { version: version, modules: Modules.all.map(&:to_pos), profiles: all.map(&:to_pos),
+            tax_categories: TaxCategories.options, menu_tax_defaults: TaxCategories::MENU_DEFAULTS }
         end
 
         private
@@ -137,9 +148,21 @@ module Spree
           errors << "#{key}.order: must be a positive integer." unless attrs['order'].is_a?(Integer) && attrs['order'].positive?
           errors.concat(module_errors(key, attrs['modules']))
           errors.concat(branch_default_errors(key, attrs['branch_defaults']))
-          errors.concat(display_errors(key, attrs['display']))
+          errors.concat(display_errors(key, attrs['display'], attrs['modules']))
           errors.concat(list_errors(key, 'recommended_features', attrs['recommended_features'], FeatureFlag::FEATURES, 'feature'))
           errors.concat(list_errors(key, 'sample_units', attrs['sample_units'], UnitDefinition.known_codes, 'unit'))
+          errors.concat(station_errors(key, attrs['kitchen_stations'], attrs['modules']))
+          errors
+        end
+
+        def station_errors(key, kinds, modules)
+          return [] if kinds.nil?
+          return ["#{key}.kitchen_stations: must be a list."] unless kinds.is_a?(Array)
+
+          errors = kinds.reject { |kind| STATION_KINDS.include?(kind.to_s) }.
+                   map { |kind| "#{key}.kitchen_stations: #{kind.inspect} must be one of #{STATION_KINDS.join(', ')}." }
+          errors << "#{key}.kitchen_stations: lists a kind more than once." if kinds.uniq.size != kinds.size
+          errors << "#{key}.kitchen_stations: needs #{KITCHEN_MODULE}." if kinds.any? && !Array(modules).map(&:to_s).include?(KITCHEN_MODULE)
           errors
         end
 
@@ -185,17 +208,29 @@ module Spree
             'must be empty or an amount of zero or more' unless value.nil? || (value.is_a?(Integer) && value >= 0) || (value.is_a?(String) && value.match?(DECIMAL))
           when 'adjustment_approval_threshold'
             'must be empty or a whole number of zero or more' unless value.nil? || (value.is_a?(Integer) && value >= 0)
+          when 'kitchen_send_trigger'
+            "must be one of #{Kitchen::Send::TRIGGERS.join(', ')}" unless Kitchen::Send::TRIGGERS.include?(value)
           end
         end
 
-        def display_errors(key, display)
+        def display_errors(key, display, modules)
           return [] if display.nil?
           return ["#{key}.display: must be a mapping."] unless display.is_a?(Hash)
 
           display.filter_map do |field, value|
-            next "#{key}.display.#{field}: unknown field; allowed: #{DISPLAY_FIELDS.join(', ')}." unless DISPLAY_FIELDS.include?(field.to_s)
-
-            "#{key}.display.catalog_view: #{value.inspect} must be one of #{CATALOG_VIEWS.join(', ')}." unless CATALOG_VIEWS.include?(value)
+            where = "#{key}.display.#{field}"
+            case field.to_s
+            when 'catalog_view'
+              "#{where}: #{value.inspect} must be one of #{CATALOG_VIEWS.join(', ')}." unless CATALOG_VIEWS.include?(value)
+            when 'surface'
+              if !SURFACES.key?(value)
+                "#{where}: #{value.inspect} must be one of #{SURFACES.keys.join(', ')}."
+              elsif SURFACES[value] && !Array(modules).map(&:to_s).include?(SURFACES[value])
+                "#{where}: #{value} needs #{SURFACES[value]}."
+              end
+            else
+              "#{where}: unknown field; allowed: #{DISPLAY_FIELDS.join(', ')}."
+            end
           end
         end
 

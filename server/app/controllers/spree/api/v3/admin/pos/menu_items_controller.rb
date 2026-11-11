@@ -8,6 +8,15 @@ module Spree
           # Menu items of the store, inactive ones included, each with its
           # sizes at list price for the settings screen.
           class MenuItemsController < MenuResourcesController
+            # meta.tax_defaults: the tax categories the store's F&B setup chose
+            # for food and for alcoholic drinks (ids or null), for the item form.
+            def index
+              read_store!
+              profile = Spree::Pos::StoreProfile.for_store(current_store).includes(:food_tax_category, :alcohol_tax_category).first
+              render json: { data: scope.to_a.map { |record| present(record) },
+                             meta: { tax_defaults: profile&.tax_defaults || { food: nil, alcohol: nil } } }
+            end
+
             private
 
             def model
