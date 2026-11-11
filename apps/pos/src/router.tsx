@@ -11,6 +11,7 @@ import { CollectPage } from './pages/collect';
 import { CustomerDisplayPage } from './pages/customer-display';
 import { LoginPage } from './pages/login';
 import { ReceiptPage } from './pages/receipt';
+import { ReservationsPage } from './pages/reservations';
 import { ReturnExchangePage } from './pages/return-exchange';
 import { SalePage } from './pages/sale';
 import { ShiftsPage } from './pages/shifts';
@@ -79,6 +80,13 @@ const collectRoute = createRoute({
   component: CollectPage,
 });
 
+// A branch's bookings: the day's tables, deposits and seating.
+const reservationsRoute = createRoute({
+  getParentRoute: () => authedRoute,
+  path: '/reservations',
+  component: ReservationsPage,
+});
+
 // Receipts (authed) and the customer display, which has no staff session:
 // it reads only with its own display token.
 const receiptsRoute = createRoute({
@@ -104,7 +112,14 @@ export const router = createRouter({
   routeTree: rootRoute.addChildren([
     loginRoute,
     customerDisplayRoute,
-    authedRoute.addChildren([saleRoute, returnsRoute, shiftsRoute, collectRoute, receiptsRoute]),
+    authedRoute.addChildren([
+      saleRoute,
+      returnsRoute,
+      shiftsRoute,
+      collectRoute,
+      reservationsRoute,
+      receiptsRoute,
+    ]),
   ]),
   basepath: import.meta.env.BASE_URL.replace(/\/$/, '') || '/',
 });

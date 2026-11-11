@@ -10,13 +10,16 @@ class _$TableSplitOrders extends TableSplitOrders {
   @override
   final Workspace workspace;
   @override
-  final Workspace newWorkspace;
+  final Workspace? newWorkspace;
+  @override
+  final BuiltList<Workspace>? newWorkspaces;
 
   factory _$TableSplitOrders(
           [void Function(TableSplitOrdersBuilder)? updates]) =>
       (TableSplitOrdersBuilder()..update(updates))._build();
 
-  _$TableSplitOrders._({required this.workspace, required this.newWorkspace})
+  _$TableSplitOrders._(
+      {required this.workspace, this.newWorkspace, this.newWorkspaces})
       : super._();
   @override
   TableSplitOrders rebuild(void Function(TableSplitOrdersBuilder) updates) =>
@@ -31,7 +34,8 @@ class _$TableSplitOrders extends TableSplitOrders {
     if (identical(other, this)) return true;
     return other is TableSplitOrders &&
         workspace == other.workspace &&
-        newWorkspace == other.newWorkspace;
+        newWorkspace == other.newWorkspace &&
+        newWorkspaces == other.newWorkspaces;
   }
 
   @override
@@ -39,6 +43,7 @@ class _$TableSplitOrders extends TableSplitOrders {
     var _$hash = 0;
     _$hash = $jc(_$hash, workspace.hashCode);
     _$hash = $jc(_$hash, newWorkspace.hashCode);
+    _$hash = $jc(_$hash, newWorkspaces.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -47,7 +52,8 @@ class _$TableSplitOrders extends TableSplitOrders {
   String toString() {
     return (newBuiltValueToStringHelper(r'TableSplitOrders')
           ..add('workspace', workspace)
-          ..add('newWorkspace', newWorkspace))
+          ..add('newWorkspace', newWorkspace)
+          ..add('newWorkspaces', newWorkspaces))
         .toString();
   }
 }
@@ -66,6 +72,12 @@ class TableSplitOrdersBuilder
   set newWorkspace(WorkspaceBuilder? newWorkspace) =>
       _$this._newWorkspace = newWorkspace;
 
+  ListBuilder<Workspace>? _newWorkspaces;
+  ListBuilder<Workspace> get newWorkspaces =>
+      _$this._newWorkspaces ??= ListBuilder<Workspace>();
+  set newWorkspaces(ListBuilder<Workspace>? newWorkspaces) =>
+      _$this._newWorkspaces = newWorkspaces;
+
   TableSplitOrdersBuilder() {
     TableSplitOrders._defaults(this);
   }
@@ -74,7 +86,8 @@ class TableSplitOrdersBuilder
     final $v = _$v;
     if ($v != null) {
       _workspace = $v.workspace.toBuilder();
-      _newWorkspace = $v.newWorkspace.toBuilder();
+      _newWorkspace = $v.newWorkspace?.toBuilder();
+      _newWorkspaces = $v.newWorkspaces?.toBuilder();
       _$v = null;
     }
     return this;
@@ -99,7 +112,8 @@ class TableSplitOrdersBuilder
       _$result = _$v ??
           _$TableSplitOrders._(
             workspace: workspace.build(),
-            newWorkspace: newWorkspace.build(),
+            newWorkspace: _newWorkspace?.build(),
+            newWorkspaces: _newWorkspaces?.build(),
           );
     } catch (_) {
       late String _$failedField;
@@ -107,7 +121,9 @@ class TableSplitOrdersBuilder
         _$failedField = 'workspace';
         workspace.build();
         _$failedField = 'newWorkspace';
-        newWorkspace.build();
+        _newWorkspace?.build();
+        _$failedField = 'newWorkspaces';
+        _newWorkspaces?.build();
       } catch (e) {
         throw BuiltValueNestedFieldError(
             r'TableSplitOrders', _$failedField, e.toString());

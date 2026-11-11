@@ -103,6 +103,9 @@ Map<String, Object?> lineJson(
   String sent = '0',
   String pending = '2',
   Map<String, Object?> kitchen = const {},
+  int? course,
+  String? courseStatus,
+  int? seat,
 }) =>
     {
       'id': id,
@@ -116,6 +119,9 @@ Map<String, Object?> lineJson(
       'pending_kitchen_quantity': pending,
       'row_version': 1,
       'kitchen_status': kitchen,
+      'course': course,
+      'course_status': courseStatus,
+      'seat': seat,
     };
 
 Workspace workspace({String id = 'posws_1', List<Map<String, Object?>> lines = const [], int revision = 3}) =>
@@ -253,12 +259,17 @@ class FakeWaiterApi implements WaiterApi {
   @override
   Future<Workspace> append(String workspaceId, List<AppendItem> items, {required String batchId}) => _answer(
         'append:${items.map((item) => '${item.variantId}x${item.quantity}'
-            '${item.modifiers?.map((pick) => '+${pick.optionId}').join() ?? ''}').join(',')}:$batchId',
+            '${item.modifiers?.map((pick) => '+${pick.optionId}').join() ?? ''}'
+            '${item.course == null ? '' : '@c${item.course}'}${item.seat == null ? '' : 's${item.seat}'}'
+            '${item.hold == true ? 'h' : ''}').join(',')}:$batchId',
         () => current!,
       );
 
   @override
   Future<Workspace> sendToKitchen(String workspaceId) => _answer('send:$workspaceId', () => current!);
+
+  @override
+  Future<Workspace> fireCourse(String workspaceId, int course) => _answer('fire:$workspaceId:$course', () => current!);
 
   @override
   Future<Workspace> voidSent(String workspaceId, String saleLineId,

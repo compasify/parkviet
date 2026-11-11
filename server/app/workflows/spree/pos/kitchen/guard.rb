@@ -101,6 +101,19 @@ module Spree
           item
         end
 
+        # Handing a dish out: the kitchen, and the people at the pass.
+        def serve_item!(store, staff, item_id)
+          item = KitchenTicketItem.find_by_prefix_id(item_id.to_s) || raise(ActiveRecord::RecordNotFound)
+          ticket = item.kitchen_ticket
+          raise ActiveRecord::RecordNotFound unless ticket.store_id == store.id
+
+          access = AccessPolicy.new(store: store, staff: staff)
+          return item if access.allows?(ticket.branch, Capabilities::EXPO_OPERATE)
+
+          operate!(store, staff, ticket.branch)
+          item
+        end
+
         def staff_ticket!(store, staff, ticket_id)
           ticket = KitchenTicket.locate(KitchenTicket.for_store(store), ticket_id) || raise(ActiveRecord::RecordNotFound)
           operate!(store, staff, ticket.branch)

@@ -51,8 +51,26 @@ module Spree
 
         def start = change('start')
         def ready = change('ready')
-        def serve = change('serve')
         def recall = change('recall')
+
+        # The pass hands a ready dish out; the order is announced too.
+        def serve
+          item = Kitchen::Guard.item!(@device.branch, params[:id])
+          Kitchen::MarkServed.call(item: item, actor: @device)
+          render json: { data: item.kitchen_ticket.reload.to_pos }
+        end
+
+        # A pass screen fires a held course of a table order.
+        def fire_course
+          workspace = Kitchen::Guard.workspace!(@device.branch, params[:workspace_id])
+          key = request.headers['Idempotency-Key'].presence || params[:idempotency_key].to_s.presence
+          if key.blank? || key.length > 200
+            return render json: { error: { code: 'parameter_invalid', message: 'Idempotency-Key is required.' } }, status: :unprocessable_content
+          end
+
+          result = Kitchen::FireCourse.call(workspace: workspace, actor: @device, course: params[:course], key: key)
+          render json: { data: result['workspace'], meta: { tickets: result['tickets'], ticket_count: result['ticket_count'] } }
+        end
 
         def bump
           ticket = Kitchen::Guard.ticket!(@device.branch, params[:id])

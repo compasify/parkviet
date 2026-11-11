@@ -8,6 +8,7 @@ import 'package:built_collection/built_collection.dart';
 import 'package:pos_api/src/model/workspace_line.dart';
 import 'package:pos_api/src/model/resource_ref.dart';
 import 'package:pos_api/src/model/workspace_prebill.dart';
+import 'package:pos_api/src/model/workspace_reservation.dart';
 import 'package:pos_api/src/model/kitchen_send_summary.dart';
 import 'package:pos_api/src/model/workspace_service_charge.dart';
 import 'package:pos_api/src/model/workspace_totals.dart';
@@ -35,6 +36,7 @@ part 'workspace.g.dart';
 /// * [serviceCharge] - Present when the branch has a service charge rate.
 /// * [prebill] - The latest pre-bill of a table order.
 /// * [paymentRequest] - The table's open request for the bill.
+/// * [reservation] - The booking seated at this table order, with its deposits.
 /// * [kitchenSends] - Every kitchen send of a table order; null for other orders.
 /// * [lineItems]
 /// * [totals]
@@ -90,6 +92,10 @@ abstract class Workspace implements Built<Workspace, WorkspaceBuilder> {
   /// The table's open request for the bill.
   @BuiltValueField(wireName: r'payment_request')
   PaymentRequest? get paymentRequest;
+
+  /// The booking seated at this table order, with its deposits.
+  @BuiltValueField(wireName: r'reservation')
+  WorkspaceReservation? get reservation;
 
   /// Every kitchen send of a table order; null for other orders.
   @BuiltValueField(wireName: r'kitchen_sends')
@@ -210,6 +216,13 @@ class _$WorkspaceSerializer implements PrimitiveSerializer<Workspace> {
       yield serializers.serialize(
         object.paymentRequest,
         specifiedType: const FullType.nullable(PaymentRequest),
+      );
+    }
+    if (object.reservation != null) {
+      yield r'reservation';
+      yield serializers.serialize(
+        object.reservation,
+        specifiedType: const FullType.nullable(WorkspaceReservation),
       );
     }
     if (object.kitchenSends != null) {
@@ -363,6 +376,14 @@ class _$WorkspaceSerializer implements PrimitiveSerializer<Workspace> {
           ) as PaymentRequest?;
           if (valueDes == null) continue;
           result.paymentRequest.replace(valueDes);
+          break;
+        case r'reservation':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(WorkspaceReservation),
+          ) as WorkspaceReservation?;
+          if (valueDes == null) continue;
+          result.reservation.replace(valueDes);
           break;
         case r'kitchen_sends':
           final valueDes = serializers.deserialize(

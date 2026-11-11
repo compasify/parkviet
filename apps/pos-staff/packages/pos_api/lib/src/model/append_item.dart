@@ -17,6 +17,11 @@ part 'append_item.g.dart';
 /// * [quantity]
 /// * [modifiers]
 /// * [note]
+/// * [course] - The course of a table dish.
+/// * [seat]
+/// * [hold] - Keep the dish off the kitchen until its course is fired; needs `course`.
+/// * [buffetTierId] - Adds the tier's ticket, `quantity` guests, as a `cover` line; `variant_id` is then ignored and may be empty.
+/// * [buffetCoverLineId] - A free dish of that cover's buffet tier; refused (`buffet_item_not_in_tier`) for any other dish.
 @BuiltValue()
 abstract class AppendItem implements Built<AppendItem, AppendItemBuilder> {
   @BuiltValueField(wireName: r'variant_id')
@@ -30,6 +35,25 @@ abstract class AppendItem implements Built<AppendItem, AppendItemBuilder> {
 
   @BuiltValueField(wireName: r'note')
   String? get note;
+
+  /// The course of a table dish.
+  @BuiltValueField(wireName: r'course')
+  int? get course;
+
+  @BuiltValueField(wireName: r'seat')
+  int? get seat;
+
+  /// Keep the dish off the kitchen until its course is fired; needs `course`.
+  @BuiltValueField(wireName: r'hold')
+  bool? get hold;
+
+  /// Adds the tier's ticket, `quantity` guests, as a `cover` line; `variant_id` is then ignored and may be empty.
+  @BuiltValueField(wireName: r'buffet_tier_id')
+  String? get buffetTierId;
+
+  /// A free dish of that cover's buffet tier; refused (`buffet_item_not_in_tier`) for any other dish.
+  @BuiltValueField(wireName: r'buffet_cover_line_id')
+  String? get buffetCoverLineId;
 
   AppendItem._();
 
@@ -77,6 +101,41 @@ class _$AppendItemSerializer implements PrimitiveSerializer<AppendItem> {
       yield r'note';
       yield serializers.serialize(
         object.note,
+        specifiedType: const FullType(String),
+      );
+    }
+    if (object.course != null) {
+      yield r'course';
+      yield serializers.serialize(
+        object.course,
+        specifiedType: const FullType(int),
+      );
+    }
+    if (object.seat != null) {
+      yield r'seat';
+      yield serializers.serialize(
+        object.seat,
+        specifiedType: const FullType(int),
+      );
+    }
+    if (object.hold != null) {
+      yield r'hold';
+      yield serializers.serialize(
+        object.hold,
+        specifiedType: const FullType(bool),
+      );
+    }
+    if (object.buffetTierId != null) {
+      yield r'buffet_tier_id';
+      yield serializers.serialize(
+        object.buffetTierId,
+        specifiedType: const FullType(String),
+      );
+    }
+    if (object.buffetCoverLineId != null) {
+      yield r'buffet_cover_line_id';
+      yield serializers.serialize(
+        object.buffetCoverLineId,
         specifiedType: const FullType(String),
       );
     }
@@ -136,6 +195,46 @@ class _$AppendItemSerializer implements PrimitiveSerializer<AppendItem> {
           ) as String?;
           if (valueDes == null) continue;
           result.note = valueDes;
+          break;
+        case r'course':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(int),
+          ) as int?;
+          if (valueDes == null) continue;
+          result.course = valueDes;
+          break;
+        case r'seat':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(int),
+          ) as int?;
+          if (valueDes == null) continue;
+          result.seat = valueDes;
+          break;
+        case r'hold':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(bool),
+          ) as bool?;
+          if (valueDes == null) continue;
+          result.hold = valueDes;
+          break;
+        case r'buffet_tier_id':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.buffetTierId = valueDes;
+          break;
+        case r'buffet_cover_line_id':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.buffetCoverLineId = valueDes;
           break;
         default:
           unhandled.add(key);

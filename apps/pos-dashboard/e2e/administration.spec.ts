@@ -76,10 +76,10 @@ test('branch and register creation, editing, disabling and recovery preserve pay
   const row = table.getByRole('row').filter({ hasText: 'Quầy ưu tiên' }); await act(page, 'Quầy ưu tiên', 'Ngừng hoạt động'); await confirm(page, 'Ngừng hoạt động'); await expect(row).toContainText('đã ngừng');
   await act(page, 'Quầy ưu tiên', 'Kích hoạt lại'); await confirm(page, 'Kích hoạt lại'); await expect(row).toContainText('đang dùng');
 });
-test('staff permissions expose 28 capabilities, confirm sensitive changes and exclude existing memberships', async ({ page }) => {
+test('staff permissions expose 30 capabilities, confirm sensitive changes and exclude existing memberships', async ({ page }) => {
   const { state, memberships } = await install(page); await open(page, 'branches/branch_main/staff');
   await act(page, 'Nguyễn Thị Lan', 'Chỉnh sửa'); const dialog = page.getByRole('dialog');
-  await expect(dialog.getByRole('group', { name: 'Quyền tại chi nhánh', exact: true }).getByRole('checkbox')).toHaveCount(28);
+  await expect(dialog.getByRole('group', { name: 'Quyền tại chi nhánh', exact: true }).getByRole('checkbox')).toHaveCount(30);
   await dialog.getByRole('checkbox', { name: 'Áp dụng giảm giá', exact: true }).check(); await dialog.getByRole('checkbox', { name: 'Đổi giá bán', exact: true }).check(); await expect(dialog.getByRole('button', { name: 'Lưu', exact: true })).toBeDisabled();
   await dialog.getByRole('checkbox', { name: 'Tôi xác nhận', exact: false }).check(); await expect(dialog).toContainText('lan@example.test'); expect(await dialog.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
   await dialog.getByRole('button', { name: 'Lưu', exact: true }).click(); await expect(dialog).toHaveCount(0);

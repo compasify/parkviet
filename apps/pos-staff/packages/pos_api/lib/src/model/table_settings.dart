@@ -5,6 +5,7 @@
 // ignore_for_file: unused_element
 import 'package:built_collection/built_collection.dart';
 import 'package:pos_api/src/model/table_tax_category.dart';
+import 'package:pos_api/src/model/course_label.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
 
@@ -13,6 +14,10 @@ part 'table_settings.g.dart';
 /// TableSettings
 ///
 /// Properties:
+/// * [reservationGraceMinutes] - How long a booking waits past its time before it is a no-show.
+/// * [reservationDurationMinutes] - The length of a booking when none is given.
+/// * [reservationFeeProductId] - The service sold when a deposit is kept (priced with its tax included).
+/// * [courseLabels]
 /// * [branchId]
 /// * [tableRegisterId] - The register whose open shift table orders are booked on.
 /// * [serviceChargeRate] - Percent of the items after discounts; none when null.
@@ -22,6 +27,21 @@ part 'table_settings.g.dart';
 @BuiltValue()
 abstract class TableSettings
     implements Built<TableSettings, TableSettingsBuilder> {
+  /// How long a booking waits past its time before it is a no-show.
+  @BuiltValueField(wireName: r'reservation_grace_minutes')
+  int get reservationGraceMinutes;
+
+  /// The length of a booking when none is given.
+  @BuiltValueField(wireName: r'reservation_duration_minutes')
+  int get reservationDurationMinutes;
+
+  /// The service sold when a deposit is kept (priced with its tax included).
+  @BuiltValueField(wireName: r'reservation_fee_product_id')
+  String? get reservationFeeProductId;
+
+  @BuiltValueField(wireName: r'course_labels')
+  BuiltList<CourseLabel> get courseLabels;
+
   @BuiltValueField(wireName: r'branch_id')
   String get branchId;
 
@@ -69,6 +89,28 @@ class _$TableSettingsSerializer implements PrimitiveSerializer<TableSettings> {
     TableSettings object, {
     FullType specifiedType = FullType.unspecified,
   }) sync* {
+    yield r'reservation_grace_minutes';
+    yield serializers.serialize(
+      object.reservationGraceMinutes,
+      specifiedType: const FullType(int),
+    );
+    yield r'reservation_duration_minutes';
+    yield serializers.serialize(
+      object.reservationDurationMinutes,
+      specifiedType: const FullType(int),
+    );
+    yield r'reservation_fee_product_id';
+    yield object.reservationFeeProductId == null
+        ? null
+        : serializers.serialize(
+            object.reservationFeeProductId,
+            specifiedType: const FullType.nullable(String),
+          );
+    yield r'course_labels';
+    yield serializers.serialize(
+      object.courseLabels,
+      specifiedType: const FullType(BuiltList, [FullType(CourseLabel)]),
+    );
     yield r'branch_id';
     yield serializers.serialize(
       object.branchId,
@@ -131,6 +173,35 @@ class _$TableSettingsSerializer implements PrimitiveSerializer<TableSettings> {
       final key = serializedList[i] as String;
       final value = serializedList[i + 1];
       switch (key) {
+        case r'reservation_grace_minutes':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(int),
+          ) as int;
+          result.reservationGraceMinutes = valueDes;
+          break;
+        case r'reservation_duration_minutes':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(int),
+          ) as int;
+          result.reservationDurationMinutes = valueDes;
+          break;
+        case r'reservation_fee_product_id':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.reservationFeeProductId = valueDes;
+          break;
+        case r'course_labels':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(BuiltList, [FullType(CourseLabel)]),
+          ) as BuiltList<CourseLabel>;
+          result.courseLabels.replace(valueDes);
+          break;
         case r'branch_id':
           final valueDes = serializers.deserialize(
             value,

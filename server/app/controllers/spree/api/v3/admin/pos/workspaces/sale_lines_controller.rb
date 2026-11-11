@@ -20,7 +20,8 @@ module Spree
 
                 result = Spree::Pos::Workspaces::EditUnsentLine.call(
                   workspace: workspace!(params[:workspace_id]), staff: current_user, key: key, sale_line_id: params[:id],
-                  row_version: params[:row_version], quantity: params[:quantity]
+                  row_version: params[:row_version], quantity: params[:quantity],
+                  placement: params.permit(:course, :seat, :hold).to_h
                 )
                 render json: { data: result }
               end

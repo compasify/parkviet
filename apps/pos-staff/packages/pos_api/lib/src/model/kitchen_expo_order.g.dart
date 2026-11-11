@@ -10,6 +10,8 @@ class _$KitchenExpoOrder extends KitchenExpoOrder {
   @override
   final String workspaceId;
   @override
+  final String? areaId;
+  @override
   final BuiltMap<String, JsonObject?> header;
   @override
   final String serviceMode;
@@ -24,6 +26,7 @@ class _$KitchenExpoOrder extends KitchenExpoOrder {
 
   _$KitchenExpoOrder._(
       {required this.workspaceId,
+      this.areaId,
       required this.header,
       required this.serviceMode,
       this.readySince,
@@ -42,6 +45,7 @@ class _$KitchenExpoOrder extends KitchenExpoOrder {
     if (identical(other, this)) return true;
     return other is KitchenExpoOrder &&
         workspaceId == other.workspaceId &&
+        areaId == other.areaId &&
         header == other.header &&
         serviceMode == other.serviceMode &&
         readySince == other.readySince &&
@@ -52,6 +56,7 @@ class _$KitchenExpoOrder extends KitchenExpoOrder {
   int get hashCode {
     var _$hash = 0;
     _$hash = $jc(_$hash, workspaceId.hashCode);
+    _$hash = $jc(_$hash, areaId.hashCode);
     _$hash = $jc(_$hash, header.hashCode);
     _$hash = $jc(_$hash, serviceMode.hashCode);
     _$hash = $jc(_$hash, readySince.hashCode);
@@ -64,6 +69,7 @@ class _$KitchenExpoOrder extends KitchenExpoOrder {
   String toString() {
     return (newBuiltValueToStringHelper(r'KitchenExpoOrder')
           ..add('workspaceId', workspaceId)
+          ..add('areaId', areaId)
           ..add('header', header)
           ..add('serviceMode', serviceMode)
           ..add('readySince', readySince)
@@ -79,6 +85,10 @@ class KitchenExpoOrderBuilder
   String? _workspaceId;
   String? get workspaceId => _$this._workspaceId;
   set workspaceId(String? workspaceId) => _$this._workspaceId = workspaceId;
+
+  String? _areaId;
+  String? get areaId => _$this._areaId;
+  set areaId(String? areaId) => _$this._areaId = areaId;
 
   MapBuilder<String, JsonObject?>? _header;
   MapBuilder<String, JsonObject?> get header =>
@@ -107,6 +117,7 @@ class KitchenExpoOrderBuilder
     final $v = _$v;
     if ($v != null) {
       _workspaceId = $v.workspaceId;
+      _areaId = $v.areaId;
       _header = $v.header.toBuilder();
       _serviceMode = $v.serviceMode;
       _readySince = $v.readySince;
@@ -136,6 +147,7 @@ class KitchenExpoOrderBuilder
           _$KitchenExpoOrder._(
             workspaceId: BuiltValueNullFieldError.checkNotNull(
                 workspaceId, r'KitchenExpoOrder', 'workspaceId'),
+            areaId: areaId,
             header: header.build(),
             serviceMode: BuiltValueNullFieldError.checkNotNull(
                 serviceMode, r'KitchenExpoOrder', 'serviceMode'),

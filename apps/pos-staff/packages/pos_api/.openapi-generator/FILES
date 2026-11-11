@@ -20,6 +20,10 @@ lib/src/model/area.dart
 lib/src/model/area_input.dart
 lib/src/model/area_list.dart
 lib/src/model/area_result.dart
+lib/src/model/available_resource.dart
+lib/src/model/buffet_tier.dart
+lib/src/model/buffet_tier_item.dart
+lib/src/model/buffet_tier_list.dart
 lib/src/model/call_board.dart
 lib/src/model/call_board_preparing_inner.dart
 lib/src/model/call_board_ready_inner.dart
@@ -32,6 +36,7 @@ lib/src/model/context_administration.dart
 lib/src/model/context_branch.dart
 lib/src/model/context_staff.dart
 lib/src/model/context_store.dart
+lib/src/model/course_label.dart
 lib/src/model/cup_label_settings.dart
 lib/src/model/date.dart
 lib/src/model/device.dart
@@ -75,6 +80,8 @@ lib/src/model/kitchen_board.dart
 lib/src/model/kitchen_board_result.dart
 lib/src/model/kitchen_expo_item.dart
 lib/src/model/kitchen_expo_order.dart
+lib/src/model/kitchen_held_course.dart
+lib/src/model/kitchen_held_line.dart
 lib/src/model/kitchen_history.dart
 lib/src/model/kitchen_history_entry.dart
 lib/src/model/kitchen_history_item.dart
@@ -259,6 +266,19 @@ lib/src/model/recipe.dart
 lib/src/model/recipe_ingredients_inner.dart
 lib/src/model/recipe_owner.dart
 lib/src/model/recipe_owner_versions_inner.dart
+lib/src/model/reservation.dart
+lib/src/model/reservation_availability_result.dart
+lib/src/model/reservation_availability_result_meta.dart
+lib/src/model/reservation_cancel_input.dart
+lib/src/model/reservation_deposit.dart
+lib/src/model/reservation_deposit_resolve_input.dart
+lib/src/model/reservation_input.dart
+lib/src/model/reservation_list.dart
+lib/src/model/reservation_list_meta.dart
+lib/src/model/reservation_result.dart
+lib/src/model/reservation_seat.dart
+lib/src/model/reservation_seat_input.dart
+lib/src/model/reservation_seat_result.dart
 lib/src/model/resource.dart
 lib/src/model/resource_board.dart
 lib/src/model/resource_board_area.dart
@@ -268,6 +288,7 @@ lib/src/model/resource_board_tile.dart
 lib/src/model/resource_input.dart
 lib/src/model/resource_list.dart
 lib/src/model/resource_manual_status_input.dart
+lib/src/model/resource_next_reservation.dart
 lib/src/model/resource_ref.dart
 lib/src/model/resource_result.dart
 lib/src/model/service_charge_waive_input.dart
@@ -293,6 +314,7 @@ lib/src/model/table_pins.dart
 lib/src/model/table_pins_result.dart
 lib/src/model/table_settings.dart
 lib/src/model/table_settings_input.dart
+lib/src/model/table_settings_input_course_labels_inner.dart
 lib/src/model/table_settings_result.dart
 lib/src/model/table_split_input.dart
 lib/src/model/table_split_orders.dart
@@ -302,6 +324,7 @@ lib/src/model/tax_row.dart
 lib/src/model/workspace.dart
 lib/src/model/workspace_line.dart
 lib/src/model/workspace_prebill.dart
+lib/src/model/workspace_reservation.dart
 lib/src/model/workspace_result.dart
 lib/src/model/workspace_service_charge.dart
 lib/src/model/workspace_totals.dart

@@ -17,6 +17,11 @@ export function resourceBoardKey(generation: number, branchId?: string | null) {
     : (['pos', 'resource-board', generation, branchId] as const);
 }
 
+// A branch's bookings of one day (`GET /pos/reservations`).
+export function reservationsKey(generation: number, branchId: string | null, date: string) {
+  return ['pos', 'reservations', generation, branchId, date] as const;
+}
+
 export function posWorkspacesKey(generation: number, storeId: string | null) {
   return ['pos', 'workspaces', generation, storeId] as const;
 }

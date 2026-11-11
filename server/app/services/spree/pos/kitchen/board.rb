@@ -7,6 +7,8 @@ module Spree
       # (every station when none is named: the pass):
       # - `open`: every ticket with an item still to make. Tickets past their
       #   station's red threshold come first, then the oldest.
+      # - `held`: held courses waiting for their fire, on a pass or the board of
+      #   every station only.
       # - `done`: tickets finished in the last 30 minutes, newest first, for recall.
       # - `all_day`: the open items added up by dish and options, oldest first
       #   inside each dish, for the "by dish" tab and its bump.
@@ -34,8 +36,34 @@ module Spree
             stations: shown.map(&:to_pos), service_mode: service_mode.presence, server_now: now.iso8601(3),
             open: open.sort_by { |ticket| [late?(ticket, now) ? 0 : 1, ticket.sent_at, ticket.id] }.map(&:to_pos),
             done: recent(done, cutoff).map(&:to_pos), all_day: all_day(open),
-            expo: expo(chosen ? fed + own.select { |ticket| ticket.kitchen_station.kind == 'expo' } : own)
+            expo: expo(chosen ? fed + own.select { |ticket| ticket.kitchen_station.kind == 'expo' } : own),
+            held: chosen.nil? || chosen.any? { |row| row.kind == 'expo' } ? held(branch, service_mode) : []
           }
+        end
+
+        # Held courses of the open table orders, waiting at the pass for their
+        # fire: one row per order and course, oldest order first. Read from the
+        # sale lines, so nothing reaches a station before it is fired.
+        def held(branch, service_mode)
+          lines = SaleLine.joins(:workspace).where(course_status: 'held').
+                  where(spree_pos_workspaces: { branch_id: branch.id, operational_status: Workspace::OPEN_STATUSES }).
+                  where.not(spree_pos_workspaces: { resource_id: nil })
+          lines = lines.where(spree_pos_workspaces: { service_mode: service_mode }) if service_mode.present?
+          lines = lines.includes(:line_item, workspace: :resource).order(:created_at, :id).to_a
+          return [] if lines.empty?
+
+          names = CourseLabel.for_branch(branch)
+          lines.group_by { |line| [line.workspace_id, line.course] }.map do |(_, course), group|
+            workspace = group.first.workspace
+            {
+              workspace_id: workspace.prefixed_id, resource_name: workspace.resource&.name,
+              area_id: Area.prefixed_for(workspace.resource&.area_id), course: course,
+              course_name: names[course] || "Lượt #{course}", held_since: group.map(&:created_at).min.iso8601(3),
+              lines: group.map do |line|
+                { sale_line_id: line.prefixed_id, name: line.line_item.name, quantity: line.sale_quantity.to_s('F'), seat: line.seat }
+              end
+            }
+          end
         end
 
         # The stations that hand their finished items to a chosen pass.
@@ -59,7 +87,7 @@ module Spree
             "OR (spree_pos_kitchen_ticket_items.status = 'ready' AND spree_pos_kitchen_ticket_items.ready_at >= :expo_cutoff)",
             open: KitchenTicketItem::OPEN, cutoff: cutoff, expo_cutoff: cutoff - (EXPO_WINDOW - KitchenTicket::DONE_WINDOW)
           ).distinct.pluck(:kitchen_ticket_id)
-          KitchenTicket.where(id: ids).includes(:kitchen_station, :workspace, :branch, items: :sale_line).to_a
+          KitchenTicket.where(id: ids).includes(:kitchen_station, :branch, workspace: :resource, items: :sale_line).to_a
         end
 
         def late?(ticket, now)
@@ -100,6 +128,7 @@ module Spree
           ticket = group.first.first
           {
             workspace_id: ticket.workspace.prefixed_id, header: ticket.header, service_mode: ticket.service_mode,
+            area_id: Area.prefixed_for(ticket.workspace.resource&.area_id),
             ready_since: group.filter_map { |_, item| item.ready_at }.min&.iso8601(3),
             items: group.map do |row_ticket, item|
               { item: item.to_pos, kitchen_ticket_id: row_ticket.prefixed_id, station_name: row_ticket.kitchen_station.name }

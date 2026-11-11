@@ -20,15 +20,18 @@ module Spree
         def on_complete(workspace:, actor:)
           return [] unless workspace.branch.kitchen_send_trigger == 'on_complete'
 
-          call(workspace: workspace, actor: actor, send_key: "complete:#{workspace.prefixed_id}")
+          call(workspace: workspace, actor: actor, send_key: "complete:#{workspace.prefixed_id}", buffet: false)
         end
 
         # "Send to kitchen" while the order is still open. A table order is
         # sent by anyone serving it, without a lease: a send only tells the
         # kitchen what the order already holds. Other orders keep the lease.
-        def command(workspace:, staff:, key:, revision: nil, lease_generation: nil, editor_id: nil, device: nil)
+        # pproval_id lets a buffet round past its limits through
+        # (BuffetRounds, approval uffet.override_round).
+        def command(workspace:, staff:, key:, revision: nil, lease_generation: nil, editor_id: nil, device: nil, approval_id: nil)
           lease_free = Workspaces::AppendItems.lease_free?(workspace)
           payload = { 'command' => 'kitchen.send' }
+          payload['approval_id'] = approval_id.to_s if approval_id.present?
           unless lease_free
             payload.merge!('revision' => revision, 'lease_generation' => lease_generation,
                            'editor_digest' => Workspace.editor_digest(editor_id))
@@ -41,24 +44,29 @@ module Spree
               Deliveries::Assign.validate_editing!(workspace, staff, revision, lease_generation, editor_id)
             end
             ModulePolicy.require!(workspace.branch, MODULE)
-            tickets = call(workspace: workspace, actor: staff, send_key: key, device: device)
+            tickets = call(workspace: workspace, actor: staff, send_key: key, device: device, approval_id: approval_id)
             workspace.update!(revision: workspace.revision + 1) if tickets.any?
             { 'workspace' => workspace.to_pos, 'tickets' => tickets.map(&:to_pos), 'ticket_count' => tickets.size }
           end
         end
 
+        # A held course is not sent: it waits at the pass until FireCourse.
+        # uffet: false skips the buffet round rules (a paid counter order).
         # @return [Array<KitchenTicket>] the tickets of this send, new or replayed
-        def call(workspace:, actor:, send_key:, device: nil)
+        def call(workspace:, actor:, send_key:, device: nil, approval_id: nil, buffet: true, scope: nil)
           branch = workspace.branch
           return [] unless ModulePolicy.enabled?(branch, MODULE)
 
           sent = KitchenTicket.where(workspace_id: workspace.id, send_key: send_key).order(:sequence).to_a
           return sent if sent.any?
 
-          pending = SaleLine.where(workspace_id: workspace.id, kind: SaleLineKinds::Menu::KIND).
+          pending = (scope || SaleLine.where(workspace_id: workspace.id)).where(kind: SaleLineKinds::Menu::KIND).
+                    where.not(course_status: 'held').
                     where('sale_quantity > kitchen_sent_quantity').order(:id).lock.
                     includes(:line_modifiers, :line_components, variant: %i[product option_values]).to_a
           return [] if pending.empty?
+
+          BuffetRounds.check!(workspace: workspace, lines: pending, actor: actor, approval_id: approval_id) if buffet
 
           router = Router.new(branch)
           groups = pending.group_by { |line| router.station_for(line, workspace.service_mode) }
@@ -70,9 +78,12 @@ module Spree
           OrderNumbers.assign!(workspace)
           kitchen_send = record_send!(workspace, actor, send_key, device)
           tickets = write!(workspace, actor, send_key, groups, kitchen_send)
-          AuditEntry.record!(store: workspace.store, actor: actor, action: 'kitchen.send', subject: workspace,
-                             metadata: { send_key: send_key, tickets: tickets.map(&:prefixed_id),
-                                         lines: pending.map(&:prefixed_id) })
+          # A pass screen firing a course is named on the send itself.
+          if actor.is_a?(Spree.admin_user_class)
+            AuditEntry.record!(store: workspace.store, actor: actor, action: 'kitchen.send', subject: workspace,
+                               metadata: { send_key: send_key, tickets: tickets.map(&:prefixed_id),
+                                           lines: pending.map(&:prefixed_id) })
+          end
           print_after_commit(tickets, actor)
           CupLabels::Issue.after_commit(workspace: workspace, actor: actor, upto: :sent)
           tickets

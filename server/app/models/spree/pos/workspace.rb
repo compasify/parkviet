@@ -187,6 +187,8 @@ module Spree
           service_charge: branch.service_charge_rate && ServiceCharges::Apply.to_pos(self),
           prebill: resource_id && prebill_pos,
           payment_request: resource_id && PaymentRequest.open.find_by(workspace_id: id)&.to_pos,
+          # The booking seated at this table and the deposits it brought.
+          reservation: resource_id && reservation_pos,
           # Who told the kitchen what, and when; table orders are sent many times.
           kitchen_sends: resource_id && KitchenSend.where(workspace_id: id).includes(:staff, :device).order(:sequence).map(&:to_pos),
           totals: {
@@ -215,6 +217,19 @@ module Spree
       def prebill_pos
         print = PrebillPrint.where(workspace_id: id).order(:sequence).last
         print && print.to_pos.merge(stale: print.status == 'superseded' || (print.status == 'current' && print.revision != revision))
+      end
+
+      # The booking seated at this table, if any, with its deposits.
+      def reservation_pos
+        booking = Reservation.includes(deposits: :received_funds).find_by(workspace_id: id)
+        return nil if booking.nil?
+
+        {
+          id: booking.prefixed_id, guest_name: booking.guest_name, party_size: booking.party_size,
+          status: booking.status, revision: booking.revision,
+          deposit_held: money(booking.deposits.select(&:held?).sum(&:amount)),
+          deposits: booking.deposits.map(&:to_pos)
+        }
       end
 
       def financial_pos

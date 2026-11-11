@@ -3,17 +3,19 @@
 //
 
 // ignore_for_file: unused_element
+import 'package:built_collection/built_collection.dart';
 import 'package:pos_api/src/model/workspace.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
 
 part 'table_split_orders.g.dart';
 
-/// TableSplitOrders
+/// The order split, and the new order (by lines) or the new bills of the other seats (by seat).
 ///
 /// Properties:
 /// * [workspace]
 /// * [newWorkspace]
+/// * [newWorkspaces]
 @BuiltValue()
 abstract class TableSplitOrders
     implements Built<TableSplitOrders, TableSplitOrdersBuilder> {
@@ -21,7 +23,10 @@ abstract class TableSplitOrders
   Workspace get workspace;
 
   @BuiltValueField(wireName: r'new_workspace')
-  Workspace get newWorkspace;
+  Workspace? get newWorkspace;
+
+  @BuiltValueField(wireName: r'new_workspaces')
+  BuiltList<Workspace>? get newWorkspaces;
 
   TableSplitOrders._();
 
@@ -54,11 +59,20 @@ class _$TableSplitOrdersSerializer
       object.workspace,
       specifiedType: const FullType(Workspace),
     );
-    yield r'new_workspace';
-    yield serializers.serialize(
-      object.newWorkspace,
-      specifiedType: const FullType(Workspace),
-    );
+    if (object.newWorkspace != null) {
+      yield r'new_workspace';
+      yield serializers.serialize(
+        object.newWorkspace,
+        specifiedType: const FullType(Workspace),
+      );
+    }
+    if (object.newWorkspaces != null) {
+      yield r'new_workspaces';
+      yield serializers.serialize(
+        object.newWorkspaces,
+        specifiedType: const FullType(BuiltList, [FullType(Workspace)]),
+      );
+    }
   }
 
   @override
@@ -94,9 +108,19 @@ class _$TableSplitOrdersSerializer
         case r'new_workspace':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType: const FullType(Workspace),
-          ) as Workspace;
+            specifiedType: const FullType.nullable(Workspace),
+          ) as Workspace?;
+          if (valueDes == null) continue;
           result.newWorkspace.replace(valueDes);
+          break;
+        case r'new_workspaces':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType:
+                const FullType.nullable(BuiltList, [FullType(Workspace)]),
+          ) as BuiltList<Workspace>?;
+          if (valueDes == null) continue;
+          result.newWorkspaces.replace(valueDes);
           break;
         default:
           unhandled.add(key);

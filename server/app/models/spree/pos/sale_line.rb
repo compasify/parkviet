@@ -12,6 +12,9 @@ module Spree
       belongs_to :variant, class_name: 'Spree::Variant'
       belongs_to :added_by, class_name: staff_class_name, optional: true
       belongs_to :added_device, class_name: 'Spree::Pos::Device', optional: true
+      # A buffet cover names its tier; a dish eaten on the buffet names its cover.
+      belongs_to :buffet_tier, class_name: 'Spree::Pos::BuffetTier', optional: true
+      belongs_to :buffet_cover_line, class_name: 'Spree::Pos::SaleLine', optional: true
       has_one :line_discount_intent, class_name: 'Spree::Pos::LineDiscountIntent', dependent: :destroy
       has_many :line_modifiers, -> { order(:id) }, class_name: 'Spree::Pos::LineModifier', dependent: :delete_all,
                                                    inverse_of: :sale_line
@@ -21,6 +24,11 @@ module Spree
       validates :merge_key, presence: true
       validates :note, length: { maximum: 200 }
       validate :kind_is_registered
+      # held: its course waits for a fire; the kitchen is not told yet.
+      COURSE_STATUSES = %w[none held fired].freeze
+      validates :course_status, inclusion: { in: COURSE_STATUSES }
+      validates :course, numericality: { only_integer: true, in: 1..CourseLabel::MAX }, allow_nil: true
+      validates :seat, numericality: { only_integer: true, in: 1..99 }, allow_nil: true
       # Every change of the line moves its version, so an edit made from an
       # older copy of the line is refused (Workspaces::EditUnsentLine).
       before_update :bump_row_version
@@ -61,13 +69,17 @@ module Spree
           note: note, modifiers: line_modifiers.map(&:to_pos), components: line_components.map(&:to_pos),
           kitchen_sent_quantity: kitchen_sent_quantity.to_s('F'),
           pending_kitchen_quantity: pending_kitchen_quantity.to_s('F'), row_version: row_version,
-          added_by: added_by_id && { id: added_by.prefixed_id, name: KitchenSend.staff_name(added_by) }
+          added_by: added_by_id && { id: added_by.prefixed_id, name: KitchenSend.staff_name(added_by) },
+          course: course, course_status: course_status, seat: seat,
+          buffet_tier_id: BuffetTier.prefixed_for(buffet_tier_id),
+          buffet_cover_line_id: SaleLine.prefixed_for(buffet_cover_line_id)
         }
       end
 
-      # What the kitchen has not been told yet; only menu lines go to the kitchen.
+      # What the kitchen has not been told yet; only menu lines go to the
+      # kitchen, and a held course waits for its fire.
       def pending_kitchen_quantity
-        return BigDecimal('0') unless kind == SaleLineKinds::Menu::KIND
+        return BigDecimal('0') unless kind == SaleLineKinds::Menu::KIND && course_status != 'held'
 
         [sale_quantity - kitchen_sent_quantity, BigDecimal('0')].max
       end

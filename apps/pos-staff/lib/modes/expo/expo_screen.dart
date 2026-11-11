@@ -15,6 +15,7 @@ import '../kds/kds_repository.dart';
 import '../kds/kds_screen.dart';
 import '../kds/ticket_card.dart';
 import '../mode_scaffold.dart';
+import '../waiter/table_courses.dart';
 
 /// The pass: the ready items waiting to go out, one card per table or
 /// order, oldest first. "Đã ra" serves one item, "Ra cả đơn" every ready
@@ -72,6 +73,9 @@ class ExpoBoard extends StatefulWidget {
 class _ExpoBoardState extends State<ExpoBoard> {
   late final Timer _ticker = Timer.periodic(widget.tick, (_) => setState(() {}));
 
+  /// The area the pass looks after; null for every area.
+  String? _area;
+
   @override
   void dispose() {
     _ticker.cancel();
@@ -97,6 +101,14 @@ class _ExpoBoardState extends State<ExpoBoard> {
         final board = state.board;
         if (board == null) return const Center(child: CircularProgressIndicator());
         final now = widget.controller.clock.now();
+        final areas = {
+          for (final order in board.expo) order.areaId,
+          for (final held in board.held) held.areaId,
+        }.whereType<String>().toList()
+          ..sort();
+        final area = areas.contains(_area) ? _area : null;
+        final ready = board.expo.where((order) => area == null || order.areaId == area).toList();
+        final held = board.held.where((row) => area == null || row.areaId == area).toList();
         return Column(
           children: [
             if (!state.live)
@@ -107,14 +119,43 @@ class _ExpoBoardState extends State<ExpoBoard> {
                 padding: const EdgeInsets.all(12),
                 child: Text(l10n.kdsOfflineNever, style: theme.textTheme.titleMedium),
               ),
+            if (areas.length > 1)
+              SizedBox(
+                height: 56,
+                child: ListView(
+                  key: const Key('expo-areas'),
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.all(8),
+                  children: [
+                    for (final choice in [null, ...areas])
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: ChoiceChip(
+                          key: Key('expo-area-${choice ?? 'all'}'),
+                          label: Text(choice == null ? l10n.expoAllAreas : l10n.expoArea(areas.indexOf(choice) + 1)),
+                          selected: area == choice,
+                          onSelected: (_) => setState(() => _area = choice),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
             Expanded(
-              child: board.expo.isEmpty
+              child: ready.isEmpty && held.isEmpty
                   ? Center(child: Text(l10n.expoNothingReady, style: const TextStyle(fontSize: 18)))
                   : ListView(
                       key: const Key('expo-orders'),
                       padding: const EdgeInsets.all(8),
                       children: [
-                        for (final order in board.expo)
+                        if (held.isNotEmpty) _SectionTitle(l10n.expoHeldTitle),
+                        for (final row in held)
+                          _HeldCourseCard(
+                            held: row,
+                            now: now,
+                            onFire: () => _run(() => widget.controller.fireCourse(row.workspaceId, row.course)),
+                          ),
+                        if (ready.isNotEmpty) _SectionTitle(l10n.expoReadyTitle),
+                        for (final order in ready)
                           _ExpoOrderCard(
                             order: order,
                             now: now,
@@ -176,6 +217,7 @@ class _ExpoOrderCard extends StatelessWidget {
                 ),
                 subtitle: Text(
                   [
+                    if (row.item.seat != null) l10n.seatNumber(row.item.seat!),
                     if (modifiersLabel(row.item).isNotEmpty) '+ ${modifiersLabel(row.item)}',
                     row.stationName,
                   ].join(' · '),
@@ -197,6 +239,74 @@ class _ExpoOrderCard extends StatelessWidget {
                 onPressed: onServeAll,
                 icon: const Icon(Icons.room_service_outlined),
                 label: Text(l10n.expoServeAll, style: const TextStyle(fontSize: 18)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(4, 12, 4, 4),
+        child: Text(text, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+      );
+}
+
+/// A course a table holds back: its dishes by seat and a fire button.
+class _HeldCourseCard extends StatelessWidget {
+  const _HeldCourseCard({required this.held, required this.now, required this.onFire});
+
+  final KitchenHeldCourse held;
+  final DateTime now;
+  final VoidCallback onFire;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final name = held.courseName.isEmpty ? courseLabel(l10n, held.course) : held.courseName;
+    return Card(
+      key: Key('expo-held-${held.workspaceId}-${held.course}'),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '${held.resourceName ?? l10n.kdsOrder(held.workspaceId)} · $name',
+                    style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                ),
+                Text(elapsedLabel(held.heldSince, now), style: theme.textTheme.titleMedium),
+              ],
+            ),
+            for (final line in held.lines)
+              Text(
+                [
+                  '${quantityLabel(line.quantity)} x ${line.name}',
+                  if (line.seat != null) l10n.seatNumber(line.seat!),
+                ].join(' · '),
+                style: const TextStyle(fontSize: 18),
+              ),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: kdsButtonHeight,
+              child: FilledButton.icon(
+                key: Key('expo-fire-${held.workspaceId}-${held.course}'),
+                onPressed: onFire,
+                icon: const Icon(Icons.local_fire_department_outlined),
+                label: Text(l10n.courseFire(name, held.lines.length), style: const TextStyle(fontSize: 18)),
               ),
             ),
           ],

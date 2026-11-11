@@ -3,6 +3,7 @@ import { useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useModalFocus } from '../lib/dialog-focus';
 import type { PosWorkspace } from '../lib/pos-context';
+import { canSplitBySeat, seatsOf, sharedLines } from '../lib/table-courses';
 import { PosIcon } from './pos-icon';
 
 // Picks the lines that leave this table order for a new one, at the same
@@ -14,6 +15,7 @@ export function SplitOrderDialog({
   busy,
   error,
   onSplit,
+  onSplitBySeat,
   onClose,
 }: {
   workspace: PosWorkspace;
@@ -22,6 +24,8 @@ export function SplitOrderDialog({
   busy: boolean;
   error: string;
   onSplit: (input: { saleLineIds: string[]; resourceId?: string }) => void;
+  // One bill per seat, each shared dish on the seat picked for it.
+  onSplitBySeat?: (shared: Record<string, number>) => void;
   onClose: () => void;
 }) {
   const { t } = useTranslation();
@@ -29,6 +33,11 @@ export function SplitOrderDialog({
   const card = useRef<HTMLDivElement>(null);
   const [picked, setPicked] = useState<string[]>([]);
   const [target, setTarget] = useState('');
+  const bySeat = Boolean(onSplitBySeat) && canSplitBySeat(workspace);
+  const [mode, setMode] = useState<'lines' | 'seat'>('lines');
+  const seats = seatsOf(workspace);
+  const shared = sharedLines(workspace);
+  const [sharedSeat, setSharedSeat] = useState<Record<string, number>>({});
   useModalFocus(card, () => {
     if (!busy) onClose();
   });
@@ -63,57 +72,141 @@ export function SplitOrderDialog({
             <PosIcon name="close" />
           </button>
         </div>
-        <fieldset className="split-order-lines">
-          <legend>{t('tableSplitLines')}</legend>
-          {lines.map((line) => (
-            <label key={line.id}>
+        {bySeat ? (
+          <div className="row split-order-mode" role="radiogroup" aria-label={t('tableSplitMode')}>
+            <label>
               <input
-                type="checkbox"
-                checked={picked.includes(line.id)}
-                onChange={() => toggle(line.id)}
+                type="radio"
+                name="split-mode"
+                checked={mode === 'lines'}
+                onChange={() => setMode('lines')}
               />
-              <span>
-                {line.quantity} × {line.name}
-              </span>
+              {t('tableSplitByLines')}
             </label>
-          ))}
-        </fieldset>
-        <label>
-          {t('tableSplitTarget')}
-          <select value={target} onChange={(event) => setTarget(event.target.value)}>
-            <option value="">{t('tableSplitSameTable')}</option>
-            {tables
-              .filter((row) => row.id !== tableId && row.state === 'available')
-              .map((row) => (
-                <option key={row.id} value={row.id}>
-                  {row.name}
-                </option>
+            <label>
+              <input
+                type="radio"
+                name="split-mode"
+                checked={mode === 'seat'}
+                onChange={() => setMode('seat')}
+              />
+              {t('tableSplitBySeat')}
+            </label>
+          </div>
+        ) : null}
+        {bySeat && mode === 'seat' ? (
+          <>
+            <p className="workspace-hint">{t('tableSplitBySeatHint', { count: seats.length })}</p>
+            {shared.length > 0 ? (
+              <fieldset className="split-order-lines">
+                <legend>{t('tableSplitShared')}</legend>
+                {shared.map((line) => (
+                  <label key={line.sale_line_id}>
+                    <span>
+                      {line.quantity} × {line.name}
+                    </span>
+                    <select
+                      value={sharedSeat[line.sale_line_id ?? ''] ?? seats[0]}
+                      onChange={(event) =>
+                        setSharedSeat((current) => ({
+                          ...current,
+                          [line.sale_line_id ?? '']: Number(event.target.value),
+                        }))
+                      }
+                    >
+                      {seats.map((seat) => (
+                        <option key={seat} value={seat}>
+                          {t('seatNumber', { seat })}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ))}
+              </fieldset>
+            ) : null}
+            {error ? (
+              <p className="error" role="alert">
+                {error}
+              </p>
+            ) : null}
+            <div className="payment-popup-actions">
+              <button
+                type="button"
+                className="checkout-submit"
+                disabled={busy}
+                onClick={() =>
+                  onSplitBySeat?.(
+                    Object.fromEntries(
+                      shared.map((line) => [
+                        line.sale_line_id ?? '',
+                        sharedSeat[line.sale_line_id ?? ''] ?? seats[0],
+                      ]),
+                    ),
+                  )
+                }
+              >
+                {busy ? t('waiting') : t('tableSplitBySeatAction', { count: seats.length })}
+              </button>
+              <button type="button" disabled={busy} onClick={onClose}>
+                {t('creditClose')}
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <fieldset className="split-order-lines">
+              <legend>{t('tableSplitLines')}</legend>
+              {lines.map((line) => (
+                <label key={line.id}>
+                  <input
+                    type="checkbox"
+                    checked={picked.includes(line.id)}
+                    onChange={() => toggle(line.id)}
+                  />
+                  <span>
+                    {line.quantity} × {line.name}
+                  </span>
+                </label>
               ))}
-          </select>
-        </label>
-        {tooMany ? (
-          <p className="workspace-hint" role="status">
-            {t('tableFailure_split_all_lines')}
-          </p>
-        ) : null}
-        {error ? (
-          <p className="error" role="alert">
-            {error}
-          </p>
-        ) : null}
-        <div className="payment-popup-actions">
-          <button
-            type="button"
-            className="checkout-submit"
-            disabled={busy || picked.length === 0 || tooMany}
-            onClick={() => onSplit({ saleLineIds: picked, resourceId: target || undefined })}
-          >
-            {busy ? t('waiting') : t('tableSplitAction')}
-          </button>
-          <button type="button" disabled={busy} onClick={onClose}>
-            {t('creditClose')}
-          </button>
-        </div>
+            </fieldset>
+            <label>
+              {t('tableSplitTarget')}
+              <select value={target} onChange={(event) => setTarget(event.target.value)}>
+                <option value="">{t('tableSplitSameTable')}</option>
+                {tables
+                  .filter((row) => row.id !== tableId && row.state === 'available')
+                  .map((row) => (
+                    <option key={row.id} value={row.id}>
+                      {row.name}
+                    </option>
+                  ))}
+              </select>
+            </label>
+            {tooMany ? (
+              <p className="workspace-hint" role="status">
+                {t('tableFailure_split_all_lines')}
+              </p>
+            ) : null}
+            {error ? (
+              <p className="error" role="alert">
+                {error}
+              </p>
+            ) : null}
+            <div className="payment-popup-actions">
+              <button
+                type="button"
+                className="checkout-submit"
+                disabled={busy || picked.length === 0 || tooMany}
+                onClick={() => onSplit({ saleLineIds: picked, resourceId: target || undefined })}
+              >
+                {busy ? t('waiting') : t('tableSplitAction')}
+              </button>
+              <button type="button" disabled={busy} onClick={onClose}>
+                {t('creditClose')}
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

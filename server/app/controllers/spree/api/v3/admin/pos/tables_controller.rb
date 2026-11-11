@@ -30,7 +30,10 @@ module Spree
               command(Spree::Pos::Tables::Merge, target_workspace_id: params[:target_workspace_id])
             end
 
+            # y: seat gives every seat its own bill; otherwise the chosen lines move.
             def split
+              return command(Spree::Pos::Tables::SplitBySeat, shared: params[:shared] || {}) if params[:by].to_s == 'seat'
+
               command(Spree::Pos::Tables::Split, sale_line_ids: Array(params[:sale_line_ids]), resource_id: params[:resource_id],
                                                  guest_count: params[:guest_count])
             end

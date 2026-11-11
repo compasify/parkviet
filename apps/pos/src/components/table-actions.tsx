@@ -29,6 +29,7 @@ export function TableOrderBar({
   onMove,
   onMerge,
   onSplit,
+  onSplitBySeat,
   onServiceCharge,
   onRequestPayment,
   onResolvePayment,
@@ -47,6 +48,8 @@ export function TableOrderBar({
   onMove: (resourceId: string) => Promise<unknown>;
   onMerge: (targetId: string) => Promise<unknown>;
   onSplit: (input: { saleLineIds: string[]; resourceId?: string }) => Promise<unknown>;
+  // One bill per seat; absent when the branch does not track seats.
+  onSplitBySeat?: (shared: Record<string, number>) => Promise<unknown>;
   onServiceCharge: (waived: boolean) => Promise<unknown>;
   onRequestPayment: () => Promise<unknown>;
   onResolvePayment: (status: 'done' | 'canceled') => Promise<unknown>;
@@ -258,6 +261,14 @@ export function TableOrderBar({
             void act(() => onSplit(input)).then((done) => {
               if (done) setSplitting(false);
             })
+          }
+          onSplitBySeat={
+            onSplitBySeat
+              ? (shared) =>
+                  void act(() => onSplitBySeat(shared)).then((done) => {
+                    if (done) setSplitting(false);
+                  })
+              : undefined
           }
         />
       ) : null}

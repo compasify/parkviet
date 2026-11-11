@@ -27,9 +27,20 @@ module Spree
             batch ||= SecureRandom.uuid
             scope = SaleLine.where(workspace_id: workspace.id, append_batch_id: batch, kitchen_sent_quantity: 0)
             results = rows.map do |row|
+              course = TableLines.course_attributes(row)
+              if row['buffet_tier_id']
+                next TableLines.add_cover!(workspace: workspace, staff: staff, row: row,
+                                           attributes: { added_by: staff, added_device: device, append_batch_id: batch, **course })
+              end
+
+              cover = row['buffet_cover_line_id'] && TableLines.buffet_cover!(workspace, row)
+              # Buffet dishes are free on their cover and never merge across covers.
               LineBuilder.add!(workspace: workspace, staff: staff, variant_id: row['variant_id'], quantity: row['quantity'],
-                               modifiers: row['modifiers'], note: row['note'], merge: true, merge_scope: scope,
-                               attributes: { added_by: staff, added_device: device, append_batch_id: batch })
+                               modifiers: row['modifiers'], note: row['note'], merge: cover.nil?,
+                               merge_scope: scope.where(course: course[:course], seat: course[:seat], course_status: course[:course_status]),
+                               server_price: cover && BigDecimal('0'),
+                               attributes: { added_by: staff, added_device: device, append_batch_id: batch,
+                                             buffet_cover_line_id: cover&.id, **course })
             end
             ApplyDiscount.recalculate!(workspace)
             workspace.update!(revision: workspace.revision + 1)
@@ -84,14 +95,16 @@ module Spree
             raise Conflict.new('An item is invalid.', reason: 'append_items_invalid') unless row.is_a?(Hash)
 
             row = row.stringify_keys
-            raise Conflict.new('An item needs a variant.', reason: 'append_items_invalid') if row['variant_id'].blank?
+            if row['variant_id'].blank? && row['buffet_tier_id'].blank?
+              raise Conflict.new('An item needs a variant.', reason: 'append_items_invalid')
+            end
 
             ManageLineItem.check_note!(row['note'])
             entry = { 'variant_id' => row['variant_id'].to_s, 'quantity' => row['quantity'].nil? ? 1 : row['quantity'] }
             modifiers = ManageLineItem.normalize_modifiers(row['modifiers'])
             entry['modifiers'] = modifiers unless modifiers.nil?
             entry['note'] = row['note'].to_s if row['note'].present?
-            entry
+            entry.merge(TableLines.normalize(row))
           end
         end
       end

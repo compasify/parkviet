@@ -10,11 +10,14 @@ import 'package:built_value/serializer.dart';
 
 part 'edit_unsent_line_input.g.dart';
 
-/// EditUnsentLineInput
+/// At least one of the fields. A sent line may still change its seat; quantity, course and hold only change on what was not sent.
 ///
 /// Properties:
 /// * [rowVersion]
 /// * [quantity]
+/// * [course]
+/// * [seat]
+/// * [hold]
 @BuiltValue()
 abstract class EditUnsentLineInput
     implements Built<EditUnsentLineInput, EditUnsentLineInputBuilder> {
@@ -22,7 +25,16 @@ abstract class EditUnsentLineInput
   int get rowVersion;
 
   @BuiltValueField(wireName: r'quantity')
-  int get quantity;
+  int? get quantity;
+
+  @BuiltValueField(wireName: r'course')
+  int? get course;
+
+  @BuiltValueField(wireName: r'seat')
+  int? get seat;
+
+  @BuiltValueField(wireName: r'hold')
+  bool? get hold;
 
   EditUnsentLineInput._();
 
@@ -58,11 +70,34 @@ class _$EditUnsentLineInputSerializer
       object.rowVersion,
       specifiedType: const FullType(int),
     );
-    yield r'quantity';
-    yield serializers.serialize(
-      object.quantity,
-      specifiedType: const FullType(int),
-    );
+    if (object.quantity != null) {
+      yield r'quantity';
+      yield serializers.serialize(
+        object.quantity,
+        specifiedType: const FullType(int),
+      );
+    }
+    if (object.course != null) {
+      yield r'course';
+      yield serializers.serialize(
+        object.course,
+        specifiedType: const FullType.nullable(int),
+      );
+    }
+    if (object.seat != null) {
+      yield r'seat';
+      yield serializers.serialize(
+        object.seat,
+        specifiedType: const FullType.nullable(int),
+      );
+    }
+    if (object.hold != null) {
+      yield r'hold';
+      yield serializers.serialize(
+        object.hold,
+        specifiedType: const FullType(bool),
+      );
+    }
   }
 
   @override
@@ -98,9 +133,34 @@ class _$EditUnsentLineInputSerializer
         case r'quantity':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType: const FullType(int),
-          ) as int;
+            specifiedType: const FullType.nullable(int),
+          ) as int?;
+          if (valueDes == null) continue;
           result.quantity = valueDes;
+          break;
+        case r'course':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(int),
+          ) as int?;
+          if (valueDes == null) continue;
+          result.course = valueDes;
+          break;
+        case r'seat':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(int),
+          ) as int?;
+          if (valueDes == null) continue;
+          result.seat = valueDes;
+          break;
+        case r'hold':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(bool),
+          ) as bool?;
+          if (valueDes == null) continue;
+          result.hold = valueDes;
           break;
         default:
           unhandled.add(key);

@@ -30,6 +30,8 @@ Map<String, Object?> itemJson(
   List<Map<String, Object?>> modifiers = const [],
   String? readyAt,
   int recallCount = 0,
+  int? seat,
+  int? course,
 }) =>
     {
       'id': id,
@@ -48,6 +50,8 @@ Map<String, Object?> itemJson(
       'recall_count': recallCount,
       'prep_seconds': null,
       'late': false,
+      'seat': seat,
+      'course': course,
     };
 
 Map<String, Object?> ticketJson(
@@ -87,6 +91,7 @@ KitchenBoard board({
   Map<String, Object?>? station,
   List<Map<String, Object?>> allDay = const [],
   List<Map<String, Object?>> expo = const [],
+  List<Map<String, Object?>> held = const [],
 }) =>
     standardSerializers.deserializeWith(KitchenBoard.serializer, {
       'branch_id': 'posbranch_1',
@@ -98,6 +103,7 @@ KitchenBoard board({
       'done': done,
       'all_day': allDay,
       'expo': expo,
+      'held': held,
     })!;
 
 /// One all-day row as `Kitchen::Board` answers it.
@@ -159,6 +165,11 @@ class FakeKitchenApi implements KitchenApi {
   Future<List<KitchenTicket>> serveOrder(String workspaceId) async {
     calls.add('serveOrder:$workspaceId');
     return servedResult;
+  }
+
+  @override
+  Future<void> fireCourse(String workspaceId, int course) async {
+    calls.add('fire:$workspaceId:$course');
   }
 
   @override

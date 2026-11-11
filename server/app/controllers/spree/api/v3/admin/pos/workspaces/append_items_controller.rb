@@ -31,7 +31,7 @@ module Spree
               def item(row)
                 return row unless row.respond_to?(:permit)
 
-                permitted = row.permit(:variant_id, :quantity, :note).to_h
+                permitted = row.permit(:variant_id, :quantity, :note, :course, :seat, :hold, :buffet_tier_id, :buffet_cover_line_id).to_h
                 permitted['modifiers'] = ItemsController.modifier_params(row) if row.key?(:modifiers)
                 permitted
               end

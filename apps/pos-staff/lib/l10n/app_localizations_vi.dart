@@ -920,4 +920,128 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get checklistStart => 'Bắt đầu dùng';
+
+  @override
+  String get courseNone => 'Không chia lượt';
+
+  @override
+  String get courseStarter => 'Khai vị';
+
+  @override
+  String get courseMain => 'Món chính';
+
+  @override
+  String get courseDessert => 'Tráng miệng';
+
+  @override
+  String courseNumber(int number) {
+    return 'Lượt $number';
+  }
+
+  @override
+  String get courseHold => 'Giữ lại, chờ gọi';
+
+  @override
+  String get courseHeldTitle => 'Đang giữ, chờ gọi món';
+
+  @override
+  String courseFire(String course, int count) {
+    return 'Gọi $course ($count món)';
+  }
+
+  @override
+  String courseFired(String course) {
+    return 'Đã gửi bếp: $course';
+  }
+
+  @override
+  String get seatLabel => 'Ghế';
+
+  @override
+  String get seatShared => 'Dùng chung';
+
+  @override
+  String seatNumber(int seat) {
+    return 'Ghế $seat';
+  }
+
+  @override
+  String get expoHeldTitle => 'Chờ gọi món';
+
+  @override
+  String get expoReadyTitle => 'Đã xong, cần mang ra';
+
+  @override
+  String get expoAllAreas => 'Tất cả khu';
+
+  @override
+  String expoArea(int number) {
+    return 'Khu $number';
+  }
+
+  @override
+  String get ownerReservationsTitle => 'Đặt bàn hôm nay';
+
+  @override
+  String get ownerNoReservations => 'Hôm nay chưa có lượt đặt bàn.';
+
+  @override
+  String ownerDeposit(String amount, String status) {
+    return 'Cọc $amount · $status';
+  }
+
+  @override
+  String get ownerRefund => 'Hoàn cọc';
+
+  @override
+  String get ownerForfeit => 'Giữ cọc';
+
+  @override
+  String ownerConfirmRefund(String amount, String name) {
+    return 'Hoàn $amount cho $name?';
+  }
+
+  @override
+  String ownerConfirmForfeit(String amount, String name) {
+    return 'Giữ cọc $amount của $name? Khoản cọc thành một hóa đơn phí giữ chỗ có thuế.';
+  }
+
+  @override
+  String get ownerConfirm => 'Xác nhận';
+
+  @override
+  String get ownerKeep => 'Thôi';
+
+  @override
+  String get ownerRefunded => 'Đã hoàn cọc.';
+
+  @override
+  String get ownerForfeited => 'Đã ghi nhận giữ cọc.';
+
+  @override
+  String get reservationBooked => 'Đã đặt';
+
+  @override
+  String get reservationSeated => 'Đã vào bàn';
+
+  @override
+  String get reservationCompleted => 'Đã xong';
+
+  @override
+  String get reservationNoShow => 'Không đến';
+
+  @override
+  String get reservationCanceled => 'Đã hủy';
+
+  @override
+  String get depositHeld => 'đang giữ';
+
+  @override
+  String get depositApplied => 'đã trừ vào hóa đơn';
+
+  @override
+  String get depositRefunded => 'đã hoàn';
+
+  @override
+  String get depositForfeited => 'đã giữ cọc';
 }

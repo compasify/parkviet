@@ -92,6 +92,8 @@ module Spree
             # The bill the table asked for is paid: its request is done.
             PaymentRequest.open.where(workspace_id: workspace.id).update_all(status: 'done', resolved_by_id: staff.id,
                                                                              resolved_at: Time.current, updated_at: Time.current)
+            # The booking seated at this table is done and lets its tables go.
+            Reservations::Seat.finish!(workspace) if workspace.resource_id
             AuditEntry.record!(store: workspace.store, actor: staff, subject: workspace, action: audit_action(entry, zero_total),
                                metadata: { order_id: order.prefixed_id, total: order.total.to_s('F'),
                                            receivable_id: entry&.prefixed_id, debt: debt.to_s('F') })

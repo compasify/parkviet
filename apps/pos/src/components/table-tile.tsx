@@ -1,5 +1,10 @@
 import { formatMoney } from '@parkviet/pos-shared/money';
-import { type BoardTable, tableStateKey } from '@parkviet/pos-shared/tables';
+import {
+  type BoardTable,
+  buffetMinutesLeft,
+  buffetTiming,
+  tableStateKey,
+} from '@parkviet/pos-shared/tables';
 import type { CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -16,12 +21,19 @@ export function TableTile({
   onSelect: (table: BoardTable) => void;
   style?: CSSProperties;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const state = t(tableStateKey(table.state));
+  // The board is read again every few seconds, so the clock of the read is near enough.
+  const now = new Date().toISOString();
+  const buffet = buffetTiming(table.buffet_ends_at, now);
+  const buffetLeft = buffetMinutesLeft(table.buffet_ends_at, now);
+  const booking = table.next_reservation;
   return (
     <button
       type="button"
-      className={`table-tile table-tile-${table.state} table-shape-${table.shape}`}
+      className={`table-tile table-tile-${table.state} table-shape-${table.shape}${
+        buffet === 'ending' || buffet === 'over' ? ` table-tile-buffet-${buffet}` : ''
+      }`}
       data-state={table.state}
       data-table-id={table.id}
       aria-pressed={selected}
@@ -49,6 +61,25 @@ export function TableTile({
       {table.subtotal != null && table.orders.length > 0 ? (
         <span className="table-tile-total">
           {formatMoney(table.subtotal, table.currency ?? 'VND')}
+        </span>
+      ) : null}
+      {booking ? (
+        <span className="table-tile-flag table-tile-booking">
+          {t('tableNextReservation', {
+            time: new Date(booking.starts_at).toLocaleTimeString(i18n.language, {
+              hour: '2-digit',
+              minute: '2-digit',
+            }),
+            name: booking.guest_name,
+            count: booking.party_size,
+          })}
+        </span>
+      ) : null}
+      {buffet !== 'none' && buffetLeft != null ? (
+        <span className={`table-tile-flag table-tile-buffet table-tile-buffet-${buffet}`}>
+          {buffet === 'over'
+            ? t('tableBuffetOver')
+            : t('tableBuffetLeft', { count: Math.max(0, buffetLeft) })}
         </span>
       ) : null}
       {table.edited_after_prebill ? (

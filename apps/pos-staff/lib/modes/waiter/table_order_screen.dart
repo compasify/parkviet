@@ -12,6 +12,7 @@ import '../print_station/drivers/printer_driver.dart';
 import '../print_station/escpos_renderer.dart';
 import '../print_station/printer_profile.dart';
 import 'order_menu_screen.dart';
+import 'table_courses.dart';
 import 'void_dialog.dart';
 import 'waiter_context.dart';
 import 'waiter_messages.dart';
@@ -125,6 +126,11 @@ class _TableOrderScreenState extends State<TableOrderScreen> {
   Future<void> _send() async {
     final l10n = AppLocalizations.of(context);
     await _run(() => widget.waiter.api.sendToKitchen(widget.workspaceId), done: l10n.waiterSent);
+  }
+
+  Future<void> _fire(int course) async {
+    final l10n = AppLocalizations.of(context);
+    await _run(() => widget.waiter.api.fireCourse(widget.workspaceId, course), done: l10n.courseFired(courseLabel(l10n, course)));
   }
 
   Future<void> _line(WorkspaceLine line) async {
@@ -399,6 +405,25 @@ class _TableOrderScreenState extends State<TableOrderScreen> {
                     trailing: Text(l10n.waiterSubtotal(moneyLabel(subtotal)), style: Theme.of(context).textTheme.titleMedium),
                   ),
                   const Divider(height: 1),
+                  if (heldCourses(workspace).isNotEmpty)
+                    Padding(
+                      key: const Key('held-courses'),
+                      padding: const EdgeInsets.all(8),
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          Text(l10n.courseHeldTitle, style: Theme.of(context).textTheme.titleSmall),
+                          for (final held in heldCourses(workspace))
+                            FilledButton.tonal(
+                              key: Key('fire-${held.course}'),
+                              onPressed: _busy ? null : () => _fire(held.course),
+                              child: Text(l10n.courseFire(courseLabel(l10n, held.course), held.count)),
+                            ),
+                        ],
+                      ),
+                    ),
                   if (lines.isEmpty) Padding(padding: const EdgeInsets.all(32), child: Center(child: Text(l10n.waiterEmptyOrder))),
                   for (final line in lines)
                     ListTile(
@@ -409,6 +434,7 @@ class _TableOrderScreenState extends State<TableOrderScreen> {
                         if (line.modifiers?.isNotEmpty ?? false)
                           '+ ${line.modifiers!.map((row) => row.quantity > 1 ? '${row.name} x${row.quantity}' : row.name).join(', ')}',
                         if (line.note?.isNotEmpty ?? false) line.note!,
+                        if (placementLabel(l10n, line).isNotEmpty) placementLabel(l10n, line),
                         kitchenStatusLabel(l10n, line),
                       ].join('\n')),
                       trailing: Text(moneyLabel(money(line.amount))),

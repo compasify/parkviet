@@ -74,7 +74,19 @@
   "capabilityKitchenVoid": "Hủy món đã báo bếp",
   "capabilityTableServe": "Phục vụ bàn",
   "capabilityResourceManage": "Sơ đồ bàn, khu vực",
+  "capabilityReservationManage": "Nhận đặt bàn",
+  "capabilityExpoOperate": "Điều phối ra món (expo)",
   "tableState_available": "Trống",
+  "tableState_reserved": "Đã đặt",
+  "reservationStatus_booked": "Đang chờ",
+  "reservationStatus_seated": "Đã nhận bàn",
+  "reservationStatus_completed": "Đã xong",
+  "reservationStatus_no_show": "Không đến",
+  "reservationStatus_canceled": "Đã hủy",
+  "depositStatus_held": "Đang giữ",
+  "depositStatus_applied": "Đã trừ vào hóa đơn",
+  "depositStatus_refunded": "Đã hoàn",
+  "depositStatus_forfeited": "Mất cọc",
   "tableState_occupied": "Có khách",
   "tableState_ordered": "Đã gọi món",
   "tableState_waiting_long": "Chờ món lâu",
@@ -266,6 +278,12 @@
       "description": "Cộng phí phục vụ theo % tiền món sau giảm giá, tính thuế theo loại thuế chi nhánh chọn.",
       "off": "Chi nhánh chưa bật chức năng Phí phục vụ, nên đơn không cộng phí phục vụ.",
       "disabled": "Chi nhánh chưa bật chức năng Phí phục vụ; máy chủ không đổi phí phục vụ. Việc bán hàng không bị ảnh hưởng."
+    },
+    "fnb_reservations": {
+      "label": "Đặt bàn",
+      "description": "Nhận đặt bàn, giữ bàn theo giờ, thu tiền cọc và trừ cọc khi khách thanh toán.",
+      "off": "Chi nhánh chưa bật chức năng Đặt bàn.",
+      "disabled": "Chi nhánh chưa bật chức năng Đặt bàn; máy chủ không nhận đặt bàn mới. Việc bán hàng không bị ảnh hưởng."
     }
   },
   "profiles": {

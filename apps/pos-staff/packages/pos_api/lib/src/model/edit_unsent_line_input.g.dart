@@ -10,13 +10,24 @@ class _$EditUnsentLineInput extends EditUnsentLineInput {
   @override
   final int rowVersion;
   @override
-  final int quantity;
+  final int? quantity;
+  @override
+  final int? course;
+  @override
+  final int? seat;
+  @override
+  final bool? hold;
 
   factory _$EditUnsentLineInput(
           [void Function(EditUnsentLineInputBuilder)? updates]) =>
       (EditUnsentLineInputBuilder()..update(updates))._build();
 
-  _$EditUnsentLineInput._({required this.rowVersion, required this.quantity})
+  _$EditUnsentLineInput._(
+      {required this.rowVersion,
+      this.quantity,
+      this.course,
+      this.seat,
+      this.hold})
       : super._();
   @override
   EditUnsentLineInput rebuild(
@@ -32,7 +43,10 @@ class _$EditUnsentLineInput extends EditUnsentLineInput {
     if (identical(other, this)) return true;
     return other is EditUnsentLineInput &&
         rowVersion == other.rowVersion &&
-        quantity == other.quantity;
+        quantity == other.quantity &&
+        course == other.course &&
+        seat == other.seat &&
+        hold == other.hold;
   }
 
   @override
@@ -40,6 +54,9 @@ class _$EditUnsentLineInput extends EditUnsentLineInput {
     var _$hash = 0;
     _$hash = $jc(_$hash, rowVersion.hashCode);
     _$hash = $jc(_$hash, quantity.hashCode);
+    _$hash = $jc(_$hash, course.hashCode);
+    _$hash = $jc(_$hash, seat.hashCode);
+    _$hash = $jc(_$hash, hold.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -48,7 +65,10 @@ class _$EditUnsentLineInput extends EditUnsentLineInput {
   String toString() {
     return (newBuiltValueToStringHelper(r'EditUnsentLineInput')
           ..add('rowVersion', rowVersion)
-          ..add('quantity', quantity))
+          ..add('quantity', quantity)
+          ..add('course', course)
+          ..add('seat', seat)
+          ..add('hold', hold))
         .toString();
   }
 }
@@ -65,6 +85,18 @@ class EditUnsentLineInputBuilder
   int? get quantity => _$this._quantity;
   set quantity(int? quantity) => _$this._quantity = quantity;
 
+  int? _course;
+  int? get course => _$this._course;
+  set course(int? course) => _$this._course = course;
+
+  int? _seat;
+  int? get seat => _$this._seat;
+  set seat(int? seat) => _$this._seat = seat;
+
+  bool? _hold;
+  bool? get hold => _$this._hold;
+  set hold(bool? hold) => _$this._hold = hold;
+
   EditUnsentLineInputBuilder() {
     EditUnsentLineInput._defaults(this);
   }
@@ -74,6 +106,9 @@ class EditUnsentLineInputBuilder
     if ($v != null) {
       _rowVersion = $v.rowVersion;
       _quantity = $v.quantity;
+      _course = $v.course;
+      _seat = $v.seat;
+      _hold = $v.hold;
       _$v = null;
     }
     return this;
@@ -97,8 +132,10 @@ class EditUnsentLineInputBuilder
         _$EditUnsentLineInput._(
           rowVersion: BuiltValueNullFieldError.checkNotNull(
               rowVersion, r'EditUnsentLineInput', 'rowVersion'),
-          quantity: BuiltValueNullFieldError.checkNotNull(
-              quantity, r'EditUnsentLineInput', 'quantity'),
+          quantity: quantity,
+          course: course,
+          seat: seat,
+          hold: hold,
         );
     replace(_$result);
     return _$result;

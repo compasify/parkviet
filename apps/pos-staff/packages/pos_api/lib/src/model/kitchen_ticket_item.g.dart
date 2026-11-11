@@ -85,6 +85,10 @@ class _$KitchenTicketItemStatusEnumSerializer
 
 class _$KitchenTicketItem extends KitchenTicketItem {
   @override
+  final int? seat;
+  @override
+  final int? course;
+  @override
   final DateTime? recalledAt;
   @override
   final int recallCount;
@@ -122,7 +126,9 @@ class _$KitchenTicketItem extends KitchenTicketItem {
       (KitchenTicketItemBuilder()..update(updates))._build();
 
   _$KitchenTicketItem._(
-      {this.recalledAt,
+      {this.seat,
+      this.course,
+      this.recalledAt,
       required this.recallCount,
       this.prepSeconds,
       required this.late_,
@@ -151,6 +157,8 @@ class _$KitchenTicketItem extends KitchenTicketItem {
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
     return other is KitchenTicketItem &&
+        seat == other.seat &&
+        course == other.course &&
         recalledAt == other.recalledAt &&
         recallCount == other.recallCount &&
         prepSeconds == other.prepSeconds &&
@@ -172,6 +180,8 @@ class _$KitchenTicketItem extends KitchenTicketItem {
   @override
   int get hashCode {
     var _$hash = 0;
+    _$hash = $jc(_$hash, seat.hashCode);
+    _$hash = $jc(_$hash, course.hashCode);
     _$hash = $jc(_$hash, recalledAt.hashCode);
     _$hash = $jc(_$hash, recallCount.hashCode);
     _$hash = $jc(_$hash, prepSeconds.hashCode);
@@ -195,6 +205,8 @@ class _$KitchenTicketItem extends KitchenTicketItem {
   @override
   String toString() {
     return (newBuiltValueToStringHelper(r'KitchenTicketItem')
+          ..add('seat', seat)
+          ..add('course', course)
           ..add('recalledAt', recalledAt)
           ..add('recallCount', recallCount)
           ..add('prepSeconds', prepSeconds)
@@ -218,6 +230,14 @@ class _$KitchenTicketItem extends KitchenTicketItem {
 class KitchenTicketItemBuilder
     implements Builder<KitchenTicketItem, KitchenTicketItemBuilder> {
   _$KitchenTicketItem? _$v;
+
+  int? _seat;
+  int? get seat => _$this._seat;
+  set seat(int? seat) => _$this._seat = seat;
+
+  int? _course;
+  int? get course => _$this._course;
+  set course(int? course) => _$this._course = course;
 
   DateTime? _recalledAt;
   DateTime? get recalledAt => _$this._recalledAt;
@@ -294,6 +314,8 @@ class KitchenTicketItemBuilder
   KitchenTicketItemBuilder get _$this {
     final $v = _$v;
     if ($v != null) {
+      _seat = $v.seat;
+      _course = $v.course;
       _recalledAt = $v.recalledAt;
       _recallCount = $v.recallCount;
       _prepSeconds = $v.prepSeconds;
@@ -333,6 +355,8 @@ class KitchenTicketItemBuilder
     try {
       _$result = _$v ??
           _$KitchenTicketItem._(
+            seat: seat,
+            course: course,
             recalledAt: recalledAt,
             recallCount: BuiltValueNullFieldError.checkNotNull(
                 recallCount, r'KitchenTicketItem', 'recallCount'),

@@ -3,6 +3,8 @@ import en from './locales/en.json';
 import vi from './locales/vi.json';
 import { normalizeProfile, tableSurfaceOf } from './pos-modules';
 import {
+  buffetMinutesLeft,
+  buffetTiming,
   clampPlacement,
   countStates,
   filterTables,
@@ -136,5 +138,40 @@ describe('table surface', () => {
       'table_grid',
     );
     expect(tableSurfaceOf({ modules: on, profile: profile() }, 'kiosk')).toBe('table_grid');
+  });
+});
+
+describe('buffet timing', () => {
+  it('warns in the last ten minutes and once over, on the server clock', () => {
+    const ends = '2026-11-12T13:30:00Z';
+    expect(buffetTiming(ends, '2026-11-12T13:00:00Z')).toBe('running');
+    expect(buffetTiming(ends, '2026-11-12T13:20:00Z')).toBe('ending');
+    expect(buffetTiming(ends, '2026-11-12T13:31:00Z')).toBe('over');
+    expect(buffetTiming(null, '2026-11-12T13:31:00Z')).toBe('none');
+    expect(buffetMinutesLeft(ends, '2026-11-12T13:20:30Z')).toBe(9);
+  });
+
+  it('reads the next booking and buffet end of a tile', () => {
+    const board = normalizeResourceBoard({
+      resources: [
+        {
+          id: 'posres_1',
+          state: 'reserved',
+          next_reservation: {
+            id: 'posresv_1',
+            starts_at: '2026-11-12T13:00:00Z',
+            guest_name: 'Chị Lan',
+            party_size: 4,
+          },
+          buffet_ends_at: null,
+          orders: [],
+        },
+      ],
+    });
+    expect(board.resources[0]).toMatchObject({
+      state: 'reserved',
+      next_reservation: { id: 'posresv_1', guest_name: 'Chị Lan', party_size: 4 },
+      buffet_ends_at: null,
+    });
   });
 });

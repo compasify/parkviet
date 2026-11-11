@@ -1651,6 +1651,222 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Bắt đầu dùng'**
   String get checklistStart;
+
+  /// No description provided for @courseNone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không chia lượt'**
+  String get courseNone;
+
+  /// No description provided for @courseStarter.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khai vị'**
+  String get courseStarter;
+
+  /// No description provided for @courseMain.
+  ///
+  /// In vi, this message translates to:
+  /// **'Món chính'**
+  String get courseMain;
+
+  /// No description provided for @courseDessert.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tráng miệng'**
+  String get courseDessert;
+
+  /// No description provided for @courseNumber.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lượt {number}'**
+  String courseNumber(int number);
+
+  /// No description provided for @courseHold.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giữ lại, chờ gọi'**
+  String get courseHold;
+
+  /// No description provided for @courseHeldTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang giữ, chờ gọi món'**
+  String get courseHeldTitle;
+
+  /// No description provided for @courseFire.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gọi {course} ({count} món)'**
+  String courseFire(String course, int count);
+
+  /// No description provided for @courseFired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã gửi bếp: {course}'**
+  String courseFired(String course);
+
+  /// No description provided for @seatLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ghế'**
+  String get seatLabel;
+
+  /// No description provided for @seatShared.
+  ///
+  /// In vi, this message translates to:
+  /// **'Dùng chung'**
+  String get seatShared;
+
+  /// No description provided for @seatNumber.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ghế {seat}'**
+  String seatNumber(int seat);
+
+  /// No description provided for @expoHeldTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ gọi món'**
+  String get expoHeldTitle;
+
+  /// No description provided for @expoReadyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã xong, cần mang ra'**
+  String get expoReadyTitle;
+
+  /// No description provided for @expoAllAreas.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tất cả khu'**
+  String get expoAllAreas;
+
+  /// No description provided for @expoArea.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khu {number}'**
+  String expoArea(int number);
+
+  /// No description provided for @ownerReservationsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đặt bàn hôm nay'**
+  String get ownerReservationsTitle;
+
+  /// No description provided for @ownerNoReservations.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hôm nay chưa có lượt đặt bàn.'**
+  String get ownerNoReservations;
+
+  /// No description provided for @ownerDeposit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cọc {amount} · {status}'**
+  String ownerDeposit(String amount, String status);
+
+  /// No description provided for @ownerRefund.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn cọc'**
+  String get ownerRefund;
+
+  /// No description provided for @ownerForfeit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giữ cọc'**
+  String get ownerForfeit;
+
+  /// No description provided for @ownerConfirmRefund.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn {amount} cho {name}?'**
+  String ownerConfirmRefund(String amount, String name);
+
+  /// No description provided for @ownerConfirmForfeit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giữ cọc {amount} của {name}? Khoản cọc thành một hóa đơn phí giữ chỗ có thuế.'**
+  String ownerConfirmForfeit(String amount, String name);
+
+  /// No description provided for @ownerConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác nhận'**
+  String get ownerConfirm;
+
+  /// No description provided for @ownerKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thôi'**
+  String get ownerKeep;
+
+  /// No description provided for @ownerRefunded.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã hoàn cọc.'**
+  String get ownerRefunded;
+
+  /// No description provided for @ownerForfeited.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã ghi nhận giữ cọc.'**
+  String get ownerForfeited;
+
+  /// No description provided for @reservationBooked.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đặt'**
+  String get reservationBooked;
+
+  /// No description provided for @reservationSeated.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã vào bàn'**
+  String get reservationSeated;
+
+  /// No description provided for @reservationCompleted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã xong'**
+  String get reservationCompleted;
+
+  /// No description provided for @reservationNoShow.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không đến'**
+  String get reservationNoShow;
+
+  /// No description provided for @reservationCanceled.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã hủy'**
+  String get reservationCanceled;
+
+  /// No description provided for @depositHeld.
+  ///
+  /// In vi, this message translates to:
+  /// **'đang giữ'**
+  String get depositHeld;
+
+  /// No description provided for @depositApplied.
+  ///
+  /// In vi, this message translates to:
+  /// **'đã trừ vào hóa đơn'**
+  String get depositApplied;
+
+  /// No description provided for @depositRefunded.
+  ///
+  /// In vi, this message translates to:
+  /// **'đã hoàn'**
+  String get depositRefunded;
+
+  /// No description provided for @depositForfeited.
+  ///
+  /// In vi, this message translates to:
+  /// **'đã giữ cọc'**
+  String get depositForfeited;
 }
 
 class _AppLocalizationsDelegate

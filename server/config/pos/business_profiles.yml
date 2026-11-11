@@ -212,11 +212,12 @@ profiles:
     sample_units: []
     kitchen_stations: [prep]
 
-  # Tables on a floor plan, pay after eating, a suggested 5% service charge.
+  # Tables on a floor plan, pay after eating, a suggested 5% service charge,
+  # and bookings with deposits. Karaoke and bars turn bookings on by hand.
   nha_hang:
     group: fnb
     order: 19
-    modules: [fnb.menu, fnb.kitchen, resources, fnb.tables, fnb.postpay, fnb.service_charge]
+    modules: [fnb.menu, fnb.kitchen, resources, fnb.tables, fnb.postpay, fnb.service_charge, fnb.reservations]
     branch_defaults: { kitchen_send_trigger: manual, service_charge_rate: 5 }
     display: { surface: floor_plan }
     recommended_features: [vietqr, customer_display]

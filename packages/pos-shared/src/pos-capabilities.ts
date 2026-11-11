@@ -27,6 +27,8 @@ export const posCapabilities = [
   ['pos.kitchen.void', 'capabilityKitchenVoid'],
   ['pos.table.serve', 'capabilityTableServe'],
   ['pos.resource.manage', 'capabilityResourceManage'],
+  ['pos.reservation.manage', 'capabilityReservationManage'],
+  ['pos.expo.operate', 'capabilityExpoOperate'],
 ] as const;
 
 export const sensitiveCapabilities = [

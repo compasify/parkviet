@@ -24,6 +24,10 @@ import 'package:pos_api/src/model/area.dart';
 import 'package:pos_api/src/model/area_input.dart';
 import 'package:pos_api/src/model/area_list.dart';
 import 'package:pos_api/src/model/area_result.dart';
+import 'package:pos_api/src/model/available_resource.dart';
+import 'package:pos_api/src/model/buffet_tier.dart';
+import 'package:pos_api/src/model/buffet_tier_item.dart';
+import 'package:pos_api/src/model/buffet_tier_list.dart';
 import 'package:pos_api/src/model/call_board.dart';
 import 'package:pos_api/src/model/call_board_preparing_inner.dart';
 import 'package:pos_api/src/model/call_board_ready_inner.dart';
@@ -36,6 +40,7 @@ import 'package:pos_api/src/model/context_administration.dart';
 import 'package:pos_api/src/model/context_branch.dart';
 import 'package:pos_api/src/model/context_staff.dart';
 import 'package:pos_api/src/model/context_store.dart';
+import 'package:pos_api/src/model/course_label.dart';
 import 'package:pos_api/src/model/cup_label_settings.dart';
 import 'package:pos_api/src/model/device.dart';
 import 'package:pos_api/src/model/device_pair_result.dart';
@@ -78,6 +83,8 @@ import 'package:pos_api/src/model/kitchen_board.dart';
 import 'package:pos_api/src/model/kitchen_board_result.dart';
 import 'package:pos_api/src/model/kitchen_expo_item.dart';
 import 'package:pos_api/src/model/kitchen_expo_order.dart';
+import 'package:pos_api/src/model/kitchen_held_course.dart';
+import 'package:pos_api/src/model/kitchen_held_line.dart';
 import 'package:pos_api/src/model/kitchen_history.dart';
 import 'package:pos_api/src/model/kitchen_history_entry.dart';
 import 'package:pos_api/src/model/kitchen_history_item.dart';
@@ -262,6 +269,19 @@ import 'package:pos_api/src/model/recipe.dart';
 import 'package:pos_api/src/model/recipe_ingredients_inner.dart';
 import 'package:pos_api/src/model/recipe_owner.dart';
 import 'package:pos_api/src/model/recipe_owner_versions_inner.dart';
+import 'package:pos_api/src/model/reservation.dart';
+import 'package:pos_api/src/model/reservation_availability_result.dart';
+import 'package:pos_api/src/model/reservation_availability_result_meta.dart';
+import 'package:pos_api/src/model/reservation_cancel_input.dart';
+import 'package:pos_api/src/model/reservation_deposit.dart';
+import 'package:pos_api/src/model/reservation_deposit_resolve_input.dart';
+import 'package:pos_api/src/model/reservation_input.dart';
+import 'package:pos_api/src/model/reservation_list.dart';
+import 'package:pos_api/src/model/reservation_list_meta.dart';
+import 'package:pos_api/src/model/reservation_result.dart';
+import 'package:pos_api/src/model/reservation_seat.dart';
+import 'package:pos_api/src/model/reservation_seat_input.dart';
+import 'package:pos_api/src/model/reservation_seat_result.dart';
 import 'package:pos_api/src/model/resource.dart';
 import 'package:pos_api/src/model/resource_board.dart';
 import 'package:pos_api/src/model/resource_board_area.dart';
@@ -271,6 +291,7 @@ import 'package:pos_api/src/model/resource_board_tile.dart';
 import 'package:pos_api/src/model/resource_input.dart';
 import 'package:pos_api/src/model/resource_list.dart';
 import 'package:pos_api/src/model/resource_manual_status_input.dart';
+import 'package:pos_api/src/model/resource_next_reservation.dart';
 import 'package:pos_api/src/model/resource_ref.dart';
 import 'package:pos_api/src/model/resource_result.dart';
 import 'package:pos_api/src/model/service_charge_waive_input.dart';
@@ -296,6 +317,7 @@ import 'package:pos_api/src/model/table_pins.dart';
 import 'package:pos_api/src/model/table_pins_result.dart';
 import 'package:pos_api/src/model/table_settings.dart';
 import 'package:pos_api/src/model/table_settings_input.dart';
+import 'package:pos_api/src/model/table_settings_input_course_labels_inner.dart';
 import 'package:pos_api/src/model/table_settings_result.dart';
 import 'package:pos_api/src/model/table_split_input.dart';
 import 'package:pos_api/src/model/table_split_orders.dart';
@@ -305,6 +327,7 @@ import 'package:pos_api/src/model/tax_row.dart';
 import 'package:pos_api/src/model/workspace.dart';
 import 'package:pos_api/src/model/workspace_line.dart';
 import 'package:pos_api/src/model/workspace_prebill.dart';
+import 'package:pos_api/src/model/workspace_reservation.dart';
 import 'package:pos_api/src/model/workspace_result.dart';
 import 'package:pos_api/src/model/workspace_service_charge.dart';
 import 'package:pos_api/src/model/workspace_totals.dart';
@@ -323,6 +346,10 @@ part 'serializers.g.dart';
   AreaInput,
   AreaList,
   AreaResult,
+  AvailableResource,
+  BuffetTier,
+  BuffetTierItem,
+  BuffetTierList,
   CallBoard,
   CallBoardPreparingInner,
   CallBoardReadyInner,
@@ -335,6 +362,7 @@ part 'serializers.g.dart';
   ContextBranch,
   ContextStaff,
   ContextStore,
+  CourseLabel,
   CupLabelSettings,
   Device,
   DevicePairResult,
@@ -377,6 +405,8 @@ part 'serializers.g.dart';
   KitchenBoardResult,
   KitchenExpoItem,
   KitchenExpoOrder,
+  KitchenHeldCourse,
+  KitchenHeldLine,
   KitchenHistory,
   KitchenHistoryEntry,
   KitchenHistoryItem,
@@ -563,6 +593,19 @@ part 'serializers.g.dart';
   RecipeIngredientsInner,
   RecipeOwner,
   RecipeOwnerVersionsInner,
+  Reservation,
+  ReservationAvailabilityResult,
+  ReservationAvailabilityResultMeta,
+  ReservationCancelInput,
+  ReservationDeposit,
+  ReservationDepositResolveInput,
+  ReservationInput,
+  ReservationList,
+  ReservationListMeta,
+  ReservationResult,
+  ReservationSeat,
+  ReservationSeatInput,
+  ReservationSeatResult,
   Resource,
   ResourceBoard,
   ResourceBoardArea,
@@ -572,6 +615,7 @@ part 'serializers.g.dart';
   ResourceInput,
   ResourceList,
   ResourceManualStatusInput,
+  ResourceNextReservation,
   ResourceRef,
   ResourceResult,
   ServiceChargeWaiveInput,
@@ -598,6 +642,7 @@ part 'serializers.g.dart';
   TablePinsResult,
   TableSettings,
   TableSettingsInput,
+  TableSettingsInputCourseLabelsInner,
   TableSettingsResult,
   TableSplitInput,
   TableSplitOrders,
@@ -607,6 +652,7 @@ part 'serializers.g.dart';
   Workspace,
   WorkspaceLine,
   WorkspacePrebill,
+  WorkspaceReservation,
   WorkspaceResult,
   WorkspaceServiceCharge,
   WorkspaceTotals,
@@ -629,6 +675,10 @@ Serializers serializers = (_$serializers.toBuilder()
         const FullType(
             BuiltList, [FullType(PosPrinterStations200ResponseDataInner)]),
         () => ListBuilder<PosPrinterStations200ResponseDataInner>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(Workspace)]),
+        () => ListBuilder<Workspace>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(EinvoiceLine)]),
@@ -718,8 +768,20 @@ Serializers serializers = (_$serializers.toBuilder()
         () => ListBuilder<PosRecipeSaveRequestIngredientsInner>(),
       )
       ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(ReservationDeposit)]),
+        () => ListBuilder<ReservationDeposit>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(BuffetTierItem)]),
+        () => ListBuilder<BuffetTierItem>(),
+      )
+      ..addBuilderFactory(
         const FullType(BuiltList, [FullType(HardwareStation)]),
         () => ListBuilder<HardwareStation>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(KitchenHeldLine)]),
+        () => ListBuilder<KitchenHeldLine>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(PlatformReportRow)]),
@@ -768,6 +830,10 @@ Serializers serializers = (_$serializers.toBuilder()
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(KitchenStation)]),
         () => ListBuilder<KitchenStation>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(CourseLabel)]),
+        () => ListBuilder<CourseLabel>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(MenuItemAllOfVariants)]),
@@ -830,6 +896,10 @@ Serializers serializers = (_$serializers.toBuilder()
         () => ListBuilder<LineModifier>(),
       )
       ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(ResourceRef)]),
+        () => ListBuilder<ResourceRef>(),
+      )
+      ..addBuilderFactory(
         const FullType(BuiltList, [FullType(KitchenHistoryItem)]),
         () => ListBuilder<KitchenHistoryItem>(),
       )
@@ -842,6 +912,11 @@ Serializers serializers = (_$serializers.toBuilder()
         () => ListBuilder<HardwareDevice>(),
       )
       ..addBuilderFactory(
+        const FullType(
+            BuiltList, [FullType(TableSettingsInputCourseLabelsInner)]),
+        () => ListBuilder<TableSettingsInputCourseLabelsInner>(),
+      )
+      ..addBuilderFactory(
         const FullType(BuiltList, [FullType(KitchenTicketItemModifiersInner)]),
         () => ListBuilder<KitchenTicketItemModifiersInner>(),
       )
@@ -852,6 +927,10 @@ Serializers serializers = (_$serializers.toBuilder()
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(HardwareCheck)]),
         () => ListBuilder<HardwareCheck>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(AvailableResource)]),
+        () => ListBuilder<AvailableResource>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(KitchenTicket)]),
@@ -878,12 +957,20 @@ Serializers serializers = (_$serializers.toBuilder()
         () => ListBuilder<EinvoiceSetting>(),
       )
       ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(KitchenHeldCourse)]),
+        () => ListBuilder<KitchenHeldCourse>(),
+      )
+      ..addBuilderFactory(
         const FullType(BuiltList, [FullType(ResourceBoardTile)]),
         () => ListBuilder<ResourceBoardTile>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(CallBoardPreparingInner)]),
         () => ListBuilder<CallBoardPreparingInner>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(BuffetTier)]),
+        () => ListBuilder<BuffetTier>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(KitchenTicketItemComponentsInner)]),
@@ -913,6 +1000,10 @@ Serializers serializers = (_$serializers.toBuilder()
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(String)]),
         () => ListBuilder<String>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(Reservation)]),
+        () => ListBuilder<Reservation>(),
       )
       ..add(KitchenStationInput.serializer)
       ..add(MenuItemConfig.serializer)

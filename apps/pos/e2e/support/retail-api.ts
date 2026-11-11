@@ -135,6 +135,8 @@ export type Sheet = {
   table?: { id: string; name: string; label: string | null; guests: number | null };
   // Its kitchen sends, in order.
   kitchenSends?: Array<{ id: string; sequence: number; sent_at: string; items: number }>;
+  // The booking seated at the table, as the server sends it.
+  reservation?: Record<string, unknown> | null;
 };
 
 type Funds = {
@@ -454,6 +456,7 @@ export function serialize(world: World, sheet: Sheet) {
           resource: { id: sheet.table.id, name: sheet.table.name, kind: 'table', area_id: 'posarea_1' },
           guest_count: sheet.table.guests,
           table_label: sheet.table.label,
+          reservation: sheet.reservation ?? null,
           kitchen_sends: (sheet.kitchenSends ?? []).map(({ items: _items, ...send }) => ({
             ...send, staff_id: STAFF_ID, staff_name: 'Lan', device_id: null,
           })),

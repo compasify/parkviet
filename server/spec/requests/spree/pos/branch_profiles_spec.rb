@@ -122,7 +122,8 @@ RSpec.describe 'POS branch profiles', type: :request, pos_modules: :default do
     data = apply(manager, 'nha_thuoc', apply_modules: true, apply_defaults: ['lot_selection'])['data']
     expect(response).to have_http_status(:ok)
     expect(branch.reload).to have_attributes(profile_key: 'nha_thuoc', profile_version: 2, lot_selection: 'fefo', return_window_days: 30)
-    expect(data['modules']).to eq('retail.units' => true, 'retail.measured' => false, 'retail.traceability' => true, 'fnb.menu' => false, 'fnb.recipes' => false, 'fnb.kitchen' => false, 'fnb.order_number' => false, 'fnb.cup_label' => false, 'fnb.delivery_platforms' => false, 'resources' => false, 'fnb.tables' => false, 'fnb.postpay' => false, 'fnb.service_charge' => false)
+    expect(data['modules']).to eq('retail.units' => true, 'retail.measured' => false, 'retail.traceability' => true, 'fnb.menu' => false, 'fnb.recipes' => false, 'fnb.kitchen' => false, 'fnb.order_number' => false, 'fnb.cup_label' => false, 'fnb.delivery_platforms' => false, 'resources' => false, 'fnb.tables' => false, 'fnb.postpay' => false, 'fnb.service_charge' => false,
+                                     'fnb.reservations' => false)
     expect(data['applied']).to eq(
       'modules' => { 'enabled' => [], 'disabled' => ['retail.measured'] },
       'defaults' => [{ 'field' => 'lot_selection', 'from' => 'cashier_pick', 'to' => 'fefo' }],
@@ -143,7 +144,8 @@ RSpec.describe 'POS branch profiles', type: :request, pos_modules: :default do
 
     # Without apply_modules the modules stay as they are, even for a profile with none.
     data = apply(manager, 'thoi_trang', expected: 'nha_thuoc')['data']
-    expect(data['modules']).to eq('retail.units' => true, 'retail.measured' => false, 'retail.traceability' => true, 'fnb.menu' => false, 'fnb.recipes' => false, 'fnb.kitchen' => false, 'fnb.order_number' => false, 'fnb.cup_label' => false, 'fnb.delivery_platforms' => false, 'resources' => false, 'fnb.tables' => false, 'fnb.postpay' => false, 'fnb.service_charge' => false)
+    expect(data['modules']).to eq('retail.units' => true, 'retail.measured' => false, 'retail.traceability' => true, 'fnb.menu' => false, 'fnb.recipes' => false, 'fnb.kitchen' => false, 'fnb.order_number' => false, 'fnb.cup_label' => false, 'fnb.delivery_platforms' => false, 'resources' => false, 'fnb.tables' => false, 'fnb.postpay' => false, 'fnb.service_charge' => false,
+                                     'fnb.reservations' => false)
     expect(data['applied']).to include('modules' => { 'enabled' => [], 'disabled' => [] }, 'defaults' => [])
     expect(branch.reload).to have_attributes(profile_key: 'thoi_trang', return_window_days: 30)
 

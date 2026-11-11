@@ -102,6 +102,14 @@ class _$TableSettingsServiceChargeAppliesToEnumSerializer
 
 class _$TableSettings extends TableSettings {
   @override
+  final int reservationGraceMinutes;
+  @override
+  final int reservationDurationMinutes;
+  @override
+  final String? reservationFeeProductId;
+  @override
+  final BuiltList<CourseLabel> courseLabels;
+  @override
   final String branchId;
   @override
   final String? tableRegisterId;
@@ -119,7 +127,11 @@ class _$TableSettings extends TableSettings {
       (TableSettingsBuilder()..update(updates))._build();
 
   _$TableSettings._(
-      {required this.branchId,
+      {required this.reservationGraceMinutes,
+      required this.reservationDurationMinutes,
+      this.reservationFeeProductId,
+      required this.courseLabels,
+      required this.branchId,
       this.tableRegisterId,
       this.serviceChargeRate,
       required this.serviceChargeAppliesTo,
@@ -137,6 +149,10 @@ class _$TableSettings extends TableSettings {
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
     return other is TableSettings &&
+        reservationGraceMinutes == other.reservationGraceMinutes &&
+        reservationDurationMinutes == other.reservationDurationMinutes &&
+        reservationFeeProductId == other.reservationFeeProductId &&
+        courseLabels == other.courseLabels &&
         branchId == other.branchId &&
         tableRegisterId == other.tableRegisterId &&
         serviceChargeRate == other.serviceChargeRate &&
@@ -148,6 +164,10 @@ class _$TableSettings extends TableSettings {
   @override
   int get hashCode {
     var _$hash = 0;
+    _$hash = $jc(_$hash, reservationGraceMinutes.hashCode);
+    _$hash = $jc(_$hash, reservationDurationMinutes.hashCode);
+    _$hash = $jc(_$hash, reservationFeeProductId.hashCode);
+    _$hash = $jc(_$hash, courseLabels.hashCode);
     _$hash = $jc(_$hash, branchId.hashCode);
     _$hash = $jc(_$hash, tableRegisterId.hashCode);
     _$hash = $jc(_$hash, serviceChargeRate.hashCode);
@@ -161,6 +181,10 @@ class _$TableSettings extends TableSettings {
   @override
   String toString() {
     return (newBuiltValueToStringHelper(r'TableSettings')
+          ..add('reservationGraceMinutes', reservationGraceMinutes)
+          ..add('reservationDurationMinutes', reservationDurationMinutes)
+          ..add('reservationFeeProductId', reservationFeeProductId)
+          ..add('courseLabels', courseLabels)
           ..add('branchId', branchId)
           ..add('tableRegisterId', tableRegisterId)
           ..add('serviceChargeRate', serviceChargeRate)
@@ -174,6 +198,27 @@ class _$TableSettings extends TableSettings {
 class TableSettingsBuilder
     implements Builder<TableSettings, TableSettingsBuilder> {
   _$TableSettings? _$v;
+
+  int? _reservationGraceMinutes;
+  int? get reservationGraceMinutes => _$this._reservationGraceMinutes;
+  set reservationGraceMinutes(int? reservationGraceMinutes) =>
+      _$this._reservationGraceMinutes = reservationGraceMinutes;
+
+  int? _reservationDurationMinutes;
+  int? get reservationDurationMinutes => _$this._reservationDurationMinutes;
+  set reservationDurationMinutes(int? reservationDurationMinutes) =>
+      _$this._reservationDurationMinutes = reservationDurationMinutes;
+
+  String? _reservationFeeProductId;
+  String? get reservationFeeProductId => _$this._reservationFeeProductId;
+  set reservationFeeProductId(String? reservationFeeProductId) =>
+      _$this._reservationFeeProductId = reservationFeeProductId;
+
+  ListBuilder<CourseLabel>? _courseLabels;
+  ListBuilder<CourseLabel> get courseLabels =>
+      _$this._courseLabels ??= ListBuilder<CourseLabel>();
+  set courseLabels(ListBuilder<CourseLabel>? courseLabels) =>
+      _$this._courseLabels = courseLabels;
 
   String? _branchId;
   String? get branchId => _$this._branchId;
@@ -216,6 +261,10 @@ class TableSettingsBuilder
   TableSettingsBuilder get _$this {
     final $v = _$v;
     if ($v != null) {
+      _reservationGraceMinutes = $v.reservationGraceMinutes;
+      _reservationDurationMinutes = $v.reservationDurationMinutes;
+      _reservationFeeProductId = $v.reservationFeeProductId;
+      _courseLabels = $v.courseLabels.toBuilder();
       _branchId = $v.branchId;
       _tableRegisterId = $v.tableRegisterId;
       _serviceChargeRate = $v.serviceChargeRate;
@@ -245,6 +294,16 @@ class TableSettingsBuilder
     try {
       _$result = _$v ??
           _$TableSettings._(
+            reservationGraceMinutes: BuiltValueNullFieldError.checkNotNull(
+                reservationGraceMinutes,
+                r'TableSettings',
+                'reservationGraceMinutes'),
+            reservationDurationMinutes: BuiltValueNullFieldError.checkNotNull(
+                reservationDurationMinutes,
+                r'TableSettings',
+                'reservationDurationMinutes'),
+            reservationFeeProductId: reservationFeeProductId,
+            courseLabels: courseLabels.build(),
             branchId: BuiltValueNullFieldError.checkNotNull(
                 branchId, r'TableSettings', 'branchId'),
             tableRegisterId: tableRegisterId,
@@ -256,6 +315,9 @@ class TableSettingsBuilder
     } catch (_) {
       late String _$failedField;
       try {
+        _$failedField = 'courseLabels';
+        courseLabels.build();
+
         _$failedField = 'serviceChargeAppliesTo';
         serviceChargeAppliesTo.build();
 

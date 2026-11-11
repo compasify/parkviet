@@ -15,6 +15,7 @@ part 'kitchen_expo_order.g.dart';
 ///
 /// Properties:
 /// * [workspaceId]
+/// * [areaId] - The area of the order's table, for a pass that runs one area.
 /// * [header] - The ticket header (table, call number…), as on KitchenTicket.
 /// * [serviceMode]
 /// * [readySince]
@@ -24,6 +25,10 @@ abstract class KitchenExpoOrder
     implements Built<KitchenExpoOrder, KitchenExpoOrderBuilder> {
   @BuiltValueField(wireName: r'workspace_id')
   String get workspaceId;
+
+  /// The area of the order's table, for a pass that runs one area.
+  @BuiltValueField(wireName: r'area_id')
+  String? get areaId;
 
   /// The ticket header (table, call number…), as on KitchenTicket.
   @BuiltValueField(wireName: r'header')
@@ -69,6 +74,13 @@ class _$KitchenExpoOrderSerializer
       object.workspaceId,
       specifiedType: const FullType(String),
     );
+    yield r'area_id';
+    yield object.areaId == null
+        ? null
+        : serializers.serialize(
+            object.areaId,
+            specifiedType: const FullType.nullable(String),
+          );
     yield r'header';
     yield serializers.serialize(
       object.header,
@@ -123,6 +135,14 @@ class _$KitchenExpoOrderSerializer
             specifiedType: const FullType(String),
           ) as String;
           result.workspaceId = valueDes;
+          break;
+        case r'area_id':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.areaId = valueDes;
           break;
         case r'header':
           final valueDes = serializers.deserialize(

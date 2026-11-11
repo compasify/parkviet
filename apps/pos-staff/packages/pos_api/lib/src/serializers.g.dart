@@ -21,6 +21,12 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(AreaList.serializer)
       ..add(AreaResult.serializer)
       ..add(AreaStatusEnum.serializer)
+      ..add(AvailableResource.serializer)
+      ..add(AvailableResourceKindEnum.serializer)
+      ..add(BuffetTier.serializer)
+      ..add(BuffetTierItem.serializer)
+      ..add(BuffetTierList.serializer)
+      ..add(BuffetTierStatusEnum.serializer)
       ..add(CallBoard.serializer)
       ..add(CallBoardPreparingInner.serializer)
       ..add(CallBoardReadyInner.serializer)
@@ -34,6 +40,7 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(ContextEinvoiceTypeEnum.serializer)
       ..add(ContextStaff.serializer)
       ..add(ContextStore.serializer)
+      ..add(CourseLabel.serializer)
       ..add(CupLabelSettings.serializer)
       ..add(CupLabelSettingsFieldsEnum.serializer)
       ..add(CupLabelSettingsSizeEnum.serializer)
@@ -95,6 +102,8 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(KitchenBoardResult.serializer)
       ..add(KitchenExpoItem.serializer)
       ..add(KitchenExpoOrder.serializer)
+      ..add(KitchenHeldCourse.serializer)
+      ..add(KitchenHeldLine.serializer)
       ..add(KitchenHistory.serializer)
       ..add(KitchenHistoryEntry.serializer)
       ..add(KitchenHistoryEntryKindEnum.serializer)
@@ -332,6 +341,25 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(RecipeOwner.serializer)
       ..add(RecipeOwnerOwnerTypeEnum.serializer)
       ..add(RecipeOwnerVersionsInner.serializer)
+      ..add(Reservation.serializer)
+      ..add(ReservationAvailabilityResult.serializer)
+      ..add(ReservationAvailabilityResultMeta.serializer)
+      ..add(ReservationCancelInput.serializer)
+      ..add(ReservationCancelInputStatusEnum.serializer)
+      ..add(ReservationDeposit.serializer)
+      ..add(ReservationDepositKindEnum.serializer)
+      ..add(ReservationDepositResolveInput.serializer)
+      ..add(ReservationDepositStatusEnum.serializer)
+      ..add(ReservationInput.serializer)
+      ..add(ReservationInputSource_Enum.serializer)
+      ..add(ReservationList.serializer)
+      ..add(ReservationListMeta.serializer)
+      ..add(ReservationResult.serializer)
+      ..add(ReservationSeat.serializer)
+      ..add(ReservationSeatInput.serializer)
+      ..add(ReservationSeatResult.serializer)
+      ..add(ReservationSource_Enum.serializer)
+      ..add(ReservationStatusEnum.serializer)
       ..add(Resource.serializer)
       ..add(ResourceBoard.serializer)
       ..add(ResourceBoardArea.serializer)
@@ -351,6 +379,7 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(ResourceManualStatusEnum.serializer)
       ..add(ResourceManualStatusInput.serializer)
       ..add(ResourceManualStatusInputManualStatusEnum.serializer)
+      ..add(ResourceNextReservation.serializer)
       ..add(ResourceRef.serializer)
       ..add(ResourceRefKindEnum.serializer)
       ..add(ResourceResult.serializer)
@@ -379,19 +408,23 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(TablePinsResult.serializer)
       ..add(TableSettings.serializer)
       ..add(TableSettingsInput.serializer)
+      ..add(TableSettingsInputCourseLabelsInner.serializer)
       ..add(TableSettingsInputServiceChargeAppliesToEnum.serializer)
       ..add(TableSettingsResult.serializer)
       ..add(TableSettingsServiceChargeAppliesToEnum.serializer)
       ..add(TableSplitInput.serializer)
+      ..add(TableSplitInputByEnum.serializer)
       ..add(TableSplitOrders.serializer)
       ..add(TableSplitResult.serializer)
       ..add(TableTaxCategory.serializer)
       ..add(TaxRow.serializer)
       ..add(Workspace.serializer)
       ..add(WorkspaceLine.serializer)
+      ..add(WorkspaceLineCourseStatusEnum.serializer)
       ..add(WorkspaceLineKindEnum.serializer)
       ..add(WorkspacePrebill.serializer)
       ..add(WorkspacePrebillStatusEnum.serializer)
+      ..add(WorkspaceReservation.serializer)
       ..add(WorkspaceResult.serializer)
       ..add(WorkspaceServiceCharge.serializer)
       ..add(WorkspaceServiceModeEnum.serializer)
@@ -403,6 +436,15 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(Area)]),
           () => ListBuilder<Area>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(AvailableResource)]),
+          () => ListBuilder<AvailableResource>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(BuffetTier)]),
+          () => ListBuilder<BuffetTier>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(BuffetTierItem)]),
+          () => ListBuilder<BuffetTierItem>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [
             const FullType(BuiltMap, const [
@@ -422,6 +464,16 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(CatalogItem)]),
           () => ListBuilder<CatalogItem>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(CourseLabel)]),
+          () => ListBuilder<CourseLabel>())
+      ..addBuilderFactory(
+          const FullType(BuiltList,
+              const [const FullType(TableSettingsServiceChargeAppliesToEnum)]),
+          () => ListBuilder<TableSettingsServiceChargeAppliesToEnum>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(TableTaxCategory)]),
+          () => ListBuilder<TableTaxCategory>())
       ..addBuilderFactory(
           const FullType(
               BuiltList, const [const FullType(CupLabelSettingsFieldsEnum)]),
@@ -468,6 +520,9 @@ Serializers _$serializers = (Serializers().toBuilder()
           const FullType(BuiltList, const [const FullType(IngredientUsageRow)]),
           () => ListBuilder<IngredientUsageRow>())
       ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(KitchenHeldLine)]),
+          () => ListBuilder<KitchenHeldLine>())
+      ..addBuilderFactory(
           const FullType(
               BuiltList, const [const FullType(KitchenHistoryEntry)]),
           () => ListBuilder<KitchenHistoryEntry>())
@@ -501,6 +556,9 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(KitchenExpoOrder)]),
           () => ListBuilder<KitchenExpoOrder>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(KitchenHeldCourse)]),
+          () => ListBuilder<KitchenHeldCourse>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(KitchenTicket)]),
           () => ListBuilder<KitchenTicket>())
@@ -671,6 +729,12 @@ Serializers _$serializers = (Serializers().toBuilder()
               BuiltList, const [const FullType(RecipeOwnerVersionsInner)]),
           () => ListBuilder<RecipeOwnerVersionsInner>())
       ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(Reservation)]),
+          () => ListBuilder<Reservation>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(ReservationDeposit)]),
+          () => ListBuilder<ReservationDeposit>())
+      ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(Resource)]),
           () => ListBuilder<Resource>())
       ..addBuilderFactory(
@@ -682,6 +746,12 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(ResourceBoardOrder)]),
           () => ListBuilder<ResourceBoardOrder>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(ResourceRef)]),
+          () => ListBuilder<ResourceRef>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(ReservationDeposit)]),
+          () => ListBuilder<ReservationDeposit>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(StationRoute)]),
           () => ListBuilder<StationRoute>())
@@ -780,11 +850,11 @@ Serializers _$serializers = (Serializers().toBuilder()
           () => ListBuilder<TableSettingsInputServiceChargeAppliesToEnum>())
       ..addBuilderFactory(
           const FullType(BuiltList,
-              const [const FullType(TableSettingsServiceChargeAppliesToEnum)]),
-          () => ListBuilder<TableSettingsServiceChargeAppliesToEnum>())
+              const [const FullType(TableSettingsInputCourseLabelsInner)]),
+          () => ListBuilder<TableSettingsInputCourseLabelsInner>())
       ..addBuilderFactory(
-          const FullType(BuiltList, const [const FullType(TableTaxCategory)]),
-          () => ListBuilder<TableTaxCategory>())
+          const FullType(BuiltList, const [const FullType(Workspace)]),
+          () => ListBuilder<Workspace>())
       ..addBuilderFactory(
           const FullType(
               BuiltList, const [const FullType(WorkspaceTotalsTaxesInner)]),
@@ -801,6 +871,13 @@ Serializers _$serializers = (Serializers().toBuilder()
           const FullType(
               BuiltMap, const [const FullType(String), const FullType(int)]),
           () => MapBuilder<String, int>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltMap, const [const FullType(String), const FullType(int)]),
+          () => MapBuilder<String, int>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltMap, const [
             const FullType(String),

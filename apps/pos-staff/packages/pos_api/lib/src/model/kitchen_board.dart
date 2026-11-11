@@ -3,6 +3,7 @@
 //
 
 // ignore_for_file: unused_element
+import 'package:pos_api/src/model/kitchen_held_course.dart';
 import 'package:pos_api/src/model/kitchen_expo_order.dart';
 import 'package:built_collection/built_collection.dart';
 import 'package:pos_api/src/model/kitchen_ticket.dart';
@@ -25,6 +26,7 @@ part 'kitchen_board.g.dart';
 /// * [done] - Tickets finished in the last 30 minutes, newest first.
 /// * [allDay] - The open items added up by dish and options, in the order the oldest of each was sent.
 /// * [expo] - Ready items waiting at the pass, by order: from the stations that hand to the shown `expo` stations, or every ready item when no station is chosen. Items leave once served or after two hours.
+/// * [held] - Held courses of open table orders, waiting at the pass for their fire, one row per order and course, oldest first. Only on the board of every station or of a chosen `expo` station; nothing of them has reached a station yet.
 @BuiltValue()
 abstract class KitchenBoard
     implements Built<KitchenBoard, KitchenBoardBuilder> {
@@ -62,6 +64,10 @@ abstract class KitchenBoard
   /// Ready items waiting at the pass, by order: from the stations that hand to the shown `expo` stations, or every ready item when no station is chosen. Items leave once served or after two hours.
   @BuiltValueField(wireName: r'expo')
   BuiltList<KitchenExpoOrder> get expo;
+
+  /// Held courses of open table orders, waiting at the pass for their fire, one row per order and course, oldest first. Only on the board of every station or of a chosen `expo` station; nothing of them has reached a station yet.
+  @BuiltValueField(wireName: r'held')
+  BuiltList<KitchenHeldCourse> get held;
 
   KitchenBoard._();
 
@@ -134,6 +140,11 @@ class _$KitchenBoardSerializer implements PrimitiveSerializer<KitchenBoard> {
     yield serializers.serialize(
       object.expo,
       specifiedType: const FullType(BuiltList, [FullType(KitchenExpoOrder)]),
+    );
+    yield r'held';
+    yield serializers.serialize(
+      object.held,
+      specifiedType: const FullType(BuiltList, [FullType(KitchenHeldCourse)]),
     );
   }
 
@@ -227,6 +238,14 @@ class _$KitchenBoardSerializer implements PrimitiveSerializer<KitchenBoard> {
                 const FullType(BuiltList, [FullType(KitchenExpoOrder)]),
           ) as BuiltList<KitchenExpoOrder>;
           result.expo.replace(valueDes);
+          break;
+        case r'held':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType:
+                const FullType(BuiltList, [FullType(KitchenHeldCourse)]),
+          ) as BuiltList<KitchenHeldCourse>;
+          result.held.replace(valueDes);
           break;
         default:
           unhandled.add(key);

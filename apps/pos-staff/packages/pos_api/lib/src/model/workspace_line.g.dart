@@ -48,8 +48,40 @@ final BuiltSet<WorkspaceLineKindEnum> _$workspaceLineKindEnumValues =
   _$workspaceLineKindEnum_cover,
 ]);
 
+const WorkspaceLineCourseStatusEnum _$workspaceLineCourseStatusEnum_none =
+    const WorkspaceLineCourseStatusEnum._('none');
+const WorkspaceLineCourseStatusEnum _$workspaceLineCourseStatusEnum_held =
+    const WorkspaceLineCourseStatusEnum._('held');
+const WorkspaceLineCourseStatusEnum _$workspaceLineCourseStatusEnum_fired =
+    const WorkspaceLineCourseStatusEnum._('fired');
+
+WorkspaceLineCourseStatusEnum _$workspaceLineCourseStatusEnumValueOf(
+    String name) {
+  switch (name) {
+    case 'none':
+      return _$workspaceLineCourseStatusEnum_none;
+    case 'held':
+      return _$workspaceLineCourseStatusEnum_held;
+    case 'fired':
+      return _$workspaceLineCourseStatusEnum_fired;
+    default:
+      throw ArgumentError(name);
+  }
+}
+
+final BuiltSet<WorkspaceLineCourseStatusEnum>
+    _$workspaceLineCourseStatusEnumValues = BuiltSet<
+        WorkspaceLineCourseStatusEnum>(const <WorkspaceLineCourseStatusEnum>[
+  _$workspaceLineCourseStatusEnum_none,
+  _$workspaceLineCourseStatusEnum_held,
+  _$workspaceLineCourseStatusEnum_fired,
+]);
+
 Serializer<WorkspaceLineKindEnum> _$workspaceLineKindEnumSerializer =
     _$WorkspaceLineKindEnumSerializer();
+Serializer<WorkspaceLineCourseStatusEnum>
+    _$workspaceLineCourseStatusEnumSerializer =
+    _$WorkspaceLineCourseStatusEnumSerializer();
 
 class _$WorkspaceLineKindEnumSerializer
     implements PrimitiveSerializer<WorkspaceLineKindEnum> {
@@ -84,6 +116,38 @@ class _$WorkspaceLineKindEnumSerializer
   WorkspaceLineKindEnum deserialize(Serializers serializers, Object serialized,
           {FullType specifiedType = FullType.unspecified}) =>
       WorkspaceLineKindEnum.valueOf(
+          _fromWire[serialized] ?? (serialized is String ? serialized : ''));
+}
+
+class _$WorkspaceLineCourseStatusEnumSerializer
+    implements PrimitiveSerializer<WorkspaceLineCourseStatusEnum> {
+  static const Map<String, Object> _toWire = const <String, Object>{
+    'none': 'none',
+    'held': 'held',
+    'fired': 'fired',
+  };
+  static const Map<Object, String> _fromWire = const <Object, String>{
+    'none': 'none',
+    'held': 'held',
+    'fired': 'fired',
+  };
+
+  @override
+  final Iterable<Type> types = const <Type>[WorkspaceLineCourseStatusEnum];
+  @override
+  final String wireName = 'WorkspaceLineCourseStatusEnum';
+
+  @override
+  Object serialize(
+          Serializers serializers, WorkspaceLineCourseStatusEnum object,
+          {FullType specifiedType = FullType.unspecified}) =>
+      _toWire[object.name] ?? object.name;
+
+  @override
+  WorkspaceLineCourseStatusEnum deserialize(
+          Serializers serializers, Object serialized,
+          {FullType specifiedType = FullType.unspecified}) =>
+      WorkspaceLineCourseStatusEnum.valueOf(
           _fromWire[serialized] ?? (serialized is String ? serialized : ''));
 }
 
@@ -122,6 +186,16 @@ class _$WorkspaceLine extends WorkspaceLine {
   final StaffRef? addedBy;
   @override
   final LineKitchenStatus? kitchenStatus;
+  @override
+  final int? course;
+  @override
+  final WorkspaceLineCourseStatusEnum? courseStatus;
+  @override
+  final int? seat;
+  @override
+  final String? buffetTierId;
+  @override
+  final String? buffetCoverLineId;
 
   factory _$WorkspaceLine([void Function(WorkspaceLineBuilder)? updates]) =>
       (WorkspaceLineBuilder()..update(updates))._build();
@@ -143,7 +217,12 @@ class _$WorkspaceLine extends WorkspaceLine {
       this.pendingKitchenQuantity,
       this.rowVersion,
       this.addedBy,
-      this.kitchenStatus})
+      this.kitchenStatus,
+      this.course,
+      this.courseStatus,
+      this.seat,
+      this.buffetTierId,
+      this.buffetCoverLineId})
       : super._();
   @override
   WorkspaceLine rebuild(void Function(WorkspaceLineBuilder) updates) =>
@@ -172,7 +251,12 @@ class _$WorkspaceLine extends WorkspaceLine {
         pendingKitchenQuantity == other.pendingKitchenQuantity &&
         rowVersion == other.rowVersion &&
         addedBy == other.addedBy &&
-        kitchenStatus == other.kitchenStatus;
+        kitchenStatus == other.kitchenStatus &&
+        course == other.course &&
+        courseStatus == other.courseStatus &&
+        seat == other.seat &&
+        buffetTierId == other.buffetTierId &&
+        buffetCoverLineId == other.buffetCoverLineId;
   }
 
   @override
@@ -195,6 +279,11 @@ class _$WorkspaceLine extends WorkspaceLine {
     _$hash = $jc(_$hash, rowVersion.hashCode);
     _$hash = $jc(_$hash, addedBy.hashCode);
     _$hash = $jc(_$hash, kitchenStatus.hashCode);
+    _$hash = $jc(_$hash, course.hashCode);
+    _$hash = $jc(_$hash, courseStatus.hashCode);
+    _$hash = $jc(_$hash, seat.hashCode);
+    _$hash = $jc(_$hash, buffetTierId.hashCode);
+    _$hash = $jc(_$hash, buffetCoverLineId.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -218,7 +307,12 @@ class _$WorkspaceLine extends WorkspaceLine {
           ..add('pendingKitchenQuantity', pendingKitchenQuantity)
           ..add('rowVersion', rowVersion)
           ..add('addedBy', addedBy)
-          ..add('kitchenStatus', kitchenStatus))
+          ..add('kitchenStatus', kitchenStatus)
+          ..add('course', course)
+          ..add('courseStatus', courseStatus)
+          ..add('seat', seat)
+          ..add('buffetTierId', buffetTierId)
+          ..add('buffetCoverLineId', buffetCoverLineId))
         .toString();
   }
 }
@@ -303,6 +397,28 @@ class WorkspaceLineBuilder
   set kitchenStatus(LineKitchenStatusBuilder? kitchenStatus) =>
       _$this._kitchenStatus = kitchenStatus;
 
+  int? _course;
+  int? get course => _$this._course;
+  set course(int? course) => _$this._course = course;
+
+  WorkspaceLineCourseStatusEnum? _courseStatus;
+  WorkspaceLineCourseStatusEnum? get courseStatus => _$this._courseStatus;
+  set courseStatus(WorkspaceLineCourseStatusEnum? courseStatus) =>
+      _$this._courseStatus = courseStatus;
+
+  int? _seat;
+  int? get seat => _$this._seat;
+  set seat(int? seat) => _$this._seat = seat;
+
+  String? _buffetTierId;
+  String? get buffetTierId => _$this._buffetTierId;
+  set buffetTierId(String? buffetTierId) => _$this._buffetTierId = buffetTierId;
+
+  String? _buffetCoverLineId;
+  String? get buffetCoverLineId => _$this._buffetCoverLineId;
+  set buffetCoverLineId(String? buffetCoverLineId) =>
+      _$this._buffetCoverLineId = buffetCoverLineId;
+
   WorkspaceLineBuilder() {
     WorkspaceLine._defaults(this);
   }
@@ -327,6 +443,11 @@ class WorkspaceLineBuilder
       _rowVersion = $v.rowVersion;
       _addedBy = $v.addedBy?.toBuilder();
       _kitchenStatus = $v.kitchenStatus?.toBuilder();
+      _course = $v.course;
+      _courseStatus = $v.courseStatus;
+      _seat = $v.seat;
+      _buffetTierId = $v.buffetTierId;
+      _buffetCoverLineId = $v.buffetCoverLineId;
       _$v = null;
     }
     return this;
@@ -373,6 +494,11 @@ class WorkspaceLineBuilder
             rowVersion: rowVersion,
             addedBy: _addedBy?.build(),
             kitchenStatus: _kitchenStatus?.build(),
+            course: course,
+            courseStatus: courseStatus,
+            seat: seat,
+            buffetTierId: buffetTierId,
+            buffetCoverLineId: buffetCoverLineId,
           );
     } catch (_) {
       late String _$failedField;

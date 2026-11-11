@@ -254,6 +254,19 @@ Rails.application.routes.draw do
             get 'table_settings', to: 'table_settings#show'
             put 'table_settings', to: 'table_settings#update'
             post 'tables/:resource_id/open', to: 'tables#open_table'
+            # Bookings of tables and rooms, free tables for a time, and deposits.
+            post 'reservations/deposits/:deposit_id/refund', to: 'reservations#refund_deposit'
+            post 'reservations/deposits/:deposit_id/forfeit', to: 'reservations#forfeit_deposit'
+            resources :reservations, only: [:index, :show, :create, :update] do
+              get :availability, on: :collection
+              member do
+                post :cancel
+                post :seat
+                post :deposits, action: :take_deposit
+              end
+            end
+            # Buffet tickets and their dishes.
+            resources :buffet_tiers, only: [:index, :create, :update]
             # E-invoices of completed orders and the store's provider settings.
             get 'einvoices/summary', to: 'einvoices#summary'
             post 'einvoices/retry', to: 'einvoices#retry_issue'
@@ -376,6 +389,9 @@ Rails.application.routes.draw do
               post 'payment_request/resolve', to: 'payment_requests#resolve'
               post 'service_charge', to: 'workspaces/service_charges#update'
               post 'checklist', to: 'workspaces/checklists#create'
+              # Courses held back from the kitchen, and a booking's deposits at payment.
+              post 'courses/:course/fire', to: 'workspaces/courses#fire'
+              post 'deposits/apply', to: 'workspaces/deposits#apply'
               member do
                 post 'discount/clear', to: 'workspaces/discounts#clear'
                 post :park
@@ -425,6 +441,7 @@ Rails.application.routes.draw do
     post 'tickets/:id/bump', action: :bump
     post 'all_day/bump', action: :bump_all_day
     post 'orders/:workspace_id/serve', action: :serve_order
+    post 'workspaces/:workspace_id/courses/:course/fire', action: :fire_course
   end
 
   # The counter app and POS administration built into the production image,

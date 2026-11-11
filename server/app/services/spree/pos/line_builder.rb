@@ -13,12 +13,13 @@ module Spree
       Result = Struct.new(:sale_line, :line_item, :audit, keyword_init: true)
 
       class << self
+        # `server_price` sells the item at a price the server set.
         # `merge_scope` is where a mergeable item may join an existing line;
         # `attributes` are written on a new SaleLine (who added it, from
         # which device, in which batch).
         def add!(workspace:, staff:, variant_id:, quantity: nil, sale_quantity: nil, sale_unit_code: nil, lot_code: nil, expiry_on: nil,
                  serial_codes: nil, price_override: nil, merge: nil, measurement_event_id: nil, label_barcode: nil, modifiers: nil,
-                 note: nil, merge_scope: nil, attributes: {})
+                 note: nil, merge_scope: nil, server_price: nil, attributes: {})
           SalesChannel.validate_order!(workspace)
           expiry_on = parse_expiry!(expiry_on)
           label = read_label!(workspace, label_barcode, variant_id) if label_barcode.present?
@@ -49,6 +50,13 @@ module Spree
             unit_price = menu.unit_price
           else
             unit_price = resolve_price!(workspace, staff, variant, variant_unit, price_override)
+          end
+          # A price the server decides: a buffet dish (free, paid by its
+          # ticket) or a forfeited deposit's holding fee.
+          if server_price
+            raise Conflict, 'This item takes no price from the client.' if price_override.present?
+
+            unit_price = server_price
           end
           line_price = UnitNormalizer.unit_price_per_base(price: unit_price, variant_unit: variant_unit)
           merge_key = if menu

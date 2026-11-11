@@ -21,6 +21,8 @@ module Spree
       belongs_to :table_register, class_name: 'Spree::Pos::Register', optional: true
       # Tax of the service charge; nil taxes it under the store's default category.
       belongs_to :service_charge_tax_category, class_name: 'Spree::TaxCategory', optional: true
+      # The service sold when a booking's deposit is kept.
+      belongs_to :reservation_fee_product, class_name: 'Spree::Product', optional: true
       has_many :registers, class_name: 'Spree::Pos::Register', dependent: :restrict_with_error
       has_many :memberships, class_name: 'Spree::Pos::StaffMembership', dependent: :restrict_with_error
 

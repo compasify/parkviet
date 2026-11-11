@@ -74,7 +74,19 @@
   "capabilityKitchenVoid": "Void items sent to the kitchen",
   "capabilityTableServe": "Serve tables",
   "capabilityResourceManage": "Floor plan and areas",
+  "capabilityReservationManage": "Take bookings",
+  "capabilityExpoOperate": "Run the pass (expo)",
   "tableState_available": "Free",
+  "tableState_reserved": "Reserved",
+  "reservationStatus_booked": "Waiting",
+  "reservationStatus_seated": "Seated",
+  "reservationStatus_completed": "Done",
+  "reservationStatus_no_show": "No-show",
+  "reservationStatus_canceled": "Canceled",
+  "depositStatus_held": "Held",
+  "depositStatus_applied": "Taken off the bill",
+  "depositStatus_refunded": "Refunded",
+  "depositStatus_forfeited": "Kept",
   "tableState_occupied": "Seated",
   "tableState_ordered": "Ordered",
   "tableState_waiting_long": "Waiting long",
@@ -266,6 +278,12 @@
       "description": "Add a service charge as a percent of the items after discounts, taxed under the category the branch chose.",
       "off": "The service charge is off at this branch, so orders carry none.",
       "disabled": "The service charge is off at this branch; the server changes no service charge. Selling is not affected."
+    },
+    "fnb_reservations": {
+      "label": "Reservations",
+      "description": "Take table bookings, hold tables for their time, take deposits and take them off the bill.",
+      "off": "Reservations are off at this branch.",
+      "disabled": "Reservations are off at this branch; the server takes no new booking. Selling is not affected."
     }
   },
   "profiles": {

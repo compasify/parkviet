@@ -283,7 +283,7 @@ export type PosLineItem = {
   net_amount?: string;
   item_net_amount?: string;
   sale_line_id: string | null;
-  kind?: 'ordinary' | 'measured' | 'tracked' | 'menu';
+  kind?: 'ordinary' | 'measured' | 'tracked' | 'menu' | 'cover';
   // A menu line's options, combo contents and note, copied at the time of sale.
   note?: string | null;
   modifiers?: PosLineModifier[];
@@ -298,6 +298,14 @@ export type PosLineItem = {
   kitchen_status?: Partial<Record<KitchenLineState, string>>;
   // Bumped on every change; an unsent table line is edited by its version.
   row_version?: number;
+  // A table dish's course (1 starter, 2 main…) and whether it waits for its fire.
+  course?: number | null;
+  course_status?: 'none' | 'held' | 'fired';
+  // The seat that ordered it; a bill can be split by seat.
+  seat?: number | null;
+  // A buffet ticket line (kind cover) names its tier; a free buffet dish its cover.
+  buffet_tier_id?: string | null;
+  buffet_cover_line_id?: string | null;
   added_by?: { id: string; name: string } | null;
   base_quantity?: number;
   sale_unit?: string;
@@ -627,6 +635,24 @@ export type PosWorkspace = {
   trace?: WorkspaceTrace | null;
   // Table orders: every kitchen send, in order. Null on other orders.
   kitchen_sends?: PosKitchenSend[] | null;
+  // The booking seated at this table and its deposits (`fnb.reservations`).
+  reservation?: PosWorkspaceReservation | null;
+};
+
+export type PosWorkspaceReservation = {
+  id: string;
+  guest_name: string;
+  party_size: number;
+  status: string;
+  revision: number;
+  deposit_held: string;
+  deposits: {
+    id: string;
+    kind: string;
+    amount: string;
+    status: 'held' | 'applied' | 'refunded' | 'forfeited';
+    available: string;
+  }[];
 };
 
 export type PosKitchenSend = {

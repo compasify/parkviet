@@ -51,6 +51,7 @@ export const LABELLED_MODULES = [
   'fnb.tables',
   'fnb.postpay',
   'fnb.service_charge',
+  'fnb.reservations',
 ] as const;
 
 function record(value: unknown): Record<string, unknown> | null {

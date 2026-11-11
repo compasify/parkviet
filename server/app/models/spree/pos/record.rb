@@ -16,6 +16,11 @@ module Spree
         scope.find_by(id: found.id) if found
       end
 
+      # The prefixed id of a row from its key, without loading it.
+      def self.prefixed_for(id)
+        id && "#{_prefix_id_prefix}_#{Spree::PrefixedId::SQIDS.encode([id])}"
+      end
+
       def self.money(value)
         return value if value.is_a?(BigDecimal)
         return if value.is_a?(Float)

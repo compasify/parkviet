@@ -923,4 +923,128 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get checklistStart => 'Start';
+
+  @override
+  String get courseNone => 'No course';
+
+  @override
+  String get courseStarter => 'Starter';
+
+  @override
+  String get courseMain => 'Main';
+
+  @override
+  String get courseDessert => 'Dessert';
+
+  @override
+  String courseNumber(int number) {
+    return 'Course $number';
+  }
+
+  @override
+  String get courseHold => 'Hold until fired';
+
+  @override
+  String get courseHeldTitle => 'Held, waiting to be fired';
+
+  @override
+  String courseFire(String course, int count) {
+    return 'Fire $course ($count dishes)';
+  }
+
+  @override
+  String courseFired(String course) {
+    return 'Sent to the kitchen: $course';
+  }
+
+  @override
+  String get seatLabel => 'Seat';
+
+  @override
+  String get seatShared => 'Shared';
+
+  @override
+  String seatNumber(int seat) {
+    return 'Seat $seat';
+  }
+
+  @override
+  String get expoHeldTitle => 'Waiting to be fired';
+
+  @override
+  String get expoReadyTitle => 'Ready, to take out';
+
+  @override
+  String get expoAllAreas => 'All areas';
+
+  @override
+  String expoArea(int number) {
+    return 'Area $number';
+  }
+
+  @override
+  String get ownerReservationsTitle => 'Today\'s bookings';
+
+  @override
+  String get ownerNoReservations => 'No bookings today yet.';
+
+  @override
+  String ownerDeposit(String amount, String status) {
+    return 'Deposit $amount · $status';
+  }
+
+  @override
+  String get ownerRefund => 'Refund deposit';
+
+  @override
+  String get ownerForfeit => 'Keep deposit';
+
+  @override
+  String ownerConfirmRefund(String amount, String name) {
+    return 'Refund $amount to $name?';
+  }
+
+  @override
+  String ownerConfirmForfeit(String amount, String name) {
+    return 'Keep the $amount deposit of $name? It becomes a taxed holding-fee sale.';
+  }
+
+  @override
+  String get ownerConfirm => 'Confirm';
+
+  @override
+  String get ownerKeep => 'Not now';
+
+  @override
+  String get ownerRefunded => 'The deposit was refunded.';
+
+  @override
+  String get ownerForfeited => 'The deposit was kept.';
+
+  @override
+  String get reservationBooked => 'Booked';
+
+  @override
+  String get reservationSeated => 'Seated';
+
+  @override
+  String get reservationCompleted => 'Done';
+
+  @override
+  String get reservationNoShow => 'No-show';
+
+  @override
+  String get reservationCanceled => 'Canceled';
+
+  @override
+  String get depositHeld => 'held';
+
+  @override
+  String get depositApplied => 'taken off the bill';
+
+  @override
+  String get depositRefunded => 'refunded';
+
+  @override
+  String get depositForfeited => 'kept';
 }

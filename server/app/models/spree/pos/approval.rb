@@ -32,7 +32,7 @@ module Spree
       # Records an approval may be bound to. Each carries its own revision, so
       # a changed subject invalidates the approval.
       SUBJECTS = %w[Spree::Pos::Workspace Spree::Pos::ReturnOperation Spree::Pos::RefundRequest Spree::Pos::Shift
-                    Spree::Pos::InventoryAdjustment].freeze
+                    Spree::Pos::InventoryAdjustment Spree::Pos::Reservation].freeze
       # Who may ask for an approval at the branch: sellers, and return staff
       # for returns and refunds.
       REQUESTER_CAPABILITIES = {
@@ -41,6 +41,8 @@ module Spree
         # A shift close variance: the cashier, or a manager closing for them.
         'Spree::Pos::Shift' => [Capabilities::OPEN_SHIFT, Capabilities::RECOVER],
         'Spree::Pos::InventoryAdjustment' => [Capabilities::INVENTORY_MANAGE],
+        # Refunding or forfeiting a booking's deposit.
+        'Spree::Pos::Reservation' => [Capabilities::RESERVATION_MANAGE, Capabilities::OPEN_SHIFT],
         # Sellers, and the people serving a table (only table orders are theirs to edit).
         'Spree::Pos::Workspace' => [Capabilities::OPEN_SHIFT, Capabilities::TABLE_SERVE]
       }.freeze
@@ -48,6 +50,10 @@ module Spree
       PREBILL_ACTIONS = %w[workspace.reprint_prebill workspace.cancel_prebill].freeze
       # Taking back an item the kitchen was told about (Kitchen::VoidSent).
       KITCHEN_VOID_ACTION = 'kitchen.void_sent'
+      # A booking's deposit given back, or kept as a holding fee.
+      RESERVATION_ACTIONS = %w[reservation.refund_deposit reservation.forfeit_deposit].freeze
+      # A buffet round past its limits, sent to the kitchen anyway.
+      BUFFET_OVERRIDE_ACTION = 'buffet.override_round'
 
       def consume!(action:, amount:, currency:, revision:, subject:, requester:)
         raise Conflict, 'Approval subject is required.' unless SUBJECTS.include?(subject.class.name) && subject.persisted?

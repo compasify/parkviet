@@ -9,9 +9,11 @@ import 'package:built_value/serializer.dart';
 
 part 'table_split_input.g.dart';
 
-/// TableSplitInput
+/// The chosen `sale_line_ids` move to a new order, or with `by: seat` every seat of the order gets its own bill.
 ///
 /// Properties:
+/// * [by]
+/// * [shared] - A dish without a seat, by sale line id, and the seat whose bill takes it; the first seat otherwise.
 /// * [expectedRevision]
 /// * [leaseGeneration]
 /// * [editorId]
@@ -21,6 +23,14 @@ part 'table_split_input.g.dart';
 @BuiltValue()
 abstract class TableSplitInput
     implements Built<TableSplitInput, TableSplitInputBuilder> {
+  @BuiltValueField(wireName: r'by')
+  TableSplitInputByEnum? get by;
+  // enum byEnum {  lines,  seat,  };
+
+  /// A dish without a seat, by sale line id, and the seat whose bill takes it; the first seat otherwise.
+  @BuiltValueField(wireName: r'shared')
+  BuiltMap<String, int>? get shared;
+
   @BuiltValueField(wireName: r'expected_revision')
   int get expectedRevision;
 
@@ -31,7 +41,7 @@ abstract class TableSplitInput
   String get editorId;
 
   @BuiltValueField(wireName: r'sale_line_ids')
-  BuiltList<String> get saleLineIds;
+  BuiltList<String>? get saleLineIds;
 
   /// The table of the new order; this order's table by default.
   @BuiltValueField(wireName: r'resource_id')
@@ -66,6 +76,21 @@ class _$TableSplitInputSerializer
     TableSplitInput object, {
     FullType specifiedType = FullType.unspecified,
   }) sync* {
+    if (object.by != null) {
+      yield r'by';
+      yield serializers.serialize(
+        object.by,
+        specifiedType: const FullType(TableSplitInputByEnum),
+      );
+    }
+    if (object.shared != null) {
+      yield r'shared';
+      yield serializers.serialize(
+        object.shared,
+        specifiedType:
+            const FullType(BuiltMap, [FullType(String), FullType(int)]),
+      );
+    }
     yield r'expected_revision';
     yield serializers.serialize(
       object.expectedRevision,
@@ -81,11 +106,13 @@ class _$TableSplitInputSerializer
       object.editorId,
       specifiedType: const FullType(String),
     );
-    yield r'sale_line_ids';
-    yield serializers.serialize(
-      object.saleLineIds,
-      specifiedType: const FullType(BuiltList, [FullType(String)]),
-    );
+    if (object.saleLineIds != null) {
+      yield r'sale_line_ids';
+      yield serializers.serialize(
+        object.saleLineIds,
+        specifiedType: const FullType(BuiltList, [FullType(String)]),
+      );
+    }
     if (object.resourceId != null) {
       yield r'resource_id';
       yield serializers.serialize(
@@ -125,6 +152,23 @@ class _$TableSplitInputSerializer
       final key = serializedList[i] as String;
       final value = serializedList[i + 1];
       switch (key) {
+        case r'by':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(TableSplitInputByEnum),
+          ) as TableSplitInputByEnum?;
+          if (valueDes == null) continue;
+          result.by = valueDes;
+          break;
+        case r'shared':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(
+                BuiltMap, [FullType(String), FullType(int)]),
+          ) as BuiltMap<String, int>?;
+          if (valueDes == null) continue;
+          result.shared.replace(valueDes);
+          break;
         case r'expected_revision':
           final valueDes = serializers.deserialize(
             value,
@@ -149,8 +193,10 @@ class _$TableSplitInputSerializer
         case r'sale_line_ids':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType: const FullType(BuiltList, [FullType(String)]),
-          ) as BuiltList<String>;
+            specifiedType:
+                const FullType.nullable(BuiltList, [FullType(String)]),
+          ) as BuiltList<String>?;
+          if (valueDes == null) continue;
           result.saleLineIds.replace(valueDes);
           break;
         case r'resource_id':
@@ -196,4 +242,21 @@ class _$TableSplitInputSerializer
     );
     return result.build();
   }
+}
+
+class TableSplitInputByEnum extends EnumClass {
+  @BuiltValueEnumConst(wireName: r'lines')
+  static const TableSplitInputByEnum lines = _$tableSplitInputByEnum_lines;
+  @BuiltValueEnumConst(wireName: r'seat')
+  static const TableSplitInputByEnum seat = _$tableSplitInputByEnum_seat;
+
+  static Serializer<TableSplitInputByEnum> get serializer =>
+      _$tableSplitInputByEnumSerializer;
+
+  const TableSplitInputByEnum._(String name) : super(name);
+
+  static BuiltSet<TableSplitInputByEnum> get values =>
+      _$tableSplitInputByEnumValues;
+  static TableSplitInputByEnum valueOf(String name) =>
+      _$tableSplitInputByEnumValueOf(name);
 }

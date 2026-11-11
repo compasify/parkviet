@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:pos_api/pos_api.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../auth/staff_session.dart';
 import '../../core/api_client.dart';
@@ -34,6 +35,9 @@ abstract interface class KitchenApi {
   /// Hands an order over at the counter: every ready item of the order is
   /// served. Answers the tickets that changed, none when nothing was ready.
   Future<List<KitchenTicket>> serveOrder(String workspaceId);
+
+  /// Sends a held course of a table to the kitchen now (the expo calls it).
+  Future<void> fireCourse(String workspaceId, int course);
 
   Future<List<KitchenMenuItem>> menuItems(String? stationId);
 
@@ -108,6 +112,15 @@ class ApiKitchenApi implements KitchenApi {
   @override
   Future<List<KitchenTicket>> serveOrder(String workspaceId) async =>
       (await client.call((api) => api.posDeviceKitchenOrderServe(workspaceId: workspaceId))).data.tickets.toList();
+
+  @override
+  Future<void> fireCourse(String workspaceId, int course) async {
+    await client.call((api) => api.posDeviceCourseFire(
+          idempotencyKey: const Uuid().v4(),
+          workspaceId: workspaceId,
+          course: course,
+        ));
+  }
 
   @override
   Future<List<KitchenMenuItem>> menuItems(String? stationId) async =>
@@ -307,6 +320,12 @@ class KdsController {
 
   /// Hands the order over: every ready item of it is served.
   Future<AppFailure?> serveOrder(String workspaceId) => _change(() => api.serveOrder(workspaceId));
+
+  /// Fires a held course; the board read after it shows the new tickets.
+  Future<AppFailure?> fireCourse(String workspaceId, int course) => _change(() async {
+        await api.fireCourse(workspaceId, course);
+        return const <KitchenTicket>[];
+      });
 
   Future<AppFailure?> _change(Future<List<KitchenTicket>> Function() request) async {
     try {

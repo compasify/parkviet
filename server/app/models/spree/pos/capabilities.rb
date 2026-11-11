@@ -58,10 +58,16 @@ module Spree
       # Taking back an item the kitchen was already told about without asking
       # for an approval. Everyone else needs one per void.
       KITCHEN_VOID = 'pos.kitchen.void'
+      # A branch's bookings: book, change, cancel and seat them, and take
+      # their deposits. Refunding or forfeiting a deposit still needs an approval.
+      RESERVATION_MANAGE = 'pos.reservation.manage'
+      # Working the pass as a person: hand ready dishes out and fire held courses.
+      EXPO_OPERATE = 'pos.expo.operate'
       ASSIGNABLE = [MANAGE, OPEN_SHIFT, DISCOUNT, PRICE_OVERRIDE, CUSTOMER, PAYMENT, RESOLVE, RECOVER, APPROVE, TAKEOVER,
                     CREDIT_MANAGE, CREDIT_SELL, RETURN, CASH_MOVE, REPORT_READ, REPORT_EXPORT,
                     INVENTORY_MANAGE, INVENTORY_TRACE, DEVICE_MANAGE, PRINTER_MANAGE, MANAGE_MENU, SET_SOLD_OUT,
-                    EINVOICE_MANAGE, OPERATE_KITCHEN, MANAGE_KITCHEN, TABLE_SERVE, RESOURCE_MANAGE, KITCHEN_VOID].freeze
+                    EINVOICE_MANAGE, OPERATE_KITCHEN, MANAGE_KITCHEN, TABLE_SERVE, RESOURCE_MANAGE, KITCHEN_VOID,
+                    RESERVATION_MANAGE, EXPO_OPERATE].freeze
 
       def self.sanitize(values)
         Array(values).map(&:to_s).uniq

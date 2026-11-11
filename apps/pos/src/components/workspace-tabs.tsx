@@ -28,6 +28,7 @@ import {
   type ScanResult,
   shouldCaptureScannerKey,
 } from '../lib/scanner-queue';
+import type { TablePlacement } from '../lib/table-courses';
 import { appendable, voidReasons } from '../lib/table-kitchen';
 import {
   canServeTables,
@@ -40,8 +41,10 @@ import {
 import { workspaceHasContent, workspaceIsSettled, workspacePhase } from '../lib/workspace-content';
 import { createWorkspaceSerializer } from '../lib/workspace-serializer';
 import { readLayout } from '../lib/workspace-storage';
+import { BuffetTierPicker } from './buffet-tier-picker';
 import { CatalogSearch, type ScanNotice } from './catalog-search';
 import { CloseTabDialog } from './close-tab-dialog';
+import { CourseSeatPicker } from './course-seat-picker';
 import { CustomerPanel } from './customer-panel';
 import { DeliveryForm } from './delivery-form';
 import { DiscountForm } from './discount-form';
@@ -58,6 +61,7 @@ import { PlatformOrderTray } from './platform-order-tray';
 import { PosIcon } from './pos-icon';
 import { usePosSelection } from './pos-selection';
 import { PrebillDialog } from './prebill-dialog';
+import { ReservationDepositNote } from './reservation-deposit-note';
 import { useScannerCalibration } from './scanner-calibration';
 import { ServiceModeControl } from './service-mode-control';
 import { TableOrderBar } from './table-actions';
@@ -658,6 +662,17 @@ export function WorkspaceTabs() {
   // The sent line whose items are being voided.
   const [voiding, setVoiding] = useState<PosLineItem | null>(null);
   const kitchenOn = data?.modules?.['fnb.kitchen'] === true;
+  // Course, seat and buffet cover of the next dishes, per table order.
+  const [placementOf, setPlacementOf] = useState<{ id: string; value: TablePlacement } | null>(
+    null,
+  );
+  const placement: TablePlacement =
+    active && placementOf?.id === active.id ? placementOf.value : {};
+  const setPlacement = (value: TablePlacement) => {
+    if (active) setPlacementOf({ id: active.id, value });
+  };
+  const tableAddExtra = <T extends object>(extra: T) =>
+    active && activeTable.table && kitchenOn ? { ...extra, placement } : extra;
   const enqueueScan = useRef<(code: string) => void>(() => undefined);
   enqueueScan.current = (code) => {
     if (!active || !editable || channelUnavailable) return;
@@ -1015,7 +1030,7 @@ export function WorkspaceTabs() {
                     active
                       ? (variantId, extra) =>
                           command(active, (current) =>
-                            workspaces.addItem(current, variantId, 1, extra),
+                            workspaces.addItem(current, variantId, 1, tableAddExtra(extra)),
                           )
                       : undefined
                   }
@@ -1175,6 +1190,16 @@ export function WorkspaceTabs() {
                       async (current) => (await workspaces.splitTable(current, input)).workspace,
                     )
                   }
+                  onSplitBySeat={
+                    kitchenOn
+                      ? (shared) =>
+                          command(
+                            active,
+                            async (current) =>
+                              (await workspaces.splitBySeat(current, shared)).workspace,
+                          )
+                      : undefined
+                  }
                   onServiceCharge={(waived) =>
                     command(active, (current) => workspaces.setServiceCharge(current, waived))
                   }
@@ -1186,6 +1211,31 @@ export function WorkspaceTabs() {
                   }
                   onPrebillChanged={() => void workspaces.refresh()}
                 />
+              ) : null}
+              {active && activeTable.table && kitchenOn && !active.payments ? (
+                <div className="table-service-panel">
+                  <CourseSeatPicker
+                    workspace={active}
+                    value={placement}
+                    onChange={setPlacement}
+                    disabled={!canAppend || busy}
+                    onFire={(course) =>
+                      command(active, (current) => workspaces.fireCourse(current, course))
+                    }
+                  />
+                  <BuffetTierPicker
+                    workspace={active}
+                    branchId={selection.branchId}
+                    placement={placement}
+                    onPlacement={setPlacement}
+                    disabled={!canAppend || busy}
+                    onAddCover={(tierId, guests) =>
+                      command(active, (current) =>
+                        workspaces.addBuffetCover(current, tierId, guests),
+                      )
+                    }
+                  />
+                </div>
               ) : null}
               {active ? (
                 <article className="draft-detail">
@@ -1513,6 +1563,17 @@ export function WorkspaceTabs() {
                     />
                   ) : null}
                   {callNumbers ? <PickupQueue branchId={active.branch_id} /> : null}
+                  {active.reservation ? (
+                    <ReservationDepositNote
+                      workspace={active}
+                      disabled={
+                        locked || busy || !isEditor || active.operational_status !== 'editing'
+                      }
+                      onApply={() =>
+                        command(active, (current) => workspaces.applyDeposits(current))
+                      }
+                    />
+                  ) : null}
                   <PaymentPanel
                     workspace={active}
                     staffId={staffId}

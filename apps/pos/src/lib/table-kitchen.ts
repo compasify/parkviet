@@ -37,7 +37,7 @@ export function appendable(
 
 // Fields a table addition carries; anything else (a lot, a serial, a price)
 // is a counter sale's add and goes through the lease.
-const APPEND_FIELDS = new Set(['modifiers', 'note', 'merge']);
+const APPEND_FIELDS = new Set(['modifiers', 'note', 'merge', 'placement']);
 
 export function addsByAppend(workspace: PosWorkspace, extra: Record<string, unknown>): boolean {
   return (

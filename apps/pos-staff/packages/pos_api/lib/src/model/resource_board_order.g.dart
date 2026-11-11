@@ -70,6 +70,8 @@ class _$ResourceBoardOrderOperationalStatusEnumSerializer
 
 class _$ResourceBoardOrder extends ResourceBoardOrder {
   @override
+  final DateTime? buffetEndsAt;
+  @override
   final String id;
   @override
   final String? tableLabel;
@@ -95,7 +97,8 @@ class _$ResourceBoardOrder extends ResourceBoardOrder {
       (ResourceBoardOrderBuilder()..update(updates))._build();
 
   _$ResourceBoardOrder._(
-      {required this.id,
+      {this.buffetEndsAt,
+      required this.id,
       this.tableLabel,
       this.guestCount,
       required this.total,
@@ -119,6 +122,7 @@ class _$ResourceBoardOrder extends ResourceBoardOrder {
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
     return other is ResourceBoardOrder &&
+        buffetEndsAt == other.buffetEndsAt &&
         id == other.id &&
         tableLabel == other.tableLabel &&
         guestCount == other.guestCount &&
@@ -134,6 +138,7 @@ class _$ResourceBoardOrder extends ResourceBoardOrder {
   @override
   int get hashCode {
     var _$hash = 0;
+    _$hash = $jc(_$hash, buffetEndsAt.hashCode);
     _$hash = $jc(_$hash, id.hashCode);
     _$hash = $jc(_$hash, tableLabel.hashCode);
     _$hash = $jc(_$hash, guestCount.hashCode);
@@ -151,6 +156,7 @@ class _$ResourceBoardOrder extends ResourceBoardOrder {
   @override
   String toString() {
     return (newBuiltValueToStringHelper(r'ResourceBoardOrder')
+          ..add('buffetEndsAt', buffetEndsAt)
           ..add('id', id)
           ..add('tableLabel', tableLabel)
           ..add('guestCount', guestCount)
@@ -168,6 +174,11 @@ class _$ResourceBoardOrder extends ResourceBoardOrder {
 class ResourceBoardOrderBuilder
     implements Builder<ResourceBoardOrder, ResourceBoardOrderBuilder> {
   _$ResourceBoardOrder? _$v;
+
+  DateTime? _buffetEndsAt;
+  DateTime? get buffetEndsAt => _$this._buffetEndsAt;
+  set buffetEndsAt(DateTime? buffetEndsAt) =>
+      _$this._buffetEndsAt = buffetEndsAt;
 
   String? _id;
   String? get id => _$this._id;
@@ -222,6 +233,7 @@ class ResourceBoardOrderBuilder
   ResourceBoardOrderBuilder get _$this {
     final $v = _$v;
     if ($v != null) {
+      _buffetEndsAt = $v.buffetEndsAt;
       _id = $v.id;
       _tableLabel = $v.tableLabel;
       _guestCount = $v.guestCount;
@@ -253,6 +265,7 @@ class ResourceBoardOrderBuilder
   _$ResourceBoardOrder _build() {
     final _$result = _$v ??
         _$ResourceBoardOrder._(
+          buffetEndsAt: buffetEndsAt,
           id: BuiltValueNullFieldError.checkNotNull(
               id, r'ResourceBoardOrder', 'id'),
           tableLabel: tableLabel,

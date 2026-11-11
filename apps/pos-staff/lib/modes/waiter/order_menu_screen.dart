@@ -4,6 +4,7 @@ import 'package:pos_api/pos_api.dart';
 import '../../core/errors.dart';
 import '../../core/menu/modifier_sheet.dart';
 import '../../l10n/app_localizations.dart';
+import 'table_courses.dart';
 import 'waiter_cart.dart';
 import 'waiter_context.dart';
 import 'waiter_messages.dart';
@@ -170,6 +171,7 @@ class _OrderMenuScreenState extends State<OrderMenuScreen> {
             ],
           ),
         ),
+        _PlacementBar(placement: _cart.placement, onChanged: _cart.setPlacement),
         Expanded(
           child: items.isEmpty
               ? Center(child: Text(l10n.waiterNoDishes))
@@ -191,6 +193,61 @@ class _OrderMenuScreenState extends State<OrderMenuScreen> {
                 ),
         ),
       ],
+    );
+  }
+}
+
+/// The course, seat and hold the next dishes go in the cart with.
+class _PlacementBar extends StatelessWidget {
+  const _PlacementBar({required this.placement, required this.onChanged});
+
+  final TablePlacement placement;
+  final ValueChanged<TablePlacement> onChanged;
+
+  static const _seats = 12;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: Wrap(
+        key: const Key('placement-bar'),
+        crossAxisAlignment: WrapCrossAlignment.center,
+        runSpacing: 4,
+        children: [
+          for (final course in [null, ...tableCourses])
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: ChoiceChip(
+                key: Key('course-${course ?? 'none'}'),
+                label: Text(course == null ? l10n.courseNone : courseLabel(l10n, course)),
+                selected: placement.course == course,
+                onSelected: (_) => onChanged(placement.copyWith(course: () => course)),
+              ),
+            ),
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: FilterChip(
+              key: const Key('course-hold'),
+              label: Text(l10n.courseHold),
+              selected: placement.holds,
+              onSelected: placement.course == null ? null : (hold) => onChanged(placement.copyWith(hold: hold)),
+            ),
+          ),
+          DropdownButton<int?>(
+            key: const Key('seat-picker'),
+            value: placement.seat,
+            hint: Text(l10n.seatLabel),
+            items: [
+              DropdownMenuItem<int?>(value: null, child: Text(l10n.seatShared)),
+              for (var seat = 1; seat <= _seats; seat++)
+                DropdownMenuItem<int?>(value: seat, child: Text(l10n.seatNumber(seat))),
+            ],
+            onChanged: (seat) => onChanged(placement.copyWith(seat: () => seat)),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -277,6 +334,12 @@ class _CartBar extends StatelessWidget {
                   title: Text(line.item.name),
                   subtitle: Text([
                     if (line.optionsLabel.isNotEmpty) '+ ${line.optionsLabel}',
+                    if (line.placement.seat != null) AppLocalizations.of(sheet).seatNumber(line.placement.seat!),
+                    if (line.placement.course != null)
+                      [
+                        courseLabel(AppLocalizations.of(sheet), line.placement.course!),
+                        if (line.placement.holds) AppLocalizations.of(sheet).courseHold,
+                      ].join(' · '),
                     if (line.choice.note.isNotEmpty) line.choice.note,
                     moneyLabel(line.total),
                   ].join('\n')),

@@ -70,11 +70,14 @@ Class | Method | HTTP request | Description
 [*DefaultApi*](doc/DefaultApi.md) | [**posAreaCreate**](doc/DefaultApi.md#posareacreate) | **POST** /api/v3/admin/pos/areas | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posAreaUpdate**](doc/DefaultApi.md#posareaupdate) | **PATCH** /api/v3/admin/pos/areas/{id} | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posAreas**](doc/DefaultApi.md#posareas) | **GET** /api/v3/admin/pos/areas | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posBuffetTierList**](doc/DefaultApi.md#posbuffettierlist) | **GET** /api/v3/admin/pos/buffet_tiers | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posCatalog**](doc/DefaultApi.md#poscatalog) | **GET** /api/v3/admin/pos/catalog | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posContext**](doc/DefaultApi.md#poscontext) | **GET** /api/v3/admin/pos/context | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posCourseFire**](doc/DefaultApi.md#poscoursefire) | **POST** /api/v3/admin/pos/workspaces/{workspace_id}/courses/{course}/fire | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posCupLabelSettings**](doc/DefaultApi.md#poscuplabelsettings) | **GET** /api/v3/admin/pos/cup_label_settings | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posCupLabelSettingsUpdate**](doc/DefaultApi.md#poscuplabelsettingsupdate) | **PUT** /api/v3/admin/pos/cup_label_settings | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posCupLabelTest**](doc/DefaultApi.md#poscuplabeltest) | **POST** /api/v3/admin/pos/cup_label_settings/test | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posDeviceCourseFire**](doc/DefaultApi.md#posdevicecoursefire) | **POST** /api/v3/pos_device/kitchen/workspaces/{workspace_id}/courses/{course}/fire | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posDeviceKitchenAllDayBump**](doc/DefaultApi.md#posdevicekitchenalldaybump) | **POST** /api/v3/pos_device/kitchen/all_day/bump | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posDeviceKitchenBoard**](doc/DefaultApi.md#posdevicekitchenboard) | **GET** /api/v3/pos_device/kitchen/board | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posDeviceKitchenItemReady**](doc/DefaultApi.md#posdevicekitchenitemready) | **POST** /api/v3/pos_device/kitchen/items/{id}/ready | 
@@ -160,6 +163,14 @@ Class | Method | HTTP request | Description
 [*DefaultApi*](doc/DefaultApi.md) | [**posReportIngredientUsage**](doc/DefaultApi.md#posreportingredientusage) | **GET** /api/v3/admin/pos/reports/ingredient_usage | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posReportMenuMargin**](doc/DefaultApi.md#posreportmenumargin) | **GET** /api/v3/admin/pos/reports/menu_margin | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posReportPlatforms**](doc/DefaultApi.md#posreportplatforms) | **GET** /api/v3/admin/pos/reports/platforms | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posReservationAvailability**](doc/DefaultApi.md#posreservationavailability) | **GET** /api/v3/admin/pos/reservations/availability | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posReservationCancel**](doc/DefaultApi.md#posreservationcancel) | **POST** /api/v3/admin/pos/reservations/{id}/cancel | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posReservationCreate**](doc/DefaultApi.md#posreservationcreate) | **POST** /api/v3/admin/pos/reservations | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posReservationDepositForfeit**](doc/DefaultApi.md#posreservationdepositforfeit) | **POST** /api/v3/admin/pos/reservations/deposits/{deposit_id}/forfeit | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posReservationDepositRefund**](doc/DefaultApi.md#posreservationdepositrefund) | **POST** /api/v3/admin/pos/reservations/deposits/{deposit_id}/refund | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posReservationList**](doc/DefaultApi.md#posreservationlist) | **GET** /api/v3/admin/pos/reservations | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posReservationSeat**](doc/DefaultApi.md#posreservationseat) | **POST** /api/v3/admin/pos/reservations/{id}/seat | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posReservationShow**](doc/DefaultApi.md#posreservationshow) | **GET** /api/v3/admin/pos/reservations/{id} | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posResourceArchive**](doc/DefaultApi.md#posresourcearchive) | **POST** /api/v3/admin/pos/resources/{id}/archive | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posResourceBoard**](doc/DefaultApi.md#posresourceboard) | **GET** /api/v3/admin/pos/resource_board | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posResourceCreate**](doc/DefaultApi.md#posresourcecreate) | **POST** /api/v3/admin/pos/resources | 
@@ -207,6 +218,10 @@ Class | Method | HTTP request | Description
  - [AreaInput](doc/AreaInput.md)
  - [AreaList](doc/AreaList.md)
  - [AreaResult](doc/AreaResult.md)
+ - [AvailableResource](doc/AvailableResource.md)
+ - [BuffetTier](doc/BuffetTier.md)
+ - [BuffetTierItem](doc/BuffetTierItem.md)
+ - [BuffetTierList](doc/BuffetTierList.md)
  - [CallBoard](doc/CallBoard.md)
  - [CallBoardPreparingInner](doc/CallBoardPreparingInner.md)
  - [CallBoardReadyInner](doc/CallBoardReadyInner.md)
@@ -219,6 +234,7 @@ Class | Method | HTTP request | Description
  - [ContextBranch](doc/ContextBranch.md)
  - [ContextStaff](doc/ContextStaff.md)
  - [ContextStore](doc/ContextStore.md)
+ - [CourseLabel](doc/CourseLabel.md)
  - [CupLabelSettings](doc/CupLabelSettings.md)
  - [Device](doc/Device.md)
  - [DevicePairResult](doc/DevicePairResult.md)
@@ -261,6 +277,8 @@ Class | Method | HTTP request | Description
  - [KitchenBoardResult](doc/KitchenBoardResult.md)
  - [KitchenExpoItem](doc/KitchenExpoItem.md)
  - [KitchenExpoOrder](doc/KitchenExpoOrder.md)
+ - [KitchenHeldCourse](doc/KitchenHeldCourse.md)
+ - [KitchenHeldLine](doc/KitchenHeldLine.md)
  - [KitchenHistory](doc/KitchenHistory.md)
  - [KitchenHistoryEntry](doc/KitchenHistoryEntry.md)
  - [KitchenHistoryItem](doc/KitchenHistoryItem.md)
@@ -445,6 +463,19 @@ Class | Method | HTTP request | Description
  - [RecipeIngredientsInner](doc/RecipeIngredientsInner.md)
  - [RecipeOwner](doc/RecipeOwner.md)
  - [RecipeOwnerVersionsInner](doc/RecipeOwnerVersionsInner.md)
+ - [Reservation](doc/Reservation.md)
+ - [ReservationAvailabilityResult](doc/ReservationAvailabilityResult.md)
+ - [ReservationAvailabilityResultMeta](doc/ReservationAvailabilityResultMeta.md)
+ - [ReservationCancelInput](doc/ReservationCancelInput.md)
+ - [ReservationDeposit](doc/ReservationDeposit.md)
+ - [ReservationDepositResolveInput](doc/ReservationDepositResolveInput.md)
+ - [ReservationInput](doc/ReservationInput.md)
+ - [ReservationList](doc/ReservationList.md)
+ - [ReservationListMeta](doc/ReservationListMeta.md)
+ - [ReservationResult](doc/ReservationResult.md)
+ - [ReservationSeat](doc/ReservationSeat.md)
+ - [ReservationSeatInput](doc/ReservationSeatInput.md)
+ - [ReservationSeatResult](doc/ReservationSeatResult.md)
  - [Resource](doc/Resource.md)
  - [ResourceBoard](doc/ResourceBoard.md)
  - [ResourceBoardArea](doc/ResourceBoardArea.md)
@@ -454,6 +485,7 @@ Class | Method | HTTP request | Description
  - [ResourceInput](doc/ResourceInput.md)
  - [ResourceList](doc/ResourceList.md)
  - [ResourceManualStatusInput](doc/ResourceManualStatusInput.md)
+ - [ResourceNextReservation](doc/ResourceNextReservation.md)
  - [ResourceRef](doc/ResourceRef.md)
  - [ResourceResult](doc/ResourceResult.md)
  - [ServiceChargeWaiveInput](doc/ServiceChargeWaiveInput.md)
@@ -479,6 +511,7 @@ Class | Method | HTTP request | Description
  - [TablePinsResult](doc/TablePinsResult.md)
  - [TableSettings](doc/TableSettings.md)
  - [TableSettingsInput](doc/TableSettingsInput.md)
+ - [TableSettingsInputCourseLabelsInner](doc/TableSettingsInputCourseLabelsInner.md)
  - [TableSettingsResult](doc/TableSettingsResult.md)
  - [TableSplitInput](doc/TableSplitInput.md)
  - [TableSplitOrders](doc/TableSplitOrders.md)
@@ -488,6 +521,7 @@ Class | Method | HTTP request | Description
  - [Workspace](doc/Workspace.md)
  - [WorkspaceLine](doc/WorkspaceLine.md)
  - [WorkspacePrebill](doc/WorkspacePrebill.md)
+ - [WorkspaceReservation](doc/WorkspaceReservation.md)
  - [WorkspaceResult](doc/WorkspaceResult.md)
  - [WorkspaceServiceCharge](doc/WorkspaceServiceCharge.md)
  - [WorkspaceTotals](doc/WorkspaceTotals.md)

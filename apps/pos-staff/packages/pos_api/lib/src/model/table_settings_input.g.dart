@@ -113,6 +113,14 @@ class _$TableSettingsInput extends TableSettingsInput {
       serviceChargeAppliesTo;
   @override
   final String? serviceChargeTaxCategoryId;
+  @override
+  final int? reservationGraceMinutes;
+  @override
+  final int? reservationDurationMinutes;
+  @override
+  final String? reservationFeeProductId;
+  @override
+  final BuiltList<TableSettingsInputCourseLabelsInner>? courseLabels;
 
   factory _$TableSettingsInput(
           [void Function(TableSettingsInputBuilder)? updates]) =>
@@ -123,7 +131,11 @@ class _$TableSettingsInput extends TableSettingsInput {
       this.tableRegisterId,
       this.serviceChargeRate,
       this.serviceChargeAppliesTo,
-      this.serviceChargeTaxCategoryId})
+      this.serviceChargeTaxCategoryId,
+      this.reservationGraceMinutes,
+      this.reservationDurationMinutes,
+      this.reservationFeeProductId,
+      this.courseLabels})
       : super._();
   @override
   TableSettingsInput rebuild(
@@ -142,7 +154,11 @@ class _$TableSettingsInput extends TableSettingsInput {
         tableRegisterId == other.tableRegisterId &&
         serviceChargeRate == other.serviceChargeRate &&
         serviceChargeAppliesTo == other.serviceChargeAppliesTo &&
-        serviceChargeTaxCategoryId == other.serviceChargeTaxCategoryId;
+        serviceChargeTaxCategoryId == other.serviceChargeTaxCategoryId &&
+        reservationGraceMinutes == other.reservationGraceMinutes &&
+        reservationDurationMinutes == other.reservationDurationMinutes &&
+        reservationFeeProductId == other.reservationFeeProductId &&
+        courseLabels == other.courseLabels;
   }
 
   @override
@@ -153,6 +169,10 @@ class _$TableSettingsInput extends TableSettingsInput {
     _$hash = $jc(_$hash, serviceChargeRate.hashCode);
     _$hash = $jc(_$hash, serviceChargeAppliesTo.hashCode);
     _$hash = $jc(_$hash, serviceChargeTaxCategoryId.hashCode);
+    _$hash = $jc(_$hash, reservationGraceMinutes.hashCode);
+    _$hash = $jc(_$hash, reservationDurationMinutes.hashCode);
+    _$hash = $jc(_$hash, reservationFeeProductId.hashCode);
+    _$hash = $jc(_$hash, courseLabels.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -164,7 +184,11 @@ class _$TableSettingsInput extends TableSettingsInput {
           ..add('tableRegisterId', tableRegisterId)
           ..add('serviceChargeRate', serviceChargeRate)
           ..add('serviceChargeAppliesTo', serviceChargeAppliesTo)
-          ..add('serviceChargeTaxCategoryId', serviceChargeTaxCategoryId))
+          ..add('serviceChargeTaxCategoryId', serviceChargeTaxCategoryId)
+          ..add('reservationGraceMinutes', reservationGraceMinutes)
+          ..add('reservationDurationMinutes', reservationDurationMinutes)
+          ..add('reservationFeeProductId', reservationFeeProductId)
+          ..add('courseLabels', courseLabels))
         .toString();
   }
 }
@@ -202,6 +226,29 @@ class TableSettingsInputBuilder
   set serviceChargeTaxCategoryId(String? serviceChargeTaxCategoryId) =>
       _$this._serviceChargeTaxCategoryId = serviceChargeTaxCategoryId;
 
+  int? _reservationGraceMinutes;
+  int? get reservationGraceMinutes => _$this._reservationGraceMinutes;
+  set reservationGraceMinutes(int? reservationGraceMinutes) =>
+      _$this._reservationGraceMinutes = reservationGraceMinutes;
+
+  int? _reservationDurationMinutes;
+  int? get reservationDurationMinutes => _$this._reservationDurationMinutes;
+  set reservationDurationMinutes(int? reservationDurationMinutes) =>
+      _$this._reservationDurationMinutes = reservationDurationMinutes;
+
+  String? _reservationFeeProductId;
+  String? get reservationFeeProductId => _$this._reservationFeeProductId;
+  set reservationFeeProductId(String? reservationFeeProductId) =>
+      _$this._reservationFeeProductId = reservationFeeProductId;
+
+  ListBuilder<TableSettingsInputCourseLabelsInner>? _courseLabels;
+  ListBuilder<TableSettingsInputCourseLabelsInner> get courseLabels =>
+      _$this._courseLabels ??=
+          ListBuilder<TableSettingsInputCourseLabelsInner>();
+  set courseLabels(
+          ListBuilder<TableSettingsInputCourseLabelsInner>? courseLabels) =>
+      _$this._courseLabels = courseLabels;
+
   TableSettingsInputBuilder() {
     TableSettingsInput._defaults(this);
   }
@@ -214,6 +261,10 @@ class TableSettingsInputBuilder
       _serviceChargeRate = $v.serviceChargeRate;
       _serviceChargeAppliesTo = $v.serviceChargeAppliesTo?.toBuilder();
       _serviceChargeTaxCategoryId = $v.serviceChargeTaxCategoryId;
+      _reservationGraceMinutes = $v.reservationGraceMinutes;
+      _reservationDurationMinutes = $v.reservationDurationMinutes;
+      _reservationFeeProductId = $v.reservationFeeProductId;
+      _courseLabels = $v.courseLabels?.toBuilder();
       _$v = null;
     }
     return this;
@@ -243,12 +294,19 @@ class TableSettingsInputBuilder
             serviceChargeRate: serviceChargeRate,
             serviceChargeAppliesTo: _serviceChargeAppliesTo?.build(),
             serviceChargeTaxCategoryId: serviceChargeTaxCategoryId,
+            reservationGraceMinutes: reservationGraceMinutes,
+            reservationDurationMinutes: reservationDurationMinutes,
+            reservationFeeProductId: reservationFeeProductId,
+            courseLabels: _courseLabels?.build(),
           );
     } catch (_) {
       late String _$failedField;
       try {
         _$failedField = 'serviceChargeAppliesTo';
         _serviceChargeAppliesTo?.build();
+
+        _$failedField = 'courseLabels';
+        _courseLabels?.build();
       } catch (e) {
         throw BuiltValueNestedFieldError(
             r'TableSettingsInput', _$failedField, e.toString());

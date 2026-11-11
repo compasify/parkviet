@@ -7,6 +7,7 @@ import type { PosModifierSelection, PosWorkspace } from '../lib/pos-context';
 import { posWorkspacesKey } from '../lib/query-keys';
 import { leaseConflict, posFailureKey } from '../lib/request-failure';
 import { SessionSuperseded } from '../lib/session-coordinator';
+import { placementFields, type TablePlacement } from '../lib/table-courses';
 import { addsByAppend, editsByVersion, findLine } from '../lib/table-kitchen';
 import { isTableOrder } from '../lib/tables';
 import { beginIntent, finishIntent, forgetIntent, hasIntent } from '../lib/uncertain-intents';
@@ -314,6 +315,9 @@ export function useWorkspaces(
         // Menu lines: absent options mean the item's defaults, [] means none.
         modifiers: PosModifierSelection[];
         note: string;
+        // Table dishes: the course, the seat, held until the course is fired,
+        // and the buffet cover a free buffet dish is eaten on.
+        placement: TablePlacement;
       }> = {},
     ) {
       // A table order takes additions from anyone serving it, without the lease.
@@ -323,6 +327,7 @@ export function useWorkspaces(
           quantity,
           ...(extra.modifiers ? { modifiers: extra.modifiers } : {}),
           ...(extra.note ? { note: extra.note } : {}),
+          ...placementFields(extra.placement),
         };
         return (
           await sendIntent(
@@ -713,6 +718,67 @@ export function useWorkspaces(
         abandonIfNeeded(error);
         throw error;
       }
+    },
+    // One bill per seat: every seat's dishes go to its own order at the table;
+    // `shared` puts a dish without a seat on a seat's bill (else the first).
+    async splitBySeat(workspace: PosWorkspace, shared: Record<string, number>) {
+      const body = {
+        expected_revision: workspace.revision,
+        lease_generation: workspace.lease_generation,
+        editor_id: editorId,
+        by: 'seat',
+        shared,
+      };
+      const key = crypto.randomUUID();
+      try {
+        const result = await commandQueue.enqueue(workspace.id, key, commandDigest(body), () =>
+          session.request<{ data: { workspace: PosWorkspace; new_workspaces: PosWorkspace[] } }>(
+            'POST',
+            `/pos/workspaces/${workspace.id}/split`,
+            { body: { ...body, idempotency_key: key }, idempotencyKey: key },
+          ),
+        );
+        await acceptWorkspace(result.data.workspace);
+        channel?.postMessage(workspaceHint(result.data.workspace.id));
+        return result.data;
+      } catch (error) {
+        if (leaseConflict(error)?.reason === 'lease_stale') {
+          release(workspace.id);
+          void refresh();
+        }
+        abandonIfNeeded(error);
+        throw error;
+      }
+    },
+    // A buffet ticket per guest: a `cover` line of the tier.
+    async addBuffetCover(workspace: PosWorkspace, tierId: string, guests: number) {
+      return (
+        await sendIntent(
+          workspace.id,
+          {
+            items: [{ variant_id: '', buffet_tier_id: tierId, quantity: guests }],
+            append_batch_id: appendBatch(workspace.id),
+          },
+          `/pos/workspaces/${workspace.id}/items/append`,
+        )
+      ).workspace;
+    },
+    // "Fire" a held course: its dishes go to the kitchen now. No lease.
+    async fireCourse(workspace: PosWorkspace, course: number) {
+      return (
+        await sendIntent(workspace.id, {}, `/pos/workspaces/${workspace.id}/courses/${course}/fire`)
+      ).workspace;
+    },
+    // The held deposits of the booking seated here come off the bill.
+    async applyDeposits(workspace: PosWorkspace) {
+      const body = {
+        expected_revision: workspace.revision,
+        lease_generation: workspace.lease_generation,
+        editor_id: editorId,
+      };
+      return (
+        await sendIntent(workspace.id, body, `/pos/workspaces/${workspace.id}/deposits/apply`)
+      ).workspace;
     },
     // Takes the service charge off this order, or puts it back.
     async setServiceCharge(workspace: PosWorkspace, waived: boolean) {

@@ -5,6 +5,7 @@
 
 export const TABLE_STATES = [
   'available',
+  'reserved',
   'occupied',
   'ordered',
   'waiting_long',
@@ -44,6 +45,16 @@ export type BoardOrder = {
   prebilled: boolean;
   edited_after_prebill: boolean;
   pending_kitchen_items: number;
+  // When the order's earliest buffet ticket runs out; null without a buffet.
+  buffet_ends_at: string | null;
+};
+
+// The table's next booking in the coming hours (`fnb.reservations`).
+export type NextReservation = {
+  id: string;
+  starts_at: string;
+  guest_name: string;
+  party_size: number;
 };
 
 export type Placement = { x: number; y: number; w: number; h: number; rotation: number };
@@ -64,6 +75,8 @@ export type BoardTable = Placement & {
   payment_requested: boolean;
   edited_after_prebill: boolean;
   orders: BoardOrder[];
+  next_reservation: NextReservation | null;
+  buffet_ends_at: string | null;
 };
 
 export type ResourceBoard = {
@@ -147,6 +160,7 @@ function order(value: unknown): BoardOrder | null {
     prebilled: source.prebilled === true,
     edited_after_prebill: source.edited_after_prebill === true,
     pending_kitchen_items: int(source.pending_kitchen_items),
+    buffet_ends_at: text(source.buffet_ends_at),
   };
 }
 
@@ -173,6 +187,19 @@ function table(value: unknown): BoardTable | null {
       const item = order(row);
       return item ? [item] : [];
     }),
+    next_reservation: nextReservation(source.next_reservation),
+    buffet_ends_at: text(source.buffet_ends_at),
+  };
+}
+
+function nextReservation(value: unknown): NextReservation | null {
+  const source = record(value);
+  if (!source || typeof source.id !== 'string' || typeof source.starts_at !== 'string') return null;
+  return {
+    id: source.id,
+    starts_at: source.starts_at,
+    guest_name: text(source.guest_name) ?? '',
+    party_size: int(source.party_size),
   };
 }
 
@@ -280,4 +307,32 @@ export function clampPlacement(
     x: Math.min(Math.max(0, Math.round(placement.x)), area.floor_width - w),
     y: Math.min(Math.max(0, Math.round(placement.y)), area.floor_height - h),
   };
+}
+
+// How close a buffet table is to its time: `ending` in the last 10 minutes
+// (yellow), `over` once past it (red). Read on the server's clock.
+export type BuffetTiming = 'none' | 'running' | 'ending' | 'over';
+
+export const BUFFET_ENDING_MINUTES = 10;
+
+export function buffetTiming(
+  endsAt: string | null | undefined,
+  now: string | null | undefined,
+): BuffetTiming {
+  if (!endsAt || !now) return 'none';
+  const end = Date.parse(endsAt);
+  const at = Date.parse(now);
+  if (Number.isNaN(end) || Number.isNaN(at)) return 'none';
+  if (at >= end) return 'over';
+  return end - at <= BUFFET_ENDING_MINUTES * 60_000 ? 'ending' : 'running';
+}
+
+// Whole minutes left (negative once over), for the tile's countdown.
+export function buffetMinutesLeft(
+  endsAt: string | null | undefined,
+  now: string | null | undefined,
+): number | null {
+  if (!endsAt || !now) return null;
+  const left = Date.parse(endsAt) - Date.parse(now);
+  return Number.isNaN(left) ? null : Math.floor(left / 60_000);
 }

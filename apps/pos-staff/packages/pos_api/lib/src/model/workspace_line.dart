@@ -34,6 +34,11 @@ part 'workspace_line.g.dart';
 /// * [rowVersion] - Moves on every change of the line; unsent-line edits send it back.
 /// * [addedBy] - Who added the line.
 /// * [kitchenStatus] - Table orders only, how far the kitchen got with what was sent of the line.
+/// * [course] - The course of a table dish (1 starter, 2 main, 3 dessert…; names in table settings).
+/// * [courseStatus] - `held` keeps the dish off the kitchen until its course is fired; `fired` once it was. A held line sends nothing.
+/// * [seat] - The seat that ordered it; a bill can be split by seat.
+/// * [buffetTierId] - On a `cover` line, the buffet tier its ticket is for.
+/// * [buffetCoverLineId] - On a free buffet dish, the cover line it is eaten on.
 @BuiltValue()
 abstract class WorkspaceLine
     implements Built<WorkspaceLine, WorkspaceLineBuilder> {
@@ -93,6 +98,27 @@ abstract class WorkspaceLine
   /// Table orders only, how far the kitchen got with what was sent of the line.
   @BuiltValueField(wireName: r'kitchen_status')
   LineKitchenStatus? get kitchenStatus;
+
+  /// The course of a table dish (1 starter, 2 main, 3 dessert…; names in table settings).
+  @BuiltValueField(wireName: r'course')
+  int? get course;
+
+  /// `held` keeps the dish off the kitchen until its course is fired; `fired` once it was. A held line sends nothing.
+  @BuiltValueField(wireName: r'course_status')
+  WorkspaceLineCourseStatusEnum? get courseStatus;
+  // enum courseStatusEnum {  none,  held,  fired,  };
+
+  /// The seat that ordered it; a bill can be split by seat.
+  @BuiltValueField(wireName: r'seat')
+  int? get seat;
+
+  /// On a `cover` line, the buffet tier its ticket is for.
+  @BuiltValueField(wireName: r'buffet_tier_id')
+  String? get buffetTierId;
+
+  /// On a free buffet dish, the cover line it is eaten on.
+  @BuiltValueField(wireName: r'buffet_cover_line_id')
+  String? get buffetCoverLineId;
 
   WorkspaceLine._();
 
@@ -224,6 +250,41 @@ class _$WorkspaceLineSerializer implements PrimitiveSerializer<WorkspaceLine> {
       yield serializers.serialize(
         object.kitchenStatus,
         specifiedType: const FullType(LineKitchenStatus),
+      );
+    }
+    if (object.course != null) {
+      yield r'course';
+      yield serializers.serialize(
+        object.course,
+        specifiedType: const FullType.nullable(int),
+      );
+    }
+    if (object.courseStatus != null) {
+      yield r'course_status';
+      yield serializers.serialize(
+        object.courseStatus,
+        specifiedType: const FullType(WorkspaceLineCourseStatusEnum),
+      );
+    }
+    if (object.seat != null) {
+      yield r'seat';
+      yield serializers.serialize(
+        object.seat,
+        specifiedType: const FullType.nullable(int),
+      );
+    }
+    if (object.buffetTierId != null) {
+      yield r'buffet_tier_id';
+      yield serializers.serialize(
+        object.buffetTierId,
+        specifiedType: const FullType.nullable(String),
+      );
+    }
+    if (object.buffetCoverLineId != null) {
+      yield r'buffet_cover_line_id';
+      yield serializers.serialize(
+        object.buffetCoverLineId,
+        specifiedType: const FullType.nullable(String),
       );
     }
   }
@@ -383,6 +444,47 @@ class _$WorkspaceLineSerializer implements PrimitiveSerializer<WorkspaceLine> {
           if (valueDes == null) continue;
           result.kitchenStatus.replace(valueDes);
           break;
+        case r'course':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(int),
+          ) as int?;
+          if (valueDes == null) continue;
+          result.course = valueDes;
+          break;
+        case r'course_status':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType:
+                const FullType.nullable(WorkspaceLineCourseStatusEnum),
+          ) as WorkspaceLineCourseStatusEnum?;
+          if (valueDes == null) continue;
+          result.courseStatus = valueDes;
+          break;
+        case r'seat':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(int),
+          ) as int?;
+          if (valueDes == null) continue;
+          result.seat = valueDes;
+          break;
+        case r'buffet_tier_id':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.buffetTierId = valueDes;
+          break;
+        case r'buffet_cover_line_id':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.buffetCoverLineId = valueDes;
+          break;
         default:
           unhandled.add(key);
           unhandled.add(value);
@@ -437,4 +539,27 @@ class WorkspaceLineKindEnum extends EnumClass {
       _$workspaceLineKindEnumValues;
   static WorkspaceLineKindEnum valueOf(String name) =>
       _$workspaceLineKindEnumValueOf(name);
+}
+
+/// `held` keeps the dish off the kitchen until its course is fired; `fired` once it was. A held line sends nothing.
+class WorkspaceLineCourseStatusEnum extends EnumClass {
+  @BuiltValueEnumConst(wireName: r'none')
+  static const WorkspaceLineCourseStatusEnum none =
+      _$workspaceLineCourseStatusEnum_none;
+  @BuiltValueEnumConst(wireName: r'held')
+  static const WorkspaceLineCourseStatusEnum held =
+      _$workspaceLineCourseStatusEnum_held;
+  @BuiltValueEnumConst(wireName: r'fired')
+  static const WorkspaceLineCourseStatusEnum fired =
+      _$workspaceLineCourseStatusEnum_fired;
+
+  static Serializer<WorkspaceLineCourseStatusEnum> get serializer =>
+      _$workspaceLineCourseStatusEnumSerializer;
+
+  const WorkspaceLineCourseStatusEnum._(String name) : super(name);
+
+  static BuiltSet<WorkspaceLineCourseStatusEnum> get values =>
+      _$workspaceLineCourseStatusEnumValues;
+  static WorkspaceLineCourseStatusEnum valueOf(String name) =>
+      _$workspaceLineCourseStatusEnumValueOf(name);
 }

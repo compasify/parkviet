@@ -14,6 +14,8 @@ part 'kitchen_ticket_item.g.dart';
 /// KitchenTicketItem
 ///
 /// Properties:
+/// * [seat] - The seat that ordered it, from its sale line.
+/// * [course] - The course of its sale line (1 starter, 2 main…).
 /// * [recalledAt] - The last time the item was called back to the kitchen.
 /// * [recallCount]
 /// * [prepSeconds] - From the send to ready, written when the item became ready.
@@ -33,6 +35,14 @@ part 'kitchen_ticket_item.g.dart';
 @BuiltValue()
 abstract class KitchenTicketItem
     implements Built<KitchenTicketItem, KitchenTicketItemBuilder> {
+  /// The seat that ordered it, from its sale line.
+  @BuiltValueField(wireName: r'seat')
+  int? get seat;
+
+  /// The course of its sale line (1 starter, 2 main…).
+  @BuiltValueField(wireName: r'course')
+  int? get course;
+
   /// The last time the item was called back to the kitchen.
   @BuiltValueField(wireName: r'recalled_at')
   DateTime? get recalledAt;
@@ -114,6 +124,20 @@ class _$KitchenTicketItemSerializer
     KitchenTicketItem object, {
     FullType specifiedType = FullType.unspecified,
   }) sync* {
+    yield r'seat';
+    yield object.seat == null
+        ? null
+        : serializers.serialize(
+            object.seat,
+            specifiedType: const FullType.nullable(int),
+          );
+    yield r'course';
+    yield object.course == null
+        ? null
+        : serializers.serialize(
+            object.course,
+            specifiedType: const FullType.nullable(int),
+          );
     yield r'recalled_at';
     yield object.recalledAt == null
         ? null
@@ -237,6 +261,22 @@ class _$KitchenTicketItemSerializer
       final key = serializedList[i] as String;
       final value = serializedList[i + 1];
       switch (key) {
+        case r'seat':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(int),
+          ) as int?;
+          if (valueDes == null) continue;
+          result.seat = valueDes;
+          break;
+        case r'course':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(int),
+          ) as int?;
+          if (valueDes == null) continue;
+          result.course = valueDes;
+          break;
         case r'recalled_at':
           final valueDes = serializers.deserialize(
             value,

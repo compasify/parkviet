@@ -1,3 +1,4 @@
+import { RESERVATIONS_MODULE } from '@parkviet/pos-shared/reservations';
 import { Link } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -60,6 +61,12 @@ export function PosPage({
           <Link to="/collect" activeProps={{ className: 'is-active', 'aria-current': 'page' }}>
             <PosIcon name="cash" />
             {t('collectNav')}
+          </Link>
+        ) : null}
+        {context.data?.modules?.[RESERVATIONS_MODULE] === true && capabilities.length > 0 ? (
+          <Link to="/reservations" activeProps={{ className: 'is-active', 'aria-current': 'page' }}>
+            <PosIcon name="list" />
+            {t('reservationsNav')}
           </Link>
         ) : null}
       </nav>

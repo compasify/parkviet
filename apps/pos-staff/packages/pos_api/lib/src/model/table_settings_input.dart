@@ -3,6 +3,7 @@
 //
 
 // ignore_for_file: unused_element
+import 'package:pos_api/src/model/table_settings_input_course_labels_inner.dart';
 import 'package:built_collection/built_collection.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
@@ -17,6 +18,10 @@ part 'table_settings_input.g.dart';
 /// * [serviceChargeRate]
 /// * [serviceChargeAppliesTo]
 /// * [serviceChargeTaxCategoryId]
+/// * [reservationGraceMinutes]
+/// * [reservationDurationMinutes]
+/// * [reservationFeeProductId]
+/// * [courseLabels] - Names of courses 1, 2, 3… in order; replaces them all.
 @BuiltValue()
 abstract class TableSettingsInput
     implements Built<TableSettingsInput, TableSettingsInputBuilder> {
@@ -36,6 +41,19 @@ abstract class TableSettingsInput
 
   @BuiltValueField(wireName: r'service_charge_tax_category_id')
   String? get serviceChargeTaxCategoryId;
+
+  @BuiltValueField(wireName: r'reservation_grace_minutes')
+  int? get reservationGraceMinutes;
+
+  @BuiltValueField(wireName: r'reservation_duration_minutes')
+  int? get reservationDurationMinutes;
+
+  @BuiltValueField(wireName: r'reservation_fee_product_id')
+  String? get reservationFeeProductId;
+
+  /// Names of courses 1, 2, 3… in order; replaces them all.
+  @BuiltValueField(wireName: r'course_labels')
+  BuiltList<TableSettingsInputCourseLabelsInner>? get courseLabels;
 
   TableSettingsInput._();
 
@@ -95,6 +113,35 @@ class _$TableSettingsInputSerializer
       yield serializers.serialize(
         object.serviceChargeTaxCategoryId,
         specifiedType: const FullType.nullable(String),
+      );
+    }
+    if (object.reservationGraceMinutes != null) {
+      yield r'reservation_grace_minutes';
+      yield serializers.serialize(
+        object.reservationGraceMinutes,
+        specifiedType: const FullType(int),
+      );
+    }
+    if (object.reservationDurationMinutes != null) {
+      yield r'reservation_duration_minutes';
+      yield serializers.serialize(
+        object.reservationDurationMinutes,
+        specifiedType: const FullType(int),
+      );
+    }
+    if (object.reservationFeeProductId != null) {
+      yield r'reservation_fee_product_id';
+      yield serializers.serialize(
+        object.reservationFeeProductId,
+        specifiedType: const FullType.nullable(String),
+      );
+    }
+    if (object.courseLabels != null) {
+      yield r'course_labels';
+      yield serializers.serialize(
+        object.courseLabels,
+        specifiedType: const FullType(
+            BuiltList, [FullType(TableSettingsInputCourseLabelsInner)]),
       );
     }
   }
@@ -161,6 +208,39 @@ class _$TableSettingsInputSerializer
           ) as String?;
           if (valueDes == null) continue;
           result.serviceChargeTaxCategoryId = valueDes;
+          break;
+        case r'reservation_grace_minutes':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(int),
+          ) as int?;
+          if (valueDes == null) continue;
+          result.reservationGraceMinutes = valueDes;
+          break;
+        case r'reservation_duration_minutes':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(int),
+          ) as int?;
+          if (valueDes == null) continue;
+          result.reservationDurationMinutes = valueDes;
+          break;
+        case r'reservation_fee_product_id':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.reservationFeeProductId = valueDes;
+          break;
+        case r'course_labels':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(
+                BuiltList, [FullType(TableSettingsInputCourseLabelsInner)]),
+          ) as BuiltList<TableSettingsInputCourseLabelsInner>?;
+          if (valueDes == null) continue;
+          result.courseLabels.replace(valueDes);
           break;
         default:
           unhandled.add(key);

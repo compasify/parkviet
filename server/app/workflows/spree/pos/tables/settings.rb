@@ -16,9 +16,45 @@ module Spree
             service_charge_rate: branch.service_charge_rate&.to_s('F'),
             service_charge_applies_to: Array(branch.service_charge_applies_to),
             service_charge_tax_category_id: branch.service_charge_tax_category&.prefixed_id,
+            reservation_grace_minutes: branch.reservation_grace_minutes,
+            reservation_duration_minutes: branch.reservation_duration_minutes,
+            reservation_fee_product_id: branch.reservation_fee_product&.prefixed_id,
+            course_labels: CourseLabel.to_pos(branch),
             tax_categories: Spree::TaxCategory.where(store_id: branch.store_id).order(:name, :id).limit(100).map do |category|
               { id: category.prefixed_id, name: category.name, tax_code: category.tax_code.presence, is_default: category.is_default == true }
             end }
+        end
+
+        # How long a booking holds a table, how late it may be, and the
+        # service sold when its deposit is kept.
+        def reservations!(store, branch, values)
+          %w[reservation_grace_minutes reservation_duration_minutes].each do |field|
+            next unless values.key?(field)
+
+            minutes = Integer(values[field].to_s, 10) rescue nil # rubocop:disable Style/RescueModifier
+            raise Conflict.new('The minutes are invalid.', reason: 'reservation_settings_invalid') unless minutes&.between?(1, 1440)
+
+            branch[field] = minutes
+          end
+          return unless values.key?('reservation_fee_product_id')
+
+          id = values['reservation_fee_product_id'].presence
+          product = id && Spree::Product.find_by_prefix_id(id.to_s)
+          raise ActiveRecord::RecordNotFound if id && (product.nil? || product.store_id != store.id)
+
+          branch.reservation_fee_product = product
+        end
+
+        # The names of the courses, numbered from 1; an empty list goes back
+        # to the defaults.
+        def labels!(branch, rows)
+          names = Array(rows).map { |row| row.is_a?(Hash) ? row.stringify_keys['name'].to_s.strip : row.to_s.strip }
+          if names.size > CourseLabel::MAX || names.any? { |name| name.empty? || name.length > 40 }
+            raise Conflict.new('The course names are invalid.', reason: 'course_labels_invalid')
+          end
+
+          CourseLabel.where(branch_id: branch.id).delete_all
+          names.each_with_index { |name, index| CourseLabel.create!(branch: branch, position: index + 1, name: name) }
         end
 
         def manage!(store, staff, branch)
@@ -30,7 +66,8 @@ module Spree
 
         def update(store:, staff:, key:, branch:, attributes:)
           values = attributes.to_h.stringify_keys.slice('table_register_id', 'service_charge_rate', 'service_charge_applies_to',
-                                                         'service_charge_tax_category_id')
+                                                         'service_charge_tax_category_id', 'reservation_grace_minutes',
+                                                         'reservation_duration_minutes', 'reservation_fee_product_id', 'course_labels')
           payload = { 'command' => 'table_settings.update', 'branch_id' => branch.prefixed_id, 'attributes' => values }
           CommandExecutor.call(store: store, actor: staff, key: key, payload: payload, authorize: -> { manage!(store, staff, branch) }) do
             branch.lock!
@@ -51,7 +88,9 @@ module Spree
 
               branch.service_charge_tax_category = category
             end
+            reservations!(store, branch, values)
             branch.save!
+            labels!(branch, values['course_labels']) if values.key?('course_labels')
             after = to_pos(branch)
             AuditEntry.record!(store: store, actor: staff, action: 'table_settings.update', subject: branch,
                                metadata: { before: before, after: after.except(:tax_categories) })

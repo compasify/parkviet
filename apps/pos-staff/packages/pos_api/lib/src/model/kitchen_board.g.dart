@@ -25,6 +25,8 @@ class _$KitchenBoard extends KitchenBoard {
   final BuiltList<KitchenAllDayRow> allDay;
   @override
   final BuiltList<KitchenExpoOrder> expo;
+  @override
+  final BuiltList<KitchenHeldCourse> held;
 
   factory _$KitchenBoard([void Function(KitchenBoardBuilder)? updates]) =>
       (KitchenBoardBuilder()..update(updates))._build();
@@ -38,7 +40,8 @@ class _$KitchenBoard extends KitchenBoard {
       required this.open,
       required this.done,
       required this.allDay,
-      required this.expo})
+      required this.expo,
+      required this.held})
       : super._();
   @override
   KitchenBoard rebuild(void Function(KitchenBoardBuilder) updates) =>
@@ -59,7 +62,8 @@ class _$KitchenBoard extends KitchenBoard {
         open == other.open &&
         done == other.done &&
         allDay == other.allDay &&
-        expo == other.expo;
+        expo == other.expo &&
+        held == other.held;
   }
 
   @override
@@ -74,6 +78,7 @@ class _$KitchenBoard extends KitchenBoard {
     _$hash = $jc(_$hash, done.hashCode);
     _$hash = $jc(_$hash, allDay.hashCode);
     _$hash = $jc(_$hash, expo.hashCode);
+    _$hash = $jc(_$hash, held.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -89,7 +94,8 @@ class _$KitchenBoard extends KitchenBoard {
           ..add('open', open)
           ..add('done', done)
           ..add('allDay', allDay)
-          ..add('expo', expo))
+          ..add('expo', expo)
+          ..add('held', held))
         .toString();
   }
 }
@@ -141,6 +147,11 @@ class KitchenBoardBuilder
       _$this._expo ??= ListBuilder<KitchenExpoOrder>();
   set expo(ListBuilder<KitchenExpoOrder>? expo) => _$this._expo = expo;
 
+  ListBuilder<KitchenHeldCourse>? _held;
+  ListBuilder<KitchenHeldCourse> get held =>
+      _$this._held ??= ListBuilder<KitchenHeldCourse>();
+  set held(ListBuilder<KitchenHeldCourse>? held) => _$this._held = held;
+
   KitchenBoardBuilder() {
     KitchenBoard._defaults(this);
   }
@@ -157,6 +168,7 @@ class KitchenBoardBuilder
       _done = $v.done.toBuilder();
       _allDay = $v.allDay.toBuilder();
       _expo = $v.expo.toBuilder();
+      _held = $v.held.toBuilder();
       _$v = null;
     }
     return this;
@@ -191,6 +203,7 @@ class KitchenBoardBuilder
             done: done.build(),
             allDay: allDay.build(),
             expo: expo.build(),
+            held: held.build(),
           );
     } catch (_) {
       late String _$failedField;
@@ -208,6 +221,8 @@ class KitchenBoardBuilder
         allDay.build();
         _$failedField = 'expo';
         expo.build();
+        _$failedField = 'held';
+        held.build();
       } catch (e) {
         throw BuiltValueNestedFieldError(
             r'KitchenBoard', _$failedField, e.toString());

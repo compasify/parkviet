@@ -12,6 +12,7 @@ part 'resource_board_order.g.dart';
 /// ResourceBoardOrder
 ///
 /// Properties:
+/// * [buffetEndsAt] - When the order's earliest buffet ticket runs out; null without a buffet.
 /// * [id]
 /// * [tableLabel]
 /// * [guestCount]
@@ -25,6 +26,10 @@ part 'resource_board_order.g.dart';
 @BuiltValue()
 abstract class ResourceBoardOrder
     implements Built<ResourceBoardOrder, ResourceBoardOrderBuilder> {
+  /// When the order's earliest buffet ticket runs out; null without a buffet.
+  @BuiltValueField(wireName: r'buffet_ends_at')
+  DateTime? get buffetEndsAt;
+
   @BuiltValueField(wireName: r'id')
   String get id;
 
@@ -83,6 +88,13 @@ class _$ResourceBoardOrderSerializer
     ResourceBoardOrder object, {
     FullType specifiedType = FullType.unspecified,
   }) sync* {
+    yield r'buffet_ends_at';
+    yield object.buffetEndsAt == null
+        ? null
+        : serializers.serialize(
+            object.buffetEndsAt,
+            specifiedType: const FullType.nullable(DateTime),
+          );
     yield r'id';
     yield serializers.serialize(
       object.id,
@@ -162,6 +174,14 @@ class _$ResourceBoardOrderSerializer
       final key = serializedList[i] as String;
       final value = serializedList[i + 1];
       switch (key) {
+        case r'buffet_ends_at':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(DateTime),
+          ) as DateTime?;
+          if (valueDes == null) continue;
+          result.buffetEndsAt = valueDes;
+          break;
         case r'id':
           final valueDes = serializers.deserialize(
             value,

@@ -40,6 +40,10 @@ Rails.application.config.to_prepare do
     modules.register(key: 'fnb.service_charge', group: 'fnb', depends_on: [],
                      entrypoints: ['Spree::Pos::ServiceCharges::Apply'])
 
+    # Bookings of tables and rooms, with deposits kept for the guest.
+    modules.register(key: 'fnb.reservations', group: 'fnb', depends_on: ['resources'],
+                     entrypoints: ['Spree::Api::V3::Admin::Pos::ReservationsController', 'Spree::Pos::Reservations::Create'])
+
     # Names only, so "coming soon" profiles can refer to them. No code, and
     # no branch can turn them on.
     modules.planned 'timed_billing', group: 'fnb'

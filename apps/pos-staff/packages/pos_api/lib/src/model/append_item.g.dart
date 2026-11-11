@@ -15,12 +15,30 @@ class _$AppendItem extends AppendItem {
   final BuiltList<ModifierPick>? modifiers;
   @override
   final String? note;
+  @override
+  final int? course;
+  @override
+  final int? seat;
+  @override
+  final bool? hold;
+  @override
+  final String? buffetTierId;
+  @override
+  final String? buffetCoverLineId;
 
   factory _$AppendItem([void Function(AppendItemBuilder)? updates]) =>
       (AppendItemBuilder()..update(updates))._build();
 
   _$AppendItem._(
-      {required this.variantId, this.quantity, this.modifiers, this.note})
+      {required this.variantId,
+      this.quantity,
+      this.modifiers,
+      this.note,
+      this.course,
+      this.seat,
+      this.hold,
+      this.buffetTierId,
+      this.buffetCoverLineId})
       : super._();
   @override
   AppendItem rebuild(void Function(AppendItemBuilder) updates) =>
@@ -36,7 +54,12 @@ class _$AppendItem extends AppendItem {
         variantId == other.variantId &&
         quantity == other.quantity &&
         modifiers == other.modifiers &&
-        note == other.note;
+        note == other.note &&
+        course == other.course &&
+        seat == other.seat &&
+        hold == other.hold &&
+        buffetTierId == other.buffetTierId &&
+        buffetCoverLineId == other.buffetCoverLineId;
   }
 
   @override
@@ -46,6 +69,11 @@ class _$AppendItem extends AppendItem {
     _$hash = $jc(_$hash, quantity.hashCode);
     _$hash = $jc(_$hash, modifiers.hashCode);
     _$hash = $jc(_$hash, note.hashCode);
+    _$hash = $jc(_$hash, course.hashCode);
+    _$hash = $jc(_$hash, seat.hashCode);
+    _$hash = $jc(_$hash, hold.hashCode);
+    _$hash = $jc(_$hash, buffetTierId.hashCode);
+    _$hash = $jc(_$hash, buffetCoverLineId.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -56,7 +84,12 @@ class _$AppendItem extends AppendItem {
           ..add('variantId', variantId)
           ..add('quantity', quantity)
           ..add('modifiers', modifiers)
-          ..add('note', note))
+          ..add('note', note)
+          ..add('course', course)
+          ..add('seat', seat)
+          ..add('hold', hold)
+          ..add('buffetTierId', buffetTierId)
+          ..add('buffetCoverLineId', buffetCoverLineId))
         .toString();
   }
 }
@@ -82,6 +115,27 @@ class AppendItemBuilder implements Builder<AppendItem, AppendItemBuilder> {
   String? get note => _$this._note;
   set note(String? note) => _$this._note = note;
 
+  int? _course;
+  int? get course => _$this._course;
+  set course(int? course) => _$this._course = course;
+
+  int? _seat;
+  int? get seat => _$this._seat;
+  set seat(int? seat) => _$this._seat = seat;
+
+  bool? _hold;
+  bool? get hold => _$this._hold;
+  set hold(bool? hold) => _$this._hold = hold;
+
+  String? _buffetTierId;
+  String? get buffetTierId => _$this._buffetTierId;
+  set buffetTierId(String? buffetTierId) => _$this._buffetTierId = buffetTierId;
+
+  String? _buffetCoverLineId;
+  String? get buffetCoverLineId => _$this._buffetCoverLineId;
+  set buffetCoverLineId(String? buffetCoverLineId) =>
+      _$this._buffetCoverLineId = buffetCoverLineId;
+
   AppendItemBuilder() {
     AppendItem._defaults(this);
   }
@@ -93,6 +147,11 @@ class AppendItemBuilder implements Builder<AppendItem, AppendItemBuilder> {
       _quantity = $v.quantity;
       _modifiers = $v.modifiers?.toBuilder();
       _note = $v.note;
+      _course = $v.course;
+      _seat = $v.seat;
+      _hold = $v.hold;
+      _buffetTierId = $v.buffetTierId;
+      _buffetCoverLineId = $v.buffetCoverLineId;
       _$v = null;
     }
     return this;
@@ -121,6 +180,11 @@ class AppendItemBuilder implements Builder<AppendItem, AppendItemBuilder> {
             quantity: quantity,
             modifiers: _modifiers?.build(),
             note: note,
+            course: course,
+            seat: seat,
+            hold: hold,
+            buffetTierId: buffetTierId,
+            buffetCoverLineId: buffetCoverLineId,
           );
     } catch (_) {
       late String _$failedField;

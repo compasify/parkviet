@@ -1,3 +1,4 @@
+import { RESERVATIONS_MODULE } from '@parkviet/pos-shared/reservations';
 import { Link } from '@tanstack/react-router';
 import { type ReactNode, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -92,6 +93,11 @@ export function UserMenu({
         {collect ? (
           <Link to="/collect" {...item}>
             {t('collectNav')}
+          </Link>
+        ) : null}
+        {staffed && data.modules?.[RESERVATIONS_MODULE] === true ? (
+          <Link to="/reservations" {...item}>
+            {t('reservationsNav')}
           </Link>
         ) : null}
       </MenuGroup>,

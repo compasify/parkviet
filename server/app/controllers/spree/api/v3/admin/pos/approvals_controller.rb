@@ -32,6 +32,8 @@ module Spree
               raise CanCan::AccessDenied unless policy.allows?(branch, Spree::Pos::Capabilities::APPROVE)
 
               requester = staff!(params[:requester_id])
+              return create_for_reservation(branch, requester) if params[:reservation_id].present?
+
               subject = Spree::Pos::Workspace.locate(
                 Spree::Pos::Workspace.for_store(current_store).where(branch_id: branch.id), params[:workspace_id]
               )
@@ -50,6 +52,10 @@ module Spree
               if [Spree::Pos::ReturnOperation::ACTION, Spree::Pos::RefundRequest::ACTION,
                   Spree::Pos::InventoryAdjustment::ACTION].include?(params[:action_name].to_s)
                 raise Spree::Pos::Conflict, 'Return, refund and stock count approvals are granted on their own record.'
+              end
+
+              if Spree::Pos::Approval::RESERVATION_ACTIONS.include?(params[:action_name].to_s)
+                raise Spree::Pos::Conflict, 'Deposit approvals are granted on their booking.'
               end
 
               amount = money_or_nil
@@ -82,6 +88,34 @@ module Spree
             end
 
             private
+
+            # A booking's deposit refund or forfeit, bound to the booking's
+            # version and the deposit amount.
+            def create_for_reservation(branch, requester)
+              subject = Spree::Pos::Reservation.locate(Spree::Pos::Reservation.for_store(current_store).where(branch_id: branch.id),
+                                                       params[:reservation_id])
+              raise ActiveRecord::RecordNotFound if subject.nil?
+              unless Spree::Pos::Approval::RESERVATION_ACTIONS.include?(params[:action_name].to_s)
+                raise Spree::Pos::Conflict, 'A booking takes deposit approvals only.'
+              end
+
+              requester_policy = Spree::Pos::AccessPolicy.new(store: current_store, staff: requester)
+              allowed = Spree::Pos::Approval::REQUESTER_CAPABILITIES.fetch(subject.class.name).any? { |key| requester_policy.allows?(branch, key) }
+              raise CanCan::AccessDenied unless allowed
+              raise Spree::Pos::Conflict.new('Revision is stale.', revision: subject.revision) unless params[:revision].to_s == subject.revision.to_s
+
+              amount = money_or_nil
+              approval = Spree::Pos::Approval.create!(
+                store: current_store, branch: branch, approver: current_user, requester: requester,
+                subject_type: subject.class.name, subject_id: subject.id, action: params[:action_name],
+                amount: amount, currency: amount ? current_store.default_currency : nil,
+                revision: params[:revision].to_s, expires_at: params[:expires_at], status: 'active'
+              )
+              audit!('approval.grant', approval, action: approval.action, revision: approval.revision)
+              Spree::Pos::Realtime.publish(branch, 'approval.requested', id: approval.prefixed_id,
+                                                                         refs: { reservation_id: subject.prefixed_id })
+              render json: { data: approval.to_pos }, status: :created
+            end
 
             def money_or_nil
               return if params[:amount].blank?

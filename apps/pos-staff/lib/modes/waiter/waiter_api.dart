@@ -21,6 +21,9 @@ abstract interface class WaiterApi {
 
   Future<Workspace> sendToKitchen(String workspaceId);
 
+  /// Sends a held course to the kitchen now.
+  Future<Workspace> fireCourse(String workspaceId, int course);
+
   /// Voids [quantity] of a line the kitchen has, for a reason; spends an
   /// approval when the person may not void.
   Future<Workspace> voidSent(
@@ -113,6 +116,14 @@ class ApiWaiterApi implements WaiterApi {
             idempotencyKey: _key,
             workspaceId: workspaceId,
             kitchenSendInput: KitchenSendInput(),
+          )))
+      .data;
+
+  @override
+  Future<Workspace> fireCourse(String workspaceId, int course) async => (await client.call((api) => api.posCourseFire(
+            idempotencyKey: _key,
+            workspaceId: workspaceId,
+            course: course,
           )))
       .data;
 

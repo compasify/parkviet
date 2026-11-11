@@ -887,6 +887,12 @@ paths:
   /api/v3/admin/pos/approvals:
     post:
       operationId: posApprovalCreate
+      description: >
+        An approver grants one action. With `workspace_id` it is bound to an
+        order's revision (`buffet.override_round` lets a buffet round past
+        its limits); with `reservation_id` to a booking's revision, for
+        `reservation.refund_deposit` or `reservation.forfeit_deposit` and
+        the deposit's `amount`.
       responses:
         '201':
           description: Approval
@@ -898,6 +904,313 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/Approval'
+  /api/v3/admin/pos/reservations:
+    get:
+      operationId: posReservationList
+      description: >
+        A branch's bookings overlapping a day (`date`, the branch's day,
+        today by default) or a window (`from`, `to`, at most 31 days).
+        Needs `fnb.reservations` to book; reading is for the branch's staff.
+      parameters:
+        - $ref: '#/components/parameters/ReportBranch'
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: status
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [booked, seated, completed, no_show, canceled]
+      responses:
+        '200':
+          description: The bookings, earliest first
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationList'
+    post:
+      operationId: posReservationCreate
+      description: >
+        Books tables for a party; `pos.reservation.manage`. A table already
+        held for an overlapping time is refused.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReservationInput'
+      responses:
+        '201':
+          description: The booking
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationResult'
+        '409':
+          description: >
+            Refused; `error.details.reason` is `reservation_overlap` (with
+            `resource_ids`), `reservation_capacity`, `reservation_time_invalid`,
+            `reservation_invalid`, `reservation_resources_invalid`,
+            `table_archived` or `module_disabled`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/reservations/availability:
+    get:
+      operationId: posReservationAvailability
+      description: >
+        Tables free for a party at a time: active, available, seating the
+        party (unknown capacity last) and held by no overlapping booking;
+        smallest that fits first. The end defaults to the branch's booking
+        length.
+      parameters:
+        - $ref: '#/components/parameters/ReportBranch'
+        - name: starts_at
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+        - name: ends_at
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: party_size
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+        - name: except_id
+          in: query
+          description: A booking being changed keeps its own tables.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The free tables
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationAvailabilityResult'
+  /api/v3/admin/pos/reservations/{id}:
+    get:
+      operationId: posReservationShow
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: The booking
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationResult'
+  /api/v3/admin/pos/reservations/{id}/seat:
+    post:
+      operationId: posReservationSeat
+      description: >
+        The party arrived: opens a dine-in order on the booking's first
+        table, as any table opening, and the booking becomes seated. Its
+        deposits are taken off the bill when the order is paid.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReservationSeatInput'
+      responses:
+        '201':
+          description: The booking and its order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationSeatResult'
+        '409':
+          description: >
+            Refused; `error.details.reason` is `reservation_not_booked`,
+            `table_unavailable` or `module_disabled`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/reservations/{id}/cancel:
+    post:
+      operationId: posReservationCancel
+      description: >
+        Ends a waiting booking: `canceled` (default) or `no_show`. Its tables
+        are let go; deposits stay held until refunded or kept.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReservationCancelInput'
+      responses:
+        '200':
+          description: The booking
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationResult'
+        '409':
+          description: Refused; `error.details.reason` is `reservation_not_booked`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/reservations/deposits/{deposit_id}/refund:
+    post:
+      operationId: posReservationDepositRefund
+      description: >
+        Gives a deposit back to the guest as a payout from what is left on its
+        receipt. Needs an approval (`reservation.refund_deposit`) unless the
+        person may grant one.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/DepositId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReservationDepositResolveInput'
+      responses:
+        '200':
+          description: The booking
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationResult'
+        '409':
+          description: >
+            Refused; `error.details.reason` is `approval_required`,
+            `deposit_settled` or `module_disabled`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/reservations/deposits/{deposit_id}/forfeit:
+    post:
+      operationId: posReservationDepositForfeit
+      description: >
+        Keeps the deposit of a canceled or no-show booking as a taxed
+        holding-fee sale. Needs an approval (`reservation.forfeit_deposit`)
+        unless the person may grant one.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/DepositId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReservationDepositResolveInput'
+      responses:
+        '200':
+          description: The booking
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationResult'
+        '409':
+          description: >
+            Refused; `error.details.reason` is `approval_required`,
+            `reservation_not_ended`, `reservation_fee_product_missing`,
+            `deposit_settled` or `module_disabled`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/buffet_tiers:
+    get:
+      operationId: posBuffetTierList
+      description: The active buffet tiers of a branch (`status=all` for archived ones too).
+      parameters:
+        - $ref: '#/components/parameters/ReportBranch'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [all]
+      responses:
+        '200':
+          description: The tiers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BuffetTierList'
+  /api/v3/admin/pos/workspaces/{workspace_id}/courses/{course}/fire:
+    post:
+      operationId: posCourseFire
+      description: >
+        "Fire" a held course of a table order: its held dishes go to the
+        kitchen as any send, only the difference. The same key fires once.
+        Whoever serves the order or `pos.expo.operate`.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/CourseNumber'
+      responses:
+        '201':
+          description: The order, with the tickets in `meta`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KitchenSendResult'
+        '200':
+          description: Nothing new reached the kitchen
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KitchenSendResult'
+        '409':
+          description: >
+            Refused; `error.details.reason` is `course_not_held`,
+            `course_invalid`, `buffet_round_limit` or `module_disabled`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/pos_device/kitchen/workspaces/{workspace_id}/courses/{course}/fire:
+    post:
+      operationId: posDeviceCourseFire
+      description: The pass screen fires a held course; the same as posCourseFire, by the screen.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/CourseNumber'
+      responses:
+        '200':
+          description: The order, with the tickets in `meta`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KitchenSendResult'
+        '409':
+          $ref: '#/components/responses/KitchenRefused'
   /api/v3/pos_device/pair:
     post:
       operationId: posDevicePair
@@ -3110,7 +3423,8 @@ paths:
       operationId: posTableSplit
       description: >
         Moves the chosen lines, whole, to a new order at the same or another
-        table, on the same shift. At least one line stays.
+        table, on the same shift. At least one line stays. With `by: seat`,
+        every seat's dishes go to a bill of their own at the table.
       parameters:
         - $ref: '#/components/parameters/KitchenIdempotencyKey'
         - $ref: '#/components/parameters/WorkspaceId'
@@ -3130,7 +3444,7 @@ paths:
         '409':
           description: >
             Refused; `error.details.reason` is `split_lines_invalid`,
-            `split_all_lines`, `discount_present`, `traced_line`,
+            `split_seats_invalid`, `split_all_lines`, `discount_present`, `traced_line`,
             `table_unavailable`, `snapshot_locked`, `lease_stale` or
             `module_disabled`
           content:
@@ -3448,6 +3762,20 @@ components:
       required: true
       schema:
         type: string
+    CourseNumber:
+      name: course
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 9
+    DepositId:
+      name: deposit_id
+      in: path
+      required: true
+      schema:
+        type: string
     KitchenIdempotencyKey:
       name: Idempotency-Key
       in: header
@@ -3657,6 +3985,11 @@ components:
           oneOf:
             - $ref: '#/components/schemas/PaymentRequest'
             - type: 'null'
+        reservation:
+          description: The booking seated at this table order, with its deposits.
+          oneOf:
+            - $ref: '#/components/schemas/WorkspaceReservation'
+            - type: 'null'
         kitchen_sends:
           description: Every kitchen send of a table order; null for other orders.
           type: [array, 'null']
@@ -3737,6 +4070,24 @@ components:
         kitchen_status:
           description: Table orders only, how far the kitchen got with what was sent of the line.
           $ref: '#/components/schemas/LineKitchenStatus'
+        course:
+          type: [integer, 'null']
+          description: The course of a table dish (1 starter, 2 main, 3 dessert…; names in table settings).
+        course_status:
+          type: string
+          enum: [none, held, fired]
+          description: >
+            `held` keeps the dish off the kitchen until its course is fired;
+            `fired` once it was. A held line sends nothing.
+        seat:
+          type: [integer, 'null']
+          description: The seat that ordered it; a bill can be split by seat.
+        buffet_tier_id:
+          type: [string, 'null']
+          description: On a `cover` line, the buffet tier its ticket is for.
+        buffet_cover_line_id:
+          type: [string, 'null']
+          description: On a free buffet dish, the cover line it is eaten on.
     StaffRef:
       type: object
       additionalProperties: false
@@ -5517,8 +5868,14 @@ components:
       type: object
       additionalProperties: false
       required: [id, sale_line_id, name, modifiers, components, note, quantity, status, started_at, ready_at, served_at, voided_at,
-                 recalled_at, recall_count, prep_seconds, late]
+                 recalled_at, recall_count, prep_seconds, late, seat, course]
       properties:
+        seat:
+          type: [integer, 'null']
+          description: The seat that ordered it, from its sale line.
+        course:
+          type: [integer, 'null']
+          description: The course of its sale line (1 starter, 2 main…).
         recalled_at:
           type: [string, 'null']
           format: date-time
@@ -5661,7 +6018,7 @@ components:
     KitchenBoard:
       type: object
       additionalProperties: false
-      required: [branch_id, station, stations, service_mode, server_now, open, done, all_day, expo]
+      required: [branch_id, station, stations, service_mode, server_now, open, done, all_day, expo, held]
       properties:
         branch_id:
           type: string
@@ -5707,6 +6064,50 @@ components:
             station is chosen. Items leave once served or after two hours.
           items:
             $ref: '#/components/schemas/KitchenExpoOrder'
+        held:
+          type: array
+          description: >
+            Held courses of open table orders, waiting at the pass for their
+            fire, one row per order and course, oldest first. Only on the
+            board of every station or of a chosen `expo` station; nothing of
+            them has reached a station yet.
+          items:
+            $ref: '#/components/schemas/KitchenHeldCourse'
+    KitchenHeldCourse:
+      type: object
+      additionalProperties: false
+      required: [workspace_id, resource_name, area_id, course, course_name, held_since, lines]
+      properties:
+        workspace_id:
+          type: string
+        resource_name:
+          type: [string, 'null']
+        area_id:
+          type: [string, 'null']
+        course:
+          type: integer
+        course_name:
+          type: string
+        held_since:
+          type: string
+          format: date-time
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/KitchenHeldLine'
+    KitchenHeldLine:
+      type: object
+      additionalProperties: false
+      required: [sale_line_id, name, quantity, seat]
+      properties:
+        sale_line_id:
+          type: string
+        name:
+          type: string
+        quantity:
+          type: string
+        seat:
+          type: [integer, 'null']
     KitchenAllDayRow:
       type: object
       additionalProperties: false
@@ -5745,10 +6146,13 @@ components:
     KitchenExpoOrder:
       type: object
       additionalProperties: false
-      required: [workspace_id, header, service_mode, ready_since, items]
+      required: [workspace_id, header, service_mode, area_id, ready_since, items]
       properties:
         workspace_id:
           type: string
+        area_id:
+          type: [string, 'null']
+          description: The area of the order's table, for a pass that runs one area.
         header:
           type: object
           additionalProperties: true
@@ -6636,8 +7040,13 @@ components:
     ResourceBoardOrder:
       type: object
       additionalProperties: false
-      required: [id, table_label, guest_count, total, revision, operational_status, payment_requested, prebilled, edited_after_prebill, pending_kitchen_items]
+      required: [id, table_label, guest_count, total, revision, operational_status, payment_requested, prebilled, edited_after_prebill, pending_kitchen_items,
+                 buffet_ends_at]
       properties:
+        buffet_ends_at:
+          type: [string, 'null']
+          format: date-time
+          description: When the order's earliest buffet ticket runs out; null without a buffet.
         id:
           type: string
         table_label:
@@ -6663,8 +7072,18 @@ components:
     ResourceBoardTile:
       type: object
       additionalProperties: false
-      required: [id, area_id, name, kind, capacity, shape, x, y, w, h, rotation, manual_status, state, guest_count, seated_minutes, subtotal, currency, payment_requested, edited_after_prebill, orders]
+      required: [id, area_id, name, kind, capacity, shape, x, y, w, h, rotation, manual_status, state, guest_count, seated_minutes, subtotal, currency, payment_requested, edited_after_prebill, orders,
+                 next_reservation, buffet_ends_at]
       properties:
+        next_reservation:
+          description: The table's next active booking in the coming 12 hours.
+          oneOf:
+            - $ref: '#/components/schemas/ResourceNextReservation'
+            - type: 'null'
+        buffet_ends_at:
+          type: [string, 'null']
+          format: date-time
+          description: The earliest buffet end of the table's open orders.
         id:
           type: string
         area_id:
@@ -6694,11 +7113,12 @@ components:
           enum: [available, cleaning, out_of_service]
         state:
           type: string
-          enum: [available, occupied, ordered, waiting_long, payment_requested, prebilled, cleaning, out_of_service]
+          enum: [available, reserved, occupied, ordered, waiting_long, payment_requested, prebilled, cleaning, out_of_service]
           description: >
             Strongest first: out_of_service, cleaning (no open order),
             payment_requested, prebilled, waiting_long (a kitchen item waited
-            past its station's threshold), ordered, occupied, available.
+            past its station's threshold), ordered, occupied, reserved (no
+            open order and a booking starts within the hour), available.
         guest_count:
           type: [integer, 'null']
         seated_minutes:
@@ -6716,6 +7136,20 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ResourceBoardOrder'
+    ResourceNextReservation:
+      type: object
+      additionalProperties: false
+      required: [id, starts_at, guest_name, party_size]
+      properties:
+        id:
+          type: string
+        starts_at:
+          type: string
+          format: date-time
+        guest_name:
+          type: string
+        party_size:
+          type: integer
     ResourceBoard:
       type: object
       additionalProperties: false
@@ -6744,8 +7178,21 @@ components:
       type: object
       additionalProperties: false
       required: [branch_id, table_register_id, service_charge_rate, service_charge_applies_to, service_charge_tax_category_id,
-                 tax_categories]
+                 tax_categories, reservation_grace_minutes, reservation_duration_minutes, reservation_fee_product_id, course_labels]
       properties:
+        reservation_grace_minutes:
+          type: integer
+          description: How long a booking waits past its time before it is a no-show.
+        reservation_duration_minutes:
+          type: integer
+          description: The length of a booking when none is given.
+        reservation_fee_product_id:
+          type: [string, 'null']
+          description: The service sold when a deposit is kept (priced with its tax included).
+        course_labels:
+          type: array
+          items:
+            $ref: '#/components/schemas/CourseLabel'
         branch_id:
           type: string
         table_register_id:
@@ -6796,6 +7243,350 @@ components:
             enum: [counter, dine_in, takeaway, delivery, tab, timed]
         service_charge_tax_category_id:
           type: [string, 'null']
+        reservation_grace_minutes:
+          type: integer
+          minimum: 1
+          maximum: 1440
+        reservation_duration_minutes:
+          type: integer
+          minimum: 1
+          maximum: 1440
+        reservation_fee_product_id:
+          type: [string, 'null']
+        course_labels:
+          type: array
+          description: Names of courses 1, 2, 3… in order; replaces them all.
+          maxItems: 9
+          items:
+            type: object
+            required: [name]
+            properties:
+              name:
+                type: string
+                maxLength: 40
+    CourseLabel:
+      type: object
+      additionalProperties: false
+      required: [position, name]
+      properties:
+        position:
+          type: integer
+        name:
+          type: string
+    ReservationDeposit:
+      type: object
+      additionalProperties: false
+      description: >
+        Money paid to hold a booking: a receipt with no order, never revenue
+        until applied to the bill or kept as a taxed holding fee.
+      required: [id, reservation_id, received_funds_id, kind, amount, currency, status, available, resolution_order_id,
+                 liability_payout_id, funds_allocation_id, received_at, resolved_at]
+      properties:
+        id:
+          type: string
+        reservation_id:
+          type: string
+        received_funds_id:
+          type: string
+        kind:
+          type: string
+          enum: [cash, bank_manual]
+        amount:
+          type: string
+        currency:
+          type: string
+        status:
+          type: string
+          enum: [held, applied, refunded, forfeited]
+        available:
+          type: string
+          description: What is left on its receipt, for the bill or a refund.
+        resolution_order_id:
+          type: [string, 'null']
+        liability_payout_id:
+          type: [string, 'null']
+        funds_allocation_id:
+          type: [string, 'null']
+        received_at:
+          type: [string, 'null']
+          format: date-time
+        resolved_at:
+          type: [string, 'null']
+          format: date-time
+    Reservation:
+      type: object
+      additionalProperties: false
+      required: [id, branch_id, status, source, guest_name, phone, party_size, note, starts_at, ends_at, revision, customer_id,
+                 workspace_id, seated_at, canceled_at, resources, deposits, deposit_held]
+      properties:
+        id:
+          type: string
+        branch_id:
+          type: string
+        status:
+          type: string
+          enum: [booked, seated, completed, no_show, canceled]
+        source:
+          type: string
+          enum: [phone, walk_in, online]
+        guest_name:
+          type: string
+        phone:
+          type: [string, 'null']
+        party_size:
+          type: integer
+        note:
+          type: [string, 'null']
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+        revision:
+          type: integer
+          description: Approvals to refund or keep a deposit are bound to it.
+        customer_id:
+          type: [string, 'null']
+        workspace_id:
+          type: [string, 'null']
+          description: The order the party was seated at.
+        seated_at:
+          type: [string, 'null']
+          format: date-time
+        canceled_at:
+          type: [string, 'null']
+          format: date-time
+        resources:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResourceRef'
+        deposits:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReservationDeposit'
+        deposit_held:
+          type: string
+          description: The deposits still held.
+        fee_workspace_id:
+          type: string
+          description: Only after a forfeit, the holding-fee sale that kept the deposit.
+    WorkspaceReservation:
+      type: object
+      additionalProperties: false
+      required: [id, guest_name, party_size, status, revision, deposit_held, deposits]
+      properties:
+        id:
+          type: string
+        guest_name:
+          type: string
+        party_size:
+          type: integer
+        status:
+          type: string
+        revision:
+          type: integer
+        deposit_held:
+          type: string
+        deposits:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReservationDeposit'
+    ReservationResult:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/Reservation'
+    ReservationList:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Reservation'
+        meta:
+          type: object
+          required: [from, to]
+          properties:
+            from:
+              type: string
+              format: date-time
+            to:
+              type: string
+              format: date-time
+    ReservationInput:
+      type: object
+      required: [branch_id, resource_ids, guest_name, party_size, starts_at]
+      properties:
+        branch_id:
+          type: string
+        resource_ids:
+          type: array
+          minItems: 1
+          maxItems: 10
+          items:
+            type: string
+        guest_name:
+          type: string
+          maxLength: 80
+        phone:
+          type: string
+          maxLength: 20
+        party_size:
+          type: integer
+          minimum: 1
+          maximum: 999
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+        source:
+          type: string
+          enum: [phone, walk_in, online]
+        note:
+          type: string
+          maxLength: 500
+        customer_id:
+          type: string
+    AvailableResource:
+      type: object
+      additionalProperties: false
+      required: [id, name, kind, area_id, capacity]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        kind:
+          type: string
+          enum: [table, room, billiard, vip]
+        area_id:
+          type: [string, 'null']
+        capacity:
+          type: integer
+          description: 0 when unknown.
+    ReservationAvailabilityResult:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AvailableResource'
+        meta:
+          type: object
+          required: [starts_at, ends_at, party_size]
+          properties:
+            starts_at:
+              type: string
+              format: date-time
+            ends_at:
+              type: string
+              format: date-time
+            party_size:
+              type: integer
+    ReservationSeatInput:
+      type: object
+      required: [editor_id]
+      properties:
+        editor_id:
+          type: string
+        guest_count:
+          type: integer
+          minimum: 0
+          maximum: 999
+          description: The party size by default.
+    ReservationSeat:
+      type: object
+      required: [reservation, workspace]
+      properties:
+        reservation:
+          $ref: '#/components/schemas/Reservation'
+        workspace:
+          $ref: '#/components/schemas/Workspace'
+    ReservationSeatResult:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/ReservationSeat'
+    ReservationCancelInput:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [canceled, no_show]
+    ReservationDepositResolveInput:
+      type: object
+      properties:
+        approval_id:
+          type: string
+        reason:
+          type: string
+    BuffetTierItem:
+      type: object
+      additionalProperties: false
+      required: [id, product_id, variant_id, name, max_per_round]
+      properties:
+        id:
+          type: string
+        product_id:
+          type: string
+        variant_id:
+          type: string
+          description: Order the dish with this variant and the cover's `buffet_cover_line_id`.
+        name:
+          type: string
+        max_per_round:
+          type: [integer, 'null']
+          description: At most this many per guest in one round; no limit when null.
+    BuffetTier:
+      type: object
+      additionalProperties: false
+      required: [id, branch_id, name, status, product_id, product_name, variant_id, duration_minutes, round_item_limit,
+                 round_interval_minutes, items]
+      properties:
+        id:
+          type: string
+        branch_id:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+          enum: [active, archived]
+        product_id:
+          type: string
+          description: The ticket sold per guest.
+        product_name:
+          type: string
+        variant_id:
+          type: string
+        duration_minutes:
+          type: integer
+          description: How long a table eats; the table board warns near the end.
+        round_item_limit:
+          type: [integer, 'null']
+          description: Dishes per guest in one round; no limit when null.
+        round_interval_minutes:
+          type: integer
+          description: Minutes between two rounds.
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/BuffetTierItem'
+    BuffetTierList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/BuffetTier'
     TableSettingsResult:
       type: object
       required: [data]
@@ -6864,6 +7655,26 @@ components:
         note:
           type: string
           maxLength: 200
+        course:
+          type: integer
+          minimum: 1
+          maximum: 9
+          description: The course of a table dish.
+        seat:
+          type: integer
+          minimum: 1
+          maximum: 99
+        hold:
+          type: boolean
+          description: Keep the dish off the kitchen until its course is fired; needs `course`.
+        buffet_tier_id:
+          type: string
+          description: >
+            Adds the tier's ticket, `quantity` guests, as a `cover` line;
+            `variant_id` is then ignored and may be empty.
+        buffet_cover_line_id:
+          type: string
+          description: A free dish of that cover's buffet tier; refused (`buffet_item_not_in_tier`) for any other dish.
     ModifierPick:
       type: object
       additionalProperties: false
@@ -6907,13 +7718,26 @@ components:
     EditUnsentLineInput:
       type: object
       additionalProperties: true
-      required: [row_version, quantity]
+      required: [row_version]
+      description: >
+        At least one of the fields. A sent line may still change its seat;
+        quantity, course and hold only change on what was not sent.
       properties:
         row_version:
           type: integer
         quantity:
           type: integer
           minimum: 1
+        course:
+          type: [integer, 'null']
+          minimum: 1
+          maximum: 9
+        seat:
+          type: [integer, 'null']
+          minimum: 1
+          maximum: 99
+        hold:
+          type: boolean
     KitchenVoidInput:
       type: object
       additionalProperties: true
@@ -7077,8 +7901,20 @@ components:
           type: string
     TableSplitInput:
       type: object
-      required: [expected_revision, lease_generation, editor_id, sale_line_ids]
+      description: >
+        The chosen `sale_line_ids` move to a new order, or with `by: seat` every
+        seat of the order gets its own bill.
+      required: [expected_revision, lease_generation, editor_id]
       properties:
+        by:
+          type: string
+          enum: [lines, seat]
+        shared:
+          type: object
+          description: A dish without a seat, by sale line id, and the seat whose bill takes it; the first seat otherwise.
+          additionalProperties:
+            type: integer
+            minimum: 1
         expected_revision:
           type: integer
         lease_generation:
@@ -7098,12 +7934,17 @@ components:
           maximum: 999
     TableSplitOrders:
       type: object
-      required: [workspace, new_workspace]
+      description: The order split, and the new order (by lines) or the new bills of the other seats (by seat).
+      required: [workspace]
       properties:
         workspace:
           $ref: '#/components/schemas/Workspace'
         new_workspace:
           $ref: '#/components/schemas/Workspace'
+        new_workspaces:
+          type: array
+          items:
+            $ref: '#/components/schemas/Workspace'
     TableSplitResult:
       type: object
       required: [data]

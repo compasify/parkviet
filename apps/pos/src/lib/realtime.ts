@@ -122,7 +122,8 @@ export function invalidationsFor(
     case 'resource.updated':
       return event.id.startsWith('posprintjob_')
         ? [{ queryKey: ['pos', 'print-jobs', scope.generation] }]
-        : [board];
+        : // A booking announces each table it holds.
+          [board, { queryKey: ['pos', 'reservations', scope.generation] }];
     default:
       return [];
   }

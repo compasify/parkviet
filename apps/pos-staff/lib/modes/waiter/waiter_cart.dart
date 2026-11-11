@@ -3,16 +3,20 @@ import 'package:pos_api/pos_api.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/menu/modifier_sheet.dart';
+import 'table_courses.dart';
 
 /// One dish in the cart, before it is added to the order.
 @immutable
 class CartLine {
-  const CartLine({required this.key, required this.item, required this.choice});
+  const CartLine({required this.key, required this.item, required this.choice, this.placement = const TablePlacement()});
 
   /// Tells two cart lines apart on the screen.
   final String key;
   final MenuItem item;
   final ModifierChoice choice;
+
+  /// The course, seat and hold the dish was put in the cart with.
+  final TablePlacement placement;
 
   int get quantity => choice.quantity;
   num get total => choice.unitPrice * choice.quantity;
@@ -25,12 +29,14 @@ class CartLine {
         key: key,
         item: item,
         choice: ModifierChoice(variant: choice.variant, options: choice.options, note: choice.note, quantity: quantity),
+        placement: placement,
       );
 
   AppendItem toAppendItem() => AppendItem((b) {
         b
           ..variantId = choice.variant.id
           ..quantity = choice.quantity;
+        placement.apply(b);
         if (choice.note.isNotEmpty) b.note = choice.note;
         if (choice.options.isNotEmpty) {
           b.modifiers.replace([
@@ -61,8 +67,16 @@ class WaiterCart extends ChangeNotifier {
   int get count => _lines.fold(0, (sum, line) => sum + line.quantity);
   num get total => _lines.fold<num>(0, (sum, line) => sum + line.total);
 
+  /// Where the next dishes go; a dish keeps the placement it was added with.
+  TablePlacement placement = const TablePlacement();
+
+  void setPlacement(TablePlacement next) {
+    placement = next;
+    notifyListeners();
+  }
+
   void add(MenuItem item, ModifierChoice choice) {
-    _lines.add(CartLine(key: 'c${_next++}', item: item, choice: choice));
+    _lines.add(CartLine(key: 'c${_next++}', item: item, choice: choice, placement: placement));
     _changed();
   }
 

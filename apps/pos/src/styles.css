@@ -870,4 +870,29 @@ kbd { padding: var(--pos-s1); border: 1px solid var(--pos-border); border-radius
 .table-order-tools { display: flex; flex-wrap: wrap; align-items: end; gap: var(--pos-s2); }
 .table-order-tools label { display: grid; gap: 2px; min-width: 140px; font-size: var(--pos-small); }
 .split-order-lines { display: grid; gap: 0; }
+.split-order-mode { gap: var(--pos-s3); }
+/* Booked tables (teal), a buffet in its last minutes (amber) or over (red). */
+.pos-layout .table-tile-reserved { border-left-color: #1f8a7a; }
+.table-tile-reserved .table-tile-state, .table-state-badge.table-tile-reserved { background: #e1f4f1; color: #13594f; }
+.table-tile-booking { color: #13594f; }
+.pos-layout .table-tile.table-tile-buffet-ending { box-shadow: inset 0 0 0 2px #d29a1e; }
+.pos-layout .table-tile.table-tile-buffet-over { box-shadow: inset 0 0 0 2px var(--pos-danger); }
+.table-tile-buffet-over.table-tile-flag { color: var(--pos-danger); }
+.table-service-panel, .reservation-deposit-note { display: grid; gap: var(--pos-s2); padding: var(--pos-s2) var(--pos-s3); margin-bottom: var(--pos-s2); background: var(--pos-tint); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); }
+.course-seat-picker .row, .buffet-tier-picker .row { flex-wrap: wrap; align-items: end; gap: var(--pos-s2); }
+.course-seat-picker label, .buffet-tier-picker label { display: grid; gap: 2px; min-width: 110px; font-size: var(--pos-small); }
+.course-seat-picker .check-label { display: flex; align-items: center; gap: var(--pos-s1, 4px); }
+.reservation-form, .reservation-deposit-form, .reservation-approval-form { display: flex; flex-wrap: wrap; align-items: end; gap: var(--pos-s2); padding: var(--pos-s3); margin-bottom: var(--pos-s3); background: var(--pos-surface); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); }
+.reservation-form h2 { flex-basis: 100%; margin: 0; }
+.reservation-form label, .reservation-deposit-form label, .reservation-approval-form label { display: grid; gap: 2px; min-width: 140px; font-size: var(--pos-small); }
+.reservation-row { display: grid; gap: var(--pos-s2); }
+.reservation-row[data-status='canceled'], .reservation-row[data-status='no_show'] { opacity: 0.7; }
+.reservation-actions { flex-wrap: wrap; gap: var(--pos-s2); }
+.reservation-deposit { display: block; }
+.reservation-timeline { display: grid; gap: 2px; margin-bottom: var(--pos-s3); overflow-x: auto; }
+.reservation-timeline-hours, .reservation-timeline-row { display: grid; grid-template-columns: 96px minmax(480px, 1fr); align-items: center; gap: var(--pos-s2); }
+.reservation-timeline-hours { grid-template-columns: 96px repeat(13, minmax(36px, 1fr)); font-size: var(--pos-small); color: var(--pos-muted); }
+.reservation-timeline-track { position: relative; height: 28px; background: var(--pos-tint); border-radius: var(--pos-radius); }
+.reservation-block { position: absolute; top: 2px; bottom: 2px; padding: 0 6px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: var(--pos-small); line-height: 24px; border-radius: var(--pos-radius); background: #1f8a7a; color: #fff; }
+.reservation-block-seated { background: var(--pos-blue); }
 @media (max-width: 767px) { .table-floor-body { grid-template-columns: minmax(0, 1fr); } }
