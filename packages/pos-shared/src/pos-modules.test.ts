@@ -218,6 +218,10 @@ describe('business profile catalogue', () => {
     expect(sellingSurfaceOf({ modules: {}, profile: profile('menu_grid') })).toBe('catalog');
     expect(sellingSurfaceOf({ modules: null, profile: profile('menu_grid') })).toBe('catalog');
     expect(sellingSurfaceOf(undefined)).toBe('catalog');
+    // A table surface still picks items from the menu.
+    expect(sellingSurfaceOf({ modules: on, profile: profile('floor_plan') })).toBe('menu_grid');
+    expect(profile('table_grid')?.display).toEqual({ surface: 'table_grid' });
+    expect(profile('kiosk')?.display).toEqual({});
   });
 
   it('reads an empty catalogue from anything else', () => {

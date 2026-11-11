@@ -21,6 +21,10 @@ module Spree
       # Rolling F&B back closes its group (or moves its modules back to
       # planned): branches keep their data and keep selling.
       OPEN_GROUPS = %w[retail fnb].freeze
+      # Modules a branch can turn on but no profile offers yet: a profile
+      # needing one stays coming soon until setup can choose the register
+      # that table orders are booked on.
+      PROFILE_HELD_MODULES = %w[resources fnb.tables fnb.postpay fnb.service_charge].freeze
       FIELDS = %w[group order modules branch_defaults display recommended_features sample_units kitchen_stations].freeze
       BRANCH_DEFAULT_FIELDS = %w[return_window_days lot_selection variance_threshold adjustment_approval_threshold
                                  kitchen_send_trigger].freeze
@@ -28,7 +32,7 @@ module Spree
       CATALOG_VIEWS = %w[cards list].freeze
       # The selling screen. A surface is only a hint: the client still needs
       # the module (menu_grid shows nothing without fnb.menu).
-      SURFACES = { 'catalog' => nil, 'menu_grid' => 'fnb.menu' }.freeze
+      SURFACES = { 'catalog' => nil, 'menu_grid' => 'fnb.menu', 'table_grid' => 'fnb.tables', 'floor_plan' => 'fnb.tables' }.freeze
       # Stations the F&B setup step proposes; expo is set up by hand.
       STATION_KINDS = %w[prep bar].freeze
       KITCHEN_MODULE = 'fnb.kitchen'
@@ -38,7 +42,8 @@ module Spree
                             :kitchen_stations) do
         # Computed from the module registry, never written by hand.
         def status
-          OPEN_GROUPS.include?(group) && modules.all? { |key| Modules.available?(key) } ? AVAILABLE : COMING_SOON
+          open = OPEN_GROUPS.include?(group) && (modules & PROFILE_HELD_MODULES).empty?
+          open && modules.all? { |key| Modules.available?(key) } ? AVAILABLE : COMING_SOON
         end
 
         def available?

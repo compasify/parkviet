@@ -20,6 +20,7 @@ module Spree
           end
           CommandExecutor.call(store: workspace.store, actor: staff, key: key, payload: payload, workspace: workspace, authorize: authorize) do
             Guard.validate_editor!(workspace, staff, revision, lease_generation, editor_id)
+            Guard.collect_on_own_shift!(workspace, staff)
             Guard.validate_open_shift!(workspace)
             SalesChannel.validate_uncommitted_order!(workspace)
             Guard.tracked_guard!(workspace)

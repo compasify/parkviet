@@ -29,7 +29,7 @@ module Spree
               end
               # The counter's tabs leave delivery platform orders to their tray.
               scope = scope.where.not(order_source: Spree::Pos::Workspace::PLATFORM_SOURCES) if params[:platform] == 'exclude'
-              records, meta = page_scope(scope.includes(:branch, :register, :shift, :order).order(id: :desc))
+              records, meta = page_scope(scope.includes(:branch, :register, :shift, :order, :resource).order(id: :desc))
               render json: { data: Spree::Pos::WorkspaceSummary.list(records), meta: meta }
             end
 

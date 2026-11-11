@@ -72,6 +72,7 @@ import { Route as AuthenticatedStoreIdShiftsLateCashRouteImport } from './routes
 import { Route as AuthenticatedStoreIdBranchesBranchIdIndexRouteImport } from './routes/_authenticated/$storeId/branches/$branchId/index'
 import { Route as AuthenticatedStoreIdBranchesBranchIdBusinessModelRouteImport } from './routes/_authenticated/$storeId/branches/$branchId/business-model'
 import { Route as AuthenticatedStoreIdBranchesBranchIdFeaturesRouteImport } from './routes/_authenticated/$storeId/branches/$branchId/features'
+import { Route as AuthenticatedStoreIdBranchesBranchIdFloorPlanRouteImport } from './routes/_authenticated/$storeId/branches/$branchId/floor-plan'
 import { Route as AuthenticatedStoreIdBranchesBranchIdHardwareRouteImport } from './routes/_authenticated/$storeId/branches/$branchId/hardware'
 import { Route as AuthenticatedStoreIdBranchesBranchIdKitchenRouteImport } from './routes/_authenticated/$storeId/branches/$branchId/kitchen'
 import { Route as AuthenticatedStoreIdBranchesBranchIdLabelFormatsRouteImport } from './routes/_authenticated/$storeId/branches/$branchId/label-formats'
@@ -456,6 +457,12 @@ const AuthenticatedStoreIdBranchesBranchIdFeaturesRoute =
     path: '/features',
     getParentRoute: () => AuthenticatedStoreIdBranchesBranchIdRoute,
   } as any)
+const AuthenticatedStoreIdBranchesBranchIdFloorPlanRoute =
+  AuthenticatedStoreIdBranchesBranchIdFloorPlanRouteImport.update({
+    id: '/floor-plan',
+    path: '/floor-plan',
+    getParentRoute: () => AuthenticatedStoreIdBranchesBranchIdRoute,
+  } as any)
 const AuthenticatedStoreIdBranchesBranchIdHardwareRoute =
   AuthenticatedStoreIdBranchesBranchIdHardwareRouteImport.update({
     id: '/hardware',
@@ -585,6 +592,7 @@ export interface FileRoutesByFullPath {
   '/$storeId/shifts/': typeof AuthenticatedStoreIdShiftsIndexRoute
   '/$storeId/branches/$branchId/business-model': typeof AuthenticatedStoreIdBranchesBranchIdBusinessModelRoute
   '/$storeId/branches/$branchId/features': typeof AuthenticatedStoreIdBranchesBranchIdFeaturesRoute
+  '/$storeId/branches/$branchId/floor-plan': typeof AuthenticatedStoreIdBranchesBranchIdFloorPlanRoute
   '/$storeId/branches/$branchId/hardware': typeof AuthenticatedStoreIdBranchesBranchIdHardwareRoute
   '/$storeId/branches/$branchId/kitchen': typeof AuthenticatedStoreIdBranchesBranchIdKitchenRoute
   '/$storeId/branches/$branchId/label-formats': typeof AuthenticatedStoreIdBranchesBranchIdLabelFormatsRoute
@@ -649,6 +657,7 @@ export interface FileRoutesByTo {
   '/$storeId/shifts': typeof AuthenticatedStoreIdShiftsIndexRoute
   '/$storeId/branches/$branchId/business-model': typeof AuthenticatedStoreIdBranchesBranchIdBusinessModelRoute
   '/$storeId/branches/$branchId/features': typeof AuthenticatedStoreIdBranchesBranchIdFeaturesRoute
+  '/$storeId/branches/$branchId/floor-plan': typeof AuthenticatedStoreIdBranchesBranchIdFloorPlanRoute
   '/$storeId/branches/$branchId/hardware': typeof AuthenticatedStoreIdBranchesBranchIdHardwareRoute
   '/$storeId/branches/$branchId/kitchen': typeof AuthenticatedStoreIdBranchesBranchIdKitchenRoute
   '/$storeId/branches/$branchId/label-formats': typeof AuthenticatedStoreIdBranchesBranchIdLabelFormatsRoute
@@ -726,6 +735,7 @@ export interface FileRoutesById {
   '/_authenticated/$storeId/shifts/': typeof AuthenticatedStoreIdShiftsIndexRoute
   '/_authenticated/$storeId/branches/$branchId/business-model': typeof AuthenticatedStoreIdBranchesBranchIdBusinessModelRoute
   '/_authenticated/$storeId/branches/$branchId/features': typeof AuthenticatedStoreIdBranchesBranchIdFeaturesRoute
+  '/_authenticated/$storeId/branches/$branchId/floor-plan': typeof AuthenticatedStoreIdBranchesBranchIdFloorPlanRoute
   '/_authenticated/$storeId/branches/$branchId/hardware': typeof AuthenticatedStoreIdBranchesBranchIdHardwareRoute
   '/_authenticated/$storeId/branches/$branchId/kitchen': typeof AuthenticatedStoreIdBranchesBranchIdKitchenRoute
   '/_authenticated/$storeId/branches/$branchId/label-formats': typeof AuthenticatedStoreIdBranchesBranchIdLabelFormatsRoute
@@ -803,6 +813,7 @@ export interface FileRouteTypes {
     | '/$storeId/shifts/'
     | '/$storeId/branches/$branchId/business-model'
     | '/$storeId/branches/$branchId/features'
+    | '/$storeId/branches/$branchId/floor-plan'
     | '/$storeId/branches/$branchId/hardware'
     | '/$storeId/branches/$branchId/kitchen'
     | '/$storeId/branches/$branchId/label-formats'
@@ -867,6 +878,7 @@ export interface FileRouteTypes {
     | '/$storeId/shifts'
     | '/$storeId/branches/$branchId/business-model'
     | '/$storeId/branches/$branchId/features'
+    | '/$storeId/branches/$branchId/floor-plan'
     | '/$storeId/branches/$branchId/hardware'
     | '/$storeId/branches/$branchId/kitchen'
     | '/$storeId/branches/$branchId/label-formats'
@@ -943,6 +955,7 @@ export interface FileRouteTypes {
     | '/_authenticated/$storeId/shifts/'
     | '/_authenticated/$storeId/branches/$branchId/business-model'
     | '/_authenticated/$storeId/branches/$branchId/features'
+    | '/_authenticated/$storeId/branches/$branchId/floor-plan'
     | '/_authenticated/$storeId/branches/$branchId/hardware'
     | '/_authenticated/$storeId/branches/$branchId/kitchen'
     | '/_authenticated/$storeId/branches/$branchId/label-formats'
@@ -1406,6 +1419,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStoreIdBranchesBranchIdFeaturesRouteImport
       parentRoute: typeof AuthenticatedStoreIdBranchesBranchIdRoute
     }
+    '/_authenticated/$storeId/branches/$branchId/floor-plan': {
+      id: '/_authenticated/$storeId/branches/$branchId/floor-plan'
+      path: '/floor-plan'
+      fullPath: '/$storeId/branches/$branchId/floor-plan'
+      preLoaderRoute: typeof AuthenticatedStoreIdBranchesBranchIdFloorPlanRouteImport
+      parentRoute: typeof AuthenticatedStoreIdBranchesBranchIdRoute
+    }
     '/_authenticated/$storeId/branches/$branchId/hardware': {
       id: '/_authenticated/$storeId/branches/$branchId/hardware'
       path: '/hardware'
@@ -1489,6 +1509,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedStoreIdBranchesBranchIdRouteChildren {
   AuthenticatedStoreIdBranchesBranchIdBusinessModelRoute: typeof AuthenticatedStoreIdBranchesBranchIdBusinessModelRoute
   AuthenticatedStoreIdBranchesBranchIdFeaturesRoute: typeof AuthenticatedStoreIdBranchesBranchIdFeaturesRoute
+  AuthenticatedStoreIdBranchesBranchIdFloorPlanRoute: typeof AuthenticatedStoreIdBranchesBranchIdFloorPlanRoute
   AuthenticatedStoreIdBranchesBranchIdHardwareRoute: typeof AuthenticatedStoreIdBranchesBranchIdHardwareRoute
   AuthenticatedStoreIdBranchesBranchIdKitchenRoute: typeof AuthenticatedStoreIdBranchesBranchIdKitchenRoute
   AuthenticatedStoreIdBranchesBranchIdLabelFormatsRoute: typeof AuthenticatedStoreIdBranchesBranchIdLabelFormatsRoute
@@ -1507,6 +1528,8 @@ const AuthenticatedStoreIdBranchesBranchIdRouteChildren: AuthenticatedStoreIdBra
       AuthenticatedStoreIdBranchesBranchIdBusinessModelRoute,
     AuthenticatedStoreIdBranchesBranchIdFeaturesRoute:
       AuthenticatedStoreIdBranchesBranchIdFeaturesRoute,
+    AuthenticatedStoreIdBranchesBranchIdFloorPlanRoute:
+      AuthenticatedStoreIdBranchesBranchIdFloorPlanRoute,
     AuthenticatedStoreIdBranchesBranchIdHardwareRoute:
       AuthenticatedStoreIdBranchesBranchIdHardwareRoute,
     AuthenticatedStoreIdBranchesBranchIdKitchenRoute:

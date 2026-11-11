@@ -13,6 +13,7 @@ const GROUPS: { key: string; capabilities: Capability[] }[] = [
       'pos.customer.write',
       'pos.return.process',
       'pos.credit.sell',
+      'pos.table.serve',
     ],
   },
   {
@@ -34,6 +35,7 @@ const GROUPS: { key: string; capabilities: Capability[] }[] = [
       'pos.credit.manage',
       'pos.device.manage',
       'pos.printer.manage',
+      'pos.resource.manage',
     ],
   },
   { key: 'reports', capabilities: ['pos.report.read', 'pos.report.export'] },

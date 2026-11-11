@@ -11,9 +11,15 @@ module Spree
 
         def authorize_editor!(workspace, staff)
           policy = AccessPolicy.new(store: workspace.store, staff: staff)
+          owner = workspace.shift.owner_id == staff.id && policy.allows?(workspace.branch, Capabilities::OPEN_SHIFT)
           raise CanCan::AccessDenied if workspace.branch.disabled? || workspace.register&.disabled? ||
-            workspace.shift.owner_id != staff.id ||
-            !policy.permission?('write_pos_orders') || !policy.allows?(workspace.branch, Capabilities::OPEN_SHIFT)
+            !(owner || policy.can_collect_table?(workspace)) || !policy.permission?('write_pos_orders')
+        end
+
+        # A table's bill collected by a cashier other than the shift owner is
+        # booked on the collector's shift, while it holds no money yet.
+        def collect_on_own_shift!(workspace, staff)
+          ShiftRebind.rebind_to_collector!(workspace: workspace, staff: staff) if workspace.shift.owner_id != staff.id
         end
 
         def authorize_collect!(workspace, staff)

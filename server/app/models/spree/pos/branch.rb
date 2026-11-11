@@ -17,6 +17,10 @@ module Spree
       belongs_to :receiving_stock_location, class_name: 'Spree::StockLocation', optional: true
       # Where cup labels print (CupLabels::Issue); size and fields in `cup_label_settings`.
       belongs_to :cup_label_printer, class_name: 'Spree::Pos::Printer', optional: true
+      # Table orders are booked on this register's open shift.
+      belongs_to :table_register, class_name: 'Spree::Pos::Register', optional: true
+      # Tax of the service charge; nil taxes it under the store's default category.
+      belongs_to :service_charge_tax_category, class_name: 'Spree::TaxCategory', optional: true
       has_many :registers, class_name: 'Spree::Pos::Register', dependent: :restrict_with_error
       has_many :memberships, class_name: 'Spree::Pos::StaffMembership', dependent: :restrict_with_error
 
@@ -47,7 +51,10 @@ module Spree
       # When orders reach the kitchen: as the sale completes, or when the
       # cashier sends them (Kitchen::Send).
       validates :kitchen_send_trigger, inclusion: { in: %w[on_complete manual] }
+      # Percent of the items after discounts; nil means no service charge.
+      validates :service_charge_rate, numericality: { greater_than: 0, less_than_or_equal_to: 50 }, allow_nil: true
       validate :locations_belong_to_store
+      validate :table_settings_of_store
       validate :stock_location_fixed_for_open_drafts, on: :update
 
       scope :for_store, ->(store) { where(store_id: store.id) }
@@ -105,6 +112,16 @@ module Spree
         return unless Workspace.where(branch_id: id, operational_status: %w[editing parked]).exists?
 
         errors.add(:stock_location, :invalid)
+      end
+
+      def table_settings_of_store
+        errors.add(:table_register, :invalid) if table_register && table_register.branch_id != id
+        if service_charge_tax_category && service_charge_tax_category.respond_to?(:store_id) &&
+           service_charge_tax_category.store_id.present? && service_charge_tax_category.store_id != store_id
+          errors.add(:service_charge_tax_category, :invalid)
+        end
+        modes = service_charge_applies_to
+        errors.add(:service_charge_applies_to, :invalid) unless modes.is_a?(Array) && (modes - Workspace::SERVICE_MODES).empty? && modes.uniq.size == modes.size
       end
 
       def locations_belong_to_store

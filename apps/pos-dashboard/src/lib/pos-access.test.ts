@@ -6,6 +6,7 @@ import {
   canManageBranch,
   canManageEinvoices,
   canManageMenu,
+  canManageResources,
   canSendReminders,
   canSetSoldOut,
   routeAllowed,
@@ -124,6 +125,30 @@ describe('POS permission gates', () => {
     expect(tabs(cook)).toEqual([])
     expect(routeAllowed('branch-printing', printerManager)).toBe(true)
     expect(routeAllowed('branch-payments', printerManager)).toBe(false)
+  })
+  it('offers the floor plan tab while the branch runs resources', () => {
+    const staff = (capabilities: string[], resources: boolean, permissionKeys: string[] = []) => ({
+      permissionKeys,
+      context: {
+        selection: { branch_id: 'b', register_id: null },
+        capabilities,
+        modules: { resources },
+      } as unknown as PosContext,
+    })
+    const tabs = (access: Parameters<typeof branchTabs>[0]) =>
+      branchTabs(access).map((tab) => tab.key)
+    expect(tabs(staff(['pos.resource.manage'], true))).toEqual(['overview', 'floorPlan'])
+    expect(routeAllowed('branch', staff(['pos.resource.manage'], false))).toBe(true)
+    expect(routeAllowed('branch-floor-plan', staff(['pos.resource.manage'], false))).toBe(false)
+    expect(canManageResources(staff(['pos.resource.manage'], true))).toBe(true)
+    // Branch managers keep the table settings on the same tab.
+    expect(routeAllowed('branch-floor-plan', staff(['pos.topology.manage'], true))).toBe(true)
+    expect(canManageResources(staff(['pos.topology.manage'], true))).toBe(false)
+    expect(routeAllowed('branch-floor-plan', staff(['pos.table.serve'], true))).toBe(false)
+    const reader = staff([], true, ['read_pos_topology'])
+    expect(routeAllowed('branch-floor-plan', reader)).toBe(true)
+    expect(canManageResources(reader)).toBe(false)
+    expect(canManageResources(staff([], true, ['write_pos_topology']))).toBe(true)
   })
   it('offers platform settlement to resolvers while the branch takes platform orders', () => {
     const resolver = (modules: Record<string, boolean>) => ({

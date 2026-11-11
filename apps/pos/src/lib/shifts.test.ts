@@ -5,6 +5,7 @@ import {
   blockedChecklist,
   canMoveCash,
   canReconcileCash,
+  checklistTableName,
   checklistTarget,
   describeShiftFailure,
   isOutflow,
@@ -18,6 +19,15 @@ import {
 const conflict = (details: Record<string, unknown>) => ({ status: 409, details });
 
 describe('shift close helpers', () => {
+  it('names the table an open order is served at, with its letter', () => {
+    const draft = { type: 'draft' as const, status: 'editing', workspace_id: 'ws_1' };
+    const at = (table: unknown) => checklistTableName({ ...draft, table } as never);
+    expect(checklistTableName(draft)).toBeNull();
+    expect(at({ id: 'posres_1', name: 'Bàn 4', label: null })).toBe('Bàn 4');
+    expect(at({ id: 'posres_1', name: 'Bàn 4', label: 'B' })).toBe('Bàn 4 · B');
+    expect(at('Bàn 4')).toBeNull();
+  });
+
   it('names the variance direction so it is not shown by colour alone', () => {
     expect(varianceKind('-10000.0')).toBe('short');
     expect(varianceKind('5000.0')).toBe('over');

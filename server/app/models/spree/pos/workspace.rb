@@ -16,6 +16,9 @@ module Spree
       SERVICE_MODES = %w[counter dine_in takeaway delivery tab timed].freeze
       # The name the counter calls out with the call number.
       GUEST_NAME_MAX = 60
+      # Served at a table or room: these modes may point at a resource.
+      RESOURCE_MODES = %w[dine_in timed].freeze
+      OPEN_STATUSES = %w[editing parked].freeze
 
       belongs_to :store, class_name: 'Spree::Store'
       belongs_to :branch, class_name: 'Spree::Pos::Branch'
@@ -24,6 +27,8 @@ module Spree
       belongs_to :order, class_name: 'Spree::Order'
       belongs_to :pos_customer, class_name: 'Spree::Pos::CustomerProfile', optional: true
       belongs_to :lease_holder, class_name: staff_class_name, optional: true
+      # The table or room the order is served at. Moving tables changes it.
+      belongs_to :resource, class_name: 'Spree::Pos::Resource', optional: true
 
       validates :operational_status, inclusion: { in: %w[editing parked canceled completed] }
       validates :note, length: { maximum: 1000 }
@@ -32,6 +37,9 @@ module Spree
       validates :business_date, presence: true
       validates :guest_name, length: { maximum: GUEST_NAME_MAX }
       validates :order_number, numericality: { only_integer: true, greater_than: 0 }, allow_nil: true
+      validates :guest_count, numericality: { only_integer: true, in: 0..999 }, allow_nil: true
+      validates :table_label, length: { maximum: 4 }
+      validate :resource_fits_order
       validate :source_is_immutable
       validate :order_number_is_kept
       validate :business_date_is_fixed
@@ -92,7 +100,10 @@ module Spree
           service_mode: service_mode,
           business_date: business_date&.iso8601,
           order_number: order_number,
-          guest_name: guest_name
+          guest_name: guest_name,
+          resource: resource&.to_ref,
+          guest_count: guest_count,
+          table_label: table_label
         }
       end
 
@@ -165,6 +176,10 @@ module Spree
           },
           # An order to deliver: deliverer, fee and delivery status.
           delivery: Spree::Pos::Delivery.find_by(workspace_id: id)&.to_pos,
+          # Read only where they can exist, so counter sales add no queries.
+          service_charge: branch.service_charge_rate && ServiceCharges::Apply.to_pos(self),
+          prebill: resource_id && prebill_pos,
+          payment_request: resource_id && PaymentRequest.open.find_by(workspace_id: id)&.to_pos,
           totals: {
             item_total: money(order.item_total), discount_total: money(discounts.sum(&:amount)),
             fee_total: money(order.fee_total),
@@ -175,6 +190,12 @@ module Spree
           },
           financial: financial_pos
         )
+      end
+
+      # The latest pre-bill; `stale` once the order changed after it was printed.
+      def prebill_pos
+        print = PrebillPrint.where(workspace_id: id).order(:sequence).last
+        print && print.to_pos.merge(stale: print.status == 'superseded' || (print.status == 'current' && print.revision != revision))
       end
 
       def financial_pos
@@ -224,6 +245,13 @@ module Spree
       end
 
       private
+
+      def resource_fits_order
+        return if resource_id.nil?
+
+        errors.add(:service_mode, :invalid) unless RESOURCE_MODES.include?(service_mode)
+        errors.add(:resource, :invalid) if resource && resource.branch_id != branch_id
+      end
 
       def assign_business_date
         return if business_date.present? || branch.nil?

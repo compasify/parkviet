@@ -27,10 +27,22 @@ Rails.application.config.to_prepare do
     modules.register(key: 'fnb.delivery_platforms', group: 'fnb', depends_on: ['fnb.menu'],
                      entrypoints: ['Spree::Api::V3::Admin::Pos::PlatformOrdersController', 'Spree::Pos::PlatformOrders::Enter'])
 
+    # Areas and tables (rooms, billiard tables) on a branch's floor plan.
+    modules.register(key: 'resources', group: 'fnb', depends_on: [],
+                     entrypoints: ['Spree::Api::V3::Admin::Pos::ResourcesController', 'Spree::Pos::ResourceState'])
+    # Orders at a table: open, move, merge, split.
+    modules.register(key: 'fnb.tables', group: 'fnb', depends_on: ['resources'],
+                     entrypoints: ['Spree::Api::V3::Admin::Pos::TablesController', 'Spree::Pos::Tables::Open'])
+    # Pay after eating: recorded pre-bills and payment requests.
+    modules.register(key: 'fnb.postpay', group: 'fnb', depends_on: [],
+                     entrypoints: ['Spree::Api::V3::Admin::Pos::PrebillsController', 'Spree::Pos::Workspaces::Prebill'])
+    # A taxed percentage charge on the items after discounts.
+    modules.register(key: 'fnb.service_charge', group: 'fnb', depends_on: [],
+                     entrypoints: ['Spree::Pos::ServiceCharges::Apply'])
+
     # Names only, so "coming soon" profiles can refer to them. No code, and
     # no branch can turn them on.
-    modules.planned 'resources', 'fnb.tables',
-                    'fnb.postpay', 'fnb.service_charge', 'timed_billing', group: 'fnb'
+    modules.planned 'timed_billing', group: 'fnb'
   end
 
   Spree::Pos::SaleLineKinds.define! do |kinds|

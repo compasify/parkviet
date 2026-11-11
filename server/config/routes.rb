@@ -238,6 +238,21 @@ Rails.application.routes.draw do
             end
             get 'platform_settings', to: 'platform_settings#show'
             put 'platform_settings', to: 'platform_settings#update'
+            # A branch's floor plan, its live board, table service settings,
+            # and seating guests at a table.
+            resources :areas, only: [:index, :create, :update] do
+              post :archive, on: :member
+            end
+            resources :resources, only: [:index, :create, :update] do
+              member do
+                post :archive
+                post :manual_status
+              end
+            end
+            get 'resource_board', to: 'resource_boards#show'
+            get 'table_settings', to: 'table_settings#show'
+            put 'table_settings', to: 'table_settings#update'
+            post 'tables/:resource_id/open', to: 'tables#open_table'
             # E-invoices of completed orders and the store's provider settings.
             get 'einvoices/summary', to: 'einvoices#summary'
             post 'einvoices/retry', to: 'einvoices#retry_issue'
@@ -338,6 +353,15 @@ Rails.application.routes.draw do
               get 'kitchen_tickets', to: 'workspaces/kitchen_tickets#index'
               post 'guest_name', to: 'workspaces/guest_names#update'
               post 'cup_labels', to: 'workspaces/cup_labels#create'
+              # Table orders: move, merge, split, pre-bill, payment request, service charge.
+              post 'move', to: 'tables#move'
+              post 'merge', to: 'tables#merge'
+              post 'split', to: 'tables#split'
+              post 'prebill', to: 'prebills#create'
+              post 'prebill/cancel', to: 'prebills#cancel'
+              post 'payment_request', to: 'payment_requests#create'
+              post 'payment_request/resolve', to: 'payment_requests#resolve'
+              post 'service_charge', to: 'workspaces/service_charges#update'
               member do
                 post 'discount/clear', to: 'workspaces/discounts#clear'
                 post :park

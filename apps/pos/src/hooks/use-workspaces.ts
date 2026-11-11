@@ -92,11 +92,12 @@ export function useWorkspaces(
       registerId,
       detailId,
     ],
+    // Without a shift there is no tab list, yet someone serving tables still
+    // opens the table order picked on the floor.
     enabled:
-      enabled &&
       snapshot.status === 'authenticated' &&
       Boolean(storeId && branchId && detailId) &&
-      query.isSuccess,
+      (enabled ? query.isSuccess : Boolean(activeId)),
     queryFn: async () => {
       try {
         return await session.request<{ data: PosWorkspace }>('GET', `/pos/workspaces/${detailId}`);
@@ -544,6 +545,112 @@ export function useWorkspaces(
       };
       return (await sendIntent(workspace.id, body, `/pos/workspaces/${workspace.id}/kitchen_sends`))
         .workspace;
+    },
+    // Seats guests at a table: a dine-in draft booked on the open shift of the
+    // branch's table register, its lease held by this page. `addOrder` opens
+    // another order beside the table's open one.
+    async openTable(resourceId: string, input: { guestCount: number | null; addOrder: boolean }) {
+      try {
+        const { workspace: result, recovered } = await sendIntent(
+          `table:${resourceId}`,
+          {
+            branch_id: branchId,
+            editor_id: editorId,
+            ...(input.guestCount === null ? {} : { guest_count: input.guestCount }),
+            ...(input.addOrder ? { add_order: true } : {}),
+          },
+          `/pos/tables/${resourceId}/open`,
+        );
+        if (!recovered)
+          setOwned((current) => ({ ...current, [result.id]: result.lease_generation }));
+        return result;
+      } catch (error) {
+        abandonIfNeeded(error);
+        throw error;
+      }
+    },
+    async moveTable(workspace: PosWorkspace, resourceId: string) {
+      const body = {
+        expected_revision: workspace.revision,
+        lease_generation: workspace.lease_generation,
+        editor_id: editorId,
+        resource_id: resourceId,
+      };
+      return (await sendIntent(workspace.id, body, `/pos/workspaces/${workspace.id}/move`))
+        .workspace;
+    },
+    // Every line of this order joins `targetId`, and this order is canceled.
+    async mergeTable(workspace: PosWorkspace, targetId: string) {
+      const body = {
+        expected_revision: workspace.revision,
+        lease_generation: workspace.lease_generation,
+        editor_id: editorId,
+        target_workspace_id: targetId,
+      };
+      const result = (await sendIntent(workspace.id, body, `/pos/workspaces/${workspace.id}/merge`))
+        .workspace;
+      release(workspace.id);
+      return result;
+    },
+    // The chosen lines move, whole, to a new order at the same or another table.
+    async splitTable(
+      workspace: PosWorkspace,
+      input: { saleLineIds: string[]; resourceId?: string; guestCount?: number },
+    ) {
+      const body = {
+        expected_revision: workspace.revision,
+        lease_generation: workspace.lease_generation,
+        editor_id: editorId,
+        sale_line_ids: input.saleLineIds,
+        ...(input.resourceId ? { resource_id: input.resourceId } : {}),
+        ...(input.guestCount === undefined ? {} : { guest_count: input.guestCount }),
+      };
+      const key = crypto.randomUUID();
+      try {
+        const result = await commandQueue.enqueue(workspace.id, key, commandDigest(body), () =>
+          session.request<{ data: { workspace: PosWorkspace; new_workspace: PosWorkspace } }>(
+            'POST',
+            `/pos/workspaces/${workspace.id}/split`,
+            { body: { ...body, idempotency_key: key }, idempotencyKey: key },
+          ),
+        );
+        await acceptWorkspace(result.data.workspace);
+        channel?.postMessage(workspaceHint(result.data.workspace.id));
+        return result.data;
+      } catch (error) {
+        if (leaseConflict(error)?.reason === 'lease_stale') {
+          release(workspace.id);
+          void refresh();
+        }
+        abandonIfNeeded(error);
+        throw error;
+      }
+    },
+    // Takes the service charge off this order, or puts it back.
+    async setServiceCharge(workspace: PosWorkspace, waived: boolean) {
+      const body = {
+        expected_revision: workspace.revision,
+        lease_generation: workspace.lease_generation,
+        editor_id: editorId,
+        waived,
+      };
+      return (
+        await sendIntent(workspace.id, body, `/pos/workspaces/${workspace.id}/service_charge`)
+      ).workspace;
+    },
+    // The table asks for the bill; no lease and no money.
+    async requestPayment(workspace: PosWorkspace) {
+      return (await sendIntent(workspace.id, {}, `/pos/workspaces/${workspace.id}/payment_request`))
+        .workspace;
+    },
+    async resolvePaymentRequest(workspace: PosWorkspace, status: 'done' | 'canceled') {
+      return (
+        await sendIntent(
+          workspace.id,
+          { status },
+          `/pos/workspaces/${workspace.id}/payment_request/resolve`,
+        )
+      ).workspace;
     },
     async clearDelivery(workspace: PosWorkspace) {
       const body = {

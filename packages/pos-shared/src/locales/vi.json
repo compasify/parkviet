@@ -71,6 +71,16 @@
   "capabilityEinvoiceManage": "Quản lý hóa đơn điện tử",
   "capabilityKitchenOperate": "Làm bếp (màn bếp)",
   "capabilityKitchenManage": "Cài đặt bếp & bar",
+  "capabilityTableServe": "Phục vụ bàn",
+  "capabilityResourceManage": "Sơ đồ bàn, khu vực",
+  "tableState_available": "Trống",
+  "tableState_occupied": "Có khách",
+  "tableState_ordered": "Đã gọi món",
+  "tableState_waiting_long": "Chờ món lâu",
+  "tableState_payment_requested": "Gọi thanh toán",
+  "tableState_prebilled": "Đã in tạm tính",
+  "tableState_cleaning": "Đang dọn",
+  "tableState_out_of_service": "Ngưng phục vụ",
   "receiptCopyBanner": "BẢN SAO – lần {{number}}",
   "capabilityShift": "Mở ca",
   "capabilityRecover": "Khôi phục",
@@ -231,6 +241,30 @@
       "description": "Nhập tay đơn GrabFood, ShopeeFood, gửi bếp, theo dõi và đối soát tiền nền tảng trả.",
       "off": "Chi nhánh chưa bật chức năng Đơn Grab, Shopee, nên không nhập được đơn nền tảng.",
       "disabled": "Chi nhánh chưa bật chức năng Đơn Grab, Shopee; máy chủ không nhận đơn nền tảng. Việc bán hàng không bị ảnh hưởng."
+    },
+    "resources": {
+      "label": "Sơ đồ bàn, phòng",
+      "description": "Khu vực và bàn (phòng, bàn bida) của chi nhánh, vẽ trên sơ đồ để thu ngân thấy bàn nào trống.",
+      "off": "Chi nhánh chưa bật chức năng Sơ đồ bàn, phòng, nên không thêm hay sửa được khu vực và bàn.",
+      "disabled": "Chi nhánh chưa bật chức năng Sơ đồ bàn, phòng; máy chủ không ghi nhận thay đổi sơ đồ. Việc bán hàng không bị ảnh hưởng."
+    },
+    "fnb_tables": {
+      "label": "Gọi món tại bàn",
+      "description": "Mở bàn cho khách, gọi món theo bàn, chuyển, gộp, tách bàn.",
+      "off": "Chi nhánh chưa bật chức năng Gọi món tại bàn, nên không mở được bàn mới.",
+      "disabled": "Chi nhánh chưa bật chức năng Gọi món tại bàn; máy chủ không mở bàn mới. Đơn đang mở vẫn thanh toán được."
+    },
+    "fnb_postpay": {
+      "label": "Ăn trước trả sau",
+      "description": "In phiếu tạm tính cho bàn, khách gọi thanh toán, in lại cần quản lý duyệt.",
+      "off": "Chi nhánh chưa bật chức năng Ăn trước trả sau, nên không in phiếu tạm tính hay gọi thanh toán.",
+      "disabled": "Chi nhánh chưa bật chức năng Ăn trước trả sau; máy chủ không ghi nhận phiếu tạm tính. Việc thanh toán không bị ảnh hưởng."
+    },
+    "fnb_service_charge": {
+      "label": "Phí phục vụ",
+      "description": "Cộng phí phục vụ theo % tiền món sau giảm giá, tính thuế theo loại thuế chi nhánh chọn.",
+      "off": "Chi nhánh chưa bật chức năng Phí phục vụ, nên đơn không cộng phí phục vụ.",
+      "disabled": "Chi nhánh chưa bật chức năng Phí phục vụ; máy chủ không đổi phí phục vụ. Việc bán hàng không bị ảnh hưởng."
     }
   },
   "profiles": {

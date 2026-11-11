@@ -23,8 +23,9 @@
 #                         branch keeps the column default (returns off,
 #                         lot_selection fefo) and a profile change proposes nothing.
 #   display               catalog_view: cards | list
-#                         surface: catalog | menu_grid, the selling screen
-#                         (menu_grid needs fnb.menu)
+#                         surface: catalog | menu_grid | table_grid | floor_plan,
+#                         the selling screen (menu_grid needs fnb.menu; table_grid
+#                         and floor_plan need fnb.tables)
 #   recommended_features  Spree::Pos::FeatureFlag::FEATURES
 #   sample_units          default unit codes or codes in config/pos/sample_units.yml
 #   kitchen_stations      station kinds (prep | bar) the F&B setup step proposes;

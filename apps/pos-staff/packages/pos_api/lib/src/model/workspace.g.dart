@@ -104,6 +104,18 @@ class _$Workspace extends Workspace {
   @override
   final String? guestName;
   @override
+  final ResourceRef? resource;
+  @override
+  final int? guestCount;
+  @override
+  final String? tableLabel;
+  @override
+  final WorkspaceServiceCharge? serviceCharge;
+  @override
+  final WorkspacePrebill? prebill;
+  @override
+  final PaymentRequest? paymentRequest;
+  @override
   final BuiltList<WorkspaceLine>? lineItems;
   @override
   final WorkspaceTotals totals;
@@ -119,6 +131,12 @@ class _$Workspace extends Workspace {
       required this.businessDate,
       this.orderNumber,
       this.guestName,
+      this.resource,
+      this.guestCount,
+      this.tableLabel,
+      this.serviceCharge,
+      this.prebill,
+      this.paymentRequest,
       this.lineItems,
       required this.totals})
       : super._();
@@ -140,6 +158,12 @@ class _$Workspace extends Workspace {
         businessDate == other.businessDate &&
         orderNumber == other.orderNumber &&
         guestName == other.guestName &&
+        resource == other.resource &&
+        guestCount == other.guestCount &&
+        tableLabel == other.tableLabel &&
+        serviceCharge == other.serviceCharge &&
+        prebill == other.prebill &&
+        paymentRequest == other.paymentRequest &&
         lineItems == other.lineItems &&
         totals == other.totals;
   }
@@ -154,6 +178,12 @@ class _$Workspace extends Workspace {
     _$hash = $jc(_$hash, businessDate.hashCode);
     _$hash = $jc(_$hash, orderNumber.hashCode);
     _$hash = $jc(_$hash, guestName.hashCode);
+    _$hash = $jc(_$hash, resource.hashCode);
+    _$hash = $jc(_$hash, guestCount.hashCode);
+    _$hash = $jc(_$hash, tableLabel.hashCode);
+    _$hash = $jc(_$hash, serviceCharge.hashCode);
+    _$hash = $jc(_$hash, prebill.hashCode);
+    _$hash = $jc(_$hash, paymentRequest.hashCode);
     _$hash = $jc(_$hash, lineItems.hashCode);
     _$hash = $jc(_$hash, totals.hashCode);
     _$hash = $jf(_$hash);
@@ -170,6 +200,12 @@ class _$Workspace extends Workspace {
           ..add('businessDate', businessDate)
           ..add('orderNumber', orderNumber)
           ..add('guestName', guestName)
+          ..add('resource', resource)
+          ..add('guestCount', guestCount)
+          ..add('tableLabel', tableLabel)
+          ..add('serviceCharge', serviceCharge)
+          ..add('prebill', prebill)
+          ..add('paymentRequest', paymentRequest)
           ..add('lineItems', lineItems)
           ..add('totals', totals))
         .toString();
@@ -209,6 +245,35 @@ class WorkspaceBuilder implements Builder<Workspace, WorkspaceBuilder> {
   String? get guestName => _$this._guestName;
   set guestName(String? guestName) => _$this._guestName = guestName;
 
+  ResourceRefBuilder? _resource;
+  ResourceRefBuilder get resource => _$this._resource ??= ResourceRefBuilder();
+  set resource(ResourceRefBuilder? resource) => _$this._resource = resource;
+
+  int? _guestCount;
+  int? get guestCount => _$this._guestCount;
+  set guestCount(int? guestCount) => _$this._guestCount = guestCount;
+
+  String? _tableLabel;
+  String? get tableLabel => _$this._tableLabel;
+  set tableLabel(String? tableLabel) => _$this._tableLabel = tableLabel;
+
+  WorkspaceServiceChargeBuilder? _serviceCharge;
+  WorkspaceServiceChargeBuilder get serviceCharge =>
+      _$this._serviceCharge ??= WorkspaceServiceChargeBuilder();
+  set serviceCharge(WorkspaceServiceChargeBuilder? serviceCharge) =>
+      _$this._serviceCharge = serviceCharge;
+
+  WorkspacePrebillBuilder? _prebill;
+  WorkspacePrebillBuilder get prebill =>
+      _$this._prebill ??= WorkspacePrebillBuilder();
+  set prebill(WorkspacePrebillBuilder? prebill) => _$this._prebill = prebill;
+
+  PaymentRequestBuilder? _paymentRequest;
+  PaymentRequestBuilder get paymentRequest =>
+      _$this._paymentRequest ??= PaymentRequestBuilder();
+  set paymentRequest(PaymentRequestBuilder? paymentRequest) =>
+      _$this._paymentRequest = paymentRequest;
+
   ListBuilder<WorkspaceLine>? _lineItems;
   ListBuilder<WorkspaceLine> get lineItems =>
       _$this._lineItems ??= ListBuilder<WorkspaceLine>();
@@ -234,6 +299,12 @@ class WorkspaceBuilder implements Builder<Workspace, WorkspaceBuilder> {
       _businessDate = $v.businessDate;
       _orderNumber = $v.orderNumber;
       _guestName = $v.guestName;
+      _resource = $v.resource?.toBuilder();
+      _guestCount = $v.guestCount;
+      _tableLabel = $v.tableLabel;
+      _serviceCharge = $v.serviceCharge?.toBuilder();
+      _prebill = $v.prebill?.toBuilder();
+      _paymentRequest = $v.paymentRequest?.toBuilder();
       _lineItems = $v.lineItems?.toBuilder();
       _totals = $v.totals.toBuilder();
       _$v = null;
@@ -270,12 +341,27 @@ class WorkspaceBuilder implements Builder<Workspace, WorkspaceBuilder> {
                 businessDate, r'Workspace', 'businessDate'),
             orderNumber: orderNumber,
             guestName: guestName,
+            resource: _resource?.build(),
+            guestCount: guestCount,
+            tableLabel: tableLabel,
+            serviceCharge: _serviceCharge?.build(),
+            prebill: _prebill?.build(),
+            paymentRequest: _paymentRequest?.build(),
             lineItems: _lineItems?.build(),
             totals: totals.build(),
           );
     } catch (_) {
       late String _$failedField;
       try {
+        _$failedField = 'resource';
+        _resource?.build();
+
+        _$failedField = 'serviceCharge';
+        _serviceCharge?.build();
+        _$failedField = 'prebill';
+        _prebill?.build();
+        _$failedField = 'paymentRequest';
+        _paymentRequest?.build();
         _$failedField = 'lineItems';
         _lineItems?.build();
         _$failedField = 'totals';

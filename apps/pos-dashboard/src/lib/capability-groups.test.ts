@@ -9,6 +9,7 @@ describe('capability groups', () => {
   })
   it('labels capabilities with the shared translation keys', () => {
     expect(capabilityLabel('pos.shift.open')).toBe('capabilityShift')
+    expect(capabilityLabel('pos.resource.manage')).toBe('capabilityResourceManage')
     expect(capabilityLabel('pos.unknown')).toBe('adminUnknownPermission')
   })
   it('flags sensitive grants and removals only', () => {
@@ -17,5 +18,7 @@ describe('capability groups', () => {
     )
     expect(changesSensitive(['pos.shift.open'], ['pos.shift.open', 'pos.cash.move'])).toBe(true)
     expect(changesSensitive(['pos.cash.move'], [])).toBe(true)
+    expect(changesSensitive([], ['pos.resource.manage'])).toBe(true)
+    expect(changesSensitive([], ['pos.table.serve'])).toBe(false)
   })
 })

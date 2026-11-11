@@ -2526,6 +2526,548 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/areas:
+    get:
+      operationId: posAreas
+      description: >
+        The areas (floors, rooms) of a branch's floor plan, by position.
+        Archived ones only with `status=all`. Needs `resources` at the branch.
+      parameters:
+        - $ref: '#/components/parameters/ReportBranch'
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [all]
+      responses:
+        '200':
+          description: The areas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AreaList'
+    post:
+      operationId: posAreaCreate
+      description: Adds an area. Needs `pos.resource.manage` or store topology administration.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AreaInput'
+      responses:
+        '201':
+          description: The area
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AreaResult'
+        '409':
+          description: Refused; `error.details.reason` is `module_disabled` or `area_archived`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/areas/{id}:
+    patch:
+      operationId: posAreaUpdate
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AreaInput'
+      responses:
+        '200':
+          description: The area
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AreaResult'
+        '409':
+          description: Refused; `error.details.reason` is `module_disabled` or `area_archived`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/areas/{id}/archive:
+    post:
+      operationId: posAreaArchive
+      description: Archives an area whose tables are all archived.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: The area
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AreaResult'
+        '409':
+          description: Refused; `error.details.reason` is `area_in_use` or `module_disabled`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/resources:
+    get:
+      operationId: posResources
+      description: >
+        The tables (rooms, billiard tables) of a branch's floor plan, by
+        position. Archived ones only with `status=all`. Needs `resources`.
+      parameters:
+        - $ref: '#/components/parameters/ReportBranch'
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [all]
+      responses:
+        '200':
+          description: The tables
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceList'
+    post:
+      operationId: posResourceCreate
+      description: >
+        Adds a table to an area. It must fit inside the area's grid. Needs
+        `pos.resource.manage` or store topology administration.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResourceInput'
+      responses:
+        '201':
+          description: The table
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceResult'
+        '409':
+          description: >
+            Refused; `error.details.reason` is `resource_outside_area`,
+            `area_archived`, `table_archived` or `module_disabled`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/resources/{id}:
+    patch:
+      operationId: posResourceUpdate
+      description: Moves, resizes or renames a table; only the fields sent change.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResourceInput'
+      responses:
+        '200':
+          description: The table
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceResult'
+        '409':
+          description: >
+            Refused; `error.details.reason` is `resource_outside_area`,
+            `area_archived`, `table_archived` or `module_disabled`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/resources/{id}/archive:
+    post:
+      operationId: posResourceArchive
+      description: Archives a table without an open order; its name can be used again.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: The table
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceResult'
+        '409':
+          description: Refused; `error.details.reason` is `table_in_use` or `module_disabled`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/resources/{id}/manual_status:
+    post:
+      operationId: posResourceManualStatus
+      description: >
+        Marks a table being cleaned, out of service or available again.
+        People serving tables and cashiers may do it; out of service only
+        without an open order.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResourceManualStatusInput'
+      responses:
+        '200':
+          description: The table
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceResult'
+        '409':
+          description: >
+            Refused; `error.details.reason` is `manual_status_invalid`,
+            `table_archived`, `table_in_use` or `module_disabled`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/resource_board:
+    get:
+      operationId: posResourceBoard
+      description: >
+        The live floor of a branch: every active area and table with the
+        table's state computed from its open orders. A fixed number of
+        queries whatever the number of tables. Refetch on `resource.updated`,
+        `workspace.updated` and `payment.requested`.
+      parameters:
+        - $ref: '#/components/parameters/ReportBranch'
+      responses:
+        '200':
+          description: The floor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceBoardResult'
+  /api/v3/admin/pos/table_settings:
+    get:
+      operationId: posTableSettings
+      parameters:
+        - $ref: '#/components/parameters/ReportBranch'
+      responses:
+        '200':
+          description: The branch's table service settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableSettingsResult'
+    put:
+      operationId: posTableSettingsUpdate
+      description: >
+        The register table orders are booked on and the service charge.
+        Only the fields sent change; `null` clears a field. Needs
+        `pos.branch.manage` or store topology administration.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TableSettingsInput'
+      responses:
+        '200':
+          description: The settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableSettingsResult'
+  /api/v3/admin/pos/tables/{resource_id}/open:
+    post:
+      operationId: posTableOpen
+      description: >
+        Seats guests: a dine-in draft at the table, booked on the open shift
+        of the branch's table register, its lease held by the caller. A
+        table has one open order unless `add_order` opens another one beside
+        it (lettered A, B…). Needs `fnb.tables` and `pos.table.serve` or
+        `pos.shift.open`.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - name: resource_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TableOpenInput'
+      responses:
+        '201':
+          description: The new order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceResult'
+        '409':
+          description: >
+            Refused; `error.details.reason` is `table_occupied` (with
+            `workspace_ids`), `table_unavailable`, `table_archived`,
+            `table_register_missing`, `no_open_shift`, `guest_count_invalid`,
+            `table_full` or `module_disabled`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/workspaces/{workspace_id}/move:
+    post:
+      operationId: posTableMove
+      description: Moves a table order to another table with its lines, kitchen tickets and shift.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/WorkspaceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TableMoveInput'
+      responses:
+        '200':
+          description: The order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceResult'
+        '409':
+          description: >
+            Refused; `error.details.reason` is `same_table`,
+            `table_unavailable`, `not_table_order`, `snapshot_locked`,
+            `lease_stale` or `module_disabled`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/workspaces/{workspace_id}/merge:
+    post:
+      operationId: posTableMerge
+      description: >
+        Moves every line of this table order into another one and cancels
+        this one; guest counts add up. Refused while either order is locked
+        by a payment or holds a discount.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/WorkspaceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TableMergeInput'
+      responses:
+        '200':
+          description: The order the lines joined
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceResult'
+        '409':
+          description: >
+            Refused; `error.details.reason` is `snapshot_locked`,
+            `discount_present`, `traced_line`, `same_order`,
+            `not_table_order`, `workspace_closed`, `lease_stale` or
+            `module_disabled`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/workspaces/{workspace_id}/split:
+    post:
+      operationId: posTableSplit
+      description: >
+        Moves the chosen lines, whole, to a new order at the same or another
+        table, on the same shift. At least one line stays.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/WorkspaceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TableSplitInput'
+      responses:
+        '200':
+          description: Both orders
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableSplitResult'
+        '409':
+          description: >
+            Refused; `error.details.reason` is `split_lines_invalid`,
+            `split_all_lines`, `discount_present`, `traced_line`,
+            `table_unavailable`, `snapshot_locked`, `lease_stale` or
+            `module_disabled`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/workspaces/{workspace_id}/prebill:
+    post:
+      operationId: posPrebill
+      description: >
+        Records a pre-bill of an open order and answers its print document;
+        with `printer_id` it also queues it there. Takes no money and locks
+        nothing. The first pre-bill is free; another one needs an approval
+        for `workspace.reprint_prebill` bound to the order's revision. Needs
+        `fnb.postpay`.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/WorkspaceId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrebillInput'
+      responses:
+        '201':
+          description: The pre-bill
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrebillResult'
+        '409':
+          description: >
+            Refused; `error.details.reason` is `approval_required` (with
+            `action`), `workspace_closed` or `module_disabled`, or an
+            approval or printer reason
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/workspaces/{workspace_id}/prebill/cancel:
+    post:
+      operationId: posPrebillCancel
+      description: Takes the pre-bill back; needs an approval for `workspace.cancel_prebill`.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/WorkspaceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrebillInput'
+      responses:
+        '200':
+          description: The canceled pre-bill
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrebillResult'
+        '409':
+          description: Refused; `error.details.reason` is `approval_required`, `prebill_missing` or `module_disabled`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/workspaces/{workspace_id}/payment_request:
+    post:
+      operationId: posPaymentRequest
+      description: >
+        A table asks for the bill: tells the cashiers (`payment.requested`).
+        No lease, no money. Asking again while a request is open answers it.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/WorkspaceId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentRequestInput'
+      responses:
+        '201':
+          description: The order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceResult'
+        '409':
+          description: Refused; `error.details.reason` is `not_table_order`, `note_too_long`, `workspace_closed` or `module_disabled`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/workspaces/{workspace_id}/payment_request/resolve:
+    post:
+      operationId: posPaymentRequestResolve
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/WorkspaceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentRequestResolveInput'
+      responses:
+        '200':
+          description: The order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceResult'
+        '409':
+          description: Refused; `error.details.reason` is `payment_request_status_invalid`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/workspaces/{workspace_id}/service_charge:
+    post:
+      operationId: posServiceChargeWaive
+      description: >
+        Takes the service charge off one order (`waived: true`) or puts it
+        back. Needs `pos.discount.apply`; audited.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/WorkspaceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceChargeWaiveInput'
+      responses:
+        '200':
+          description: The order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceResult'
+        '409':
+          description: Refused; `error.details.reason` is `snapshot_locked`, `lease_stale` or `module_disabled`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 components:
   parameters:
     Id:
@@ -2708,6 +3250,31 @@ components:
           type: [string, 'null']
           maxLength: 60
           description: The name the counter calls out with the call number.
+        resource:
+          description: The table of a table order (`fnb.tables`).
+          oneOf:
+            - $ref: '#/components/schemas/ResourceRef'
+            - type: 'null'
+        guest_count:
+          type: [integer, 'null']
+        table_label:
+          type: [string, 'null']
+          description: A, B… when a table has several open orders.
+        service_charge:
+          description: Present when the branch has a service charge rate.
+          oneOf:
+            - $ref: '#/components/schemas/WorkspaceServiceCharge'
+            - type: 'null'
+        prebill:
+          description: The latest pre-bill of a table order.
+          oneOf:
+            - $ref: '#/components/schemas/WorkspacePrebill'
+            - type: 'null'
+        payment_request:
+          description: The table's open request for the bill.
+          oneOf:
+            - $ref: '#/components/schemas/PaymentRequest'
+            - type: 'null'
         line_items:
           type: array
           items:
@@ -5088,3 +5655,546 @@ components:
               format: date-time
             count:
               type: integer
+    WorkspaceResult:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/Workspace'
+    ResourceRef:
+      type: object
+      additionalProperties: false
+      required: [id, name, kind, area_id]
+      description: The table an order sits at.
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        kind:
+          type: string
+          enum: [table, room, billiard, vip]
+        area_id:
+          type: [string, 'null']
+    WorkspaceServiceCharge:
+      type: object
+      additionalProperties: false
+      required: [rate, amount, waived, applies]
+      description: The branch's service charge on this order; `amount` is 0 when waived or not charged.
+      properties:
+        rate:
+          type: [string, 'null']
+        amount:
+          type: string
+        waived:
+          type: boolean
+        applies:
+          type: boolean
+          description: The order's service mode is one the branch charges.
+    WorkspacePrebill:
+      type: object
+      additionalProperties: false
+      required: [id, sequence, revision, status, total, currency, staff_id, approval_id, printed_at]
+      properties:
+        id:
+          type: string
+        sequence:
+          type: integer
+          description: 1 for the first pre-bill, 2 and up for reprints.
+        revision:
+          type: integer
+        status:
+          type: string
+          enum: [current, superseded, canceled]
+        total:
+          type: string
+        currency:
+          type: string
+        staff_id:
+          type: string
+        approval_id:
+          type: [string, 'null']
+        printed_at:
+          type: string
+          format: date-time
+        stale:
+          type: boolean
+          description: The order changed after this pre-bill; on the order's latest pre-bill only.
+    PaymentRequest:
+      type: object
+      additionalProperties: false
+      required: [id, status, note, requested_by_id, requested_at, resolved_at]
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          enum: [open, done, canceled]
+        note:
+          type: [string, 'null']
+          maxLength: 200
+        requested_by_id:
+          type: string
+        requested_at:
+          type: string
+          format: date-time
+        resolved_at:
+          type: [string, 'null']
+          format: date-time
+    PaymentRequestInput:
+      type: object
+      properties:
+        note:
+          type: string
+          maxLength: 200
+    PaymentRequestResolveInput:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [done, canceled]
+    Area:
+      type: object
+      additionalProperties: false
+      required: [id, branch_id, name, position, status, floor_width, floor_height]
+      properties:
+        id:
+          type: string
+        branch_id:
+          type: string
+        name:
+          type: string
+          maxLength: 80
+        position:
+          type: integer
+        status:
+          type: string
+          enum: [active, archived]
+        floor_width:
+          type: integer
+          description: Grid columns of the floor plan.
+        floor_height:
+          type: integer
+          description: Grid rows of the floor plan.
+    AreaInput:
+      type: object
+      properties:
+        branch_id:
+          type: string
+          description: Required when creating.
+        name:
+          type: string
+          maxLength: 80
+        position:
+          type: integer
+        floor_width:
+          type: integer
+          minimum: 4
+          maximum: 200
+        floor_height:
+          type: integer
+          minimum: 4
+          maximum: 200
+    AreaResult:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/Area'
+    AreaList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Area'
+    Resource:
+      type: object
+      additionalProperties: false
+      required: [id, branch_id, area_id, kind, name, capacity, shape, x, y, w, h, rotation, manual_status, resource_type_code, status, position]
+      properties:
+        id:
+          type: string
+        branch_id:
+          type: string
+        area_id:
+          type: string
+        kind:
+          type: string
+          enum: [table, room, billiard, vip]
+        name:
+          type: string
+          maxLength: 40
+        capacity:
+          type: integer
+        shape:
+          type: string
+          enum: [rect, round]
+        x:
+          type: integer
+        y:
+          type: integer
+        w:
+          type: integer
+        h:
+          type: integer
+        rotation:
+          type: integer
+        manual_status:
+          type: string
+          enum: [available, cleaning, out_of_service]
+        resource_type_code:
+          type: [string, 'null']
+        status:
+          type: string
+          enum: [active, archived]
+        position:
+          type: integer
+    ResourceInput:
+      type: object
+      properties:
+        branch_id:
+          type: string
+          description: Required when creating.
+        area_id:
+          type: string
+          description: Required when creating.
+        name:
+          type: string
+          maxLength: 40
+        kind:
+          type: string
+          enum: [table, room, billiard, vip]
+        capacity:
+          type: integer
+          minimum: 0
+          maximum: 999
+        shape:
+          type: string
+          enum: [rect, round]
+        x:
+          type: integer
+          minimum: 0
+        y:
+          type: integer
+          minimum: 0
+        w:
+          type: integer
+          minimum: 1
+          maximum: 50
+        h:
+          type: integer
+          minimum: 1
+          maximum: 50
+        rotation:
+          type: integer
+          minimum: 0
+          maximum: 359
+        position:
+          type: integer
+        resource_type_code:
+          type: string
+          maxLength: 40
+    ResourceManualStatusInput:
+      type: object
+      required: [manual_status]
+      properties:
+        manual_status:
+          type: string
+          enum: [available, cleaning, out_of_service]
+    ResourceResult:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/Resource'
+    ResourceList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Resource'
+    ResourceBoardArea:
+      type: object
+      additionalProperties: false
+      required: [id, name, position, floor_width, floor_height]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        position:
+          type: integer
+        floor_width:
+          type: integer
+        floor_height:
+          type: integer
+    ResourceBoardOrder:
+      type: object
+      additionalProperties: false
+      required: [id, table_label, guest_count, total, revision, operational_status, payment_requested, prebilled, edited_after_prebill, pending_kitchen_items]
+      properties:
+        id:
+          type: string
+        table_label:
+          type: [string, 'null']
+        guest_count:
+          type: [integer, 'null']
+        total:
+          type: string
+        revision:
+          type: integer
+        operational_status:
+          type: string
+          enum: [editing, parked]
+        payment_requested:
+          type: boolean
+        prebilled:
+          type: boolean
+          description: Its current pre-bill matches the order.
+        edited_after_prebill:
+          type: boolean
+        pending_kitchen_items:
+          type: integer
+    ResourceBoardTile:
+      type: object
+      additionalProperties: false
+      required: [id, area_id, name, kind, capacity, shape, x, y, w, h, rotation, manual_status, state, guest_count, seated_minutes, subtotal, currency, payment_requested, edited_after_prebill, orders]
+      properties:
+        id:
+          type: string
+        area_id:
+          type: [string, 'null']
+        name:
+          type: string
+        kind:
+          type: string
+          enum: [table, room, billiard, vip]
+        capacity:
+          type: integer
+        shape:
+          type: string
+          enum: [rect, round]
+        x:
+          type: integer
+        y:
+          type: integer
+        w:
+          type: integer
+        h:
+          type: integer
+        rotation:
+          type: integer
+        manual_status:
+          type: string
+          enum: [available, cleaning, out_of_service]
+        state:
+          type: string
+          enum: [available, occupied, ordered, waiting_long, payment_requested, prebilled, cleaning, out_of_service]
+          description: >
+            Strongest first: out_of_service, cleaning (no open order),
+            payment_requested, prebilled, waiting_long (a kitchen item waited
+            past its station's threshold), ordered, occupied, available.
+        guest_count:
+          type: [integer, 'null']
+        seated_minutes:
+          type: [integer, 'null']
+          description: Minutes since the oldest open order was opened, on the server clock.
+        subtotal:
+          type: [string, 'null']
+        currency:
+          type: [string, 'null']
+        payment_requested:
+          type: boolean
+        edited_after_prebill:
+          type: boolean
+        orders:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResourceBoardOrder'
+    ResourceBoard:
+      type: object
+      additionalProperties: false
+      required: [branch_id, server_now, areas, resources]
+      properties:
+        branch_id:
+          type: string
+        server_now:
+          type: string
+          format: date-time
+        areas:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResourceBoardArea'
+        resources:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResourceBoardTile'
+    ResourceBoardResult:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/ResourceBoard'
+    TableSettings:
+      type: object
+      additionalProperties: false
+      required: [branch_id, table_register_id, service_charge_rate, service_charge_applies_to, service_charge_tax_category_id]
+      properties:
+        branch_id:
+          type: string
+        table_register_id:
+          type: [string, 'null']
+          description: The register whose open shift table orders are booked on.
+        service_charge_rate:
+          type: [string, 'null']
+          description: Percent of the items after discounts; none when null.
+        service_charge_applies_to:
+          type: array
+          items:
+            type: string
+            enum: [counter, dine_in, takeaway, delivery, tab, timed]
+        service_charge_tax_category_id:
+          type: [string, 'null']
+    TableSettingsInput:
+      type: object
+      required: [branch_id]
+      properties:
+        branch_id:
+          type: string
+        table_register_id:
+          type: [string, 'null']
+        service_charge_rate:
+          type: [string, 'null']
+        service_charge_applies_to:
+          type: array
+          items:
+            type: string
+            enum: [counter, dine_in, takeaway, delivery, tab, timed]
+        service_charge_tax_category_id:
+          type: [string, 'null']
+    TableSettingsResult:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/TableSettings'
+    TableOpenInput:
+      type: object
+      required: [branch_id, editor_id]
+      properties:
+        branch_id:
+          type: string
+        editor_id:
+          type: string
+        guest_count:
+          type: integer
+          minimum: 0
+          maximum: 999
+        add_order:
+          type: boolean
+          description: Open another order beside the table's open one.
+    TableMoveInput:
+      type: object
+      required: [expected_revision, lease_generation, editor_id, resource_id]
+      properties:
+        expected_revision:
+          type: integer
+        lease_generation:
+          type: integer
+        editor_id:
+          type: string
+        resource_id:
+          type: string
+    TableMergeInput:
+      type: object
+      required: [expected_revision, lease_generation, editor_id, target_workspace_id]
+      properties:
+        expected_revision:
+          type: integer
+        lease_generation:
+          type: integer
+        editor_id:
+          type: string
+        target_workspace_id:
+          type: string
+    TableSplitInput:
+      type: object
+      required: [expected_revision, lease_generation, editor_id, sale_line_ids]
+      properties:
+        expected_revision:
+          type: integer
+        lease_generation:
+          type: integer
+        editor_id:
+          type: string
+        sale_line_ids:
+          type: array
+          items:
+            type: string
+        resource_id:
+          type: string
+          description: The table of the new order; this order's table by default.
+        guest_count:
+          type: integer
+          minimum: 0
+          maximum: 999
+    TableSplitOrders:
+      type: object
+      required: [workspace, new_workspace]
+      properties:
+        workspace:
+          $ref: '#/components/schemas/Workspace'
+        new_workspace:
+          $ref: '#/components/schemas/Workspace'
+    TableSplitResult:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/TableSplitOrders'
+    PrebillInput:
+      type: object
+      properties:
+        approval_id:
+          type: string
+          description: Needed for a reprint and for a cancel.
+        printer_id:
+          type: string
+        receipt_template_id:
+          type: string
+        unmask:
+          type: string
+          enum: ['true', 'false']
+    PrebillOutcome:
+      type: object
+      required: [prebill]
+      properties:
+        prebill:
+          $ref: '#/components/schemas/WorkspacePrebill'
+        document:
+          $ref: '#/components/schemas/PrintDocument'
+        print_job:
+          $ref: '#/components/schemas/PrintJob'
+    PrebillResult:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/PrebillOutcome'
+    ServiceChargeWaiveInput:
+      type: object
+      required: [expected_revision, lease_generation, editor_id, waived]
+      properties:
+        expected_revision:
+          type: integer
+        lease_generation:
+          type: integer
+        editor_id:
+          type: string
+        waived:
+          type: boolean

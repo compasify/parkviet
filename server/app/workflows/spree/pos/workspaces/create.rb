@@ -38,32 +38,40 @@ module Spree
             shift, = selection_shift.call
             raise CanCan::AccessDenied if shift.nil?
 
-            draft = ::Pos::CreateWalkInDraft.call(store: store, staff: staff)
-            unless draft.respond_to?(:success?) && draft.success?
-              record = draft.respond_to?(:value) ? draft.value : nil
-              raise ActiveRecord::RecordInvalid, record if record.respond_to?(:errors)
-
-              raise ActiveRecord::RecordNotSaved, 'Walk-in draft was not created.'
-            end
-
-            workspace = Workspace.create!(
-              store: store,
-              branch: shift.branch,
-              register: shift.register,
-              shift: shift,
-              order: draft.value,
-              revision: 0,
-              lease_generation: 1,
-              lease_holder: staff,
-              lease_editor_digest: editor_digest,
-              lease_expires_at: Workspace.database_now + Workspace::LEASE_TTL,
-              operational_status: 'editing',
-              service_mode: mode,
-              business_date: BusinessDay.for(shift.branch, Workspace.business_now)
-            )
+            workspace = draft!(store: store, staff: staff, shift: shift, editor_digest: editor_digest, service_mode: mode)
             AuditEntry.record!(store: store, actor: staff, action: 'workspace.create', subject: workspace)
             workspace.to_pos
           end
+        end
+
+        # A new draft on `shift`, its lease held by `staff`. Shared with the
+        # commands that open an order at a table (`attributes`: the table,
+        # guest count and label).
+        def self.draft!(store:, staff:, shift:, editor_digest:, service_mode:, **attributes)
+          draft = ::Pos::CreateWalkInDraft.call(store: store, staff: staff)
+          unless draft.respond_to?(:success?) && draft.success?
+            record = draft.respond_to?(:value) ? draft.value : nil
+            raise ActiveRecord::RecordInvalid, record if record.respond_to?(:errors)
+
+            raise ActiveRecord::RecordNotSaved, 'Walk-in draft was not created.'
+          end
+
+          Workspace.create!(
+            store: store,
+            branch: shift.branch,
+            register: shift.register,
+            shift: shift,
+            order: draft.value,
+            revision: 0,
+            lease_generation: 1,
+            lease_holder: staff,
+            lease_editor_digest: editor_digest,
+            lease_expires_at: Workspace.database_now + Workspace::LEASE_TTL,
+            operational_status: 'editing',
+            service_mode: service_mode,
+            business_date: BusinessDay.for(shift.branch, Workspace.business_now),
+            **attributes
+          )
         end
 
         # A lost response is recovered from the receipt even after the shift

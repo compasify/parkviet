@@ -1,6 +1,6 @@
 import { formatMoney } from '@parkviet/pos-shared/money';
 import { contextFeature } from '@parkviet/pos-shared/pos-features';
-import { sellingSurfaceOf } from '@parkviet/pos-shared/pos-modules';
+import { isTableSurface, sellingSurfaceOf, tableSurfaceOf } from '@parkviet/pos-shared/pos-modules';
 import { rateLabel } from '@parkviet/pos-shared/receipt-template/data';
 import { describeTraceFailure } from '@parkviet/pos-shared/traceability';
 import { useNavigate, useSearch } from '@tanstack/react-router';
@@ -27,6 +27,14 @@ import {
   type ScanResult,
   shouldCaptureScannerKey,
 } from '../lib/scanner-queue';
+import {
+  canServeTables,
+  inSelection,
+  isTableOrder,
+  savedTableSurface,
+  tableOrderName,
+  tableOrderOf,
+} from '../lib/tables';
 import { workspaceHasContent, workspaceIsSettled, workspacePhase } from '../lib/workspace-content';
 import { createWorkspaceSerializer } from '../lib/workspace-serializer';
 import { readLayout } from '../lib/workspace-storage';
@@ -50,6 +58,8 @@ import { usePosSelection } from './pos-selection';
 import { PrebillDialog } from './prebill-dialog';
 import { useScannerCalibration } from './scanner-calibration';
 import { ServiceModeControl } from './service-mode-control';
+import { TableOrderBar } from './table-actions';
+import { TableFloor } from './table-floor';
 
 type ScanPlan = { workspace?: PosWorkspace } & (
   | { kind: 'variant'; variantId: string }
@@ -122,18 +132,18 @@ export function WorkspaceTabs() {
       setHidden(saved.closedWorkspaceIds ?? []);
     }
   }, [staffId, storeId, selection.branchId, selection.registerId]);
+  // A table order is booked on the branch's table register, which may not be
+  // the one selected here: picked on the floor, it joins the tabs while selected.
   const rows = (workspaces.query.data?.data ?? []).filter(
-    (workspace) =>
-      !hidden.includes(workspace.id) &&
-      workspace.branch_id === selection.branchId &&
-      workspace.register_id === selection.registerId,
+    (workspace) => !hidden.includes(workspace.id) && inSelection(workspace, selection),
   );
   const pinned = workspaces.selectedQuery.isError ? undefined : workspaces.selectedQuery.data?.data;
   if (
     pinned &&
     pinned.id === activeId &&
-    pinned.branch_id === selection.branchId &&
-    pinned.register_id === selection.registerId &&
+    inSelection(pinned, selection) &&
+    // Without a shift only a table order opens (someone serving tables).
+    (data?.shift || isTableOrder(pinned)) &&
     !hidden.includes(pinned.id) &&
     !rows.some((row) => row.id === pinned.id)
   )
@@ -184,6 +194,11 @@ export function WorkspaceTabs() {
   const cupLabels = data?.modules?.['fnb.cup_label'] === true;
   // Delivery platform orders typed in at the counter; they keep to their own tray.
   const platformOrders = data?.modules?.['fnb.delivery_platforms'] === true;
+  // Table service: the floor (tiles or plan, chosen per device) beside selling.
+  const [savedSurface, setSavedSurface] = useState(() => savedTableSurface());
+  const tableSurface = tableSurfaceOf(data, savedSurface);
+  const postpay = data?.modules?.['fnb.postpay'] === true;
+  const activeTable = tableOrderOf(active);
   const tablist = useRef<HTMLDivElement>(null);
   const discountDetailsRef = useRef<HTMLDetailsElement>(null);
   const noteDetailsRef = useRef<HTMLDetailsElement>(null);
@@ -219,6 +234,13 @@ export function WorkspaceTabs() {
   // shared link) wins over the remembered tab until the list has loaded.
   const search = useSearch({ from: '/authed/' });
   const navigate = useNavigate();
+  // The floor is the first screen where the profile starts on a table
+  // surface; an order asked for by the URL opens for selling instead.
+  const [floorChoice, setFloorChoice] = useState<boolean | null>(null);
+  const [orderAtStart] = useState(() => search.order ?? null);
+  const showFloor =
+    tableSurface !== null &&
+    (floorChoice ?? (isTableSurface(data?.profile?.display.surface) && !orderAtStart));
   // Order the URL asks for and that is not selected yet.
   const requestedOrder = useRef<string | null>(search.order ?? null);
   // The URL as of the last render, and the order this component last wrote
@@ -453,6 +475,21 @@ export function WorkspaceTabs() {
     if (canCreate && !rowsRef.current.some((row) => !next.includes(row.id))) createDraft();
   }
 
+  // An order picked on the floor (or just seated) opens for selling, even one
+  // whose tab was closed here before.
+  function selectOrder(workspaceId: string) {
+    if (hiddenRef.current.includes(workspaceId)) {
+      const next = hiddenRef.current.filter((id) => id !== workspaceId);
+      hiddenRef.current = next;
+      setHidden(next);
+      workspaces.rememberClosed(next);
+    }
+    activeIdRef.current = workspaceId;
+    setActiveId(workspaceId);
+    workspaces.rememberView(workspaceId, workspaces.page);
+    setFloorChoice(false);
+  }
+
   const canCreate = Boolean(
     !channelUnavailable &&
       !locked &&
@@ -631,7 +668,20 @@ export function WorkspaceTabs() {
   return (
     <section className="draft-workspace" aria-label={t('draftList')}>
       <div className="draft-toolbar">
-        <button type="button" disabled={busy || !canCreate} onClick={createDraft}>
+        {tableSurface ? (
+          <button type="button" className="floor-toggle" onClick={() => setFloorChoice(!showFloor)}>
+            <PosIcon name={showFloor ? 'back' : 'grid'} />{' '}
+            {showFloor ? t('tableBackToSale') : t('tableFloorOpen')}
+          </button>
+        ) : null}
+        <button
+          type="button"
+          disabled={busy || !canCreate}
+          onClick={() => {
+            createDraft();
+            if (showFloor) setFloorChoice(false);
+          }}
+        >
           <PosIcon name="plus" /> {t('newDraft')}
         </button>
         <details className="draft-filter">
@@ -658,6 +708,7 @@ export function WorkspaceTabs() {
         <div className="tablist" ref={tablist} role="tablist" aria-label={t('draftList')}>
           {visible.map((workspace) => {
             const phase = workspacePhase(workspace.id === active?.id ? active : workspace);
+            const seat = tableOrderOf(workspace);
             return (
               <span key={workspace.id} className="workspace-tab" role="presentation">
                 <button
@@ -671,9 +722,16 @@ export function WorkspaceTabs() {
                   onClick={() => {
                     setActiveId(workspace.id);
                     workspaces.rememberView(workspace.id, workspaces.page);
+                    if (showFloor) setFloorChoice(false);
                   }}
                 >
                   <strong>{t('invoiceTab', { number: tabNumbers[workspace.id] })}</strong>
+                  {/* The table a table order is served at. */}
+                  {seat.table ? (
+                    <span className="workspace-table-name">
+                      {tableOrderName(seat.table.name, seat.label)}
+                    </span>
+                  ) : null}
                   {/* The call number the counter calls out, once the order has one. */}
                   {workspace.order_number != null ? (
                     <span className="workspace-call-number" data-testid="tab-call-number">
@@ -864,523 +922,622 @@ export function WorkspaceTabs() {
           canCollect={Boolean(data?.capabilities.includes('pos.payment.collect'))}
         />
       ) : null}
-      <nav className="sale-panel-nav" aria-label={t('sellingArea')}>
-        {[
-          ['pos-catalog', 'catalogTitle'],
-          ['pos-basket', 'basketTitle'],
-          ['pos-checkout', 'checkoutTitle'],
-        ].map(([id, label]) => (
-          <a
-            key={id}
-            href={`#${id}`}
-            onClick={(event) => {
-              event.preventDefault();
-              document.getElementById(id)?.scrollIntoView({ block: 'nearest', inline: 'start' });
-            }}
-          >
-            {t(label)}
-          </a>
-        ))}
-      </nav>
-      <div className="sale-layout">
-        <section
-          className="selling-panel catalog-panel"
-          id="pos-catalog"
-          aria-label={t('catalogTitle')}
-        >
-          {active && blockedScans[active.id] ? (
-            <div className="workspace-hint" role="alert">
-              <span>
-                {t('scanUnknown', {
-                  code: blockedScans[active.id],
-                  count: scanner.snapshot(active.id).pending.length,
-                })}
-              </span>
-              <button
-                type="button"
-                onClick={() => {
-                  setBlockedScans((current) => {
-                    const next = { ...current };
-                    delete next[active.id];
-                    return next;
-                  });
-                  scanner.retry(active.id);
+      {showFloor && tableSurface ? (
+        <TableFloor
+          key={`${storeId}:${selection.branchId}`}
+          branchId={selection.branchId}
+          surface={tableSurface}
+          onSurface={setSavedSurface}
+          canServe={canServeTables(data)}
+          locked={locked || !selectionComplete}
+          onOpenTable={async (table, input) => {
+            const created = await workspaces.openTable(table.id, input);
+            selectOrder(created.id);
+          }}
+          onSelectOrder={selectOrder}
+        />
+      ) : (
+        <>
+          <nav className="sale-panel-nav" aria-label={t('sellingArea')}>
+            {[
+              ['pos-catalog', 'catalogTitle'],
+              ['pos-basket', 'basketTitle'],
+              ['pos-checkout', 'checkoutTitle'],
+            ].map(([id, label]) => (
+              <a
+                key={id}
+                href={`#${id}`}
+                onClick={(event) => {
+                  event.preventDefault();
+                  document
+                    .getElementById(id)
+                    ?.scrollIntoView({ block: 'nearest', inline: 'start' });
                 }}
               >
-                {t('scanRetry')}
-              </button>
-            </div>
-          ) : null}
-          {menuSurface ? (
-            <MenuGrid
-              key={`${storeId}:${selection.branchId}`}
-              branchId={selection.branchId}
-              addDisabled={quickAddDisabled}
-              addDisabledReason={lockReason}
-              canSetSoldOut={Boolean(
-                data?.capabilities.includes('pos.menu.sold_out') ||
-                  data?.capabilities.includes('pos.menu.manage'),
-              )}
-              onAdd={
-                active
-                  ? (variantId, extra) =>
-                      command(active, (current) => workspaces.addItem(current, variantId, 1, extra))
-                  : undefined
-              }
-            />
-          ) : (
-            <CatalogSearch
-              key={`${storeId}:${selection.branchId}`}
-              storeId={storeId}
-              branchId={selection.branchId}
-              workspaceId={active?.id ?? null}
-              addDisabled={quickAddDisabled}
-              addDisabledReason={lockReason}
-              scanNotice={scanNotice}
-              onScan={
-                editable && !channelUnavailable ? (code) => enqueueScan.current(code) : undefined
-              }
-              scanTerminator={calibration.terminator}
-              onAdd={active ? (variantId) => quickAdd(active, variantId) : undefined}
-              onAddForm={
-                active
-                  ? (variantId, quantity, extra) =>
-                      command(active, (current) =>
-                        workspaces.addItem(current, variantId, quantity, extra),
-                      )
-                  : undefined
-              }
-            />
-          )}
-        </section>
-        <section
-          className="selling-panel basket-panel"
-          id="pos-basket"
-          aria-label={t('basketTitle')}
-        >
-          <div className="basket-heading">
-            <h2>{t('basketTitle')}</h2>
-            {active ? (
-              <span
-                className={`workspace-phase workspace-phase-${activePhase}`}
-                role="status"
-                title={t(`workspacePhaseHint_${activePhase}`)}
-              >
-                {t(`workspacePhase_${activePhase}`)}
-              </span>
-            ) : null}
-            {active ? (
-              <span>
-                {active.line_items?.length ?? 0} {t('basketLines')}
-              </span>
-            ) : null}
-            {active ? (
-              <div className="row basket-actions">
-                <button
-                  type="button"
-                  disabled={busy || locked || !isEditor || active.operational_status === 'canceled'}
-                  onClick={() =>
-                    void run(() =>
-                      command(active, (current) =>
-                        workspaces.change(
-                          current,
-                          current.operational_status === 'parked' ? 'reopen' : 'park',
-                        ),
-                      ),
-                    )
+                {t(label)}
+              </a>
+            ))}
+          </nav>
+          <div className="sale-layout">
+            <section
+              className="selling-panel catalog-panel"
+              id="pos-catalog"
+              aria-label={t('catalogTitle')}
+            >
+              {active && blockedScans[active.id] ? (
+                <div className="workspace-hint" role="alert">
+                  <span>
+                    {t('scanUnknown', {
+                      code: blockedScans[active.id],
+                      count: scanner.snapshot(active.id).pending.length,
+                    })}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBlockedScans((current) => {
+                        const next = { ...current };
+                        delete next[active.id];
+                        return next;
+                      });
+                      scanner.retry(active.id);
+                    }}
+                  >
+                    {t('scanRetry')}
+                  </button>
+                </div>
+              ) : null}
+              {menuSurface ? (
+                <MenuGrid
+                  key={`${storeId}:${selection.branchId}`}
+                  branchId={selection.branchId}
+                  addDisabled={quickAddDisabled}
+                  addDisabledReason={lockReason}
+                  canSetSoldOut={Boolean(
+                    data?.capabilities.includes('pos.menu.sold_out') ||
+                      data?.capabilities.includes('pos.menu.manage'),
+                  )}
+                  onAdd={
+                    active
+                      ? (variantId, extra) =>
+                          command(active, (current) =>
+                            workspaces.addItem(current, variantId, 1, extra),
+                          )
+                      : undefined
                   }
-                >
-                  {t(active.operational_status === 'parked' ? 'reopenDraft' : 'park')}
-                </button>
-                <details className="order-more">
-                  <summary>
-                    {t('orderMore')} <PosIcon name="chevron" />
-                  </summary>
-                  <div className="order-more-menu">
+                />
+              ) : (
+                <CatalogSearch
+                  key={`${storeId}:${selection.branchId}`}
+                  storeId={storeId}
+                  branchId={selection.branchId}
+                  workspaceId={active?.id ?? null}
+                  addDisabled={quickAddDisabled}
+                  addDisabledReason={lockReason}
+                  scanNotice={scanNotice}
+                  onScan={
+                    editable && !channelUnavailable
+                      ? (code) => enqueueScan.current(code)
+                      : undefined
+                  }
+                  scanTerminator={calibration.terminator}
+                  onAdd={active ? (variantId) => quickAdd(active, variantId) : undefined}
+                  onAddForm={
+                    active
+                      ? (variantId, quantity, extra) =>
+                          command(active, (current) =>
+                            workspaces.addItem(current, variantId, quantity, extra),
+                          )
+                      : undefined
+                  }
+                />
+              )}
+            </section>
+            <section
+              className="selling-panel basket-panel"
+              id="pos-basket"
+              aria-label={t('basketTitle')}
+            >
+              <div className="basket-heading">
+                <h2>{t('basketTitle')}</h2>
+                {active ? (
+                  <span
+                    className={`workspace-phase workspace-phase-${activePhase}`}
+                    role="status"
+                    title={t(`workspacePhaseHint_${activePhase}`)}
+                  >
+                    {t(`workspacePhase_${activePhase}`)}
+                  </span>
+                ) : null}
+                {active ? (
+                  <span>
+                    {active.line_items?.length ?? 0} {t('basketLines')}
+                  </span>
+                ) : null}
+                {active ? (
+                  <div className="row basket-actions">
                     <button
                       type="button"
                       disabled={
-                        busy ||
-                        locked ||
-                        !isEditor ||
-                        active.operational_status === 'canceled' ||
-                        active.payments
+                        busy || locked || !isEditor || active.operational_status === 'canceled'
                       }
-                      title={active.payments ? t('cancelDraftPayments') : undefined}
-                      onClick={() => {
-                        if (window.confirm(t('cancelDraftConfirm', { order: active.order_id })))
-                          void run(() =>
-                            command(active, (current) => workspaces.change(current, 'cancel')),
-                          );
-                      }}
+                      onClick={() =>
+                        void run(() =>
+                          command(active, (current) =>
+                            workspaces.change(
+                              current,
+                              current.operational_status === 'parked' ? 'reopen' : 'park',
+                            ),
+                          ),
+                        )
+                      }
                     >
-                      {t('cancelDraft')}
+                      {t(active.operational_status === 'parked' ? 'reopenDraft' : 'park')}
                     </button>
-                    <button type="button" onClick={() => hideWorkspace(active.id)}>
-                      {t('closeView')}
-                    </button>
-                    <button
-                      type="button"
-                      disabled={active.operational_status !== 'editing'}
-                      onClick={() => setPrebillOpen(true)}
-                    >
-                      {t('receiptPrebillOpen')}
-                    </button>
+                    <details className="order-more">
+                      <summary>
+                        {t('orderMore')} <PosIcon name="chevron" />
+                      </summary>
+                      <div className="order-more-menu">
+                        <button
+                          type="button"
+                          disabled={
+                            busy ||
+                            locked ||
+                            !isEditor ||
+                            active.operational_status === 'canceled' ||
+                            active.payments
+                          }
+                          title={active.payments ? t('cancelDraftPayments') : undefined}
+                          onClick={() => {
+                            if (window.confirm(t('cancelDraftConfirm', { order: active.order_id })))
+                              void run(() =>
+                                command(active, (current) => workspaces.change(current, 'cancel')),
+                              );
+                          }}
+                        >
+                          {t('cancelDraft')}
+                        </button>
+                        <button type="button" onClick={() => hideWorkspace(active.id)}>
+                          {t('closeView')}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={active.operational_status !== 'editing'}
+                          onClick={() => setPrebillOpen(true)}
+                        >
+                          {t('receiptPrebillOpen')}
+                        </button>
+                      </div>
+                    </details>
+                    {prebillOpen && active.operational_status === 'editing' ? (
+                      <PrebillDialog
+                        workspace={active}
+                        names={{
+                          storeName: data?.store.name,
+                          branchName: data?.branches.find((row) => row.id === active.branch_id)
+                            ?.name,
+                          registerName: data?.registers.find((row) => row.id === active.register_id)
+                            ?.name,
+                        }}
+                        timeZone={
+                          data?.branches.find((row) => row.id === active.branch_id)?.timezone ??
+                          data?.store.timezone ??
+                          'Asia/Ho_Chi_Minh'
+                        }
+                        record={postpay && activeTable.table !== null}
+                        staffId={staffId}
+                        canApprove={Boolean(data?.capabilities.includes('pos.approval.grant'))}
+                        onClose={() => setPrebillOpen(false)}
+                      />
+                    ) : null}
                   </div>
-                </details>
-                {prebillOpen && active.operational_status === 'editing' ? (
-                  <PrebillDialog
+                ) : null}
+              </div>
+              {active && activeTable.table ? (
+                <TableOrderBar
+                  key={active.id}
+                  workspace={active}
+                  branchId={selection.branchId}
+                  staffId={staffId}
+                  editDisabled={editDisabled}
+                  actionDisabled={locked || busy}
+                  canWaive={Boolean(data?.capabilities.includes('pos.discount.apply'))}
+                  canApprove={Boolean(data?.capabilities.includes('pos.approval.grant'))}
+                  postpay={postpay}
+                  onMove={(resourceId) =>
+                    command(active, (current) => workspaces.moveTable(current, resourceId))
+                  }
+                  onMerge={async (targetId) => {
+                    const target = await command(active, (current) =>
+                      workspaces.mergeTable(current, targetId),
+                    );
+                    selectOrder(target.id);
+                  }}
+                  onSplit={(input) =>
+                    command(
+                      active,
+                      async (current) => (await workspaces.splitTable(current, input)).workspace,
+                    )
+                  }
+                  onServiceCharge={(waived) =>
+                    command(active, (current) => workspaces.setServiceCharge(current, waived))
+                  }
+                  onRequestPayment={() =>
+                    command(active, (current) => workspaces.requestPayment(current))
+                  }
+                  onResolvePayment={(status) =>
+                    command(active, (current) => workspaces.resolvePaymentRequest(current, status))
+                  }
+                  onPrebillChanged={() => void workspaces.refresh()}
+                />
+              ) : null}
+              {active ? (
+                <article className="draft-detail">
+                  {active.order_number != null ? (
+                    <p
+                      className={`call-number-banner${
+                        active.operational_status === 'completed' ? ' call-number-banner-done' : ''
+                      }`}
+                      data-testid="call-number"
+                    >
+                      {t('callNumber', { number: active.order_number })}
+                      {active.guest_name ? <small> · {active.guest_name}</small> : null}
+                    </p>
+                  ) : null}
+                  {callNumbers || cupLabels ? (
+                    <GuestNameField
+                      key={`:guest:${active.guest_name ?? ''}`}
+                      workspace={active}
+                      disabled={sourceDisabled}
+                      disabledReason={lockReason}
+                      onSave={(guestName) =>
+                        command(active, (current) => workspaces.setGuestName(current, guestName))
+                      }
+                    />
+                  ) : null}
+                  <OrderLines
+                    key={active.id}
                     workspace={active}
-                    names={{
+                    disabled={editDisabled}
+                    disabledReason={lockReason}
+                    canApplyDiscount={Boolean(data?.capabilities.includes('pos.discount.apply'))}
+                    canOverridePrice={Boolean(data?.capabilities.includes('pos.price.override'))}
+                    onUpdate={(lineId, input) =>
+                      command(active, (current) => workspaces.updateItem(current, lineId, input))
+                    }
+                    onRemove={(lineId) =>
+                      command(active, (current) => workspaces.removeItem(current, lineId))
+                    }
+                    onLineDiscount={(saleLineId, input) =>
+                      command(active, (current) =>
+                        workspaces.lineDiscount(current, saleLineId, input),
+                      )
+                    }
+                    onClearLineDiscount={(saleLineId, approvalId) =>
+                      command(active, (current) =>
+                        workspaces.clearLineDiscount(current, saleLineId, approvalId),
+                      )
+                    }
+                    onPriceOverride={(saleLineId, input) =>
+                      command(active, (current) =>
+                        workspaces.priceOverride(current, saleLineId, input),
+                      )
+                    }
+                    menu={menuSurface ? (menu.data ?? null) : null}
+                    onUpdateModifiers={(saleLineId, input) =>
+                      command(active, (current) =>
+                        workspaces.updateModifiers(current, saleLineId, input),
+                      )
+                    }
+                    onAddSame={(variantId, input) =>
+                      command(active, (current) =>
+                        workspaces.addItem(current, variantId, 1, { ...input, merge: true }),
+                      )
+                    }
+                    cupLabels={cupLabels}
+                  />
+                  {lockReason && isEditor ? (
+                    <p className="workspace-hint" role="status">
+                      {lockReason}
+                    </p>
+                  ) : null}
+                  {busy || commandQueue.hasPending(active.id) ? (
+                    <p className="muted" role="status">
+                      {t('waiting')}
+                    </p>
+                  ) : null}
+                </article>
+              ) : (
+                <div className="empty">
+                  <strong>{t('basketEmpty')}</strong>
+                  <p>{t('basketStart')}</p>
+                </div>
+              )}
+            </section>
+            <aside
+              className="checkout-panel"
+              id="pos-checkout"
+              tabIndex={-1}
+              aria-label={t('checkoutTitle')}
+            >
+              {active ? (
+                <div className="checkout-section" key={active.id}>
+                  <CustomerPanel
+                    key={active.id}
+                    workspace={active}
+                    branchId={selection.branchId}
+                    storeId={storeId}
+                    canCreate={Boolean(data?.capabilities.includes('pos.customer.write'))}
+                    disabled={editDisabled}
+                    disabledReason={lockReason}
+                    onAssign={(profileId) =>
+                      command(active, (current) => workspaces.assignCustomer(current, profileId))
+                    }
+                    onClear={() => command(active, (current) => workspaces.clearCustomer(current))}
+                  />
+                  <ServiceModeControl
+                    value={active.service_mode}
+                    enabled={data?.modules?.['fnb.menu'] === true}
+                    disabled={sourceDisabled}
+                    onPick={(mode) =>
+                      void run(() =>
+                        command(active, (current) => workspaces.setServiceMode(current, mode)),
+                      )
+                    }
+                  />
+                  <OrderSourcePicker
+                    value={active.order_source}
+                    disabled={sourceDisabled}
+                    onPick={(source) =>
+                      void run(() =>
+                        command(active, (current) => workspaces.setOrderSource(current, source)),
+                      )
+                    }
+                  />
+                  <section className="checkout-totals" aria-label={t('orderDetails')}>
+                    <div className="checkout-totals-header">
+                      <h2>{t('orderDetails')}</h2>
+                      <div className="checkout-tools">
+                        <details className="checkout-optional" ref={discountDetailsRef}>
+                          <summary title={lockReason}>
+                            <PosIcon name="edit" /> {t('discountTitle')}
+                          </summary>
+                          <div className="pos-popup-backdrop">
+                            <DiscountForm
+                              key={`${active.id}:${active.revision}:${active.discount?.id ?? 'new'}:${active.coupon?.code ?? 'no-coupon'}`}
+                              workspace={active}
+                              canApply={Boolean(data?.capabilities.includes('pos.discount.apply'))}
+                              disabled={editDisabled}
+                              disabledReason={lockReason}
+                              onApply={(input) =>
+                                command(active, (current) => workspaces.discount(current, input))
+                              }
+                              onClear={(approvalId) =>
+                                command(active, (current) =>
+                                  workspaces.clearDiscount(current, approvalId),
+                                )
+                              }
+                              onApplyCoupon={(code) =>
+                                command(active, (current) => workspaces.applyCoupon(current, code))
+                              }
+                              onClearCoupon={() =>
+                                command(active, (current) => workspaces.clearCoupon(current))
+                              }
+                              onClose={() => {
+                                if (discountDetailsRef.current)
+                                  discountDetailsRef.current.open = false;
+                              }}
+                            />
+                          </div>
+                        </details>
+                        <details className="checkout-optional" ref={noteDetailsRef}>
+                          <summary title={lockReason}>
+                            <PosIcon name="edit" /> {t('noteTitle')}
+                          </summary>
+                          <div className="pos-popup-backdrop">
+                            <NoteForm
+                              key={`${active.id}:note:${active.note ?? ''}`}
+                              workspace={active}
+                              disabled={editDisabled}
+                              disabledReason={lockReason}
+                              onSave={(note) =>
+                                command(active, (current) => workspaces.updateNote(current, note))
+                              }
+                              onClose={() => {
+                                if (noteDetailsRef.current) noteDetailsRef.current.open = false;
+                              }}
+                            />
+                          </div>
+                        </details>
+                        {/* Delivery orders (`delivery` switch); an order already
+                        marked keeps the entry so it can be undone. */}
+                        {data?.features?.delivery === true || active.delivery ? (
+                          <details className="checkout-optional" ref={deliveryDetailsRef}>
+                            <summary title={lockReason}>
+                              <PosIcon name="box" /> {t('deliveryTitle')}
+                            </summary>
+                            <div className="pos-popup-backdrop">
+                              <DeliveryForm
+                                key={`${active.id}:delivery:${active.revision}`}
+                                workspace={active}
+                                disabled={editDisabled}
+                                disabledReason={lockReason}
+                                onSave={(input) =>
+                                  command(active, (current) =>
+                                    workspaces.setDelivery(current, input),
+                                  )
+                                }
+                                onClear={() =>
+                                  command(active, (current) => workspaces.clearDelivery(current))
+                                }
+                                onClose={() => {
+                                  if (deliveryDetailsRef.current)
+                                    deliveryDetailsRef.current.open = false;
+                                }}
+                              />
+                            </div>
+                          </details>
+                        ) : null}
+                      </div>
+                    </div>
+                    {active.totals ? (
+                      <>
+                        <div className="checkout-line">
+                          <span>{t('subtotal')}</span>
+                          <strong>
+                            {formatMoney(active.totals.item_total, active.totals.currency)}
+                          </strong>
+                        </div>
+                        <div className="checkout-line">
+                          <span>
+                            {t('discount')}{' '}
+                            {active.coupon ? (
+                              <small className="item-discount-source">{active.coupon.code}</small>
+                            ) : null}
+                          </span>
+                          <strong>
+                            {formatMoney(active.totals.discount_total, active.totals.currency)}
+                          </strong>
+                        </div>
+                        {active.delivery ? (
+                          <div className="checkout-line">
+                            <span>
+                              {t('deliveryFee')}{' '}
+                              <small className="item-discount-source">
+                                {active.delivery.deliverer
+                                  ? t('deliveryBadgeNamed', { name: active.delivery.deliverer })
+                                  : t('deliveryBadge')}
+                              </small>
+                            </span>
+                            <strong>
+                              {formatMoney(
+                                active.totals.fee_total ?? active.delivery.fee,
+                                active.totals.currency,
+                              )}
+                            </strong>
+                          </div>
+                        ) : null}
+                        {activeTable.serviceCharge?.applies && !activeTable.serviceCharge.waived ? (
+                          <div className="checkout-line">
+                            <span>
+                              {t('tableServiceCharge')}
+                              {activeTable.serviceCharge.rate
+                                ? ` (${activeTable.serviceCharge.rate.replace(/\.0+$/, '')}%)`
+                                : ''}
+                            </span>
+                            <strong>
+                              {formatMoney(
+                                activeTable.serviceCharge.amount,
+                                active.totals.currency,
+                              )}
+                            </strong>
+                          </div>
+                        ) : null}
+                        {(active.totals.taxes ?? []).map((tax) => (
+                          <div className="checkout-line" key={`${tax.rate}:${tax.label}`}>
+                            <span>
+                              {tax.label} ({rateLabel(tax.rate)})
+                            </span>
+                            <strong>
+                              {formatMoney(tax.amount, active.totals?.currency ?? 'VND')}
+                            </strong>
+                          </div>
+                        ))}
+                        <div className="checkout-line checkout-total">
+                          <span>{t('orderTotal')}</span>
+                          <strong>
+                            {formatMoney(active.totals.total, active.totals.currency)}
+                          </strong>
+                        </div>
+                      </>
+                    ) : (
+                      <p>{t('totalsUnavailable')}</p>
+                    )}
+                  </section>
+                  {active.note ? <p className="checkout-note-preview">{active.note}</p> : null}
+                  {data?.modules?.['fnb.kitchen'] === true ? (
+                    <KitchenHistory
+                      workspace={active}
+                      manual={
+                        data.branches.find((row) => row.id === active.branch_id)
+                          ?.kitchen_send_trigger === 'manual'
+                      }
+                      disabled={editDisabled || !isEditor}
+                      disabledReason={lockReason}
+                      onSend={() =>
+                        run(() => command(active, (current) => workspaces.sendToKitchen(current)))
+                      }
+                    />
+                  ) : null}
+                  {callNumbers ? <PickupQueue branchId={active.branch_id} /> : null}
+                  <PaymentPanel
+                    workspace={active}
+                    staffId={staffId}
+                    storeId={storeId}
+                    canCollect={Boolean(data?.capabilities.includes('pos.payment.collect'))}
+                    canResolve={Boolean(data?.capabilities.includes('pos.payment.resolve'))}
+                    canSellCredit={Boolean(data?.capabilities.includes('pos.credit.sell'))}
+                    creditEnabled={contextFeature(data, 'credit')}
+                    einvoiceType={data?.einvoice_type ?? 'none'}
+                    // Only an explicit switch skips the second person.
+                    quickCredit={data?.features?.quick_credit === true}
+                    // A table order without money yet moves to the shift of whoever
+                    // collects it, so the collector's own open drawer is enough.
+                    drawerOpen={Boolean(
+                      data?.shift &&
+                        (data.shift.id === active.shift_id ||
+                          (activeTable.table !== null && !active.payments)) &&
+                        data.shift.owner_id === data.staff.id,
+                    )}
+                    disabled={
+                      locked ||
+                      busy ||
+                      !isEditor ||
+                      (active.operational_status !== 'editing' &&
+                        active.operational_status !== 'completed')
+                    }
+                    command={(action) => command(active, action)}
+                    reserveTrace={(current) => workspaces.reserveTrace(current)}
+                    ticketNames={{
                       storeName: data?.store.name,
                       branchName: data?.branches.find((row) => row.id === active.branch_id)?.name,
                       registerName: data?.registers.find((row) => row.id === active.register_id)
                         ?.name,
+                      cashier: data?.staff.full_name || data?.staff.email,
                     }}
                     timeZone={
                       data?.branches.find((row) => row.id === active.branch_id)?.timezone ??
                       data?.store.timezone ??
                       'Asia/Ho_Chi_Minh'
                     }
-                    onClose={() => setPrebillOpen(false)}
                   />
-                ) : null}
-              </div>
-            ) : null}
-          </div>
-          {active ? (
-            <article className="draft-detail">
-              {active.order_number != null ? (
-                <p
-                  className={`call-number-banner${
-                    active.operational_status === 'completed' ? ' call-number-banner-done' : ''
-                  }`}
-                  data-testid="call-number"
-                >
-                  {t('callNumber', { number: active.order_number })}
-                  {active.guest_name ? <small> · {active.guest_name}</small> : null}
-                </p>
-              ) : null}
-              {callNumbers || cupLabels ? (
-                <GuestNameField
-                  key={`:guest:${active.guest_name ?? ''}`}
-                  workspace={active}
-                  disabled={sourceDisabled}
-                  disabledReason={lockReason}
-                  onSave={(guestName) =>
-                    command(active, (current) => workspaces.setGuestName(current, guestName))
-                  }
-                />
-              ) : null}
-              <OrderLines
-                key={active.id}
-                workspace={active}
-                disabled={editDisabled}
-                disabledReason={lockReason}
-                canApplyDiscount={Boolean(data?.capabilities.includes('pos.discount.apply'))}
-                canOverridePrice={Boolean(data?.capabilities.includes('pos.price.override'))}
-                onUpdate={(lineId, input) =>
-                  command(active, (current) => workspaces.updateItem(current, lineId, input))
-                }
-                onRemove={(lineId) =>
-                  command(active, (current) => workspaces.removeItem(current, lineId))
-                }
-                onLineDiscount={(saleLineId, input) =>
-                  command(active, (current) => workspaces.lineDiscount(current, saleLineId, input))
-                }
-                onClearLineDiscount={(saleLineId, approvalId) =>
-                  command(active, (current) =>
-                    workspaces.clearLineDiscount(current, saleLineId, approvalId),
-                  )
-                }
-                onPriceOverride={(saleLineId, input) =>
-                  command(active, (current) => workspaces.priceOverride(current, saleLineId, input))
-                }
-                menu={menuSurface ? (menu.data ?? null) : null}
-                onUpdateModifiers={(saleLineId, input) =>
-                  command(active, (current) =>
-                    workspaces.updateModifiers(current, saleLineId, input),
-                  )
-                }
-                onAddSame={(variantId, input) =>
-                  command(active, (current) =>
-                    workspaces.addItem(current, variantId, 1, { ...input, merge: true }),
-                  )
-                }
-                cupLabels={cupLabels}
-              />
-              {lockReason && isEditor ? (
-                <p className="workspace-hint" role="status">
-                  {lockReason}
-                </p>
-              ) : null}
-              {busy || commandQueue.hasPending(active.id) ? (
-                <p className="muted" role="status">
-                  {t('waiting')}
-                </p>
-              ) : null}
-            </article>
-          ) : (
-            <div className="empty">
-              <strong>{t('basketEmpty')}</strong>
-              <p>{t('basketStart')}</p>
-            </div>
-          )}
-        </section>
-        <aside
-          className="checkout-panel"
-          id="pos-checkout"
-          tabIndex={-1}
-          aria-label={t('checkoutTitle')}
-        >
-          {active ? (
-            <div className="checkout-section" key={active.id}>
-              <CustomerPanel
-                key={active.id}
-                workspace={active}
-                branchId={selection.branchId}
-                storeId={storeId}
-                canCreate={Boolean(data?.capabilities.includes('pos.customer.write'))}
-                disabled={editDisabled}
-                disabledReason={lockReason}
-                onAssign={(profileId) =>
-                  command(active, (current) => workspaces.assignCustomer(current, profileId))
-                }
-                onClear={() => command(active, (current) => workspaces.clearCustomer(current))}
-              />
-              <ServiceModeControl
-                value={active.service_mode}
-                enabled={data?.modules?.['fnb.menu'] === true}
-                disabled={sourceDisabled}
-                onPick={(mode) =>
-                  void run(() =>
-                    command(active, (current) => workspaces.setServiceMode(current, mode)),
-                  )
-                }
-              />
-              <OrderSourcePicker
-                value={active.order_source}
-                disabled={sourceDisabled}
-                onPick={(source) =>
-                  void run(() =>
-                    command(active, (current) => workspaces.setOrderSource(current, source)),
-                  )
-                }
-              />
-              <section className="checkout-totals" aria-label={t('orderDetails')}>
-                <div className="checkout-totals-header">
-                  <h2>{t('orderDetails')}</h2>
-                  <div className="checkout-tools">
-                    <details className="checkout-optional" ref={discountDetailsRef}>
-                      <summary title={lockReason}>
-                        <PosIcon name="edit" /> {t('discountTitle')}
-                      </summary>
-                      <div className="pos-popup-backdrop">
-                        <DiscountForm
-                          key={`${active.id}:${active.revision}:${active.discount?.id ?? 'new'}:${active.coupon?.code ?? 'no-coupon'}`}
-                          workspace={active}
-                          canApply={Boolean(data?.capabilities.includes('pos.discount.apply'))}
-                          disabled={editDisabled}
-                          disabledReason={lockReason}
-                          onApply={(input) =>
-                            command(active, (current) => workspaces.discount(current, input))
-                          }
-                          onClear={(approvalId) =>
-                            command(active, (current) =>
-                              workspaces.clearDiscount(current, approvalId),
-                            )
-                          }
-                          onApplyCoupon={(code) =>
-                            command(active, (current) => workspaces.applyCoupon(current, code))
-                          }
-                          onClearCoupon={() =>
-                            command(active, (current) => workspaces.clearCoupon(current))
-                          }
-                          onClose={() => {
-                            if (discountDetailsRef.current) discountDetailsRef.current.open = false;
-                          }}
-                        />
-                      </div>
-                    </details>
-                    <details className="checkout-optional" ref={noteDetailsRef}>
-                      <summary title={lockReason}>
-                        <PosIcon name="edit" /> {t('noteTitle')}
-                      </summary>
-                      <div className="pos-popup-backdrop">
-                        <NoteForm
-                          key={`${active.id}:note:${active.note ?? ''}`}
-                          workspace={active}
-                          disabled={editDisabled}
-                          disabledReason={lockReason}
-                          onSave={(note) =>
-                            command(active, (current) => workspaces.updateNote(current, note))
-                          }
-                          onClose={() => {
-                            if (noteDetailsRef.current) noteDetailsRef.current.open = false;
-                          }}
-                        />
-                      </div>
-                    </details>
-                    {/* Delivery orders (`delivery` switch); an order already
-                        marked keeps the entry so it can be undone. */}
-                    {data?.features?.delivery === true || active.delivery ? (
-                      <details className="checkout-optional" ref={deliveryDetailsRef}>
-                        <summary title={lockReason}>
-                          <PosIcon name="box" /> {t('deliveryTitle')}
-                        </summary>
-                        <div className="pos-popup-backdrop">
-                          <DeliveryForm
-                            key={`${active.id}:delivery:${active.revision}`}
-                            workspace={active}
-                            disabled={editDisabled}
-                            disabledReason={lockReason}
-                            onSave={(input) =>
-                              command(active, (current) => workspaces.setDelivery(current, input))
-                            }
-                            onClear={() =>
-                              command(active, (current) => workspaces.clearDelivery(current))
-                            }
-                            onClose={() => {
-                              if (deliveryDetailsRef.current)
-                                deliveryDetailsRef.current.open = false;
-                            }}
-                          />
-                        </div>
-                      </details>
-                    ) : null}
+                  <DisplayPinControl
+                    shiftId={data?.shift?.id ?? null}
+                    ownsShift={Boolean(data?.shift && data.shift.owner_id === data.staff.id)}
+                    enabled={contextFeature(data, 'customer_display')}
+                    callBoard={callNumbers}
+                    workspace={active}
+                  />
+                </div>
+              ) : (
+                <div className="checkout-section">
+                  <h2>{t('customerTitle')}</h2>
+                  <p className="muted">{t('checkoutChooseDraft')}</p>
+                  <div className="checkout-totals">
+                    <h2>{t('orderDetails')}</h2>
+                    <p className="muted">{t('checkoutNoTotals')}</p>
+                  </div>
+                  <div className="checkout-totals">
+                    <h2>{t('paymentTitle')}</h2>
+                    <p className="muted">{t('checkoutNoPayment')}</p>
                   </div>
                 </div>
-                {active.totals ? (
-                  <>
-                    <div className="checkout-line">
-                      <span>{t('subtotal')}</span>
-                      <strong>
-                        {formatMoney(active.totals.item_total, active.totals.currency)}
-                      </strong>
-                    </div>
-                    <div className="checkout-line">
-                      <span>
-                        {t('discount')}{' '}
-                        {active.coupon ? (
-                          <small className="item-discount-source">{active.coupon.code}</small>
-                        ) : null}
-                      </span>
-                      <strong>
-                        {formatMoney(active.totals.discount_total, active.totals.currency)}
-                      </strong>
-                    </div>
-                    {active.delivery ? (
-                      <div className="checkout-line">
-                        <span>
-                          {t('deliveryFee')}{' '}
-                          <small className="item-discount-source">
-                            {active.delivery.deliverer
-                              ? t('deliveryBadgeNamed', { name: active.delivery.deliverer })
-                              : t('deliveryBadge')}
-                          </small>
-                        </span>
-                        <strong>
-                          {formatMoney(
-                            active.totals.fee_total ?? active.delivery.fee,
-                            active.totals.currency,
-                          )}
-                        </strong>
-                      </div>
-                    ) : null}
-                    {(active.totals.taxes ?? []).map((tax) => (
-                      <div className="checkout-line" key={`${tax.rate}:${tax.label}`}>
-                        <span>
-                          {tax.label} ({rateLabel(tax.rate)})
-                        </span>
-                        <strong>{formatMoney(tax.amount, active.totals?.currency ?? 'VND')}</strong>
-                      </div>
-                    ))}
-                    <div className="checkout-line checkout-total">
-                      <span>{t('orderTotal')}</span>
-                      <strong>{formatMoney(active.totals.total, active.totals.currency)}</strong>
-                    </div>
-                  </>
-                ) : (
-                  <p>{t('totalsUnavailable')}</p>
-                )}
-              </section>
-              {active.note ? <p className="checkout-note-preview">{active.note}</p> : null}
-              {data?.modules?.['fnb.kitchen'] === true ? (
-                <KitchenHistory
-                  workspace={active}
-                  manual={
-                    data.branches.find((row) => row.id === active.branch_id)
-                      ?.kitchen_send_trigger === 'manual'
-                  }
-                  disabled={editDisabled || !isEditor}
-                  disabledReason={lockReason}
-                  onSend={() =>
-                    run(() => command(active, (current) => workspaces.sendToKitchen(current)))
-                  }
-                />
-              ) : null}
-              {callNumbers ? <PickupQueue branchId={active.branch_id} /> : null}
-              <PaymentPanel
-                workspace={active}
-                staffId={staffId}
-                storeId={storeId}
-                canCollect={Boolean(data?.capabilities.includes('pos.payment.collect'))}
-                canResolve={Boolean(data?.capabilities.includes('pos.payment.resolve'))}
-                canSellCredit={Boolean(data?.capabilities.includes('pos.credit.sell'))}
-                creditEnabled={contextFeature(data, 'credit')}
-                einvoiceType={data?.einvoice_type ?? 'none'}
-                // Only an explicit switch skips the second person.
-                quickCredit={data?.features?.quick_credit === true}
-                drawerOpen={Boolean(
-                  data?.shift &&
-                    data.shift.id === active.shift_id &&
-                    data.shift.owner_id === data.staff.id,
-                )}
-                disabled={
-                  locked ||
-                  busy ||
-                  !isEditor ||
-                  (active.operational_status !== 'editing' &&
-                    active.operational_status !== 'completed')
-                }
-                command={(action) => command(active, action)}
-                reserveTrace={(current) => workspaces.reserveTrace(current)}
-                ticketNames={{
-                  storeName: data?.store.name,
-                  branchName: data?.branches.find((row) => row.id === active.branch_id)?.name,
-                  registerName: data?.registers.find((row) => row.id === active.register_id)?.name,
-                  cashier: data?.staff.full_name || data?.staff.email,
-                }}
-                timeZone={
-                  data?.branches.find((row) => row.id === active.branch_id)?.timezone ??
-                  data?.store.timezone ??
-                  'Asia/Ho_Chi_Minh'
-                }
-              />
-              <DisplayPinControl
-                shiftId={data?.shift?.id ?? null}
-                ownsShift={Boolean(data?.shift && data.shift.owner_id === data.staff.id)}
-                enabled={contextFeature(data, 'customer_display')}
-                callBoard={callNumbers}
-                workspace={active}
-              />
-            </div>
-          ) : (
-            <div className="checkout-section">
-              <h2>{t('customerTitle')}</h2>
-              <p className="muted">{t('checkoutChooseDraft')}</p>
-              <div className="checkout-totals">
-                <h2>{t('orderDetails')}</h2>
-                <p className="muted">{t('checkoutNoTotals')}</p>
-              </div>
-              <div className="checkout-totals">
-                <h2>{t('paymentTitle')}</h2>
-                <p className="muted">{t('checkoutNoPayment')}</p>
-              </div>
-            </div>
-          )}
-        </aside>
-      </div>
+              )}
+            </aside>
+          </div>
+        </>
+      )}
     </section>
   );
 }

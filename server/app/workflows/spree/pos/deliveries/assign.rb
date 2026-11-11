@@ -73,8 +73,7 @@ module Spree
         def self.authorize!(workspace, staff)
           policy = AccessPolicy.new(store: workspace.store, staff: staff)
           raise CanCan::AccessDenied if workspace.branch.disabled? || workspace.register&.disabled? ||
-            workspace.shift.owner_id != staff.id ||
-            !policy.permission?('write_pos_orders') || !policy.allows?(workspace.branch, Capabilities::OPEN_SHIFT)
+            !policy.can_edit_workspace?(workspace) || !policy.permission?('write_pos_orders')
         end
 
         def self.validate_editing!(workspace, staff, revision, lease_generation, editor_id)

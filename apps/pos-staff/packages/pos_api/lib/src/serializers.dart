@@ -16,6 +16,10 @@ import 'package:pos_api/src/model/date.dart';
 
 import 'package:pos_api/src/model/approval.dart';
 import 'package:pos_api/src/model/approval_revision.dart';
+import 'package:pos_api/src/model/area.dart';
+import 'package:pos_api/src/model/area_input.dart';
+import 'package:pos_api/src/model/area_list.dart';
+import 'package:pos_api/src/model/area_result.dart';
 import 'package:pos_api/src/model/call_board.dart';
 import 'package:pos_api/src/model/call_board_preparing_inner.dart';
 import 'package:pos_api/src/model/call_board_ready_inner.dart';
@@ -90,6 +94,9 @@ import 'package:pos_api/src/model/menu_tax_defaults.dart';
 import 'package:pos_api/src/model/modifier_group.dart';
 import 'package:pos_api/src/model/modifier_group_options_inner.dart';
 import 'package:pos_api/src/model/modifier_selection.dart';
+import 'package:pos_api/src/model/payment_request.dart';
+import 'package:pos_api/src/model/payment_request_input.dart';
+import 'package:pos_api/src/model/payment_request_resolve_input.dart';
 import 'package:pos_api/src/model/platform_order.dart';
 import 'package:pos_api/src/model/platform_order_cancel_input.dart';
 import 'package:pos_api/src/model/platform_order_editor.dart';
@@ -190,6 +197,9 @@ import 'package:pos_api/src/model/pos_workspace_cup_labels_reprint_request.dart'
 import 'package:pos_api/src/model/pos_workspace_guest_name_request.dart';
 import 'package:pos_api/src/model/pos_workspace_kitchen_tickets200_response.dart';
 import 'package:pos_api/src/model/pos_workspace_line_modifiers_request.dart';
+import 'package:pos_api/src/model/prebill_input.dart';
+import 'package:pos_api/src/model/prebill_outcome.dart';
+import 'package:pos_api/src/model/prebill_result.dart';
 import 'package:pos_api/src/model/print_block.dart';
 import 'package:pos_api/src/model/print_block_one_of.dart';
 import 'package:pos_api/src/model/print_block_one_of1.dart';
@@ -222,6 +232,18 @@ import 'package:pos_api/src/model/recipe.dart';
 import 'package:pos_api/src/model/recipe_ingredients_inner.dart';
 import 'package:pos_api/src/model/recipe_owner.dart';
 import 'package:pos_api/src/model/recipe_owner_versions_inner.dart';
+import 'package:pos_api/src/model/resource.dart';
+import 'package:pos_api/src/model/resource_board.dart';
+import 'package:pos_api/src/model/resource_board_area.dart';
+import 'package:pos_api/src/model/resource_board_order.dart';
+import 'package:pos_api/src/model/resource_board_result.dart';
+import 'package:pos_api/src/model/resource_board_tile.dart';
+import 'package:pos_api/src/model/resource_input.dart';
+import 'package:pos_api/src/model/resource_list.dart';
+import 'package:pos_api/src/model/resource_manual_status_input.dart';
+import 'package:pos_api/src/model/resource_ref.dart';
+import 'package:pos_api/src/model/resource_result.dart';
+import 'package:pos_api/src/model/service_charge_waive_input.dart';
 import 'package:pos_api/src/model/station_route.dart';
 import 'package:pos_api/src/model/station_route_input.dart';
 import 'package:pos_api/src/model/stock_alert.dart';
@@ -235,9 +257,21 @@ import 'package:pos_api/src/model/system_status_realtime.dart';
 import 'package:pos_api/src/model/system_status_server.dart';
 import 'package:pos_api/src/model/system_status_version.dart';
 import 'package:pos_api/src/model/system_status_vietqr.dart';
+import 'package:pos_api/src/model/table_merge_input.dart';
+import 'package:pos_api/src/model/table_move_input.dart';
+import 'package:pos_api/src/model/table_open_input.dart';
+import 'package:pos_api/src/model/table_settings.dart';
+import 'package:pos_api/src/model/table_settings_input.dart';
+import 'package:pos_api/src/model/table_settings_result.dart';
+import 'package:pos_api/src/model/table_split_input.dart';
+import 'package:pos_api/src/model/table_split_orders.dart';
+import 'package:pos_api/src/model/table_split_result.dart';
 import 'package:pos_api/src/model/tax_row.dart';
 import 'package:pos_api/src/model/workspace.dart';
 import 'package:pos_api/src/model/workspace_line.dart';
+import 'package:pos_api/src/model/workspace_prebill.dart';
+import 'package:pos_api/src/model/workspace_result.dart';
+import 'package:pos_api/src/model/workspace_service_charge.dart';
 import 'package:pos_api/src/model/workspace_totals.dart';
 import 'package:pos_api/src/model/workspace_totals_taxes_inner.dart';
 
@@ -246,6 +280,10 @@ part 'serializers.g.dart';
 @SerializersFor([
   Approval,
   ApprovalRevision,
+  Area,
+  AreaInput,
+  AreaList,
+  AreaResult,
   CallBoard,
   CallBoardPreparingInner,
   CallBoardReadyInner,
@@ -322,6 +360,9 @@ part 'serializers.g.dart';
   ModifierGroup,
   ModifierGroupOptionsInner,
   ModifierSelection,
+  PaymentRequest,
+  PaymentRequestInput,
+  PaymentRequestResolveInput,
   PlatformOrder,
   PlatformOrderCancelInput,
   PlatformOrderEditor,
@@ -422,6 +463,9 @@ part 'serializers.g.dart';
   PosWorkspaceGuestNameRequest,
   PosWorkspaceKitchenTickets200Response,
   PosWorkspaceLineModifiersRequest,
+  PrebillInput,
+  PrebillOutcome,
+  PrebillResult,
   PrintBlock,
   PrintBlockOneOf,
   PrintBlockOneOf1,
@@ -454,6 +498,18 @@ part 'serializers.g.dart';
   RecipeIngredientsInner,
   RecipeOwner,
   RecipeOwnerVersionsInner,
+  Resource,
+  ResourceBoard,
+  ResourceBoardArea,
+  ResourceBoardOrder,
+  ResourceBoardResult,
+  ResourceBoardTile,
+  ResourceInput,
+  ResourceList,
+  ResourceManualStatusInput,
+  ResourceRef,
+  ResourceResult,
+  ServiceChargeWaiveInput,
   StationRoute,
   StationRouteInput,
   $StationRouteInput,
@@ -468,9 +524,21 @@ part 'serializers.g.dart';
   SystemStatusServer,
   SystemStatusVersion,
   SystemStatusVietqr,
+  TableMergeInput,
+  TableMoveInput,
+  TableOpenInput,
+  TableSettings,
+  TableSettingsInput,
+  TableSettingsResult,
+  TableSplitInput,
+  TableSplitOrders,
+  TableSplitResult,
   TaxRow,
   Workspace,
   WorkspaceLine,
+  WorkspacePrebill,
+  WorkspaceResult,
+  WorkspaceServiceCharge,
   WorkspaceTotals,
   WorkspaceTotalsTaxesInner,
 ])
@@ -578,6 +646,10 @@ Serializers serializers = (_$serializers.toBuilder()
         () => ListBuilder<IngredientUsageRow>(),
       )
       ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(Resource)]),
+        () => ListBuilder<Resource>(),
+      )
+      ..addBuilderFactory(
         const FullType(BuiltList, [FullType(ModifierSelection)]),
         () => ListBuilder<ModifierSelection>(),
       )
@@ -610,6 +682,10 @@ Serializers serializers = (_$serializers.toBuilder()
         () => MapBuilder<String, int>(),
       )
       ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(Area)]),
+        () => ListBuilder<Area>(),
+      )
+      ..addBuilderFactory(
         const FullType(BuiltList, [FullType(MenuMarginRow)]),
         () => ListBuilder<MenuMarginRow>(),
       )
@@ -618,8 +694,16 @@ Serializers serializers = (_$serializers.toBuilder()
         () => ListBuilder<PrintJob>(),
       )
       ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(ResourceBoardArea)]),
+        () => ListBuilder<ResourceBoardArea>(),
+      )
+      ..addBuilderFactory(
         const FullType(BuiltList, [FullType(PlatformOrder)]),
         () => ListBuilder<PlatformOrder>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(ResourceBoardOrder)]),
+        () => ListBuilder<ResourceBoardOrder>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(Printer)]),
@@ -676,6 +760,10 @@ Serializers serializers = (_$serializers.toBuilder()
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(EinvoiceSetting)]),
         () => ListBuilder<EinvoiceSetting>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(ResourceBoardTile)]),
+        () => ListBuilder<ResourceBoardTile>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(CallBoardPreparingInner)]),

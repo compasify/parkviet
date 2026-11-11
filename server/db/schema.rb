@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_11_210000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_11_220300) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -2283,6 +2283,23 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_210000) do
     t.check_constraint "status::text = ANY (ARRAY['active'::character varying::text, 'revoked'::character varying::text, 'consumed'::character varying::text])", name: "chk_spree_pos_approvals_status"
   end
 
+  create_table "spree_pos_areas", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "branch_id", null: false
+    t.string "name", limit: 80, null: false
+    t.integer "position", default: 0, null: false
+    t.string "status", default: "active", null: false
+    t.integer "floor_width", default: 24, null: false
+    t.integer "floor_height", default: 16, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["branch_id", "name"], name: "idx_pos_areas_name", unique: true, where: "((status)::text = 'active'::text)"
+    t.index ["branch_id"], name: "index_spree_pos_areas_on_branch_id"
+    t.index ["store_id"], name: "index_spree_pos_areas_on_store_id"
+    t.check_constraint "floor_width >= 4 AND floor_width <= 200 AND floor_height >= 4 AND floor_height <= 200", name: "chk_pos_areas_floor"
+    t.check_constraint "status::text = ANY (ARRAY['active'::character varying, 'archived'::character varying]::text[])", name: "chk_pos_areas_status"
+  end
+
   create_table "spree_pos_audit_entries", force: :cascade do |t|
     t.bigint "store_id", null: false
     t.bigint "actor_id", null: false
@@ -2377,16 +2394,23 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_210000) do
     t.string "kitchen_send_trigger", default: "on_complete", null: false
     t.bigint "cup_label_printer_id"
     t.jsonb "cup_label_settings", default: {}, null: false
+    t.bigint "table_register_id"
+    t.decimal "service_charge_rate", precision: 5, scale: 2
+    t.jsonb "service_charge_applies_to", default: ["dine_in"], null: false
+    t.bigint "service_charge_tax_category_id"
     t.index ["cup_label_printer_id"], name: "index_spree_pos_branches_on_cup_label_printer_id"
+    t.index ["service_charge_tax_category_id"], name: "index_spree_pos_branches_on_service_charge_tax_category_id"
     t.index ["stock_location_id"], name: "index_spree_pos_branches_on_stock_location_id"
     t.index ["store_id", "code"], name: "index_spree_pos_branches_on_store_id_and_code", unique: true
     t.index ["store_id"], name: "index_spree_pos_branches_on_store_id"
+    t.index ["table_register_id"], name: "index_spree_pos_branches_on_table_register_id"
     t.check_constraint "adjustment_approval_threshold IS NULL OR adjustment_approval_threshold >= 0", name: "chk_pos_branches_adjustment_threshold"
     t.check_constraint "display_freshness_ttl_seconds IS NULL OR display_freshness_ttl_seconds >= 5 AND display_freshness_ttl_seconds <= 120", name: "chk_pos_branches_display_freshness"
     t.check_constraint "kitchen_send_trigger::text = ANY (ARRAY['on_complete'::character varying, 'manual'::character varying]::text[])", name: "chk_pos_branches_kitchen_send_trigger"
     t.check_constraint "lot_selection::text = ANY (ARRAY['fefo'::character varying::text, 'cashier_pick'::character varying::text])", name: "chk_pos_branches_lot_selection"
     t.check_constraint "profile_version >= 1", name: "chk_pos_branches_profile_version"
     t.check_constraint "return_window_days IS NULL OR return_window_days >= 0 AND return_window_days <= 3650", name: "chk_pos_branches_return_window"
+    t.check_constraint "service_charge_rate IS NULL OR service_charge_rate > 0::numeric AND service_charge_rate <= 50::numeric", name: "chk_pos_branches_service_charge_rate"
     t.check_constraint "status::text = ANY (ARRAY['active'::character varying::text, 'disabled'::character varying::text])", name: "chk_spree_pos_branches_status"
     t.check_constraint "variance_threshold IS NULL OR variance_threshold >= 0::numeric", name: "chk_pos_branches_variance_threshold"
   end
@@ -3309,6 +3333,24 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_210000) do
     t.check_constraint "status::text = ANY (ARRAY['active'::character varying::text, 'disabled'::character varying::text])", name: "chk_pos_payment_methods_status"
   end
 
+  create_table "spree_pos_payment_requests", force: :cascade do |t|
+    t.bigint "workspace_id", null: false
+    t.bigint "requested_by_id", null: false
+    t.bigint "device_id"
+    t.bigint "resolved_by_id"
+    t.string "status", default: "open", null: false
+    t.string "note", limit: 200
+    t.datetime "resolved_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["device_id"], name: "index_spree_pos_payment_requests_on_device_id"
+    t.index ["requested_by_id"], name: "index_spree_pos_payment_requests_on_requested_by_id"
+    t.index ["resolved_by_id"], name: "index_spree_pos_payment_requests_on_resolved_by_id"
+    t.index ["workspace_id"], name: "idx_pos_payment_requests_open", unique: true, where: "((status)::text = 'open'::text)"
+    t.index ["workspace_id"], name: "idx_pos_payment_requests_workspace"
+    t.check_constraint "status::text = ANY (ARRAY['open'::character varying, 'done'::character varying, 'canceled'::character varying]::text[])", name: "chk_pos_payment_requests_status"
+  end
+
   create_table "spree_pos_payout_evidences", force: :cascade do |t|
     t.bigint "store_id", null: false
     t.bigint "liability_payout_id"
@@ -3377,6 +3419,23 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_210000) do
     t.check_constraint "commission_rate >= 0::numeric AND commission_rate <= 100::numeric", name: "chk_pos_platform_settings_rate"
     t.check_constraint "platform::text = ANY (ARRAY['grabfood'::character varying, 'shopeefood'::character varying]::text[])", name: "chk_pos_platform_settings_platform"
     t.check_constraint "status::text = ANY (ARRAY['active'::character varying, 'disabled'::character varying]::text[])", name: "chk_pos_platform_settings_status"
+  end
+
+  create_table "spree_pos_prebill_prints", force: :cascade do |t|
+    t.bigint "workspace_id", null: false
+    t.integer "revision", null: false
+    t.integer "sequence", null: false
+    t.bigint "staff_id", null: false
+    t.bigint "approval_id"
+    t.string "status", default: "current", null: false
+    t.decimal "total", precision: 12, scale: 2, null: false
+    t.string "currency", limit: 3, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["approval_id"], name: "index_spree_pos_prebill_prints_on_approval_id"
+    t.index ["staff_id"], name: "index_spree_pos_prebill_prints_on_staff_id"
+    t.index ["workspace_id", "sequence"], name: "idx_pos_prebill_prints_sequence", unique: true
+    t.check_constraint "status::text = ANY (ARRAY['current'::character varying, 'superseded'::character varying, 'canceled'::character varying]::text[])", name: "chk_pos_prebill_prints_status"
   end
 
   create_table "spree_pos_print_jobs", force: :cascade do |t|
@@ -3724,6 +3783,36 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_210000) do
     t.index ["store_id", "code"], name: "index_spree_pos_registers_on_store_id_and_code", unique: true
     t.index ["store_id"], name: "index_spree_pos_registers_on_store_id"
     t.check_constraint "status::text = ANY (ARRAY['active'::character varying::text, 'disabled'::character varying::text])", name: "chk_spree_pos_registers_status"
+  end
+
+  create_table "spree_pos_resources", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "branch_id", null: false
+    t.bigint "area_id", null: false
+    t.string "kind", default: "table", null: false
+    t.string "name", limit: 40, null: false
+    t.integer "capacity", default: 4, null: false
+    t.string "shape", default: "rect", null: false
+    t.integer "x", default: 0, null: false
+    t.integer "y", default: 0, null: false
+    t.integer "w", default: 2, null: false
+    t.integer "h", default: 2, null: false
+    t.integer "rotation", default: 0, null: false
+    t.string "manual_status", default: "available", null: false
+    t.string "resource_type_code", limit: 40
+    t.string "status", default: "active", null: false
+    t.integer "position", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["area_id"], name: "index_spree_pos_resources_on_area_id"
+    t.index ["branch_id", "name"], name: "idx_pos_resources_name", unique: true, where: "((status)::text = 'active'::text)"
+    t.index ["branch_id"], name: "index_spree_pos_resources_on_branch_id"
+    t.index ["store_id"], name: "index_spree_pos_resources_on_store_id"
+    t.check_constraint "capacity >= 0 AND capacity <= 999 AND x >= 0 AND y >= 0 AND w >= 1 AND w <= 50 AND h >= 1 AND h <= 50 AND rotation >= 0 AND rotation <= 359", name: "chk_pos_resources_geometry"
+    t.check_constraint "kind::text = ANY (ARRAY['table'::character varying, 'room'::character varying, 'billiard'::character varying, 'vip'::character varying]::text[])", name: "chk_pos_resources_kind"
+    t.check_constraint "manual_status::text = ANY (ARRAY['available'::character varying, 'cleaning'::character varying, 'out_of_service'::character varying]::text[])", name: "chk_pos_resources_manual_status"
+    t.check_constraint "shape::text = ANY (ARRAY['rect'::character varying, 'round'::character varying]::text[])", name: "chk_pos_resources_shape"
+    t.check_constraint "status::text = ANY (ARRAY['active'::character varying, 'archived'::character varying]::text[])", name: "chk_pos_resources_status"
   end
 
   create_table "spree_pos_return_operations", force: :cascade do |t|
@@ -4224,6 +4313,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_210000) do
     t.date "business_date", null: false
     t.integer "order_number"
     t.string "guest_name", limit: 60
+    t.bigint "resource_id"
+    t.integer "guest_count"
+    t.string "table_label", limit: 4
+    t.boolean "service_charge_waived", default: false, null: false
     t.index ["branch_id", "business_date", "order_number"], name: "idx_pos_workspaces_order_number", unique: true, where: "(order_number IS NOT NULL)"
     t.index ["branch_id", "business_date"], name: "idx_pos_workspaces_branch_business_date"
     t.index ["branch_id"], name: "index_spree_pos_workspaces_on_branch_id"
@@ -4231,12 +4324,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_210000) do
     t.index ["order_id"], name: "index_spree_pos_workspaces_on_order_id", unique: true
     t.index ["pos_customer_id"], name: "index_spree_pos_workspaces_on_pos_customer_id"
     t.index ["register_id"], name: "index_spree_pos_workspaces_on_register_id"
+    t.index ["resource_id", "operational_status"], name: "idx_pos_workspaces_resource_status"
     t.index ["shift_id"], name: "index_spree_pos_workspaces_on_shift_id"
     t.index ["store_id"], name: "index_spree_pos_workspaces_on_store_id"
+    t.check_constraint "guest_count IS NULL OR guest_count >= 0 AND guest_count <= 999", name: "chk_pos_workspaces_guest_count"
     t.check_constraint "note IS NULL OR char_length(note) <= 1000", name: "chk_pos_workspace_note_length"
     t.check_constraint "operational_status::text = ANY (ARRAY['editing'::character varying::text, 'parked'::character varying::text, 'canceled'::character varying::text, 'completed'::character varying::text])", name: "chk_spree_pos_workspaces_status"
     t.check_constraint "order_number IS NULL OR order_number > 0", name: "chk_pos_workspaces_order_number"
     t.check_constraint "order_source::text = ANY (ARRAY['counter'::character varying, 'facebook'::character varying, 'zalo'::character varying, 'other'::character varying, 'grabfood'::character varying, 'shopeefood'::character varying]::text[])", name: "chk_pos_workspace_order_source"
+    t.check_constraint "resource_id IS NULL OR (service_mode::text = ANY (ARRAY['dine_in'::character varying, 'timed'::character varying]::text[]))", name: "chk_pos_workspaces_resource_mode"
     t.check_constraint "service_mode::text = ANY (ARRAY['counter'::character varying::text, 'dine_in'::character varying::text, 'takeaway'::character varying::text, 'delivery'::character varying::text, 'tab'::character varying::text, 'timed'::character varying::text])", name: "chk_pos_workspace_service_mode"
   end
 
@@ -5973,6 +6069,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_210000) do
   add_foreign_key "spree_pos_approvals", "spree_admin_users", column: "requester_id"
   add_foreign_key "spree_pos_approvals", "spree_pos_branches", column: "branch_id"
   add_foreign_key "spree_pos_approvals", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_areas", "spree_pos_branches", column: "branch_id"
+  add_foreign_key "spree_pos_areas", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_audit_entries", "spree_admin_users", column: "actor_id"
   add_foreign_key "spree_pos_audit_entries", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_branch_label_formats", "spree_pos_branches", column: "branch_id"
@@ -5990,9 +6088,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_210000) do
   add_foreign_key "spree_pos_branch_receipt_templates", "spree_pos_receipt_templates", column: "receipt_template_id"
   add_foreign_key "spree_pos_branch_receipt_templates", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_branches", "spree_pos_printers", column: "cup_label_printer_id"
+  add_foreign_key "spree_pos_branches", "spree_pos_registers", column: "table_register_id", on_delete: :nullify
   add_foreign_key "spree_pos_branches", "spree_stock_locations", column: "receiving_stock_location_id"
   add_foreign_key "spree_pos_branches", "spree_stock_locations", column: "stock_location_id"
   add_foreign_key "spree_pos_branches", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_branches", "spree_tax_categories", column: "service_charge_tax_category_id", on_delete: :nullify
   add_foreign_key "spree_pos_cash_movements", "spree_admin_users", column: "actor_id"
   add_foreign_key "spree_pos_cash_movements", "spree_pos_branches", column: "branch_id"
   add_foreign_key "spree_pos_cash_movements", "spree_pos_liability_payouts", column: "liability_payout_id"
@@ -6130,6 +6230,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_210000) do
   add_foreign_key "spree_pos_order_number_counters", "spree_pos_branches", column: "branch_id"
   add_foreign_key "spree_pos_outbox_entries", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_payment_methods", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_payment_requests", "spree_admin_users", column: "requested_by_id"
+  add_foreign_key "spree_pos_payment_requests", "spree_admin_users", column: "resolved_by_id"
+  add_foreign_key "spree_pos_payment_requests", "spree_pos_devices", column: "device_id"
+  add_foreign_key "spree_pos_payment_requests", "spree_pos_workspaces", column: "workspace_id"
   add_foreign_key "spree_pos_payout_evidences", "spree_admin_users", column: "actor_id"
   add_foreign_key "spree_pos_payout_evidences", "spree_pos_liability_payouts", column: "liability_payout_id"
   add_foreign_key "spree_pos_payout_evidences", "spree_pos_refund_requests", column: "refund_request_id"
@@ -6141,6 +6245,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_210000) do
   add_foreign_key "spree_pos_platform_orders", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_platform_settings", "spree_pos_branches", column: "branch_id"
   add_foreign_key "spree_pos_platform_settings", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_prebill_prints", "spree_admin_users", column: "staff_id"
+  add_foreign_key "spree_pos_prebill_prints", "spree_pos_approvals", column: "approval_id"
+  add_foreign_key "spree_pos_prebill_prints", "spree_pos_workspaces", column: "workspace_id"
   add_foreign_key "spree_pos_print_jobs", "spree_admin_users", column: "created_by_id"
   add_foreign_key "spree_pos_print_jobs", "spree_pos_branches", column: "branch_id"
   add_foreign_key "spree_pos_print_jobs", "spree_pos_devices", column: "claimed_by_device_id"
@@ -6204,6 +6311,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_210000) do
   add_foreign_key "spree_pos_refund_requests", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_registers", "spree_pos_branches", column: "branch_id"
   add_foreign_key "spree_pos_registers", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_resources", "spree_pos_areas", column: "area_id"
+  add_foreign_key "spree_pos_resources", "spree_pos_branches", column: "branch_id"
+  add_foreign_key "spree_pos_resources", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_return_operations", "spree_admin_users", column: "receiver_id"
   add_foreign_key "spree_pos_return_operations", "spree_admin_users", column: "requester_id"
   add_foreign_key "spree_pos_return_operations", "spree_orders", column: "order_id"
@@ -6292,6 +6402,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_210000) do
   add_foreign_key "spree_pos_workspaces", "spree_pos_branches", column: "branch_id"
   add_foreign_key "spree_pos_workspaces", "spree_pos_customers", column: "pos_customer_id"
   add_foreign_key "spree_pos_workspaces", "spree_pos_registers", column: "register_id"
+  add_foreign_key "spree_pos_workspaces", "spree_pos_resources", column: "resource_id"
   add_foreign_key "spree_pos_workspaces", "spree_pos_shifts", column: "shift_id"
   add_foreign_key "spree_pos_workspaces", "spree_stores", column: "store_id"
   add_foreign_key "spree_product_translations", "spree_products"

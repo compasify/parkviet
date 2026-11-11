@@ -20,9 +20,15 @@ module Spree
               raise Conflict.new('Service mode is invalid.', revision: workspace.revision, reason: 'service_mode_invalid')
             end
 
+            if workspace.resource_id && !Workspace::RESOURCE_MODES.include?(mode)
+              raise Conflict.new('An order at a table is served there.', revision: workspace.revision, reason: 'table_service_mode')
+            end
+
             if workspace.service_mode != mode
               before = workspace.service_mode
               workspace.update!(service_mode: mode, revision: workspace.revision + 1)
+              # Whether the service charge applies depends on the mode.
+              ServiceCharges::Apply.call(workspace)
               AuditEntry.record!(store: workspace.store, actor: staff, action: 'workspace.service_mode', subject: workspace,
                                  metadata: { before: before, service_mode: mode })
             end

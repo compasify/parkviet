@@ -160,6 +160,15 @@ describe('invalidationsFor', () => {
     expect(matched(event({ event: 'approval.requested' }), list)).toBe(false);
   });
 
+  it('reloads the floor when a table, an order or a bill request changes', () => {
+    const board = ['pos', 'resource-board', 3, 'br_1'];
+    expect(matched(event(), board)).toBe(true);
+    expect(matched(event({ event: 'resource.updated', id: 'posres_1' }), board)).toBe(true);
+    expect(matched(event({ event: 'payment.requested' }), board)).toBe(true);
+    expect(matched(event({ event: 'resource.updated', id: 'posprintjob_1' }), board)).toBe(false);
+    expect(matched(event({ event: 'menu.sold_out' }), board)).toBe(false);
+  });
+
   it('ignores an event this build does not know', () => {
     expect(invalidationsFor(event({ event: 'table.moved' }), scope)).toEqual([]);
   });

@@ -26,6 +26,17 @@ export function checklistTarget(item: ChecklistItem): ChecklistTarget | null {
   return null;
 }
 
+// The table an open order on the shift is served at ("Bàn 4 · B"), so the
+// close dialog says which table still holds it. Null for a counter order or a
+// server that does not send it.
+export function checklistTableName(item: ChecklistItem): string | null {
+  const table = (item as { table?: unknown }).table;
+  if (typeof table !== 'object' || table === null) return null;
+  const { name, label } = table as { name?: unknown; label?: unknown };
+  if (typeof name !== 'string' || !name) return null;
+  return typeof label === 'string' && label ? `${name} · ${label}` : name;
+}
+
 // Makes a draft the active tab the next time the sale screen opens (the tabs
 // restore the remembered view of this branch and register).
 export function activateWorkspaceTab(

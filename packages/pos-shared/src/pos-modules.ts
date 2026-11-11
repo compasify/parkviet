@@ -14,8 +14,15 @@ export type PosModuleUsage = Record<string, boolean>;
 
 export type PosCatalogView = 'cards' | 'list';
 
-// The selling screen a profile suggests. menu_grid still needs nb.menu.
-export type PosSellingSurface = 'catalog' | 'menu_grid';
+// The selling screen a profile suggests. menu_grid still needs fnb.menu; the
+// table surfaces (the floor as tiles or as a plan) need fnb.tables.
+export type PosSellingSurface = 'catalog' | 'menu_grid' | 'table_grid' | 'floor_plan';
+
+export type PosTableSurface = 'table_grid' | 'floor_plan';
+
+export const TABLE_SURFACES: readonly PosTableSurface[] = ['table_grid', 'floor_plan'];
+
+const SELLING_SURFACES: readonly PosSellingSurface[] = ['catalog', 'menu_grid', ...TABLE_SURFACES];
 
 export type PosProfileDisplay = { catalog_view?: PosCatalogView; surface?: PosSellingSurface };
 
@@ -40,6 +47,10 @@ export const LABELLED_MODULES = [
   'fnb.order_number',
   'fnb.cup_label',
   'fnb.delivery_platforms',
+  'resources',
+  'fnb.tables',
+  'fnb.postpay',
+  'fnb.service_charge',
 ] as const;
 
 function record(value: unknown): Record<string, unknown> | null {
@@ -107,7 +118,9 @@ export function normalizeDisplay(value: unknown): PosProfileDisplay {
   const surface = display?.surface;
   return {
     ...(view === 'cards' || view === 'list' ? { catalog_view: view } : {}),
-    ...(surface === 'catalog' || surface === 'menu_grid' ? { surface } : {}),
+    ...(SELLING_SURFACES.includes(surface as PosSellingSurface)
+      ? { surface: surface as PosSellingSurface }
+      : {}),
   };
 }
 
@@ -124,14 +137,32 @@ export function catalogViewOf(
   return context?.profile?.display.catalog_view ?? 'cards';
 }
 
-// What the counter sells from: picture tiles of the menu when the branch runs
-// `fnb.menu` and its profile does not ask for the catalogue, else the catalogue.
-// The module decides; the profile only chooses between the two.
+// What the counter picks items from: picture tiles of the menu when the branch
+// runs `fnb.menu` and its profile does not ask for the catalogue, else the
+// catalogue. A table surface in the profile still sells from the menu. The
+// module decides; the profile only chooses between the two.
 export function sellingSurfaceOf(
   context: { modules?: PosModules | null; profile?: PosBranchProfile | null } | undefined,
-): PosSellingSurface {
+): 'catalog' | 'menu_grid' {
   if (context?.modules?.['fnb.menu'] !== true) return 'catalog';
   return context.profile?.display.surface === 'catalog' ? 'catalog' : 'menu_grid';
+}
+
+export function isTableSurface(value: unknown): value is PosTableSurface {
+  return TABLE_SURFACES.includes(value as PosTableSurface);
+}
+
+// How the floor is shown at a branch running `fnb.tables`: the choice saved on
+// this device, else the profile's table surface, else tiles. Null when the
+// branch does not serve tables.
+export function tableSurfaceOf(
+  context: { modules?: PosModules | null; profile?: PosBranchProfile | null } | undefined,
+  saved?: string | null,
+): PosTableSurface | null {
+  if (context?.modules?.['fnb.tables'] !== true) return null;
+  if (isTableSurface(saved)) return saved;
+  const suggested = context.profile?.display.surface;
+  return isTableSurface(suggested) ? suggested : 'table_grid';
 }
 
 // i18n key fragment of a module: dots would read as nesting in i18next.

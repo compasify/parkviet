@@ -818,3 +818,53 @@ kbd { padding: var(--pos-s1); border: 1px solid var(--pos-border); border-radius
 @media (prefers-reduced-motion: reduce) { .call-board-ready li.call-board-new { animation: none; outline: 6px solid var(--pos-warning); } }
 .customer-display-pairing form { display: grid; gap: var(--pos-s3); max-width: 40ch; }
 @media (prefers-reduced-motion: reduce) { .customer-display * { transition: none !important; animation: none !important; } }
+
+/* Table service: the floor as tiles or as a plan, and the tools of a table
+   order. Every state colour comes with its written state. */
+.pos-layout .draft-toolbar > .floor-toggle { order: 1; }
+.workspace-table-name { display: inline-flex; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; color: var(--pos-ink); background: #eef1f4; }
+.table-floor { display: grid; gap: var(--pos-s3); min-width: 0; }
+.table-floor-bar { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--pos-s2); }
+.table-floor-bar fieldset, .table-floor-states { display: flex; flex-wrap: wrap; gap: var(--pos-s2); margin: 0; padding: 0; border: 0; }
+.pos-layout :is(.table-floor-bar, .table-floor-states) button[aria-pressed='true'] { background: var(--pos-selected); border-color: var(--pos-blue); color: var(--pos-blue); }
+.table-filter-count { font-variant-numeric: tabular-nums; color: var(--pos-muted); font-weight: 400; }
+.table-floor-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, 320px); gap: var(--pos-s3); align-items: start; }
+.table-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(136px, 1fr)); gap: var(--pos-s2); }
+.floor-plan { display: grid; gap: 2px; width: 100%; min-width: 0; margin: 0; padding: var(--pos-s2); background: var(--pos-tint); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); }
+.floor-plan-cell { display: grid; min-width: 0; min-height: 0; }
+.floor-plan .table-tile { min-height: 0; height: 100%; padding: var(--pos-s1); font-size: var(--pos-small); overflow: hidden; }
+.pos-layout .table-tile { position: relative; display: grid; align-content: start; justify-items: start; gap: 2px; width: 100%; min-height: 112px; padding: var(--pos-s2); text-align: left; border: 1px solid var(--pos-border); border-left-width: 6px; background: var(--pos-surface); }
+.pos-layout .table-tile[aria-pressed='true'] { outline: 3px solid var(--pos-blue); outline-offset: 1px; }
+.pos-layout .table-shape-round { border-radius: 999px; justify-items: center; text-align: center; }
+.table-tile-name { font-size: var(--pos-heading); }
+.table-tile-state, .table-state-badge { display: inline-flex; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 700; color: var(--pos-ink); background: #eef1f4; }
+.table-tile-meta { display: flex; flex-wrap: wrap; gap: 0 var(--pos-s2); color: var(--pos-muted); font-size: var(--pos-small); font-weight: 400; }
+.table-tile-total { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--pos-blue); }
+.table-tile-flag { color: var(--pos-warning); font-size: var(--pos-small); font-weight: 600; }
+/* Neutral free, blue seated, dark blue ordered, amber waiting, red asking for the bill,
+   purple pre-billed, grey striped being cleaned. */
+.pos-layout .table-tile-available { border-left-color: #b8c7d3; }
+.pos-layout .table-tile-occupied { border-left-color: #3b8fd6; }
+.table-tile-occupied .table-tile-state, .table-state-badge.table-tile-occupied { background: #e3eef8; color: #1d4f7a; }
+.pos-layout .table-tile-ordered { border-left-color: var(--pos-blue); }
+.table-tile-ordered .table-tile-state, .table-state-badge.table-tile-ordered { background: var(--pos-blue); color: #fff; }
+.pos-layout .table-tile-waiting_long { border-left-color: #d29a1e; }
+.table-tile-waiting_long .table-tile-state, .table-state-badge.table-tile-waiting_long { background: #fff4d9; color: var(--pos-warning); }
+.pos-layout .table-tile-payment_requested { border-left-color: var(--pos-danger); }
+.table-tile-payment_requested .table-tile-state, .table-state-badge.table-tile-payment_requested { background: #fff0ee; color: var(--pos-danger); }
+.pos-layout .table-tile-prebilled { border-left-color: #6b4fa8; }
+.table-tile-prebilled .table-tile-state, .table-state-badge.table-tile-prebilled { background: #efe9f8; color: #4d3680; }
+.pos-layout .table-tile-cleaning { border-left-color: #8a99a6; background: repeating-linear-gradient(135deg, var(--pos-surface) 0 8px, #eef1f4 8px 16px); }
+.pos-layout .table-tile-out_of_service { border-left-color: #8a99a6; background: #eef1f4; color: var(--pos-muted); }
+.table-panel { display: grid; gap: var(--pos-s2); padding: var(--pos-s3); background: var(--pos-surface); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); }
+.table-panel-heading { display: flex; align-items: center; justify-content: space-between; gap: var(--pos-s2); }
+.pos-layout .table-panel-heading h2 { margin: 0; }
+.table-panel-orders { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--pos-s2); }
+.pos-layout .table-panel-orders button { width: 100%; justify-content: space-between; flex-wrap: wrap; }
+.table-panel-open { display: grid; gap: var(--pos-s2); }
+.table-order-bar { display: grid; gap: var(--pos-s2); padding: var(--pos-s2) var(--pos-s3); margin-bottom: var(--pos-s2); background: var(--pos-tint); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); }
+.pos-layout .table-order-title { display: flex; flex-wrap: wrap; align-items: center; gap: var(--pos-s2); margin: 0; color: var(--pos-ink); }
+.table-order-tools { display: flex; flex-wrap: wrap; align-items: end; gap: var(--pos-s2); }
+.table-order-tools label { display: grid; gap: 2px; min-width: 140px; font-size: var(--pos-small); }
+.split-order-lines { display: grid; gap: 0; }
+@media (max-width: 767px) { .table-floor-body { grid-template-columns: minmax(0, 1fr); } }

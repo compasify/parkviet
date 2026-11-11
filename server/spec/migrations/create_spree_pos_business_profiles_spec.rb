@@ -34,7 +34,7 @@ RSpec.describe CreateSpreePosBusinessProfiles, pos_modules: :default do
       expect(branch.profile_version).to eq(1)
       expect(Spree::Pos::BranchModule.where(branch: branch).pluck(:module_key, :enabled, :reason)).
         to contain_exactly(['retail.units', true, 'backfill'], ['retail.measured', true, 'backfill'], ['retail.traceability', true, 'backfill'])
-      expect(Spree::Pos::ModulePolicy.for_branch(branch).values).to all(be(true))
+      expect(Spree::Pos::ModulePolicy.for_branch(branch).slice('retail.units', 'retail.measured', 'retail.traceability').values).to all(be(true))
     end
     profile = Spree::Pos::StoreProfile.find_by!(store: store)
     expect(profile.attributes.slice('profile_key', 'profile_version', 'wholesale', 'interests')).

@@ -16,6 +16,7 @@ import {
   activateWorkspaceTab,
   blockedChecklist,
   type ChecklistItem,
+  checklistTableName,
   checklistTarget,
   describeShiftFailure,
   formatInZone,
@@ -64,12 +65,14 @@ function ChecklistList({
     <ul className="record-list shift-checklist" aria-label={label}>
       {items.map((item) => {
         const target = checklistTarget(item);
+        const table = checklistTableName(item);
         return (
           <li key={`${item.type}-${item.id ?? item.workspace_id}`}>
             <div className="record-copy">
               <strong>
                 {t(`shiftCheck_${item.type}`)}
                 {item.order_number ? ` · ${item.order_number}` : ''}
+                {table ? ` · ${t('shiftCheckTable', { table })}` : ''}
               </strong>
               <small>
                 {t(`shiftCheckStatus_${item.status}`, { defaultValue: item.status })}

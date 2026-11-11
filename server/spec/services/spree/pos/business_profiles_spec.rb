@@ -65,7 +65,8 @@ RSpec.describe Spree::Pos::BusinessProfiles do
                                         include(key: 'fnb.kitchen', status: 'available'),
                                         include(key: 'fnb.order_number', status: 'available'),
                                         include(key: 'fnb.cup_label', status: 'available', depends_on: ['fnb.menu']),
-                                        include(key: 'fnb.tables', status: 'planned'))
+                                        include(key: 'fnb.tables', status: 'available', depends_on: ['resources']),
+                                        include(key: 'timed_billing', status: 'planned'))
       expect(data[:profiles].first.keys).
         to eq(%i[key group order status modules branch_defaults display recommended_features sample_units kitchen_stations])
       expect(data[:tax_categories].map { |row| row[:code] }).to eq(%w[vat_food vat_special])
@@ -139,7 +140,10 @@ RSpec.describe Spree::Pos::BusinessProfiles do
       expect(errors_of('nha_thuoc' => profile(display: { 'surface' => 'menu_grid' }))).
         to eq(['nha_thuoc.display.surface: menu_grid needs fnb.menu.'])
       expect(errors_of('nha_thuoc' => profile(display: { 'surface' => 'floor_plan' }))).
-        to eq(['nha_thuoc.display.surface: "floor_plan" must be one of catalog, menu_grid.'])
+        to eq(['nha_thuoc.display.surface: floor_plan needs fnb.tables.'])
+      expect(errors_of('nha_thuoc' => profile(display: { 'surface' => 'kiosk' }))).
+        to eq(['nha_thuoc.display.surface: "kiosk" must be one of catalog, menu_grid, table_grid, floor_plan.'])
+      expect(errors_of('quan_an' => profile(group: 'fnb', modules: %w[resources fnb.tables], display: { 'surface' => 'table_grid' }))).to eq([])
       expect(errors_of('nha_thuoc' => profile(display: { 'surface' => 'catalog', 'catalog_view' => 'cards' }))).to eq([])
       expect(errors_of('quan_an' => profile(group: 'fnb', modules: ['fnb.menu'], display: { 'surface' => 'menu_grid' }))).to eq([])
     end
@@ -169,7 +173,12 @@ RSpec.describe Spree::Pos::BusinessProfiles do
     end
 
     it 'counts a profile with a planned module as coming soon' do
-      built = described_class.build(catalog({ 'quan_an' => profile(group: 'retail', modules: ['fnb.tables', 'retail.units']) }))
+      built = described_class.build(catalog({ 'quan_an' => profile(group: 'retail', modules: ['timed_billing', 'retail.units']) }))
+      expect(built.profiles.first.status).to eq('coming_soon')
+    end
+
+    it 'keeps a profile that lists the table service modules coming soon' do
+      built = described_class.build(catalog({ 'quan_an' => profile(group: 'fnb', modules: %w[fnb.menu resources fnb.tables]) }))
       expect(built.profiles.first.status).to eq('coming_soon')
     end
 
@@ -190,13 +199,14 @@ RSpec.describe Spree::Pos::BusinessProfiles do
       end
     end
 
-    it 'registers the three retail modules, the menu, recipes, the planned F&B names, and freezes the registry' do
-      expect(described_class.available_keys).to eq(%w[retail.units retail.measured retail.traceability fnb.menu fnb.recipes fnb.kitchen fnb.order_number fnb.cup_label fnb.delivery_platforms])
+    it 'registers the three retail modules, the F&B modules, the planned names, and freezes the registry' do
+      expect(described_class.available_keys).to eq(%w[retail.units retail.measured retail.traceability fnb.menu fnb.recipes fnb.kitchen fnb.order_number fnb.cup_label fnb.delivery_platforms resources fnb.tables fnb.postpay fnb.service_charge])
       expect(described_class.find('fnb.recipes').depends_on).to eq(%w[fnb.menu retail.units])
       expect(described_class.find('retail.measured').depends_on).to eq(['retail.units'])
       expect(described_class.available?('fnb.menu')).to be(true)
-      expect(described_class.known?('fnb.tables')).to be(true)
-      expect(described_class.available?('fnb.tables')).to be(false)
+      expect(described_class.find('fnb.tables').depends_on).to eq(['resources'])
+      expect(described_class.known?('timed_billing')).to be(true)
+      expect(described_class.available?('timed_billing')).to be(false)
       expect(described_class.find('fnb.kitchen').depends_on).to eq(['fnb.menu'])
       expect(described_class.all).to all(be_frozen)
       expect { described_class.send(:registry)['retail.extra'] = nil }.to raise_error(FrozenError)

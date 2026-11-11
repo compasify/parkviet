@@ -40,8 +40,12 @@ module Spree
         'Spree::Pos::RefundRequest' => [Capabilities::RETURN],
         # A shift close variance: the cashier, or a manager closing for them.
         'Spree::Pos::Shift' => [Capabilities::OPEN_SHIFT, Capabilities::RECOVER],
-        'Spree::Pos::InventoryAdjustment' => [Capabilities::INVENTORY_MANAGE]
+        'Spree::Pos::InventoryAdjustment' => [Capabilities::INVENTORY_MANAGE],
+        # Sellers, and the people serving a table (only table orders are theirs to edit).
+        'Spree::Pos::Workspace' => [Capabilities::OPEN_SHIFT, Capabilities::TABLE_SERVE]
       }.freeze
+      # Pre-bills of a table: printing one again, or taking one back.
+      PREBILL_ACTIONS = %w[workspace.reprint_prebill workspace.cancel_prebill].freeze
 
       def consume!(action:, amount:, currency:, revision:, subject:, requester:)
         raise Conflict, 'Approval subject is required.' unless SUBJECTS.include?(subject.class.name) && subject.persisted?

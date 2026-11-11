@@ -50,10 +50,15 @@ module Spree
       OPERATE_KITCHEN = 'pos.kitchen.operate'
       # A branch's kitchen setup: stations, routes and when orders are sent.
       MANAGE_KITCHEN = 'pos.kitchen.manage'
+      # Serving tables: open a table and edit its orders without owning the
+      # shift they are booked on. Counter orders stay with their cashier.
+      TABLE_SERVE = 'pos.table.serve'
+      # A branch's floor plan: areas, tables and their cleaning / out of service marks.
+      RESOURCE_MANAGE = 'pos.resource.manage'
       ASSIGNABLE = [MANAGE, OPEN_SHIFT, DISCOUNT, PRICE_OVERRIDE, CUSTOMER, PAYMENT, RESOLVE, RECOVER, APPROVE, TAKEOVER,
                     CREDIT_MANAGE, CREDIT_SELL, RETURN, CASH_MOVE, REPORT_READ, REPORT_EXPORT,
                     INVENTORY_MANAGE, INVENTORY_TRACE, DEVICE_MANAGE, PRINTER_MANAGE, MANAGE_MENU, SET_SOLD_OUT,
-                    EINVOICE_MANAGE, OPERATE_KITCHEN, MANAGE_KITCHEN].freeze
+                    EINVOICE_MANAGE, OPERATE_KITCHEN, MANAGE_KITCHEN, TABLE_SERVE, RESOURCE_MANAGE].freeze
 
       def self.sanitize(values)
         Array(values).map(&:to_s).uniq

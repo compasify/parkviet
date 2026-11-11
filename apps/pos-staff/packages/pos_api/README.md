@@ -66,6 +66,10 @@ All URIs are relative to *http://localhost*
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
 [*DefaultApi*](doc/DefaultApi.md) | [**posApprovalCreate**](doc/DefaultApi.md#posapprovalcreate) | **POST** /api/v3/admin/pos/approvals | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posAreaArchive**](doc/DefaultApi.md#posareaarchive) | **POST** /api/v3/admin/pos/areas/{id}/archive | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posAreaCreate**](doc/DefaultApi.md#posareacreate) | **POST** /api/v3/admin/pos/areas | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posAreaUpdate**](doc/DefaultApi.md#posareaupdate) | **PATCH** /api/v3/admin/pos/areas/{id} | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posAreas**](doc/DefaultApi.md#posareas) | **GET** /api/v3/admin/pos/areas | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posCatalog**](doc/DefaultApi.md#poscatalog) | **GET** /api/v3/admin/pos/catalog | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posContext**](doc/DefaultApi.md#poscontext) | **GET** /api/v3/admin/pos/context | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posCupLabelSettings**](doc/DefaultApi.md#poscuplabelsettings) | **GET** /api/v3/admin/pos/cup_label_settings | 
@@ -120,6 +124,8 @@ Class | Method | HTTP request | Description
 [*DefaultApi*](doc/DefaultApi.md) | [**posMenuItems**](doc/DefaultApi.md#posmenuitems) | **GET** /api/v3/admin/pos/menu_items | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posMenuSoldOut**](doc/DefaultApi.md#posmenusoldout) | **PUT** /api/v3/admin/pos/menu_availabilities | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posModifierGroups**](doc/DefaultApi.md#posmodifiergroups) | **GET** /api/v3/admin/pos/modifier_groups | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posPaymentRequest**](doc/DefaultApi.md#pospaymentrequest) | **POST** /api/v3/admin/pos/workspaces/{workspace_id}/payment_request | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posPaymentRequestResolve**](doc/DefaultApi.md#pospaymentrequestresolve) | **POST** /api/v3/admin/pos/workspaces/{workspace_id}/payment_request/resolve | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posPlatformOrderCancel**](doc/DefaultApi.md#posplatformordercancel) | **POST** /api/v3/admin/pos/platform_orders/{id}/cancel | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posPlatformOrderComplete**](doc/DefaultApi.md#posplatformordercomplete) | **POST** /api/v3/admin/pos/platform_orders/{id}/complete | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posPlatformOrderEnter**](doc/DefaultApi.md#posplatformorderenter) | **POST** /api/v3/admin/pos/platform_orders | 
@@ -128,6 +134,8 @@ Class | Method | HTTP request | Description
 [*DefaultApi*](doc/DefaultApi.md) | [**posPlatformOrdersSettle**](doc/DefaultApi.md#posplatformorderssettle) | **POST** /api/v3/admin/pos/platform_orders/settle | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posPlatformSettingUpdate**](doc/DefaultApi.md#posplatformsettingupdate) | **PUT** /api/v3/admin/pos/platform_settings | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posPlatformSettings**](doc/DefaultApi.md#posplatformsettings) | **GET** /api/v3/admin/pos/platform_settings | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posPrebill**](doc/DefaultApi.md#posprebill) | **POST** /api/v3/admin/pos/workspaces/{workspace_id}/prebill | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posPrebillCancel**](doc/DefaultApi.md#posprebillcancel) | **POST** /api/v3/admin/pos/workspaces/{workspace_id}/prebill/cancel | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posPrintJobCancel**](doc/DefaultApi.md#posprintjobcancel) | **POST** /api/v3/admin/pos/print_jobs/{id}/cancel | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posPrintJobCreate**](doc/DefaultApi.md#posprintjobcreate) | **POST** /api/v3/admin/pos/print_jobs | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posPrintJobPrebills**](doc/DefaultApi.md#posprintjobprebills) | **GET** /api/v3/admin/pos/print_jobs/prebills | 
@@ -145,6 +153,13 @@ Class | Method | HTTP request | Description
 [*DefaultApi*](doc/DefaultApi.md) | [**posReportIngredientUsage**](doc/DefaultApi.md#posreportingredientusage) | **GET** /api/v3/admin/pos/reports/ingredient_usage | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posReportMenuMargin**](doc/DefaultApi.md#posreportmenumargin) | **GET** /api/v3/admin/pos/reports/menu_margin | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posReportPlatforms**](doc/DefaultApi.md#posreportplatforms) | **GET** /api/v3/admin/pos/reports/platforms | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posResourceArchive**](doc/DefaultApi.md#posresourcearchive) | **POST** /api/v3/admin/pos/resources/{id}/archive | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posResourceBoard**](doc/DefaultApi.md#posresourceboard) | **GET** /api/v3/admin/pos/resource_board | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posResourceCreate**](doc/DefaultApi.md#posresourcecreate) | **POST** /api/v3/admin/pos/resources | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posResourceManualStatus**](doc/DefaultApi.md#posresourcemanualstatus) | **POST** /api/v3/admin/pos/resources/{id}/manual_status | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posResourceUpdate**](doc/DefaultApi.md#posresourceupdate) | **PATCH** /api/v3/admin/pos/resources/{id} | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posResources**](doc/DefaultApi.md#posresources) | **GET** /api/v3/admin/pos/resources | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posServiceChargeWaive**](doc/DefaultApi.md#posservicechargewaive) | **POST** /api/v3/admin/pos/workspaces/{workspace_id}/service_charge | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posStationRouteCreate**](doc/DefaultApi.md#posstationroutecreate) | **POST** /api/v3/admin/pos/station_routes | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posStationRouteDestroy**](doc/DefaultApi.md#posstationroutedestroy) | **DELETE** /api/v3/admin/pos/station_routes/{id} | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posStationRouteUpdate**](doc/DefaultApi.md#posstationrouteupdate) | **PATCH** /api/v3/admin/pos/station_routes/{id} | 
@@ -152,6 +167,12 @@ Class | Method | HTTP request | Description
 [*DefaultApi*](doc/DefaultApi.md) | [**posStockAlertSet**](doc/DefaultApi.md#posstockalertset) | **PUT** /api/v3/admin/pos/stock_alerts | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posStockAlerts**](doc/DefaultApi.md#posstockalerts) | **GET** /api/v3/admin/pos/stock_alerts | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posSystemStatus**](doc/DefaultApi.md#possystemstatus) | **GET** /api/v3/admin/pos/system_status | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posTableMerge**](doc/DefaultApi.md#postablemerge) | **POST** /api/v3/admin/pos/workspaces/{workspace_id}/merge | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posTableMove**](doc/DefaultApi.md#postablemove) | **POST** /api/v3/admin/pos/workspaces/{workspace_id}/move | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posTableOpen**](doc/DefaultApi.md#postableopen) | **POST** /api/v3/admin/pos/tables/{resource_id}/open | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posTableSettings**](doc/DefaultApi.md#postablesettings) | **GET** /api/v3/admin/pos/table_settings | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posTableSettingsUpdate**](doc/DefaultApi.md#postablesettingsupdate) | **PUT** /api/v3/admin/pos/table_settings | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posTableSplit**](doc/DefaultApi.md#postablesplit) | **POST** /api/v3/admin/pos/workspaces/{workspace_id}/split | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posWorkspaceAddItem**](doc/DefaultApi.md#posworkspaceadditem) | **POST** /api/v3/admin/pos/workspaces/{id}/items | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posWorkspaceCreate**](doc/DefaultApi.md#posworkspacecreate) | **POST** /api/v3/admin/pos/workspaces | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posWorkspaceCupLabelsReprint**](doc/DefaultApi.md#posworkspacecuplabelsreprint) | **POST** /api/v3/admin/pos/workspaces/{workspace_id}/cup_labels | 
@@ -165,6 +186,10 @@ Class | Method | HTTP request | Description
 
  - [Approval](doc/Approval.md)
  - [ApprovalRevision](doc/ApprovalRevision.md)
+ - [Area](doc/Area.md)
+ - [AreaInput](doc/AreaInput.md)
+ - [AreaList](doc/AreaList.md)
+ - [AreaResult](doc/AreaResult.md)
  - [CallBoard](doc/CallBoard.md)
  - [CallBoardPreparingInner](doc/CallBoardPreparingInner.md)
  - [CallBoardReadyInner](doc/CallBoardReadyInner.md)
@@ -239,6 +264,9 @@ Class | Method | HTTP request | Description
  - [ModifierGroup](doc/ModifierGroup.md)
  - [ModifierGroupOptionsInner](doc/ModifierGroupOptionsInner.md)
  - [ModifierSelection](doc/ModifierSelection.md)
+ - [PaymentRequest](doc/PaymentRequest.md)
+ - [PaymentRequestInput](doc/PaymentRequestInput.md)
+ - [PaymentRequestResolveInput](doc/PaymentRequestResolveInput.md)
  - [PlatformOrder](doc/PlatformOrder.md)
  - [PlatformOrderCancelInput](doc/PlatformOrderCancelInput.md)
  - [PlatformOrderEditor](doc/PlatformOrderEditor.md)
@@ -339,6 +367,9 @@ Class | Method | HTTP request | Description
  - [PosWorkspaceGuestNameRequest](doc/PosWorkspaceGuestNameRequest.md)
  - [PosWorkspaceKitchenTickets200Response](doc/PosWorkspaceKitchenTickets200Response.md)
  - [PosWorkspaceLineModifiersRequest](doc/PosWorkspaceLineModifiersRequest.md)
+ - [PrebillInput](doc/PrebillInput.md)
+ - [PrebillOutcome](doc/PrebillOutcome.md)
+ - [PrebillResult](doc/PrebillResult.md)
  - [PrintBlock](doc/PrintBlock.md)
  - [PrintBlockOneOf](doc/PrintBlockOneOf.md)
  - [PrintBlockOneOf1](doc/PrintBlockOneOf1.md)
@@ -371,6 +402,18 @@ Class | Method | HTTP request | Description
  - [RecipeIngredientsInner](doc/RecipeIngredientsInner.md)
  - [RecipeOwner](doc/RecipeOwner.md)
  - [RecipeOwnerVersionsInner](doc/RecipeOwnerVersionsInner.md)
+ - [Resource](doc/Resource.md)
+ - [ResourceBoard](doc/ResourceBoard.md)
+ - [ResourceBoardArea](doc/ResourceBoardArea.md)
+ - [ResourceBoardOrder](doc/ResourceBoardOrder.md)
+ - [ResourceBoardResult](doc/ResourceBoardResult.md)
+ - [ResourceBoardTile](doc/ResourceBoardTile.md)
+ - [ResourceInput](doc/ResourceInput.md)
+ - [ResourceList](doc/ResourceList.md)
+ - [ResourceManualStatusInput](doc/ResourceManualStatusInput.md)
+ - [ResourceRef](doc/ResourceRef.md)
+ - [ResourceResult](doc/ResourceResult.md)
+ - [ServiceChargeWaiveInput](doc/ServiceChargeWaiveInput.md)
  - [StationRoute](doc/StationRoute.md)
  - [StationRouteInput](doc/StationRouteInput.md)
  - [StockAlert](doc/StockAlert.md)
@@ -384,9 +427,21 @@ Class | Method | HTTP request | Description
  - [SystemStatusServer](doc/SystemStatusServer.md)
  - [SystemStatusVersion](doc/SystemStatusVersion.md)
  - [SystemStatusVietqr](doc/SystemStatusVietqr.md)
+ - [TableMergeInput](doc/TableMergeInput.md)
+ - [TableMoveInput](doc/TableMoveInput.md)
+ - [TableOpenInput](doc/TableOpenInput.md)
+ - [TableSettings](doc/TableSettings.md)
+ - [TableSettingsInput](doc/TableSettingsInput.md)
+ - [TableSettingsResult](doc/TableSettingsResult.md)
+ - [TableSplitInput](doc/TableSplitInput.md)
+ - [TableSplitOrders](doc/TableSplitOrders.md)
+ - [TableSplitResult](doc/TableSplitResult.md)
  - [TaxRow](doc/TaxRow.md)
  - [Workspace](doc/Workspace.md)
  - [WorkspaceLine](doc/WorkspaceLine.md)
+ - [WorkspacePrebill](doc/WorkspacePrebill.md)
+ - [WorkspaceResult](doc/WorkspaceResult.md)
+ - [WorkspaceServiceCharge](doc/WorkspaceServiceCharge.md)
  - [WorkspaceTotals](doc/WorkspaceTotals.md)
  - [WorkspaceTotalsTaxesInner](doc/WorkspaceTotalsTaxesInner.md)
 

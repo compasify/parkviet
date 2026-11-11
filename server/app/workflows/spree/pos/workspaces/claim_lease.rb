@@ -8,11 +8,10 @@ module Spree
           editor_digest = Workspace.editor_digest(editor_id)
           payload = { 'command' => 'claim_lease', 'editor_digest' => editor_digest, 'takeover' => takeover }
           authorize = lambda do
-            owner = workspace.shift.owner_id == staff.id
             policy = AccessPolicy.new(store: workspace.store, staff: staff)
             takeover_allowed = policy.allows?(workspace.branch, Capabilities::TAKEOVER)
-            owner_allowed = owner && policy.allows?(workspace.branch, Capabilities::OPEN_SHIFT)
-            raise CanCan::AccessDenied if workspace.branch.disabled? || workspace.register&.disabled? || !(owner_allowed || takeover_allowed)
+            editor_allowed = policy.can_edit_workspace?(workspace) || policy.can_collect_table?(workspace)
+            raise CanCan::AccessDenied if workspace.branch.disabled? || workspace.register&.disabled? || !(editor_allowed || takeover_allowed)
             raise CanCan::AccessDenied if workspace.operational_status == 'canceled'
           end
           CommandExecutor.call(store: workspace.store, actor: staff, key:, payload:, workspace:, authorize:) do

@@ -36,8 +36,11 @@ module Spree
                 Spree::Pos::Workspace.for_store(current_store).where(branch_id: branch.id), params[:workspace_id]
               )
               raise ActiveRecord::RecordNotFound if subject.nil?
-              raise CanCan::AccessDenied unless [subject.shift.owner_id, subject.lease_holder_id].include?(requester.id)
-              raise CanCan::AccessDenied unless Spree::Pos::AccessPolicy.new(store: current_store, staff: requester).allows?(branch, Spree::Pos::Capabilities::OPEN_SHIFT)
+              requester_policy = Spree::Pos::AccessPolicy.new(store: current_store, staff: requester)
+              # The cashier of the order, or for a table order anyone who may edit it.
+              cashier = [subject.shift.owner_id, subject.lease_holder_id].include?(requester.id) &&
+                        requester_policy.allows?(branch, Spree::Pos::Capabilities::OPEN_SHIFT)
+              raise CanCan::AccessDenied unless cashier || (subject.resource_id && requester_policy.can_edit_workspace?(subject))
               raise Spree::Pos::Conflict.new('Revision is stale.', revision: subject.revision) unless params[:revision].to_s == subject.revision.to_s
               # Credit approvals reserve exposure, so they only come from the credit approval endpoint.
               if params[:action_name].to_s == Spree::Pos::Credit::ACTION

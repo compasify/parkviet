@@ -6,7 +6,11 @@
 import 'package:pos_api/src/model/date.dart';
 import 'package:built_collection/built_collection.dart';
 import 'package:pos_api/src/model/workspace_line.dart';
+import 'package:pos_api/src/model/resource_ref.dart';
+import 'package:pos_api/src/model/workspace_prebill.dart';
+import 'package:pos_api/src/model/workspace_service_charge.dart';
 import 'package:pos_api/src/model/workspace_totals.dart';
+import 'package:pos_api/src/model/payment_request.dart';
 import 'package:built_value/json_object.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
@@ -23,6 +27,12 @@ part 'workspace.g.dart';
 /// * [businessDate]
 /// * [orderNumber] - Call number (`fnb.order_number`), 1, 2, 3… per branch and business date, given at the first kitchen send or at completion and kept.
 /// * [guestName] - The name the counter calls out with the call number.
+/// * [resource] - The table of a table order (`fnb.tables`).
+/// * [guestCount]
+/// * [tableLabel] - A, B… when a table has several open orders.
+/// * [serviceCharge] - Present when the branch has a service charge rate.
+/// * [prebill] - The latest pre-bill of a table order.
+/// * [paymentRequest] - The table's open request for the bill.
 /// * [lineItems]
 /// * [totals]
 @BuiltValue()
@@ -50,6 +60,29 @@ abstract class Workspace implements Built<Workspace, WorkspaceBuilder> {
   /// The name the counter calls out with the call number.
   @BuiltValueField(wireName: r'guest_name')
   String? get guestName;
+
+  /// The table of a table order (`fnb.tables`).
+  @BuiltValueField(wireName: r'resource')
+  ResourceRef? get resource;
+
+  @BuiltValueField(wireName: r'guest_count')
+  int? get guestCount;
+
+  /// A, B… when a table has several open orders.
+  @BuiltValueField(wireName: r'table_label')
+  String? get tableLabel;
+
+  /// Present when the branch has a service charge rate.
+  @BuiltValueField(wireName: r'service_charge')
+  WorkspaceServiceCharge? get serviceCharge;
+
+  /// The latest pre-bill of a table order.
+  @BuiltValueField(wireName: r'prebill')
+  WorkspacePrebill? get prebill;
+
+  /// The table's open request for the bill.
+  @BuiltValueField(wireName: r'payment_request')
+  PaymentRequest? get paymentRequest;
 
   @BuiltValueField(wireName: r'line_items')
   BuiltList<WorkspaceLine>? get lineItems;
@@ -117,6 +150,48 @@ class _$WorkspaceSerializer implements PrimitiveSerializer<Workspace> {
       yield serializers.serialize(
         object.guestName,
         specifiedType: const FullType.nullable(String),
+      );
+    }
+    if (object.resource != null) {
+      yield r'resource';
+      yield serializers.serialize(
+        object.resource,
+        specifiedType: const FullType.nullable(ResourceRef),
+      );
+    }
+    if (object.guestCount != null) {
+      yield r'guest_count';
+      yield serializers.serialize(
+        object.guestCount,
+        specifiedType: const FullType.nullable(int),
+      );
+    }
+    if (object.tableLabel != null) {
+      yield r'table_label';
+      yield serializers.serialize(
+        object.tableLabel,
+        specifiedType: const FullType.nullable(String),
+      );
+    }
+    if (object.serviceCharge != null) {
+      yield r'service_charge';
+      yield serializers.serialize(
+        object.serviceCharge,
+        specifiedType: const FullType.nullable(WorkspaceServiceCharge),
+      );
+    }
+    if (object.prebill != null) {
+      yield r'prebill';
+      yield serializers.serialize(
+        object.prebill,
+        specifiedType: const FullType.nullable(WorkspacePrebill),
+      );
+    }
+    if (object.paymentRequest != null) {
+      yield r'payment_request';
+      yield serializers.serialize(
+        object.paymentRequest,
+        specifiedType: const FullType.nullable(PaymentRequest),
       );
     }
     if (object.lineItems != null) {
@@ -206,6 +281,54 @@ class _$WorkspaceSerializer implements PrimitiveSerializer<Workspace> {
           ) as String?;
           if (valueDes == null) continue;
           result.guestName = valueDes;
+          break;
+        case r'resource':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(ResourceRef),
+          ) as ResourceRef?;
+          if (valueDes == null) continue;
+          result.resource.replace(valueDes);
+          break;
+        case r'guest_count':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(int),
+          ) as int?;
+          if (valueDes == null) continue;
+          result.guestCount = valueDes;
+          break;
+        case r'table_label':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.tableLabel = valueDes;
+          break;
+        case r'service_charge':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(WorkspaceServiceCharge),
+          ) as WorkspaceServiceCharge?;
+          if (valueDes == null) continue;
+          result.serviceCharge.replace(valueDes);
+          break;
+        case r'prebill':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(WorkspacePrebill),
+          ) as WorkspacePrebill?;
+          if (valueDes == null) continue;
+          result.prebill.replace(valueDes);
+          break;
+        case r'payment_request':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(PaymentRequest),
+          ) as PaymentRequest?;
+          if (valueDes == null) continue;
+          result.paymentRequest.replace(valueDes);
           break;
         case r'line_items':
           final valueDes = serializers.deserialize(

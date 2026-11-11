@@ -14,12 +14,7 @@ module Spree
             'editor_digest' => editor_digest, 'value_type' => value_type.to_s, 'value' => value.to_s,
             'reason' => reason.to_s, 'approval_id' => approval_id.to_s.presence
           }
-          authorize = lambda do
-            policy = AccessPolicy.new(store: workspace.store, staff: staff)
-            raise CanCan::AccessDenied if workspace.branch.disabled? || workspace.register&.disabled? ||
-              workspace.shift.owner_id != staff.id ||
-              !policy.allows?(workspace.branch, Capabilities::OPEN_SHIFT)
-          end
+          authorize = -> { authorize!(workspace, staff) }
           CommandExecutor.call(store: workspace.store, actor: staff, key: key, payload: payload, workspace: workspace, authorize: authorize) do
             validate_command!(workspace, staff, revision, lease_generation, editor_id)
             validate_discount!(workspace, value_type, value, reason)
@@ -55,15 +50,10 @@ module Spree
             'command' => 'clear_discount', 'revision' => revision, 'lease_generation' => lease_generation,
             'editor_digest' => editor_digest, 'approval_id' => approval_id.to_s.presence
           }
-          authorize = lambda do
-            policy = AccessPolicy.new(store: workspace.store, staff: staff)
-            raise CanCan::AccessDenied if workspace.branch.disabled? || workspace.register&.disabled? ||
-              workspace.shift.owner_id != staff.id ||
-              !policy.allows?(workspace.branch, Capabilities::OPEN_SHIFT)
-          end
+          authorize = -> { authorize!(workspace, staff) }
           CommandExecutor.call(store: workspace.store, actor: staff, key: key, payload: payload, workspace: workspace, authorize: authorize) do
             validate_command!(workspace, staff, revision, lease_generation, editor_id)
-            intent = DiscountIntent.find_by(workspace: workspace)
+            intent =DiscountIntent.find_by(workspace: workspace)
             amount = intent && applied_amount(intent)
             approval = approve!(workspace, staff, revision, approval_id, amount: amount, action: CLEAR_ACTION)
             before = intent && { value_type: intent.value_type, value: intent.value, amount: amount.to_s('F') }
@@ -79,6 +69,11 @@ module Spree
                                metadata: { before: before, total: workspace.order.total.to_s('F') }.merge(approval_metadata(approval)))
             response(workspace)
           end
+        end
+
+        def self.authorize!(workspace, staff)
+          policy = AccessPolicy.new(store: workspace.store, staff: staff)
+          raise CanCan::AccessDenied if workspace.branch.disabled? || workspace.register&.disabled? || !policy.can_edit_workspace?(workspace)
         end
 
         def self.response(workspace)
@@ -134,6 +129,8 @@ module Spree
           Spree::PromotionHandler::Cart.new(workspace.order).activate
           Spree.order_recalculate_totals_workflow.call(order: workspace.order)
           workspace.order.reload
+          # The service charge follows the items and discounts just summed.
+          ServiceCharges::Apply.call(workspace)
         end
       end
     end

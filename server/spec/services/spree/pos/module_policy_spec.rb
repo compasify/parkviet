@@ -24,11 +24,11 @@ RSpec.describe Spree::Pos::ModulePolicy, pos_modules: :default do
 
   it 'reports every available module, off without a row, on only with an enabled row' do
     expect(described_class.for_branch(branch)).to eq('retail.units' => false, 'retail.measured' => false, 'retail.traceability' => false,
-                                                     'fnb.menu' => false, 'fnb.recipes' => false, 'fnb.kitchen' => false, 'fnb.order_number' => false, 'fnb.cup_label' => false, 'fnb.delivery_platforms' => false)
+                                                     'fnb.menu' => false, 'fnb.recipes' => false, 'fnb.kitchen' => false, 'fnb.order_number' => false, 'fnb.cup_label' => false, 'fnb.delivery_platforms' => false, 'resources' => false, 'fnb.tables' => false, 'fnb.postpay' => false, 'fnb.service_charge' => false)
     turn(branch, 'retail.units', true)
     turn(branch, 'retail.traceability', false)
     expect(described_class.for_branch(branch)).to eq('retail.units' => true, 'retail.measured' => false, 'retail.traceability' => false,
-                                                     'fnb.menu' => false, 'fnb.recipes' => false, 'fnb.kitchen' => false, 'fnb.order_number' => false, 'fnb.cup_label' => false, 'fnb.delivery_platforms' => false)
+                                                     'fnb.menu' => false, 'fnb.recipes' => false, 'fnb.kitchen' => false, 'fnb.order_number' => false, 'fnb.cup_label' => false, 'fnb.delivery_platforms' => false, 'resources' => false, 'fnb.tables' => false, 'fnb.postpay' => false, 'fnb.service_charge' => false)
     expect(described_class.for_branch(nil)).to eq({})
     expect(described_class.enabled?(branch, 'retail.units')).to be(true)
     expect(described_class.enabled?(branch, :'retail.traceability')).to be(false)
@@ -75,7 +75,7 @@ RSpec.describe Spree::Pos::ModulePolicy, pos_modules: :default do
   end
 
   it 'stores only available modules, once per branch, within the branch store' do
-    expect(Spree::Pos::BranchModule.new(store: store, branch: branch, module_key: 'fnb.tables', enabled: true)).not_to be_valid
+    expect(Spree::Pos::BranchModule.new(store: store, branch: branch, module_key: 'timed_billing', enabled: true)).not_to be_valid
     turn(branch, 'retail.units', true)
     expect(Spree::Pos::BranchModule.new(store: store, branch: branch, module_key: 'retail.units', enabled: false)).not_to be_valid
     foreign = create(:store)

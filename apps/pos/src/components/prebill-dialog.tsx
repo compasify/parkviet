@@ -2,6 +2,7 @@ import { useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePrintRoute } from '../hooks/use-print-jobs';
 import { usePrintTemplate } from '../hooks/use-receipt-templates';
+import { useTableCommands } from '../hooks/use-resource-board';
 import { abandonIfNeeded } from '../hooks/use-tenders';
 import { session } from '../lib/app-session';
 import { useModalFocus } from '../lib/dialog-focus';
@@ -9,13 +10,15 @@ import type { PosWorkspace } from '../lib/pos-context';
 import { createBrowserPrintAdapter, prebillPrintDocument, printTitle } from '../lib/print-adapter';
 import { BROWSER_ROUTE, deliverDirect, type PrintRoute } from '../lib/print-adapters';
 import { printRefusal } from '../lib/print-queue-messages';
-import { conflictReason, describeFailure } from '../lib/request-failure';
+import { conflictReason, definitiveRejection, describeFailure } from '../lib/request-failure';
+import { approvalAction, describeTableFailure } from '../lib/tables';
 import { PosIcon } from './pos-icon';
 import { usePosSelection } from './pos-selection';
 import { ReceiptPrintPortal, ReceiptSheet } from './receipt-sheet';
 import { TemplatePicker } from './template-picker';
 
 const adapter = createBrowserPrintAdapter();
+const PREBILL_REPRINT_ACTION = 'workspace.reprint_prebill';
 
 // Provisional bill of an open order, from the server figures on screen. It is
 // labelled "TẠM TÍNH – CHƯA THANH TOÁN" and has no receipt number. It prints
@@ -24,15 +27,26 @@ const adapter = createBrowserPrintAdapter();
 // on the server and counted, so a second print of the same content needs a
 // reprint with a manager's approval. The browser and a LAN printer record
 // nothing yet, so the limit does not cover them.
+//
+// A table order of a branch running `fnb.postpay` (`record`) records every
+// pre-bill on the server first, whatever prints it: the first one is free,
+// another one needs a manager's approval of the reprint for the order as it
+// stands, and a print station gets it queued by that same record.
 export function PrebillDialog({
   workspace,
   names,
   timeZone,
+  record = false,
+  staffId = null,
+  canApprove = false,
   onClose,
 }: {
   workspace: PosWorkspace;
   names: { storeName?: string | null; branchName?: string | null; registerName?: string | null };
   timeZone: string;
+  record?: boolean;
+  staffId?: string | null;
+  canApprove?: boolean;
   onClose: () => void;
 }) {
   const { t } = useTranslation();
@@ -44,6 +58,12 @@ export function PrebillDialog({
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
   const [offerBrowser, setOfferBrowser] = useState(false);
+  const [approvalNeeded, setApprovalNeeded] = useState(false);
+  const commands = useTableCommands(workspace.branch_id);
+  // The key of a record whose answer was lost: the next press retries it
+  // under that key instead of asking for a second pre-bill. Any answer from
+  // the server ends it, so a deliberate second print is a new request.
+  const uncertainRecord = useRef<{ attempt: string; key: string } | null>(null);
   const printRoute = usePrintRoute(workspace.branch_id, workspace.register_id ?? null, 'prebill');
   useModalFocus(card, onClose);
   // The store's address and phone, and the branch, from the POS context.
@@ -103,16 +123,56 @@ export function PrebillDialog({
       setError(t(outcome.reason === 'blocked' ? 'prebillPrintBlocked' : 'prebillPrintFailed'));
   };
 
-  const doPrint = async (route: PrintRoute = printRoute.route) => {
+  // Records the pre-bill; false when it was refused (the reason is shown).
+  const recordPrebill = async (route: PrintRoute, approvalId?: string) => {
+    const printerId = route.kind === 'queue' ? route.printer.id : undefined;
+    const attempt = `${workspace.revision}:${approvalId ?? ''}:${printerId ?? ''}`;
+    const key =
+      uncertainRecord.current?.attempt === attempt
+        ? uncertainRecord.current.key
+        : crypto.randomUUID();
+    uncertainRecord.current = { attempt, key };
+    try {
+      await commands.prebill(
+        workspace,
+        { approvalId, printerId, templateId: template.choice?.templateId },
+        key,
+      );
+      uncertainRecord.current = null;
+      setApprovalNeeded(false);
+      return true;
+    } catch (failure) {
+      if (definitiveRejection(failure)) uncertainRecord.current = null;
+      if (approvalAction(failure)) setApprovalNeeded(true);
+      else setError(printRefusal(failure, t) ?? describeTableFailure(failure, t));
+      return false;
+    }
+  };
+
+  const doPrint = async (route: PrintRoute = printRoute.route, approve = false) => {
     if (busy) return;
     setError('');
     setNotice('');
     setOfferBrowser(false);
     setBusy(true);
     try {
+      if (record) {
+        let approvalId: string | undefined;
+        if (approve && staffId)
+          approvalId = await commands.approve(workspace, staffId, PREBILL_REPRINT_ACTION);
+        if (!(await recordPrebill(route, approvalId))) return;
+        // The record queued it on the print station.
+        if (route.kind === 'queue') {
+          setNotice(t('printQueuedNotice', { printer: route.printer.name }));
+          return;
+        }
+      }
       if (route.kind === 'queue') await queue(route);
       else if (route.kind === 'direct') await direct(route);
       else await browser();
+    } catch (failure) {
+      abandonIfNeeded(failure);
+      setError(describeTableFailure(failure, t));
     } finally {
       setBusy(false);
     }
@@ -166,6 +226,22 @@ export function PrebillDialog({
           <p className="error" role="alert">
             {error}
           </p>
+        ) : null}
+        {approvalNeeded ? (
+          <div className="payment-held" role="status">
+            <p>{t('prebillReprintNeedsApproval')}</p>
+            {canApprove && staffId ? (
+              <button
+                type="button"
+                disabled={busy || printRoute.loading}
+                onClick={() => void doPrint(printRoute.route, true)}
+              >
+                {t('prebillApproveReprint')}
+              </button>
+            ) : (
+              <p className="muted">{t('prebillAskManager')}</p>
+            )}
+          </div>
         ) : null}
         {offerBrowser ? (
           <button type="button" disabled={busy} onClick={() => void doPrint(BROWSER_ROUTE)}>

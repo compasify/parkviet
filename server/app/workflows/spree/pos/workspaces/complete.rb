@@ -31,6 +31,8 @@ module Spree
           end
           CommandExecutor.call(store: workspace.store, actor: staff, key: key, payload: payload, workspace: workspace, authorize: authorize) do
             Tenders::Guard.validate_editor!(workspace, staff, revision, lease_generation, editor_id)
+            # Completing a table paid on another shift keeps it there.
+            ShiftRebind.rebind_to_collector!(workspace: workspace, staff: staff, strict: false) if workspace.shift.owner_id != staff.id
             Tenders::Guard.validate_open_shift!(workspace)
             SalesChannel.validate_uncommitted_order!(workspace)
             Tenders::Guard.tracked_guard!(workspace)

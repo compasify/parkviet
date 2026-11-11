@@ -31,6 +31,7 @@ export type PosPage =
   | 'branch-payments'
   | 'branch-printing'
   | 'branch-kitchen'
+  | 'branch-floor-plan'
   | 'branch-platforms'
   | 'branch-hardware'
   | 'platform-settlement'
@@ -74,6 +75,11 @@ export const canManagePrinters = (access: PosAccess) => hasCapability(access, 'p
 // A branch's kitchen setup: stations, routes and the send trigger.
 export const canManageKitchen = (access: PosAccess) =>
   canAdminister(access, true) || hasCapability(access, 'pos.kitchen.manage')
+// A branch's floor plan: its areas and tables. Offered while the branch runs
+// `resources`; its table settings belong to the branch's managers.
+export const canManageResources = (access: PosAccess) =>
+  canAdminister(access, true) || hasCapability(access, 'pos.resource.manage')
+const runsResources = (access: PosAccess) => access.context?.modules?.resources === true
 // Order history is read by any staff member of the branch.
 export const canReadOrders = (access: PosAccess) => (access.context?.capabilities.length ?? 0) > 0
 // The received-funds ledger is read by collectors and resolvers; only
@@ -169,10 +175,18 @@ export function visibleNav(page: PosPage, access: PosAccess) {
   if (page === 'branch')
     return (
       !canAdminister(access) &&
-      (canManageBranch(access) || canManagePrinters(access) || canManageKitchen(access))
+      (canManageBranch(access) ||
+        canManagePrinters(access) ||
+        canManageKitchen(access) ||
+        canManageResources(access))
     )
   if (page === 'branch-printing') return canAdminister(access) || canManagePrinters(access)
   if (page === 'branch-kitchen') return canAdminister(access) || canManageKitchen(access)
+  if (page === 'branch-floor-plan')
+    return (
+      runsResources(access) &&
+      (canAdminister(access) || canManageResources(access) || canManageBranch(access))
+    )
   if (page === 'features' || page === 'business-model')
     return canAdminister(access) || canManageBranch(access)
   if (page === 'setup' || page === 'store-model') return canAdminister(access, true)
@@ -193,7 +207,8 @@ export function routeAllowed(page: PosPage, access: PosAccess) {
       canAdminister(access) ||
       canManageBranch(access) ||
       canManagePrinters(access) ||
-      canManageKitchen(access)
+      canManageKitchen(access) ||
+      canManageResources(access)
     )
   if (page === 'deliveries') return canHandleDeliveries(access.context?.capabilities)
   if (page === 'inventory') return canOpenStock(access)
@@ -217,6 +232,7 @@ export const BRANCH_TABS = [
   { key: 'payments', page: 'branch-payments', path: '/payments' },
   { key: 'printing', page: 'branch-printing', path: '/printing' },
   { key: 'kitchen', page: 'branch-kitchen', path: '/kitchen' },
+  { key: 'floorPlan', page: 'branch-floor-plan', path: '/floor-plan' },
   { key: 'platforms', page: 'branch-platforms', path: '/platforms' },
   { key: 'hardware', page: 'branch-hardware', path: '/hardware' },
 ] as const satisfies readonly { key: string; page: PosPage; path: string }[]

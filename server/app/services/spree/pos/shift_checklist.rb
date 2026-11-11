@@ -54,7 +54,7 @@ module Spree
       end
 
       def open_drafts
-        @open_drafts ||= Workspace.where(shift_id: shift.id, operational_status: OPEN_DRAFTS).includes(:order).order(:id).to_a
+        @open_drafts ||= Workspace.where(shift_id: shift.id, operational_status: OPEN_DRAFTS).includes(:order, :resource).order(:id).to_a
       end
 
       def funded_ids
@@ -65,14 +65,22 @@ module Spree
         received = ReceivedFunds.where(workspace_id: funded_ids.to_a).group(:workspace_id).sum(:received_net)
         open_drafts.select { |draft| funded_ids.include?(draft.id) }.map do |draft|
           { type: 'workspace_money', workspace_id: draft.prefixed_id, order_number: draft.order.number,
-            status: draft.operational_status, amount: received.fetch(draft.id, 0).to_s('F') }
+            status: draft.operational_status, amount: received.fetch(draft.id, 0).to_s('F'), **table_of(draft) }
         end
       end
 
       def drafts_without_money
         open_drafts.reject { |draft| funded_ids.include?(draft.id) }.map do |draft|
-          { type: 'draft', workspace_id: draft.prefixed_id, order_number: draft.order.number, status: draft.operational_status }
+          { type: 'draft', workspace_id: draft.prefixed_id, order_number: draft.order.number, status: draft.operational_status,
+            **table_of(draft) }
         end
+      end
+
+      # The table an open order is served at, so the close dialog names it.
+      def table_of(draft)
+        return {} unless draft.resource
+
+        { table: { id: draft.resource.prefixed_id, name: draft.resource.name, label: draft.table_label } }
       end
 
       def unknown_by_owner(column)

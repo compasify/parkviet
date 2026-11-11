@@ -1,6 +1,6 @@
 import { type Consumer, createConsumer } from '@rails/actioncable';
 import type { InvalidateQueryFilters } from '@tanstack/react-query';
-import { posWorkspacesKey } from './query-keys';
+import { posWorkspacesKey, resourceBoardKey } from './query-keys';
 
 export type RealtimeStatus = 'connected' | 'connecting' | 'offline';
 
@@ -91,9 +91,14 @@ export function invalidationsFor(
   event: RealtimeEvent,
   scope: RealtimeScope,
 ): InvalidateQueryFilters[] {
+  // The floor's table states are computed from the open orders of the branch.
+  const board = { queryKey: resourceBoardKey(scope.generation) };
   switch (event.event) {
     case 'workspace.updated':
-      return [{ queryKey: ['pos', 'workspace-credit', scope.generation, event.id] }];
+      return [{ queryKey: ['pos', 'workspace-credit', scope.generation, event.id] }, board];
+    // A table asked for the bill.
+    case 'payment.requested':
+      return [board];
     // A granted reprint approval shows on the print queue's pre-bills.
     case 'approval.requested':
       return [
@@ -112,12 +117,12 @@ export function invalidationsFor(
         { queryKey: ['pos', 'kitchen-tickets', scope.generation] },
         { queryKey: ['pos', 'kitchen-orders', scope.generation] },
       ];
-    // Claims, prints and cancels of a job; other resources announce through
-    // this event too and do not concern the queue.
+    // Claims, prints and cancels of a job; other resources (tables among
+    // them) announce through this event too and concern the floor instead.
     case 'resource.updated':
       return event.id.startsWith('posprintjob_')
         ? [{ queryKey: ['pos', 'print-jobs', scope.generation] }]
-        : [];
+        : [board];
     default:
       return [];
   }

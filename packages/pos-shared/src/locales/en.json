@@ -71,6 +71,16 @@
   "capabilityEinvoiceManage": "Manage e-invoices",
   "capabilityKitchenOperate": "Work the kitchen screen",
   "capabilityKitchenManage": "Set up the kitchen and bar",
+  "capabilityTableServe": "Serve tables",
+  "capabilityResourceManage": "Floor plan and areas",
+  "tableState_available": "Free",
+  "tableState_occupied": "Seated",
+  "tableState_ordered": "Ordered",
+  "tableState_waiting_long": "Waiting long",
+  "tableState_payment_requested": "Asked for the bill",
+  "tableState_prebilled": "Pre-bill printed",
+  "tableState_cleaning": "Cleaning",
+  "tableState_out_of_service": "Out of service",
   "receiptCopyBanner": "COPY – no. {{number}}",
   "capabilityShift": "Open shift",
   "capabilityRecover": "Recover",
@@ -231,6 +241,30 @@
       "description": "Type in GrabFood and ShopeeFood orders, send them to the kitchen, follow them and settle what the platform pays.",
       "off": "Grab and Shopee orders are off at this branch, so no platform order can be entered.",
       "disabled": "Grab and Shopee orders are off at this branch; the server takes no platform order. Selling is not affected."
+    },
+    "resources": {
+      "label": "Floor plan",
+      "description": "The branch's areas and tables (rooms, billiard tables), drawn on a plan so the counter sees which are free.",
+      "off": "The floor plan is off at this branch, so areas and tables cannot be added or changed.",
+      "disabled": "The floor plan is off at this branch; the server records no change to it. Selling is not affected."
+    },
+    "fnb_tables": {
+      "label": "Table service",
+      "description": "Seat guests at a table, order by table, move, merge and split tables.",
+      "off": "Table service is off at this branch, so no table can be opened.",
+      "disabled": "Table service is off at this branch; the server opens no new table. Open orders can still be paid."
+    },
+    "fnb_postpay": {
+      "label": "Eat first, pay later",
+      "description": "Print a pre-bill for a table, let a table ask for the bill; a reprint needs a manager.",
+      "off": "Eat first, pay later is off at this branch, so no pre-bill can be printed and no table can ask for the bill.",
+      "disabled": "Eat first, pay later is off at this branch; the server records no pre-bill. Payment is not affected."
+    },
+    "fnb_service_charge": {
+      "label": "Service charge",
+      "description": "Add a service charge as a percent of the items after discounts, taxed under the category the branch chose.",
+      "off": "The service charge is off at this branch, so orders carry none.",
+      "disabled": "The service charge is off at this branch; the server changes no service charge. Selling is not affected."
     }
   },
   "profiles": {

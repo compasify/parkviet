@@ -9,7 +9,9 @@ module Spree
           payload = { 'command' => 'change_status', 'status' => status, 'revision' => revision, 'lease_generation' => lease_generation, 'editor_digest' => editor_digest }
           authorize = lambda do
             policy = AccessPolicy.new(store: workspace.store, staff: staff)
-            if workspace.branch.disabled? || workspace.register&.disabled? || !policy.allows?(workspace.branch, Capabilities::OPEN_SHIFT)
+            # Anyone selling here with the lease, as before; a table order also its servers.
+            if workspace.branch.disabled? || workspace.register&.disabled? ||
+               !(policy.allows?(workspace.branch, Capabilities::OPEN_SHIFT) || policy.can_edit_workspace?(workspace))
               raise CanCan::AccessDenied
             end
           end

@@ -122,6 +122,8 @@ export type Sheet = {
   // Counter service: the call number of the business day and the guest's name.
   orderNumber?: number | null;
   guestName?: string | null;
+  // A table order (`fnb.tables`): the table, its letter and the guests.
+  table?: { id: string; name: string; label: string | null; guests: number | null };
 };
 
 type Funds = {
@@ -183,7 +185,11 @@ export type World = {
   // Store-wide data a module still has (`module_usage`), e.g. tracked SKUs.
   moduleUsage?: Record<string, boolean>;
   // Industry profile of the selected branch (`profile` in the context).
-  profile?: { key: string; version: number; display: { catalog_view?: 'cards' | 'list'; surface?: 'catalog' | 'menu_grid' } };
+  profile?: {
+    key: string;
+    version: number;
+    display: { catalog_view?: 'cards' | 'list'; surface?: 'catalog' | 'menu_grid' | 'table_grid' | 'floor_plan' };
+  };
   administration?: { read: boolean; write: boolean };
   // The store's e-invoice (`einvoice_type` in the context); absent on older servers.
   einvoiceType?: 'none' | 'cash_register' | 'coded';
@@ -431,6 +437,14 @@ export function serialize(world: World, sheet: Sheet) {
     note: null,
     order_number: sheet.orderNumber ?? null,
     guest_name: sheet.guestName ?? null,
+    ...(sheet.table
+      ? {
+          service_mode: 'dine_in',
+          resource: { id: sheet.table.id, name: sheet.table.name, kind: 'table', area_id: 'posarea_1' },
+          guest_count: sheet.table.guests,
+          table_label: sheet.table.label,
+        }
+      : {}),
     customer: sheet.customer && {
       ...sheet.customer, email: null, customer_id: null, has_account: false,
     },

@@ -355,8 +355,7 @@ module Spree
             authorize = lambda do
               policy = AccessPolicy.new(store: workspace.store, staff: staff)
               raise CanCan::AccessDenied if workspace.branch.disabled? || workspace.register&.disabled? ||
-                workspace.shift.owner_id != staff.id ||
-                !policy.permission?('write_pos_orders') || !policy.allows?(workspace.branch, Capabilities::OPEN_SHIFT)
+                !policy.can_edit_workspace?(workspace) || !policy.permission?('write_pos_orders')
             end
             CommandExecutor.call(store: workspace.store, actor: staff, key: key, payload: payload, workspace: workspace, authorize: authorize, &block)
           end

@@ -12,6 +12,11 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add($StationRouteInput.serializer)
       ..add(Approval.serializer)
       ..add(ApprovalRevision.serializer)
+      ..add(Area.serializer)
+      ..add(AreaInput.serializer)
+      ..add(AreaList.serializer)
+      ..add(AreaResult.serializer)
+      ..add(AreaStatusEnum.serializer)
       ..add(CallBoard.serializer)
       ..add(CallBoardPreparingInner.serializer)
       ..add(CallBoardReadyInner.serializer)
@@ -111,6 +116,11 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(ModifierGroup.serializer)
       ..add(ModifierGroupOptionsInner.serializer)
       ..add(ModifierSelection.serializer)
+      ..add(PaymentRequest.serializer)
+      ..add(PaymentRequestInput.serializer)
+      ..add(PaymentRequestResolveInput.serializer)
+      ..add(PaymentRequestResolveInputStatusEnum.serializer)
+      ..add(PaymentRequestStatusEnum.serializer)
       ..add(PlatformOrder.serializer)
       ..add(PlatformOrderCancelInput.serializer)
       ..add(PlatformOrderEditor.serializer)
@@ -235,6 +245,10 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(PosWorkspaceGuestNameRequest.serializer)
       ..add(PosWorkspaceKitchenTickets200Response.serializer)
       ..add(PosWorkspaceLineModifiersRequest.serializer)
+      ..add(PrebillInput.serializer)
+      ..add(PrebillInputUnmaskEnum.serializer)
+      ..add(PrebillOutcome.serializer)
+      ..add(PrebillResult.serializer)
       ..add(PrintBlock.serializer)
       ..add(PrintBlockOneOf.serializer)
       ..add(PrintBlockOneOf1.serializer)
@@ -286,6 +300,31 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(RecipeOwner.serializer)
       ..add(RecipeOwnerOwnerTypeEnum.serializer)
       ..add(RecipeOwnerVersionsInner.serializer)
+      ..add(Resource.serializer)
+      ..add(ResourceBoard.serializer)
+      ..add(ResourceBoardArea.serializer)
+      ..add(ResourceBoardOrder.serializer)
+      ..add(ResourceBoardOrderOperationalStatusEnum.serializer)
+      ..add(ResourceBoardResult.serializer)
+      ..add(ResourceBoardTile.serializer)
+      ..add(ResourceBoardTileKindEnum.serializer)
+      ..add(ResourceBoardTileManualStatusEnum.serializer)
+      ..add(ResourceBoardTileShapeEnum.serializer)
+      ..add(ResourceBoardTileStateEnum.serializer)
+      ..add(ResourceInput.serializer)
+      ..add(ResourceInputKindEnum.serializer)
+      ..add(ResourceInputShapeEnum.serializer)
+      ..add(ResourceKindEnum.serializer)
+      ..add(ResourceList.serializer)
+      ..add(ResourceManualStatusEnum.serializer)
+      ..add(ResourceManualStatusInput.serializer)
+      ..add(ResourceManualStatusInputManualStatusEnum.serializer)
+      ..add(ResourceRef.serializer)
+      ..add(ResourceRefKindEnum.serializer)
+      ..add(ResourceResult.serializer)
+      ..add(ResourceShapeEnum.serializer)
+      ..add(ResourceStatusEnum.serializer)
+      ..add(ServiceChargeWaiveInput.serializer)
       ..add(StationRoute.serializer)
       ..add(StockAlert.serializer)
       ..add(SystemStatus.serializer)
@@ -299,13 +338,31 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(SystemStatusServerTlsModeEnum.serializer)
       ..add(SystemStatusVersion.serializer)
       ..add(SystemStatusVietqr.serializer)
+      ..add(TableMergeInput.serializer)
+      ..add(TableMoveInput.serializer)
+      ..add(TableOpenInput.serializer)
+      ..add(TableSettings.serializer)
+      ..add(TableSettingsInput.serializer)
+      ..add(TableSettingsInputServiceChargeAppliesToEnum.serializer)
+      ..add(TableSettingsResult.serializer)
+      ..add(TableSettingsServiceChargeAppliesToEnum.serializer)
+      ..add(TableSplitInput.serializer)
+      ..add(TableSplitOrders.serializer)
+      ..add(TableSplitResult.serializer)
       ..add(TaxRow.serializer)
       ..add(Workspace.serializer)
       ..add(WorkspaceLine.serializer)
       ..add(WorkspaceLineKindEnum.serializer)
+      ..add(WorkspacePrebill.serializer)
+      ..add(WorkspacePrebillStatusEnum.serializer)
+      ..add(WorkspaceResult.serializer)
+      ..add(WorkspaceServiceCharge.serializer)
       ..add(WorkspaceServiceModeEnum.serializer)
       ..add(WorkspaceTotals.serializer)
       ..add(WorkspaceTotalsTaxesInner.serializer)
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(Area)]),
+          () => ListBuilder<Area>())
       ..addBuilderFactory(
           const FullType(
               BuiltList, const [const FullType(CallBoardPreparingInner)]),
@@ -527,11 +584,26 @@ Serializers _$serializers = (Serializers().toBuilder()
               BuiltList, const [const FullType(RecipeOwnerVersionsInner)]),
           () => ListBuilder<RecipeOwnerVersionsInner>())
       ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(Resource)]),
+          () => ListBuilder<Resource>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(ResourceBoardArea)]),
+          () => ListBuilder<ResourceBoardArea>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(ResourceBoardTile)]),
+          () => ListBuilder<ResourceBoardTile>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(ResourceBoardOrder)]),
+          () => ListBuilder<ResourceBoardOrder>())
+      ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(StationRoute)]),
           () => ListBuilder<StationRoute>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(StockAlert)]),
           () => ListBuilder<StockAlert>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
           () => ListBuilder<String>())
@@ -590,6 +662,15 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
           () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [
+            const FullType(TableSettingsInputServiceChargeAppliesToEnum)
+          ]),
+          () => ListBuilder<TableSettingsInputServiceChargeAppliesToEnum>())
+      ..addBuilderFactory(
+          const FullType(BuiltList,
+              const [const FullType(TableSettingsServiceChargeAppliesToEnum)]),
+          () => ListBuilder<TableSettingsServiceChargeAppliesToEnum>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(WorkspaceLine)]),
           () => ListBuilder<WorkspaceLine>())
