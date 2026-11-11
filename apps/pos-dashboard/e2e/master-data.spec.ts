@@ -44,13 +44,15 @@ async function install(page: Page, access = { read: true, write: true }) {
 // Spree's own strings are English under the dev server, which pre-bundles the
 // framework without its locale files; the production build carries both.
 const MENU = /^(Open actions|Mở menu thao tác)$/;
-async function act(page: Page, row: string, item: string) { await page.getByRole('row').filter({ hasText: row }).getByRole('button', { name: MENU }).click(); await page.getByRole('menuitem', { name: item, exact: true }).click(); }
+async function act(page: Page, row: string, item: string) { await page.getByRole('row', { name: row }).getByRole('button', { name: MENU }).click(); await page.getByRole('menuitem', { name: item, exact: true }).click(); }
 async function confirm(page: Page, action: string) { await page.getByRole('dialog').last().getByRole('button', { name: action, exact: true }).click(); }
 async function select(page: Page, label: string, option: string) { await page.getByRole('dialog').getByLabel(label, { exact: true }).click(); await page.getByRole('option', { name: option, exact: true }).click(); }
 
-test('the configuration group lists store master data and keeps branch settings on the branch page', async ({ page }) => {
+test('the configuration group lists store master data and keeps branch settings on the branch page', async ({ page }, testInfo) => {
   await install(page); await page.goto('/store_1/payment-methods');
-  const sidebar = page.getByRole('navigation').first();
+  // The phone drawer is closed until opened; the tablet sidebar is already docked.
+  if (testInfo.project.name === 'mobile') await page.getByRole('button', { name: 'Toggle Sidebar' }).click();
+  const sidebar = page.locator('[data-sidebar="sidebar"]').first();
   for (const name of ['Chi nhánh', 'Mẫu in', 'Phương thức thanh toán', 'Đơn vị tính', 'Nhóm quyền', 'Mẫu tem cân']) await expect(sidebar.getByRole('link', { name, exact: true })).toBeVisible();
   for (const name of ['Quầy bán hàng', 'Nhân viên & quyền', 'Hàng bán tại chi nhánh', 'Chức năng chi nhánh', 'Mô hình kinh doanh']) await expect(sidebar.getByRole('link', { name, exact: true })).toHaveCount(0);
   await expect(page.getByRole('link', { name: 'Cài đặt cửa hàng', exact: true })).toBeVisible();
@@ -64,7 +66,7 @@ test('payment methods are created, refused as the last cash method and never del
   expect(state.writes.at(-1)).toEqual({ method: 'POST', path: '/pos/payment_methods', body: { kind: 'bank_manual', code: 'momo', name: 'Ví MoMo' } });
   await act(page, 'Tiền mặt', 'Ngừng hoạt động'); await confirm(page, 'Ngừng hoạt động');
   await expect(page.getByRole('alert')).toHaveText('Cửa hàng cần ít nhất một phương thức tiền mặt đang dùng.');
-  await act(page, 'Chuyển khoản', 'Xóa'); await confirm(page, 'Xóa');
+  await act(page, 'Chuyển khoản bank', 'Xóa'); await confirm(page, 'Xóa');
   await expect(page.getByRole('alert')).toHaveText('Phương thức này đã được dùng để thanh toán; hãy ngừng hoạt động thay vì xóa.');
 });
 

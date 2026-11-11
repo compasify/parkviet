@@ -120,7 +120,7 @@ test('reports keep sales, receipts and drawer cash apart and export a CSV', asyn
   await page.getByRole('option', { name: /^Mai · Q2/ }).click();
   await expect.poll(() => lastReport(state, 'cashbook')?.shift_id).toBe('sh_s1');
 
-  await page.getByRole('link', { name: 'Công nợ' }).click();
+  await page.locator('#main-content').getByRole('link', { name: 'Công nợ', exact: true }).click();
   await expect(page.getByLabel('Từ ngày')).toHaveCount(0);
   await expect(page.getByText('Không có dữ liệu cho bộ lọc này.')).toBeVisible();
   expect(lastReport(state, 'receivables')?.from).toBeUndefined();

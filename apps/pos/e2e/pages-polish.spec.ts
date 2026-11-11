@@ -26,14 +26,18 @@ test('login shares register styling, reveals password and handles pending / fail
     await route.fulfill({ status: 401, json: { error: { code: 'unauthorized' } } });
   });
   await page.goto('/login');
-  await expect(page.locator('.header')).toHaveCSS('background-color', 'rgb(7, 86, 154)');
+  // The sign-in page is the split login layout with its own brand column; the register shell header is not rendered here.
+  await expect(page.locator('.header')).toHaveCount(0);
+  await expect(page.locator('.login-side-brand')).toContainText('ParkViet');
+  await expect(page.locator('.login-split .checkout-submit')).toHaveCSS('background-color', 'rgb(7, 86, 154)');
   await expect(page.getByText('Phiên chỉ lưu trong bộ nhớ trình duyệt.')).toHaveCount(0);
   const saleButton = page.getByRole('button', { name: 'Đăng nhập bán hàng', exact: true });
   const adminLink = page.getByRole('link', { name: 'Đăng nhập quản trị', exact: true });
   const saleBox = (await saleButton.boundingBox())!;
   const adminBox = (await adminLink.boundingBox())!;
-  expect(saleBox.y).toBeCloseTo(adminBox.y, 1);
-  expect(adminBox.x).toBeGreaterThan(saleBox.x);
+  // The sign-in column stacks the two actions at full width.
+  expect(adminBox.y).toBeGreaterThanOrEqual(saleBox.y + saleBox.height);
+  expect(adminBox.width).toBeCloseTo(saleBox.width, 0);
   await capture(page, testInfo, 'login');
   const password = page.getByLabel('Mật khẩu', { exact: true });
   await password.fill('fixture-only');
