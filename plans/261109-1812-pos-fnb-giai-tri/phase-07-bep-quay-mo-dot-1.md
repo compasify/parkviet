@@ -163,11 +163,54 @@ Migration: `create_spree_pos_kitchen_tables`, `add_kitchen_columns_to_spree_pos_
 
 ### Tiêu chí xong
 
-- [ ] Đơn trả trước complete tạo đúng ticket theo trạm, idempotent, và không bao giờ chặn việc thu tiền.
-- [ ] Chế độ `manual` gửi đúng phần chưa gửi và khóa giảm số lượng đã gửi.
-- [ ] KDS Flutter có 3 tab, bump, recall, timer vàng/đỏ, hết món; hoạt động bằng danh tính thiết bị.
+- [x] Đơn trả trước complete tạo đúng ticket theo trạm, idempotent, và không bao giờ chặn việc thu tiền.
+- [x] Chế độ `manual` gửi đúng phần chưa gửi và khóa giảm số lượng đã gửi.
+- [x] KDS Flutter có 3 tab, bump, recall, timer vàng/đỏ, hết món; hoạt động bằng danh tính thiết bị.
 - [ ] Trạm có máy in in được phiếu bếp qua trạm in.
 - [ ] Đo độ trễ đạt ≤ 2 giây trong LAN, kết quả được ghi lại.
+
+### Kết quả
+
+**Đã làm**
+
+- Dữ liệu: migration `20261111180000_create_spree_pos_kitchen_tables.rb` (trạm, tuyến, ticket, dòng ticket) và `20261111180100_add_kitchen_columns_to_spree_pos_sale_lines_and_branches.rb` (`kitchen_sent_quantity`, `kitchen_send_trigger`). `schema.rb` cập nhật qua `pnpm spree migrate`, các dòng check constraint bị viết lại đã được trả về như cũ.
+- Model `KitchenStation`, `StationRoute`, `KitchenTicket`, `KitchenTicketItem`. Ticket ghi một lần; chỉ trạng thái dòng được đổi.
+- `Kitchen::Router` (5 mức ưu tiên, trạm mặc định), `Kitchen::TicketDocument` (phiếu in, ghi chú chữ trắng nền đen qua cờ `invert` của khối text), `Kitchen::Board`.
+- Workflow `Kitchen::Send` (idempotent, chỉ gửi phần chưa gửi, tách ticket theo trạm), `Kitchen::ChangeItemStatus` (start/ready/serve/recall, bump cả ticket), `Kitchen::Guard`, `Kitchen::Setup`. `Complete` gọi gửi bếp khi `on_complete`; `ManageLineItem` và `UpdateLineModifiers` chặn giảm, xoá, đổi tuỳ chọn dưới phần đã gửi. Realtime `kitchen_ticket.updated` phát sau commit.
+- Module `fnb.kitchen`; quyền `pos.kitchen.operate`, `pos.kitchen.manage`. Hồ sơ `quan_an` gồm `fnb.kitchen` và `fnb.order_number`, nên vẫn `coming_soon` tới khi 7B xong.
+- API quản trị (trạm, tuyến, cài đặt, board, thao tác món/ticket, gửi bếp, lịch sử ticket của đơn) và API thiết bị `pos_device/kitchen/*` (chế độ `kds`/`expo`, không PIN). OpenAPI `pos-staff.yaml` cập nhật; `spec/fixtures/print_documents/schema.json` thêm `invert`; client `pos_api` sinh lại bằng `tool/gen_api.sh`.
+- Flutter `apps/pos-staff/lib/modes/kds/`: board 3 tab (Ưu tiên, Theo món, Theo bàn/số gọi), bump, recall trong mục "Đã xong", timer vàng/đỏ theo ngưỡng của trạm dựa trên `server_now`, âm báo ticket mới, giữ màn sáng, banner mất kết nối kèm giờ đồng bộ cuối và poll 5 giây khi socket rớt, chọn trạm, "Hết món" ký bằng PIN nhân viên. Expo dùng lại màn KDS với mọi trạm. Trạm in ESC/POS và raster in được khối text đảo màu.
+- Web `apps/pos`: nút "Báo bếp" có số món chưa gửi (chỉ khi `manual`), lịch sử ticket của đơn, huy hiệu đã gửi trên dòng, khoá giảm/xoá/sửa tuỳ chọn phần đã gửi.
+- `apps/pos-dashboard`: tab chi nhánh "Bếp & bar" (`/branches/$branchId/kitchen`): thời điểm gửi bếp, trạm (máy in, màn hình, ngưỡng phút, mặc định, bật/tắt), tuyến theo món hoặc nhóm bếp và hình thức phục vụ.
+
+**Lệch so với kế hoạch**
+
+- Trang cài đặt nằm ở `apps/pos-dashboard/src/pages/branch-kitchen.tsx` và route `branches/$branchId/kitchen.tsx`, không phải `apps/pos/src/pages/settings/kitchen.tsx` (cài đặt không đặt trong `apps/pos`). Hook quản trị là `apps/pos-dashboard/src/hooks/use-kitchen.ts`; `apps/pos/src/hooks/use-kitchen.ts` chỉ đọc lịch sử.
+- Nút "Báo bếp" nằm trong `kitchen-history.tsx`, gắn vào `workspace-tabs.tsx` trước `PaymentPanel`; `payment-panel.tsx` không sửa.
+- Controller tách hai bộ: quản trị (`admin/pos/kitchen*`, `station_routes`, `kitchen_settings`, `workspaces/kitchen_*`) và thiết bị (`pos_device/kitchen`), thay vì một bộ "thiết bị + nhân viên".
+- Đổi trạng thái món idempotent theo trạng thái đích, không đi qua `CommandExecutor` (thiết bị KDS không có nhân viên đăng nhập). Gửi bếp và cài đặt vẫn đi qua `CommandExecutor` với `Idempotency-Key`.
+- "Hết món" từ KDS mở phiên nhân viên bằng PIN rồi ghi `menu_availabilities` sẵn có.
+- Chỉ dòng thuộc thực đơn được gửi; chi nhánh chưa có trạm thì không gửi gì. Chế độ `manual` không tự gửi khi complete.
+- Expo dùng lại `KdsScreen` (`AppMode.expo`).
+- Spec bất biến ticket nằm trong `send_spec.rb`; `complete_spec.rb` thêm một `describe` cho gửi bếp.
+- `print-commands` web trong `pos-shared` chỉ thêm kiểu `invert`, chưa render đảo màu (in phiếu bếp đi qua trạm in Flutter).
+
+**Lệnh và kết quả**
+
+- `pnpm spree rspec` gồm `print_documents_spec`, `kitchen_send_race_spec`, `spec/services/spree/pos/kitchen`, `spec/workflows/spree/pos/kitchen`, `complete_spec`, `manage_line_item_spec`, `update_line_modifiers_spec`, `kitchen_spec`, `kitchen_stations_spec` và các spec hồi quy (branch_modules, branch_profiles, business_profiles, onboarding, topology, module_policy, menu, menu_availabilities, print_jobs, printers, sale_lines, workspace_items, realtime, devices): 248 ví dụ, 1 lỗi. Lỗi là `business_profiles_spec.rb:180` (đếm truy vấn `onboarding` ra 2 thay vì 1), do `StoreProfile.einvoice_type_for` trong `context_resolver.rb:39` đã commit ở ded9cec, không thuộc 7A.
+- `tool/gen_api.sh` chạy lại sau lần sửa yaml cuối: không lệch so với bản đã sinh.
+- `flutter analyze`: không có lỗi. `flutter test`: 100/100 qua (gồm `test/modes/kds/` 14 test, invert trong `print_commands_test` và `escpos_renderer_test`).
+- `packages/pos-shared`: typecheck, lint qua; test 250/250.
+- `apps/pos`: typecheck, lint qua; test 258/258 (`pos-administration.test.ts` cập nhật lên 25 quyền).
+- `apps/pos-dashboard`: typecheck, lint, build qua; test 88/88.
+
+**Còn mở**
+
+- In phiếu bếp trên máy in thật qua trạm in: đường phần mềm đã có (print job từ `TicketDocument`, renderer có test), chưa thử trên phần cứng.
+- Đo độ trễ Báo bếp → KDS ≤ 2 giây trong LAN: cần tablet và mạng thật, chưa đo.
+- `integration_test/kds_flow_test.dart` cần `PARKVIET_SERVER` và `PARKVIET_KDS_CODE`, chưa chạy với server seed. KDS chưa chạy trên tablet thật.
+- e2e `apps/pos/e2e/fnb-kitchen.spec.ts` chưa viết.
+- Lỗi đếm truy vấn ở `business_profiles_spec.rb:180` cần chủ phần hoá đơn điện tử xử lý.
 
 ## Phần 7B: Số gọi, tem ly, màn khách gọi số
 
@@ -281,10 +324,60 @@ Migration: `create_spree_pos_order_number_counters`, `add_call_number_and_guest_
 
 ### Tiêu chí xong
 
-- [ ] Số gọi tăng đúng theo chi nhánh × ngày kinh doanh, không trùng khi chạy song song, và in trên hóa đơn, ticket bếp, tem ly.
-- [ ] Mỗi ly in đúng một tem, có "n/N"; in lại có audit.
-- [ ] Màn khách chế độ gọi số chuyển số từ "Đang làm" sang "Mời nhận" theo trạng thái bếp, và số rời màn khi Đã giao.
-- [ ] Chi nhánh tắt các module này thì không thấy thay đổi nào.
+- [x] Số gọi tăng đúng theo chi nhánh × ngày kinh doanh, không trùng khi chạy song song, và in trên hóa đơn, ticket bếp, tem ly.
+- [x] Mỗi ly in đúng một tem, có "n/N"; in lại có audit.
+- [x] Màn khách chế độ gọi số chuyển số từ "Đang làm" sang "Mời nhận" theo trạng thái bếp, và số rời màn khi Đã giao.
+- [x] Chi nhánh tắt các module này thì không thấy thay đổi nào.
+
+### Kết quả
+
+**Đã làm**
+
+- Dữ liệu: bốn migration `20261111190000_create_spree_pos_order_number_counters.rb`, `20261111190100_add_call_number_and_guest_name_to_spree_pos_workspaces.rb` (unique một phần `(branch_id, business_date, order_number)`, `guest_name` tối đa 60), `20261111190200_add_cup_label_settings_to_spree_pos_branches.rb`, `20261111190300_add_mode_to_spree_pos_display_sessions.rb` (check `order`/`call_board`). `schema.rb` cập nhật qua `pnpm spree migrate`, các dòng check constraint bị viết lại đã được trả về như cũ; đã chạy `db:test:prepare`.
+- `OrderNumberCounter` và `OrderNumbers.assign!`: một câu upsert `INSERT … ON CONFLICT … RETURNING`, đọc `workspace.business_date`, đơn đã có số thì giữ (model chặn đổi số), chi nhánh tắt `fnb.order_number` thì không cấp. Gọi trong `Kitchen::Send` trước khi ghi ticket (header ticket có `order_number`, `guest_name`) và trong `Complete` trước gửi bếp và phát hóa đơn.
+- `Workspaces::SetGuestName` (`POST workspaces/:id/guest_name`): kiểm revision và lease như đặt nguồn đơn, gom khoảng trắng, chuỗi rỗng là xóa, quá 60 ký tự báo `guest_name_invalid`, cần `fnb.order_number` hoặc `fnb.cup_label`, ghi audit `workspace.guest_name.set`.
+- Hóa đơn: biến `order.call_number`, `order.guest_name` ở `receipt_template_variables.json`, renderer, `TemplateData` và `pos-shared` (`variables.ts`, `data.ts`). `ReceiptBuilder#sale` đưa hai giá trị vào snapshot; mẫu `sale` mặc định có dòng "Số gọi {order.call_number}" cỡ lớn ngay dưới tiêu đề, dòng tự mất khi đơn không có số. Phiếu bếp in thêm tên khách dưới số gọi.
+- Tem ly: `CupLabels::Settings` (khổ 40×30 / 50×30 / 58×40, trường hiện, phút ở cột "Mời nhận" 1–120, mặc định 15), `CupLabels::Document` (kind `cup_label`, "Số N · i/T", món, tùy chọn, ghi chú, tên khách, giờ · tên quán, `page.label` mm), `CupLabels::Issue` (một job mỗi ly, khóa `cup_label:<dòng>:<i>:<trigger>`, chạy sau commit của gửi bếp và của complete, lỗi máy in chỉ ghi log), `CupLabels::Reprint` (`POST workspaces/:id/cup_labels`, cần `pos.payment.collect`, audit `cup_label.reprint`), `CupLabels::Setup` (`GET/PUT cup_label_settings`, `POST cup_label_settings/test`, quyền quản lý bếp, audit `cup_label.settings`).
+- Màn gọi số: `DisplaySession.mode`, `Displays::Pin.set_mode` (`POST display_sessions/:id/mode`, đổi mode thì xóa ghim và tăng generation; `call_board` cần `fnb.order_number`; ghim đơn khi đang `call_board` báo `display_call_board`). `CallBoard` trả `preparing` và `ready` (kèm tên khách, `ready_at`) của ngày kinh doanh; `DisplayState` dùng nó khi mode là `call_board`.
+- Đã giao: `ChangeItemStatus.serve_order`, `POST kitchen/orders/:workspace_id/serve` (thu ngân, quầy bếp) và `POST pos_device/kitchen/orders/:workspace_id/serve` (KDS). `GET kitchen/orders` là danh sách chờ nhận cho thu ngân.
+- Module `fnb.order_number` (depends_on: []) và `fnb.cup_label` (depends_on: `fnb.menu`) đăng ký `available`. `OpenAPI pos-staff.yaml`: `Workspace.order_number`, `guest_name`, `PrintPage.label`, schema `CallBoard`, `CupLabelSettings`, `KitchenOrderServedResult` và các endpoint mới; `schema.json` sinh lại; client `pos_api` sinh lại bằng `tool/gen_api.sh`.
+- Web `apps/pos`: ô "Tên khách" ở đầu giỏ (`guest-name-field.tsx`), số gọi trên tab và băng số gọi trên giỏ (cỡ lớn sau khi complete), danh sách "Quầy trả món" (`pickup-queue.tsx`, nút "Đã giao", đọc lại khi có `kitchen_ticket.updated`), nút "In lại tem" trên dòng món đã gửi bếp hoặc đã bán, chọn chế độ màn khách trong `display-pin-control.tsx`, chế độ `call_board` trong `customer-display.tsx` (hai cột chữ lớn, số mới vào "Mời nhận" nhấp nháy và có âm báo, poll 2 giây). `readDisplayState` kiểm hình dạng trạng thái `call_board`.
+- `apps/pos-dashboard`: thẻ "Tem ly" trong tab "Bếp & bar" (máy in tem, khổ, trường, phút ở "Mời nhận", in thử). Ô `cup_label` của món trong `pages/menu.tsx` đổi thành ô tích (cột là boolean).
+- Flutter: KDS hiện số gọi và "Khách: …" trên ticket, khu "Đã xong" có nút "Đã giao" gọi API thiết bị. Trạm in đọc `page.label`: TSPL in đúng khổ tem (`SIZE w mm,h mm`, rộng `w × 8` chấm) và ngắt dòng theo bề rộng tem.
+
+**Lệch so với kế hoạch**
+
+- Cài đặt tem ly nằm ở `apps/pos-dashboard/src/pages/branch-kitchen.tsx`, không phải `apps/pos/src/pages/settings/kitchen.tsx` (như 7A).
+- Tem in cả ở lần gửi bếp lẫn lúc complete khi chi nhánh bật bếp, dùng chung khóa `auto`: ly đã in ở lần gửi không in lại, ly mà chi nhánh `manual` chưa gửi bếp vẫn có tem khi thanh toán.
+- `CupLabels::Issue` nằm ở `server/app/workflows/spree/pos/cup_labels/issue.rb` cùng `reprint.rb`, `setup.rb`; `Settings`, `Document` ở `services`.
+- Danh sách chờ nhận dùng `GET kitchen/orders` (cùng dữ liệu `CallBoard`, có `workspace_id`). Danh sách hiện cả cột "Đang làm" để thu ngân thấy đơn đang chờ.
+- Endpoint đổi mode màn khách không ghi vào `pos-staff.yaml` vì `display_sessions` không có trong hợp đồng đó.
+- Hồ sơ F&B vẫn `coming_soon`: `BusinessProfiles::OPEN_GROUPS = %w[retail]` giữ chúng lại tới phần 7D, dù các module F1 đã `available`.
+- Spec 50 luồng dùng số kết nối pool cho phép (pool − 1 worker) cùng rút 50 yêu cầu sau một cổng chung, thay vì 50 kết nối riêng.
+- Không có mẫu hóa đơn F&B riêng: dòng số gọi nằm trong mẫu `sale` mặc định cho mọi cửa hàng và tự ẩn khi đơn không có số.
+- Máy in tem không bị kiểm vai trò; chỉ cần máy in nhận lệnh qua trạm in (`printer_not_queued` nếu không).
+- Sửa thêm ngoài phạm vi 7B: kiểu `cup_label` trong `pos-shared` (`string | null` → `boolean`) và ô nhập của dashboard menu, vì server lưu boolean và tem không thể bật đúng từ dashboard nếu để như cũ.
+- Màn gọi số chỉ hiện đơn có ticket bếp: chi nhánh tắt `fnb.kitchen` có số gọi trên hóa đơn và tem nhưng màn gọi số trống.
+
+**Lệnh và kết quả**
+
+- `pnpm spree rspec spec/services/spree/pos/order_numbers_spec.rb spec/integration/spree/pos/order_number_race_spec.rb`: 7 ví dụ, 0 lỗi.
+- `pnpm spree rspec spec/workflows/spree/pos/cup_labels/issue_spec.rb spec/services/spree/pos/display_state_spec.rb spec/requests/spree/pos/display_sessions_spec.rb`: 18 ví dụ, 0 lỗi.
+- `pnpm spree rspec spec/services/spree/pos/print_documents_spec.rb`: lần đầu ghi lại golden (`sale-call-number.json` mới, `sale-default.json`, `sale-einvoice.json`, `schema.json`), lần sau 16 ví dụ, 0 lỗi.
+- Hồi quy (`kitchen_send_race_spec`, `receipt_template_spec`, branch_modules, branch_profiles, business_profiles ×2, devices, kitchen, kitchen_stations, onboarding, print_jobs, printers, receipt_templates, receipts_displays, topology_access, topology, module_policy, `receipt_template_schema_spec`, kitchen `send_spec`, `complete_spec`): 248 ví dụ, 2 lỗi ở `receipt_template_schema_spec` do chỉ số khối header cố định; spec sửa sang đọc chỉ số từ mẫu mặc định, chạy lại cùng workspaces, menu, sale_lines, workspace_commands, sale_line_identity_contract, menu_item: 50 ví dụ, 0 lỗi. Đếm truy vấn ở `business_profiles_spec` (lỗi ghi ở 7A) lần này qua.
+- Sau khi đặt tên `KitchenOrderServedResult` trong yaml: `devices_spec`, `display_sessions_spec`, `print_documents_spec`, `kitchen_spec`: 31 ví dụ, 0 lỗi.
+- Hồi quy hóa đơn (`pay_later_spec`, `manage_line_item_spec`, `receipts_displays_spec`, các spec có `ReceiptBuilder`; không có `receipt_builder_spec.rb`): 46 ví dụ, 0 lỗi.
+- `tool/gen_api.sh`: sinh lại `pos_api`. `flutter analyze`: không có lỗi. `flutter test`: 105/105 qua (golden `sale-call-number-58mm/80mm.escpos` mới, KDS số gọi + Đã giao, tem TSPL đúng khổ, ngắt dòng theo tem).
+- `packages/pos-shared`: typecheck, lint qua; test 252/252 (`validate.test.ts` đọc chỉ số header từ mẫu mặc định).
+- `apps/pos`: typecheck, lint, build qua; test 259/259. `e2e/fnb-call-number.spec.ts` viết xong và typecheck riêng qua, **chưa chạy** (máy chưa cài trình duyệt Playwright).
+- `apps/pos-dashboard`: typecheck, lint, build qua; test 88/88.
+
+**Còn mở**
+
+- In tem trên máy in thật (một máy TSPL như Xprinter XP-365B và một máy ESC/POS): đường phần mềm có test, chưa thử phần cứng, chưa kiểm khổ tem thật.
+- Màn gọi số trên màn hình thật (cỡ chữ, nhấp nháy, âm báo; trình duyệt có thể chặn âm thanh tới khi có người chạm màn) chưa thử.
+- Chạy `apps/pos/e2e/fnb-call-number.spec.ts` (và cả bộ e2e) khi có trình duyệt Playwright.
+- Thay đổi `config/initializers/pos_modules.rb` cần `pnpm spree restart` trên stack dev để module mới hiện ở môi trường dev.
 
 ## Phần 7C: Đơn từ nền tảng giao hàng (nhập tay)
 
@@ -377,9 +470,9 @@ Thu ngân nhập tay đơn GrabFood / ShopeeFood vào POS. Đơn có nguồn là
 
 ### Tiêu chí xong
 
-- [ ] Đơn nhập tay đi hết luồng nhập → bếp → sẵn sàng → hoàn tất → đối soát.
-- [ ] Không nhập trùng được cùng mã đơn nền tảng.
-- [ ] Báo cáo theo nền tảng có doanh thu gộp, hoa hồng, thực nhận và khoản chưa đối soát.
+- [x] Đơn nhập tay đi hết luồng nhập → bếp → sẵn sàng → hoàn tất → đối soát.
+- [x] Không nhập trùng được cùng mã đơn nền tảng.
+- [x] Báo cáo theo nền tảng có doanh thu gộp, hoa hồng, thực nhận và khoản chưa đối soát.
 - [ ] Spec và e2e xanh; OpenAPI đã cập nhật.
 
 ### Để sau: nối API nền tảng
@@ -391,6 +484,115 @@ Làm khi có hợp đồng đối tác và chấp nhận được chi phí. Ph�
 - đồng bộ hết món qua `menu.sold_out`.
 
 Workflow `Enter` của phần này là điểm vào chung: đơn từ webhook sẽ gọi cùng workflow đó, nên phần nhập tay không phải sửa.
+
+### Kết quả
+
+**Đã làm**
+
+- Dữ liệu: migration `20261111200000_create_spree_pos_platform_orders.rb`.
+  - Bảng `spree_pos_platform_settings`: tỷ lệ là phần trăm 0–100; unique `(branch_id, platform)`.
+  - Bảng `spree_pos_platform_orders`:
+    - các cột theo kế hoạch, thêm `store_id`, `commission_rate` (chép lúc nhập), `currency`, `ready_at`, `completed_at`, `canceled_at`, `cancel_reason`, `settled_by_id`, `settlement_reference`;
+    - unique `(branch_id, platform, platform_order_ref)` và unique `workspace_id`;
+    - check `net = gross − commission`, và check chỉ đơn `completed` mới được đối soát.
+  - Mở rộng các check constraint: `order_source` thêm `grabfood`, `shopeefood`; loại phương thức thanh toán và `received_funds.kind` thêm `platform_receivable`; `receipt_evidences.kind` thêm `platform_order`; báo cáo xuất thêm `platforms`.
+  - `schema.rb` cập nhật qua `pnpm spree migrate`. Các dòng check constraint bị viết lại đã trả về như cũ, chỉ để lại 5 constraint đổi có chủ ý. Đã chạy `db:test:prepare`.
+- Model `PlatformSetting` và `PlatformOrder` (có `estimate` và `assign_gross`). `Workspace` tách `PICKABLE_SOURCES` (nguồn thu ngân chọn) và `PLATFORM_SOURCES`; `SetOrderSource` từ chối chọn nền tảng và từ chối đổi nguồn của đơn nền tảng.
+- Tender `platform_receivable`:
+  - `PaymentMethodResolver#platform_method!` tạo phương thức `platform_receivable`, gắn với phương thức Check của Spree. Quầy không bao giờ thấy nó: danh sách quầy và trang phương thức thanh toán dùng scope `counter`.
+  - `Tenders::Prepare` chỉ cho tender này trên workspace nền tảng, và workspace nền tảng chỉ nhận tender này (`platform_tender`).
+  - `Tenders::Confirm` cần evidence `platform_order` kèm mã tham chiếu `nền tảng:mã đơn`, ghi `ReceivedFunds` loại `platform_receivable` đúng số tiền, không có `CashMovement`.
+  - Phiếu thu ghi "Nền tảng giao hàng" (`receiptPlatform` trong `print_labels.json` và `pos-shared`).
+- Workflow `PlatformOrders::*`:
+  - `Enter`:
+    - một lệnh `CommandExecutor`, idempotent theo key;
+    - khóa `PlatformSetting` để hai lần nhập cùng mã luôn thấy nhau; trùng mã thì trả `platform_order_duplicate` kèm `platform_order_id`;
+    - tạo workspace `delivery` trên ca của thu ngân, thêm dòng menu bằng `ManageLineItem.add`, chỉ nhận món thực đơn (`platform_item_not_menu`);
+    - giá nền tảng ghi đè có audit `workspace.price.override` với lý do `platform_price`, không cần `Approval`;
+    - cấp số gọi, báo bếp ngay cả khi chi nhánh để `manual`.
+  - `MarkReady`: tự chuyển `ready` khi bếp xong hết món (gọi từ `Kitchen::ChangeItemStatus`), về lại `accepted` khi recall. Thu ngân cũng bấm tay được, bấm lần hai không đổi gì.
+  - `Complete`: một lệnh gồm `ClaimLease` → `Tenders::Prepare` → `Tenders::Confirm` → `Workspaces::Complete`, nên có phiếu thu, `FundsAllocation`, Spree Payment `completed`, và hóa đơn điện tử theo cấu hình.
+  - `Cancel`:
+    - món bếp đang có (`new`, `preparing`, `ready`) cần duyệt (`approval_required`, hoặc người có `pos.approval.grant`);
+    - món bị void với lý do `platform_canceled` và audit `kitchen.void`, rồi hủy workspace; số gọi giữ lại.
+  - `Settle`: tối đa 200 đơn một lần. Chỉ đơn `completed` chưa đối soát; hoa hồng thực tế ≤ doanh thu. Chỉ đổi `PlatformOrder`; tender, `ReceivedFunds` và tổng đơn giữ nguyên.
+  - Thêm ngoài kế hoạch: `Configure` (bật/tắt nền tảng, tỷ lệ; audit `platform_setting.change`) và `Guard` (quyền).
+- Phiếu bếp: header ticket có `platform_order_ref` và `pickup_code`. `TicketDocument` in dòng đảo màu "GRABFOOD · Mã lấy: A12" và "Mã đơn nền tảng".
+- Module `fnb.delivery_platforms` (`available`, phụ thuộc `fnb.menu`). Hồ sơ F&B chưa thêm module này.
+- Báo cáo `Reports::Platforms` theo ngày kinh doanh × nền tảng: số đơn, doanh thu gộp, hoa hồng, thực nhận, chưa đối soát, hoa hồng ước tính và thực tế tách riêng. Xuất CSV qua `ExportFile` có sẵn. Route `reports/:report` thêm `platforms`.
+- API `admin/pos/platform_orders`:
+  - `index`: lọc `open`, `completed`, `canceled`, `unsettled`, theo nền tảng và kỳ (ngày kinh doanh); tham số sai trả 422;
+  - `create`, `:id/ready`, `:id/complete`, `:id/cancel`, `settle`;
+  - `platform_settings` (show/update).
+  - `workspaces#index` nhận `platform=exclude`.
+  - OpenAPI `pos-staff.yaml` thêm các path, kèm schema có tên cho mọi body và response (không sinh `InlineObject`), path `reports/platforms`, và mô tả header ticket. Client `pos_api` sinh lại bằng `tool/gen_api.sh`.
+- Flutter KDS: `ticket_card.dart` hiện dải đảo màu "GRABFOOD · Mã lấy: A12" thay cho mã nguồn thô. Khóa ARB `kdsPlatformGrabfood`, `kdsPlatformShopeefood`, `kdsPickupCode` (vi/en); thêm widget test.
+- `packages/pos-shared`:
+  - `ORDER_SOURCES` thêm hai nền tảng; thêm `PICKABLE_ORDER_SOURCES`, `PLATFORM_ORDER_SOURCES`, `isPlatformSource`;
+  - `ReceivedFunds.kind` thêm `platform_receivable`;
+  - `platform-orders.ts` (kiểu, `activePlatforms`, kiểm mã đơn);
+  - báo cáo `platforms` chỉ hiện khi bật module.
+- Web `apps/pos`:
+  - khay "Đơn Grab / Shopee" (`platform-order-tray.tsx`) với nút "Nhập đơn nền tảng", và đơn đang làm / sẵn sàng với "Sẵn sàng", "Tài xế đã lấy", "Hủy" (có lý do);
+  - form `platform-order-form.tsx`: chọn nền tảng đang bật, mã đơn, mã lấy hàng, ghi chú, chọn món từ `MenuGrid` (kèm sheet modifier), số lượng, giá nền tảng cạnh giá quán, tổng theo giá nền tảng;
+  - hook `use-platform-orders.ts`, logic thuần `lib/platform-order-draft.ts` (có test);
+  - tab bán lọc bỏ đơn nền tảng; `OrderSourcePicker` chỉ hiện nguồn chọn được, và đơn nền tảng hiện nhãn cố định;
+  - `MenuAdd` trả `Promise<unknown>` để form dùng lại lưới.
+- `apps/pos-dashboard`:
+  - tab chi nhánh "Nền tảng giao hàng" (`/branches/$branchId/platforms`): bật nền tảng, tỷ lệ hoa hồng;
+  - trang "Đối soát nền tảng" (`/platform-settlement`, nhóm Tiền): lọc đơn chưa đối soát theo nền tảng và kỳ, chọn đơn, sửa hoa hồng thực tế, mã thanh toán của nền tảng;
+  - tab báo cáo "Nền tảng giao hàng" (`/reports/platforms`, theo ngày kinh doanh);
+  - quyền `branch-platforms` và `platform-settlement` trong `pos-access.ts`, kèm test.
+
+**Cách ghi công nợ nền tảng (bước 1)**
+
+- `ReceivableEntry` không ghi được đối tượng nợ không phải khách:
+  - mỗi dòng cần `CreditAccount` gắn `CustomerProfile`, mà hồ sơ khách bắt buộc số điện thoại hoặc email thật;
+  - ghi nợ còn đặt chỗ hạn mức và `due_on`;
+  - nếu làm hồ sơ "GrabFood" đại diện thì phải bịa liên hệ, và đơn nền tảng lẫn vào sổ nợ khách, nhắc nợ, tuổi nợ.
+- Đã chọn: khoản nền tảng nợ là chính dòng `PlatformOrder` (`gross_amount`, `commission_amount`, `net_amount`, `settled_at`), có `ReceivedFunds` loại `platform_receivable` làm chứng từ. Phiếu thu ghi tiền phải thu từ nền tảng, không vào ngăn kéo.
+- "Chưa đối soát" là các đơn `completed` có `settled_at` rỗng; `Settle` chỉ đổi dòng `PlatformOrder`.
+
+**Lệch so với kế hoạch**
+
+- Hủy đơn đã báo bếp: chưa có luồng hủy món của 8B. `Cancel` tự void các món bếp đang có với lý do `platform_canceled`, cần duyệt bằng `ApplyDiscount.approve!` và có audit. Phiếu hủy in cho bếp (`void_ticket`) chưa phát; khi làm 8B thì chuyển sang luồng đó.
+- Trang đối soát, cài đặt và báo cáo nằm ở `apps/pos-dashboard` (`pages/platform-settlement.tsx`, `pages/branch-platforms.tsx`, `hooks/use-platform-orders.ts`), không ở `apps/pos` (cài đặt và back office không đặt trong `apps/pos`).
+- Không thêm quyền mới, dùng quyền sẵn có:
+  - nhập, sẵn sàng, hủy cần `write_pos_orders` và `pos.shift.open`;
+  - "Tài xế đã lấy" như mọi tender: chủ ca, `pos.payment.collect`;
+  - đối soát cần `pos.payment.resolve` hoặc `write_pos_topology`;
+  - cài đặt cần `pos.topology.manage` hoặc `write_pos_topology`;
+  - duyệt hủy cần `pos.approval.grant`.
+- `Cancel` và `Complete` lấy lại quyền sửa workspace (takeover) khi người làm có `pos.workspace.takeover`.
+- Khay đọc lại mỗi 10 giây và sau mỗi lệnh; không thêm sự kiện realtime riêng.
+- Không có `spec/services/spree/pos/reports/platforms_spec.rb`: báo cáo (dòng, tổng, ước tính và thực tế, lọc nền tảng, xuất CSV) được kiểm trong `spec/requests/spree/pos/platform_orders_spec.rb`.
+- Báo cáo bán hàng theo nguồn đơn (`by_source`) nay có thêm dòng `grabfood` và `shopeefood`; `order_sources_spec.rb` cập nhật theo.
+- KDS chỉ đổi phần hiển thị header, dữ liệu ticket không đổi; số gọi lấy từ 7B.
+
+**Lệnh và kết quả**
+
+- `pnpm spree rspec spec/workflows/spree/pos/platform_orders/ spec/requests/spree/pos/platform_orders_spec.rb` (sau khi rubocop `-a` chỉnh định dạng): 19 ví dụ, 0 lỗi.
+- `pnpm spree rspec` các spec hồi quy: module_policy, business_profiles (service và request), branch_modules, branch_profiles, onboarding, topology, `spec/workflows/spree/pos/kitchen`, kitchen, workspaces complete, workspaces, order_sources, devices, print_documents, reports, receipts_displays, vietqr_tender, settlement, shared_master_data, funds_conservation, pay_later, kitchen_send_race.
+  - Kết quả: 211 ví dụ, 1 lỗi.
+  - Lỗi là `order_sources_spec.rb:126`, do danh sách nguồn có thêm nền tảng. Đã sửa expectation, chạy lại `order_sources_spec.rb`: 7/7 qua.
+- `tool/gen_api.sh`: sinh lại, không có `InlineObject`. `flutter analyze`: không có lỗi. `flutter test`: 106/106 qua.
+- `packages/pos-shared`: typecheck, lint qua; test 257/257.
+- `apps/pos`: typecheck, lint qua; test 262/262.
+- `apps/pos-dashboard`:
+  - `pnpm build` qua (sinh lại `routeTree.gen.ts`);
+  - typecheck và lint qua;
+  - test 88/88; chạy lại `src/lib` sau khi thêm test quyền: 66/66.
+- `rubocop` trên file mới: còn vài cảnh báo `Metrics/ParameterLists` và độ dài dòng (CI không chạy rubocop).
+
+**Còn mở**
+
+- E2E chưa chạy vì máy chưa cài trình duyệt Playwright:
+  - `apps/pos/e2e/platform-orders.spec.ts`: nhập đơn, sẵn sàng, tài xế lấy;
+  - `apps/pos-dashboard/e2e/platform-settlement.spec.ts`: đối soát, báo cáo.
+  - Hai file đã viết và qua typecheck riêng.
+- Luồng hủy món của 8B và in phiếu hủy cho bếp khi nền tảng hủy đơn đã báo bếp.
+- Hồ sơ F&B chưa gồm `fnb.delivery_platforms` (mở hồ sơ ở 7D).
+- Nối API nền tảng: xem mục "Để sau" ở trên; `Enter` là điểm vào chung.
 
 ## Phần 7D: Mở ngành đợt 1
 
