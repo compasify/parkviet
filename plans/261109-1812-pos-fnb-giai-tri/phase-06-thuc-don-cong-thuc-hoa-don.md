@@ -184,12 +184,82 @@ Migration: `create_spree_pos_menu_tables`, `add_menu_columns_to_spree_pos_sale_l
 
 ### Tiêu chí xong
 
-- [ ] Thêm món với tùy chọn ra đúng giá ở server; hai bộ tùy chọn khác nhau là hai dòng.
-- [ ] Combo hiện thành phần trong đơn, trên hóa đơn và trong `to_pos`.
-- [ ] Giá theo khung giờ áp đúng, kể cả với khung vắt qua 0h.
-- [ ] Món hết bị từ chối, sự kiện `menu.sold_out` được phát, và trạng thái hết tự hết hạn sang ngày kinh doanh mới.
-- [ ] Chi nhánh tắt `fnb.menu` vẫn bán được món bằng giá gốc.
-- [ ] OpenAPI cập nhật; spec POS và e2e bán lẻ không lỗi mới.
+- [x] Thêm món với tùy chọn ra đúng giá ở server; hai bộ tùy chọn khác nhau là hai dòng.
+- [x] Combo hiện thành phần trong đơn, trên hóa đơn và trong `to_pos`.
+- [x] Giá theo khung giờ áp đúng, kể cả với khung vắt qua 0h.
+- [x] Món hết bị từ chối, sự kiện `menu.sold_out` được phát, và trạng thái hết tự hết hạn sang ngày kinh doanh mới.
+- [x] Chi nhánh tắt `fnb.menu` vẫn bán được món bằng giá gốc.
+- [x] OpenAPI cập nhật; spec POS và e2e bán lẻ không lỗi mới.
+
+### Kết quả
+
+Trạng thái 11/11/2026: code đã viết đủ, web và server đều đã kiểm. Migration đã chạy; `schema.rb` chỉ thêm 12 bảng, 2 cột của `spree_pos_sale_lines` và khóa ngoại của chúng.
+
+**Đã làm**
+
+- Server:
+  - Hai migration `20261111150000_create_spree_pos_menu_tables` (12 bảng) và `20261111150100_add_menu_columns_to_spree_pos_sale_lines` (`note`, `modifier_signature`).
+  - 12 model `Spree::Pos::Menu*`, `Modifier*`, `ComboComponent`, `LineModifier`, `LineComponent`.
+  - `Menu::Pricing`, `Menu::Reader` (đọc thực đơn kèm `etag`), kind handler `SaleLineKinds::Menu`, và tham số `modifiers` / `note` trong `ManageLineItem.add`.
+  - Workflow `UpdateLineModifiers`, `Menu::SetSoldOut` và `Menu::Save`. `Save` lo CRUD danh mục, món, nhóm tùy chọn, khung giờ và món yêu thích, kèm `AuditEntry`.
+  - Controller dưới `api/v3/admin/pos/`, route, quyền `pos.menu.manage` / `pos.menu.sold_out`.
+  - Tùy chọn và thành phần combo hiện trong `to_pos`, trên hóa đơn (`ReceiptBuilder`, `TemplateData`) và trên màn khách (`DisplayState`).
+  - Hợp đồng OpenAPI trong `pos-staff.yaml`. `fnb.menu` chuyển từ `planned` sang `register`.
+- `apps/pos`: `menu-grid`, `modifier-sheet`, `use-menu`, sửa tùy chọn và nút "Thêm ly giống vậy" trong `order-lines`, khóa i18n `menu*`.
+- `apps/pos-dashboard`: trang `/menu` (`pages/menu.tsx`, `hooks/use-menu-admin.ts`), mục nav và nhóm quyền.
+- `packages/pos-shared`: hai quyền mới, module `fnb.menu`, kiểu dữ liệu menu, dòng phụ trên hóa đơn.
+
+**Sửa trong lần kiểm này**
+
+- `menu-grid.tsx`: phím số chọn món yêu thích không chạy, vì code coi popup của các ô sửa dòng là đang mở, trong khi popup đó nằm trong `<details>` đang đóng. Giờ chỉ popup không nằm trong `<details>` đóng mới chặn phím.
+- `Menu::Save`: không cho gắn tax category của store khác vào món, vì bảng `spree_tax_categories` có `store_id`.
+- Hai test web viết theo hành vi cũ: `realtime.test.ts` dùng `menu.sold_out` làm ví dụ sự kiện lạ (nay là sự kiện thật), và `pos-administration.test.ts` đếm 20 quyền (nay là 22).
+- Biome: format lại các file menu mới và bỏ `!` trong `menu-selection.test.ts`.
+- Đóng hai khoảng trống tác giả đã liệt kê:
+  - fixture e2e có thêm `PATCH …/items/:id/modifiers`, kèm e2e "đổi tùy chọn thì tính lại giá và gộp với dòng trùng";
+  - `manage_line_item_spec` kiểm thành phần combo trong payload hóa đơn và dòng in `- Khoai tây ×2`.
+
+**Sửa khi chạy spec server**
+
+- `schema.rb`: Postgres của máy dev dump lại các check constraint cũ theo dạng khác (`ARRAY[...]::text[]`), nghĩa không đổi. Đã trả 67 dòng đó về đúng bản đã commit, nên diff chỉ còn phần thêm.
+- Spree 6.0.2 không còn master: `product.variants` gồm mọi variant, `default_variant` là variant đầu, `product.master` chỉ còn là alias deprecated, và `includes(master: …)` lỗi vì không có association đó. Thêm `MenuItem#sizes(now:)`: lấy mọi variant theo `position`, bỏ variant hết hạn bán, và bỏ master cũ khi có variant có tùy chọn (cùng luật với `CatalogReader`). `Menu::Reader` và `MenuItemsController` dùng chung hàm này.
+- Ảnh món: product của Spree 6 có `primary_media` và `media` (`Spree::Media`, `has_one_attached :attachment`), không có `images`. `Reader#image_url` giờ đọc `primary_media || media.first`; preload thêm `primary_media`.
+- Fixture `menu_item!`: variant mặc định của product là size đầu, mỗi size có option value riêng nên `options_text` ra đúng `Size: M` / `Size: L`. Bản cũ để variant mặc định nằm cạnh các size, nên `size(item, 1)` trả về size M.
+- `manage_line_item_spec`: chuỗi cố định của merge key viết `0.25e5`, nhưng ActiveSupport in `BigDecimal` là `25000.0`. Code merge key không đổi so với bản commit; đã sửa chuỗi trong spec.
+- Các spec dùng `travel_to` thiếu `include ActiveSupport::Testing::TimeHelpers` (`manage_line_item_spec`, `menu_spec`, `menu_availabilities_spec`).
+- Hai spec bán sản phẩm thường "Nước suối" chưa nhập kho cho chi nhánh, nên Spree từ chối số lượng. Đã nhập 10 trước khi bán.
+- `branch_profiles_spec`: đổi hồ sơ của store không được đổi module của chi nhánh hiện có. Spec cũ kiểm "mọi module bật", sai khi `fnb.menu` đã đăng ký nhưng không thuộc hồ sơ `khac`. Giờ spec so với trạng thái trước lệnh.
+- Các điểm cần kiểm đã rõ: `Spree::TaxCategory` có `prefixed_id` (`taxcat_…`) và `find_by_prefix_id`; cột `time` đọc lại thành `2000-01-01 HH:MM UTC`, giờ và phút không lệch; mốc 04:00 của `menu_availabilities_spec` chạy đúng.
+
+**Lệch so với plan, đã chấp nhận**
+
+- Trang quản lý thực đơn nằm trong `apps/pos-dashboard`, không phải `apps/pos/src/pages/settings/menu.tsx`, vì `apps/pos/AGENTS.md` cấm màn cài đặt ở app bán.
+- Không có mục `menuUi` trong registry. Lối vào là nav của dashboard.
+- Quầy không gửi `If-None-Match`. Quầy refetch khi nhận `menu.sold_out` và poll 60 giây. Server vẫn trả 304 khi client gửi etag.
+
+**Lệnh đã chạy**
+
+| # | Lệnh | Kết quả |
+|---|---|---|
+| 1 | `pnpm spree migrate`, rồi `pnpm spree exec bin/rails db:test:prepare` | 2 migration chạy xong; `schema.rb` +186/−1 (dòng version) |
+| 2 | `pnpm spree rspec spec/models/spree/pos/menu_item_spec.rb spec/services/spree/pos/menu/pricing_spec.rb` | 15/15 qua (lần đầu 4 lỗi do fixture size) |
+| 3 | `pnpm spree rspec spec/workflows/spree/pos/workspaces/manage_line_item_spec.rb spec/workflows/spree/pos/workspaces/update_line_modifiers_spec.rb` | 14/14 qua (lần đầu 5 lỗi: `travel_to`, kho, chuỗi merge key) |
+| 4 | `pnpm spree rspec spec/requests/spree/pos/menu_spec.rb spec/requests/spree/pos/menu_availabilities_spec.rb` | 9/9 qua (lần đầu 6 lỗi `travel_to`) |
+| 5 | spec module / hồ sơ (`business_profiles`, `module_policy`, `sale_line_kinds`, `branch_modules`, `branch_profiles`, `onboarding`, `topology`) | 57 ví dụ; 1 lỗi ở `branch_profiles_spec`, đã sửa spec; chạy lại trong lệnh 6 |
+| 6 | `pnpm spree rspec spec/requests/spree/pos/ spec/workflows/spree/pos/ spec/services/spree/pos/ spec/models/spree/pos/` | 738 ví dụ, 1 lỗi: `devices_spec` "every path has a route" thấy `GET system_status` trong `pos-staff.yaml` mà chưa có route. Một phiên khác (phần 5B) đang thêm endpoint này và sửa `routes.rb` / `pos-staff.yaml` lúc lệnh đang chạy. Chạy lại `devices_spec` sau đó: 3/3 qua |
+| 7 | Web | Không chạy lại: response và OpenAPI không đổi hình dạng |
+| 7 | `pnpm --dir packages/pos-shared test`, `typecheck` | 247/247 qua; tsc sạch |
+| 7 | `apps/pos`: `typecheck`, `test`, `lint` | tsc sạch; 255/255 qua sau khi sửa 2 test cũ; biome sạch |
+| 7 | `apps/pos-dashboard`: `vite build` (sinh lại `routeTree.gen.ts`), `typecheck`, `test`, `lint` | build qua; tsc sạch; 86/86 qua; biome sạch (chỉ còn thông tin lệch phiên bản schema `biome.json` có từ trước) |
+| 8 | `playwright test e2e/fnb-menu.spec.ts --project desktop` | 5/5 qua (4 tình huống của plan và tình huống đổi tùy chọn) |
+| 8 | `playwright test e2e/catalog-search.spec.ts e2e/branch-modules.spec.ts e2e/receipts-display.spec.ts --project desktop` | 14/14 qua |
+
+**Còn mở**
+
+- Chưa có spec nào gắn ảnh thật cho món; `image_url` mới được kiểm khi không có ảnh (trả `nil`).
+- Rubocop còn báo trên các file menu đã viết trước đó (không phải dòng sửa lần này): `Layout/HashAlignment` ở `menu_item.rb:19`, `Metrics/ParameterLists` ở 3 helper của `pos_menu_helpers.rb`, `Layout/LineLength` ở `update_line_modifiers_spec.rb:36` và `menu_spec.rb:163,165`.
+- Chưa có e2e cho trang `/menu` của dashboard.
+- Chưa có e2e tablet/mobile cho `menu-grid` / `modifier-sheet`.
 
 ## Phần 6B: Công thức và trừ kho
 
@@ -309,10 +379,83 @@ Migration: `create_spree_pos_recipe_tables`, `create_spree_pos_stock_alerts`.
 
 ### Tiêu chí xong
 
-- [ ] Bán món có size và tùy chọn trừ đúng nguyên liệu theo đơn vị gốc, idempotent.
-- [ ] Thiếu nguyên liệu không chặn việc bán và có ghi discrepancy.
-- [ ] Trả hàng hoặc hủy món F&B không nhập lại nguyên liệu; trả hàng bán lẻ không đổi.
-- [ ] Có cảnh báo sắp hết, báo cáo tiêu hao và báo cáo lãi gộp theo món.
+- [x] Bán món có size và tùy chọn trừ đúng nguyên liệu theo đơn vị gốc, idempotent.
+- [x] Thiếu nguyên liệu không chặn việc bán và có ghi discrepancy.
+- [x] Trả hàng hoặc hủy món F&B không nhập lại nguyên liệu; trả hàng bán lẻ không đổi.
+- [x] Có cảnh báo sắp hết, báo cáo tiêu hao và báo cáo lãi gộp theo món.
+
+### Kết quả
+
+Trạng thái 11/11/2026: code đã viết đủ; spec server, test web và lint đã chạy. Migration đã chạy; `schema.rb` +281/−3 (dòng version, check constraint cũ của `spree_pos_export_requests` và index cũ của `spree_pos_stock_discrepancies`). Chưa commit.
+
+**Kết luận về tồn âm (bước 1)**
+
+Đọc `spree_core-6.0.3` trong container:
+
+- `StockIntegration.adjust!` gọi `StockLocation#adjust`, tức tạo `StockMovement` kiểu `adjusted` với số lượng nguyên khác 0.
+- `Spree::StockLevel` chặn `count_on_hand < 0` khi số tồn giảm xuống dưới 0, trừ khi ghi có `force`. Chỉ `unstock(force: true)` (kiểu `shipped`, đường của shipment) mới ép được. `backorderable` không liên quan.
+- Điều chỉnh vẫn áp vào `StockLevel` cả khi variant không theo dõi tồn.
+- `Variant#handle_track_inventory_change` (after_update_commit) xóa tồn còn lại khi tắt theo dõi tồn.
+
+Vậy `adjust!` **không** cho tồn âm. `Recipes::Consume` trừ tối đa tới 0 (`min(cần, max(tồn, 0))`) và ghi phần thiếu vào `StockDiscrepancy` với `source = 'recipe'`. Việc bán không bị chặn. Đây là nhánh dự phòng của quyết định 3.
+
+**Đã làm**
+
+- Server:
+  - Migration `20261111160000_create_spree_pos_recipe_tables`: `spree_pos_recipes`, `spree_pos_recipe_ingredients`, `spree_pos_recipe_consumptions`, kèm unique và check như bảng Dữ liệu. Migration này cũng thêm cột `source` (`handover` / `recipe`) cho `spree_pos_stock_discrepancies` và dựng lại index mở theo `(fulfillment_id, variant_id, source)`.
+  - Migration `20261111160100_create_spree_pos_stock_alerts`: bảng `spree_pos_stock_alerts`; check `chk_pos_export_requests_report` thêm `ingredient_usage` và `menu_margin`.
+  - Model `Recipe`, `RecipeIngredient`, `RecipeConsumption`, `StockAlert`. `StockDiscrepancy` có `SOURCES`, scope `handover` và trả `source` trong `to_pos`.
+  - Service `Spree::Pos::Recipes`: quyền đọc / sửa, owner hợp lệ, đổi đơn vị (`base_quantity`) và giá vốn trên một đơn vị tồn (`unit_cost`).
+  - `Recipes::Expand`: ba nguồn `variant`, `modifier:<id>`, `component:<id>`; gộp theo `(nguyên liệu, nguồn)`.
+  - Workflow `Recipes::Save`: version tăng dần; chặn nguyên liệu tracked, sai dimension, lượng không đổi ra số nguyên, trùng dòng, tự làm nguyên liệu, quá 50 dòng. Ghi `AuditEntry` `recipe.change`.
+  - `Recipes::Consume`: gọi trong `Workspaces::Complete` ngay sau `Inventory::AllocateTraceability.commit!`. Khóa `StockLevel` theo `variant_id` tăng dần. Ghi `AuditEntry` `stock.low` khi tồn vượt xuống dưới ngưỡng.
+  - `Recipes::SetStockAlert`: đặt ngưỡng; để trống thì bỏ ngưỡng.
+  - Báo cáo `ingredient_usage` và `menu_margin` (chung lớp `Reports::Grouped`), có xuất file.
+  - Controller `recipes_controller` (GET/PUT) và `stock_alerts_controller` (GET/PUT); route; OpenAPI trong `pos-staff.yaml` (`/recipes`, `/stock_alerts`, hai báo cáo, schema `Recipe`, `RecipeOwner`, `StockAlert`, `IngredientUsageRow`, `MenuMarginRow`).
+  - `fnb.recipes` chuyển từ `planned` sang `register` (depends_on `fnb.menu`, `retail.units`).
+  - `Orders::Handover` và `RecoverReturnOperationJob` chỉ đụng discrepancy `source = 'handover'`.
+- `packages/pos-shared`: module `fnb.recipes` (nhãn vi / en), `REPORT_TYPES` thêm hai báo cáo, `reportTypesFor(modules)` chỉ hiện hai tab đó khi chi nhánh bật `fnb.recipes`.
+- `apps/pos-dashboard`:
+  - `components/recipe-editor.tsx`: nút "Công thức" trên từng món của `/menu`. Hộp thoại chọn size hoặc tùy chọn, rồi hiện bảng nguyên liệu (tìm hàng, số lượng, đơn vị), version, giá vốn ước tính và lượng trừ theo đơn vị tồn. Khi size còn tồn, hộp thoại hỏi xác nhận rồi mới gửi `confirm_stock_write_off`.
+  - `pages/stock-alerts.tsx` (`/stock-alerts`, mục Kho): danh sách ngưỡng của chi nhánh, mục sắp hết xếp trước; thêm, sửa, bỏ ngưỡng.
+  - `components/product-search.tsx`: tách ô tìm hàng từ `menu.tsx` để dùng chung.
+  - Hai route báo cáo `reports/ingredient_usage`, `reports/menu_margin`; cột tiền, cột phần trăm, cột Có/Không. Quyền mới trong `pos-access.ts` (`canManageRecipes`, `runsRecipes`), mục nav và khóa i18n `recipes.*`, `stockAlerts.*`, `report*`.
+
+**Lệch so với plan, đã chấp nhận**
+
+- `track_inventory = false` được đặt khi **lưu công thức đầu tiên của một size**, không phải khi bật module. Bật module không biết món nào là đồ pha chế, và đặt hàng loạt sẽ đụng cả hàng bán lẻ. Nếu size còn tồn, server trả 409 `recipe_variant_has_stock` (kèm `on_hand`), và chỉ lưu khi người dùng xác nhận. Spree sau đó tự xóa tồn đó (xem kết luận trên), nên câu "không tự xóa tồn" trong bảng Rủi ro chỉ đúng tới lúc xác nhận.
+- Đổi đơn vị chạy **một lần khi lưu**: dòng nguyên liệu lưu sẵn `base_quantity` (số nguyên theo đơn vị tồn) và `base_unit_code`. Lượng phải đổi ra số nguyên, nếu không thì trả `recipe_quantity_inexact`. Khi bán, code chỉ nhân lượng đã lưu, không đổi đơn vị.
+- "ml → chai" không đổi được vì hai đơn vị khác dimension (thể tích và cái). Spec dùng l → ml và thùng → chai (pack ratio của `VariantUnit`).
+- Tùy chọn hoặc thành phần combo **không có công thức** mà trỏ tới variant có theo dõi tồn sẽ trừ 1 đơn vị tồn của variant đó (ví dụ topping bán như hàng đóng gói). Nếu variant không theo dõi tồn thì không trừ gì.
+- `StockDiscrepancy` thêm cột `source`. Thiếu theo công thức không gắn với giao hàng, nên `Handover` không được tự đóng nó, và job phục hồi không được thử giao lại. Discrepancy công thức gắn với fulfillment đầu tiên của đơn.
+- `stock.low` chỉ là `AuditEntry`; không phát realtime, vì phase 3 chưa có kênh sự kiện kho. Báo cáo tiêu hao có `shortages` / `open_shortages` trong phần tổng.
+- Biến thể không theo dõi tồn vẫn có dòng `RecipeConsumption` (để báo cáo giá vốn) nhưng không đổi kho.
+- Giao diện nằm trong `apps/pos-dashboard`, không phải `apps/pos` (theo `apps/pos/AGENTS.md`). Trình sửa công thức là hộp thoại trên `/menu`, không phải tab trong màn sửa món. Món combo không có nút công thức: combo trừ theo công thức của từng thành phần. Người quản lý thực đơn xem được công thức; chỉ quản lý kho (`pos.inventory.manage`) hoặc quản trị store mới sửa được.
+- OpenAPI ghi hai đường báo cáo cụ thể (`/reports/ingredient_usage`, `/reports/menu_margin`), vì `devices_spec` dò route theo từng đường.
+- File spec khác plan: không có `returns_spec.rb` và `stock_integration_spec.rb`. Spec hồi quy trả hàng F&B nằm trong `complete_spec.rb`; hồi quy bán lẻ chạy `returns_refunds_spec`, `traceability_spec`, `fulfillment_returns_spec`. Hai báo cáo được kiểm trong `recipes_spec.rb`.
+
+**Lệnh đã chạy**
+
+| # | Lệnh | Kết quả |
+|---|---|---|
+| 1 | `pnpm spree migrate`, rồi `pnpm spree exec bin/rails db:test:prepare` | 2 migration chạy xong. Dump đã viết lại 63 check constraint và 3 điều kiện `where` của index sang dạng khác; đã trả về đúng bản đã commit. Check xuất file mới viết theo cùng kiểu đó |
+| 2 | `pnpm spree rspec spec/services/spree/pos/recipes/expand_spec.rb spec/workflows/spree/pos/recipes/ spec/workflows/spree/pos/workspaces/complete_spec.rb` | 18/18 qua |
+| 3 | `pnpm spree rspec spec/requests/spree/pos/recipes_spec.rb` | 4/4 qua (schema OpenAPI, ngưỡng, hai báo cáo, xuất `menu_margin`) |
+| 4 | Hồi quy: `reports`, `devices`, `returns_refunds`, `traceability`, `fulfillment_returns`, `credit_sales`, `business_profiles` ×2, `module_policy`, `sale_line_kinds`, `branch_modules`, `branch_profiles`, `onboarding`, `topology`, `menu`, `operational_metrics` | 123 ví dụ, 7 lỗi, đều do danh sách module nay có `fnb.recipes`. Đã sửa kỳ vọng; chạy lại 7 file: 54/54 qua |
+| 5 | `pnpm spree rspec spec/workflows/spree/pos/ spec/integration/spree/pos/ spec/requests/spree/pos/settlement_spec.rb spec/requests/spree/pos/workspaces_spec.rb spec/requests/spree/pos/menu_availabilities_spec.rb` | 357/357 qua |
+| 6 | `pnpm spree exec bundle exec rubocop -a` trên các file server mới | Đã sửa layout. Còn `Metrics/ParameterLists` ở `Save.call`, `SetStockAlert.call`, `Consume`, `IngredientUsage` và helper `ingredient!` (cùng kiểu các workflow có sẵn). `complete.rb` vẫn còn các cảnh báo Metrics như trước khi sửa |
+| 7 | Chạy lại lệnh 2, 3 và `devices_spec` sau rubocop | 25/25 qua |
+| 8 | `packages/pos-shared`: `test`, `typecheck`, `lint` | 248/248 qua; tsc sạch; biome sạch |
+| 9 | `apps/pos`: `typecheck`, `test`, `lint` | tsc sạch; 256/256 qua; biome sạch |
+| 10 | `apps/pos-dashboard`: `vite build` (sinh lại `routeTree.gen.ts`), `typecheck`, `test`, `lint` | build qua; tsc sạch; 87/87 qua; biome sạch sau khi format 4 file mới |
+| 11 | `playwright test e2e/reports.spec.ts e2e/shell-access.spec.ts --project desktop` | Chưa chạy: cổng 5176 bị một vite dev server khác giữ suốt hơn 5 phút chờ (`reuseExistingServer: false`); không dừng tiến trình đó |
+
+**Còn mở**
+
+- Chưa có màn xử lý discrepancy `recipe`; mới thấy được qua báo cáo tiêu hao (`open_shortages`) và API.
+- Công thức lưu sẵn lượng theo đơn vị tồn. Nếu sau này đổi đơn vị gốc hoặc pack ratio của nguyên liệu, công thức cũ không tự tính lại; phải lưu lại công thức.
+- Giá vốn lấy `cost_price` hiện tại lúc trừ kho; chưa có giá vốn bình quân.
+- Chưa có e2e cho trình sửa công thức và trang `/stock-alerts`. Chưa chạy lại e2e báo cáo của dashboard (lệnh 11).
 
 ## Phần 6C: Hóa đơn điện tử
 
@@ -454,15 +597,134 @@ Migration: `create_pos_einvoices`, `create_pos_einvoice_settings`, `add_einvoice
 
 ### Tiêu chí xong
 
-- [ ] Có ghi chú văn bản gốc NĐ 254 / TT 91; trường hóa đơn khớp ghi chú đó.
-- [ ] Store chọn được loại hóa đơn; đơn complete tạo hóa đơn qua hàng đợi, không chặn complete.
-- [ ] Hóa đơn có thuế suất theo dòng; phí phục vụ và dòng giờ được hỗ trợ trong builder.
-- [ ] Khách tự nhập MST qua QR trên bill; thu ngân nhập được tại quầy.
-- [ ] Có danh sách hóa đơn lỗi / chưa có, chạy lại được; có cảnh báo mốc 1 tỷ.
-- [ ] Adapter sandbox chạy đầy đủ.
+- [ ] Có ghi chú văn bản gốc NĐ 254 / TT 91; trường hóa đơn khớp ghi chú đó. *(Đã có ghi chú và trường khớp ghi chú, nhưng ghi chú dựa trên nguồn thứ cấp: chưa mở được toàn văn chính thức.)*
+- [x] Store chọn được loại hóa đơn; đơn complete tạo hóa đơn qua hàng đợi, không chặn complete.
+- [x] Hóa đơn có thuế suất theo dòng; phí phục vụ và dòng giờ được hỗ trợ trong builder.
+- [x] Khách tự nhập MST qua QR trên bill; thu ngân nhập được tại quầy.
+- [x] Có danh sách hóa đơn lỗi / chưa có, chạy lại được; có cảnh báo mốc 1 tỷ.
+- [x] Adapter sandbox chạy đầy đủ.
 - [ ] Adapter VNPT phát hành, tra cứu và hủy được trên môi trường thử của VNPT.
-- [ ] Mỗi cửa hàng chọn được nhà cung cấp trong cài đặt; nhà cung cấp chưa có adapter không hiện trong danh sách.
+- [x] Mỗi cửa hàng chọn được nhà cung cấp trong cài đặt; nhà cung cấp chưa có adapter không hiện trong danh sách.
 - [ ] Spec POS và e2e web xanh.
+
+### Kết quả
+
+Trạng thái 11/11/2026: code server, `packages/pos-shared`, `apps/pos-dashboard` và `apps/pos` đã viết xong. Spec server, test web, typecheck và lint đã chạy. E2e Playwright chưa chạy được (xem lệnh 12). Chưa commit.
+
+**Kết luận pháp lý** (chi tiết và nguồn S1–S27 trong [`docs/legal/hddt-nd254-tt91.md`](../../docs/legal/hddt-nd254-tt91.md))
+
+- **Nguồn đã đọc.** Không mở được toàn văn chính thức. thuvienphapluat trả 403, và không tìm thấy bản trên vanban.chinhphu.vn hay congbao.chinhphu.vn. Mỗi điểm đều dựa trên ít nhất hai nguồn thứ cấp: công văn 4831/CT-CS của Cục Thuế [S2], KPMG [S3], Forvis Mazars [S4], Crowe [S17], rồi tới blog của MISA, einvoice.vn và các bên khác. Điểm nào chỉ có một nguồn được đánh dấu **[CHƯA XÁC MINH]**.
+- **Hiệu lực.** NĐ 254/2026 và TT 91/2026 ban hành 30/06/2026, có hiệu lực từ 01/07/2026, thay NĐ 123/2020, NĐ 70/2025 và TT 32/2025 [S1]–[S5]. NĐ 141/2026 sửa NĐ 68/2026: hộ kinh doanh có doanh thu **trên** 1 tỷ đồng/năm phải dùng HĐĐT; quy định áp dụng hồi tố từ 01/01/2026 [S8], [S9].
+- **Đối tượng.** F&B, bán lẻ và vui chơi giải trí thuộc nhóm dùng hóa đơn khởi tạo từ máy tính tiền (NĐ 254, Điều 6 khoản 1 điểm c). Cơ sở đã đăng ký loại hóa đơn khác thì không bắt buộc chuyển [S12], [S13].
+- **Hóa đơn MTT.** Không bắt buộc chữ ký số. Chỉ ghi thông tin người mua khi người mua yêu cầu (MST, số định danh hoặc số điện thoại). Dữ liệu phải gửi cơ quan thuế trong ngày [S14], [S15].
+- **Người mua không đưa thông tin.** Ghi đúng cụm "Bán cho người tiêu dùng" (Phụ lục, điểm 4b). Không dùng "Người mua không lấy hóa đơn" [S2], [S15].
+- **Ký hiệu.** Mẫu số là 1 chữ số. Ký hiệu có 6 ký tự: `C`/`K`, hai số năm, `M` cho MTT hoặc `T`, rồi 2 ký tự tự đặt. Số hóa đơn tối đa 8 chữ số, do nhà cung cấp cấp [S5], [S19], [S20].
+- **Thời điểm lập.** Ngoại lệ ban đêm 22h–6h có tồn tại, nhưng chỉ áp dụng cho người bán không có phần mềm lập hóa đơn tự động. POS là phần mềm tự động, nên phải lập ngay [S2], [S22]–[S24].
+- **Xử lý sai sót.** Từ 01/07/2026 không còn thủ tục hủy hóa đơn đã lập; chỉ còn điều chỉnh hoặc thay thế [S27]. Hóa đơn MTT lập sai thì lập hóa đơn thay thế [S14], [S26].
+- **Thuế suất.** Ghi theo từng dòng. Mức 8% áp dụng tới hết 31/12/2026 [S10], [S11].
+- **Chưa xác minh.** Phí phục vụ và tiền boa.
+
+**Đã làm**
+
+- Server:
+  - **Migration.**
+    - `20261111170000_create_spree_pos_einvoices`. Các cột: `relation` (`original` / `replacement`), `original_einvoice_id`, buyer, seller, lines và totals dạng jsonb, `payment_method`, `currency`, `template_code`, `symbol`, `number`, `cqt_code`, `lookup_code`, `lookup_url`, `issued_at`, `signed_at`, `sent_to_cqt_at`, `attempts`, `next_attempt_at`, `last_error`, `buyer_token_expires_at`, `buyer_submitted_at`, `canceled_at`, `cancel_reason`. Unique `order_id` chỉ cho hóa đơn gốc; index `(store_id, status, next_attempt_at)`; có check constraint.
+    - `20261111170100_create_spree_pos_einvoice_settings`. `credentials` mã hóa bằng Active Record Encryption. Thêm `seller_tax_code`, `lookup_url`, `buyer_link_hours`. Có một dòng mặc định cho store và một dòng riêng cho từng chi nhánh.
+    - `20261111170200_add_einvoice_type_to_spree_pos_store_profiles`.
+  - **Model.** Thêm `Einvoice` và `EinvoiceSetting`. `StoreProfile` có thêm `einvoice_type`. `Capabilities` có thêm `pos.einvoice.manage`. `ReceiptSnapshot#to_pos` thêm khối `einvoice`, đọc trực tiếp từ hóa đơn.
+  - **Registry và adapter.**
+    - Registry nằm ở `Spree::Pos::Einvoices` (`register`, `catalog`, `provider_for`).
+    - `Einvoices::Provider` là interface: `issue`, `status`, `cancel`, `lookup_tax_code`, `credential_fields`, kèm `Result` và `Error` có `retryable`.
+    - `SandboxProvider` sinh số hóa đơn, mã CQT và mã tra cứu tất định, và tra được MST.
+    - Adapter được đăng ký trong `config/initializers/pos_einvoice_providers.rb`. Ở production, sandbox chỉ được đăng ký khi đặt `POS_EINVOICE_SANDBOX=on`.
+  - **Builder.**
+    - Mỗi dòng có thuế suất riêng, lấy từ `TaxLine`. Tổng thuế được cộng theo từng mức thuế suất.
+    - Đơn vị lấy từ catalog đơn vị. Dòng tính giờ dùng đơn vị "giờ", số lượng làm tròn 2 chữ số.
+    - Phí cấp đơn là dòng riêng có thuế: phí giao hàng, và phí phục vụ (kind `surcharge`).
+    - Hình thức thanh toán là TM, CK hoặc TM/CK.
+  - **Workflow.**
+    - `Enqueue` chạy trong transaction của `Complete`, trước `ReceiptBuilder`. Builder lỗi thì snapshot để trống và Issue dựng lại sau, nên complete không bao giờ bị chặn.
+    - `Issue`:
+      - nhận hóa đơn bằng cách chuyển sang `issuing` rồi commit; gọi adapter ngoài mọi transaction; ghi kết quả bằng một commit riêng;
+      - claim treo quá 10 phút thì coi như worker đã chết;
+      - lịch thử lại 1, 5, 15, 60 phút, sau đó cứ 6 giờ;
+      - che thông tin đăng nhập trong `last_error`;
+      - audit `einvoice.issued`, và `einvoice.failed` chỉ ở lần lỗi đầu.
+    - `UpdateBuyer` (quầy hoặc khách), `Replace` (hóa đơn thay thế cho hóa đơn đã phát hành, đánh dấu bản gốc `replaced`), `Cancel` (chỉ bản chưa gửi nhà cung cấp), `Retry` (tối đa 100 hóa đơn).
+    - `SaveSettings`: thông tin đăng nhập chỉ ghi; payload chỉ lưu HMAC; nhà cung cấp phải đã đăng ký; audit `einvoice_settings.change` không chứa giá trị bí mật.
+  - **Outbox.** `DispatchOutboxJob` có thêm bảng `HANDLERS`, hiện chỉ một mục là `einvoice.issue`. Mỗi lượt giữ entry 15 phút; handler có thể hẹn lại entry sang `available_at` muộn hơn; handler ném lỗi thì entry quay lại `pending` sau 5 phút. Các event_type khác vẫn được đánh dấu processed như trước.
+  - **Controller và route.**
+    - `einvoices_controller`: `index` (lọc `outstanding`, từng trạng thái, số đơn), `show`, `summary`, `update_buyer`, `retry_issue`, `cancel`, `replace`.
+    - `einvoice_settings_controller`: `show`, `update`, `sample` (route `einvoice_settings/test`).
+    - `Spree::Pos::EinvoiceBuyerController` phục vụ `GET/POST /pos_einvoice/:token`: HTML không JavaScript, token ký có hạn, rate limit 30 lần/phút, CSP chặt, `no-store`, có nút tra MST.
+  - **Bill.** Thêm biến `einvoice.lookup_code`, `einvoice.lookup_url`, `einvoice.buyer_qr`. Footer tự in QR "Quét mã để nhập thông tin xuất hóa đơn" khi liên kết còn mở. Golden mới `sale-einvoice.json`; renderer TypeScript cũng cập nhật để khớp.
+  - **Khác.** Context trả `einvoice_type`. `filter_parameters` thêm `credentials`. OpenAPI `pos-staff.yaml` có 9 đường mới, 8 schema mới và `Context.einvoice_type`.
+- `packages/pos-shared`: capability `pos.einvoice.manage` (nhãn vi / en); `PosContext.einvoice_type`; `ReceiptSnapshot.einvoice`; biến và QR trong renderer; nhãn `receiptEinvoiceBuyerCaption`.
+- `apps/pos-dashboard`:
+  - `/settings/einvoice` (trong mục Cài đặt, chỉ cho quản trị store):
+    - loại hóa đơn;
+    - nhà cung cấp, chỉ gồm các bên đã đăng ký;
+    - thông tin đăng nhập kiểu password, chỉ ghi, có ghi chú "Đã lưu";
+    - mẫu số, ký hiệu, người bán, nhãn người tiêu dùng, trang tra cứu, thời hạn liên kết, trạng thái, cấu hình theo store hoặc theo chi nhánh;
+    - nút "Phát hành thử" cho sandbox.
+  - `/einvoices` (nhóm Bán hàng):
+    - mặc định hiện hóa đơn chưa phát hành, có lọc trạng thái và tìm số đơn;
+    - thử lại từng hóa đơn hoặc tất cả hóa đơn lỗi;
+    - sửa thông tin người mua, hủy (có xác nhận và lý do), lập hóa đơn thay thế;
+    - thẻ tóm tắt doanh thu năm so với mốc 1 tỷ, cảnh báo ở 80% và 100%.
+  - Quyền mới trong `pos-access.ts` (`canManageEinvoices`), nav, nhóm quyền và khóa i18n `einvoices.*`, `einvoiceSettings.*`.
+- `apps/pos`:
+  - `payment-panel.tsx` có mục "Khách lấy hóa đơn" (có thể thu gọn), hiện khi `context.einvoice_type !== 'none'`. Mục gồm MST, tên, địa chỉ, email, điện thoại, số định danh, hộ chiếu, quốc tịch, ghi chú. Thông tin được gửi kèm `einvoice_buyer` trong cả bốn đường complete, kể cả bán nợ.
+  - Lỗi `einvoice_buyer_invalid` được báo theo tên trường.
+  - E2e `e2e/einvoice-buyer.spec.ts` và fixture `retail-api.ts` (`einvoiceType`, từ chối MST thiếu tên hoặc địa chỉ).
+- Docs: [`docs/einvoice-providers.md`](../../docs/einvoice-providers.md) mô tả luồng phát hành, cách thêm adapter và quy tắc lưu thông tin đăng nhập.
+
+**Lệch so với plan, đã chấp nhận**
+
+- **Unique `order_id`.** Ràng buộc chỉ áp cho hóa đơn gốc (partial index). Hóa đơn thay thế là một dòng riêng, có `original_einvoice_id`, theo ghi chú pháp lý mục 7 và 11.
+- **Trạng thái.** Thêm `replaced`. `canceled` chỉ dùng cho hóa đơn chưa gửi nhà cung cấp, vì không còn thủ tục hủy hóa đơn đã lập. Chưa làm hóa đơn điều chỉnh: trạng thái `adjusted` có nhưng chưa có luồng nào dùng.
+- **Token người mua.** Không có cột `buyer_token_digest`. Token là `signed_id` có `purpose` và `expires_at`. Hạn mặc định là cuối ngày kinh doanh, hoặc theo `buyer_link_hours`.
+- **Thời gian chờ thông tin người mua.** Khi khách chưa đưa thông tin và server có địa chỉ công khai, Issue chờ 10 phút (không quá cuối ngày lịch), để thông tin khách nhập qua QR kịp vào hóa đơn gốc. Không có địa chỉ công khai thì phát hành ngay và bill không in QR.
+- **Cài đặt.** Bảng thêm `seller_tax_code`, `lookup_url`, `buyer_link_hours`. Buyer thêm `personal_id`, `phone`, `passport_no`, `nationality`, theo ghi chú pháp lý.
+- **Tên module.** Registry là `Spree::Pos::Einvoices` (số nhiều, cùng tên namespace với workflow). Spec nằm trong `einvoices/`, không phải `einvoice/`.
+- **Báo cáo.** "Chưa có hóa đơn" và "doanh thu lũy kế" là `GET /einvoices?status=outstanding` và `GET /einvoices/summary`, không nằm trong `reports_controller`. Doanh thu năm là tổng `spree_orders.total` của đơn POS đã hoàn tất theo `business_date`, **chưa trừ trả hàng**.
+- **Giao diện.** Cài đặt và danh sách nằm ở `apps/pos-dashboard` (theo `apps/pos/AGENTS.md`). `apps/pos` chỉ có ô người mua lúc thanh toán. Chưa thêm trạng thái hóa đơn vào `orders.tsx` / màn bill; bill đọc thông tin hóa đơn trực tiếp qua `ReceiptSnapshot#to_pos`.
+- **Phí phục vụ.** Spree 6.0.3 không có kind `service_charge` trong `Spree::Fee::KINDS`. Builder coi `surcharge` là phí phục vụ. Phần 8A cần ghi phí phục vụ bằng kind này.
+- **Spec doanh thu.** Spree giới hạn mỗi đơn dưới 100 triệu, nên spec cảnh báo 1 tỷ hạ mốc xuống bằng `stub_const`.
+- **Adapter VNPT.** Không viết, vì không tìm được tài liệu API công khai và không có tài khoản thử. Interface và hướng dẫn đã sẵn cho việc thêm sau.
+
+**Lệnh đã chạy**
+
+| # | Lệnh | Kết quả |
+|---|---|---|
+| 1 | `pnpm spree migrate`, rồi `pnpm spree exec bin/rails db:test:prepare` | 3 migration chạy xong. Dump viết lại 67 dòng check constraint cũ; đã trả về đúng bản đã commit, nên diff `schema.rb` chỉ có phần thêm |
+| 2 | `pnpm spree rspec spec/services/spree/pos/einvoices/ spec/workflows/spree/pos/einvoices/` | Lần đầu lỗi 3: đơn vị 'Cái', audit lỗi bị ghi hai lần, kind phí không hợp lệ. Đã sửa; lần sau qua hết |
+| 3 | `pnpm spree rspec spec/requests/spree/pos/einvoices_spec.rb spec/requests/spree/pos/einvoice_buyer_spec.rb` | Lỗi YAML trong `pos-staff.yaml` (một dòng mô tả bị xuống dòng) và giới hạn 100 triệu/đơn. Đã sửa; 6/6 và 6/6 qua |
+| 4 | `pnpm spree rspec spec/services/spree/pos/print_documents_spec.rb` | Lần đầu ghi golden `sale-einvoice.json`. Đã xem lại; chạy lại 20/20 qua |
+| 5 | Hồi quy: `complete_spec`, `system_status`, `onboarding`, `topology`, `topology_access`, `printers`, `devices`, `settlement`, `return_recovery`, `settlement_recovery`, `traceable_inventory`×2, `concurrency_faults`, `fulfillment_returns`, `spec/integration/spree/pos/`, `spec/models/spree/pos/`, `receipt_store_profile`, `receipts_displays`, `receipt_templates`, `receipt_template_schema` | 318/318 qua |
+| 6 | `pnpm spree exec bundle exec rubocop -a` trên file server mới | Đã sửa layout. Còn `Metrics/ParameterLists` ở `Replace.call` và `SaveSettings.call`, và `Naming/PredicateMethod` ở `cancel` (cùng kiểu workflow có sẵn). `complete.rb` vẫn còn các cảnh báo Metrics như trước khi sửa |
+| 7 | Chạy lại lệnh 2–4 cùng `devices_spec` sau rubocop | 48/49 qua. Ca còn lỗi là `print_documents_spec.rb:144` (schema dùng chung): `pos-staff.yaml` vừa có thêm `invert` cho khối text và các kind in bếp do phiên song song thêm, `schema.json` chưa cập nhật theo. Không do phần này (lệnh 4 đã qua trước thay đổi đó) |
+| 8 | `packages/pos-shared`: `typecheck`, `test`, `lint` | tsc sạch; 250/250 qua, gồm golden `sale-einvoice` ở phía TypeScript; biome sạch sau khi format 2 file |
+| 9 | `apps/pos-dashboard`: `vite build` (sinh lại `routeTree.gen.ts`), `typecheck`, `test`, `lint` | build qua; tsc sạch; 88/88 qua; biome sạch |
+| 10 | `apps/pos`: `typecheck`, `test`, `lint` | tsc sạch; 256/256 qua (đã sửa số capability từ 22 lên 23); biome sạch |
+| 11 | Đã kiểm `server/config/recurring.yml` | `DispatchOutboxJob` vẫn chạy mỗi phút; không đổi |
+| 12 | `pnpm --dir apps/pos exec playwright test e2e/einvoice-buyer.spec.ts --project desktop` | Chưa chạy được: máy chưa cài trình duyệt Playwright (`chromium_headless_shell-1248` không có). Cài cần tải về, chưa được phép nên không cài |
+
+**Còn mở**
+
+- **Adapter VNPT** và các nhà cung cấp thật khác (MISA, Viettel):
+  - cần tài liệu tích hợp, tài khoản thử và response mẫu để viết spec;
+  - cần xác nhận nhà cung cấp có khóa chống trùng hay không.
+- **Đăng ký sử dụng HĐĐT** với cơ quan thuế và lấy mẫu số, ký hiệu thật từ nhà cung cấp. Đây là việc của từng cửa hàng; mẫu tờ khai theo TT 91 chưa được đối chiếu.
+- **Đối chiếu toàn văn chính thức** của NĐ 254 và TT 91 (Điều 9 khoản 5, Điều 10 khoản 4, Phụ lục điểm 4 và 9), và nhờ kế toán của khách đầu tiên duyệt mẫu.
+- **Ký tự đầu của ký hiệu MTT** là `C` hay `K` dưới TT 91. Ký hiệu mặc định `C<yy>MYY` / `C<yy>TYY` chỉ dùng tạm khi chưa cấu hình.
+- **Tiền boa và phí phục vụ** trên hóa đơn: hỏi kế toán. Builder hiện đưa phí phục vụ vào hóa đơn và không có dòng tip, vì phần 9B chưa có.
+- **Hóa đơn điều chỉnh** (01/BK-ĐCTT) và **thông báo sai sót 04/SS** chưa làm; mới có hóa đơn thay thế.
+- **Quy tắc thời điểm lập.** `issued_at` lấy theo nhà cung cấp, không phải thời điểm complete; phụ thuộc nhà cung cấp có cho truyền thời điểm lập hay không. Chưa có cảnh báo "gần cuối ngày mà hóa đơn MTT chưa gửi", và chưa nối vào trang trạng thái hệ thống, vì file đó thuộc phiên song song.
+- **QR trên bill** chỉ in khi server có `POS_PUBLIC_BASE_URL`.
+- **Doanh thu năm** chưa trừ trả hàng.
+- **Thông tin người mua ở trình duyệt.** Buyer nhập tại quầy đi cùng intent complete, mà intent này được lưu trong trình duyệt để phục hồi giao dịch tiền. Vì vậy thông tin người mua nằm trong storage của trình duyệt tới khi lệnh xong.
+- **E2e.** Chưa chạy `e2e/einvoice-buyer.spec.ts` (lệnh 12). Chưa có e2e cho `/einvoices` và `/settings/einvoice` của dashboard. Chưa chạy full suite.
 
 ## Tiêu chí xong của plan
 
