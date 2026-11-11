@@ -735,10 +735,55 @@ Môi trường gồm server LAN (phần 5B) seed sẵn, thu ngân web, một app
 
 - [ ] Ba hồ sơ đợt 1 chọn được trong wizard và tạo được chi nhánh F&B có trạm bếp và thuế.
 - [ ] Kịch bản 1–7 đạt; kết quả phần cứng thật được ghi lại.
-- [ ] Checklist phần cứng phản ánh trạng thái thật.
-- [ ] `README.md` có hướng dẫn F&B đợt 1.
+- [x] Checklist phần cứng phản ánh trạng thái thật.
+- [x] `README.md` có hướng dẫn F&B đợt 1.
 - [ ] Phát hành được hóa đơn qua adapter VNPT.
 - [ ] Quán thử chạy 1 tuần không có lỗi chặn.
+
+### Kết quả
+
+**Đã làm**
+
+- Server:
+  - `OPEN_GROUPS` của `BusinessProfiles` mở nhóm `fnb`. Ba hồ sơ `cafe_tra_sua`, `quan_an`, `cang_tin_tram_dung` là `available`; `karaoke_bida`, `bar_pub_club`, `nha_hang` vẫn `coming_soon` vì cần module `planned`. Spec boot mới `spec/services/spree/pos/modules_spec.rb`: mọi module F1 `available`, `depends_on` trỏ tới module có trước.
+  - Validate mới: `display.surface` (`catalog`, `menu_grid`; `menu_grid` cần `fnb.menu`), `branch_defaults.kitchen_send_trigger` (theo `Kitchen::Send::TRIGGERS`), trường hồ sơ mới `kitchen_stations` (`prep`/`bar`, không trùng, cần `fnb.kitchen`). `GET business_profiles` trả thêm `tax_categories` (mức của ngày hiện tại, 8% → 10% từ 01/01/2027) và `menu_tax_defaults`.
+  - `Onboarding::Setup` nhận `fnb_setup: { stations, tax_categories: { food, alcohol }, kitchen_send_trigger }`: kiểm hồ sơ có `fnb.menu`, tối đa 4 trạm, tên 1–80 ký tự không trùng; tạo trạm qua `Kitchen::Setup.create_station` (lệnh con, khóa suy ra từ khóa onboarding nên gửi lại không nhân đôi trạm); seed thuế và lưu thuế mặc định của món vào `StoreProfile`; trigger ghi vào chi nhánh; audit `onboarding.fnb_setup`. Hồ sơ bán lẻ gửi `fnb_setup` bị từ chối 422, không gửi thì không qua bước này.
+  - Migration `add_menu_tax_defaults_to_spree_pos_store_profiles` (`food_tax_category_id`, `alcohol_tax_category_id`). `Menu::Save` gán thuế đồ ăn, đồ uống cho món mới khi sản phẩm chưa có thuế; `GET menu_items` trả `meta.tax_defaults`.
+  - `GET /pos/hardware_status?branch_id=` (`HardwareStatus`): máy in hóa đơn / bếp / tem (PrintJob gần nhất `printed`), mỗi trạm có KDS online hoặc máy in, trạm in online theo `last_seen_at` (3 phút), màn khách còn phiên, server (địa chỉ, hàng đợi gửi ra ngoài), hóa đơn điện tử đã đủ thông tin. Quyền: `read_pos_topology` hoặc `Capabilities::MANAGE` ở chi nhánh. OpenAPI thêm `HardwareStatus` và các schema con, `MenuItemsMeta`; client Dart sinh lại.
+- `packages/pos-shared`: `sellingSurfaceOf` chọn surface theo `display.surface` của hồ sơ (module vẫn là điều kiện bắt buộc); reducer wizard có bước **Thiết lập quán** (trạm, thuế, trigger, lỗi tên trạm / trùng / thuế) chỉ khi hồ sơ có `fnb.menu`; nhãn module F1 vi/en.
+- `apps/pos`: quầy dùng `sellingSurfaceOf` thay vì chỉ xét `fnb.menu`.
+- `apps/pos-dashboard`: bước wizard `components/setup/setup-fnb-step.tsx`; xem trước hiện lưới thực đơn, trigger và trạm; tóm tắt hiện trạm và thuế; sau khi tạo quán F&B mở thẳng checklist. Checklist là tab **Phần cứng** của chi nhánh (`pages/branch-hardware.tsx`, route `branches/$branchId/hardware`, đọc lại 30 giây một lần, mỗi dòng cần xử lý có link tới chỗ sửa), có lối vào từ trang Mô hình kinh doanh. Trang Thực đơn có ô Thuế suất cho món.
+- Kịch bản: `apps/pos/e2e/fnb-wave1.spec.ts` (6 test, fixture giả lập API như các spec F&B khác): ba hồ sơ đợt 1 mở lưới thực đơn; bán cafe 3 ly (2 giống, 1 khác) thành 2 dòng, client không gửi giá; hồ sơ giữ `catalog` bán bằng tìm hàng; chi nhánh bán lẻ cùng store không thấy thực đơn và không gọi API thực đơn (kịch bản 7). `apps/pos-staff/integration_test/wave1_test.dart`: ghép trạm in với server thật, máy in giả là TCP server cổng 9100 trong test, in thử và (tùy chọn) nhận PrintJob đang chờ. Dashboard e2e thêm test wizard F&B và test bán lẻ không gửi `fnb_setup`.
+- `README.md`: mục "Bán hàng F&B (cafe, quán ăn, căng tin)", link sang `apps/pos-staff/README.md` (5A), `docs/deploy/pos-lan-vps.md` (5B) và `docs/einvoice-providers.md`.
+
+**Lệch so với kế hoạch**
+
+- Module của hồ sơ: `cafe_tra_sua` và `quan_an` thêm `retail.units` (vì `fnb.recipes` phụ thuộc `fnb.menu` + `retail.units`; `quan_an` còn cần nó cho `retail.measured`), và thêm `fnb.delivery_platforms` (module đã `available` từ phần 7C).
+- Thêm trường hồ sơ `kitchen_stations` để wizard biết đề xuất trạm nào (cafe, quán ăn: Bếp + Quầy pha chế; căng tin: Bếp), thay vì cứng trong client.
+- Wizard và checklist ở `apps/pos-dashboard`, không ở `apps/pos` (màn cài đặt thuộc dashboard): `components/setup/setup-fnb-step.tsx`, `pages/branch-hardware.tsx` là một tab chi nhánh thay cho `pages/settings/hardware.tsx`. Không có `profile-picker.tsx`: nhãn "Sắp hỗ trợ" đã theo `status` từ server nên không phải sửa.
+- Thuế mặc định của món lưu ở `StoreProfile` (cột mới) và trả trong `meta` của `GET menu_items`, vì Spree không có chỗ sẵn cho "thuế mặc định của món".
+- OpenAPI không có enum hồ sơ / module: hợp đồng dùng chuỗi, danh mục đọc từ `GET business_profiles`, nên không cập nhật enum.
+- Quyền `hardware_status`: ngoài `MANAGE` ở chi nhánh, người có `read_pos_topology` của store cũng xem được (quản trị cửa hàng).
+- `fnb-wave1.spec.ts` chạy trên fixture giả lập API, không trên server thật: lúc làm, stack dev không chạy (container web tắt) và fixture thật (`pos-live-fixture.rb`) chỉ có chi nhánh bán lẻ. Phần cần server (ticket tới đúng trạm, bump, tem ly, trừ nguyên liệu, hai mức thuế, số gọi qua ngày) được kiểm ở rspec của 7A–7C và phần này.
+- Rollback: đưa `fnb` ra khỏi `OPEN_GROUPS` (hồ sơ F&B về `coming_soon`) hoặc chuyển module về `planned`; dữ liệu giữ nguyên.
+
+**Lệnh và kết quả**
+
+- `pnpm spree rspec spec/services/spree/pos/business_profiles_spec.rb spec/services/spree/pos/modules_spec.rb spec/requests/spree/pos/onboarding_spec.rb spec/requests/spree/pos/hardware_status_spec.rb` cùng `business_profiles` (request), `branch_profiles`, `branch_modules`, `topology`, `module_policy`, `system_status`: 71 example, 0 failure.
+- `pnpm spree rspec` cho `menu_item_spec`, `devices_spec`, `kitchen_stations_spec`, `menu_spec`, `receipt_store_profile_spec`, `print_documents_spec`, `kitchen_spec`: 45 example, 0 failure.
+- `packages/pos-shared`: typecheck, lint, test 264/264 đạt.
+- `apps/pos`: lint, typecheck đạt; test 262/262; `playwright test e2e/fnb-wave1.spec.ts --project desktop` 6/6; `fnb-menu`, `fnb-call-number`, `branch-modules`, `catalog-search` desktop 12/12.
+- `apps/pos-dashboard`: typecheck, lint, test 89/89, `pnpm build` đạt (sinh lại `routeTree.gen.ts`).
+- `apps/pos-staff`: `flutter analyze` không lỗi, `flutter test` 106 test đạt.
+
+**Còn mở**
+
+- Dashboard e2e (`e2e/setup.spec.ts`, `e2e/business-model.spec.ts`) đã sửa theo hồ sơ mới nhưng chưa chạy: cổng 5176 đang bị một tiến trình khác giữ. Vì vậy tiêu chí "chọn được trong wizard" chưa tick dù server và reducer đã có spec.
+- `flutter test integration_test/wave1_test.dart` (và `kds_flow_test.dart`) chưa chạy: không có emulator / thiết bị, server dev không chạy.
+- Kịch bản 1–5 trên server LAN thật với app KDS, trạm in và màn khách; kịch bản 6 (mất internet, hóa đơn trong hàng đợi) chạy tay; checklist phần cứng thật (Sunmi T2, Xprinter LAN, máy in tem).
+- Kịch bản 4: lưới thực đơn thay chỗ ô tìm / quét mã, nên căng tin chưa quét được mã vạch hàng đóng gói khi đang ở lưới thực đơn (hồ sơ giữ `surface: catalog` thì quét được nhưng mất lưới). Cần quyết định có thêm quét mã vào lưới thực đơn không.
+- Phát hành hóa đơn thật qua adapter VNPT trên cửa hàng thử.
+- Quán thử chạy 1 tuần và các chỉ số rollout.
 
 ## Tiêu chí xong của plan
 
