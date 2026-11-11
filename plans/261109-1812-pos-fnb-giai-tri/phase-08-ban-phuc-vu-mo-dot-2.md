@@ -512,10 +512,86 @@ Cấu trúc code: `lib/features/waiter/`, `lib/features/kds/`, `lib/features/exp
 ### Tiêu chí xong
 
 - [ ] Phục vụ trên Android và iOS mở bàn, gọi món có modifier, báo bếp, và nhận báo món xong trong LAN.
-- [ ] KDS nhiều trạm có ba tab, timer vàng / đỏ, recall, và hết món đồng bộ về S1 / S2.
-- [ ] Expo cơ bản chuyển món sang "đã ra" và báo cho phục vụ.
-- [ ] Phiếu kiểm đồ in qua trạm in hoặc máy in Bluetooth.
-- [ ] App không có màn hay lệnh thu tiền nào.
+- [x] KDS nhiều trạm có ba tab, timer vàng / đỏ, recall, và hết món đồng bộ về S1 / S2.
+- [x] Expo cơ bản chuyển món sang "đã ra" và báo cho phục vụ.
+- [x] Phiếu kiểm đồ in qua trạm in hoặc máy in Bluetooth.
+- [x] App không có màn hay lệnh thu tiền nào.
+
+### Kết quả
+
+**Đã làm**
+
+- Server:
+  - Migration `add_expo_to_pos_kitchen_stations`: `expo_station_id` (FK tự tham chiếu, `on_delete: :nullify`, check không trỏ về chính nó). Model chỉ nhận trạm cùng chi nhánh, loại `expo`.
+  - Migration `add_recall_and_timing_to_pos_kitchen_ticket_items`: `recalled_at`, `recall_count`, `prep_seconds`, `late`, check `recall_count` và `prep_seconds` không âm. Index `(kitchen_ticket_id, status)` và index riêng phần cho `ready_at`.
+  - Migration `create_spree_pos_device_table_pins`: ghim bàn theo thiết bị, unique cặp `(device_id, resource_id)`, xóa theo thiết bị / bàn.
+  - `Kitchen::ChangeItemStatus`:
+    - recall nhận item `ready` hoặc `served` trong 30 phút kể từ lúc ra / xong, tăng `recall_count`, xóa giờ xong; quá hạn trả `kitchen_recall_expired`; người recall được audit `kitchen.recall`;
+    - lúc `ready` ghi `prep_seconds` (từ lúc gửi) và `late` (quá ngưỡng đỏ của trạm);
+    - `bump_all_day` bump item cũ nhất trước (FIFO theo giờ gửi) cho tới đủ số lượng, trả `kitchen_all_day_empty` / `kitchen_all_day_invalid`.
+  - `Kitchen::Board` (một truy vấn): nhiều trạm (`station_ids`), lọc `service_mode`, ticket trễ lên đầu, `all_day` gộp theo món + modifier, `expo` gom item `ready` theo đơn (trạm expo thấy món của các trạm đẩy về nó; xem mọi trạm thì thấy mọi món xong).
+  - `Kitchen::ReadyFeed`: món `ready` / `served` 30 phút gần nhất của bàn đã ghim, bàn mình thêm món (`added_by`), hoặc mọi bàn của một khu khi hỏi `area_id`.
+  - `Tables::Pin` (ghim / bỏ ghim, idempotent), `Workspaces::Checklist` + `Kitchen::ChecklistDocument` (phiếu "PHIẾU KIỂM ĐỒ", mỗi món "Đã ra X · Chưa ra Y", tạo `PrintJob` loại `checklist` khi có máy in).
+  - `Reports::KitchenTiming`: trung bình, p90, số item trễ theo trạm / món / giờ.
+  - `Workspace#to_pos`: dòng của đơn có bàn thêm `kitchen_status` (số lượng theo trạng thái), một truy vấn gộp.
+  - Endpoint: `kitchen/all_day/bump` (admin và device API), `station_ids` / `service_mode` trên hai board, `devices/current/ready_feed`, `devices/current/table_pins` (GET / POST / DELETE), `workspaces/:id/checklist`, và `workspaces/:id/lease` đưa vào hợp đồng.
+  - Quyền: thiết bị `kds` / `expo` / máy khác (`Device::MACHINE_MODES`) có phiên nhân viên chỉ gọi được context và hết món, mọi lệnh admin khác trả 403 `device_mode_forbidden`. `ready_feed` / ghim bàn chỉ cho thiết bị `waiter` có người mang `pos.table.serve`.
+- OpenAPI `pos-staff.yaml`: schema và path mới; thêm `Workspace.lease_generation`. Đã sinh lại client Dart `pos_api`, không có `InlineObject`.
+- `apps/pos-staff`:
+  - Chế độ `waiter` (`lib/modes/waiter/`):
+    - lưới bàn từ `resource_board`, lọc theo khu và trạng thái (Tất cả / Trống / Có khách / Chờ món / Yêu cầu thanh toán / Của tôi), ô hiện số khách, phút ngồi, số món chờ; giữ lâu một bàn để ghim hoặc mở đơn thứ hai;
+    - mở bàn bằng bàn phím số lớn; bàn có nhiều đơn thì chọn đơn A / B;
+    - gọi món: tab danh mục, tìm kiếm, ảnh món, món hết bị làm mờ và không vào giỏ (đọc lại menu khi có `menu.sold_out`);
+    - bảng modifier dùng chung `lib/core/menu/modifier_sheet.dart`: biến thể, min / max, bắt buộc, giá cộng, số lượng tùy chọn, ghi chú;
+    - giỏ cục bộ với "Thêm vào đơn" và "Thêm và báo bếp". `append_batch_id` giữ nguyên khi gửi lại cùng giỏ, đổi khi giỏ đổi;
+    - đơn của bàn: trạng thái từng dòng (chưa báo bếp / mới / đang làm / xong / đã ra), báo bếp, xóa dòng chưa gửi, hủy món đã gửi có lý do;
+    - thiếu quyền hủy thì hiện "Chờ quản lý duyệt" kèm ô mã duyệt; khi có `approval.requested` của đơn này trên kênh chi nhánh thì mã tự điền và lệnh tự gửi lại;
+    - hành động: yêu cầu thanh toán, chuyển bàn, gộp bàn (lấy lease trước), in phiếu kiểm đồ, in tạm tính. Máy in Bluetooth gắn với chính điện thoại thì in tại máy; máy khác thì tạo print job; không có máy in thì hiện phiếu dạng chữ;
+    - băng "Bàn 5: Phở bò ×2 đã xong" kèm rung và âm, chạm để mở bàn; lần tải đầu không reo lại món cũ. Có lựa chọn "Mọi bàn trong khu …" (lưu trên máy). Mở lại app thì đọc lại bàn và feed;
+    - 409 `line_changed` / `snapshot_locked` hiện câu dễ hiểu rồi đọc lại đơn.
+  - KDS: chọn một hay nhiều trạm (lưu trên máy, trạm đầu lưu lên server), lọc kiểu phục vụ, tab "Theo món" đọc `all_day` của server với "Xong 1" / "Xong hết (n)", modifier in đậm, món hủy gạch ngang màu đỏ, "Đã xong gần đây" recall được cả món đã ra, giữ lâu một món để Recall hoặc "Hết món" cho đúng món đó.
+  - Expo: màn riêng liệt kê món `ready` theo bàn / đơn với timer, "Đã ra món" từng món và "Ra cả đơn".
+  - l10n vi / en, `PrinterProfile.fromPrinter`.
+  - Test: `test/modes/waiter/` (cart, rule modifier, lọc bàn, ready watcher, màn gọi món, đơn bàn, hủy có duyệt, phiếu kiểm đồ, lưới bàn), `test/modes/kds/kds_stations_test.dart` (nhiều trạm, giữ lâu recall / hết món, món hủy, expo). Viết `integration_test/waiter_flow_test.dart` (chưa chạy).
+- `apps/pos`: `order-lines` hiện trạng thái bếp từng dòng ("Mới 1 · Xong 1"); `catalog-search` làm mờ và chặn món hết khi chi nhánh bật `fnb.menu` (menu được làm mới bởi `menu.sold_out` như `menu_grid`). Thu ngân đã thấy yêu cầu thanh toán từ phần 8A (`table-actions`, `table-floor`).
+- `packages/pos-shared`: kiểu `kitchen_status` cho dòng.
+
+**Lệch so với kế hoạch**
+
+- **Ngưỡng trạm theo phút:** trạm đã có `warn_after_minutes` / `late_after_minutes` từ phần 7A, nên không thêm `warn_after_seconds` / `late_after_seconds`. Migration chỉ thêm `expo_station_id` và có tên `add_expo_to_pos_kitchen_stations`.
+- **Index item:** `fired_at` không có; ticket giữ `sent_at` và trạm. Index là `(kitchen_ticket_id, status)` cùng index phần cho `ready_at`.
+- **Expo không sao chép item:** bảng expo tính từ `expo_station_id` lúc đọc board. Bump ở expo dùng lệnh `serve` sẵn có.
+- **Không có endpoint `items/:id/bump`:** dùng `start` / `ready` / `serve` / `recall` sẵn có. Pin / Unpin là một module với cờ `pinned:`.
+- **Recall từ máy KDS không ghi audit**, vì `AuditEntry` cần người. Item vẫn giữ `changed_by` và `recall_count`.
+- **`KitchenTiming`** là service, chưa có endpoint; phần 12C sẽ đưa lên báo cáo.
+- **Phiếu kiểm đồ trả cả tài liệu,** để máy in Bluetooth của điện thoại in tại chỗ.
+- **`station_ids`** truyền dạng chuỗi phân cách dấu phẩy (tối đa 20 trạm).
+- **Thêm path lease** và `Workspace.lease_generation` vào hợp đồng, vì chuyển / gộp bàn cần lease.
+- **Thư mục code:** giữ quy ước sẵn có `lib/modes/<mode>/` và `test/modes/` thay cho `lib/features/`. Test expo nằm cùng `test/modes/kds/kds_stations_test.dart` để dùng chung fixture.
+- **Duyệt hủy món trên S2** theo cùng cách như web: quản lý cấp mã. Điện thoại tự nhận mã qua `approval.requested`; chưa có luồng quản lý nhập PIN ngay trên điện thoại.
+- **Lý do hủy** trên S2 dùng bốn lý do mặc định cộng "Khác"; context thiết bị chưa trả `void_reasons` của chi nhánh.
+
+**Lệnh và kết quả**
+
+- Server:
+  - Một lượt rộng trước khi làm phần Flutter (spec của mọi file server đã đổi và thư mục kitchen): 234 example, 0 lỗi.
+  - Sau lần sinh client cuối: `pnpm spree rspec spec/requests/spree/pos/devices_spec.rb spec/requests/spree/pos/ready_feed_spec.rb spec/services/spree/pos/print_documents_spec.rb`: 24 example, 0 lỗi.
+  - Cuối cùng: `pnpm spree rspec spec/workflows/spree/pos/kitchen/ spec/services/spree/pos/kitchen/ spec/services/spree/pos/reports/kitchen_timing_spec.rb spec/requests/spree/pos/kitchen_board_spec.rb spec/requests/spree/pos/ready_feed_spec.rb spec/requests/spree/pos/devices_spec.rb`: 42 example, 0 lỗi.
+  - Spec bắt buộc đều có: All-day bump đúng item cũ nhất; recall quá 30 phút bị từ chối; thiết bị `kds` gọi `items/append` trả 403 `device_mode_forbidden`; phục vụ không có `pos.table.serve` bị 403.
+  - rubocop sạch trên file mới. Lỗi còn lại ở `workspace.rb`, `setup.rb`, `routes.rb`, `base_controller.rb` có từ trước.
+- `apps/pos-staff`: `tool/gen_api.sh` chạy lại; `flutter analyze` không có lỗi; `flutter test` qua 122 test.
+- `apps/pos`: lint, typecheck qua; 280 test qua. `playwright test e2e/table-kitchen-send.spec.ts --project desktop` (thêm kiểm tra trạng thái bếp từng dòng) và `e2e/ui-polish.spec.ts --project desktop`: 2/2 qua.
+- `packages/pos-shared`: lint, typecheck qua; 271 test qua.
+- `apps/pos-dashboard`: không đổi code; typecheck qua. Không chạy e2e vì cổng 5176 đang bận.
+
+**Còn mở**
+
+- **Thử trên thiết bị thật** (bước 8): chưa làm, vì không có máy ảo hay thiết bị. Gồm Sunmi làm KDS, Android / iPhone làm S2, `integration_test/waiter_flow_test.dart` và kiểm tra Bluetooth của phiếu kiểm đồ. Vì vậy tiêu chí đầu chưa đánh dấu.
+- **Đo "Thêm và báo bếp" tới KDS ≤ 2 giây** trong LAN: chưa đo.
+- **Thông báo cục bộ khi app chạy nền** (`flutter_local_notifications`, Q1): chưa thêm gói. Hiện app báo bằng băng, rung và âm khi đang mở, và đọc lại feed khi mở lại.
+- **Dashboard:** chưa có ô chọn "trạm expo" trên form trạm bếp; API đã nhận `expo_station_id`.
+- **Báo cáo:** `Reports::KitchenTiming` chưa có endpoint / màn (phần 12C).
+- **Mã duyệt hủy món** gắn với `revision`: một lần thêm món ở máy khác làm mã hết hiệu lực, như ở web.
 
 ## Phần 8D: Mở ngành đợt 2
 
