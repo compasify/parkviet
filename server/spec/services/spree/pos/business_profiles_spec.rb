@@ -130,7 +130,10 @@ RSpec.describe Spree::Pos::BusinessProfiles do
     let(:definition) { Spree::Pos::Modules::Definition }
 
     def graph(*rows)
-      rows.to_h { |key, depends_on, status = 'available'| [key, definition.new(key: key, group: 'retail', depends_on: depends_on, status: status)] }
+      rows.to_h do |key, depends_on, status = 'available'|
+        entrypoints = status == 'available' ? ['Spree::Pos::Modules'] : []
+        [key, definition.new(key: key, group: 'retail', depends_on: depends_on, status: status, entrypoints: entrypoints)]
+      end
     end
 
     it 'registers the three retail modules, the planned F&B names, and freezes the registry' do
