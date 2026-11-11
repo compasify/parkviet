@@ -1,6 +1,7 @@
 import { Outlet, useLocation, useNavigate } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useBranchEvents } from '../hooks/use-branch-events';
 import { useReceiptTemplates } from '../hooks/use-receipt-templates';
 import { useSession } from '../hooks/use-session';
 import { session } from '../lib/app-session';
@@ -27,6 +28,7 @@ import { ContextSelector } from './context-selector';
 import { ContextSetupDialog } from './context-setup-dialog';
 import { OpenShiftDialog } from './open-shift-dialog';
 import { PosIcon } from './pos-icon';
+import { RealtimeDot } from './pos-page';
 import { PosSelectionProvider, usePosSelection } from './pos-selection';
 import { ScannerCalibrationDialog } from './scanner-calibration';
 import { UserMenu } from './user-menu';
@@ -46,6 +48,7 @@ function ShellFrame() {
   const { context, selection, registerMode } = usePosSelection();
   // Print templates load with the POS, so the first print never waits for them.
   useReceiptTemplates(true, selection.branchId);
+  useBranchEvents(selection.branchId, context.data?.store.id ?? null);
   const pathname = useLocation({ select: (location) => location.pathname.replace(/\/+$/, '') });
   const pageTitle = pathname.endsWith('/returns')
     ? t('returnsNav')
@@ -305,6 +308,7 @@ function ShellFrame() {
           </div>
         </details>
         <div className="pos-context-status">
+          <RealtimeDot />
           <span
             className="connection-status"
             data-offline={offline}

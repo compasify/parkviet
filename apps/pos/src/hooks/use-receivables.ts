@@ -12,7 +12,9 @@ import type {
   PosWorkspace,
   PosWorkspaceCredit,
 } from '../lib/pos-context';
+import { pollInterval } from '../lib/realtime';
 import type { AllocationDraft } from '../lib/receivables';
+import { useRealtimeStatus } from './use-branch-events';
 import { useSession } from './use-session';
 import { abandonIfNeeded, financialRequest } from './use-tenders';
 import { workspaceEditorId } from './use-workspaces';
@@ -87,6 +89,7 @@ export function useWorkspaceCredit(
   poll?: (data: PosWorkspaceCredit | undefined) => boolean,
 ) {
   const snapshot = useSession();
+  const realtime = useRealtimeStatus();
   return useQuery({
     queryKey: [
       'pos',
@@ -96,7 +99,9 @@ export function useWorkspaceCredit(
       workspace?.revision,
     ],
     enabled: enabled && snapshot.status === 'authenticated' && Boolean(workspace),
-    refetchInterval: (query) => (poll?.(query.state.data) ? 5000 : false),
+    // A manager's answer runs as a command on this workspace, which publishes
+    // `workspace.updated`, so an open socket delivers it without the poll.
+    refetchInterval: (query) => (poll?.(query.state.data) ? pollInterval(realtime, 5000) : false),
     queryFn: async () =>
       (await read<{ data: PosWorkspaceCredit }>(`/pos/workspaces/${workspace?.id}/credit`)).data,
   });

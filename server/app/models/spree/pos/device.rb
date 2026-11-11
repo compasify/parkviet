@@ -67,6 +67,7 @@ module Spree
         token = self.class.new_token
         update!(token_digest: self.class.digest(token), generation: generation + 1, status: 'active',
                 revoked_at: nil, revoked_by: nil, paired_by: actor)
+        Realtime.disconnect_device(self)
         token
       end
 
@@ -74,6 +75,7 @@ module Spree
         update!(status: 'revoked', revoked_at: Time.current, revoked_by: actor, generation: generation + 1,
                 token_digest: self.class.digest(self.class.new_token))
         staff_sessions.where(ended_at: nil).update_all(ended_at: Time.current, end_reason: 'device_revoked', updated_at: Time.current)
+        Realtime.disconnect_device(self)
       end
 
       def to_pos

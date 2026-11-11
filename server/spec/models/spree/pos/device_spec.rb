@@ -38,6 +38,33 @@ RSpec.describe Spree::Pos::Device, type: :model do
     end
   end
 
+  describe 'open sockets when the generation changes' do
+    let(:sockets) { double('sockets', disconnect: nil) }
+    let(:remote) { double('remote connections', where: sockets) }
+
+    before { allow(ActionCable.server).to receive(:remote_connections).and_return(remote) }
+
+    it 'drops them on revoke' do
+      device.revoke!(actor: nil)
+      expect(remote).to have_received(:where).with(device_id: device.prefixed_id)
+      expect(sockets).to have_received(:disconnect).once
+    end
+
+    it 'drops them when the device is paired again' do
+      device.rotate_token!(actor: nil)
+      expect(remote).to have_received(:where).with(device_id: device.prefixed_id)
+      expect(sockets).to have_received(:disconnect).once
+    end
+
+    it 'keeps them when the command rolls back' do
+      described_class.transaction do
+        device.revoke!(actor: nil)
+        raise ActiveRecord::Rollback
+      end
+      expect(sockets).not_to have_received(:disconnect)
+    end
+  end
+
   it 'keeps the six modes and never treats the digest as the token' do
     expect(described_class::MODES).to eq(%w[waiter kds expo kiosk print_station owner bridge])
     token = described_class.new_token

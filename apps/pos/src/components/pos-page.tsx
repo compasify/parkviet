@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useRealtimeStatus } from '../hooks/use-branch-events';
 import { administrationAccess } from '../lib/pos-administration';
 import { posDashboardUrl } from '../lib/pos-dashboard-url';
 import { canReadReceivables } from '../lib/receivables';
@@ -76,6 +77,30 @@ export function PosPage({
       </div>
       {children}
     </div>
+  );
+}
+
+const REALTIME_LABELS = {
+  connected: 'realtimeConnected',
+  connecting: 'realtimeConnecting',
+  offline: 'realtimeOffline',
+} as const;
+
+// Whether changes from other screens arrive live or only by polling.
+export function RealtimeDot() {
+  const { t } = useTranslation();
+  const status = useRealtimeStatus();
+  const label = t(REALTIME_LABELS[status]);
+  return (
+    <span
+      className="realtime-status"
+      data-status={status}
+      role="img"
+      aria-label={label}
+      title={label}
+    >
+      <span className="connection-dot" />
+    </span>
   );
 }
 

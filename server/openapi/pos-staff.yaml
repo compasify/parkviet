@@ -6,6 +6,26 @@ info:
     Staff contract for context, catalog, workspaces and approvals, and the
     device channel. A paired device reaches the /admin/pos paths with
     `Authorization: Device <token>` and `X-Pos-Staff-Session`.
+x-realtime:
+  transport: Action Cable
+  path: /cable
+  channel: Spree::Pos::BranchChannel
+  subscribeParams:
+    branch_id: Prefixed id of the branch
+  stream: pos:branch:<branch_prefixed_id>
+  message:
+    $ref: '#/components/schemas/RealtimeEvent'
+  authentication:
+    staff: Query `token` holding the Admin API JWT. Needs an allowed Origin.
+    device: >
+      Subprotocol `pos-device.<token>` or query `device_token`, and for a staff
+      session subprotocol `pos-staff-session.<token>` or query
+      `staff_session_token`. Origin may be absent. A native client offering
+      subprotocols must also offer `actioncable-v1-json`, or the server selects
+      no protocol for the socket.
+  delivery: >
+    Events only announce a change; read it through the API. Refetch every open
+    query after a reconnect, because events sent while offline are not replayed.
 paths:
   /api/v3/admin/pos/context:
     get:
@@ -128,6 +148,36 @@ paths:
           description: Signed out
 components:
   schemas:
+    RealtimeEvent:
+      type: object
+      additionalProperties: false
+      required: [event, id, branch_id, at, refs]
+      properties:
+        event:
+          type: string
+          enum:
+            - workspace.updated
+            - kitchen_ticket.updated
+            - menu.sold_out
+            - payment.requested
+            - print_job.created
+            - resource.updated
+            - approval.requested
+        id:
+          type: string
+        branch_id:
+          type: string
+        revision:
+          type: integer
+        lease_generation:
+          type: integer
+        at:
+          type: string
+          format: date-time
+        refs:
+          type: object
+          additionalProperties:
+            type: string
     Context:
       type: object
       additionalProperties: true

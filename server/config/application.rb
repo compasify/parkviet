@@ -44,6 +44,10 @@ module SpreeStarter
     # SOLID_QUEUE_IN_PUMA=false and running `bin/jobs` as a separate service.
     config.active_job.queue_adapter = :solid_queue
 
+    # The engine mounts Action Cable at /cable ahead of every other route and
+    # only looks for a top-level ApplicationCable::Connection by itself.
+    config.action_cable.connection_class = -> { Spree::Pos::ApplicationCable::Connection }
+
     # The /jobs dashboard uses Mission Control's HTTP Basic auth, independent
     # of app sessions. In production set both env vars — without them the
     # dashboard stays locked. Dev and test fall back to the seed admin

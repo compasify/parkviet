@@ -3,9 +3,10 @@ default: &default
   encoding: unicode
   # With the Solid Queue supervisor inside Puma (the default), this pool
   # serves Puma's threads, the job worker threads, and ~3 Solid Queue
-  # internals (dispatcher, scheduler, supervisor):
-  #   pool = RAILS_MAX_THREADS + JOB_THREADS + JOB_IMAGE_THREADS + 3
-  pool: <%= Integer(ENV.fetch("RAILS_MAX_THREADS", 3)) + Integer(ENV.fetch("JOB_THREADS", 3)) + Integer(ENV.fetch("JOB_IMAGE_THREADS", 1)) + 3 %>
+  # internals (dispatcher, scheduler, supervisor), plus Action Cable's 4
+  # worker threads and Solid Cable's listener, writer and trim threads:
+  #   pool = RAILS_MAX_THREADS + JOB_THREADS + JOB_IMAGE_THREADS + 3 + 4 + 3
+  pool: <%= Integer(ENV.fetch("RAILS_MAX_THREADS", 3)) + Integer(ENV.fetch("JOB_THREADS", 3)) + Integer(ENV.fetch("JOB_IMAGE_THREADS", 1)) + 3 + 4 + 3 %>
 
 development:
   <<: *default

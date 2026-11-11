@@ -4,6 +4,10 @@ module Spree
   module Pos
     class CommandExecutor
       STACK = :spree_pos_command_stack
+      CHANGED_WORKSPACES = :spree_pos_command_changed_workspaces
+      # A lease renewal changes nothing another screen shows, and every open
+      # editor sends one every 40 seconds.
+      SILENT_COMMANDS = %w[refresh_lease].freeze
 
       # `replay_authorize`, when given, is used instead of `authorize` for a
       # replay of a receipt this actor already holds for this key (it gets the
@@ -41,6 +45,7 @@ module Spree
         outcome = 'executed'
         result = execute(&)
         outcome = 'replayed' if @replayed
+        @committed = !@replayed
         result
       rescue Conflict => e
         outcome = e.reason == FeaturePolicy::DISABLED ? 'feature_disabled' : 'conflict'
@@ -56,6 +61,7 @@ module Spree
       ensure
         if started
           stack&.pop
+          announce_changes if stack&.empty?
           log(outcome, started)
         end
       end
@@ -96,6 +102,7 @@ module Spree
             result: result
           )
           remember_workspace(receipt, result)
+          note_changed_workspace(receipt)
           result
         end
       rescue ActiveRecord::RecordNotUnique
@@ -163,6 +170,22 @@ module Spree
 
         found = Workspace.find_by_prefix_id(result['id'])
         receipt.update!(workspace: found) if found
+      end
+
+      # The receipt names the workspace of a command given one and of a
+      # creation, and no workspace for shift, return or device commands.
+      def note_changed_workspace(receipt)
+        return if receipt.workspace_id.nil? || SILENT_COMMANDS.include?(command_name)
+
+        (ActiveSupport::IsolatedExecutionState[CHANGED_WORKSPACES] ||= Set.new) << receipt.workspace_id
+      end
+
+      # Nested commands share their parent's transaction, so only the
+      # outermost one knows it committed. Each changed workspace is announced
+      # once, however many commands touched it.
+      def announce_changes
+        changed = ActiveSupport::IsolatedExecutionState.delete(CHANGED_WORKSPACES)
+        Realtime.announce_workspaces(changed.to_a) if @committed && changed.present?
       end
     end
   end

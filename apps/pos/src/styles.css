@@ -101,6 +101,9 @@ fieldset { border: 1px solid #d8e3dc; border-radius: 8px; display: grid; gap: 8p
 .connection-status { display: inline-flex; align-items: center; gap: var(--pos-s2); }
 .connection-dot { width: 8px; height: 8px; background: #a7d6b7; border-radius: 50%; flex: 0 0 auto; }
 .connection-status[data-offline='true'] .connection-dot { background: #ffd49e; }
+.realtime-status { display: inline-flex; align-items: center; }
+.realtime-status[data-status='connecting'] .connection-dot { background: #d6eaf8; }
+.realtime-status[data-status='offline'] .connection-dot { background: #ffd49e; }
 .pos-layout .shell { width: 100%; max-width: none; margin: 0; padding: var(--pos-s3); gap: var(--pos-s3); }
 .pos-alerts:empty { display: none; }
 .pos-alerts { display: flex; align-items: center; flex-wrap: wrap; gap: var(--pos-s2); }

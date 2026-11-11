@@ -61,6 +61,8 @@ module Spree
                 status: 'active'
               )
               audit!('approval.grant', approval, action: approval.action, revision: approval.revision)
+              Spree::Pos::Realtime.publish(branch, 'approval.requested', id: approval.prefixed_id,
+                                                                         refs: { workspace_id: subject.prefixed_id })
               render json: { data: approval.to_pos }, status: :created
             end
 

@@ -19,6 +19,17 @@ export default defineConfig(({ mode }) => {
           target: env.VITE_API_PROXY_TARGET || 'http://localhost:3000',
           changeOrigin: true,
         },
+        // The mocked e2e suite turns this off so its pages never open sockets
+        // on the real API.
+        ...(process.env.POS_CABLE_PROXY === 'off'
+          ? {}
+          : {
+              '/cable': {
+                target: env.VITE_API_PROXY_TARGET || 'http://localhost:3000',
+                changeOrigin: true,
+                ws: true,
+              },
+            }),
       },
     },
   };

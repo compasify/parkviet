@@ -11,6 +11,11 @@ if ENV['SENTRY_DSN'].present?
     config.enabled_environments = %w[production staging]
     config.enabled_environments << 'development' if ENV['SENTRY_REPORT_ON_DEVELOPMENT'].present?
 
+    # POS devices authenticate their socket with a token inside this header,
+    # and its name matches none of Sentry's sensitive terms.
+    request_headers = config.data_collection.http_headers.request
+    request_headers.terms = Array(request_headers.terms) + ['sec-websocket-protocol']
+
     config.excluded_exceptions += [
       'ActionController::RoutingError',
       'ActiveRecord::RecordNotFound',

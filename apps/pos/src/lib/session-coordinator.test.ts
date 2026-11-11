@@ -106,6 +106,108 @@ describe('phiên nhân viên', () => {
     expect(session.getSnapshot().status).toBe('anonymous');
   });
 
+  it('hands a socket the young access token without rotating the cookie', async () => {
+    const api = client();
+    sdk.create.mockReturnValue(api);
+    const session = coordinator();
+    await session.login('staff@example.test', 'password');
+
+    await expect(session.socketToken()).resolves.toBe('access');
+    expect(api.auth.refresh).not.toHaveBeenCalled();
+  });
+
+  it('refreshes before handing a socket an access token that may have expired', async () => {
+    vi.useFakeTimers();
+    try {
+      const api = client();
+      sdk.create.mockReturnValue(api);
+      const session = coordinator();
+      await session.login('staff@example.test', 'password');
+      vi.advanceTimersByTime(61_000);
+
+      await expect(session.socketToken()).resolves.toBe('rotated');
+      expect(api.auth.refresh).toHaveBeenCalledOnce();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('reuses a token that states its expiry until shortly before it expires', async () => {
+    vi.useFakeTimers();
+    try {
+      const api = client();
+      const exp = Math.floor(Date.now() / 1000) + 300;
+      const token = `h.${btoa(JSON.stringify({ exp })).replace(/=+$/, '')}.s`;
+      api.auth.login.mockResolvedValue({ token });
+      sdk.create.mockReturnValue(api);
+      const session = coordinator();
+      await session.login('staff@example.test', 'password');
+
+      vi.advanceTimersByTime(260_000);
+      await expect(session.socketToken()).resolves.toBe(token);
+      expect(api.auth.refresh).not.toHaveBeenCalled();
+
+      vi.advanceTimersByTime(15_000);
+      await expect(session.socketToken()).resolves.toBe('rotated');
+      expect(api.auth.refresh).toHaveBeenCalledOnce();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('keeps the session when a refresh is rate limited', async () => {
+    const api = client();
+    sdk.create.mockReturnValue(api);
+    const session = coordinator();
+    await session.login('staff@example.test', 'password');
+    api.auth.refresh.mockRejectedValue(Object.assign(new Error('slow down'), { status: 429 }));
+
+    await session.resume();
+
+    expect(session.getSnapshot().status).toBe('authenticated');
+  });
+
+  it('hands a rate limited refresh to the request instead of reporting it unauthorized', async () => {
+    const api = client();
+    let onUnauthorized: (() => Promise<boolean>) | undefined;
+    api.onUnauthorized = vi.fn((handler: () => Promise<boolean>) => {
+      onUnauthorized = handler;
+    });
+    sdk.create.mockReturnValue(api);
+    const session = coordinator();
+    await session.login('staff@example.test', 'password');
+    const limited = Object.assign(new Error('slow down'), { status: 429 });
+    api.auth.refresh.mockRejectedValue(limited);
+
+    await expect(onUnauthorized?.()).rejects.toBe(limited);
+  });
+
+  it('still reports a refused refresh as unauthorized', async () => {
+    const api = client();
+    let onUnauthorized: (() => Promise<boolean>) | undefined;
+    api.onUnauthorized = vi.fn((handler: () => Promise<boolean>) => {
+      onUnauthorized = handler;
+    });
+    sdk.create.mockReturnValue(api);
+    const session = coordinator();
+    await session.login('staff@example.test', 'password');
+    api.auth.refresh.mockRejectedValue(Object.assign(new Error('expired'), { status: 401 }));
+
+    await expect(onUnauthorized?.()).resolves.toBe(false);
+  });
+
+  it('forgets the access token on logout', async () => {
+    const first = client();
+    const second = client();
+    sdk.create.mockReturnValueOnce(first).mockReturnValue(second);
+    const session = coordinator();
+    await session.login('staff@example.test', 'password');
+    await session.logout();
+
+    await expect(session.socketToken()).resolves.toBe('rotated');
+    expect(second.auth.refresh).toHaveBeenCalledOnce();
+  });
+
   it('takes the refresh lock before rotating the cookie', async () => {
     const api = client();
     sdk.create.mockReturnValue(api);

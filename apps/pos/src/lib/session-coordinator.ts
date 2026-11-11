@@ -1,6 +1,24 @@
 import { createAdminClient } from '@spree/admin-sdk';
 
 const SESSION_MESSAGE = 'pos.session';
+// How long before its expiry a token stops being offered to a socket.
+const SOCKET_TOKEN_EXPIRY_MARGIN_MS = 30_000;
+// A token whose expiry cannot be read gets this long.
+const UNREADABLE_TOKEN_LIFETIME_MS = 60_000;
+
+function tokenExpiryMs(token: string) {
+  try {
+    const payload = (token.split('.')[1] ?? '').replace(/-/g, '+').replace(/_/g, '/');
+    const { exp } = JSON.parse(atob(payload)) as { exp?: unknown };
+    return typeof exp === 'number' ? exp * 1000 : null;
+  } catch {
+    return null;
+  }
+}
+
+function isRateLimited(error: unknown) {
+  return (error as { status?: unknown } | null)?.status === 429;
+}
 
 export type SessionStatus = 'anonymous' | 'authenticated';
 
@@ -62,6 +80,7 @@ export function createSessionCoordinator(options: {
   let client = createClient();
   let snapshot: SessionSnapshot = { status: 'anonymous', generation: 0, email: '', name: '' };
   let refreshFlight: Promise<string> | null = null;
+  let accessToken: { value: string; usableUntil: number } | null = null;
   const listeners = new Set<() => void>();
 
   function publish(next: SessionSnapshot) {
@@ -73,6 +92,19 @@ export function createSessionCoordinator(options: {
 
   function replaceClient() {
     client = createClient();
+    accessToken = null;
+  }
+
+  function applyToken(active: PosApi, token: string) {
+    active.setToken(token);
+    const expiry = tokenExpiryMs(token);
+    accessToken = {
+      value: token,
+      usableUntil:
+        expiry === null
+          ? Date.now() + UNREADABLE_TOKEN_LIFETIME_MS
+          : expiry - SOCKET_TOKEN_EXPIRY_MARGIN_MS,
+    };
   }
 
   function clearLocal(nextGeneration: number, explicitLogout = false) {
@@ -96,7 +128,10 @@ export function createSessionCoordinator(options: {
       try {
         await refresh();
         return started === generation;
-      } catch {
+      } catch (error) {
+        // Too many refreshes says nothing about the session: surface the 429
+        // to this request instead of the 401 that would sign the cashier out.
+        if (isRateLimited(error)) throw error;
         return false;
       }
     });
@@ -115,7 +150,7 @@ export function createSessionCoordinator(options: {
     }
     const token = await refreshFlight;
     if (started !== generation) throw new SessionSuperseded();
-    active.setToken(token);
+    applyToken(active, token);
     options.channel?.postMessage({ type: SESSION_MESSAGE, event: 'refreshed' });
     return token;
   }
@@ -164,7 +199,7 @@ export function createSessionCoordinator(options: {
       try {
         const { token } = await active.auth.login({ email, password });
         if (started !== generation) throw new SessionSuperseded();
-        active.setToken(token);
+        applyToken(active, token);
         bindUnauthorized(active, started);
         const identity = await active.me.get();
         if (started !== generation) throw new SessionSuperseded();
@@ -218,11 +253,18 @@ export function createSessionCoordinator(options: {
       try {
         await refresh();
       } catch (error) {
-        if (error instanceof SessionSuperseded) return;
+        if (error instanceof SessionSuperseded || isRateLimited(error)) return;
         clearLocal(generation + 1);
       }
     },
     refresh,
+    // A WebSocket handshake cannot answer a 401 and retry the way a request
+    // does, so it gets a token that will still be valid when it lands. Reusing
+    // one until then keeps reconnects from spending refresh-token rotations.
+    async socketToken() {
+      if (accessToken && Date.now() < accessToken.usableUntil) return accessToken.value;
+      return refresh();
+    },
     async fetchContext<T>(params?: { branch_id?: string | null; register_id?: string | null }) {
       return thisRequest<T>('GET', '/pos/context', { params: compactParams(params) });
     },
