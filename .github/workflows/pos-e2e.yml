@@ -31,9 +31,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Reads the pnpm version from the root package.json.
       - uses: pnpm/action-setup@v4
-        with:
-          package_json_file: apps/pos/package.json
 
       - uses: actions/setup-node@v4
         with:

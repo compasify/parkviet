@@ -37,6 +37,9 @@ jobs:
         image: postgres:18
         env:
           POSTGRES_HOST_AUTH_METHOD: trust
+          # The Spree initializer queries the database while Rails boots, so
+          # db:prepare cannot create it; the image creates it instead.
+          POSTGRES_DB: spree_test
         ports:
           - 5432:5432
         options: >-
