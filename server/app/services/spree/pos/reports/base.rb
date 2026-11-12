@@ -42,8 +42,9 @@ module Spree
         def each_row(&block)
           last = nil
           loop do
-            batch = relation.reorder(Arel.sql("#{keyset_column} ASC")).limit(BATCH)
-            batch = batch.where("#{keyset_column} > ?", last) unless last.nil?
+            key = relation.klass.arel_table[keyset_attribute]
+            batch = relation.reorder(key.asc).limit(BATCH)
+            batch = batch.where(key.gt(last)) unless last.nil?
             records = batch.to_a
             break if records.empty?
 
@@ -52,11 +53,7 @@ module Spree
           end
         end
 
-        # Fully qualified unique column the export pages on, and its attribute.
-        def keyset_column
-          "#{relation.klass.table_name}.id"
-        end
-
+        # Unique column of the relation's table that exports page on.
         def keyset_attribute
           'id'
         end

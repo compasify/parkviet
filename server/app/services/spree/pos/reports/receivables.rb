@@ -39,10 +39,6 @@ module Spree
           end
         end
 
-        def keyset_column
-          "#{ReceivableEntry.table_name}.order_id"
-        end
-
         def keyset_attribute
           'order_id'
         end

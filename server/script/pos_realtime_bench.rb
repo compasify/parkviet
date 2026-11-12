@@ -148,7 +148,7 @@ module PosRealtimeBench
     end
     clients.each(&:close)
     results.binmode
-    results.write(Marshal.dump(arrivals))
+    results.write(JSON.generate(arrivals))
     results.close
   end
 
@@ -244,7 +244,7 @@ module PosRealtimeBench
       sent, elapsed = publish_events(branch)
       sleep GRACE_SECONDS
       stop_write.close
-      arrivals = Marshal.load(results_read.binmode.read) # rubocop:disable Security/MarshalLoad
+      arrivals = JSON.parse(results_read.read)
       Process.waitpid(client)
       client = nil
       report(sent, arrivals, elapsed)

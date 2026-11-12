@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative '../../../support/pos_checkout_helpers'
+
 RSpec.describe 'POS sandbox payment qualification' do
   it 'does not place a cart when the test payment covers only half the total' do
     cart = create_cart_ready_to_complete

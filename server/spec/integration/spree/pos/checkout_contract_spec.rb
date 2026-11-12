@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative '../../../support/pos_checkout_helpers'
+
 RSpec.describe 'POS core checkout qualification' do
   it 'reports missing customer email and items for an empty cart' do
     cart = create(:cart, email: nil)
