@@ -22,6 +22,11 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(AreaList.serializer)
       ..add(AreaResult.serializer)
       ..add(AreaStatusEnum.serializer)
+      ..add(AttendantAssignment.serializer)
+      ..add(AttendantAssignmentList.serializer)
+      ..add(AttendantAssignmentResult.serializer)
+      ..add(AttendantAssignmentStartInput.serializer)
+      ..add(AttendantStaff.serializer)
       ..add(AvailableResource.serializer)
       ..add(AvailableResourceKindEnum.serializer)
       ..add(BottleKeep.serializer)
@@ -361,6 +366,7 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(ReadyFeedItemStatusEnum.serializer)
       ..add(ReadyFeedResult.serializer)
       ..add(RealtimeEvent.serializer)
+      ..add(RealtimeEventAlertEnum.serializer)
       ..add(RealtimeEventEventEnum.serializer)
       ..add(Recipe.serializer)
       ..add(RecipeIngredientsInner.serializer)
@@ -446,14 +452,20 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(TableSplitResult.serializer)
       ..add(TableTaxCategory.serializer)
       ..add(TaxRow.serializer)
+      ..add(TimedMinutesCard.serializer)
+      ..add(TimedPackage.serializer)
       ..add(TimedQuote.serializer)
       ..add(TimedQuoteLine.serializer)
+      ..add(TimedQuoteLineKindEnum.serializer)
       ..add(TimedSegment.serializer)
       ..add(TimedSegmentEditInput.serializer)
+      ..add(TimedSegmentEndedReasonEnum.serializer)
       ..add(TimedSegmentKindEnum.serializer)
       ..add(TimedSession.serializer)
+      ..add(TimedSessionApprovalInput.serializer)
       ..add(TimedSessionCommand.serializer)
       ..add(TimedSessionCommandResult.serializer)
+      ..add(TimedSessionCommandWarningsEnum.serializer)
       ..add(TimedSessionMoveInput.serializer)
       ..add(TimedSessionResult.serializer)
       ..add(TimedSessionStartInput.serializer)
@@ -503,6 +515,10 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(Area)]),
           () => ListBuilder<Area>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(AttendantAssignment)]),
+          () => ListBuilder<AttendantAssignment>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(AvailableResource)]),
           () => ListBuilder<AvailableResource>())
@@ -947,6 +963,10 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(TimedSegment)]),
           () => ListBuilder<TimedSegment>())
+      ..addBuilderFactory(
+          const FullType(BuiltList,
+              const [const FullType(TimedSessionCommandWarningsEnum)]),
+          () => ListBuilder<TimedSessionCommandWarningsEnum>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(VehicleVisit)]),
           () => ListBuilder<VehicleVisit>())

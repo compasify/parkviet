@@ -521,6 +521,14 @@ function sameSelections(line: PosLineItem): PosModifierSelection[] | null {
   return toSelections(linePicks(line));
 }
 
+// How a band of play time was priced, when not at the plan's rate; free
+// minutes stay on the bill at no price.
+const BAND_LABELS = {
+  package: 'timedBandPackage',
+  card: 'timedBandCard',
+  bonus: 'timedBandBonus',
+} as const;
+
 // A play-time line's clock: how long the room was played and, once stopped,
 // the bands it was billed at. Every time is the server's.
 function TimedLineDetail({
@@ -550,16 +558,33 @@ function TimedLineDetail({
       </span>
       {timed.status === 'stopped'
         ? bands.map((band) => (
-            <span key={`${band.starts_at}:${band.ends_at}`} className="basket-line-label">
+            <span
+              key={`${band.kind ?? 'rate'}:${band.starts_at}:${band.ends_at}`}
+              className={`basket-line-label basket-line-band-${band.kind ?? 'rate'}`}
+            >
+              {band.kind && band.kind !== 'rate' ? `${t(BAND_LABELS[band.kind])} · ` : ''}
               {band.label ? `${band.label} · ` : ''}
               {t('timedLine', {
                 minutes: band.minutes,
                 from: clock(band.starts_at),
                 to: clock(band.ends_at),
               })}
+              {band.kind === 'bonus'
+                ? ''
+                : ` · ${formatMoney(band.amount, timed.currency ?? 'VND')}`}
             </span>
           ))
         : null}
+      {timed.package ? (
+        <span className="basket-line-label">
+          {t('timedBandPackage')} · {timed.package.name}
+        </span>
+      ) : null}
+      {timed.minutes_card ? (
+        <span className="basket-line-label">
+          {t('timedBandCard')} · …{timed.minutes_card.card_hint ?? ''}
+        </span>
+      ) : null}
       {asOf && timed.quote ? (
         <span className="basket-line-label basket-line-estimate">
           {t('timedEstimateAt', {

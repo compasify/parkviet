@@ -11,6 +11,7 @@ import {
   reportFigures,
   reportPagination,
   reportRequest,
+  SCREEN_ONLY_REPORTS,
   summaryEntries,
 } from './report-table'
 
@@ -75,6 +76,20 @@ describe('report requests', () => {
     )
     expect(dashboardReportTypes({}, true)).not.toContain('vehicle_commissions')
     expect(reportColumns('vehicle_commissions')).not.toContain('driver_phone')
+  })
+
+  it('lists the attendants report while the branch bills play time, on screen only', () => {
+    expect(dashboardReportTypes({ timed_billing: true }, false)).toContain('attendants')
+    expect(dashboardReportTypes({}, true)).not.toContain('attendants')
+    expect(reportColumns('attendants')).toEqual([
+      'business_date',
+      'staff_name',
+      'rooms',
+      'assignments',
+      'minutes',
+      'hours',
+    ])
+    expect(SCREEN_ONLY_REPORTS.has('attendants')).toBe(true)
   })
 
   it('refuses a reversed or too long range', () => {

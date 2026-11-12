@@ -6,7 +6,78 @@ part of 'timed_quote_line.dart';
 // BuiltValueGenerator
 // **************************************************************************
 
+const TimedQuoteLineKindEnum _$timedQuoteLineKindEnum_rate =
+    const TimedQuoteLineKindEnum._('rate');
+const TimedQuoteLineKindEnum _$timedQuoteLineKindEnum_package =
+    const TimedQuoteLineKindEnum._('package');
+const TimedQuoteLineKindEnum _$timedQuoteLineKindEnum_card =
+    const TimedQuoteLineKindEnum._('card');
+const TimedQuoteLineKindEnum _$timedQuoteLineKindEnum_bonus =
+    const TimedQuoteLineKindEnum._('bonus');
+
+TimedQuoteLineKindEnum _$timedQuoteLineKindEnumValueOf(String name) {
+  switch (name) {
+    case 'rate':
+      return _$timedQuoteLineKindEnum_rate;
+    case 'package':
+      return _$timedQuoteLineKindEnum_package;
+    case 'card':
+      return _$timedQuoteLineKindEnum_card;
+    case 'bonus':
+      return _$timedQuoteLineKindEnum_bonus;
+    default:
+      throw ArgumentError(name);
+  }
+}
+
+final BuiltSet<TimedQuoteLineKindEnum> _$timedQuoteLineKindEnumValues =
+    BuiltSet<TimedQuoteLineKindEnum>(const <TimedQuoteLineKindEnum>[
+  _$timedQuoteLineKindEnum_rate,
+  _$timedQuoteLineKindEnum_package,
+  _$timedQuoteLineKindEnum_card,
+  _$timedQuoteLineKindEnum_bonus,
+]);
+
+Serializer<TimedQuoteLineKindEnum> _$timedQuoteLineKindEnumSerializer =
+    _$TimedQuoteLineKindEnumSerializer();
+
+class _$TimedQuoteLineKindEnumSerializer
+    implements PrimitiveSerializer<TimedQuoteLineKindEnum> {
+  static const Map<String, Object> _toWire = const <String, Object>{
+    'rate': 'rate',
+    'package': 'package',
+    'card': 'card',
+    'bonus': 'bonus',
+  };
+  static const Map<Object, String> _fromWire = const <Object, String>{
+    'rate': 'rate',
+    'package': 'package',
+    'card': 'card',
+    'bonus': 'bonus',
+  };
+
+  @override
+  final Iterable<Type> types = const <Type>[TimedQuoteLineKindEnum];
+  @override
+  final String wireName = 'TimedQuoteLineKindEnum';
+
+  @override
+  Object serialize(Serializers serializers, TimedQuoteLineKindEnum object,
+          {FullType specifiedType = FullType.unspecified}) =>
+      _toWire[object.name] ?? object.name;
+
+  @override
+  TimedQuoteLineKindEnum deserialize(Serializers serializers, Object serialized,
+          {FullType specifiedType = FullType.unspecified}) =>
+      TimedQuoteLineKindEnum.valueOf(
+          _fromWire[serialized] ?? (serialized is String ? serialized : ''));
+}
+
 class _$TimedQuoteLine extends TimedQuoteLine {
+  @override
+  final TimedQuoteLineKindEnum kind;
+  @override
+  final String? promotionId;
   @override
   final String? segmentId;
   @override
@@ -30,7 +101,9 @@ class _$TimedQuoteLine extends TimedQuoteLine {
       (TimedQuoteLineBuilder()..update(updates))._build();
 
   _$TimedQuoteLine._(
-      {this.segmentId,
+      {required this.kind,
+      this.promotionId,
+      this.segmentId,
       required this.startsAt,
       required this.endsAt,
       this.dayType,
@@ -51,6 +124,8 @@ class _$TimedQuoteLine extends TimedQuoteLine {
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
     return other is TimedQuoteLine &&
+        kind == other.kind &&
+        promotionId == other.promotionId &&
         segmentId == other.segmentId &&
         startsAt == other.startsAt &&
         endsAt == other.endsAt &&
@@ -65,6 +140,8 @@ class _$TimedQuoteLine extends TimedQuoteLine {
   @override
   int get hashCode {
     var _$hash = 0;
+    _$hash = $jc(_$hash, kind.hashCode);
+    _$hash = $jc(_$hash, promotionId.hashCode);
     _$hash = $jc(_$hash, segmentId.hashCode);
     _$hash = $jc(_$hash, startsAt.hashCode);
     _$hash = $jc(_$hash, endsAt.hashCode);
@@ -81,6 +158,8 @@ class _$TimedQuoteLine extends TimedQuoteLine {
   @override
   String toString() {
     return (newBuiltValueToStringHelper(r'TimedQuoteLine')
+          ..add('kind', kind)
+          ..add('promotionId', promotionId)
           ..add('segmentId', segmentId)
           ..add('startsAt', startsAt)
           ..add('endsAt', endsAt)
@@ -97,6 +176,14 @@ class _$TimedQuoteLine extends TimedQuoteLine {
 class TimedQuoteLineBuilder
     implements Builder<TimedQuoteLine, TimedQuoteLineBuilder> {
   _$TimedQuoteLine? _$v;
+
+  TimedQuoteLineKindEnum? _kind;
+  TimedQuoteLineKindEnum? get kind => _$this._kind;
+  set kind(TimedQuoteLineKindEnum? kind) => _$this._kind = kind;
+
+  String? _promotionId;
+  String? get promotionId => _$this._promotionId;
+  set promotionId(String? promotionId) => _$this._promotionId = promotionId;
 
   String? _segmentId;
   String? get segmentId => _$this._segmentId;
@@ -142,6 +229,8 @@ class TimedQuoteLineBuilder
   TimedQuoteLineBuilder get _$this {
     final $v = _$v;
     if ($v != null) {
+      _kind = $v.kind;
+      _promotionId = $v.promotionId;
       _segmentId = $v.segmentId;
       _startsAt = $v.startsAt;
       _endsAt = $v.endsAt;
@@ -172,6 +261,9 @@ class TimedQuoteLineBuilder
   _$TimedQuoteLine _build() {
     final _$result = _$v ??
         _$TimedQuoteLine._(
+          kind: BuiltValueNullFieldError.checkNotNull(
+              kind, r'TimedQuoteLine', 'kind'),
+          promotionId: promotionId,
           segmentId: segmentId,
           startsAt: BuiltValueNullFieldError.checkNotNull(
               startsAt, r'TimedQuoteLine', 'startsAt'),

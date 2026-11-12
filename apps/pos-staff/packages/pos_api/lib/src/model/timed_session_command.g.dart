@@ -6,7 +6,61 @@ part of 'timed_session_command.dart';
 // BuiltValueGenerator
 // **************************************************************************
 
+const TimedSessionCommandWarningsEnum
+    _$timedSessionCommandWarningsEnum_outsideOperatingHours =
+    const TimedSessionCommandWarningsEnum._('outsideOperatingHours');
+
+TimedSessionCommandWarningsEnum _$timedSessionCommandWarningsEnumValueOf(
+    String name) {
+  switch (name) {
+    case 'outsideOperatingHours':
+      return _$timedSessionCommandWarningsEnum_outsideOperatingHours;
+    default:
+      throw ArgumentError(name);
+  }
+}
+
+final BuiltSet<TimedSessionCommandWarningsEnum>
+    _$timedSessionCommandWarningsEnumValues = BuiltSet<
+        TimedSessionCommandWarningsEnum>(const <TimedSessionCommandWarningsEnum>[
+  _$timedSessionCommandWarningsEnum_outsideOperatingHours,
+]);
+
+Serializer<TimedSessionCommandWarningsEnum>
+    _$timedSessionCommandWarningsEnumSerializer =
+    _$TimedSessionCommandWarningsEnumSerializer();
+
+class _$TimedSessionCommandWarningsEnumSerializer
+    implements PrimitiveSerializer<TimedSessionCommandWarningsEnum> {
+  static const Map<String, Object> _toWire = const <String, Object>{
+    'outsideOperatingHours': 'outside_operating_hours',
+  };
+  static const Map<Object, String> _fromWire = const <Object, String>{
+    'outside_operating_hours': 'outsideOperatingHours',
+  };
+
+  @override
+  final Iterable<Type> types = const <Type>[TimedSessionCommandWarningsEnum];
+  @override
+  final String wireName = 'TimedSessionCommandWarningsEnum';
+
+  @override
+  Object serialize(
+          Serializers serializers, TimedSessionCommandWarningsEnum object,
+          {FullType specifiedType = FullType.unspecified}) =>
+      _toWire[object.name] ?? object.name;
+
+  @override
+  TimedSessionCommandWarningsEnum deserialize(
+          Serializers serializers, Object serialized,
+          {FullType specifiedType = FullType.unspecified}) =>
+      TimedSessionCommandWarningsEnum.valueOf(
+          _fromWire[serialized] ?? (serialized is String ? serialized : ''));
+}
+
 class _$TimedSessionCommand extends TimedSessionCommand {
+  @override
+  final BuiltList<TimedSessionCommandWarningsEnum>? warnings;
   @override
   final Workspace workspace;
   @override
@@ -16,7 +70,8 @@ class _$TimedSessionCommand extends TimedSessionCommand {
           [void Function(TimedSessionCommandBuilder)? updates]) =>
       (TimedSessionCommandBuilder()..update(updates))._build();
 
-  _$TimedSessionCommand._({required this.workspace, required this.timedSession})
+  _$TimedSessionCommand._(
+      {this.warnings, required this.workspace, required this.timedSession})
       : super._();
   @override
   TimedSessionCommand rebuild(
@@ -31,6 +86,7 @@ class _$TimedSessionCommand extends TimedSessionCommand {
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
     return other is TimedSessionCommand &&
+        warnings == other.warnings &&
         workspace == other.workspace &&
         timedSession == other.timedSession;
   }
@@ -38,6 +94,7 @@ class _$TimedSessionCommand extends TimedSessionCommand {
   @override
   int get hashCode {
     var _$hash = 0;
+    _$hash = $jc(_$hash, warnings.hashCode);
     _$hash = $jc(_$hash, workspace.hashCode);
     _$hash = $jc(_$hash, timedSession.hashCode);
     _$hash = $jf(_$hash);
@@ -47,6 +104,7 @@ class _$TimedSessionCommand extends TimedSessionCommand {
   @override
   String toString() {
     return (newBuiltValueToStringHelper(r'TimedSessionCommand')
+          ..add('warnings', warnings)
           ..add('workspace', workspace)
           ..add('timedSession', timedSession))
         .toString();
@@ -56,6 +114,12 @@ class _$TimedSessionCommand extends TimedSessionCommand {
 class TimedSessionCommandBuilder
     implements Builder<TimedSessionCommand, TimedSessionCommandBuilder> {
   _$TimedSessionCommand? _$v;
+
+  ListBuilder<TimedSessionCommandWarningsEnum>? _warnings;
+  ListBuilder<TimedSessionCommandWarningsEnum> get warnings =>
+      _$this._warnings ??= ListBuilder<TimedSessionCommandWarningsEnum>();
+  set warnings(ListBuilder<TimedSessionCommandWarningsEnum>? warnings) =>
+      _$this._warnings = warnings;
 
   WorkspaceBuilder? _workspace;
   WorkspaceBuilder get workspace => _$this._workspace ??= WorkspaceBuilder();
@@ -74,6 +138,7 @@ class TimedSessionCommandBuilder
   TimedSessionCommandBuilder get _$this {
     final $v = _$v;
     if ($v != null) {
+      _warnings = $v.warnings?.toBuilder();
       _workspace = $v.workspace.toBuilder();
       _timedSession = $v.timedSession.toBuilder();
       _$v = null;
@@ -99,12 +164,15 @@ class TimedSessionCommandBuilder
     try {
       _$result = _$v ??
           _$TimedSessionCommand._(
+            warnings: _warnings?.build(),
             workspace: workspace.build(),
             timedSession: timedSession.build(),
           );
     } catch (_) {
       late String _$failedField;
       try {
+        _$failedField = 'warnings';
+        _warnings?.build();
         _$failedField = 'workspace';
         workspace.build();
         _$failedField = 'timedSession';

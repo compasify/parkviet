@@ -72,6 +72,16 @@ class _$ResourceBoardTimedStatusEnumSerializer
 
 class _$ResourceBoardTimed extends ResourceBoardTimed {
   @override
+  final DateTime? pausedAt;
+  @override
+  final int? prepaidMinutes;
+  @override
+  final int? playedSeconds;
+  @override
+  final bool packageEnded;
+  @override
+  final bool pauseTooLong;
+  @override
   final String id;
   @override
   final String? workspaceId;
@@ -95,7 +105,12 @@ class _$ResourceBoardTimed extends ResourceBoardTimed {
       (ResourceBoardTimedBuilder()..update(updates))._build();
 
   _$ResourceBoardTimed._(
-      {required this.id,
+      {this.pausedAt,
+      this.prepaidMinutes,
+      this.playedSeconds,
+      required this.packageEnded,
+      required this.pauseTooLong,
+      required this.id,
       this.workspaceId,
       required this.status,
       required this.startedAt,
@@ -118,6 +133,11 @@ class _$ResourceBoardTimed extends ResourceBoardTimed {
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
     return other is ResourceBoardTimed &&
+        pausedAt == other.pausedAt &&
+        prepaidMinutes == other.prepaidMinutes &&
+        playedSeconds == other.playedSeconds &&
+        packageEnded == other.packageEnded &&
+        pauseTooLong == other.pauseTooLong &&
         id == other.id &&
         workspaceId == other.workspaceId &&
         status == other.status &&
@@ -132,6 +152,11 @@ class _$ResourceBoardTimed extends ResourceBoardTimed {
   @override
   int get hashCode {
     var _$hash = 0;
+    _$hash = $jc(_$hash, pausedAt.hashCode);
+    _$hash = $jc(_$hash, prepaidMinutes.hashCode);
+    _$hash = $jc(_$hash, playedSeconds.hashCode);
+    _$hash = $jc(_$hash, packageEnded.hashCode);
+    _$hash = $jc(_$hash, pauseTooLong.hashCode);
     _$hash = $jc(_$hash, id.hashCode);
     _$hash = $jc(_$hash, workspaceId.hashCode);
     _$hash = $jc(_$hash, status.hashCode);
@@ -148,6 +173,11 @@ class _$ResourceBoardTimed extends ResourceBoardTimed {
   @override
   String toString() {
     return (newBuiltValueToStringHelper(r'ResourceBoardTimed')
+          ..add('pausedAt', pausedAt)
+          ..add('prepaidMinutes', prepaidMinutes)
+          ..add('playedSeconds', playedSeconds)
+          ..add('packageEnded', packageEnded)
+          ..add('pauseTooLong', pauseTooLong)
           ..add('id', id)
           ..add('workspaceId', workspaceId)
           ..add('status', status)
@@ -164,6 +194,28 @@ class _$ResourceBoardTimed extends ResourceBoardTimed {
 class ResourceBoardTimedBuilder
     implements Builder<ResourceBoardTimed, ResourceBoardTimedBuilder> {
   _$ResourceBoardTimed? _$v;
+
+  DateTime? _pausedAt;
+  DateTime? get pausedAt => _$this._pausedAt;
+  set pausedAt(DateTime? pausedAt) => _$this._pausedAt = pausedAt;
+
+  int? _prepaidMinutes;
+  int? get prepaidMinutes => _$this._prepaidMinutes;
+  set prepaidMinutes(int? prepaidMinutes) =>
+      _$this._prepaidMinutes = prepaidMinutes;
+
+  int? _playedSeconds;
+  int? get playedSeconds => _$this._playedSeconds;
+  set playedSeconds(int? playedSeconds) =>
+      _$this._playedSeconds = playedSeconds;
+
+  bool? _packageEnded;
+  bool? get packageEnded => _$this._packageEnded;
+  set packageEnded(bool? packageEnded) => _$this._packageEnded = packageEnded;
+
+  bool? _pauseTooLong;
+  bool? get pauseTooLong => _$this._pauseTooLong;
+  set pauseTooLong(bool? pauseTooLong) => _$this._pauseTooLong = pauseTooLong;
 
   String? _id;
   String? get id => _$this._id;
@@ -210,6 +262,11 @@ class ResourceBoardTimedBuilder
   ResourceBoardTimedBuilder get _$this {
     final $v = _$v;
     if ($v != null) {
+      _pausedAt = $v.pausedAt;
+      _prepaidMinutes = $v.prepaidMinutes;
+      _playedSeconds = $v.playedSeconds;
+      _packageEnded = $v.packageEnded;
+      _pauseTooLong = $v.pauseTooLong;
       _id = $v.id;
       _workspaceId = $v.workspaceId;
       _status = $v.status;
@@ -240,6 +297,13 @@ class ResourceBoardTimedBuilder
   _$ResourceBoardTimed _build() {
     final _$result = _$v ??
         _$ResourceBoardTimed._(
+          pausedAt: pausedAt,
+          prepaidMinutes: prepaidMinutes,
+          playedSeconds: playedSeconds,
+          packageEnded: BuiltValueNullFieldError.checkNotNull(
+              packageEnded, r'ResourceBoardTimed', 'packageEnded'),
+          pauseTooLong: BuiltValueNullFieldError.checkNotNull(
+              pauseTooLong, r'ResourceBoardTimed', 'pauseTooLong'),
           id: BuiltValueNullFieldError.checkNotNull(
               id, r'ResourceBoardTimed', 'id'),
           workspaceId: workspaceId,

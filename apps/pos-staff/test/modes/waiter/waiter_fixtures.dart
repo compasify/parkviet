@@ -186,6 +186,7 @@ Map<String, Object?> orderJson(String id, {int pending = 0, bool paymentRequeste
 ResourceBoard boardOf(List<Map<String, Object?>> tiles) => parse(ResourceBoard.serializer, {
       'branch_id': 'posbranch_1',
       'server_now': '2026-11-12T12:00:00.000+07:00',
+      'outside_operating_hours': false,
       'areas': [
         {'id': 'posarea_1', 'name': 'Tầng 1', 'position': 0, 'floor_width': 10, 'floor_height': 10},
         {'id': 'posarea_2', 'name': 'Sân', 'position': 1, 'floor_width': 10, 'floor_height': 10},
@@ -381,6 +382,36 @@ class FakeWaiterApi implements WaiterApi {
   @override
   Future<TimedSessionCommand> moveClock(String sessionId, String resourceId) =>
       _answer('move-clock:$sessionId:$resourceId', () => clockCommand(sessionId));
+
+  @override
+  Future<TimedSessionCommand> pauseClock(String sessionId) =>
+      _answer('pause-clock:$sessionId', () => clockCommand(sessionId, status: 'paused'));
+
+  @override
+  Future<TimedSessionCommand> resumeClock(String sessionId) =>
+      _answer('resume-clock:$sessionId', () => clockCommand(sessionId));
+
+  @override
+  Future<AttendantAssignment> serveRoom(String branchId, String resourceId, String staffId) =>
+      _answer('serve:$resourceId:$staffId', () => parse(AttendantAssignment.serializer, {
+            'id': 'posattendant_1',
+            'branch_id': branchId,
+            'resource_id': resourceId,
+            'resource_name': 'P1',
+            'timed_session_id': null,
+            'staff': {'id': staffId, 'name': 'Lan'},
+            'started_at': '2026-11-12T12:00:00.000+07:00',
+            'ended_at': null,
+            'minutes': 0,
+            'business_date': '2026-11-12',
+            'note': null,
+          }));
+
+  /// The person signed in to the fake branch.
+  String? signedInStaffId;
+
+  @override
+  Future<String?> staffId(String branchId) async => signedInStaffId;
 }
 
 /// A clock of a room as the board shows it.
@@ -388,7 +419,10 @@ Map<String, Object?> timedJson(String id,
         {String workspaceId = 'posws_1',
         String status = 'running',
         String startedAt = '2026-11-12T11:20:00.000+07:00',
-        String amount = '75000.0'}) =>
+        String amount = '75000.0',
+        int? playedSeconds,
+        int? prepaidMinutes,
+        bool pauseTooLong = false}) =>
     {
       'id': id,
       'workspace_id': workspaceId,
@@ -396,9 +430,14 @@ Map<String, Object?> timedJson(String id,
       'started_at': startedAt,
       'stopped_at': status == 'stopped' ? '2026-11-12T12:00:00.000+07:00' : null,
       'planned_end_at': null,
+      'paused_at': status == 'paused' ? '2026-11-12T11:50:00.000+07:00' : null,
+      'prepaid_minutes': prepaidMinutes,
+      'played_seconds': playedSeconds,
       'played_minutes': 40,
       'quote_amount': amount,
       'ending_soon': false,
+      'package_ended': false,
+      'pause_too_long': pauseTooLong,
     };
 
 /// A room or billiard table on the board, with its clock.

@@ -1,5 +1,5 @@
 // `GET /pos/business_profiles` as the server sends it (server/config/pos/
-// business_profiles.yml, version 3): 13 retail profiles and 6 food & drink
+// business_profiles.yml, version 4): 13 retail profiles and 6 food & drink
 // profiles, karaoke / billiard included. The server has no profile "coming
 // soon" any more; `withComingSoon` marks one so for the interest scenarios,
 // as the server specs do with `treat_as_planned`.
@@ -39,7 +39,7 @@ const ROWS: Row[] = [
   { key: 'khac', group: 'retail', modules: ALL, view: 'cards' },
   { key: 'quan_an', group: 'fnb', modules: ['retail.units', 'retail.measured', 'fnb.menu', 'fnb.kitchen', 'fnb.order_number', 'fnb.recipes', 'fnb.delivery_platforms'], branch_defaults: SHOP, recommended_features: ['vietqr', 'credit', 'delivery'], kitchen_stations: ['prep', 'bar'], optional_modules: TABLES },
   { key: 'cafe_tra_sua', group: 'fnb', modules: ['retail.units', 'fnb.menu', 'fnb.kitchen', 'fnb.order_number', 'fnb.cup_label', 'fnb.recipes', 'fnb.delivery_platforms'], branch_defaults: SHOP, recommended_features: ['vietqr', 'customer_display'], kitchen_stations: ['prep', 'bar'] },
-  { key: 'karaoke_bida', group: 'fnb', modules: ['resources', 'fnb.tables', 'timed_billing', 'fnb.menu', 'fnb.kitchen', 'fnb.postpay', 'fnb.bottle_keep'], branch_defaults: { kitchen_send_trigger: 'manual' }, surface: 'resource_board', recommended_features: ['vietqr'], kitchen_stations: ['bar'] },
+  { key: 'karaoke_bida', group: 'fnb', modules: ['resources', 'fnb.tables', 'timed_billing', 'fnb.menu', 'fnb.kitchen', 'fnb.postpay', 'fnb.bottle_keep'], branch_defaults: { kitchen_send_trigger: 'manual', operating_windows: [{ days: [0, 1, 2, 3, 4, 5, 6], from: '08:00', to: '24:00' }] }, surface: 'resource_board', recommended_features: ['vietqr'], kitchen_stations: ['bar'] },
   { key: 'bar_pub_club', group: 'fnb', modules: ['fnb.menu', 'fnb.kitchen', ...TABLES], branch_defaults: { kitchen_send_trigger: 'manual' }, surface: 'table_grid', recommended_features: ['vietqr', 'customer_display'], kitchen_stations: ['prep', 'bar'] },
   { key: 'cang_tin_tram_dung', group: 'fnb', modules: ['fnb.menu', 'fnb.kitchen', 'fnb.order_number', 'retail.units'], branch_defaults: SHOP, recommended_features: ['vietqr', 'customer_display'], kitchen_stations: ['prep'] },
   { key: 'nha_hang', group: 'fnb', modules: ['fnb.menu', 'fnb.kitchen', ...TABLES], branch_defaults: { kitchen_send_trigger: 'manual', service_charge_rate: 5 }, surface: 'floor_plan', recommended_features: ['vietqr', 'customer_display'], kitchen_stations: ['prep', 'bar'] },
@@ -48,7 +48,7 @@ const ROWS: Row[] = [
 export const PROFILE_MODULES: Record<string, string[]> = Object.fromEntries(ROWS.map((row) => [row.key, row.modules]));
 
 export const BUSINESS_PROFILES = {
-  version: 3,
+  version: 4,
   modules: [
     { key: 'retail.units', group: 'retail', status: 'available', depends_on: [] },
     { key: 'retail.measured', group: 'retail', status: 'available', depends_on: ['retail.units'] },

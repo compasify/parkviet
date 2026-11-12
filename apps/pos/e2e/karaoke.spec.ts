@@ -18,12 +18,22 @@ type Clock = {
   id: string;
   resourceId: string;
   workspaceId: string;
-  status: 'running' | 'stopped';
+  status: 'running' | 'paused' | 'stopped';
   amount: string;
+  // The prepaid package the clock was sold with.
+  packageCode?: string;
   // A start corrected by hand.
   startedAt?: string;
 };
-type Recorded = { starts: Array<Record<string, unknown>>; stops: string[]; edits: Array<Record<string, unknown>> };
+type Recorded = {
+  starts: Array<Record<string, unknown>>;
+  stops: string[];
+  edits: Array<Record<string, unknown>>;
+  pauses: string[];
+  resumes: string[];
+};
+
+const PACKAGE = { code: 'goi2h', name: 'Gói 2 giờ', minutes: 120, price: '250000.0' };
 
 function board(world: World, clocks: Clock[]) {
   return {
@@ -38,7 +48,7 @@ function board(world: World, clocks: Clock[]) {
       return {
         ...room, area_id: 'posarea_1', kind: 'room', capacity: 8, shape: 'rect', w: 2, h: 2, rotation: 0,
         manual_status: 'available',
-        state: clock?.status === 'running' ? 'playing' : orders.length ? 'occupied' : 'available',
+        state: clock?.packageCode && clock.status !== 'stopped' ? 'ending_soon' : clock?.status === 'running' || clock?.status === 'paused' ? 'playing' : orders.length ? 'occupied' : 'available',
         guest_count: null, seated_minutes: orders.length ? 40 : null,
         subtotal: orders.length ? '0.0' : null, currency: orders.length ? 'VND' : null,
         payment_requested: false, edited_after_prebill: false,
@@ -48,7 +58,10 @@ function board(world: World, clocks: Clock[]) {
               id: clock.id, workspace_id: clock.workspaceId, status: clock.status,
               started_at: '2026-11-12T14:00:00Z',
               stopped_at: clock.status === 'stopped' ? SERVER_NOW : null,
-              planned_end_at: null, played_minutes: 40, quote_amount: clock.amount, ending_soon: false,
+              planned_end_at: clock.packageCode ? '2026-11-12T14:48:00Z' : null, played_minutes: 40, quote_amount: clock.amount,
+              ending_soon: Boolean(clock.packageCode), paused_at: clock.status === 'paused' ? SERVER_NOW : null,
+              prepaid_minutes: clock.packageCode ? PACKAGE.minutes : null, played_seconds: clock.status === 'stopped' ? null : 2400,
+              package_ended: false, pause_too_long: false,
             }
           : null,
         orders: orders.map((sheet) => ({
@@ -74,8 +87,18 @@ function session(clock: Clock) {
       },
     ],
     quote: {
-      as_of: SERVER_NOW, final: clock.status === 'stopped', played_minutes: 40, billed_minutes: 45, amount: clock.amount, lines: [],
+      as_of: SERVER_NOW, final: clock.status === 'stopped', played_minutes: 40, billed_minutes: 45, amount: clock.amount,
+      lines:
+        clock.packageCode && clock.status === 'stopped'
+          ? [
+              { kind: 'package', starts_at: '2026-11-12T14:00:00Z', ends_at: '2026-11-12T14:40:00Z', minutes: 40, label: null, price_per_hour: '0.0', amount: '250000.0', promotion_id: null },
+              { kind: 'bonus', starts_at: '2026-11-12T14:40:00Z', ends_at: '2026-11-12T14:55:00Z', minutes: 15, label: null, price_per_hour: '0.0', amount: '0.0', promotion_id: 'postpromo_1' },
+            ]
+          : [],
     },
+    paused_at: clock.status === 'paused' ? SERVER_NOW : null,
+    package: clock.packageCode ? PACKAGE : null,
+    minutes_card: null,
   };
 }
 
@@ -95,7 +118,7 @@ function orderView(world: World, clocks: Clock[], workspaceId: string) {
 }
 
 async function installClocks(page: Page, world: World): Promise<Recorded> {
-  const recorded: Recorded = { starts: [], stops: [], edits: [] };
+  const recorded: Recorded = { starts: [], stops: [], edits: [], pauses: [], resumes: [] };
   const clocks: Clock[] = [];
   await page.route('**/api/v3/admin/pos/workspaces/*', (route) => {
     const id = /\/pos\/workspaces\/([^/]+)$/.exec(new URL(route.request().url()).pathname)?.[1];
@@ -130,7 +153,10 @@ async function installClocks(page: Page, world: World): Promise<Recorded> {
       editor: String(body.editor_id),
       table: { id: room.id, name: room.name, label: null, guests: null },
     });
-    const clock: Clock = { id: `postimed_${clocks.length + 1}`, resourceId, workspaceId: sheet.id, status: 'running', amount: '75000.0' };
+    const clock: Clock = {
+      id: `postimed_${clocks.length + 1}`, resourceId, workspaceId: sheet.id, status: 'running', amount: '75000.0',
+      packageCode: typeof body.package_code === 'string' ? body.package_code : undefined,
+    };
     clocks.push(clock);
     return route.fulfill({ status: 201, json: { data: { workspace: orderView(world, clocks, sheet.id), timed_session: session(clock) } } });
   });
@@ -152,6 +178,26 @@ async function installClocks(page: Page, world: World): Promise<Recorded> {
       json: { data: { workspace: orderView(world, clocks, clock.workspaceId), timed_session: session(clock) } },
     });
   });
+  for (const verb of ['pause', 'resume'] as const)
+    await page.route(`**/api/v3/admin/pos/timed_sessions/*/${verb}`, (route) => {
+      const id = new URL(route.request().url()).pathname.split('/').at(-2) ?? '';
+      const clock = clocks.find((row) => row.id === id);
+      if (!clock) return route.fulfill({ status: 404, json: { error: { code: 'missing', message: 'missing' } } });
+      (verb === 'pause' ? recorded.pauses : recorded.resumes).push(id);
+      clock.status = verb === 'pause' ? 'paused' : 'running';
+      return route.fulfill({
+        json: { data: { workspace: orderView(world, clocks, clock.workspaceId), timed_session: session(clock), warnings: [] } },
+      });
+    });
+  await page.route('**/api/v3/admin/pos/rate_plans?**', (route) =>
+    route.fulfill({
+      json: {
+        data: [{ id: 'posrate_1', name: 'Phòng thường', resource_type_code: 'room', status: 'active', packages: [PACKAGE] }],
+        meta: { weekend_days: [6, 0] },
+      },
+    }),
+  );
+  await page.route('**/api/v3/admin/pos/attendant_assignments**', (route) => route.fulfill({ json: { data: [] } }));
   return recorded;
 }
 
@@ -251,4 +297,45 @@ test("a stretch of a running clock is corrected with a manager's approval", asyn
   );
   expect(Object.keys(recorded.edits[0])).not.toContain('ended_at');
   await expect(page.getByText('đã sửa')).toBeVisible();
+});
+test('a room sold with a package counts it down, pauses and resumes, and bills the free minutes', async ({ page }) => {
+  const world = newWorld({
+    capabilities: [...FULL_CASHIER, 'pos.table.serve', 'pos.timed.operate'],
+    modules: MODULES,
+    profile: { key: 'karaoke_bida', version: 4, display: { surface: 'resource_board' } },
+    menu: teaMenu(),
+  });
+  await installRetailApi(page, world);
+  const recorded = await installClocks(page, world);
+  await login(page);
+
+  await tile(page, 'P1').click();
+  const panel = page.getByRole('complementary', { name: 'P1' });
+  await panel.getByLabel('Gói giờ').selectOption('goi2h');
+  await panel.getByRole('button', { name: 'Bắt đầu tính giờ' }).click();
+  await expect.poll(() => recorded.starts.length).toBe(1);
+  expect(recorded.starts[0]).toEqual(expect.objectContaining({ package_code: 'goi2h' }));
+  expect(Object.keys(recorded.starts[0])).not.toContain('started_at');
+
+  // The room is flagged by the server as ending soon, and its package counts down.
+  await page.getByRole('button', { name: 'Sơ đồ bàn', exact: true }).click();
+  await expect(floor(page).getByRole('button', { name: 'Sắp hết giờ 1' })).toBeVisible();
+  await expect(tile(page, 'P1')).toHaveAttribute('aria-label', 'P1 · Sắp hết giờ');
+  await tile(page, 'P1').click();
+  await expect(panel).toContainText('Sắp hết giờ đặt');
+  await expect(panel).toContainText(/Gói còn \d\d:\d\d/);
+
+  await panel.getByRole('button', { name: 'Tạm dừng' }).click();
+  await expect.poll(() => recorded.pauses).toEqual(['postimed_1']);
+  await expect(panel).toContainText('Đang tạm dừng');
+  await panel.getByRole('button', { name: 'Tính giờ tiếp' }).click();
+  await expect.poll(() => recorded.resumes).toEqual(['postimed_1']);
+
+  // Stopped, the bill shows the package and the free minutes at no charge.
+  await panel.getByRole('button', { name: 'Dừng giờ' }).click();
+  await expect.poll(() => recorded.stops).toEqual(['postimed_1']);
+  await panel.getByRole('button', { name: /^Vào đơn/ }).click();
+  await expect(page.locator('.basket-line-band-bonus')).toContainText('Tặng · 15');
+  await expect(page.locator('.basket-line-band-bonus')).not.toContainText('₫');
+  await expect(page.locator('.basket-line-band-package')).toContainText('250.000');
 });

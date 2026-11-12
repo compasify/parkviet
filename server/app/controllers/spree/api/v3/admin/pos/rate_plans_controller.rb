@@ -7,7 +7,8 @@ module Spree
         module Pos
           # A branch's prices of play time (`branch_id`): rate plans by kind of
           # room with their time bands, a priced preview of a stay, the
-          # branch's holidays and its weekend days.
+          # branch's holidays, its weekend days, its operating hours and pause
+          # limit.
           class RatePlansController < BaseController
             scoped_resource :pos_orders
             pos_permissions index: %w[read_pos_orders write_pos_orders], preview: %w[read_pos_orders write_pos_orders],
@@ -22,7 +23,9 @@ module Spree
                       includes(:branch, :rate_rules, variant: %i[product tax_category]).order(:status, :resource_type_code, version: :desc)
               scope = scope.where(status: params[:status].to_s) if params[:status].present?
               records, meta = page_scope(scope)
-              render json: { data: records.map(&:to_pos), meta: meta.merge(branch_id: branch.prefixed_id, weekend_days: branch.weekend_days) }
+              render json: { data: records.map(&:to_pos), meta: meta.merge(branch_id: branch.prefixed_id, weekend_days: branch.weekend_days,
+                                                                    operating_windows: branch.operating_windows,
+                                                                    max_pause_minutes: branch.max_pause_minutes) }
             end
 
             def create
@@ -103,6 +106,15 @@ module Spree
               end
             end
 
+            # Operating hours and the pause limit of the branch's play time.
+            def update_timed_settings
+              command do |key|
+                Spree::Pos::Timed::SaveSettings.call(store: current_store, staff: current_user, key: key, branch_id: params[:branch_id],
+                                                     operating_windows: params.key?(:operating_windows) ? Array(params[:operating_windows]) : nil,
+                                                     max_pause_minutes: params[:max_pause_minutes])
+              end
+            end
+
             # A preview has no stored segment.
             PreviewSegment = Struct.new(:id, :prefixed_id)
 
@@ -131,6 +143,9 @@ module Spree
                 values['rules'] = Array(params[:rules]).map do |row|
                   row.respond_to?(:permit) ? row.permit(*Spree::Pos::Timed::SaveRatePlan::RULE_FIELDS).to_h : row
                 end
+              end
+              if params.key?(:packages)
+                values['packages'] = Array(params[:packages]).map { |row| row.respond_to?(:permit) ? row.permit(:code, :name, :minutes, :price).to_h : row }
               end
               values
             end

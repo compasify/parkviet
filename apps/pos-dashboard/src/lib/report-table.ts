@@ -20,10 +20,15 @@ export const MEAL_REPORT_TYPES = ['meals', 'meal_statement'] as const
 // A rest stop's coach commission by day, bus operator and plate, offered while
 // the branch runs coach visits.
 export const VEHICLE_REPORT_TYPES = ['vehicle_commissions'] as const
+// Hours served by each room attendant per business day, offered while the
+// branch bills play time. Read on screen only: the server does not export it.
+export const TIMED_REPORT_TYPES = ['attendants'] as const
+export const SCREEN_ONLY_REPORTS = new Set<string>(TIMED_REPORT_TYPES)
 export type PosReportType =
   | ReportType
   | (typeof MEAL_REPORT_TYPES)[number]
   | (typeof VEHICLE_REPORT_TYPES)[number]
+  | (typeof TIMED_REPORT_TYPES)[number]
 export const MEAL_RESULTS = ['ok', 'duplicate', 'limit', 'window', 'revoked', 'unknown'] as const
 
 // The report tabs of the selected branch. The statement picks a sponsor, so
@@ -38,6 +43,7 @@ export function dashboardReportTypes(
     ...(meals ? (['meals'] as const) : []),
     ...(meals && readsSponsors ? (['meal_statement'] as const) : []),
     ...(modules?.['fnb.vehicle_commission'] === true ? VEHICLE_REPORT_TYPES : []),
+    ...(modules?.timed_billing === true ? TIMED_REPORT_TYPES : []),
   ]
 }
 
@@ -130,6 +136,7 @@ export const REPORT_COLUMNS: Record<PosReportType, string[]> = {
     'unpaid',
     'commission_rate',
   ],
+  attendants: ['business_date', 'staff_name', 'rooms', 'assignments', 'minutes', 'hours'],
 }
 
 export const RETURN_COLUMNS = [

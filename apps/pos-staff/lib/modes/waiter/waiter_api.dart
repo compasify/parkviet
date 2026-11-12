@@ -97,6 +97,19 @@ abstract interface class WaiterApi {
 
   /// Moves a running clock and the room's order to a free room.
   Future<TimedSessionCommand> moveClock(String sessionId, String resourceId);
+
+  /// Pauses a running clock now on the server's time; a pause is not billed.
+  Future<TimedSessionCommand> pauseClock(String sessionId);
+
+  /// Plays on a paused clock. A pause longer than the branch allows is
+  /// refused (`approval_required`) unless a manager approved it.
+  Future<TimedSessionCommand> resumeClock(String sessionId);
+
+  /// Writes in the attendants book that [staffId] serves the room from now.
+  Future<AttendantAssignment> serveRoom(String branchId, String resourceId, String staffId);
+
+  /// The person signed in, for the attendants book; null when unknown.
+  Future<String?> staffId(String branchId);
 }
 
 /// [WaiterApi] over the generated client.
@@ -360,4 +373,29 @@ class ApiWaiterApi implements WaiterApi {
                 timedSessionMoveInput: TimedSessionMoveInput((b) => b..resourceId = resourceId),
               )))
           .data;
+
+  @override
+  Future<TimedSessionCommand> pauseClock(String sessionId) async =>
+      (await client.call((api) => api.posTimedSessionPause(idempotencyKey: _key, id: sessionId))).data;
+
+  @override
+  Future<TimedSessionCommand> resumeClock(String sessionId) async =>
+      (await client.call((api) => api.posTimedSessionResume(idempotencyKey: _key, id: sessionId))).data;
+
+  @override
+  Future<AttendantAssignment> serveRoom(String branchId, String resourceId, String staffId) async =>
+      (await client.call((api) => api.posAttendantAssignmentStart(
+                idempotencyKey: _key,
+                attendantAssignmentStartInput: AttendantAssignmentStartInput((b) => b
+                  ..branchId = branchId
+                  ..resourceId = resourceId
+                  ..staffId = staffId),
+              )))
+          .data;
+
+  @override
+  Future<String?> staffId(String branchId) async {
+    final context = await client.call((api) => api.posContext(branchId: branchId));
+    return context.staff.id;
+  }
 }

@@ -12,6 +12,7 @@ part 'timed_segment.g.dart';
 /// A stretch of a clock on one room at one rate plan; an open stretch has no end.
 ///
 /// Properties:
+/// * [endedReason] - Why the stretch ended; null while it runs and for older stretches.
 /// * [id]
 /// * [kind]
 /// * [resourceId]
@@ -25,6 +26,11 @@ part 'timed_segment.g.dart';
 @BuiltValue()
 abstract class TimedSegment
     implements Built<TimedSegment, TimedSegmentBuilder> {
+  /// Why the stretch ended; null while it runs and for older stretches.
+  @BuiltValueField(wireName: r'ended_reason')
+  TimedSegmentEndedReasonEnum? get endedReason;
+  // enum endedReasonEnum {  pause,  resume,  move,  stop,  split_window,  ,  };
+
   @BuiltValueField(wireName: r'id')
   String get id;
 
@@ -80,6 +86,13 @@ class _$TimedSegmentSerializer implements PrimitiveSerializer<TimedSegment> {
     TimedSegment object, {
     FullType specifiedType = FullType.unspecified,
   }) sync* {
+    yield r'ended_reason';
+    yield object.endedReason == null
+        ? null
+        : serializers.serialize(
+            object.endedReason,
+            specifiedType: const FullType.nullable(TimedSegmentEndedReasonEnum),
+          );
     yield r'id';
     yield serializers.serialize(
       object.id,
@@ -163,6 +176,14 @@ class _$TimedSegmentSerializer implements PrimitiveSerializer<TimedSegment> {
       final key = serializedList[i] as String;
       final value = serializedList[i + 1];
       switch (key) {
+        case r'ended_reason':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(TimedSegmentEndedReasonEnum),
+          ) as TimedSegmentEndedReasonEnum?;
+          if (valueDes == null) continue;
+          result.endedReason = valueDes;
+          break;
         case r'id':
           final valueDes = serializers.deserialize(
             value,
@@ -264,6 +285,35 @@ class _$TimedSegmentSerializer implements PrimitiveSerializer<TimedSegment> {
     );
     return result.build();
   }
+}
+
+/// Why the stretch ended; null while it runs and for older stretches.
+class TimedSegmentEndedReasonEnum extends EnumClass {
+  @BuiltValueEnumConst(wireName: r'pause')
+  static const TimedSegmentEndedReasonEnum pause =
+      _$timedSegmentEndedReasonEnum_pause;
+  @BuiltValueEnumConst(wireName: r'resume')
+  static const TimedSegmentEndedReasonEnum resume =
+      _$timedSegmentEndedReasonEnum_resume;
+  @BuiltValueEnumConst(wireName: r'move')
+  static const TimedSegmentEndedReasonEnum move =
+      _$timedSegmentEndedReasonEnum_move;
+  @BuiltValueEnumConst(wireName: r'stop')
+  static const TimedSegmentEndedReasonEnum stop =
+      _$timedSegmentEndedReasonEnum_stop;
+  @BuiltValueEnumConst(wireName: r'split_window')
+  static const TimedSegmentEndedReasonEnum splitWindow =
+      _$timedSegmentEndedReasonEnum_splitWindow;
+
+  static Serializer<TimedSegmentEndedReasonEnum> get serializer =>
+      _$timedSegmentEndedReasonEnumSerializer;
+
+  const TimedSegmentEndedReasonEnum._(String name) : super(name);
+
+  static BuiltSet<TimedSegmentEndedReasonEnum> get values =>
+      _$timedSegmentEndedReasonEnumValues;
+  static TimedSegmentEndedReasonEnum valueOf(String name) =>
+      _$timedSegmentEndedReasonEnumValueOf(name);
 }
 
 class TimedSegmentKindEnum extends EnumClass {

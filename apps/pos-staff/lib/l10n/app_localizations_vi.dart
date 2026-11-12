@@ -1171,4 +1171,54 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get waiterClockAlreadyStopped => 'Giờ của phòng này đã dừng.';
+
+  @override
+  String get waiterClockPause => 'Tạm dừng giờ';
+
+  @override
+  String get waiterClockResume => 'Tính giờ tiếp';
+
+  @override
+  String get waiterClockPaused => 'Đang tạm dừng';
+
+  @override
+  String get waiterClockAlreadyPaused => 'Giờ của phòng này đang tạm dừng.';
+
+  @override
+  String get waiterClockNotPaused => 'Giờ của phòng này không tạm dừng.';
+
+  @override
+  String get waiterClockLongPause =>
+      'Tạm dừng quá lâu: cần quản lý duyệt tại quầy để tính giờ tiếp.';
+
+  @override
+  String waiterClockPackageLeft(int minutes) {
+    return 'Gói còn $minutes phút';
+  }
+
+  @override
+  String get waiterServeRoom => 'Tôi phục vụ phòng này';
+
+  @override
+  String waiterServingRoom(String room) {
+    return 'Đã nhận phục vụ $room.';
+  }
+
+  @override
+  String get waiterAttendantBusy => 'Bạn đang phục vụ một phòng khác.';
+
+  @override
+  String waiterAlertEndingSoon(String room) {
+    return '$room còn 10 phút';
+  }
+
+  @override
+  String waiterAlertEndedPackage(String room) {
+    return '$room đã hết gói giờ';
+  }
+
+  @override
+  String waiterAlertPauseTooLong(String room) {
+    return '$room tạm dừng quá lâu';
+  }
 }

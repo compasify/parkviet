@@ -33,7 +33,7 @@ module Spree
               allocation.update!(status: 'reversed', reversed_at: Time.current)
             end
             if wallet
-              StoredValue.restore!(account: wallet, amount: allocation.amount, actor: staff, workspace: workspace,
+              StoredValue.restore!(account: wallet, amount: allocation.amount, actor: staff, workspace: workspace, allocation: allocation,
                                    note: "Hoàn lại khoản trả bị đảo #{allocation.prefixed_id}")
             end
             workspace.update!(revision: workspace.revision + 1)

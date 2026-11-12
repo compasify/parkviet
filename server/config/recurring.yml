@@ -90,6 +90,11 @@ production:
   pos_close_stale_vehicle_visits:
     class: Spree::Pos::CloseStaleVehicleVisitsJob
     schedule: every 5 minutes
+  # POS play time: tell devices about clocks ending soon, packages played out
+  # and pauses past the branch's limit (events only, never money).
+  pos_timed_session_alerts:
+    class: Spree::Pos::TimedSessions::AlertJob
+    schedule: every minute
   # POS print queue: return jobs whose print station lease ran out.
   pos_release_print_claims:
     class: Spree::Pos::ReleasePrintClaimsJob

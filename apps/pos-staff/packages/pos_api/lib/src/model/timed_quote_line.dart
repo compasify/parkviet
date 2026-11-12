@@ -3,6 +3,7 @@
 //
 
 // ignore_for_file: unused_element
+import 'package:built_collection/built_collection.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
 
@@ -11,6 +12,8 @@ part 'timed_quote_line.g.dart';
 /// One time band of a quote, at one price.
 ///
 /// Properties:
+/// * [kind] - `rate` at the plan's price, `package` the prepaid package at its price, `card` paid by the minutes card (its money moves when the clock stops), `bonus` free minutes of a promotion at 0.
+/// * [promotionId] - The timed promotion that gave a `bonus` line.
 /// * [segmentId]
 /// * [startsAt]
 /// * [endsAt]
@@ -23,6 +26,15 @@ part 'timed_quote_line.g.dart';
 @BuiltValue()
 abstract class TimedQuoteLine
     implements Built<TimedQuoteLine, TimedQuoteLineBuilder> {
+  /// `rate` at the plan's price, `package` the prepaid package at its price, `card` paid by the minutes card (its money moves when the clock stops), `bonus` free minutes of a promotion at 0.
+  @BuiltValueField(wireName: r'kind')
+  TimedQuoteLineKindEnum get kind;
+  // enum kindEnum {  rate,  package,  card,  bonus,  };
+
+  /// The timed promotion that gave a `bonus` line.
+  @BuiltValueField(wireName: r'promotion_id')
+  String? get promotionId;
+
   @BuiltValueField(wireName: r'segment_id')
   String? get segmentId;
 
@@ -77,6 +89,18 @@ class _$TimedQuoteLineSerializer
     TimedQuoteLine object, {
     FullType specifiedType = FullType.unspecified,
   }) sync* {
+    yield r'kind';
+    yield serializers.serialize(
+      object.kind,
+      specifiedType: const FullType(TimedQuoteLineKindEnum),
+    );
+    yield r'promotion_id';
+    yield object.promotionId == null
+        ? null
+        : serializers.serialize(
+            object.promotionId,
+            specifiedType: const FullType.nullable(String),
+          );
     yield r'segment_id';
     yield object.segmentId == null
         ? null
@@ -153,6 +177,21 @@ class _$TimedQuoteLineSerializer
       final key = serializedList[i] as String;
       final value = serializedList[i + 1];
       switch (key) {
+        case r'kind':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(TimedQuoteLineKindEnum),
+          ) as TimedQuoteLineKindEnum;
+          result.kind = valueDes;
+          break;
+        case r'promotion_id':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.promotionId = valueDes;
+          break;
         case r'segment_id':
           final valueDes = serializers.deserialize(
             value,
@@ -246,4 +285,27 @@ class _$TimedQuoteLineSerializer
     );
     return result.build();
   }
+}
+
+/// `rate` at the plan's price, `package` the prepaid package at its price, `card` paid by the minutes card (its money moves when the clock stops), `bonus` free minutes of a promotion at 0.
+class TimedQuoteLineKindEnum extends EnumClass {
+  @BuiltValueEnumConst(wireName: r'rate')
+  static const TimedQuoteLineKindEnum rate = _$timedQuoteLineKindEnum_rate;
+  @BuiltValueEnumConst(wireName: r'package')
+  static const TimedQuoteLineKindEnum package =
+      _$timedQuoteLineKindEnum_package;
+  @BuiltValueEnumConst(wireName: r'card')
+  static const TimedQuoteLineKindEnum card = _$timedQuoteLineKindEnum_card;
+  @BuiltValueEnumConst(wireName: r'bonus')
+  static const TimedQuoteLineKindEnum bonus = _$timedQuoteLineKindEnum_bonus;
+
+  static Serializer<TimedQuoteLineKindEnum> get serializer =>
+      _$timedQuoteLineKindEnumSerializer;
+
+  const TimedQuoteLineKindEnum._(String name) : super(name);
+
+  static BuiltSet<TimedQuoteLineKindEnum> get values =>
+      _$timedQuoteLineKindEnumValues;
+  static TimedQuoteLineKindEnum valueOf(String name) =>
+      _$timedQuoteLineKindEnumValueOf(name);
 }

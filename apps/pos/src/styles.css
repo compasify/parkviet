@@ -859,6 +859,11 @@ kbd { padding: var(--pos-s1); border: 1px solid var(--pos-border); border-radius
 .table-tile-ending_soon .table-tile-state, .table-state-badge.table-tile-ending_soon { background: #ffedd5; color: #9a3412; }
 .table-tile-timed .timed-clock, .timed-panel-clock .timed-clock { font-variant-numeric: tabular-nums; font-weight: 600; }
 .timed-panel { display: grid; gap: 6px; margin: 8px 0; }
+.pos-layout .table-tile.table-tile-timed-alert { box-shadow: inset 0 0 0 2px var(--pos-danger); }
+.timed-panel-options { display: grid; gap: var(--pos-s2); }
+.timed-panel-options label, .timed-panel-approval label { display: grid; gap: 2px; font-size: var(--pos-small); }
+.timed-panel-attendants { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.timed-panel-attendants li { display: flex; align-items: center; justify-content: space-between; gap: var(--pos-s2); }
 .pos-layout .table-tile-payment_requested { border-left-color: var(--pos-danger); }
 .table-tile-payment_requested .table-tile-state, .table-state-badge.table-tile-payment_requested { background: #fff0ee; color: var(--pos-danger); }
 .pos-layout .table-tile-prebilled { border-left-color: #6b4fa8; }

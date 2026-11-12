@@ -26,7 +26,7 @@ module Spree
 
       def to_pos
         {
-          id: prefixed_id, kind: kind, amount: amount.to_s('F'), funds_id: received_funds&.prefixed_id,
+          id: prefixed_id, kind: kind, amount: amount.to_s('F'), minutes: minutes, funds_id: received_funds&.prefixed_id,
           payout_id: liability_payout&.prefixed_id, workspace_id: workspace&.prefixed_id,
           order_number: workspace&.order&.number, actor: { id: actor.prefixed_id, name: StaffName.call(actor) },
           note: note, created_at: created_at.iso8601

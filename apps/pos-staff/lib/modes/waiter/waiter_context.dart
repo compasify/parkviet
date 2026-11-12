@@ -44,6 +44,9 @@ class WaiterContext {
   /// someone with `pos.timed.operate`. Empty until read.
   final capabilities = ValueNotifier<Set<String>>(const {});
 
+  /// The person signed in, for the attendants book. Null until read.
+  final staffId = ValueNotifier<String?>(null);
+
   Future<void> loadModules() async {
     try {
       modules.value = await api.modules(branchId);
@@ -54,6 +57,11 @@ class WaiterContext {
       capabilities.value = await api.capabilities(branchId);
     } on AppFailure {
       // The clock commands stay hidden; the server checks anyway.
+    }
+    try {
+      staffId.value = await api.staffId(branchId);
+    } on AppFailure {
+      // Serving a room stays hidden.
     }
   }
 
@@ -85,6 +93,7 @@ class WaiterContext {
     voidReasons.dispose();
     modules.dispose();
     capabilities.dispose();
+    staffId.dispose();
   }
 }
 

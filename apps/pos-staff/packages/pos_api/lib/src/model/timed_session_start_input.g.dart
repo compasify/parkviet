@@ -17,6 +17,10 @@ class _$TimedSessionStartInput extends TimedSessionStartInput {
   final int? guestCount;
   @override
   final DateTime? plannedEndAt;
+  @override
+  final String? packageCode;
+  @override
+  final String? cardToken;
 
   factory _$TimedSessionStartInput(
           [void Function(TimedSessionStartInputBuilder)? updates]) =>
@@ -27,7 +31,9 @@ class _$TimedSessionStartInput extends TimedSessionStartInput {
       required this.editorId,
       this.workspaceId,
       this.guestCount,
-      this.plannedEndAt})
+      this.plannedEndAt,
+      this.packageCode,
+      this.cardToken})
       : super._();
   @override
   TimedSessionStartInput rebuild(
@@ -46,7 +52,9 @@ class _$TimedSessionStartInput extends TimedSessionStartInput {
         editorId == other.editorId &&
         workspaceId == other.workspaceId &&
         guestCount == other.guestCount &&
-        plannedEndAt == other.plannedEndAt;
+        plannedEndAt == other.plannedEndAt &&
+        packageCode == other.packageCode &&
+        cardToken == other.cardToken;
   }
 
   @override
@@ -57,6 +65,8 @@ class _$TimedSessionStartInput extends TimedSessionStartInput {
     _$hash = $jc(_$hash, workspaceId.hashCode);
     _$hash = $jc(_$hash, guestCount.hashCode);
     _$hash = $jc(_$hash, plannedEndAt.hashCode);
+    _$hash = $jc(_$hash, packageCode.hashCode);
+    _$hash = $jc(_$hash, cardToken.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -68,7 +78,9 @@ class _$TimedSessionStartInput extends TimedSessionStartInput {
           ..add('editorId', editorId)
           ..add('workspaceId', workspaceId)
           ..add('guestCount', guestCount)
-          ..add('plannedEndAt', plannedEndAt))
+          ..add('plannedEndAt', plannedEndAt)
+          ..add('packageCode', packageCode)
+          ..add('cardToken', cardToken))
         .toString();
   }
 }
@@ -98,6 +110,14 @@ class TimedSessionStartInputBuilder
   set plannedEndAt(DateTime? plannedEndAt) =>
       _$this._plannedEndAt = plannedEndAt;
 
+  String? _packageCode;
+  String? get packageCode => _$this._packageCode;
+  set packageCode(String? packageCode) => _$this._packageCode = packageCode;
+
+  String? _cardToken;
+  String? get cardToken => _$this._cardToken;
+  set cardToken(String? cardToken) => _$this._cardToken = cardToken;
+
   TimedSessionStartInputBuilder() {
     TimedSessionStartInput._defaults(this);
   }
@@ -110,6 +130,8 @@ class TimedSessionStartInputBuilder
       _workspaceId = $v.workspaceId;
       _guestCount = $v.guestCount;
       _plannedEndAt = $v.plannedEndAt;
+      _packageCode = $v.packageCode;
+      _cardToken = $v.cardToken;
       _$v = null;
     }
     return this;
@@ -138,6 +160,8 @@ class TimedSessionStartInputBuilder
           workspaceId: workspaceId,
           guestCount: guestCount,
           plannedEndAt: plannedEndAt,
+          packageCode: packageCode,
+          cardToken: cardToken,
         );
     replace(_$result);
     return _$result;

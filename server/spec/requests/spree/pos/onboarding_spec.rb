@@ -55,12 +55,12 @@ RSpec.describe 'POS onboarding', type: :request, pos_modules: :default, pos_feat
     expect(response).to have_http_status(:created)
 
     profile = Spree::Pos::StoreProfile.find_by!(store: store)
-    expect(profile).to have_attributes(profile_key: 'nha_thuoc', profile_version: 3, wholesale: true, interests: ['karaoke_bida'],
+    expect(profile).to have_attributes(profile_key: 'nha_thuoc', profile_version: 4, wholesale: true, interests: ['karaoke_bida'],
                                        changed_by_id: owner.id)
     expect(profile.onboarded_at).to be_present
     branch = Spree::Pos::Branch.find_by!(store: store, code: 'q1')
     # The profile's defaults fill what the request left out.
-    expect(branch).to have_attributes(profile_key: 'nha_thuoc', profile_version: 3, return_window_days: 7, lot_selection: 'fefo',
+    expect(branch).to have_attributes(profile_key: 'nha_thuoc', profile_version: 4, return_window_days: 7, lot_selection: 'fefo',
                                       status: 'active', stock_location_id: location.id)
     expect(Spree::Pos::BranchModule.where(branch: branch).pluck(:module_key, :enabled, :reason)).
       to contain_exactly(['retail.units', true, 'profile:nha_thuoc'], ['retail.traceability', true, 'profile:nha_thuoc'])

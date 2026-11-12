@@ -686,14 +686,26 @@ export function useWorkspaces(
     // Starts a room's clock on the server's time. A room without an open
     // order gets a new one, its lease held by this page; otherwise the clock
     // bills the room's open order.
-    async startClock(resourceId: string, opensOrder: boolean) {
+    // A prepaid package (`packageCode`) and a minutes card read at the
+    // counter (`cardToken`) are optional.
+    async startClock(
+      resourceId: string,
+      opensOrder: boolean,
+      options: { packageCode?: string; cardToken?: string } = {},
+    ) {
       const key = crypto.randomUUID();
       try {
         const result = await session.request<{ data: { workspace: PosWorkspace } }>(
           'POST',
           `/pos/resources/${resourceId}/timed_sessions`,
           {
-            body: { branch_id: branchId, editor_id: editorId, idempotency_key: key },
+            body: {
+              branch_id: branchId,
+              editor_id: editorId,
+              idempotency_key: key,
+              ...(options.packageCode ? { package_code: options.packageCode } : {}),
+              ...(options.cardToken ? { card_token: options.cardToken } : {}),
+            },
             idempotencyKey: key,
           },
         );

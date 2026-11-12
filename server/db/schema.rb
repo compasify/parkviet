@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_12_070200) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_12_090400) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gist"
   enable_extension "pg_catalog.plpgsql"
@@ -2301,6 +2301,27 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_070200) do
     t.check_constraint "status::text = ANY (ARRAY['active'::character varying, 'archived'::character varying]::text[])", name: "chk_pos_areas_status"
   end
 
+  create_table "spree_pos_attendant_assignments", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "branch_id", null: false
+    t.bigint "resource_id", null: false
+    t.bigint "timed_session_id"
+    t.bigint "staff_id", null: false
+    t.datetime "started_at", null: false
+    t.datetime "ended_at"
+    t.date "business_date", null: false
+    t.string "note", limit: 255
+    t.bigint "started_by_id", null: false
+    t.bigint "ended_by_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["branch_id", "business_date"], name: "idx_pos_attendant_assignments_day"
+    t.index ["resource_id"], name: "index_spree_pos_attendant_assignments_on_resource_id"
+    t.index ["staff_id"], name: "idx_pos_attendant_assignments_open", unique: true, where: "(ended_at IS NULL)"
+    t.index ["timed_session_id"], name: "index_spree_pos_attendant_assignments_on_timed_session_id"
+    t.check_constraint "ended_at IS NULL OR ended_at >= started_at", name: "chk_pos_attendant_assignments_times"
+  end
+
   create_table "spree_pos_audit_entries", force: :cascade do |t|
     t.bigint "store_id", null: false
     t.bigint "actor_id", null: false
@@ -2456,6 +2477,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_070200) do
     t.boolean "tips_as_revenue", default: false, null: false
     t.integer "vehicle_visit_window_minutes", default: 60, null: false
     t.jsonb "weekend_days", default: [6, 0], null: false
+    t.jsonb "operating_windows", default: [], null: false
+    t.integer "max_pause_minutes", default: 15, null: false
     t.index ["cup_label_printer_id"], name: "index_spree_pos_branches_on_cup_label_printer_id"
     t.index ["service_charge_tax_category_id"], name: "index_spree_pos_branches_on_service_charge_tax_category_id"
     t.index ["stock_location_id"], name: "index_spree_pos_branches_on_stock_location_id"
@@ -2465,6 +2488,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_070200) do
     t.check_constraint "adjustment_approval_threshold IS NULL OR adjustment_approval_threshold >= 0", name: "chk_pos_branches_adjustment_threshold"
     t.check_constraint "bottle_keep_days >= 1 AND bottle_keep_days <= 3650", name: "chk_pos_branches_bottle_keep_days"
     t.check_constraint "display_freshness_ttl_seconds IS NULL OR display_freshness_ttl_seconds >= 5 AND display_freshness_ttl_seconds <= 120", name: "chk_pos_branches_display_freshness"
+    t.check_constraint "max_pause_minutes >= 1 AND max_pause_minutes <= 240", name: "chk_pos_branches_max_pause"
+    t.check_constraint "jsonb_typeof(operating_windows) = 'array'::text", name: "chk_pos_branches_operating_windows"
     t.check_constraint "jsonb_typeof(weekend_days) = 'array'::text", name: "chk_pos_branches_weekend_days"
     t.check_constraint "kitchen_send_trigger::text = ANY (ARRAY['on_complete'::character varying, 'manual'::character varying]::text[])", name: "chk_pos_branches_kitchen_send_trigger"
     t.check_constraint "lot_selection::text = ANY (ARRAY['fefo'::character varying::text, 'cashier_pick'::character varying::text])", name: "chk_pos_branches_lot_selection"
@@ -3807,10 +3832,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_070200) do
     t.bigint "previous_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.jsonb "packages", default: [], null: false
     t.index ["branch_id", "resource_type_code"], name: "idx_pos_rate_plans_active_type", unique: true, where: "((status)::text = 'active'::text)"
     t.index ["branch_id", "status"], name: "idx_pos_rate_plans_branch"
     t.index ["variant_id"], name: "index_spree_pos_rate_plans_on_variant_id"
     t.check_constraint "(status::text = ANY (ARRAY['active'::character varying, 'archived'::character varying]::text[])) AND block_minutes >= 1 AND block_minutes <= 60 AND grace_minutes >= 0 AND grace_minutes <= block_minutes AND minimum_minutes >= 0 AND minimum_minutes <= 1440 AND version >= 1", name: "chk_pos_rate_plans_values"
+    t.check_constraint "jsonb_typeof(packages) = 'array'::text", name: "chk_pos_rate_plans_packages"
   end
 
   create_table "spree_pos_rate_rules", force: :cascade do |t|
@@ -4549,15 +4576,21 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_070200) do
 
   create_table "spree_pos_stored_value_accounts", force: :cascade do |t|
     t.bigint "store_id", null: false
-    t.bigint "customer_profile_id", null: false
+    t.bigint "customer_profile_id"
     t.string "kind", limit: 16, null: false
     t.string "currency", limit: 16, null: false
     t.string "status", limit: 16, default: "active", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "branch_id"
+    t.string "card_digest", limit: 64
+    t.string "card_hint", limit: 8
+    t.string "holder_name", limit: 120
+    t.integer "revision", default: 0, null: false
     t.index ["customer_profile_id"], name: "index_spree_pos_stored_value_accounts_on_customer_profile_id"
+    t.index ["store_id", "card_digest"], name: "idx_pos_stored_value_accounts_card", unique: true, where: "(card_digest IS NOT NULL)"
     t.index ["store_id", "kind"], name: "idx_pos_stored_value_accounts_store"
-    t.check_constraint "kind::text = 'meal'::text AND (status::text = ANY (ARRAY['active'::character varying, 'closed'::character varying]::text[]))", name: "chk_pos_stored_value_accounts_values"
+    t.check_constraint "(kind::text = ANY (ARRAY['meal'::character varying, 'money'::character varying, 'minutes'::character varying]::text[])) AND (status::text = ANY (ARRAY['active'::character varying, 'closed'::character varying]::text[])) AND (kind::text <> 'meal'::text OR customer_profile_id IS NOT NULL) AND (kind::text = 'meal'::text OR card_digest IS NOT NULL)", name: "chk_pos_stored_value_accounts_values"
   end
 
   create_table "spree_pos_stored_value_entries", force: :cascade do |t|
@@ -4577,7 +4610,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_070200) do
     t.index ["received_funds_id"], name: "index_spree_pos_stored_value_entries_on_received_funds_id"
     t.index ["stored_value_account_id", "id"], name: "idx_pos_stored_value_entries_account"
     t.index ["workspace_id"], name: "index_spree_pos_stored_value_entries_on_workspace_id"
-    t.check_constraint "kind::text = 'top_up'::text AND amount > 0::numeric AND received_funds_id IS NOT NULL OR kind::text = 'spend'::text AND amount < 0::numeric AND funds_allocation_id IS NOT NULL OR kind::text = 'refund'::text AND amount < 0::numeric AND liability_payout_id IS NOT NULL OR kind::text = 'adjust'::text AND amount <> 0::numeric", name: "chk_pos_stored_value_entries_kind"
+    t.check_constraint "kind::text = 'top_up'::text AND amount > 0::numeric AND received_funds_id IS NOT NULL AND (minutes IS NULL OR minutes > 0) OR kind::text = 'spend'::text AND amount < 0::numeric AND funds_allocation_id IS NOT NULL AND (minutes IS NULL OR minutes < 0) OR kind::text = 'refund'::text AND amount < 0::numeric AND liability_payout_id IS NOT NULL AND (minutes IS NULL OR minutes <= 0) OR kind::text = 'adjust'::text AND (amount <> 0::numeric OR minutes IS NOT NULL AND minutes <> 0 AND received_funds_id IS NOT NULL)", name: "chk_pos_stored_value_entries_kind"
   end
 
   create_table "spree_pos_tax_rate_schedules", force: :cascade do |t|
@@ -4624,6 +4657,22 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_070200) do
     t.check_constraint "status::text = ANY (ARRAY['prepared'::character varying::text, 'confirmed'::character varying::text, 'canceled'::character varying::text, 'unknown'::character varying::text, 'failed'::character varying::text])", name: "chk_pos_tender_attempts_status"
   end
 
+  create_table "spree_pos_timed_promotions", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "branch_id", null: false
+    t.string "name", limit: 120, null: false
+    t.string "kind", limit: 24, null: false
+    t.integer "threshold_minutes", default: 0, null: false
+    t.integer "bonus_minutes", null: false
+    t.jsonb "resource_kinds", default: [], null: false
+    t.jsonb "active_windows", default: [], null: false
+    t.string "status", limit: 16, default: "active", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["branch_id", "status"], name: "idx_pos_timed_promotions_branch"
+    t.check_constraint "(kind::text = ANY (ARRAY['bonus_after'::character varying, 'bonus_with_package'::character varying]::text[])) AND (status::text = ANY (ARRAY['active'::character varying, 'archived'::character varying]::text[])) AND threshold_minutes >= 0 AND threshold_minutes <= 1440 AND bonus_minutes >= 1 AND bonus_minutes <= 600 AND jsonb_typeof(resource_kinds) = 'array'::text AND jsonb_typeof(active_windows) = 'array'::text", name: "chk_pos_timed_promotions_values"
+  end
+
   create_table "spree_pos_timed_quote_lines", force: :cascade do |t|
     t.bigint "timed_session_id", null: false
     t.bigint "timed_segment_id", null: false
@@ -4639,9 +4688,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_070200) do
     t.decimal "amount", precision: 19, scale: 4, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "kind", limit: 16, default: "rate", null: false
+    t.bigint "timed_promotion_id"
     t.index ["timed_segment_id"], name: "index_spree_pos_timed_quote_lines_on_timed_segment_id"
     t.index ["timed_session_id", "position"], name: "idx_pos_timed_quote_lines_order", unique: true
-    t.check_constraint "(day_type::text = ANY (ARRAY['weekday'::character varying, 'weekend'::character varying, 'holiday'::character varying]::text[])) AND ends_at >= starts_at AND minutes >= 0 AND amount >= 0::numeric AND price_per_hour >= 0::numeric AND surcharge_percent >= 0::numeric", name: "chk_pos_timed_quote_lines_values"
+    t.check_constraint "(day_type::text = ANY (ARRAY['weekday'::character varying, 'weekend'::character varying, 'holiday'::character varying]::text[])) AND ends_at >= starts_at AND minutes >= 0 AND amount >= 0::numeric AND price_per_hour >= 0::numeric AND surcharge_percent >= 0::numeric AND (kind::text = ANY (ARRAY['rate'::character varying, 'package'::character varying, 'card'::character varying, 'bonus'::character varying]::text[])) AND (kind::text <> 'bonus'::text OR amount = 0::numeric)", name: "chk_pos_timed_quote_lines_values"
   end
 
   create_table "spree_pos_timed_segments", force: :cascade do |t|
@@ -4655,10 +4706,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_070200) do
     t.boolean "edited", default: false, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "ended_reason", limit: 16
     t.index ["rate_plan_id"], name: "index_spree_pos_timed_segments_on_rate_plan_id"
     t.index ["timed_session_id", "started_at"], name: "idx_pos_timed_segments_session"
     t.index ["timed_session_id"], name: "idx_pos_timed_segments_open", unique: true, where: "(ended_at IS NULL)"
-    t.check_constraint "(kind::text = ANY (ARRAY['play'::character varying, 'pause'::character varying]::text[])) AND (ended_at IS NULL OR ended_at > started_at) AND (kind::text <> 'play'::text OR rate_plan_id IS NOT NULL)", name: "chk_pos_timed_segments_values"
+    t.check_constraint "(kind::text = ANY (ARRAY['play'::character varying, 'pause'::character varying]::text[])) AND (ended_at IS NULL OR ended_at > started_at) AND (kind::text <> 'play'::text OR rate_plan_id IS NOT NULL) AND (ended_reason IS NULL OR (ended_reason::text = ANY (ARRAY['pause'::character varying, 'resume'::character varying, 'move'::character varying, 'stop'::character varying, 'split_window'::character varying]::text[])))", name: "chk_pos_timed_segments_values"
     t.exclusion_constraint "timed_session_id WITH =, tsrange(started_at, COALESCE(ended_at, 'infinity'::timestamp without time zone)) WITH &&", using: :gist, name: "excl_pos_timed_segments_overlap"
   end
 
@@ -4681,11 +4733,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_070200) do
     t.bigint "stopped_by_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "prepaid_minutes"
+    t.string "package_name", limit: 120
+    t.decimal "package_price", precision: 19, scale: 4
+    t.bigint "stored_value_account_id"
+    t.jsonb "alerts", default: {}, null: false
     t.index ["resource_id", "status"], name: "idx_pos_timed_sessions_resource"
     t.index ["resource_id"], name: "idx_pos_timed_sessions_one_clock", unique: true, where: "((status)::text = ANY ((ARRAY['running'::character varying, 'paused'::character varying])::text[]))"
     t.index ["sale_line_id"], name: "index_spree_pos_timed_sessions_on_sale_line_id", unique: true
+    t.index ["stored_value_account_id"], name: "index_spree_pos_timed_sessions_on_stored_value_account_id"
     t.index ["workspace_id"], name: "index_spree_pos_timed_sessions_on_workspace_id"
-    t.check_constraint "(status::text = ANY (ARRAY['running'::character varying, 'paused'::character varying, 'stopped'::character varying]::text[])) AND played_minutes >= 0 AND billed_minutes >= 0 AND amount >= 0::numeric AND quote_version >= 0 AND (status::text <> 'stopped'::text OR stopped_at IS NOT NULL) AND (stopped_at IS NULL OR stopped_at >= started_at) AND (planned_end_at IS NULL OR planned_end_at > started_at)", name: "chk_pos_timed_sessions_values"
+    t.check_constraint "(status::text = ANY (ARRAY['running'::character varying, 'paused'::character varying, 'stopped'::character varying]::text[])) AND played_minutes >= 0 AND billed_minutes >= 0 AND amount >= 0::numeric AND quote_version >= 0 AND (status::text <> 'stopped'::text OR stopped_at IS NOT NULL) AND (stopped_at IS NULL OR stopped_at >= started_at) AND (planned_end_at IS NULL OR planned_end_at > started_at) AND (prepaid_minutes IS NULL OR prepaid_minutes >= 1 AND prepaid_minutes <= 1440) AND (package_price IS NULL OR package_price >= 0::numeric) AND (prepaid_minutes IS NULL) = (package_price IS NULL) AND jsonb_typeof(alerts) = 'object'::text", name: "chk_pos_timed_sessions_values"
   end
 
   create_table "spree_pos_tip_records", force: :cascade do |t|
@@ -6661,6 +6719,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_070200) do
   add_foreign_key "spree_pos_approvals", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_areas", "spree_pos_branches", column: "branch_id"
   add_foreign_key "spree_pos_areas", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_attendant_assignments", "spree_admin_users", column: "ended_by_id"
+  add_foreign_key "spree_pos_attendant_assignments", "spree_admin_users", column: "staff_id"
+  add_foreign_key "spree_pos_attendant_assignments", "spree_admin_users", column: "started_by_id"
+  add_foreign_key "spree_pos_attendant_assignments", "spree_pos_branches", column: "branch_id"
+  add_foreign_key "spree_pos_attendant_assignments", "spree_pos_resources", column: "resource_id"
+  add_foreign_key "spree_pos_attendant_assignments", "spree_pos_timed_sessions", column: "timed_session_id"
+  add_foreign_key "spree_pos_attendant_assignments", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_audit_entries", "spree_admin_users", column: "actor_id"
   add_foreign_key "spree_pos_audit_entries", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_bottle_keep_events", "spree_admin_users", column: "actor_id"
@@ -7036,6 +7101,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_070200) do
   add_foreign_key "spree_pos_store_profiles", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_store_profiles", "spree_tax_categories", column: "alcohol_tax_category_id"
   add_foreign_key "spree_pos_store_profiles", "spree_tax_categories", column: "food_tax_category_id"
+  add_foreign_key "spree_pos_stored_value_accounts", "spree_pos_branches", column: "branch_id"
   add_foreign_key "spree_pos_stored_value_accounts", "spree_pos_customers", column: "customer_profile_id"
   add_foreign_key "spree_pos_stored_value_accounts", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_stored_value_entries", "spree_admin_users", column: "actor_id"
@@ -7053,6 +7119,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_070200) do
   add_foreign_key "spree_pos_tender_attempts", "spree_pos_shifts", column: "shift_id"
   add_foreign_key "spree_pos_tender_attempts", "spree_pos_workspaces", column: "workspace_id"
   add_foreign_key "spree_pos_tender_attempts", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_timed_promotions", "spree_pos_branches", column: "branch_id"
+  add_foreign_key "spree_pos_timed_promotions", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_timed_quote_lines", "spree_pos_timed_promotions", column: "timed_promotion_id"
   add_foreign_key "spree_pos_timed_quote_lines", "spree_pos_timed_segments", column: "timed_segment_id", on_delete: :cascade
   add_foreign_key "spree_pos_timed_quote_lines", "spree_pos_timed_sessions", column: "timed_session_id", on_delete: :cascade
   add_foreign_key "spree_pos_timed_segments", "spree_pos_rate_plans", column: "rate_plan_id"
@@ -7063,6 +7132,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_070200) do
   add_foreign_key "spree_pos_timed_sessions", "spree_pos_branches", column: "branch_id"
   add_foreign_key "spree_pos_timed_sessions", "spree_pos_resources", column: "resource_id"
   add_foreign_key "spree_pos_timed_sessions", "spree_pos_sale_lines", column: "sale_line_id"
+  add_foreign_key "spree_pos_timed_sessions", "spree_pos_stored_value_accounts", column: "stored_value_account_id"
   add_foreign_key "spree_pos_timed_sessions", "spree_pos_workspaces", column: "workspace_id"
   add_foreign_key "spree_pos_timed_sessions", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_tip_records", "spree_pos_branches", column: "branch_id"

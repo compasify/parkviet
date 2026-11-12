@@ -17,6 +17,7 @@ import { ReservationsPage } from './pages/reservations';
 import { ReturnExchangePage } from './pages/return-exchange';
 import { SalePage } from './pages/sale';
 import { ShiftsPage } from './pages/shifts';
+import { StoredValuePage } from './pages/stored-value';
 import { TipsPage } from './pages/tips';
 import { VehicleVisitsPage } from './pages/vehicle-visits';
 
@@ -105,6 +106,13 @@ const mealAccountsRoute = createRoute({
   component: MealAccountsPage,
 });
 
+// Prepaid money and minutes cards: selling, balances, history and top-ups.
+const storedValueRoute = createRoute({
+  getParentRoute: () => authedRoute,
+  path: '/stored-value',
+  component: StoredValuePage,
+});
+
 // A rest stop's coach visits: closing, the commission and paying the driver.
 const vehicleVisitsRoute = createRoute({
   getParentRoute: () => authedRoute,
@@ -152,6 +160,7 @@ export const router = createRouter({
       reservationsRoute,
       bottleKeepsRoute,
       mealAccountsRoute,
+      storedValueRoute,
       vehicleVisitsRoute,
       tipsRoute,
       receiptsRoute,

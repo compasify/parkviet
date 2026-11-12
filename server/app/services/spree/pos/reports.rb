@@ -26,6 +26,8 @@ module Spree
         when 'meals' then Meals
         when 'meal_statement' then MealStatement
         when 'vehicle_commissions' then VehicleCommissions
+        # Read on screen only, so not in TYPES (the exportable reports).
+        when 'attendants' then Attendants
         else raise ActiveRecord::RecordNotFound
         end
       end

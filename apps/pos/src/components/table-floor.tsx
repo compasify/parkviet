@@ -16,7 +16,7 @@ import { posFailureKey } from '../lib/request-failure';
 import { describeTableFailure, saveTableSurface } from '../lib/tables';
 import { clockOffset } from '../lib/timed-clock';
 import { TableTile } from './table-tile';
-import { TimedPanel } from './timed-panel';
+import { type ClockStartOptions, TimedPanel } from './timed-panel';
 
 type StateFilter = TableState | 'open' | null;
 
@@ -50,9 +50,9 @@ export function TableFloor({
     input: { guestCount: number | null; addOrder: boolean },
   ) => Promise<unknown>;
   onSelectOrder: (workspaceId: string) => void;
-  onStartClock?: (table: BoardTable) => Promise<unknown>;
+  onStartClock?: (table: BoardTable, options: ClockStartOptions) => Promise<unknown>;
   // Stops a running clock, then opens its order's payment.
-  onCheckoutClock?: (sessionId: string) => Promise<unknown>;
+  onCheckoutClock?: (sessionId: string, approvalId?: string) => Promise<unknown>;
 }) {
   const { t } = useTranslation();
   const board = useResourceBoard(branchId, true);
@@ -127,6 +127,7 @@ export function TableFloor({
     <TableTile
       table={table}
       offsetMs={offsetMs}
+      readAt={board.data?.server_now ?? null}
       selected={table.id === selectedId}
       style={style}
       onSelect={(row) => {
@@ -280,9 +281,12 @@ export function TableFloor({
             ) : null}
             {canTime && onStartClock ? (
               <TimedPanel
+                branchId={branchId}
                 table={selected}
                 tables={tables}
                 offsetMs={offsetMs}
+                readAt={board.data?.server_now ?? null}
+                outsideHours={board.data?.outside_operating_hours === true}
                 currency={selected.currency ?? 'VND'}
                 locked={locked}
                 onStart={onStartClock}

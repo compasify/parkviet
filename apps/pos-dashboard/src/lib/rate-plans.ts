@@ -29,6 +29,26 @@ export type RatePlan = {
   status: 'active' | 'archived'
   version: number
   rules: RateRule[]
+  // Prepaid packages sold on the plan; older servers send none.
+  packages?: RatePackage[] | null
+}
+
+// A prepaid package of play time: a code, a name, its minutes and its price.
+export type RatePackage = { code: string; name: string; minutes: number; price: string }
+
+// A window of the week in the branch's time zone; 0 is Sunday, "24:00" is
+// midnight and a window ending before it starts runs past midnight.
+export type TimedWindow = { days: number[]; from: string; to: string }
+
+export type TimedPromotion = {
+  id: string
+  name: string
+  kind: 'bonus_after' | 'bonus_with_package'
+  threshold_minutes: number
+  bonus_minutes: number
+  resource_kinds: string[]
+  active_windows: TimedWindow[]
+  status: 'active' | 'archived'
 }
 
 export type SpecialDay = {
@@ -99,6 +119,9 @@ export const RATE_PLAN_REFUSALS = [
   'weekend_days_invalid',
   'module_disabled',
   'time_invalid',
+  'operating_windows_invalid',
+  'timed_settings_invalid',
+  'timed_promotion_invalid',
 ] as const
 
 type T = (key: string, options?: Record<string, unknown>) => string
@@ -108,4 +131,50 @@ export function ratePlanFailure(error: unknown, t: T): string {
   return reason && (RATE_PLAN_REFUSALS as readonly string[]).includes(reason)
     ? t(`ratePlans.failure_${reason}`)
     : describeFailure(error, t)
+}
+
+const CLOCK = /^(?:([01]\d|2[0-3]):([0-5]\d)|24:00)$/
+const PACKAGE_CODE = /^[a-z0-9][a-z0-9_-]{0,31}$/
+
+// Windows as the server takes them, or null while one is unreadable: at
+// least one day, "HH:MM" ends that differ, and no window starting at 24:00.
+export function windowsInput(windows: TimedWindow[]): TimedWindow[] | null {
+  const rows = windows.map((window) => ({
+    days: [...new Set(window.days)].sort((a, b) => a - b),
+    from: window.from.trim(),
+    to: window.to.trim(),
+  }))
+  const valid = rows.every(
+    (row) =>
+      row.days.length > 0 &&
+      row.days.every((day) => Number.isInteger(day) && day >= 0 && day <= 6) &&
+      CLOCK.test(row.from) &&
+      CLOCK.test(row.to) &&
+      row.from !== '24:00' &&
+      row.from !== row.to,
+  )
+  return valid ? rows : null
+}
+
+export type PackageDraft = { code: string; name: string; minutes: string; price: string }
+
+// Packages as the server takes them, or null while one is unreadable or two
+// share a code.
+export function packagesInput(drafts: PackageDraft[]): RatePackage[] | null {
+  const rows = drafts.map((row) => ({
+    code: row.code.trim().toLowerCase(),
+    name: row.name.trim(),
+    minutes: /^\d{1,4}$/.test(row.minutes.trim()) ? Number(row.minutes) : 0,
+    price: row.price.trim(),
+  }))
+  const valid = rows.every(
+    (row) =>
+      PACKAGE_CODE.test(row.code) &&
+      row.name.length > 0 &&
+      row.name.length <= 120 &&
+      row.minutes >= 1 &&
+      row.minutes <= 1440 &&
+      /^\d{1,12}(\.\d{1,2})?$/.test(row.price),
+  )
+  return valid && new Set(rows.map((row) => row.code)).size === rows.length ? rows : null
 }

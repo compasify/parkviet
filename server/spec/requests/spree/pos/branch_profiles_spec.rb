@@ -62,7 +62,7 @@ RSpec.describe 'POS branch profiles', type: :request, pos_modules: :default do
     tracked_product
     data = preview(manager, 'nha_thuoc')['data']
     expect(response).to have_http_status(:ok)
-    expect(data).to include('branch_id' => branch.prefixed_id, 'from' => 'khac', 'to' => 'nha_thuoc', 'profile_version' => 3)
+    expect(data).to include('branch_id' => branch.prefixed_id, 'from' => 'khac', 'to' => 'nha_thuoc', 'profile_version' => 4)
     expect(data['modules']).to eq('enable' => [], 'disable' => ['retail.measured'],
                                   'in_use' => { 'retail.measured' => { 'measured_variants' => 0, 'labelled_variants' => 0, 'label_formats' => 0 } })
     # return_window_days 30 differs from 7, lot_selection cashier_pick from fefo.
@@ -124,7 +124,7 @@ RSpec.describe 'POS branch profiles', type: :request, pos_modules: :default do
     tracked_product
     data = apply(manager, 'nha_thuoc', apply_modules: true, apply_defaults: ['lot_selection'])['data']
     expect(response).to have_http_status(:ok)
-    expect(branch.reload).to have_attributes(profile_key: 'nha_thuoc', profile_version: 3, lot_selection: 'fefo', return_window_days: 30)
+    expect(branch.reload).to have_attributes(profile_key: 'nha_thuoc', profile_version: 4, lot_selection: 'fefo', return_window_days: 30)
     expect(data['modules']).to eq('retail.units' => true, 'retail.measured' => false, 'retail.traceability' => true, 'fnb.menu' => false, 'fnb.recipes' => false, 'fnb.kitchen' => false, 'fnb.order_number' => false, 'fnb.cup_label' => false, 'fnb.delivery_platforms' => false, 'resources' => false, 'fnb.tables' => false, 'fnb.postpay' => false, 'fnb.service_charge' => false,
                                      'fnb.reservations' => false, 'fnb.bottle_keep' => false, 'fnb.pour_tracking' => false, 'fnb.meal_accounts' => false, 'fnb.vehicle_commission' => false, 'timed_billing' => false)
     expect(data['applied']).to eq(

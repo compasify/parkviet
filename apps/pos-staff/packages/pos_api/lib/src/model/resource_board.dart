@@ -16,6 +16,7 @@ part 'resource_board.g.dart';
 /// Properties:
 /// * [branchId]
 /// * [serverNow]
+/// * [outsideOperatingHours] - A clock started now would start outside the branch's operating hours; ask before starting.
 /// * [areas]
 /// * [resources]
 @BuiltValue()
@@ -26,6 +27,10 @@ abstract class ResourceBoard
 
   @BuiltValueField(wireName: r'server_now')
   DateTime get serverNow;
+
+  /// A clock started now would start outside the branch's operating hours; ask before starting.
+  @BuiltValueField(wireName: r'outside_operating_hours')
+  bool get outsideOperatingHours;
 
   @BuiltValueField(wireName: r'areas')
   BuiltList<ResourceBoardArea> get areas;
@@ -67,6 +72,11 @@ class _$ResourceBoardSerializer implements PrimitiveSerializer<ResourceBoard> {
     yield serializers.serialize(
       object.serverNow,
       specifiedType: const FullType(DateTime),
+    );
+    yield r'outside_operating_hours';
+    yield serializers.serialize(
+      object.outsideOperatingHours,
+      specifiedType: const FullType(bool),
     );
     yield r'areas';
     yield serializers.serialize(
@@ -116,6 +126,13 @@ class _$ResourceBoardSerializer implements PrimitiveSerializer<ResourceBoard> {
             specifiedType: const FullType(DateTime),
           ) as DateTime;
           result.serverNow = valueDes;
+          break;
+        case r'outside_operating_hours':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(bool),
+          ) as bool;
+          result.outsideOperatingHours = valueDes;
           break;
         case r'areas':
           final valueDes = serializers.deserialize(

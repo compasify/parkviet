@@ -56,6 +56,7 @@ import { Route as AuthenticatedStoreIdOrdersOrderIdRouteImport } from './routes/
 import { Route as AuthenticatedStoreIdReceivablesIndexRouteImport } from './routes/_authenticated/$storeId/receivables/index'
 import { Route as AuthenticatedStoreIdReceivablesOrdersRouteImport } from './routes/_authenticated/$storeId/receivables/orders'
 import { Route as AuthenticatedStoreIdReportsIndexRouteImport } from './routes/_authenticated/$storeId/reports/index'
+import { Route as AuthenticatedStoreIdReportsAttendantsRouteImport } from './routes/_authenticated/$storeId/reports/attendants'
 import { Route as AuthenticatedStoreIdReportsCashbookRouteImport } from './routes/_authenticated/$storeId/reports/cashbook'
 import { Route as AuthenticatedStoreIdReportsClosuresRouteImport } from './routes/_authenticated/$storeId/reports/closures'
 import { Route as AuthenticatedStoreIdReportsIngredient_usageRouteImport } from './routes/_authenticated/$storeId/reports/ingredient_usage'
@@ -368,6 +369,12 @@ const AuthenticatedStoreIdReportsIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedStoreIdReportsRoute,
   } as any)
+const AuthenticatedStoreIdReportsAttendantsRoute =
+  AuthenticatedStoreIdReportsAttendantsRouteImport.update({
+    id: '/attendants',
+    path: '/attendants',
+    getParentRoute: () => AuthenticatedStoreIdReportsRoute,
+  } as any)
 const AuthenticatedStoreIdReportsCashbookRoute =
   AuthenticatedStoreIdReportsCashbookRouteImport.update({
     id: '/cashbook',
@@ -620,6 +627,7 @@ export interface FileRoutesByFullPath {
   '/$storeId/inventory/$tab': typeof AuthenticatedStoreIdInventoryTabRoute
   '/$storeId/orders/$orderId': typeof AuthenticatedStoreIdOrdersOrderIdRoute
   '/$storeId/receivables/orders': typeof AuthenticatedStoreIdReceivablesOrdersRoute
+  '/$storeId/reports/attendants': typeof AuthenticatedStoreIdReportsAttendantsRoute
   '/$storeId/reports/cashbook': typeof AuthenticatedStoreIdReportsCashbookRoute
   '/$storeId/reports/closures': typeof AuthenticatedStoreIdReportsClosuresRoute
   '/$storeId/reports/ingredient_usage': typeof AuthenticatedStoreIdReportsIngredient_usageRoute
@@ -693,6 +701,7 @@ export interface FileRoutesByTo {
   '/$storeId/inventory/$tab': typeof AuthenticatedStoreIdInventoryTabRoute
   '/$storeId/orders/$orderId': typeof AuthenticatedStoreIdOrdersOrderIdRoute
   '/$storeId/receivables/orders': typeof AuthenticatedStoreIdReceivablesOrdersRoute
+  '/$storeId/reports/attendants': typeof AuthenticatedStoreIdReportsAttendantsRoute
   '/$storeId/reports/cashbook': typeof AuthenticatedStoreIdReportsCashbookRoute
   '/$storeId/reports/closures': typeof AuthenticatedStoreIdReportsClosuresRoute
   '/$storeId/reports/ingredient_usage': typeof AuthenticatedStoreIdReportsIngredient_usageRoute
@@ -777,6 +786,7 @@ export interface FileRoutesById {
   '/_authenticated/$storeId/inventory/$tab': typeof AuthenticatedStoreIdInventoryTabRoute
   '/_authenticated/$storeId/orders/$orderId': typeof AuthenticatedStoreIdOrdersOrderIdRoute
   '/_authenticated/$storeId/receivables/orders': typeof AuthenticatedStoreIdReceivablesOrdersRoute
+  '/_authenticated/$storeId/reports/attendants': typeof AuthenticatedStoreIdReportsAttendantsRoute
   '/_authenticated/$storeId/reports/cashbook': typeof AuthenticatedStoreIdReportsCashbookRoute
   '/_authenticated/$storeId/reports/closures': typeof AuthenticatedStoreIdReportsClosuresRoute
   '/_authenticated/$storeId/reports/ingredient_usage': typeof AuthenticatedStoreIdReportsIngredient_usageRoute
@@ -862,6 +872,7 @@ export interface FileRouteTypes {
     | '/$storeId/inventory/$tab'
     | '/$storeId/orders/$orderId'
     | '/$storeId/receivables/orders'
+    | '/$storeId/reports/attendants'
     | '/$storeId/reports/cashbook'
     | '/$storeId/reports/closures'
     | '/$storeId/reports/ingredient_usage'
@@ -935,6 +946,7 @@ export interface FileRouteTypes {
     | '/$storeId/inventory/$tab'
     | '/$storeId/orders/$orderId'
     | '/$storeId/receivables/orders'
+    | '/$storeId/reports/attendants'
     | '/$storeId/reports/cashbook'
     | '/$storeId/reports/closures'
     | '/$storeId/reports/ingredient_usage'
@@ -1018,6 +1030,7 @@ export interface FileRouteTypes {
     | '/_authenticated/$storeId/inventory/$tab'
     | '/_authenticated/$storeId/orders/$orderId'
     | '/_authenticated/$storeId/receivables/orders'
+    | '/_authenticated/$storeId/reports/attendants'
     | '/_authenticated/$storeId/reports/cashbook'
     | '/_authenticated/$storeId/reports/closures'
     | '/_authenticated/$storeId/reports/ingredient_usage'
@@ -1396,6 +1409,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/$storeId/reports/'
       preLoaderRoute: typeof AuthenticatedStoreIdReportsIndexRouteImport
+      parentRoute: typeof AuthenticatedStoreIdReportsRoute
+    }
+    '/_authenticated/$storeId/reports/attendants': {
+      id: '/_authenticated/$storeId/reports/attendants'
+      path: '/attendants'
+      fullPath: '/$storeId/reports/attendants'
+      preLoaderRoute: typeof AuthenticatedStoreIdReportsAttendantsRouteImport
       parentRoute: typeof AuthenticatedStoreIdReportsRoute
     }
     '/_authenticated/$storeId/reports/cashbook': {
@@ -1789,6 +1809,7 @@ const AuthenticatedStoreIdReceivablesRouteWithChildren =
   )
 
 interface AuthenticatedStoreIdReportsRouteChildren {
+  AuthenticatedStoreIdReportsAttendantsRoute: typeof AuthenticatedStoreIdReportsAttendantsRoute
   AuthenticatedStoreIdReportsCashbookRoute: typeof AuthenticatedStoreIdReportsCashbookRoute
   AuthenticatedStoreIdReportsClosuresRoute: typeof AuthenticatedStoreIdReportsClosuresRoute
   AuthenticatedStoreIdReportsIngredient_usageRoute: typeof AuthenticatedStoreIdReportsIngredient_usageRoute
@@ -1804,6 +1825,8 @@ interface AuthenticatedStoreIdReportsRouteChildren {
 
 const AuthenticatedStoreIdReportsRouteChildren: AuthenticatedStoreIdReportsRouteChildren =
   {
+    AuthenticatedStoreIdReportsAttendantsRoute:
+      AuthenticatedStoreIdReportsAttendantsRoute,
     AuthenticatedStoreIdReportsCashbookRoute:
       AuthenticatedStoreIdReportsCashbookRoute,
     AuthenticatedStoreIdReportsClosuresRoute:

@@ -2083,6 +2083,84 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Giờ của phòng này đã dừng.'**
   String get waiterClockAlreadyStopped;
+
+  /// No description provided for @waiterClockPause.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tạm dừng giờ'**
+  String get waiterClockPause;
+
+  /// No description provided for @waiterClockResume.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tính giờ tiếp'**
+  String get waiterClockResume;
+
+  /// No description provided for @waiterClockPaused.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang tạm dừng'**
+  String get waiterClockPaused;
+
+  /// No description provided for @waiterClockAlreadyPaused.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giờ của phòng này đang tạm dừng.'**
+  String get waiterClockAlreadyPaused;
+
+  /// No description provided for @waiterClockNotPaused.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giờ của phòng này không tạm dừng.'**
+  String get waiterClockNotPaused;
+
+  /// No description provided for @waiterClockLongPause.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tạm dừng quá lâu: cần quản lý duyệt tại quầy để tính giờ tiếp.'**
+  String get waiterClockLongPause;
+
+  /// No description provided for @waiterClockPackageLeft.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gói còn {minutes} phút'**
+  String waiterClockPackageLeft(int minutes);
+
+  /// No description provided for @waiterServeRoom.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tôi phục vụ phòng này'**
+  String get waiterServeRoom;
+
+  /// No description provided for @waiterServingRoom.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã nhận phục vụ {room}.'**
+  String waiterServingRoom(String room);
+
+  /// No description provided for @waiterAttendantBusy.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đang phục vụ một phòng khác.'**
+  String get waiterAttendantBusy;
+
+  /// No description provided for @waiterAlertEndingSoon.
+  ///
+  /// In vi, this message translates to:
+  /// **'{room} còn 10 phút'**
+  String waiterAlertEndingSoon(String room);
+
+  /// No description provided for @waiterAlertEndedPackage.
+  ///
+  /// In vi, this message translates to:
+  /// **'{room} đã hết gói giờ'**
+  String waiterAlertEndedPackage(String room);
+
+  /// No description provided for @waiterAlertPauseTooLong.
+  ///
+  /// In vi, this message translates to:
+  /// **'{room} tạm dừng quá lâu'**
+  String waiterAlertPauseTooLong(String room);
 }
 
 class _AppLocalizationsDelegate

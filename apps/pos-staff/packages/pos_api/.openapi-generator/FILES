@@ -20,6 +20,11 @@ lib/src/model/area.dart
 lib/src/model/area_input.dart
 lib/src/model/area_list.dart
 lib/src/model/area_result.dart
+lib/src/model/attendant_assignment.dart
+lib/src/model/attendant_assignment_list.dart
+lib/src/model/attendant_assignment_result.dart
+lib/src/model/attendant_assignment_start_input.dart
+lib/src/model/attendant_staff.dart
 lib/src/model/available_resource.dart
 lib/src/model/bottle_keep.dart
 lib/src/model/bottle_keep_actor.dart
@@ -342,11 +347,14 @@ lib/src/model/table_split_orders.dart
 lib/src/model/table_split_result.dart
 lib/src/model/table_tax_category.dart
 lib/src/model/tax_row.dart
+lib/src/model/timed_minutes_card.dart
+lib/src/model/timed_package.dart
 lib/src/model/timed_quote.dart
 lib/src/model/timed_quote_line.dart
 lib/src/model/timed_segment.dart
 lib/src/model/timed_segment_edit_input.dart
 lib/src/model/timed_session.dart
+lib/src/model/timed_session_approval_input.dart
 lib/src/model/timed_session_command.dart
 lib/src/model/timed_session_command_result.dart
 lib/src/model/timed_session_move_input.dart

@@ -20,6 +20,10 @@ module Spree
       # names or line contents into an event.
       REF_KEY = /\A[a-z][a-z_]*_id\z/
       REF_VALUE = /\A[a-z]+_[A-Za-z0-9]{1,40}\z/
+      # Named alerts a `resource.updated` may carry, so devices can tell the
+      # staff without reading anything else first: a clock's planned end or
+      # package is near or over, or a pause has run too long.
+      ALERTS = %w[ending_soon ended_package pause_too_long].freeze
 
       class << self
         def stream_name(branch)
@@ -28,7 +32,7 @@ module Spree
 
         # @param branch [Spree::Pos::Branch]
         # @param event [String] one of EVENTS; anything else raises
-        # @param payload [Hash] :id (required), and optionally :revision, :lease_generation and :refs. Other keys are dropped.
+        # @param payload [Hash] :id (required), and optionally :revision, :lease_generation, :refs and :alert (one of ALERTS). Other keys are dropped.
         def publish(branch, event, payload = {})
           raise ArgumentError, "Unknown realtime event: #{event}" unless EVENTS.include?(event)
           raise ArgumentError, "Realtime event #{event} needs an id" if payload.to_h.symbolize_keys[:id].blank?
@@ -79,6 +83,7 @@ module Spree
             revision: fields[:revision],
             lease_generation: fields[:lease_generation],
             at: Time.current.iso8601(3),
+            alert: ALERTS.include?(fields[:alert].to_s) ? fields[:alert].to_s : nil,
             refs: references(fields[:refs])
           }.compact
         end

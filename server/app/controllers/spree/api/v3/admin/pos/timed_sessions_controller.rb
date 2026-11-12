@@ -5,9 +5,10 @@ module Spree
     module V3
       module Admin
         module Pos
-          # Clocks of karaoke rooms and billiard tables: start on a room,
-          # stop, move to another room, correct a stretch's times (with an
-          # approval) and read the running quote. Every time is the server's.
+          # Clocks of karaoke rooms and billiard tables: start on a room (with a
+          # prepaid package or a minutes card), pause and resume, stop, move to
+          # another room, correct a stretch's times (with an approval) and read
+          # the running quote. Every time is the server's.
           class TimedSessionsController < BaseController
             scoped_resource :pos_orders
             pos_permissions show: %w[read_pos_orders write_pos_orders], quote: %w[read_pos_orders write_pos_orders]
@@ -17,7 +18,8 @@ module Spree
                 Spree::Pos::Timed::Start.call(store: current_store, staff: current_user, key: key, editor_id: params[:editor_id],
                                               branch_id: params[:branch_id], resource_id: params[:resource_id],
                                               workspace_id: params[:workspace_id], guest_count: params[:guest_count],
-                                              planned_end_at: params[:planned_end_at], device: @pos_device)
+                                              planned_end_at: params[:planned_end_at], package_code: params[:package_code],
+                                              card_token: params[:card_token], device: @pos_device)
               end
             end
 
@@ -35,7 +37,26 @@ module Spree
             end
 
             def stop
-              command { |key| Spree::Pos::Timed::Stop.call(session: session!, staff: current_user, key: key) }
+              command do |key|
+                Spree::Pos::Timed::Stop.call(session: session!, staff: current_user, key: key, approval_id: params[:approval_id])
+              end
+            end
+
+            def pause
+              command { |key| Spree::Pos::Timed::Pause.call(session: session!, staff: current_user, key: key) }
+            end
+
+            def resume
+              command do |key|
+                Spree::Pos::Timed::Resume.call(session: session!, staff: current_user, key: key, approval_id: params[:approval_id])
+              end
+            end
+
+            # Puts a minutes card read at the counter on the clock; it pays when the clock stops.
+            def minutes_card
+              command do |key|
+                Spree::Pos::Timed::ApplyMinutesCard.call(session: session!, staff: current_user, key: key, card_token: params[:card_token])
+              end
             end
 
             def move

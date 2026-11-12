@@ -18,6 +18,7 @@ part 'realtime_event.g.dart';
 /// * [revision]
 /// * [leaseGeneration]
 /// * [at]
+/// * [alert] - Only on `resource.updated`, sent once per deadline: a clock is ten minutes from its planned end, a package's minutes are played, or a pause ran longer than the branch allows.
 /// * [refs]
 @BuiltValue()
 abstract class RealtimeEvent
@@ -40,6 +41,11 @@ abstract class RealtimeEvent
 
   @BuiltValueField(wireName: r'at')
   DateTime get at;
+
+  /// Only on `resource.updated`, sent once per deadline: a clock is ten minutes from its planned end, a package's minutes are played, or a pause ran longer than the branch allows.
+  @BuiltValueField(wireName: r'alert')
+  RealtimeEventAlertEnum? get alert;
+  // enum alertEnum {  ending_soon,  ended_package,  pause_too_long,  };
 
   @BuiltValueField(wireName: r'refs')
   BuiltMap<String, String> get refs;
@@ -103,6 +109,13 @@ class _$RealtimeEventSerializer implements PrimitiveSerializer<RealtimeEvent> {
       object.at,
       specifiedType: const FullType(DateTime),
     );
+    if (object.alert != null) {
+      yield r'alert';
+      yield serializers.serialize(
+        object.alert,
+        specifiedType: const FullType(RealtimeEventAlertEnum),
+      );
+    }
     yield r'refs';
     yield serializers.serialize(
       object.refs,
@@ -178,6 +191,14 @@ class _$RealtimeEventSerializer implements PrimitiveSerializer<RealtimeEvent> {
           ) as DateTime;
           result.at = valueDes;
           break;
+        case r'alert':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(RealtimeEventAlertEnum),
+          ) as RealtimeEventAlertEnum?;
+          if (valueDes == null) continue;
+          result.alert = valueDes;
+          break;
         case r'refs':
           final valueDes = serializers.deserialize(
             value,
@@ -247,4 +268,27 @@ class RealtimeEventEventEnum extends EnumClass {
       _$realtimeEventEventEnumValues;
   static RealtimeEventEventEnum valueOf(String name) =>
       _$realtimeEventEventEnumValueOf(name);
+}
+
+/// Only on `resource.updated`, sent once per deadline: a clock is ten minutes from its planned end, a package's minutes are played, or a pause ran longer than the branch allows.
+class RealtimeEventAlertEnum extends EnumClass {
+  @BuiltValueEnumConst(wireName: r'ending_soon')
+  static const RealtimeEventAlertEnum endingSoon =
+      _$realtimeEventAlertEnum_endingSoon;
+  @BuiltValueEnumConst(wireName: r'ended_package')
+  static const RealtimeEventAlertEnum endedPackage =
+      _$realtimeEventAlertEnum_endedPackage;
+  @BuiltValueEnumConst(wireName: r'pause_too_long')
+  static const RealtimeEventAlertEnum pauseTooLong =
+      _$realtimeEventAlertEnum_pauseTooLong;
+
+  static Serializer<RealtimeEventAlertEnum> get serializer =>
+      _$realtimeEventAlertEnumSerializer;
+
+  const RealtimeEventAlertEnum._(String name) : super(name);
+
+  static BuiltSet<RealtimeEventAlertEnum> get values =>
+      _$realtimeEventAlertEnumValues;
+  static RealtimeEventAlertEnum valueOf(String name) =>
+      _$realtimeEventAlertEnumValueOf(name);
 }

@@ -16,10 +16,13 @@ import {
 import { usePosSession } from '../hooks/use-pos-session'
 import {
   type RatePlanInput,
+  type TimedPromotionInput,
   useRatePlans,
   useRatePlanWrite,
   useRatePreview,
   useSpecialDays,
+  useTimedPromotions,
+  useTimedPromotionWrite,
 } from '../hooks/use-rate-plans'
 import { canManageRatePlans } from '../lib/pos-access'
 import {
@@ -28,8 +31,13 @@ import {
   DAY_TYPES,
   type DayType,
   minutesToClock,
+  type PackageDraft,
+  packagesInput,
   type RatePlan,
   ratePlanFailure,
+  type TimedPromotion,
+  type TimedWindow,
+  windowsInput,
 } from '../lib/rate-plans'
 
 type Notice = { text: string; failed: boolean } | null
@@ -50,6 +58,7 @@ type PlanDraft = {
   grace: string
   minimum: string
   rules: RuleDraft[]
+  packages: Array<PackageDraft & { key: string }>
 }
 
 // Monday to Sunday; the server numbers Sunday 0.
@@ -74,6 +83,7 @@ function draftOf(plan: RatePlan | null): PlanDraft {
         { key: ruleKey(), day_type: 'weekday', start: '00:00', end: '24:00', price: '', label: '' },
         { key: ruleKey(), day_type: 'weekend', start: '00:00', end: '24:00', price: '', label: '' },
       ],
+      packages: [],
     }
   return {
     name: plan.name,
@@ -91,6 +101,13 @@ function draftOf(plan: RatePlan | null): PlanDraft {
       price: String(Number(rule.price_per_hour)),
       label: rule.label ?? '',
     })),
+    packages: (plan.packages ?? []).map((row) => ({
+      key: ruleKey(),
+      code: row.code,
+      name: row.name,
+      minutes: String(row.minutes),
+      price: String(Number(row.price)),
+    })),
   }
 }
 
@@ -104,6 +121,8 @@ function inputOf(draft: PlanDraft): RatePlanInput | null {
   const minimum = wholeMinutes(draft.minimum)
   if (!draft.name.trim() || !draft.resourceType.trim() || !draft.variantId) return null
   if (block === null || block < 1 || grace === null || minimum === null) return null
+  const packages = packagesInput(draft.packages)
+  if (!packages) return null
   const rules = draft.rules.map((rule) => ({
     day_type: rule.day_type,
     start_minute: clockToMinutes(rule.start),
@@ -130,6 +149,7 @@ function inputOf(draft: PlanDraft): RatePlanInput | null {
       end_minute: rule.end_minute ?? 1440,
       price_per_hour: rule.price_per_hour ?? '0',
     })),
+    packages,
   }
 }
 
@@ -218,6 +238,18 @@ export function BranchRatePlansTab() {
         />
       ) : null}
       <HolidaysCard write={write} />
+      {plans.data ? (
+        <TimedSettingsCard
+          key={JSON.stringify([
+            plans.data.meta.operating_windows,
+            plans.data.meta.max_pause_minutes,
+          ])}
+          windows={plans.data.meta.operating_windows ?? []}
+          maxPause={plans.data.meta.max_pause_minutes ?? 15}
+          write={write}
+        />
+      ) : null}
+      <PromotionsCard write={write} />
       {active.length > 0 ? <PreviewCard plans={active} /> : null}
     </div>
   )
@@ -234,6 +266,8 @@ function PlanEditor({ plan, onDone }: { plan: RatePlan | null; onDone: () => voi
   const set = (patch: Partial<PlanDraft>) => setDraft((current) => ({ ...current, ...patch }))
   const setRule = (key: string, patch: Partial<RuleDraft>) =>
     set({ rules: draft.rules.map((rule) => (rule.key === key ? { ...rule, ...patch } : rule)) })
+  const setPackage = (key: string, patch: Partial<PackageDraft>) =>
+    set({ packages: draft.packages.map((row) => (row.key === key ? { ...row, ...patch } : row)) })
 
   async function save(event: FormEvent) {
     event.preventDefault()
@@ -375,6 +409,64 @@ function PlanEditor({ plan, onDone }: { plan: RatePlan | null; onDone: () => voi
             })}
           </p>
         ) : null}
+      </fieldset>
+      <fieldset className="space-y-3">
+        <legend className="font-medium">{t('ratePlans.packages')}</legend>
+        <p className="text-sm text-muted-foreground">{t('ratePlans.packagesHint')}</p>
+        {draft.packages.map((row, index) => (
+          <div
+            key={row.key}
+            className="grid items-end gap-2 sm:grid-cols-5"
+            data-testid="rate-package"
+          >
+            <Field
+              label={t('ratePlans.packageCode')}
+              value={row.code}
+              onChange={(code) => setPackage(row.key, { code })}
+            />
+            <Field
+              label={t('ratePlans.packageName')}
+              value={row.name}
+              onChange={(name) => setPackage(row.key, { name })}
+            />
+            <Field
+              label={t('ratePlans.packageMinutes')}
+              value={row.minutes}
+              numeric
+              onChange={(minutes) => setPackage(row.key, { minutes })}
+            />
+            <Field
+              label={t('ratePlans.packagePrice')}
+              value={row.price}
+              numeric
+              onChange={(value) => setPackage(row.key, { price: value })}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              aria-label={t('ratePlans.removePackage', { index: index + 1 })}
+              onClick={() =>
+                set({ packages: draft.packages.filter((item) => item.key !== row.key) })
+              }
+            >
+              {t('ratePlans.remove')}
+            </Button>
+          </div>
+        ))}
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() =>
+            set({
+              packages: [
+                ...draft.packages,
+                { key: ruleKey(), code: '', name: '', minutes: '120', price: '' },
+              ],
+            })
+          }
+        >
+          {t('ratePlans.addPackage')}
+        </Button>
       </fieldset>
       <div className="flex flex-wrap gap-2">
         <Button type="submit" disabled={!input || problems.length > 0 || mutation.isPending}>
@@ -575,6 +667,351 @@ function HolidaysCard({ write }: { write: boolean }) {
           />
           <Button type="submit" disabled={!ready || mutation.isPending}>
             {t('ratePlans.addHoliday')}
+          </Button>
+        </form>
+      ) : null}
+    </ModelCard>
+  )
+}
+
+type WindowDraft = TimedWindow & { key: string }
+const windowDrafts = (windows: TimedWindow[]): WindowDraft[] =>
+  windows.map((window) => ({ ...window, key: ruleKey() }))
+
+// Windows of the week: the days each covers and its hours.
+function WindowsEditor({
+  label,
+  windows,
+  disabled,
+  onChange,
+}: {
+  label: string
+  windows: WindowDraft[]
+  disabled: boolean
+  onChange: (windows: WindowDraft[]) => void
+}) {
+  const { t } = useTranslation()
+  const setWindow = (key: string, patch: Partial<TimedWindow>) =>
+    onChange(windows.map((row) => (row.key === key ? { ...row, ...patch } : row)))
+  return (
+    <fieldset className="space-y-3">
+      <legend className="font-medium">{label}</legend>
+      {windows.map((window, index) => (
+        <div
+          key={window.key}
+          className="space-y-2 rounded-md border p-3"
+          data-testid="timed-window"
+        >
+          <div className="flex flex-wrap gap-4">
+            {WEEK_DAYS.map((day) => (
+              <ModelCheck
+                key={day}
+                checked={window.days.includes(day)}
+                disabled={disabled}
+                onChange={(on) =>
+                  setWindow(window.key, {
+                    days: on ? [...window.days, day] : window.days.filter((row) => row !== day),
+                  })
+                }
+              >
+                {t(`ratePlans.weekDay_${day}`)}
+              </ModelCheck>
+            ))}
+          </div>
+          <div className="grid items-end gap-2 sm:grid-cols-3">
+            <Field
+              label={t('ratePlans.from')}
+              value={window.from}
+              onChange={(from) => setWindow(window.key, { from })}
+            />
+            <Field
+              label={t('ratePlans.to')}
+              value={window.to}
+              onChange={(to) => setWindow(window.key, { to })}
+            />
+            {disabled ? null : (
+              <Button
+                type="button"
+                variant="outline"
+                aria-label={t('ratePlans.removeWindow', { index: index + 1 })}
+                onClick={() => onChange(windows.filter((row) => row.key !== window.key))}
+              >
+                {t('ratePlans.remove')}
+              </Button>
+            )}
+          </div>
+        </div>
+      ))}
+      {disabled ? null : (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() =>
+            onChange([
+              ...windows,
+              { key: ruleKey(), days: [0, 1, 2, 3, 4, 5, 6], from: '08:00', to: '24:00' },
+            ])
+          }
+        >
+          {t('ratePlans.addWindow')}
+        </Button>
+      )}
+    </fieldset>
+  )
+}
+
+// When the branch opens play time (a clock started outside only warns the
+// cashier) and how long a clock may stay paused before resuming it needs
+// a manager's approval.
+function TimedSettingsCard({
+  windows,
+  maxPause,
+  write,
+}: {
+  windows: TimedWindow[]
+  maxPause: number
+  write: boolean
+}) {
+  const { t } = useTranslation()
+  const { branch } = useBranchScope()
+  const mutation = useRatePlanWrite(branch.id)
+  const [drafts, setDrafts] = useState(() => windowDrafts(windows))
+  const [pause, setPause] = useState(String(maxPause))
+  const [notice, setNotice] = useState<Notice>(null)
+  const input = windowsInput(drafts)
+  const pauseMinutes = wholeMinutes(pause)
+  const ready = input !== null && pauseMinutes !== null && pauseMinutes >= 1 && pauseMinutes <= 240
+
+  async function save(event: FormEvent) {
+    event.preventDefault()
+    if (!ready || !input || pauseMinutes === null || mutation.isPending) return
+    setNotice(null)
+    try {
+      await mutation.mutateAsync({
+        kind: 'timed_settings',
+        windows: input,
+        maxPauseMinutes: pauseMinutes,
+      })
+      setNotice({ text: t('saved'), failed: false })
+    } catch (failure) {
+      setNotice({ text: ratePlanFailure(failure, t), failed: true })
+    }
+  }
+
+  return (
+    <ModelCard title={t('ratePlans.timedSettings')} id="branch-timed-settings">
+      <p className="text-sm text-muted-foreground">{t('ratePlans.timedSettingsIntro')}</p>
+      <ModelNotice notice={notice} />
+      <form className="space-y-4" onSubmit={(event) => void save(event)}>
+        <WindowsEditor
+          label={t('ratePlans.operatingWindows')}
+          windows={drafts}
+          disabled={!write}
+          onChange={setDrafts}
+        />
+        {drafts.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{t('ratePlans.alwaysOpen')}</p>
+        ) : null}
+        <Field
+          label={t('ratePlans.maxPause')}
+          hint={t('ratePlans.maxPauseHint')}
+          value={pause}
+          numeric
+          onChange={setPause}
+        />
+        {write ? (
+          <Button type="submit" disabled={!ready || mutation.isPending}>
+            {t('ratePlans.save')}
+          </Button>
+        ) : null}
+      </form>
+    </ModelCard>
+  )
+}
+
+type PromotionDraft = {
+  name: string
+  kind: TimedPromotion['kind']
+  threshold: string
+  bonus: string
+  kinds: string
+  windows: WindowDraft[]
+}
+
+const emptyPromotion = (): PromotionDraft => ({
+  name: '',
+  kind: 'bonus_after',
+  threshold: '120',
+  bonus: '15',
+  kinds: '',
+  windows: [],
+})
+
+// The promotion as the server takes it, or null while a field is unreadable.
+function promotionInput(draft: PromotionDraft): TimedPromotionInput | null {
+  const threshold = wholeMinutes(draft.threshold)
+  const bonus = wholeMinutes(draft.bonus)
+  const windows = windowsInput(draft.windows)
+  if (!draft.name.trim() || threshold === null || bonus === null || bonus < 1 || !windows)
+    return null
+  return {
+    name: draft.name.trim(),
+    kind: draft.kind,
+    threshold_minutes: threshold,
+    bonus_minutes: bonus,
+    resource_kinds: draft.kinds
+      .split(',')
+      .map((code) => code.trim())
+      .filter(Boolean),
+    active_windows: windows,
+  }
+}
+
+// "Khuyến mãi giờ": free minutes after playing long enough or with a
+// package, shown on the bill as a band at no charge. Golden hours are the
+// cheaper, labelled bands of the rate plans above.
+function PromotionsCard({ write }: { write: boolean }) {
+  const { t } = useTranslation()
+  const { branch } = useBranchScope()
+  const promotions = useTimedPromotions(branch.id)
+  const mutation = useTimedPromotionWrite(branch.id)
+  const confirm = useConfirm()
+  const [draft, setDraft] = useState<PromotionDraft>(emptyPromotion)
+  const [notice, setNotice] = useState<Notice>(null)
+  const input = promotionInput(draft)
+  const set = (patch: Partial<PromotionDraft>) => setDraft((current) => ({ ...current, ...patch }))
+
+  async function add(event: FormEvent) {
+    event.preventDefault()
+    if (!input || mutation.isPending) return
+    setNotice(null)
+    try {
+      await mutation.mutateAsync({ input })
+      setDraft(emptyPromotion())
+      setNotice({ text: t('saved'), failed: false })
+    } catch (failure) {
+      setNotice({ text: ratePlanFailure(failure, t), failed: true })
+    }
+  }
+
+  async function archive(promotion: TimedPromotion) {
+    const ok = await confirm({
+      message: t('ratePlans.promotionArchiveConfirm', { name: promotion.name }),
+      variant: 'destructive',
+      confirmLabel: t('ratePlans.archive'),
+      cancelLabel: t('adminCancel'),
+    })
+    if (!ok) return
+    try {
+      await mutation.mutateAsync({ id: promotion.id, input: { status: 'archived' } })
+    } catch (failure) {
+      setNotice({ text: ratePlanFailure(failure, t), failed: true })
+    }
+  }
+
+  return (
+    <ModelCard title={t('ratePlans.promotions')} id="branch-timed-promotions">
+      <p className="text-sm text-muted-foreground">{t('ratePlans.promotionsIntro')}</p>
+      <ModelNotice notice={notice} />
+      {promotions.isError ? (
+        <ModelState
+          title={describeFailure(promotions.error, t)}
+          error
+          retry={() => void promotions.refetch()}
+        />
+      ) : !promotions.data ? (
+        <ModelState title={t('waiting')} />
+      ) : (
+        <ul className="divide-y rounded-lg border" aria-label={t('ratePlans.promotions')}>
+          {promotions.data.length === 0 ? (
+            <li className="p-3 text-sm">{t('ratePlans.promotionsEmpty')}</li>
+          ) : null}
+          {promotions.data.map((promotion) => (
+            <li
+              key={promotion.id}
+              className="flex flex-wrap items-center gap-3 p-3"
+              data-testid={`timed-promotion-${promotion.id}`}
+            >
+              <span className="min-w-0 flex-1">
+                {promotion.name} ·{' '}
+                {t(`ratePlans.promotion_${promotion.kind}`, {
+                  threshold: promotion.threshold_minutes,
+                  bonus: promotion.bonus_minutes,
+                })}
+                {promotion.resource_kinds.length > 0
+                  ? ` · ${promotion.resource_kinds.join(', ')}`
+                  : ''}
+                {promotion.active_windows.length > 0
+                  ? ` · ${promotion.active_windows
+                      .map(
+                        (window) =>
+                          `${window.days.map((day) => t(`ratePlans.weekDay_${day}`)).join(', ')} ${window.from}–${window.to}`,
+                      )
+                      .join('; ')}`
+                  : ''}
+              </span>
+              <Badge variant={promotion.status === 'active' ? 'default' : 'secondary'}>
+                {t(`ratePlans.status_${promotion.status}`)}
+              </Badge>
+              {write && promotion.status === 'active' ? (
+                <Button variant="outline" onClick={() => void archive(promotion)}>
+                  {t('ratePlans.archive')}
+                </Button>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      )}
+      {write ? (
+        <form
+          className="space-y-3 rounded-lg border p-4"
+          aria-label={t('ratePlans.promotionAdd')}
+          onSubmit={(event) => void add(event)}
+        >
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field
+              label={t('ratePlans.name')}
+              value={draft.name}
+              onChange={(name) => set({ name })}
+            />
+            <ModelSelect
+              label={t('ratePlans.promotionKind')}
+              value={draft.kind}
+              options={(['bonus_after', 'bonus_with_package'] as const).map((value) => ({
+                value,
+                label: t(`ratePlans.promotionKind_${value}`),
+              }))}
+              onChange={(value) => set({ kind: value as TimedPromotion['kind'] })}
+            />
+            <Field
+              label={t('ratePlans.promotionThreshold')}
+              hint={t('ratePlans.promotionThresholdHint')}
+              value={draft.threshold}
+              numeric
+              onChange={(threshold) => set({ threshold })}
+            />
+            <Field
+              label={t('ratePlans.promotionBonus')}
+              value={draft.bonus}
+              numeric
+              onChange={(bonus) => set({ bonus })}
+            />
+            <Field
+              label={t('ratePlans.promotionKinds')}
+              hint={t('ratePlans.promotionKindsHint')}
+              value={draft.kinds}
+              onChange={(kinds) => set({ kinds })}
+            />
+          </div>
+          <WindowsEditor
+            label={t('ratePlans.promotionWindows')}
+            windows={draft.windows}
+            disabled={false}
+            onChange={(windows) => set({ windows })}
+          />
+          <p className="text-sm text-muted-foreground">{t('ratePlans.promotionWindowsHint')}</p>
+          <Button type="submit" disabled={!input || mutation.isPending}>
+            {t('ratePlans.promotionAdd')}
           </Button>
         </form>
       ) : null}

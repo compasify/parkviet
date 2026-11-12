@@ -95,8 +95,14 @@ module Spree
           notes = ["#{str(timed['resource'])} · #{clock.call(timed['started_at'])}–#{clock.call(timed['stopped_at'])}"]
           rows(timed['bands']).each do |band|
             label = str(band['label'])
-            notes << ["#{clock.call(band['starts_at'])}–#{clock.call(band['ends_at'])}", label,
-                      "#{band['minutes']} phút × #{money(str(band['price_per_hour']), currency)}/giờ"].compact.join(' · ')
+            span = "#{clock.call(band['starts_at'])}–#{clock.call(band['ends_at'])}"
+            notes << case str(band['kind'])
+                     # A prepaid package, a minutes card and free minutes print their minutes and amount.
+                     when 'package' then [span, t('receiptTimedPackage'), label, "#{band['minutes']} phút", money(str(band['amount']), currency)]
+                     when 'card' then [span, t('receiptTimedCard'), "#{band['minutes']} phút", money(str(band['amount']), currency)]
+                     when 'bonus' then [span, t('receiptTimedBonus'), "#{band['minutes']} phút"]
+                     else [span, label, "#{band['minutes']} phút × #{money(str(band['price_per_hour']), currency)}/giờ"]
+                     end.compact.join(' · ')
           end
           notes
         end

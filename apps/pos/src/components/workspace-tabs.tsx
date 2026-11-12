@@ -1032,15 +1032,20 @@ export function WorkspaceTabs() {
           }}
           onSelectOrder={selectOrder}
           canTime={canRunClock(data)}
-          onStartClock={async (table) => {
-            const started = await workspaces.startClock(table.id, table.orders.length === 0);
+          onStartClock={async (table, options) => {
+            const started = await workspaces.startClock(
+              table.id,
+              table.orders.length === 0,
+              options,
+            );
             selectOrder(started.id);
           }}
-          onCheckoutClock={async (sessionId) => {
+          onCheckoutClock={async (sessionId, approvalId) => {
             // The clock stops first, so the payment takes the billed time.
             const stopped = await workspaces.clockCommand(
               'POST',
               `/pos/timed_sessions/${sessionId}/stop`,
+              approvalId ? { approval_id: approvalId } : {},
             );
             selectOrder(stopped.id);
           }}
@@ -1742,6 +1747,7 @@ export function WorkspaceTabs() {
                   <PaymentPanel
                     workspace={active}
                     mealSponsorAmount={meal?.plan?.sponsor_amount ?? null}
+                    storedValueCards={data?.modules?.timed_billing === true}
                     staffId={staffId}
                     storeId={storeId}
                     canCollect={Boolean(data?.capabilities.includes('pos.payment.collect'))}

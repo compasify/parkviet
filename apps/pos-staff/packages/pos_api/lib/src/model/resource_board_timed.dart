@@ -12,6 +12,11 @@ part 'resource_board_timed.g.dart';
 /// ResourceBoardTimed
 ///
 /// Properties:
+/// * [pausedAt] - Server time the clock was paused; null unless paused.
+/// * [prepaidMinutes] - The minutes of the package the clock was sold with.
+/// * [playedSeconds] - Seconds played up to `server_now`, pauses not counted; null once stopped.
+/// * [packageEnded] - A package clock still runs past its prepaid minutes.
+/// * [pauseTooLong] - Paused longer than the branch's `max_pause_minutes`; resuming needs `pos.timed.edit` or an approval.
 /// * [id]
 /// * [workspaceId]
 /// * [status]
@@ -24,6 +29,26 @@ part 'resource_board_timed.g.dart';
 @BuiltValue()
 abstract class ResourceBoardTimed
     implements Built<ResourceBoardTimed, ResourceBoardTimedBuilder> {
+  /// Server time the clock was paused; null unless paused.
+  @BuiltValueField(wireName: r'paused_at')
+  DateTime? get pausedAt;
+
+  /// The minutes of the package the clock was sold with.
+  @BuiltValueField(wireName: r'prepaid_minutes')
+  int? get prepaidMinutes;
+
+  /// Seconds played up to `server_now`, pauses not counted; null once stopped.
+  @BuiltValueField(wireName: r'played_seconds')
+  int? get playedSeconds;
+
+  /// A package clock still runs past its prepaid minutes.
+  @BuiltValueField(wireName: r'package_ended')
+  bool get packageEnded;
+
+  /// Paused longer than the branch's `max_pause_minutes`; resuming needs `pos.timed.edit` or an approval.
+  @BuiltValueField(wireName: r'pause_too_long')
+  bool get pauseTooLong;
+
   @BuiltValueField(wireName: r'id')
   String get id;
 
@@ -80,6 +105,37 @@ class _$ResourceBoardTimedSerializer
     ResourceBoardTimed object, {
     FullType specifiedType = FullType.unspecified,
   }) sync* {
+    yield r'paused_at';
+    yield object.pausedAt == null
+        ? null
+        : serializers.serialize(
+            object.pausedAt,
+            specifiedType: const FullType.nullable(DateTime),
+          );
+    yield r'prepaid_minutes';
+    yield object.prepaidMinutes == null
+        ? null
+        : serializers.serialize(
+            object.prepaidMinutes,
+            specifiedType: const FullType.nullable(int),
+          );
+    yield r'played_seconds';
+    yield object.playedSeconds == null
+        ? null
+        : serializers.serialize(
+            object.playedSeconds,
+            specifiedType: const FullType.nullable(int),
+          );
+    yield r'package_ended';
+    yield serializers.serialize(
+      object.packageEnded,
+      specifiedType: const FullType(bool),
+    );
+    yield r'pause_too_long';
+    yield serializers.serialize(
+      object.pauseTooLong,
+      specifiedType: const FullType(bool),
+    );
     yield r'id';
     yield serializers.serialize(
       object.id,
@@ -156,6 +212,44 @@ class _$ResourceBoardTimedSerializer
       final key = serializedList[i] as String;
       final value = serializedList[i + 1];
       switch (key) {
+        case r'paused_at':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(DateTime),
+          ) as DateTime?;
+          if (valueDes == null) continue;
+          result.pausedAt = valueDes;
+          break;
+        case r'prepaid_minutes':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(int),
+          ) as int?;
+          if (valueDes == null) continue;
+          result.prepaidMinutes = valueDes;
+          break;
+        case r'played_seconds':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(int),
+          ) as int?;
+          if (valueDes == null) continue;
+          result.playedSeconds = valueDes;
+          break;
+        case r'package_ended':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(bool),
+          ) as bool;
+          result.packageEnded = valueDes;
+          break;
+        case r'pause_too_long':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(bool),
+          ) as bool;
+          result.pauseTooLong = valueDes;
+          break;
         case r'id':
           final valueDes = serializers.deserialize(
             value,

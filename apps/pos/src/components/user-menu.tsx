@@ -113,6 +113,12 @@ export function UserMenu({
             {t('mealAccountsNav')}
           </Link>
         ) : null}
+        {data.modules?.timed_billing === true &&
+        ['pos.payment.collect', 'pos.shift.open', 'pos.timed.operate'].some(has) ? (
+          <Link to="/stored-value" {...item}>
+            {t('storedValueNav')}
+          </Link>
+        ) : null}
         {data.modules?.[VEHICLE_COMMISSION_MODULE] === true &&
         ['pos.vehicle_visit.operate', 'pos.vehicle_visit.manage'].some(has) ? (
           <Link to="/vehicle-visits" {...item}>

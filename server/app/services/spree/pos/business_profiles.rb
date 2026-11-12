@@ -24,7 +24,7 @@ module Spree
       FIELDS = %w[group order modules optional_modules branch_defaults display recommended_features sample_units
                   kitchen_stations].freeze
       BRANCH_DEFAULT_FIELDS = %w[return_window_days lot_selection variance_threshold adjustment_approval_threshold
-                                 kitchen_send_trigger service_charge_rate].freeze
+                                 kitchen_send_trigger service_charge_rate operating_windows].freeze
       DISPLAY_FIELDS = %w[catalog_view surface].freeze
       CATALOG_VIEWS = %w[cards list].freeze
       # The selling screen. A surface is only a hint: the client still needs
@@ -261,6 +261,8 @@ module Spree
             "must be one of #{Kitchen::Send::TRIGGERS.join(', ')}" unless Kitchen::Send::TRIGGERS.include?(value)
           when 'service_charge_rate'
             'must be empty or a percent above 0 and at most 50' unless value.nil? || service_charge_percent?(value)
+          when 'operating_windows'
+            OperatingHours.problem(value)
           end
         end
 

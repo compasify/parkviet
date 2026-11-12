@@ -74,6 +74,17 @@ export type BoardTimed = {
   // The price up to the board's read (running) or as billed (stopped).
   quote_amount: string;
   ending_soon: boolean;
+  // Since when the clock is paused; null unless paused.
+  paused_at: string | null;
+  // The minutes of the prepaid package the clock was sold with.
+  prepaid_minutes: number | null;
+  // Seconds played up to `server_now`, pauses not counted; null once stopped
+  // (and from an older server).
+  played_seconds: number | null;
+  // A package clock still runs past its prepaid minutes.
+  package_ended: boolean;
+  // Paused longer than the branch allows: resuming needs an approval.
+  pause_too_long: boolean;
 };
 
 export type Placement = { x: number; y: number; w: number; h: number; rotation: number };
@@ -102,6 +113,8 @@ export type BoardTable = Placement & {
 export type ResourceBoard = {
   branch_id: string;
   server_now: string | null;
+  // A clock started now starts outside the branch's operating hours.
+  outside_operating_hours: boolean;
   areas: FloorArea[];
   resources: BoardTable[];
 };
@@ -231,7 +244,35 @@ function boardTimed(value: unknown): BoardTimed | null {
     played_minutes: int(source.played_minutes),
     quote_amount: text(source.quote_amount) ?? '0',
     ending_soon: source.ending_soon === true,
+    paused_at: text(source.paused_at),
+    prepaid_minutes: nullableInt(source.prepaid_minutes),
+    played_seconds: nullableInt(source.played_seconds),
+    package_ended: source.package_ended === true,
+    pause_too_long: source.pause_too_long === true,
   };
+}
+
+// Seconds a clock has played at `now` (milliseconds on the server's clock,
+// as the screen estimates it), pauses not counted: the board's count at
+// `readAt` plus the time since while it runs. Without the board's count
+// (a stopped clock, an older server), from its start to its stop or now.
+export function clockPlayedSeconds(timed: BoardTimed, readAt: string | null, now: number): number {
+  const read = readAt ? Date.parse(readAt) : Number.NaN;
+  if (timed.played_seconds !== null && !Number.isNaN(read)) {
+    const since = timed.status === 'running' ? Math.max(0, now - read) / 1000 : 0;
+    return Math.max(0, Math.floor(timed.played_seconds + since));
+  }
+  const start = Date.parse(timed.started_at);
+  const end = timed.stopped_at ? Date.parse(timed.stopped_at) : now;
+  return Number.isNaN(start) ? 0 : Math.max(0, Math.floor((end - start) / 1000));
+}
+
+// Seconds until a running clock's planned end (its package's end when it
+// has one), negative once past; null without an end or when not running.
+export function clockSecondsLeft(timed: BoardTimed, now: number): number | null {
+  if (timed.status !== 'running' || !timed.planned_end_at) return null;
+  const end = Date.parse(timed.planned_end_at);
+  return Number.isNaN(end) ? null : Math.floor((end - now) / 1000);
 }
 
 function nextReservation(value: unknown): NextReservation | null {
@@ -250,6 +291,7 @@ export function normalizeResourceBoard(value: unknown): ResourceBoard {
   return {
     branch_id: text(source.branch_id) ?? '',
     server_now: text(source.server_now),
+    outside_operating_hours: source.outside_operating_hours === true,
     areas: (Array.isArray(source.areas) ? source.areas : [])
       .flatMap((row) => {
         const item = area(row);

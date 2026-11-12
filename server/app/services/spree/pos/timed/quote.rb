@@ -20,28 +20,49 @@ module Spree
       # - the minutes rounding adds or drops are priced at the last piece.
       # Each line's amount is its minutes at the hourly price (plus the
       # surcharge), rounded to the currency; the total is the lines' sum.
+      #
+      # Then, on the billed minutes in play order:
+      # - a prepaid package covers its first minutes at the package price
+      #   (billed at least the package, even when played less);
+      # - a promotion's free minutes come off the end, at no price;
+      # - a minutes card pays the next minutes after the package at the
+      #   card's own price per minute, as far as it has minutes;
+      # - the rest is priced by the rate plan as above.
+      # Package, card and bonus each read as one line of their own.
       class Quote
         Piece = Struct.new(:segment, :starts_at, :ends_at, :day_type, :rule, :price_per_hour, :surcharge_percent, :seconds,
                            :minutes, keyword_init: true)
         Line = Data.define(:segment, :starts_at, :ends_at, :day_type, :rule_id, :label, :price_per_hour, :surcharge_percent,
-                           :minutes, :amount) do
+                           :minutes, :amount, :kind, :promotion) do
+          def initialize(kind: 'rate', promotion: nil, **)
+            super
+          end
+
           def to_pos
             { segment_id: segment.prefixed_id, starts_at: starts_at.iso8601, ends_at: ends_at.iso8601, day_type: day_type,
               label: label, price_per_hour: price_per_hour.to_s('F'), surcharge_percent: surcharge_percent.to_s('F'),
-              minutes: minutes, amount: amount.to_s('F') }
+              minutes: minutes, amount: amount.to_s('F'), kind: kind, promotion_id: promotion&.prefixed_id }
           end
         end
-        Result = Data.define(:lines, :played_minutes, :billed_minutes, :amount, :currency, :as_of, :rate_plan) do
+        Result = Data.define(:lines, :played_minutes, :billed_minutes, :amount, :currency, :as_of, :rate_plan, :card_minutes) do
+          def initialize(card_minutes: 0, **)
+            super
+          end
+
           def to_pos
             { as_of: as_of.iso8601, final: false, played_minutes: played_minutes, billed_minutes: billed_minutes,
-              amount: amount.to_s('F'), lines: lines.map(&:to_pos) }
+              card_minutes: card_minutes, amount: amount.to_s('F'), lines: lines.map(&:to_pos) }
           end
         end
+        # A prepaid package as sold: its minutes and price.
+        Package = Data.define(:name, :minutes, :price)
         # A play segment as the quote reads it: when it ran and on which plan.
         Stretch = Data.define(:segment, :starts_at, :ends_at, :plan)
 
-        # Reads the plans and holidays the session needs (RateBook) and prices it.
-        def self.call(session, now:, book: nil)
+        # Reads the plans and holidays the session needs (RateBook) and prices
+        # it. `card_lots` are the minutes card's lots when the caller holds
+        # them locked (stopping); otherwise the book reads them.
+        def self.call(session, now:, book: nil, card_lots: nil)
           segments = session.timed_segments.to_a
           book ||= RateBook.new(session.branch, plan_ids: segments.map(&:rate_plan_id).compact,
                                                 from: session.started_at, to: now)
@@ -54,13 +75,20 @@ module Spree
 
             Stretch.new(segment: segment, starts_at: segment.started_at, ends_at: ends_at, plan: plan)
           end
+          package = session.package? ? Package.new(name: session.package_name, minutes: session.prepaid_minutes, price: session.package_price) : nil
+          lots = card_lots || (session.stored_value_account_id && book.card_lots(session.stored_value_account_id))
+          promotions = book.promotions.select do |promotion|
+            promotion.applies?(session.resource, session.started_at, session.branch.timezone, package: package.present?)
+          end
           compute(stretches: stretches, timezone: session.branch.timezone, weekend_days: session.branch.weekend_days,
-                  special_days: book.special_days, currency: session.currency, as_of: now)
+                  special_days: book.special_days, currency: session.currency, as_of: now, package: package, card_lots: lots,
+                  promotions: promotions)
         end
 
         # The pure pricing: stretches (segment, start, end, plan) in, priced lines out.
         # `special_days` maps a Date to its SpecialDay.
-        def self.compute(stretches:, timezone:, weekend_days:, special_days:, currency:, as_of:)
+        def self.compute(stretches:, timezone:, weekend_days:, special_days:, currency:, as_of:, package: nil, card_lots: nil,
+                         promotions: [])
           zone = ActiveSupport::TimeZone[timezone.to_s] || Time.zone
           weekend = Array(weekend_days).map(&:to_i)
           ordered = stretches.sort_by { |row| [row.starts_at, row.segment.id.to_i] }
@@ -75,10 +103,59 @@ module Spree
           played = pieces.sum(&:minutes)
           plan = ordered.last.plan
           billed = round_minutes(played, plan)
+          billed = [billed, package.minutes].max if package
           adjust!(pieces, billed - played)
-          lines = merge(pieces).select { |row| row.minutes.positive? }.map { |row| line(row, currency) }
+          prepaid = package ? package.minutes : 0
+          promotion = promotions.max_by { |row| [row.bonus_for(billed, prepaid), -row.id.to_i] }
+          bonus = promotion ? promotion.bonus_for(billed, prepaid) : 0
+          promotion = nil if bonus.zero?
+          takes, card = card_lots ? StoredValue.minutes_cost(card_lots, billed - prepaid - bonus, currency) : [[], 0]
+          parts = carve(pieces, [['package', prepaid], ['card', card], ['rate', billed - prepaid - card - bonus], ['bonus', bonus]])
+          lines = []
+          lines << whole_line(parts['package'], 'package', package.price, package.name) if package && parts['package'].any?
+          lines << whole_line(parts['card'], 'card', takes.sum(BigDecimal('0'), &:amount), nil) if parts['card'].any?
+          lines.concat(merge(parts['rate']).select { |row| row.minutes.positive? }.map { |row| line(row, currency) })
+          lines << whole_line(parts['bonus'], 'bonus', BigDecimal('0'), nil, promotion: promotion) if parts['bonus'].any?
           Result.new(lines: lines, played_minutes: played, billed_minutes: billed, amount: lines.sum(BigDecimal('0'), &:amount),
-                     currency: currency, as_of: as_of, rate_plan: plan)
+                     currency: currency, as_of: as_of, rate_plan: plan, card_minutes: card)
+        end
+
+        # Splits the pieces' minutes, in play order, into the budget of each
+        # kind of line: { kind => [pieces] }, a piece cut at the minute where
+        # a budget ends (its time shared out by those minutes).
+        def self.carve(pieces, budgets)
+          parts = budgets.to_h { |kind, _| [kind, []] }
+          queue = budgets.map(&:dup).reject { |_, minutes| minutes <= 0 }
+          pieces.each do |piece|
+            left = piece.minutes
+            at = piece.starts_at
+            span = piece.ends_at - piece.starts_at
+            while left.positive? && queue.any?
+              kind, budget = queue.first
+              take = [left, budget].min
+              ends = take == left ? piece.ends_at : [at + (span * take / piece.minutes), piece.ends_at].min
+              parts[kind] << piece.dup.tap do |row|
+                row.minutes = take
+                row.starts_at = at
+                row.ends_at = ends
+              end
+              at = ends
+              left -= take
+              queue.first[1] -= take
+              queue.shift if queue.first[1].zero?
+            end
+          end
+          parts
+        end
+
+        # One line for all minutes of a package, a card or a bonus.
+        def self.whole_line(rows, kind, amount, label, promotion: nil)
+          minutes = rows.sum(&:minutes)
+          first = rows.first
+          price = minutes.zero? ? BigDecimal('0') : (amount * 60 / minutes).round(4)
+          Line.new(segment: first.segment, starts_at: first.starts_at, ends_at: rows.last.ends_at, day_type: first.day_type,
+                   rule_id: nil, label: label.to_s.first(40).presence, price_per_hour: price, surcharge_percent: BigDecimal('0'),
+                   minutes: minutes, amount: amount, kind: kind, promotion: promotion)
         end
 
         # For example 62 minutes, block 15, grace 5 -> 60; 66 -> 75; then the minimum.

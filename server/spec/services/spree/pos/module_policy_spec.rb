@@ -77,7 +77,7 @@ RSpec.describe Spree::Pos::ModulePolicy, pos_modules: :default do
   end
 
   it 'stores only available modules, once per branch, within the branch store' do
-    expect(Spree::Pos::BranchModule.new(store: store, branch: branch, module_key: 'resources.iot_relay', enabled: true)).not_to be_valid
+    expect(Spree::Pos::BranchModule.new(store: store, branch: branch, module_key: with_planned_module('fnb.planned_example'), enabled: true)).not_to be_valid
     turn(branch, 'retail.units', true)
     expect(Spree::Pos::BranchModule.new(store: store, branch: branch, module_key: 'retail.units', enabled: false)).not_to be_valid
     foreign = create(:store)

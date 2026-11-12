@@ -34,7 +34,7 @@ module Spree
       # a changed subject invalidates the approval.
       SUBJECTS = %w[Spree::Pos::Workspace Spree::Pos::ReturnOperation Spree::Pos::RefundRequest Spree::Pos::Shift
                     Spree::Pos::InventoryAdjustment Spree::Pos::Reservation Spree::Pos::BottleKeep
-                    Spree::Pos::MealAccount Spree::Pos::VehicleVisit].freeze
+                    Spree::Pos::MealAccount Spree::Pos::VehicleVisit Spree::Pos::StoredValueAccount].freeze
       # Who may ask for an approval at the branch: sellers, and return staff
       # for returns and refunds.
       REQUESTER_CAPABILITIES = {
@@ -51,6 +51,8 @@ module Spree
         'Spree::Pos::MealAccount' => [Capabilities::MEAL_ACCOUNT_MANAGE, Capabilities::OPEN_SHIFT],
         # A coach visit's guests or commission corrected after closing.
         'Spree::Pos::VehicleVisit' => [Capabilities::VEHICLE_VISIT_MANAGE],
+        # A prepaid card's balance corrected or paid back.
+        'Spree::Pos::StoredValueAccount' => [Capabilities::PAYMENT, Capabilities::OPEN_SHIFT],
         # Sellers, and the people serving a table (only table orders are theirs to edit).
         'Spree::Pos::Workspace' => [Capabilities::OPEN_SHIFT, Capabilities::TABLE_SERVE]
       }.freeze
@@ -79,6 +81,12 @@ module Spree
       VEHICLE_VISIT_ADJUST_ACTION = 'vehicle_visit.adjust'
       # A play session's start or end time changed (Timed::EditSegment).
       TIMED_EDIT_ACTION = 'timed.edit_segment'
+      # A clock paused longer than its branch allows, resumed or stopped.
+      TIMED_LONG_PAUSE_ACTION = 'timed.long_pause'
+      # A money or minutes card's balance corrected by hand.
+      STORED_VALUE_ADJUST_ACTION = 'stored_value.adjust'
+      STORED_VALUE_REFUND_ACTION = 'stored_value.refund'
+      STORED_VALUE_ACTIONS = [STORED_VALUE_ADJUST_ACTION, STORED_VALUE_REFUND_ACTION].freeze
 
       def consume!(action:, amount:, currency:, revision:, subject:, requester:)
         raise Conflict, 'Approval subject is required.' unless SUBJECTS.include?(subject.class.name) && subject.persisted?

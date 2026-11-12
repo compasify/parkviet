@@ -287,7 +287,13 @@ export type PosTimedSegment = {
   ended_at: string | null;
   rate_plan_name?: string | null;
   edited?: boolean;
+  // Why the stretch ended: pause, resume, move, stop or split_window.
+  ended_reason?: string | null;
 };
+
+// How a band of play time is priced: at the plan's rate, as the prepaid
+// package, paid by a minutes card, or free minutes of a promotion.
+export type PosTimedBandKind = 'rate' | 'package' | 'card' | 'bonus';
 
 // The clock of a play-time line, on the server's time: the running quote,
 // or the bands it was billed at once stopped.
@@ -301,6 +307,13 @@ export type PosLineTimedSession = {
   billed_minutes?: number | null;
   amount?: string;
   currency?: string;
+  planned_end_at?: string | null;
+  // Since when the clock is paused; null unless paused.
+  paused_at?: string | null;
+  // The prepaid package it was sold with.
+  package?: { name: string; minutes: number; price: string } | null;
+  // The minutes card that pays the time when the clock stops.
+  minutes_card?: { id: string; card_hint: string | null } | null;
   // The stretches of the clock: each room and rate it ran on.
   segments?: PosTimedSegment[];
   quote?: {
@@ -309,8 +322,12 @@ export type PosLineTimedSession = {
     final: boolean;
     played_minutes: number;
     billed_minutes: number;
+    // Minutes the minutes card pays.
+    card_minutes?: number;
     amount: string;
     lines?: Array<{
+      kind?: PosTimedBandKind;
+      promotion_id?: string | null;
       label?: string | null;
       starts_at: string;
       ends_at: string;

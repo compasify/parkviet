@@ -26,6 +26,9 @@ module Spree
             Guard.editable!(workspace)
             segment = TimedSegment.locate(session.timed_segments, segment_id) || raise(ActiveRecord::RecordNotFound)
             raise Conflict.new('A reason is required.', revision: workspace.revision, reason: 'reason_required') if reason.to_s.strip.empty?
+            if session.status == 'stopped' && ApplyMinutesCard.charged?(session)
+              raise Conflict.new('A minutes card already paid this time.', revision: workspace.revision, reason: 'timed_card_charged')
+            end
 
             new_start = Guard.time!(started_at, 'started_at')
             new_end = Guard.time!(ended_at, 'ended_at')
@@ -57,10 +60,11 @@ module Spree
                                                                                                          message: 'Changing play time needs a manager approval.')
             segment.update!(started_at: starts, ended_at: ends, edited: true)
             session.update!(started_at: session.timed_segments.minimum(:started_at), quote_version: session.quote_version + 1)
+            Guard.refresh_planned_end!(session, now)
             if session.status == 'stopped'
               session.update!(stopped_at: session.timed_segments.maximum(:ended_at))
               session.timed_segments.reset
-              Stop.bill!(session, Quote.call(session, now: now))
+              Stop.bill!(session, Quote.call(session, now: now, card_lots: []))
             end
             workspace.update!(revision: workspace.revision + 1)
             AuditEntry.record!(store: workspace.store, actor: staff, action: COMMAND, subject: workspace,

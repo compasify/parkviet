@@ -68,6 +68,12 @@ class _$TimedSessionStatusEnumSerializer
 
 class _$TimedSession extends TimedSession {
   @override
+  final DateTime? pausedAt;
+  @override
+  final TimedPackage? package;
+  @override
+  final TimedMinutesCard? minutesCard;
+  @override
   final String id;
   @override
   final TimedSessionStatusEnum status;
@@ -100,7 +106,10 @@ class _$TimedSession extends TimedSession {
       (TimedSessionBuilder()..update(updates))._build();
 
   _$TimedSession._(
-      {required this.id,
+      {this.pausedAt,
+      this.package,
+      this.minutesCard,
+      required this.id,
       required this.status,
       required this.resourceId,
       required this.resourceName,
@@ -126,6 +135,9 @@ class _$TimedSession extends TimedSession {
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
     return other is TimedSession &&
+        pausedAt == other.pausedAt &&
+        package == other.package &&
+        minutesCard == other.minutesCard &&
         id == other.id &&
         status == other.status &&
         resourceId == other.resourceId &&
@@ -145,6 +157,9 @@ class _$TimedSession extends TimedSession {
   @override
   int get hashCode {
     var _$hash = 0;
+    _$hash = $jc(_$hash, pausedAt.hashCode);
+    _$hash = $jc(_$hash, package.hashCode);
+    _$hash = $jc(_$hash, minutesCard.hashCode);
     _$hash = $jc(_$hash, id.hashCode);
     _$hash = $jc(_$hash, status.hashCode);
     _$hash = $jc(_$hash, resourceId.hashCode);
@@ -166,6 +181,9 @@ class _$TimedSession extends TimedSession {
   @override
   String toString() {
     return (newBuiltValueToStringHelper(r'TimedSession')
+          ..add('pausedAt', pausedAt)
+          ..add('package', package)
+          ..add('minutesCard', minutesCard)
           ..add('id', id)
           ..add('status', status)
           ..add('resourceId', resourceId)
@@ -187,6 +205,20 @@ class _$TimedSession extends TimedSession {
 class TimedSessionBuilder
     implements Builder<TimedSession, TimedSessionBuilder> {
   _$TimedSession? _$v;
+
+  DateTime? _pausedAt;
+  DateTime? get pausedAt => _$this._pausedAt;
+  set pausedAt(DateTime? pausedAt) => _$this._pausedAt = pausedAt;
+
+  TimedPackageBuilder? _package;
+  TimedPackageBuilder get package => _$this._package ??= TimedPackageBuilder();
+  set package(TimedPackageBuilder? package) => _$this._package = package;
+
+  TimedMinutesCardBuilder? _minutesCard;
+  TimedMinutesCardBuilder get minutesCard =>
+      _$this._minutesCard ??= TimedMinutesCardBuilder();
+  set minutesCard(TimedMinutesCardBuilder? minutesCard) =>
+      _$this._minutesCard = minutesCard;
 
   String? _id;
   String? get id => _$this._id;
@@ -256,6 +288,9 @@ class TimedSessionBuilder
   TimedSessionBuilder get _$this {
     final $v = _$v;
     if ($v != null) {
+      _pausedAt = $v.pausedAt;
+      _package = $v.package?.toBuilder();
+      _minutesCard = $v.minutesCard?.toBuilder();
       _id = $v.id;
       _status = $v.status;
       _resourceId = $v.resourceId;
@@ -293,6 +328,9 @@ class TimedSessionBuilder
     try {
       _$result = _$v ??
           _$TimedSession._(
+            pausedAt: pausedAt,
+            package: _package?.build(),
+            minutesCard: _minutesCard?.build(),
             id: BuiltValueNullFieldError.checkNotNull(
                 id, r'TimedSession', 'id'),
             status: BuiltValueNullFieldError.checkNotNull(
@@ -321,6 +359,11 @@ class TimedSessionBuilder
     } catch (_) {
       late String _$failedField;
       try {
+        _$failedField = 'package';
+        _package?.build();
+        _$failedField = 'minutesCard';
+        _minutesCard?.build();
+
         _$failedField = 'segments';
         segments.build();
         _$failedField = 'quote';

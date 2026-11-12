@@ -7,8 +7,8 @@ module Spree
     # here is stored except a table's cleaning / out-of-service mark.
     #
     # States, strongest first: out_of_service, cleaning (no open order),
-    # payment_requested, prebilled, ending_soon (a clock's planned end is
-    # near), waiting_long (a kitchen item waited past its station's late
+    # payment_requested, prebilled, ending_soon (a running clock's planned
+    # end, or its prepaid package's end, is near or past), waiting_long (a kitchen item waited past its station's late
     # threshold), playing (a clock runs in the room), ordered (sent to the
     # kitchen), occupied, available. A fixed number of queries whatever the
     # number of tables: areas, tables, open orders (with the database clock),
@@ -19,7 +19,7 @@ module Spree
                   out_of_service].freeze
       # A room shows ending soon this long before its clock's planned end.
       ENDING_SOON = 10.minutes
-      # A free table shows eserved this long before its next booking.
+      # A free table shows `reserved` this long before its next booking.
       RESERVED_AHEAD = 60.minutes
       # How far ahead a table's next booking is shown on its tile.
       BOOKING_WINDOW = '12 hours'
@@ -45,6 +45,8 @@ module Spree
         {
           branch_id: branch.prefixed_id,
           server_now: now.iso8601,
+          # Whether a clock started now is outside the branch's operating hours.
+          outside_operating_hours: OperatingHours.check(branch, now).present?,
           areas: areas.map do |area|
             { id: area.prefixed_id, name: area.name, position: area.position, floor_width: area.floor_width, floor_height: area.floor_height }
           end,
@@ -92,12 +94,19 @@ module Spree
         sessions.group_by(&:resource_id).transform_values do |list|
           session = list.reverse.find(&:active?) || list.last
           quote = session.active? ? Timed::Quote.call(session, now: now, book: book) : nil
+          running = session.status == 'running'
+          due = running && session.planned_end_at.present?
+          package_ended = due && session.package? && session.planned_end_at <= now
           { id: session.prefixed_id, workspace_id: workspace_ref(session.workspace_id), status: session.status,
             started_at: session.started_at.iso8601, stopped_at: session.stopped_at&.iso8601,
-            planned_end_at: session.planned_end_at&.iso8601,
+            planned_end_at: session.planned_end_at&.iso8601, paused_at: session.paused_since&.iso8601,
+            prepaid_minutes: session.prepaid_minutes,
+            played_seconds: session.active? ? session.played_seconds(now).floor : nil,
             played_minutes: quote ? quote.played_minutes : session.played_minutes,
             quote_amount: (quote ? quote.amount : session.amount || BigDecimal('0')).to_s('F'),
-            ending_soon: session.active? && session.planned_end_at.present? && session.planned_end_at <= now + ENDING_SOON }
+            ending_soon: due && !package_ended && session.planned_end_at <= now + ENDING_SOON,
+            package_ended: package_ended,
+            pause_too_long: session.status == 'paused' && Timed::Guard.long_pause?(session, now) }
         end
       end
 
@@ -196,7 +205,7 @@ module Spree
         end
         return 'payment_requested' if orders.any? { |row| row[:payment_requested] }
         return 'prebilled' if orders.any? { |row| row[:prebilled] }
-        return 'ending_soon' if timed&.dig(:ending_soon)
+        return 'ending_soon' if timed&.dig(:ending_soon) || timed&.dig(:package_ended)
         return 'waiting_long' if orders.any? { |row| row[:kitchen]&.dig(:late) }
         return 'playing' if timed && TimedSession::ACTIVE_STATUSES.include?(timed[:status])
         return 'ordered' if orders.any? { |row| row[:kitchen]&.dig(:sent) }

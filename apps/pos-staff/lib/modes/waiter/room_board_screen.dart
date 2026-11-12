@@ -15,9 +15,11 @@ import 'waiter_screen.dart' show tableStateLabel;
 const timedOperateCapability = 'pos.timed.operate';
 
 /// The karaoke rooms and billiard tables of the branch on the waiter's
-/// phone: each room's clock counting from the server's start, the price so
-/// far, and starting, stopping or moving the clock. Takes no money: the
-/// room's order opens for dishes and asking for the bill.
+/// phone: each room's clock counting the time played on the server's clock,
+/// the price so far, and starting, pausing, stopping or moving the clock.
+/// The branch's alerts (a room ten minutes from its end, a package used up,
+/// a pause run too long) show as a notice. Takes no money: the room's
+/// order opens for dishes and asking for the bill.
 class RoomBoardScreen extends StatefulWidget {
   const RoomBoardScreen({
     super.key,
@@ -55,7 +57,9 @@ class _RoomBoardScreenState extends State<RoomBoardScreen> {
   void initState() {
     super.initState();
     _events = widget.waiter.events.listen((event) {
-      if (_boardEvents.contains(event['event'])) unawaited(_refresh());
+      if (!_boardEvents.contains(event['event'])) return;
+      _alert(event);
+      unawaited(_refresh());
     });
     _tick = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted && _rooms.any((tile) => clockRunning(tile.timed))) {
@@ -112,14 +116,35 @@ class _RoomBoardScreenState extends State<RoomBoardScreen> {
   void _say(String text) =>
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
 
-  Future<void> _run(Future<void> Function() action) async {
+  /// A `resource.updated` that names an alert, about a room on this board.
+  void _alert(Map<String, Object?> event) {
+    final alert = event['alert'];
+    if (!mounted || alert is! String) return;
+    final room = _rooms.where((tile) => tile.id == event['id']).firstOrNull;
+    if (room == null) return;
+    final l10n = AppLocalizations.of(context);
+    final text = switch (alert) {
+      'ending_soon' => l10n.waiterAlertEndingSoon(room.name),
+      'ended_package' => l10n.waiterAlertEndedPackage(room.name),
+      'pause_too_long' => l10n.waiterAlertPauseTooLong(room.name),
+      _ => null,
+    };
+    if (text != null) _say(text);
+  }
+
+  /// Runs a clock command; [refused] words a refusal reason its own way.
+  Future<void> _run(
+    Future<void> Function() action, {
+    Map<String, String> refused = const {},
+  }) async {
     if (_busy) return;
     setState(() => _busy = true);
     try {
       await action();
     } on AppFailure catch (failure) {
       if (mounted) {
-        _say(waiterFailureMessage(AppLocalizations.of(context), failure));
+        final own = failure is ConflictFailure ? refused[failure.reason] : null;
+        _say(own ?? waiterFailureMessage(AppLocalizations.of(context), failure));
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -133,6 +158,8 @@ class _RoomBoardScreenState extends State<RoomBoardScreen> {
       timedOperateCapability,
     );
     final running = clockRunning(tile.timed);
+    final paused = tile.timed?.status == ResourceBoardTimedStatusEnum.paused;
+    final staffId = widget.waiter.staffId.value;
     final usable =
         tile.state != ResourceBoardTileStateEnum.cleaning &&
         tile.state != ResourceBoardTileStateEnum.outOfService;
@@ -155,6 +182,22 @@ class _RoomBoardScreenState extends State<RoomBoardScreen> {
                 onTap: () => Navigator.of(sheet).pop('start'),
               ),
             if (operate && running) ...[
+              if (paused)
+                ListTile(
+                  key: Key('room-resume-${tile.id}'),
+                  minTileHeight: 64,
+                  leading: const Icon(Icons.play_circle),
+                  title: Text(l10n.waiterClockResume),
+                  onTap: () => Navigator.of(sheet).pop('resume'),
+                )
+              else
+                ListTile(
+                  key: Key('room-pause-${tile.id}'),
+                  minTileHeight: 64,
+                  leading: const Icon(Icons.pause),
+                  title: Text(l10n.waiterClockPause),
+                  onTap: () => Navigator.of(sheet).pop('pause'),
+                ),
               ListTile(
                 key: Key('room-stop-${tile.id}'),
                 minTileHeight: 64,
@@ -170,6 +213,14 @@ class _RoomBoardScreenState extends State<RoomBoardScreen> {
                 onTap: () => Navigator.of(sheet).pop('move'),
               ),
             ],
+            if (operate && staffId != null && usable && tile.orders.isNotEmpty)
+              ListTile(
+                key: Key('room-serve-${tile.id}'),
+                minTileHeight: 64,
+                leading: const Icon(Icons.person_pin),
+                title: Text(l10n.waiterServeRoom),
+                onTap: () => Navigator.of(sheet).pop('serve'),
+              ),
             if (tile.orders.isNotEmpty)
               ListTile(
                 key: Key('room-order-${tile.id}'),
@@ -190,6 +241,18 @@ class _RoomBoardScreenState extends State<RoomBoardScreen> {
         await _stop(tile);
       case 'move':
         await _move(tile);
+      case 'pause':
+        final id = tile.timed!.id;
+        await _run(() => widget.waiter.api.pauseClock(id));
+      case 'resume':
+        final id = tile.timed!.id;
+        // A pause longer than the branch allows is reopened at the counter.
+        await _run(
+          () => widget.waiter.api.resumeClock(id),
+          refused: {'approval_required': l10n.waiterClockLongPause},
+        );
+      case 'serve':
+        await _serve(tile, staffId!);
       case 'order':
         final id = tile.timed?.workspaceId ?? await _pickOrder(tile);
         if (id != null) await _show(id);
@@ -312,6 +375,14 @@ class _RoomBoardScreenState extends State<RoomBoardScreen> {
     });
   }
 
+  Future<void> _serve(ResourceBoardTile tile, String staffId) async {
+    final l10n = AppLocalizations.of(context);
+    await _run(() async {
+      await widget.waiter.api.serveRoom(widget.waiter.branchId, tile.id, staffId);
+      if (mounted) _say(l10n.waiterServingRoom(tile.name));
+    });
+  }
+
   Future<void> _show(String workspaceId) async {
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
@@ -368,6 +439,7 @@ class _RoomBoardScreenState extends State<RoomBoardScreen> {
                             itemBuilder: (context, index) => RoomTile(
                               tile: rooms[index],
                               now: widget.now().add(_offset),
+                              readAt: _board!.serverNow,
                               onTap: () => _actions(rooms[index]),
                             ),
                           ),
@@ -384,9 +456,19 @@ bool clockRunning(ResourceBoardTimed? timed) =>
     (timed.status == ResourceBoardTimedStatusEnum.running ||
         timed.status == ResourceBoardTimedStatusEnum.paused);
 
-/// How long a clock has run on the server's clock: until it stopped, else
-/// until [serverNow]. Never negative.
-Duration clockElapsed(ResourceBoardTimed timed, DateTime serverNow) {
+/// How long a clock has played on the server's clock, pauses not counted:
+/// the seconds the board read at [readAt], plus the time since while it
+/// runs. Without them (a stopped clock, an older server), from its start
+/// until it stopped, else until [serverNow]. Never negative.
+Duration clockElapsed(ResourceBoardTimed timed, DateTime serverNow, {DateTime? readAt}) {
+  final played = timed.playedSeconds;
+  if (played != null && readAt != null) {
+    final since = timed.status == ResourceBoardTimedStatusEnum.running
+        ? serverNow.difference(readAt)
+        : Duration.zero;
+    final elapsed = Duration(seconds: played) + since;
+    return elapsed.isNegative ? Duration.zero : elapsed;
+  }
   final end = timed.stoppedAt ?? serverNow;
   final elapsed = end.difference(timed.startedAt);
   return elapsed.isNegative ? Duration.zero : elapsed;
@@ -410,12 +492,16 @@ class RoomTile extends StatelessWidget {
     required this.tile,
     required this.now,
     required this.onTap,
+    this.readAt,
   });
 
   final ResourceBoardTile tile;
 
   /// The server's time now, as this phone estimates it.
   final DateTime now;
+
+  /// The server's time the board was read at.
+  final DateTime? readAt;
   final VoidCallback onTap;
 
   @override
@@ -425,24 +511,29 @@ class RoomTile extends StatelessWidget {
     final scheme = theme.colorScheme;
     final timed = tile.timed;
     final running = clockRunning(timed);
-    final (background, foreground) = switch (tile.state) {
-      ResourceBoardTileStateEnum.available => (
-        scheme.surfaceContainerHighest,
-        scheme.onSurface,
-      ),
-      ResourceBoardTileStateEnum.endingSoon ||
-      ResourceBoardTileStateEnum.paymentRequested ||
-      ResourceBoardTileStateEnum.prebilled => (
-        Colors.amber.shade200,
-        Colors.black,
-      ),
-      ResourceBoardTileStateEnum.cleaning ||
-      ResourceBoardTileStateEnum.outOfService => (
-        scheme.outlineVariant,
-        scheme.onSurface,
-      ),
-      _ => (scheme.primaryContainer, scheme.onPrimaryContainer),
-    };
+    final paused = timed?.status == ResourceBoardTimedStatusEnum.paused;
+    final prepaid = timed?.prepaidMinutes;
+    final elapsed = running ? clockElapsed(timed!, now, readAt: readAt) : Duration.zero;
+    final (background, foreground) = timed?.pauseTooLong == true || timed?.packageEnded == true
+        ? (scheme.errorContainer, scheme.onErrorContainer)
+        : switch (tile.state) {
+            ResourceBoardTileStateEnum.available => (
+              scheme.surfaceContainerHighest,
+              scheme.onSurface,
+            ),
+            ResourceBoardTileStateEnum.endingSoon ||
+            ResourceBoardTileStateEnum.paymentRequested ||
+            ResourceBoardTileStateEnum.prebilled => (
+              Colors.amber.shade200,
+              Colors.black,
+            ),
+            ResourceBoardTileStateEnum.cleaning ||
+            ResourceBoardTileStateEnum.outOfService => (
+              scheme.outlineVariant,
+              scheme.onSurface,
+            ),
+            _ => (scheme.primaryContainer, scheme.onPrimaryContainer),
+          };
     return Material(
       key: Key('room-${tile.id}'),
       color: background,
@@ -467,11 +558,11 @@ class RoomTile extends StatelessWidget {
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
-                  Text(tableStateLabel(l10n, tile.state)),
+                  Text(paused ? l10n.waiterClockPaused : tableStateLabel(l10n, tile.state)),
                   if (running) ...[
                     const SizedBox(height: 4),
                     Text(
-                      formatClock(clockElapsed(timed!, now)),
+                      formatClock(elapsed),
                       key: Key('room-clock-${tile.id}'),
                       style: theme.textTheme.headlineSmall?.copyWith(
                         color: foreground,
@@ -480,9 +571,16 @@ class RoomTile extends StatelessWidget {
                     ),
                     Text(
                       l10n.waiterClockQuote(
-                        moneyLabel(money(timed.quoteAmount)),
+                        moneyLabel(money(timed!.quoteAmount)),
                       ),
                     ),
+                    if (prepaid != null)
+                      Text(
+                        l10n.waiterClockPackageLeft(
+                          (prepaid - elapsed.inMinutes).clamp(0, prepaid),
+                        ),
+                        key: Key('room-package-${tile.id}'),
+                      ),
                   ],
                   if (tile.guestCount != null)
                     Text(l10n.waiterGuests(tile.guestCount!)),

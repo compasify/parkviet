@@ -36,7 +36,7 @@ RSpec.describe 'POS business profiles', type: :request do
     it 'serves the catalog to any POS session, including cashiers without topology rights' do
       data = get_pos(staff_with(%w[read_pos_orders]), 'business_profiles')['data']
       expect(response).to have_http_status(:ok)
-      expect(data['version']).to eq(3)
+      expect(data['version']).to eq(4)
       expect(data['profiles'].size).to eq(19)
       expect(data['profiles'].map { |row| row['status'] }.tally).to eq('available' => 19)
       expect(data['profiles'].find { |row| row['key'] == 'karaoke_bida' }).
@@ -59,8 +59,7 @@ RSpec.describe 'POS business profiles', type: :request do
       )
       expect(data['modules']).to include(
         { 'key' => 'retail.measured', 'group' => 'retail', 'status' => 'available', 'depends_on' => ['retail.units'] },
-        { 'key' => 'timed_billing', 'group' => 'fnb', 'status' => 'available', 'depends_on' => ['resources', 'fnb.tables'] },
-        { 'key' => 'resources.iot_relay', 'group' => 'fnb', 'status' => 'planned', 'depends_on' => [] }
+        { 'key' => 'timed_billing', 'group' => 'fnb', 'status' => 'available', 'depends_on' => ['resources', 'fnb.tables'] }
       )
 
       get_pos(staff_with(%w[write_pos_topology]), 'business_profiles')

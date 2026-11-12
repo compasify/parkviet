@@ -39,7 +39,7 @@
 #
 # Bump `version` when a change to a profile should be offered to branches
 # already set up with it.
-version: 3
+version: 4
 profiles:
   tap_hoa_sieu_thi:
     group: retail
@@ -188,7 +188,8 @@ profiles:
     group: fnb
     order: 16
     modules: [resources, fnb.tables, timed_billing, fnb.menu, fnb.kitchen, fnb.postpay, fnb.bottle_keep]
-    branch_defaults: { kitchen_send_trigger: manual }
+    # Play time from 08:00 to midnight; a clock started from 00:00 to 08:00 is warned about.
+    branch_defaults: { kitchen_send_trigger: manual, operating_windows: [{ days: [0, 1, 2, 3, 4, 5, 6], from: '08:00', to: '24:00' }] }
     display: { surface: resource_board }
     recommended_features: [vietqr]
     sample_units: []

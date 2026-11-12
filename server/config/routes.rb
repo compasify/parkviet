@@ -173,7 +173,7 @@ Rails.application.routes.draw do
             get 'shift_closures/open', to: 'shifts/closures#open'
             get 'cash_reconciliations/candidates', to: 'cash_reconciliations#candidates'
             resources :cash_reconciliations, only: [:index, :create]
-            get 'reports/:report', to: 'reports#show', as: :report, constraints: { report: /sales|receipts|cashbook|receivables|closures|ingredient_usage|menu_margin|platforms|bar|meals|meal_statement|vehicle_commissions/ }
+            get 'reports/:report', to: 'reports#show', as: :report, constraints: { report: /sales|receipts|cashbook|receivables|closures|ingredient_usage|menu_margin|platforms|bar|meals|meal_statement|vehicle_commissions|attendants/ }
             resources :exports, only: [:index, :show, :create] do
               member do
                 post :download_link
@@ -315,6 +315,9 @@ Rails.application.routes.draw do
               member do
                 get :quote
                 post :stop
+                post :pause
+                post :resume
+                post :minutes_card
                 post :move
                 patch 'segments/:segment_id', action: :update_segment
               end
@@ -324,9 +327,27 @@ Rails.application.routes.draw do
             patch 'rate_plans/special_days/:special_day_id', to: 'rate_plans#update_special_day'
             delete 'rate_plans/special_days/:special_day_id', to: 'rate_plans#destroy_special_day'
             patch 'rate_plans/weekend_days', to: 'rate_plans#update_weekend_days'
+            patch 'rate_plans/timed_settings', to: 'rate_plans#update_timed_settings'
             resources :rate_plans, only: [:index, :create, :update] do
               member do
                 get :preview
+              end
+            end
+            # Free minutes on play time, the attendants book, and prepaid money
+            # and minutes cards.
+            resources :timed_promotions, only: [:index, :create, :update]
+            get 'attendant_assignments/candidates', to: 'attendant_assignments#candidates'
+            resources :attendant_assignments, only: [:index, :create] do
+              post :stop, on: :member
+            end
+            # A card's code goes in the body, never in a URL.
+            post 'stored_value_accounts/lookup', to: 'stored_value_accounts#lookup'
+            resources :stored_value_accounts, only: [:index, :show, :create] do
+              member do
+                get :entries
+                post :top_ups, action: :top_up
+                post :refund
+                post :adjust
               end
             end
             get 'tips', to: 'tips#index'
@@ -461,6 +482,8 @@ Rails.application.routes.draw do
               get 'meal', to: 'workspaces/meals#show'
               post 'meal_swipes', to: 'workspaces/meals#swipe'
               post 'meal_wallet', to: 'workspaces/meals#pay'
+              # Part of the payment from a prepaid money card.
+              post 'stored_value_payments', to: 'workspaces/stored_values#pay'
               # The coach visit of a rest stop the order was sold to.
               put 'vehicle_visit', to: 'workspaces/vehicle_visits#update'
               member do

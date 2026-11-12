@@ -6,6 +6,44 @@ part of 'timed_segment.dart';
 // BuiltValueGenerator
 // **************************************************************************
 
+const TimedSegmentEndedReasonEnum _$timedSegmentEndedReasonEnum_pause =
+    const TimedSegmentEndedReasonEnum._('pause');
+const TimedSegmentEndedReasonEnum _$timedSegmentEndedReasonEnum_resume =
+    const TimedSegmentEndedReasonEnum._('resume');
+const TimedSegmentEndedReasonEnum _$timedSegmentEndedReasonEnum_move =
+    const TimedSegmentEndedReasonEnum._('move');
+const TimedSegmentEndedReasonEnum _$timedSegmentEndedReasonEnum_stop =
+    const TimedSegmentEndedReasonEnum._('stop');
+const TimedSegmentEndedReasonEnum _$timedSegmentEndedReasonEnum_splitWindow =
+    const TimedSegmentEndedReasonEnum._('splitWindow');
+
+TimedSegmentEndedReasonEnum _$timedSegmentEndedReasonEnumValueOf(String name) {
+  switch (name) {
+    case 'pause':
+      return _$timedSegmentEndedReasonEnum_pause;
+    case 'resume':
+      return _$timedSegmentEndedReasonEnum_resume;
+    case 'move':
+      return _$timedSegmentEndedReasonEnum_move;
+    case 'stop':
+      return _$timedSegmentEndedReasonEnum_stop;
+    case 'splitWindow':
+      return _$timedSegmentEndedReasonEnum_splitWindow;
+    default:
+      throw ArgumentError(name);
+  }
+}
+
+final BuiltSet<TimedSegmentEndedReasonEnum>
+    _$timedSegmentEndedReasonEnumValues =
+    BuiltSet<TimedSegmentEndedReasonEnum>(const <TimedSegmentEndedReasonEnum>[
+  _$timedSegmentEndedReasonEnum_pause,
+  _$timedSegmentEndedReasonEnum_resume,
+  _$timedSegmentEndedReasonEnum_move,
+  _$timedSegmentEndedReasonEnum_stop,
+  _$timedSegmentEndedReasonEnum_splitWindow,
+]);
+
 const TimedSegmentKindEnum _$timedSegmentKindEnum_play =
     const TimedSegmentKindEnum._('play');
 const TimedSegmentKindEnum _$timedSegmentKindEnum_pause =
@@ -28,8 +66,46 @@ final BuiltSet<TimedSegmentKindEnum> _$timedSegmentKindEnumValues =
   _$timedSegmentKindEnum_pause,
 ]);
 
+Serializer<TimedSegmentEndedReasonEnum>
+    _$timedSegmentEndedReasonEnumSerializer =
+    _$TimedSegmentEndedReasonEnumSerializer();
 Serializer<TimedSegmentKindEnum> _$timedSegmentKindEnumSerializer =
     _$TimedSegmentKindEnumSerializer();
+
+class _$TimedSegmentEndedReasonEnumSerializer
+    implements PrimitiveSerializer<TimedSegmentEndedReasonEnum> {
+  static const Map<String, Object> _toWire = const <String, Object>{
+    'pause': 'pause',
+    'resume': 'resume',
+    'move': 'move',
+    'stop': 'stop',
+    'splitWindow': 'split_window',
+  };
+  static const Map<Object, String> _fromWire = const <Object, String>{
+    'pause': 'pause',
+    'resume': 'resume',
+    'move': 'move',
+    'stop': 'stop',
+    'split_window': 'splitWindow',
+  };
+
+  @override
+  final Iterable<Type> types = const <Type>[TimedSegmentEndedReasonEnum];
+  @override
+  final String wireName = 'TimedSegmentEndedReasonEnum';
+
+  @override
+  Object serialize(Serializers serializers, TimedSegmentEndedReasonEnum object,
+          {FullType specifiedType = FullType.unspecified}) =>
+      _toWire[object.name] ?? object.name;
+
+  @override
+  TimedSegmentEndedReasonEnum deserialize(
+          Serializers serializers, Object serialized,
+          {FullType specifiedType = FullType.unspecified}) =>
+      TimedSegmentEndedReasonEnum.valueOf(
+          _fromWire[serialized] ?? (serialized is String ? serialized : ''));
+}
 
 class _$TimedSegmentKindEnumSerializer
     implements PrimitiveSerializer<TimedSegmentKindEnum> {
@@ -61,6 +137,8 @@ class _$TimedSegmentKindEnumSerializer
 
 class _$TimedSegment extends TimedSegment {
   @override
+  final TimedSegmentEndedReasonEnum? endedReason;
+  @override
   final String id;
   @override
   final TimedSegmentKindEnum kind;
@@ -85,7 +163,8 @@ class _$TimedSegment extends TimedSegment {
       (TimedSegmentBuilder()..update(updates))._build();
 
   _$TimedSegment._(
-      {required this.id,
+      {this.endedReason,
+      required this.id,
       required this.kind,
       required this.resourceId,
       required this.resourceName,
@@ -107,6 +186,7 @@ class _$TimedSegment extends TimedSegment {
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
     return other is TimedSegment &&
+        endedReason == other.endedReason &&
         id == other.id &&
         kind == other.kind &&
         resourceId == other.resourceId &&
@@ -122,6 +202,7 @@ class _$TimedSegment extends TimedSegment {
   @override
   int get hashCode {
     var _$hash = 0;
+    _$hash = $jc(_$hash, endedReason.hashCode);
     _$hash = $jc(_$hash, id.hashCode);
     _$hash = $jc(_$hash, kind.hashCode);
     _$hash = $jc(_$hash, resourceId.hashCode);
@@ -139,6 +220,7 @@ class _$TimedSegment extends TimedSegment {
   @override
   String toString() {
     return (newBuiltValueToStringHelper(r'TimedSegment')
+          ..add('endedReason', endedReason)
           ..add('id', id)
           ..add('kind', kind)
           ..add('resourceId', resourceId)
@@ -156,6 +238,11 @@ class _$TimedSegment extends TimedSegment {
 class TimedSegmentBuilder
     implements Builder<TimedSegment, TimedSegmentBuilder> {
   _$TimedSegment? _$v;
+
+  TimedSegmentEndedReasonEnum? _endedReason;
+  TimedSegmentEndedReasonEnum? get endedReason => _$this._endedReason;
+  set endedReason(TimedSegmentEndedReasonEnum? endedReason) =>
+      _$this._endedReason = endedReason;
 
   String? _id;
   String? get id => _$this._id;
@@ -205,6 +292,7 @@ class TimedSegmentBuilder
   TimedSegmentBuilder get _$this {
     final $v = _$v;
     if ($v != null) {
+      _endedReason = $v.endedReason;
       _id = $v.id;
       _kind = $v.kind;
       _resourceId = $v.resourceId;
@@ -236,6 +324,7 @@ class TimedSegmentBuilder
   _$TimedSegment _build() {
     final _$result = _$v ??
         _$TimedSegment._(
+          endedReason: endedReason,
           id: BuiltValueNullFieldError.checkNotNull(id, r'TimedSegment', 'id'),
           kind: BuiltValueNullFieldError.checkNotNull(
               kind, r'TimedSegment', 'kind'),

@@ -44,7 +44,7 @@ module Spree
               end
             end
             if wallet
-              StoredValue.restore!(account: wallet, amount: payout.amount, actor: staff,
+              StoredValue.restore!(account: wallet, amount: payout.amount, actor: staff, payout: payout,
                                    note: "Hoàn tiền không thành #{payout.prefixed_id}")
             end
             AuditEntry.record!(store: store, actor: staff, action: 'liability_payout.resolve', subject: payout.received_funds,

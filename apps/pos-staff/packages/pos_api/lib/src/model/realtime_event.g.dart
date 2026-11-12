@@ -54,8 +54,37 @@ final BuiltSet<RealtimeEventEventEnum> _$realtimeEventEventEnumValues =
   _$realtimeEventEventEnum_approvalPeriodRequested,
 ]);
 
+const RealtimeEventAlertEnum _$realtimeEventAlertEnum_endingSoon =
+    const RealtimeEventAlertEnum._('endingSoon');
+const RealtimeEventAlertEnum _$realtimeEventAlertEnum_endedPackage =
+    const RealtimeEventAlertEnum._('endedPackage');
+const RealtimeEventAlertEnum _$realtimeEventAlertEnum_pauseTooLong =
+    const RealtimeEventAlertEnum._('pauseTooLong');
+
+RealtimeEventAlertEnum _$realtimeEventAlertEnumValueOf(String name) {
+  switch (name) {
+    case 'endingSoon':
+      return _$realtimeEventAlertEnum_endingSoon;
+    case 'endedPackage':
+      return _$realtimeEventAlertEnum_endedPackage;
+    case 'pauseTooLong':
+      return _$realtimeEventAlertEnum_pauseTooLong;
+    default:
+      throw ArgumentError(name);
+  }
+}
+
+final BuiltSet<RealtimeEventAlertEnum> _$realtimeEventAlertEnumValues =
+    BuiltSet<RealtimeEventAlertEnum>(const <RealtimeEventAlertEnum>[
+  _$realtimeEventAlertEnum_endingSoon,
+  _$realtimeEventAlertEnum_endedPackage,
+  _$realtimeEventAlertEnum_pauseTooLong,
+]);
+
 Serializer<RealtimeEventEventEnum> _$realtimeEventEventEnumSerializer =
     _$RealtimeEventEventEnumSerializer();
+Serializer<RealtimeEventAlertEnum> _$realtimeEventAlertEnumSerializer =
+    _$RealtimeEventAlertEnumSerializer();
 
 class _$RealtimeEventEventEnumSerializer
     implements PrimitiveSerializer<RealtimeEventEventEnum> {
@@ -95,6 +124,36 @@ class _$RealtimeEventEventEnumSerializer
           _fromWire[serialized] ?? (serialized is String ? serialized : ''));
 }
 
+class _$RealtimeEventAlertEnumSerializer
+    implements PrimitiveSerializer<RealtimeEventAlertEnum> {
+  static const Map<String, Object> _toWire = const <String, Object>{
+    'endingSoon': 'ending_soon',
+    'endedPackage': 'ended_package',
+    'pauseTooLong': 'pause_too_long',
+  };
+  static const Map<Object, String> _fromWire = const <Object, String>{
+    'ending_soon': 'endingSoon',
+    'ended_package': 'endedPackage',
+    'pause_too_long': 'pauseTooLong',
+  };
+
+  @override
+  final Iterable<Type> types = const <Type>[RealtimeEventAlertEnum];
+  @override
+  final String wireName = 'RealtimeEventAlertEnum';
+
+  @override
+  Object serialize(Serializers serializers, RealtimeEventAlertEnum object,
+          {FullType specifiedType = FullType.unspecified}) =>
+      _toWire[object.name] ?? object.name;
+
+  @override
+  RealtimeEventAlertEnum deserialize(Serializers serializers, Object serialized,
+          {FullType specifiedType = FullType.unspecified}) =>
+      RealtimeEventAlertEnum.valueOf(
+          _fromWire[serialized] ?? (serialized is String ? serialized : ''));
+}
+
 class _$RealtimeEvent extends RealtimeEvent {
   @override
   final RealtimeEventEventEnum event;
@@ -109,6 +168,8 @@ class _$RealtimeEvent extends RealtimeEvent {
   @override
   final DateTime at;
   @override
+  final RealtimeEventAlertEnum? alert;
+  @override
   final BuiltMap<String, String> refs;
 
   factory _$RealtimeEvent([void Function(RealtimeEventBuilder)? updates]) =>
@@ -121,6 +182,7 @@ class _$RealtimeEvent extends RealtimeEvent {
       this.revision,
       this.leaseGeneration,
       required this.at,
+      this.alert,
       required this.refs})
       : super._();
   @override
@@ -140,6 +202,7 @@ class _$RealtimeEvent extends RealtimeEvent {
         revision == other.revision &&
         leaseGeneration == other.leaseGeneration &&
         at == other.at &&
+        alert == other.alert &&
         refs == other.refs;
   }
 
@@ -152,6 +215,7 @@ class _$RealtimeEvent extends RealtimeEvent {
     _$hash = $jc(_$hash, revision.hashCode);
     _$hash = $jc(_$hash, leaseGeneration.hashCode);
     _$hash = $jc(_$hash, at.hashCode);
+    _$hash = $jc(_$hash, alert.hashCode);
     _$hash = $jc(_$hash, refs.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
@@ -166,6 +230,7 @@ class _$RealtimeEvent extends RealtimeEvent {
           ..add('revision', revision)
           ..add('leaseGeneration', leaseGeneration)
           ..add('at', at)
+          ..add('alert', alert)
           ..add('refs', refs))
         .toString();
   }
@@ -200,6 +265,10 @@ class RealtimeEventBuilder
   DateTime? get at => _$this._at;
   set at(DateTime? at) => _$this._at = at;
 
+  RealtimeEventAlertEnum? _alert;
+  RealtimeEventAlertEnum? get alert => _$this._alert;
+  set alert(RealtimeEventAlertEnum? alert) => _$this._alert = alert;
+
   MapBuilder<String, String>? _refs;
   MapBuilder<String, String> get refs =>
       _$this._refs ??= MapBuilder<String, String>();
@@ -218,6 +287,7 @@ class RealtimeEventBuilder
       _revision = $v.revision;
       _leaseGeneration = $v.leaseGeneration;
       _at = $v.at;
+      _alert = $v.alert;
       _refs = $v.refs.toBuilder();
       _$v = null;
     }
@@ -252,6 +322,7 @@ class RealtimeEventBuilder
             leaseGeneration: leaseGeneration,
             at: BuiltValueNullFieldError.checkNotNull(
                 at, r'RealtimeEvent', 'at'),
+            alert: alert,
             refs: refs.build(),
           );
     } catch (_) {

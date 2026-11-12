@@ -8,6 +8,8 @@ part of 'timed_quote.dart';
 
 class _$TimedQuote extends TimedQuote {
   @override
+  final int cardMinutes;
+  @override
   final DateTime asOf;
   @override
   final bool final_;
@@ -24,7 +26,8 @@ class _$TimedQuote extends TimedQuote {
       (TimedQuoteBuilder()..update(updates))._build();
 
   _$TimedQuote._(
-      {required this.asOf,
+      {required this.cardMinutes,
+      required this.asOf,
       required this.final_,
       required this.playedMinutes,
       required this.billedMinutes,
@@ -42,6 +45,7 @@ class _$TimedQuote extends TimedQuote {
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
     return other is TimedQuote &&
+        cardMinutes == other.cardMinutes &&
         asOf == other.asOf &&
         final_ == other.final_ &&
         playedMinutes == other.playedMinutes &&
@@ -53,6 +57,7 @@ class _$TimedQuote extends TimedQuote {
   @override
   int get hashCode {
     var _$hash = 0;
+    _$hash = $jc(_$hash, cardMinutes.hashCode);
     _$hash = $jc(_$hash, asOf.hashCode);
     _$hash = $jc(_$hash, final_.hashCode);
     _$hash = $jc(_$hash, playedMinutes.hashCode);
@@ -66,6 +71,7 @@ class _$TimedQuote extends TimedQuote {
   @override
   String toString() {
     return (newBuiltValueToStringHelper(r'TimedQuote')
+          ..add('cardMinutes', cardMinutes)
           ..add('asOf', asOf)
           ..add('final_', final_)
           ..add('playedMinutes', playedMinutes)
@@ -78,6 +84,10 @@ class _$TimedQuote extends TimedQuote {
 
 class TimedQuoteBuilder implements Builder<TimedQuote, TimedQuoteBuilder> {
   _$TimedQuote? _$v;
+
+  int? _cardMinutes;
+  int? get cardMinutes => _$this._cardMinutes;
+  set cardMinutes(int? cardMinutes) => _$this._cardMinutes = cardMinutes;
 
   DateTime? _asOf;
   DateTime? get asOf => _$this._asOf;
@@ -113,6 +123,7 @@ class TimedQuoteBuilder implements Builder<TimedQuote, TimedQuoteBuilder> {
   TimedQuoteBuilder get _$this {
     final $v = _$v;
     if ($v != null) {
+      _cardMinutes = $v.cardMinutes;
       _asOf = $v.asOf;
       _final_ = $v.final_;
       _playedMinutes = $v.playedMinutes;
@@ -142,6 +153,8 @@ class TimedQuoteBuilder implements Builder<TimedQuote, TimedQuoteBuilder> {
     try {
       _$result = _$v ??
           _$TimedQuote._(
+            cardMinutes: BuiltValueNullFieldError.checkNotNull(
+                cardMinutes, r'TimedQuote', 'cardMinutes'),
             asOf: BuiltValueNullFieldError.checkNotNull(
                 asOf, r'TimedQuote', 'asOf'),
             final_: BuiltValueNullFieldError.checkNotNull(

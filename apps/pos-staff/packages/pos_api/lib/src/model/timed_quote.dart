@@ -13,6 +13,7 @@ part 'timed_quote.g.dart';
 /// The price of a clock: up to `as_of` on the server's clock while it runs (`final` false), as billed once stopped.
 ///
 /// Properties:
+/// * [cardMinutes] - Minutes the minutes card pays.
 /// * [asOf]
 /// * [final_]
 /// * [playedMinutes]
@@ -21,6 +22,10 @@ part 'timed_quote.g.dart';
 /// * [lines]
 @BuiltValue()
 abstract class TimedQuote implements Built<TimedQuote, TimedQuoteBuilder> {
+  /// Minutes the minutes card pays.
+  @BuiltValueField(wireName: r'card_minutes')
+  int get cardMinutes;
+
   @BuiltValueField(wireName: r'as_of')
   DateTime get asOf;
 
@@ -62,6 +67,11 @@ class _$TimedQuoteSerializer implements PrimitiveSerializer<TimedQuote> {
     TimedQuote object, {
     FullType specifiedType = FullType.unspecified,
   }) sync* {
+    yield r'card_minutes';
+    yield serializers.serialize(
+      object.cardMinutes,
+      specifiedType: const FullType(int),
+    );
     yield r'as_of';
     yield serializers.serialize(
       object.asOf,
@@ -117,6 +127,13 @@ class _$TimedQuoteSerializer implements PrimitiveSerializer<TimedQuote> {
       final key = serializedList[i] as String;
       final value = serializedList[i + 1];
       switch (key) {
+        case r'card_minutes':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(int),
+          ) as int;
+          result.cardMinutes = valueDes;
+          break;
         case r'as_of':
           final valueDes = serializers.deserialize(
             value,

@@ -6,6 +6,8 @@ import {
   buffetMinutesLeft,
   buffetTiming,
   clampPlacement,
+  clockPlayedSeconds,
+  clockSecondsLeft,
   countStates,
   filterTables,
   fitsArea,
@@ -55,6 +57,7 @@ describe('resource board', () => {
     expect(normalizeResourceBoard(null)).toEqual({
       branch_id: '',
       server_now: null,
+      outside_operating_hours: false,
       areas: [],
       resources: [],
     });
@@ -106,6 +109,52 @@ describe('resource board', () => {
     });
     expect(read.resources[1]).toMatchObject({ state: 'ending_soon', timed: null });
     expect(board.resources[0].timed).toBeNull();
+  });
+
+  it('counts a paused clock still and a package down on the server clock', () => {
+    const read = normalizeResourceBoard({
+      server_now: '2026-11-12T20:00:00Z',
+      outside_operating_hours: true,
+      resources: [
+        {
+          id: 'posres_1',
+          timed: {
+            id: 't1',
+            status: 'running',
+            started_at: '2026-11-12T19:00:00Z',
+            planned_end_at: '2026-11-12T21:10:00Z',
+            prepaid_minutes: 120,
+            played_seconds: 50 * 60,
+          },
+        },
+        {
+          id: 'posres_2',
+          timed: {
+            id: 't2',
+            status: 'paused',
+            started_at: '2026-11-12T19:00:00Z',
+            paused_at: '2026-11-12T19:45:00Z',
+            played_seconds: 45 * 60,
+            pause_too_long: true,
+          },
+        },
+      ],
+    });
+    expect(read.outside_operating_hours).toBe(true);
+    const [running, paused] = read.resources.flatMap((row) => (row.timed ? [row.timed] : []));
+    expect(running).toMatchObject({
+      prepaid_minutes: 120,
+      package_ended: false,
+      pause_too_long: false,
+    });
+    expect(paused).toMatchObject({ paused_at: '2026-11-12T19:45:00Z', pause_too_long: true });
+    const later = Date.parse('2026-11-12T20:05:00Z');
+    expect(clockPlayedSeconds(running, read.server_now, later)).toBe(55 * 60);
+    expect(clockPlayedSeconds(paused, read.server_now, later)).toBe(45 * 60);
+    expect(clockSecondsLeft(running, later)).toBe(65 * 60);
+    expect(clockSecondsLeft(paused, later)).toBeNull();
+    // Without the board's count: from the start.
+    expect(clockPlayedSeconds({ ...running, played_seconds: null }, null, later)).toBe(65 * 60);
   });
 
   it('labels every state in both languages', () => {

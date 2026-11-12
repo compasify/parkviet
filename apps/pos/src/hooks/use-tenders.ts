@@ -293,6 +293,29 @@ export function useTenders(staffId: string | null, storeId: string | null) {
         throw error;
       }
     },
+    // A prepaid money card pays what the order still owes, up to its
+    // balance. The card is named by its id (found by reading it first), so
+    // the card's reading is never kept with the command on this device.
+    async payStoredValue(workspace: PosWorkspace, cardId: string) {
+      try {
+        const result = await runFinancialCommand<{ workspace: PosWorkspace; card: unknown }>(
+          financialRequest,
+          {
+            staffId,
+            storeId,
+            scopeId: workspace.id,
+            action: 'stored_value.pay',
+            path: `/pos/workspaces/${workspace.id}/stored_value_payments`,
+            body: { ...workspaceBody(workspace, {}), card_id: cardId },
+          },
+        );
+        await accept(result.data.workspace);
+        return result.data;
+      } catch (error) {
+        abandonIfNeeded(error);
+        throw error;
+      }
+    },
     handover(workspace: PosWorkspace) {
       return runFinancial(
         workspace,

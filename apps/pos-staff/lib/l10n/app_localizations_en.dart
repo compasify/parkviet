@@ -1174,4 +1174,55 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get waiterClockAlreadyStopped => 'This room\'s clock has stopped.';
+
+  @override
+  String get waiterClockPause => 'Pause the clock';
+
+  @override
+  String get waiterClockResume => 'Resume the clock';
+
+  @override
+  String get waiterClockPaused => 'Paused';
+
+  @override
+  String get waiterClockAlreadyPaused =>
+      'This room\'s clock is already paused.';
+
+  @override
+  String get waiterClockNotPaused => 'This room\'s clock is not paused.';
+
+  @override
+  String get waiterClockLongPause =>
+      'Paused too long: a manager approves resuming at the counter.';
+
+  @override
+  String waiterClockPackageLeft(int minutes) {
+    return '$minutes min left in the package';
+  }
+
+  @override
+  String get waiterServeRoom => 'I serve this room';
+
+  @override
+  String waiterServingRoom(String room) {
+    return 'You now serve $room.';
+  }
+
+  @override
+  String get waiterAttendantBusy => 'You already serve another room.';
+
+  @override
+  String waiterAlertEndingSoon(String room) {
+    return '$room has 10 minutes left';
+  }
+
+  @override
+  String waiterAlertEndedPackage(String room) {
+    return '$room has used its package';
+  }
+
+  @override
+  String waiterAlertPauseTooLong(String room) {
+    return '$room has been paused too long';
+  }
 }

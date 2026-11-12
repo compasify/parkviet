@@ -9,6 +9,12 @@ module Spree
       # the room's rate plan. A room runs one clock at a time; two people
       # pressing Start together get one clock (the room's row lock, and a
       # partial unique index behind it). The client sends no time.
+      #
+      # A prepaid package of the room's plan (`package_code`) counts down
+      # from its minutes; a minutes card read at the counter (`card_token`)
+      # pays the time when the clock stops. Starting outside the branch's
+      # operating hours is allowed and answered with the warning
+      # `outside_operating_hours` (OperatingHours).
       module Start
         COMMAND = 'timed.start'
 
@@ -16,11 +22,13 @@ module Spree
 
         # @return [Hash] 'workspace' and 'timed_session'
         def call(store:, staff:, key:, editor_id:, branch_id:, resource_id:, workspace_id: nil, guest_count: nil,
-                 planned_end_at: nil, device: nil)
+                 planned_end_at: nil, package_code: nil, card_token: nil, device: nil)
           branch = Guard.branch!(store, branch_id)
           payload = { 'command' => COMMAND, 'branch_id' => branch.prefixed_id, 'resource_id' => resource_id.to_s,
                       'workspace_id' => workspace_id.to_s.presence, 'guest_count' => guest_count&.to_s,
-                      'planned_end_at' => planned_end_at.to_s.presence, 'editor_digest' => Workspace.editor_digest(editor_id) }
+                      'planned_end_at' => planned_end_at.to_s.presence, 'editor_digest' => Workspace.editor_digest(editor_id),
+                      'package_code' => package_code.to_s.presence,
+                      'card_digest' => card_token.present? ? StoredValueAccount.card_digest(card_token.to_s.strip) : nil }
           session = nil
           result = CommandExecutor.call(store: store, actor: staff, key: key, payload: payload,
                                         authorize: -> { Guard.start!(store, staff, branch) }) do
@@ -36,6 +44,10 @@ module Spree
             plan = RatePlan.active_for(resource)
             raise Conflict.new('This room has no rate plan.', reason: 'rate_plan_missing', details: { resource_id: resource.prefixed_id }) if plan.nil?
 
+            package = package_code.present? ? plan.package(package_code) : nil
+            raise Conflict.new('This package is not sold on the room.', reason: 'timed_package_unknown') if package_code.present? && package.nil?
+
+            card = card_token.present? ? Guard.minutes_card!(store, card_token) : nil
             workspace = order_for!(store, staff, key, editor_id, branch, resource, workspace_id, guest_count)
             workspace.lock!
             Guard.operate!(workspace, staff)
@@ -44,10 +56,14 @@ module Spree
             ends = Guard.time!(planned_end_at, 'planned_end_at')
             raise Conflict.new('The planned end is in the past.', reason: 'planned_end_invalid') if ends && ends <= now
 
+            ends = now + package['minutes'].minutes if package
+            warnings = [OperatingHours.check(branch, now)].compact
+
             sale_line = Lines.create!(workspace: workspace, staff: staff, plan: plan, device: device)
             session = TimedSession.create!(store: store, branch: branch, workspace: workspace, sale_line: sale_line, resource: resource,
                                            status: 'running', started_at: now, planned_end_at: ends, currency: workspace.order.currency,
-                                           started_by: staff)
+                                           started_by: staff, prepaid_minutes: package&.dig('minutes'), package_name: package&.dig('name'),
+                                           package_price: package && BigDecimal(package['price'].to_s), stored_value_account: card)
             TimedSegment.create!(timed_session: session, resource: resource, kind: 'play', started_at: now, rate_plan: plan,
                                  rate_plan_version: plan.version)
             Workspaces::ApplyDiscount.recalculate!(workspace)
@@ -55,11 +71,12 @@ module Spree
             AuditEntry.record!(store: store, actor: staff, action: COMMAND, subject: workspace,
                                metadata: { timed_session_id: session.prefixed_id, resource_id: resource.prefixed_id,
                                            rate_plan_id: plan.prefixed_id, rate_plan_version: plan.version, started_at: now.iso8601,
-                                           planned_end_at: ends&.iso8601, device_id: device&.prefixed_id })
+                                           planned_end_at: ends&.iso8601, device_id: device&.prefixed_id, package: package,
+                                           card_id: card&.prefixed_id, warnings: warnings.presence })
             Realtime.publish(branch, 'resource.updated', id: resource.prefixed_id,
                                                          refs: { workspace_id: workspace.prefixed_id, timed_session_id: session.prefixed_id })
             Realtime.announce_workspaces([workspace.id])
-            { 'workspace' => workspace.to_pos, 'timed_session' => Sessions.to_pos(session.reload, now: now) }
+            { 'workspace' => workspace.to_pos, 'timed_session' => Sessions.to_pos(session.reload, now: now), 'warnings' => warnings }
           end
           result
         rescue ActiveRecord::RecordNotUnique => e

@@ -12,6 +12,8 @@ class _$ResourceBoard extends ResourceBoard {
   @override
   final DateTime serverNow;
   @override
+  final bool outsideOperatingHours;
+  @override
   final BuiltList<ResourceBoardArea> areas;
   @override
   final BuiltList<ResourceBoardTile> resources;
@@ -22,6 +24,7 @@ class _$ResourceBoard extends ResourceBoard {
   _$ResourceBoard._(
       {required this.branchId,
       required this.serverNow,
+      required this.outsideOperatingHours,
       required this.areas,
       required this.resources})
       : super._();
@@ -38,6 +41,7 @@ class _$ResourceBoard extends ResourceBoard {
     return other is ResourceBoard &&
         branchId == other.branchId &&
         serverNow == other.serverNow &&
+        outsideOperatingHours == other.outsideOperatingHours &&
         areas == other.areas &&
         resources == other.resources;
   }
@@ -47,6 +51,7 @@ class _$ResourceBoard extends ResourceBoard {
     var _$hash = 0;
     _$hash = $jc(_$hash, branchId.hashCode);
     _$hash = $jc(_$hash, serverNow.hashCode);
+    _$hash = $jc(_$hash, outsideOperatingHours.hashCode);
     _$hash = $jc(_$hash, areas.hashCode);
     _$hash = $jc(_$hash, resources.hashCode);
     _$hash = $jf(_$hash);
@@ -58,6 +63,7 @@ class _$ResourceBoard extends ResourceBoard {
     return (newBuiltValueToStringHelper(r'ResourceBoard')
           ..add('branchId', branchId)
           ..add('serverNow', serverNow)
+          ..add('outsideOperatingHours', outsideOperatingHours)
           ..add('areas', areas)
           ..add('resources', resources))
         .toString();
@@ -75,6 +81,11 @@ class ResourceBoardBuilder
   DateTime? _serverNow;
   DateTime? get serverNow => _$this._serverNow;
   set serverNow(DateTime? serverNow) => _$this._serverNow = serverNow;
+
+  bool? _outsideOperatingHours;
+  bool? get outsideOperatingHours => _$this._outsideOperatingHours;
+  set outsideOperatingHours(bool? outsideOperatingHours) =>
+      _$this._outsideOperatingHours = outsideOperatingHours;
 
   ListBuilder<ResourceBoardArea>? _areas;
   ListBuilder<ResourceBoardArea> get areas =>
@@ -96,6 +107,7 @@ class ResourceBoardBuilder
     if ($v != null) {
       _branchId = $v.branchId;
       _serverNow = $v.serverNow;
+      _outsideOperatingHours = $v.outsideOperatingHours;
       _areas = $v.areas.toBuilder();
       _resources = $v.resources.toBuilder();
       _$v = null;
@@ -125,6 +137,10 @@ class ResourceBoardBuilder
                 branchId, r'ResourceBoard', 'branchId'),
             serverNow: BuiltValueNullFieldError.checkNotNull(
                 serverNow, r'ResourceBoard', 'serverNow'),
+            outsideOperatingHours: BuiltValueNullFieldError.checkNotNull(
+                outsideOperatingHours,
+                r'ResourceBoard',
+                'outsideOperatingHours'),
             areas: areas.build(),
             resources: resources.build(),
           );

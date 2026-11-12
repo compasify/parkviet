@@ -16,14 +16,14 @@ RSpec.describe Spree::Pos::Modules do
     end
   end
 
-  it 'registers resources, tables, pay-later, service charge and timed billing, and keeps relays planned' do
+  it 'registers resources, tables, pay-later, service charge and timed billing, and no planned names' do
     %w[resources fnb.tables fnb.postpay fnb.service_charge timed_billing].each do |key|
       expect(described_class.find(key).status).to eq('available'), key
       expect(described_class.find(key).entrypoints).not_to be_empty, key
     end
     expect(described_class.find('fnb.tables').depends_on).to eq(['resources'])
     expect(described_class.find('timed_billing').depends_on).to eq(['resources', 'fnb.tables'])
-    expect(described_class.find('resources.iot_relay').status).to eq('planned')
+    expect(described_class.all.map(&:status).uniq).to eq(['available'])
   end
 
   it 'passes the boot checks with the registry as registered' do

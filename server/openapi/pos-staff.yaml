@@ -4247,7 +4247,9 @@ paths:
           description: >
             Refused; `error.details.reason` is `timed_session_running`,
             `rate_plan_missing`, `workspace_required` (with `workspace_ids`),
-            `planned_end_invalid`, `table_unavailable`, `workspace_closed` or
+            `planned_end_invalid`, `timed_package_unknown`,
+            `stored_value_card_unknown`, `stored_value_closed`,
+            `stored_value_insufficient`, `table_unavailable`, `workspace_closed` or
             `module_disabled`
           content:
             application/json:
@@ -4288,6 +4290,12 @@ paths:
       parameters:
         - $ref: '#/components/parameters/KitchenIdempotencyKey'
         - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TimedSessionApprovalInput'
       responses:
         '200':
           description: The order and the stopped clock
@@ -4296,7 +4304,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/TimedSessionCommandResult'
         '409':
-          description: Refused; `error.details.reason` is `workspace_closed` or `snapshot_locked`
+          description: >
+            Refused; `error.details.reason` is `workspace_closed`,
+            `snapshot_locked`, `approval_required` (a pause longer than the
+            branch allows, as for resuming), `stored_value_insufficient` or
+            `stored_value_changed` (the minutes card changed while stopping)
           content:
             application/json:
               schema:
@@ -4372,6 +4384,135 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/timed_sessions/{id}/pause:
+    post:
+      operationId: posTimedSessionPause
+      description: >
+        Pauses a running clock now on the server's clock; a pause is never
+        billed. Needs `pos.timed.operate` and no lease.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: The order and the paused clock
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimedSessionCommandResult'
+        '409':
+          description: >
+            Refused; `error.details.reason` is `timed_session_paused`,
+            `timed_session_stopped`, `workspace_closed` or `module_disabled`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/timed_sessions/{id}/resume:
+    post:
+      operationId: posTimedSessionResume
+      description: >
+        Plays on a paused clock at the room's plan. A pause longer than the
+        branch's `max_pause_minutes` needs `pos.timed.edit` or a manager's
+        approval for `timed.long_pause` bound to the order's revision.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TimedSessionApprovalInput'
+      responses:
+        '200':
+          description: The order and the running clock
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimedSessionCommandResult'
+        '409':
+          description: >
+            Refused; `error.details.reason` is `timed_session_not_paused`,
+            `approval_required` (with `action`, `paused_minutes` and
+            `max_pause_minutes`), `rate_plan_missing`, `workspace_closed` or
+            `module_disabled`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/attendant_assignments:
+    get:
+      operationId: posAttendantAssignmentList
+      description: >
+        The attendants book of a branch: the open turns, or with `date` the
+        turns of that business day. Needs `pos.timed.operate`.
+      parameters:
+        - name: branch_id
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: resource_id
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The turns
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttendantAssignmentList'
+    post:
+      operationId: posAttendantAssignmentStart
+      description: >
+        Starts a turn now: a staff member of the branch serves a room. A
+        turn on a room with a clock ends when the clock stops. No money.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttendantAssignmentStartInput'
+      responses:
+        '201':
+          description: The turn
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttendantAssignmentResult'
+        '409':
+          description: >
+            Refused; `error.details.reason` is `attendant_busy`,
+            `attendant_not_member`, `attendant_invalid` or `module_disabled`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/attendant_assignments/{id}/stop:
+    post:
+      operationId: posAttendantAssignmentStop
+      description: Ends a turn now; a turn already ended is answered as it is.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: The turn
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttendantAssignmentResult'
 components:
   parameters:
     Id:
@@ -4489,6 +4630,13 @@ components:
         at:
           type: string
           format: date-time
+        alert:
+          type: string
+          enum: [ending_soon, ended_package, pause_too_long]
+          description: >
+            Only on `resource.updated`, sent once per deadline: a clock is ten
+            minutes from its planned end, a package's minutes are played, or a
+            pause ran longer than the branch allows.
         refs:
           type: object
           additionalProperties:
@@ -7807,7 +7955,8 @@ components:
           description: >
             Strongest first: out_of_service, cleaning (no open order),
             payment_requested, prebilled, ending_soon (a running clock is
-            within ten minutes of its planned end), waiting_long (a kitchen
+            within ten minutes of its planned end, or past the end of its
+            package), waiting_long (a kitchen
             item waited past its station's threshold), playing (a clock is
             running), ordered, occupied, reserved (no open order and a
             booking starts within the hour), available.
@@ -7831,8 +7980,25 @@ components:
     ResourceBoardTimed:
       type: object
       additionalProperties: false
-      required: [id, workspace_id, status, started_at, stopped_at, planned_end_at, played_minutes, quote_amount, ending_soon]
+      required: [id, workspace_id, status, started_at, stopped_at, planned_end_at, paused_at, prepaid_minutes, played_seconds, played_minutes,
+                 quote_amount, ending_soon, package_ended, pause_too_long]
       properties:
+        paused_at:
+          type: [string, 'null']
+          format: date-time
+          description: Server time the clock was paused; null unless paused.
+        prepaid_minutes:
+          type: [integer, 'null']
+          description: The minutes of the package the clock was sold with.
+        played_seconds:
+          type: [integer, 'null']
+          description: Seconds played up to `server_now`, pauses not counted; null once stopped.
+        package_ended:
+          type: boolean
+          description: A package clock still runs past its prepaid minutes.
+        pause_too_long:
+          type: boolean
+          description: Paused longer than the branch's `max_pause_minutes`; resuming needs `pos.timed.edit` or an approval.
         id:
           type: string
         workspace_id:
@@ -7874,13 +8040,16 @@ components:
     ResourceBoard:
       type: object
       additionalProperties: false
-      required: [branch_id, server_now, areas, resources]
+      required: [branch_id, server_now, outside_operating_hours, areas, resources]
       properties:
         branch_id:
           type: string
         server_now:
           type: string
           format: date-time
+        outside_operating_hours:
+          type: boolean
+          description: A clock started now would start outside the branch's operating hours; ask before starting.
         areas:
           type: array
           items:
@@ -9418,6 +9587,92 @@ components:
           type: string
           format: date-time
           description: When the guests plan to leave; the room shows `ending_soon` ten minutes before.
+        package_code:
+          type: string
+          description: >
+            A prepaid package of the room's rate plan (`RatePlan.packages`);
+            the clock is billed at least its minutes at its price and ends
+            when they are played.
+        card_token:
+          type: string
+          description: What a minutes card's QR code or tag reads; the card pays the time when the clock stops.
+    TimedSessionApprovalInput:
+      type: object
+      properties:
+        approval_id:
+          type: string
+          description: A manager's approval for `timed.long_pause`, for someone without `pos.timed.edit`.
+    AttendantAssignmentStartInput:
+      type: object
+      required: [branch_id, resource_id, staff_id]
+      properties:
+        branch_id:
+          type: string
+        resource_id:
+          type: string
+        staff_id:
+          type: string
+          description: An active member of the branch who serves the room.
+        note:
+          type: string
+          maxLength: 255
+    AttendantStaff:
+      type: object
+      additionalProperties: false
+      required: [id, name]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+    AttendantAssignment:
+      type: object
+      additionalProperties: false
+      required: [id, branch_id, resource_id, resource_name, timed_session_id, staff, started_at, ended_at, minutes, business_date, note]
+      description: Who serves a room from when to when; an open turn has no end. Never on the bill.
+      properties:
+        id:
+          type: string
+        branch_id:
+          type: string
+        resource_id:
+          type: string
+        resource_name:
+          type: string
+        timed_session_id:
+          type: [string, 'null']
+        staff:
+          $ref: '#/components/schemas/AttendantStaff'
+        started_at:
+          type: string
+          format: date-time
+        ended_at:
+          type: [string, 'null']
+          format: date-time
+        minutes:
+          type: integer
+          description: Whole minutes served up to the server's now, or to the end.
+        business_date:
+          type: string
+          format: date
+        note:
+          type: [string, 'null']
+    AttendantAssignmentResult:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/AttendantAssignment'
+    AttendantAssignmentList:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AttendantAssignment'
+        meta:
+          $ref: '#/components/schemas/WorkspacePageMeta'
     TimedSessionMoveInput:
       type: object
       required: [resource_id]
@@ -9445,9 +9700,13 @@ components:
     TimedSegment:
       type: object
       additionalProperties: false
-      required: [id, kind, resource_id, resource_name, started_at, ended_at, rate_plan_id, rate_plan_name, rate_plan_version, edited]
+      required: [id, kind, resource_id, resource_name, started_at, ended_at, ended_reason, rate_plan_id, rate_plan_name, rate_plan_version, edited]
       description: A stretch of a clock on one room at one rate plan; an open stretch has no end.
       properties:
+        ended_reason:
+          type: [string, 'null']
+          enum: [pause, resume, move, stop, split_window, null]
+          description: Why the stretch ended; null while it runs and for older stretches.
         id:
           type: string
         kind:
@@ -9475,9 +9734,19 @@ components:
     TimedQuoteLine:
       type: object
       additionalProperties: false
-      required: [segment_id, starts_at, ends_at, day_type, label, price_per_hour, surcharge_percent, minutes, amount]
+      required: [segment_id, starts_at, ends_at, day_type, label, price_per_hour, surcharge_percent, minutes, amount, kind, promotion_id]
       description: One time band of a quote, at one price.
       properties:
+        kind:
+          type: string
+          enum: [rate, package, card, bonus]
+          description: >
+            `rate` at the plan's price, `package` the prepaid package at its
+            price, `card` paid by the minutes card (its money moves when the
+            clock stops), `bonus` free minutes of a promotion at 0.
+        promotion_id:
+          type: [string, 'null']
+          description: The timed promotion that gave a `bonus` line.
         segment_id:
           type: [string, 'null']
         starts_at:
@@ -9502,11 +9771,14 @@ components:
     TimedQuote:
       type: object
       additionalProperties: false
-      required: [as_of, final, played_minutes, billed_minutes, amount, lines]
+      required: [as_of, final, played_minutes, billed_minutes, card_minutes, amount, lines]
       description: >
         The price of a clock: up to `as_of` on the server's clock while it
         runs (`final` false), as billed once stopped.
       properties:
+        card_minutes:
+          type: integer
+          description: Minutes the minutes card pays.
         as_of:
           type: string
           format: date-time
@@ -9526,9 +9798,21 @@ components:
       type: object
       additionalProperties: false
       required: [id, status, resource_id, resource_name, started_at, stopped_at, planned_end_at, played_minutes, billed_minutes, amount, currency,
-                 quote_version, segments, quote]
+                 quote_version, paused_at, package, minutes_card, segments, quote]
       description: The clock of a room's play time, with its stretches and quote. Every time is the server's.
       properties:
+        paused_at:
+          type: [string, 'null']
+          format: date-time
+          description: Since when the clock is paused; null unless paused.
+        package:
+          oneOf:
+            - $ref: '#/components/schemas/TimedPackage'
+            - type: 'null'
+        minutes_card:
+          oneOf:
+            - $ref: '#/components/schemas/TimedMinutesCard'
+            - type: 'null'
         id:
           type: string
         status:
@@ -9566,6 +9850,29 @@ components:
           oneOf:
             - $ref: '#/components/schemas/TimedQuote'
             - type: 'null'
+    TimedPackage:
+      type: object
+      additionalProperties: false
+      required: [name, minutes, price]
+      description: The prepaid package a clock was sold with, as sold.
+      properties:
+        name:
+          type: string
+        minutes:
+          type: integer
+        price:
+          type: string
+    TimedMinutesCard:
+      type: object
+      additionalProperties: false
+      required: [id, card_hint]
+      description: The minutes card that pays the clock's time when it stops.
+      properties:
+        id:
+          type: string
+        card_hint:
+          type: [string, 'null']
+          description: The last characters of the card's code.
     TimedSessionResult:
       type: object
       required: [data]
@@ -9576,6 +9883,12 @@ components:
       type: object
       required: [workspace, timed_session]
       properties:
+        warnings:
+          type: array
+          description: Only when starting; `outside_operating_hours` when the clock started outside the branch's hours.
+          items:
+            type: string
+            enum: [outside_operating_hours]
         workspace:
           $ref: '#/components/schemas/Workspace'
         timed_session:

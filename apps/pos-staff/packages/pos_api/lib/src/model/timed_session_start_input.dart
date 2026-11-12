@@ -16,6 +16,8 @@ part 'timed_session_start_input.g.dart';
 /// * [workspaceId] - The order to bill when the room has several open orders.
 /// * [guestCount]
 /// * [plannedEndAt] - When the guests plan to leave; the room shows `ending_soon` ten minutes before.
+/// * [packageCode] - A prepaid package of the room's rate plan (`RatePlan.packages`); the clock is billed at least its minutes at its price and ends when they are played.
+/// * [cardToken] - What a minutes card's QR code or tag reads; the card pays the time when the clock stops.
 @BuiltValue()
 abstract class TimedSessionStartInput
     implements Built<TimedSessionStartInput, TimedSessionStartInputBuilder> {
@@ -36,6 +38,14 @@ abstract class TimedSessionStartInput
   /// When the guests plan to leave; the room shows `ending_soon` ten minutes before.
   @BuiltValueField(wireName: r'planned_end_at')
   DateTime? get plannedEndAt;
+
+  /// A prepaid package of the room's rate plan (`RatePlan.packages`); the clock is billed at least its minutes at its price and ends when they are played.
+  @BuiltValueField(wireName: r'package_code')
+  String? get packageCode;
+
+  /// What a minutes card's QR code or tag reads; the card pays the time when the clock stops.
+  @BuiltValueField(wireName: r'card_token')
+  String? get cardToken;
 
   TimedSessionStartInput._();
 
@@ -96,6 +106,20 @@ class _$TimedSessionStartInputSerializer
       yield serializers.serialize(
         object.plannedEndAt,
         specifiedType: const FullType(DateTime),
+      );
+    }
+    if (object.packageCode != null) {
+      yield r'package_code';
+      yield serializers.serialize(
+        object.packageCode,
+        specifiedType: const FullType(String),
+      );
+    }
+    if (object.cardToken != null) {
+      yield r'card_token';
+      yield serializers.serialize(
+        object.cardToken,
+        specifiedType: const FullType(String),
       );
     }
   }
@@ -160,6 +184,22 @@ class _$TimedSessionStartInputSerializer
           ) as DateTime?;
           if (valueDes == null) continue;
           result.plannedEndAt = valueDes;
+          break;
+        case r'package_code':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.packageCode = valueDes;
+          break;
+        case r'card_token':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.cardToken = valueDes;
           break;
         default:
           unhandled.add(key);

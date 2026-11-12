@@ -81,7 +81,7 @@ RSpec.describe 'POS branch modules', type: :request, pos_modules: :default do
   it 'needs a known, available module, a boolean and a reason' do
     manager = staff_with(%w[write_pos_topology])
     expect(switch(manager, 'retail.teleport', true).dig('error', 'details', 'reason')).to eq('module_unknown')
-    expect(switch(manager, 'resources.iot_relay', true).dig('error', 'details', 'reason')).to eq('module_unavailable')
+    expect(switch(manager, with_planned_module('fnb.planned_example'), true).dig('error', 'details', 'reason')).to eq('module_unavailable')
     expect(switch(manager, 'retail.units', 'yes').dig('error', 'details', 'reason')).to eq('module_value_invalid')
     expect(switch(manager, 'retail.units', true, reason: ' ').dig('error', 'details', 'reason')).to eq('reason_required')
     expect(switch(manager, 'retail.units', true, reason: 'x' * 201).dig('error', 'details', 'reason')).to eq('reason_invalid')

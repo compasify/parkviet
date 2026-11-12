@@ -5,8 +5,10 @@ import {
   clockToMinutes,
   coverageProblems,
   minutesToClock,
+  packagesInput,
   RATE_PLAN_REFUSALS,
   ratePlanFailure,
+  windowsInput,
 } from './rate-plans'
 
 const band = (day_type: 'weekday' | 'weekend' | 'holiday', start: number, end: number) => ({
@@ -56,5 +58,35 @@ describe('rate plans', () => {
         expect((bundle.ratePlans as Record<string, unknown>)[`failure_${reason}`]).toEqual(
           expect.any(String),
         )
+  })
+})
+
+describe('operating windows and packages', () => {
+  it('takes windows of the week, overnight ones too', () => {
+    expect(windowsInput([{ days: [5, 1, 5], from: '08:00', to: '24:00' }])).toEqual([
+      { days: [1, 5], from: '08:00', to: '24:00' },
+    ])
+    expect(windowsInput([{ days: [6], from: '18:00', to: '02:00' }])).not.toBeNull()
+    expect(windowsInput([])).toEqual([])
+  })
+
+  it('refuses windows the server refuses', () => {
+    expect(windowsInput([{ days: [], from: '08:00', to: '12:00' }])).toBeNull()
+    expect(windowsInput([{ days: [1], from: '24:00', to: '02:00' }])).toBeNull()
+    expect(windowsInput([{ days: [1], from: '08:00', to: '08:00' }])).toBeNull()
+    expect(windowsInput([{ days: [7], from: '08:00', to: '09:00' }])).toBeNull()
+    expect(windowsInput([{ days: [1], from: '8:00', to: '09:00' }])).toBeNull()
+  })
+
+  it('takes packages with a unique code, minutes and a price', () => {
+    expect(
+      packagesInput([{ code: ' Goi2H ', name: 'Gói 2 giờ', minutes: '120', price: '250000' }]),
+    ).toEqual([{ code: 'goi2h', name: 'Gói 2 giờ', minutes: 120, price: '250000' }])
+    const row = { code: 'goi', name: 'Gói', minutes: '60', price: '100000' }
+    expect(packagesInput([row, row])).toBeNull()
+    expect(packagesInput([{ ...row, minutes: '0' }])).toBeNull()
+    expect(packagesInput([{ ...row, price: 'free' }])).toBeNull()
+    expect(packagesInput([{ ...row, code: '-x' }])).toBeNull()
+    expect(packagesInput([{ ...row, name: ' ' }])).toBeNull()
   })
 })

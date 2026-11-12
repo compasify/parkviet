@@ -25,6 +25,9 @@ String waiterFailureMessage(AppLocalizations l10n, AppFailure failure) => switch
       ConflictFailure(reason: 'rate_plan_missing') => l10n.waiterClockNoRatePlan,
       ConflictFailure(reason: 'workspace_required') => l10n.waiterClockPickOrder,
       ConflictFailure(reason: 'timed_session_stopped') => l10n.waiterClockAlreadyStopped,
+      ConflictFailure(reason: 'timed_session_paused') => l10n.waiterClockAlreadyPaused,
+      ConflictFailure(reason: 'timed_session_not_paused') => l10n.waiterClockNotPaused,
+      ConflictFailure(reason: 'attendant_busy') => l10n.waiterAttendantBusy,
       ForbiddenFailure() => l10n.waiterForbidden,
       _ => failureMessage(l10n, failure),
     };

@@ -47,6 +47,7 @@ import {
   reportColumns,
   reportPagination,
   reportRequest,
+  SCREEN_ONLY_REPORTS,
   shiftLines,
   TIME_COLUMNS,
 } from '../lib/report-table'
@@ -62,6 +63,7 @@ const BUSINESS_DATED = new Set<PosReportType>([
   'meals',
   'meal_statement',
   'vehicle_commissions',
+  'attendants',
 ])
 type Notice = { text: string; failed: boolean } | null
 
@@ -150,7 +152,7 @@ function Report({
   const meta = report.data?.meta
   const timeZone = meta?.timezone ?? branchZone
   const currency = data?.store.currency ?? 'VND'
-  const exporting = canExportReports(data?.capabilities)
+  const exporting = canExportReports(data?.capabilities) && !SCREEN_ONLY_REPORTS.has(type)
   // Off stops new exports only; files already made stay downloadable until they expire.
   const exportsOn = contextFeature(data, 'exports')
   const createExport = useCreateExport()

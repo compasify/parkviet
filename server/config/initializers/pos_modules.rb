@@ -62,11 +62,6 @@ Rails.application.config.to_prepare do
     # kind of day, and clocks billed as a timed line of the room's order.
     modules.register(key: 'timed_billing', group: 'fnb', depends_on: ['resources', 'fnb.tables'],
                      entrypoints: ['Spree::Api::V3::Admin::Pos::TimedSessionsController', 'Spree::Pos::Timed::Start'])
-
-    # Names only, so "coming soon" profiles can refer to them. No code, and
-    # no branch can turn them on.
-    # Billiard table lights switched by relays.
-    modules.planned 'resources.iot_relay', group: 'fnb'
   end
 
   Spree::Pos::SaleLineKinds.define! do |kinds|

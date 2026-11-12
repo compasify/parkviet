@@ -163,7 +163,7 @@ RSpec.describe 'POS topology', type: :request do
     # No store profile: `khac`, all three modules, no defaults (returns stay off).
     data = create_branch.call('q1')['data']
     expect(response).to have_http_status(:created)
-    expect(data).to include('profile_key' => 'khac', 'profile_version' => 3, 'return_window_days' => nil, 'lot_selection' => 'fefo')
+    expect(data).to include('profile_key' => 'khac', 'profile_version' => 4, 'return_window_days' => nil, 'lot_selection' => 'fefo')
     first = Spree::Pos::Branch.find_by_prefix_id!(data['id'])
     expect(Spree::Pos::BranchModule.where(branch: first).pluck(:module_key, :enabled, :reason)).to contain_exactly(
       ['retail.units', true, 'profile:khac'], ['retail.measured', true, 'profile:khac'], ['retail.traceability', true, 'profile:khac']

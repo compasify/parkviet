@@ -105,7 +105,7 @@ module Spree
               current.update!(resource: to, rate_plan: plan, rate_plan_version: plan.version)
             else
               closing_plan = current_plan!(current)
-              current.update!(ended_at: now, rate_plan: closing_plan, rate_plan_version: closing_plan&.version)
+              current.update!(ended_at: now, ended_reason: 'move', rate_plan: closing_plan, rate_plan_version: closing_plan&.version)
               TimedSegment.create!(timed_session: session, resource: to, kind: current.kind, started_at: now,
                                    rate_plan: current.play? ? plan : nil, rate_plan_version: current.play? ? plan.version : nil)
             end
@@ -113,6 +113,62 @@ module Spree
           session.update!(resource: to, quote_version: session.quote_version + 1)
           Realtime.publish(session.branch, 'resource.updated', id: from.prefixed_id, refs: { timed_session_id: session.prefixed_id })
           session
+        end
+
+        # The room and its order changed: every screen of the branch rereads them.
+        def announce!(session, workspace)
+          Realtime.publish(workspace.branch, 'resource.updated', id: session.resource.prefixed_id,
+                                                                 refs: { workspace_id: workspace.prefixed_id, timed_session_id: session.prefixed_id })
+          Realtime.announce_workspaces([workspace.id])
+        end
+
+        # A minutes card read from its QR code or tag, active and with minutes.
+        def minutes_card!(store, token)
+          card = StoredValueAccount.find_card(store, token)
+          raise Conflict.new('This card is not known.', reason: 'stored_value_card_unknown') if card.nil? || !card.minutes?
+          raise Conflict.new('This card is closed.', reason: 'stored_value_closed') unless card.active?
+          raise Conflict.new('This card has no minutes left.', reason: StoredValue::INSUFFICIENT) unless card.minutes_balance.positive?
+
+          card
+        end
+
+        # Whether a paused clock has been paused longer than its branch allows.
+        def long_pause?(session, now)
+          since = session.paused_since
+          since.present? && now - since > session.branch.max_pause_minutes.minutes
+        end
+
+        # Ending a pause longer than the branch allows (resuming or stopping
+        # the clock) takes `pos.timed.edit`, or a manager's approval of
+        # `timed.long_pause` bound to the order's revision: a "pause" while
+        # the guests keep playing would leave their time unbilled.
+        def approve_long_pause!(session, staff, now, approval_id)
+          return nil unless long_pause?(session, now)
+
+          workspace = session.workspace
+          details = { action: Approval::TIMED_LONG_PAUSE_ACTION, revision: workspace.revision,
+                      paused_minutes: ((now - session.paused_since) / 60).floor, max_pause_minutes: session.branch.max_pause_minutes }
+          policy = AccessPolicy.new(store: workspace.store, staff: staff)
+          if approval_id.blank? && !policy.allows?(workspace.branch, Capabilities::TIMED_EDIT)
+            raise Conflict.new('A long pause needs a manager approval.', revision: workspace.revision, reason: 'approval_required',
+                                                                         details: details)
+          end
+
+          Workspaces::ApplyDiscount.approve!(workspace, staff, workspace.revision, approval_id, amount: nil,
+                                                                                               action: Approval::TIMED_LONG_PAUSE_ACTION,
+                                                                                               capability: Capabilities::TIMED_EDIT,
+                                                                                               message: 'A long pause needs a manager approval.')
+        end
+
+        # A clock sold with a package ends when the package's minutes are
+        # played: now plus the minutes left (pauses do not count). A paused
+        # clock keeps the end it had.
+        def refresh_planned_end!(session, now)
+          return unless session.package? && session.status == 'running'
+
+          session.timed_segments.reset
+          left = (session.prepaid_minutes * 60) - session.played_seconds(now)
+          session.update!(planned_end_at: [now + left, session.started_at + 1].max)
         end
 
         # The plan a closing segment is priced at: the room's plan of now,

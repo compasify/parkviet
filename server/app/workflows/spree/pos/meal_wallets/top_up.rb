@@ -33,32 +33,12 @@ module Spree
           CommandExecutor.call(store: store, actor: staff, key: key, payload: payload, authorize: authorize) do
             ModulePolicy.require!(branch, MealAccounts::Guard::MODULE)
             currency = account.stored_value_account.currency
-            money = Collections::Receive.validate!(kind.to_s, kept, handed, currency, reference, receiving_account)
-            shift = Shift.for_store(store).open_now.find_by(branch_id: branch.id, owner_id: staff.id)
-            raise Conflict.new('Open your own shift before topping up a wallet.', reason: 'shift_required') if shift.nil?
-
-            ShiftBarrier.hold!(shift)
-            account.lock!
-            raise Conflict.new('This meal account is locked.', reason: 'meal_account_locked') unless account.active?
-
-            duplicate_ids = if kind.to_s == 'bank_manual'
-                              ReceiptReferenceGuard.check!(store: store, staff: staff, branch: branch, reference: reference,
-                                                           receiving_account: receiving_account, confirm_duplicate: confirm_duplicate)
-                            else
-                              []
-                            end
-            funds = ReceivedFunds.create!(
-              store: store, branch: branch, register: shift.register, shift: shift, actor: staff, kind: kind.to_s,
-              status: 'received', handed_amount: money[:handed], applied_amount: kept, change_amount: money[:change],
-              received_net: kept, currency: currency, reference: reference.presence,
-              receiving_account: receiving_account.presence, custody: 'drawer', received_at: Time.current
-            )
-            if kind.to_s == 'cash'
-              CashMovement.create!(store: store, branch: branch, register: shift.register, shift: shift, received_funds: funds,
-                                   actor: staff, kind: 'receipt', amount: kept, currency: currency,
-                                   source_type: funds.class.name, source_id: funds.id)
+            funds, money = StoredValue.receive!(store: store, staff: staff, branch: branch, kind: kind, amount: kept, handed: handed,
+                                                currency: currency, reference: reference, receiving_account: receiving_account,
+                                                confirm_duplicate: confirm_duplicate) do
+              account.lock!
+              raise Conflict.new('This meal account is locked.', reason: 'meal_account_locked') unless account.active?
             end
-            ReceiptReferenceGuard.audit!(store: store, staff: staff, funds: funds, duplicate_ids: duplicate_ids)
             entry = StoredValue.top_up!(account: account.stored_value_account, funds: funds, actor: staff)
             account.bump!
             AuditEntry.record!(store: store, actor: staff, action: ACTION, subject: account,

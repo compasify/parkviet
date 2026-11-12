@@ -74,6 +74,17 @@ module PosModuleHelpers
     allow(Spree::Pos::Modules).to receive(:available?).with(key).and_return(false)
   end
 
+  # Adds a planned module (a name with no code) to the registry for one
+  # example, for examples about planned modules now that boot registers none.
+  def with_planned_module(key, group: 'fnb')
+    definitions = Spree::Pos::Modules.send(:registry).merge(
+      key => Spree::Pos::Modules::Definition.new(key: key, group: group, depends_on: [].freeze,
+                                                 status: Spree::Pos::Modules::PLANNED, entrypoints: [].freeze)
+    ).freeze
+    allow(Spree::Pos::Modules).to receive(:registry).and_return(definitions)
+    key
+  end
+
   def self.enable_profile_modules!(branch)
     keys = Spree::Pos::BusinessProfiles.find(branch.profile_key)&.modules || Spree::Pos::Modules.available_keys
     keys &= Spree::Pos::Modules.available_keys

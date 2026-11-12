@@ -7,6 +7,7 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { quickApproveCredit } from '../hooks/use-receivables';
+import { lookupStoredValueCard } from '../hooks/use-stored-value';
 import {
   usePaymentMethods,
   useReceivedFundDetail,
@@ -18,6 +19,7 @@ import type { PosPaymentMethod, PosWorkspace } from '../lib/pos-context';
 import { autoPrintEnabled } from '../lib/receipt-preferences';
 import { creditConflictKey } from '../lib/receivables';
 import { conflictReason, posFailureKey } from '../lib/request-failure';
+import { normalizeStoredValueCard, storedValueReasonKey } from '../lib/stored-value';
 import { vietqrConflictKey } from '../lib/vietqr';
 import { CreditApprovalDialog } from './credit-approval-dialog';
 import { FeatureOffNote } from './feature-off-note';
@@ -122,6 +124,9 @@ async function eachRow<T>(
   }
 }
 
+// A card reading that matches no card.
+class StoredValueMissing extends Error {}
+
 export function PaymentPanel({
   workspace,
   staffId,
@@ -139,7 +144,10 @@ export function PaymentPanel({
   timeZone,
   einvoiceType = 'none',
   mealSponsorAmount,
+  storedValueCards = false,
 }: {
+  // The branch bills play time, so prepaid money cards may pay the order.
+  storedValueCards?: boolean;
   // A canteen order's sponsor part (decimal string): the cashier takes only
   // the eater's part, and completing charges the rest to the sponsor.
   mealSponsorAmount?: string | null;
@@ -194,6 +202,8 @@ export function PaymentPanel({
     evidenceWasOpen.current = evidenceOpen;
   }, [evidenceOpen]);
   const [creditOpen, setCreditOpen] = useState(false);
+  const [cardReading, setCardReading] = useState('');
+  const [cardNotice, setCardNotice] = useState('');
   const [handedOver, setHandedOver] = useState(false);
   // "Khách lấy hóa đơn": who the e-invoice is made out to. Left empty, the
   // invoice is for a consumer and the receipt carries a QR to add details.
@@ -326,6 +336,7 @@ export function PaymentPanel({
   const parsedAllocate = parseVndInput(allocateAmount);
 
   function explain(failure: unknown, fallbackKey?: string) {
+    if (failure instanceof StoredValueMissing) return t('storedValueNotFound');
     const reason = conflictReason(failure);
     if (reason === 'einvoice_buyer_invalid') {
       const field = einvoiceBuyerField(failure);
@@ -333,7 +344,8 @@ export function PaymentPanel({
         field: field ? t(`einvoiceBuyer_${field}`, { defaultValue: field }) : '',
       });
     }
-    const key = creditConflictKey(reason) ?? vietqrConflictKey(reason);
+    const key =
+      creditConflictKey(reason) ?? vietqrConflictKey(reason) ?? storedValueReasonKey(reason);
     return key ? t(key) : describeTraceFailure(failure, t, fallbackKey);
   }
 
@@ -773,6 +785,60 @@ export function PaymentPanel({
               />
             </label>
           ))}
+        </details>
+      ) : null}
+      {canCollect && storedValueCards && !mealSponsor && !completed && financial && hasItems ? (
+        <details className="stored-value-pay checkout-optional">
+          <summary>{t('storedValuePay')}</summary>
+          <small className="muted">{t('storedValuePayHint')}</small>
+          <label>
+            {t('storedValueReading')}
+            <input
+              value={cardReading}
+              autoComplete="off"
+              maxLength={120}
+              disabled={locked}
+              placeholder={t('storedValueReadingHint')}
+              onChange={(event) => setCardReading(event.target.value)}
+            />
+          </label>
+          <button
+            type="button"
+            disabled={
+              locked ||
+              traceBlocked ||
+              drawerBlocked ||
+              unresolvedAttempts.length > 0 ||
+              remainingIsZero ||
+              !cardReading.trim()
+            }
+            aria-describedby={blockedBy}
+            onClick={() => {
+              const reading = cardReading.trim();
+              setCardNotice('');
+              void run(async () => {
+                const card = await lookupStoredValueCard(workspace.branch_id, reading);
+                if (!card) throw new StoredValueMissing();
+                let paid: unknown = null;
+                await command(async (current) => {
+                  const result = await tenders.payStoredValue(current, card.id);
+                  paid = result.card;
+                  return result.workspace;
+                });
+                const after = normalizeStoredValueCard(paid);
+                setCardReading('');
+                setCardNotice(
+                  t('storedValuePaid', {
+                    hint: card.cardHint,
+                    balance: formatMoney(after?.balance ?? '0', card.currency),
+                  }),
+                );
+              });
+            }}
+          >
+            {t('storedValuePaySubmit')}
+          </button>
+          {cardNotice ? <p role="status">{cardNotice}</p> : null}
         </details>
       ) : null}
       {canCollect && !completed && financial && remainingIsZero && hasItems ? (

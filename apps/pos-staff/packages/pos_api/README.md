@@ -70,6 +70,9 @@ Class | Method | HTTP request | Description
 [*DefaultApi*](doc/DefaultApi.md) | [**posAreaCreate**](doc/DefaultApi.md#posareacreate) | **POST** /api/v3/admin/pos/areas | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posAreaUpdate**](doc/DefaultApi.md#posareaupdate) | **PATCH** /api/v3/admin/pos/areas/{id} | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posAreas**](doc/DefaultApi.md#posareas) | **GET** /api/v3/admin/pos/areas | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posAttendantAssignmentList**](doc/DefaultApi.md#posattendantassignmentlist) | **GET** /api/v3/admin/pos/attendant_assignments | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posAttendantAssignmentStart**](doc/DefaultApi.md#posattendantassignmentstart) | **POST** /api/v3/admin/pos/attendant_assignments | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posAttendantAssignmentStop**](doc/DefaultApi.md#posattendantassignmentstop) | **POST** /api/v3/admin/pos/attendant_assignments/{id}/stop | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posBottleKeepLabel**](doc/DefaultApi.md#posbottlekeeplabel) | **POST** /api/v3/admin/pos/bottle_keeps/{id}/label | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posBottleKeepList**](doc/DefaultApi.md#posbottlekeeplist) | **GET** /api/v3/admin/pos/bottle_keeps | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posBottleKeepPour**](doc/DefaultApi.md#posbottlekeeppour) | **POST** /api/v3/admin/pos/bottle_keeps/{id}/pour | 
@@ -198,7 +201,9 @@ Class | Method | HTTP request | Description
 [*DefaultApi*](doc/DefaultApi.md) | [**posTableSplit**](doc/DefaultApi.md#postablesplit) | **POST** /api/v3/admin/pos/workspaces/{workspace_id}/split | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posTimedSegmentUpdate**](doc/DefaultApi.md#postimedsegmentupdate) | **PATCH** /api/v3/admin/pos/timed_sessions/{id}/segments/{segment_id} | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posTimedSessionMove**](doc/DefaultApi.md#postimedsessionmove) | **POST** /api/v3/admin/pos/timed_sessions/{id}/move | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posTimedSessionPause**](doc/DefaultApi.md#postimedsessionpause) | **POST** /api/v3/admin/pos/timed_sessions/{id}/pause | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posTimedSessionQuote**](doc/DefaultApi.md#postimedsessionquote) | **GET** /api/v3/admin/pos/timed_sessions/{id}/quote | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posTimedSessionResume**](doc/DefaultApi.md#postimedsessionresume) | **POST** /api/v3/admin/pos/timed_sessions/{id}/resume | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posTimedSessionShow**](doc/DefaultApi.md#postimedsessionshow) | **GET** /api/v3/admin/pos/timed_sessions/{id} | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posTimedSessionStart**](doc/DefaultApi.md#postimedsessionstart) | **POST** /api/v3/admin/pos/resources/{resource_id}/timed_sessions | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posTimedSessionStop**](doc/DefaultApi.md#postimedsessionstop) | **POST** /api/v3/admin/pos/timed_sessions/{id}/stop | 
@@ -242,6 +247,11 @@ Class | Method | HTTP request | Description
  - [AreaInput](doc/AreaInput.md)
  - [AreaList](doc/AreaList.md)
  - [AreaResult](doc/AreaResult.md)
+ - [AttendantAssignment](doc/AttendantAssignment.md)
+ - [AttendantAssignmentList](doc/AttendantAssignmentList.md)
+ - [AttendantAssignmentResult](doc/AttendantAssignmentResult.md)
+ - [AttendantAssignmentStartInput](doc/AttendantAssignmentStartInput.md)
+ - [AttendantStaff](doc/AttendantStaff.md)
  - [AvailableResource](doc/AvailableResource.md)
  - [BottleKeep](doc/BottleKeep.md)
  - [BottleKeepActor](doc/BottleKeepActor.md)
@@ -563,11 +573,14 @@ Class | Method | HTTP request | Description
  - [TableSplitResult](doc/TableSplitResult.md)
  - [TableTaxCategory](doc/TableTaxCategory.md)
  - [TaxRow](doc/TaxRow.md)
+ - [TimedMinutesCard](doc/TimedMinutesCard.md)
+ - [TimedPackage](doc/TimedPackage.md)
  - [TimedQuote](doc/TimedQuote.md)
  - [TimedQuoteLine](doc/TimedQuoteLine.md)
  - [TimedSegment](doc/TimedSegment.md)
  - [TimedSegmentEditInput](doc/TimedSegmentEditInput.md)
  - [TimedSession](doc/TimedSession.md)
+ - [TimedSessionApprovalInput](doc/TimedSessionApprovalInput.md)
  - [TimedSessionCommand](doc/TimedSessionCommand.md)
  - [TimedSessionCommandResult](doc/TimedSessionCommandResult.md)
  - [TimedSessionMoveInput](doc/TimedSessionMoveInput.md)

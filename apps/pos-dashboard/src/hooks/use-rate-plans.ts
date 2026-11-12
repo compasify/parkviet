@@ -2,10 +2,25 @@ import { useResourceMutation } from '@spree/dashboard-core'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { posRequest } from '../lib/pos-request'
 import { posKey } from '../lib/query-keys'
-import type { RatePlan, RatePreview, RateRule, SpecialDay } from '../lib/rate-plans'
+import type {
+  RatePackage,
+  RatePlan,
+  RatePreview,
+  RateRule,
+  SpecialDay,
+  TimedPromotion,
+  TimedWindow,
+} from '../lib/rate-plans'
 import { useSession } from './use-session'
 
-export type RatePlanList = { data: RatePlan[]; meta: { weekend_days?: number[] } }
+export type RatePlanList = {
+  data: RatePlan[]
+  meta: {
+    weekend_days?: number[]
+    operating_windows?: TimedWindow[] | null
+    max_pause_minutes?: number | null
+  }
+}
 export type RatePlanInput = Partial<
   Pick<
     RatePlan,
@@ -17,7 +32,7 @@ export type RatePlanInput = Partial<
     | 'minimum_minutes'
     | 'status'
   >
-> & { rules?: Omit<RateRule, 'id'>[] }
+> & { rules?: Omit<RateRule, 'id'>[]; packages?: RatePackage[] }
 
 // A branch's rate plans, newest version of each first, with its weekend days.
 export function useRatePlans(branchId: string) {
@@ -72,6 +87,7 @@ type Write =
   | { kind: 'special_day'; date: string; name: string; holiday_surcharge_percent: string }
   | { kind: 'remove_special_day'; id: string }
   | { kind: 'weekend_days'; days: number[] }
+  | { kind: 'timed_settings'; windows: TimedWindow[]; maxPauseMinutes: number }
 
 // Every write of the tab: a plan (a used one comes back as its next
 // version), a holiday added or removed, the weekend days.
@@ -111,11 +127,54 @@ export function useRatePlanWrite(branchId: string) {
             body: { ...branch, weekend_days: write.days },
             idempotencyKey,
           })
+        case 'timed_settings':
+          return posRequest('PATCH', '/pos/rate_plans/timed_settings', {
+            body: {
+              ...branch,
+              operating_windows: write.windows,
+              max_pause_minutes: write.maxPauseMinutes,
+            },
+            idempotencyKey,
+          })
       }
     },
     successMessage: false,
     errorMessage: false,
     onSuccess: () =>
       client.invalidateQueries({ queryKey: posKey(storeId, 'rate-plans', branchId) }),
+  })
+}
+
+export type TimedPromotionInput = Partial<Omit<TimedPromotion, 'id'>>
+
+// The minutes a branch gives away: "play X minutes, get Y free" and
+// "buy a package, get Y free", by kind of room and time of the week.
+export function useTimedPromotions(branchId: string) {
+  const { storeId } = useSession()
+  return useQuery({
+    queryKey: posKey(storeId, 'timed-promotions', branchId),
+    queryFn: async () =>
+      (
+        await posRequest<{ data: TimedPromotion[] }>('GET', '/pos/timed_promotions', {
+          params: { branch_id: branchId, limit: '100' },
+        })
+      ).data,
+  })
+}
+
+export function useTimedPromotionWrite(branchId: string) {
+  const client = useQueryClient()
+  const { storeId } = useSession()
+  return useResourceMutation({
+    mutationFn: (write: { id?: string; input: TimedPromotionInput }) =>
+      posRequest<{ data: TimedPromotion }>(
+        write.id ? 'PATCH' : 'POST',
+        write.id ? `/pos/timed_promotions/${write.id}` : '/pos/timed_promotions',
+        { body: { ...write.input, branch_id: branchId }, idempotencyKey: crypto.randomUUID() },
+      ),
+    successMessage: false,
+    errorMessage: false,
+    onSuccess: () =>
+      client.invalidateQueries({ queryKey: posKey(storeId, 'timed-promotions', branchId) }),
   })
 }

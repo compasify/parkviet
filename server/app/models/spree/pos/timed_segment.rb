@@ -10,6 +10,7 @@ module Spree
       has_prefix_id :postimedseg
 
       KINDS = %w[play pause].freeze
+      ENDED_REASONS = %w[pause resume move stop split_window].freeze
 
       belongs_to :timed_session, class_name: 'Spree::Pos::TimedSession', inverse_of: :timed_segments
       belongs_to :resource, class_name: 'Spree::Pos::Resource'
@@ -17,6 +18,7 @@ module Spree
 
       validates :kind, inclusion: { in: KINDS }
       validates :started_at, presence: true
+      validates :ended_reason, inclusion: { in: ENDED_REASONS }, allow_nil: true
       validate :ends_after_start
 
       def open?
@@ -31,7 +33,7 @@ module Spree
         { id: prefixed_id, kind: kind, resource_id: resource.prefixed_id, resource_name: resource.name,
           started_at: started_at.iso8601, ended_at: ended_at&.iso8601,
           rate_plan_id: rate_plan&.prefixed_id, rate_plan_name: rate_plan&.name, rate_plan_version: rate_plan_version,
-          edited: edited }
+          edited: edited, ended_reason: ended_reason }
       end
 
       private

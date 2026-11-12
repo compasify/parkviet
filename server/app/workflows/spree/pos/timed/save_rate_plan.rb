@@ -18,7 +18,7 @@ module Spree
 
         def call(store:, staff:, key:, branch_id:, attributes:, rate_plan_id: nil)
           branch = Guard.branch!(store, branch_id)
-          values = attributes.to_h.deep_stringify_keys.slice(*FIELDS, 'rules')
+          values = attributes.to_h.deep_stringify_keys.slice(*FIELDS, 'rules', 'packages')
           payload = { 'command' => COMMAND, 'branch_id' => branch.prefixed_id, 'rate_plan_id' => rate_plan_id.to_s.presence,
                       'values' => values.to_json }
           CommandExecutor.call(store: store, actor: staff, key: key, payload: payload, authorize: -> { Guard.manage!(store, staff, branch) }) do
@@ -51,7 +51,7 @@ module Spree
             AuditEntry.record!(store: store, actor: staff, action: COMMAND, subject: plan,
                                metadata: { version: plan.version, previous_id: plan.previous&.prefixed_id, status: plan.status,
                                            block_minutes: plan.block_minutes, grace_minutes: plan.grace_minutes,
-                                           minimum_minutes: plan.minimum_minutes, variant_id: plan.variant.prefixed_id,
+                                           minimum_minutes: plan.minimum_minutes, variant_id: plan.variant.prefixed_id, packages: plan.packages,
                                            rules: plan.rate_rules.map { |rule| rule.to_pos.except(:id) } })
             # Rooms' running quotes change with the plan.
             Realtime.publish(branch, 'resource.updated', id: plan.prefixed_id, refs: { rate_plan_id: plan.prefixed_id })
@@ -73,7 +73,8 @@ module Spree
         def next_version(current)
           plan = RatePlan.new(store: current.store, branch: current.branch, name: current.name, resource_type_code: current.resource_type_code,
                               variant: current.variant, block_minutes: current.block_minutes, grace_minutes: current.grace_minutes,
-                              minimum_minutes: current.minimum_minutes, status: 'active', version: current.version + 1, previous: current)
+                              minimum_minutes: current.minimum_minutes, packages: current.packages, status: 'active',
+                              version: current.version + 1, previous: current)
           current.rate_rules.each { |rule| plan.rate_rules.build(rule.attributes.slice(*RULE_FIELDS, 'position')) }
           plan
         end
@@ -92,6 +93,7 @@ module Spree
             plan.status = status
           end
           rules!(plan, values['rules']) if values.key?('rules')
+          plan.packages = packages!(values['packages']) if values.key?('packages')
           raise ActiveRecord::RecordNotFound if plan.variant && plan.variant.product&.store_id != store.id
         end
 
@@ -122,6 +124,21 @@ module Spree
             plan.rate_rules.build(day_type: row['day_type'].to_s, start_minute: integer!(row['start_minute'], 'start_minute'),
                                   end_minute: integer!(row['end_minute'], 'end_minute'), price_per_hour: price,
                                   label: row['label'].to_s.strip.presence, position: index + 1)
+          end
+        end
+
+        # Prepaid packages sent whole: code, name, minutes and price.
+        def packages!(rows)
+          invalid = -> { raise Conflict.new('The packages are invalid.', reason: 'rate_plan_invalid', details: { fields: ['packages'] }) }
+          invalid.call unless rows.is_a?(Array)
+          rows.map do |row|
+            row = row.to_unsafe_h if row.respond_to?(:to_unsafe_h)
+            invalid.call unless row.is_a?(Hash)
+            row = row.stringify_keys
+            price = Record.money(row['price'].to_s.strip)
+            invalid.call if price.nil? || price.negative?
+            { 'code' => row['code'].to_s.strip.downcase, 'name' => row['name'].to_s.strip, 'minutes' => integer!(row['minutes'], 'packages'),
+              'price' => price.to_s('F') }
           end
         end
 

@@ -18,6 +18,7 @@ export function TableTile({
   onSelect,
   style,
   offsetMs = 0,
+  readAt = null,
 }: {
   table: BoardTable;
   selected: boolean;
@@ -25,6 +26,8 @@ export function TableTile({
   style?: CSSProperties;
   // Server clock minus this device's, for a room clock.
   offsetMs?: number;
+  // The server time the board was read at.
+  readAt?: string | null;
 }) {
   const { t, i18n } = useTranslation();
   const state = t(tableStateKey(table.state));
@@ -33,12 +36,18 @@ export function TableTile({
   const buffet = buffetTiming(table.buffet_ends_at, now);
   const buffetLeft = buffetMinutesLeft(table.buffet_ends_at, now);
   const booking = table.next_reservation;
+  // A room past its package or paused too long needs someone now (red);
+  // a room ending soon shows its own state colour (amber).
+  const timedAlert =
+    table.timed && (table.timed.package_ended || table.timed.pause_too_long)
+      ? ' table-tile-timed-alert'
+      : '';
   return (
     <button
       type="button"
       className={`table-tile table-tile-${table.state} table-shape-${table.shape}${
         buffet === 'ending' || buffet === 'over' ? ` table-tile-buffet-${buffet}` : ''
-      }`}
+      }${timedAlert}`}
       data-state={table.state}
       data-table-id={table.id}
       aria-pressed={selected}
@@ -70,7 +79,8 @@ export function TableTile({
       ) : null}
       {table.timed && isRunning(table.timed) ? (
         <span className="table-tile-flag table-tile-timed">
-          <TimedClock timed={table.timed} offsetMs={offsetMs} />{' '}
+          {table.timed.status === 'paused' ? `${t('timedPaused')} · ` : null}
+          <TimedClock timed={table.timed} offsetMs={offsetMs} readAt={readAt} />{' '}
           {formatMoney(table.timed.quote_amount, table.currency ?? 'VND')}
         </span>
       ) : null}

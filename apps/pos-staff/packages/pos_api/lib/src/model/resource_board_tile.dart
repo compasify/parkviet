@@ -30,7 +30,7 @@ part 'resource_board_tile.g.dart';
 /// * [h]
 /// * [rotation]
 /// * [manualStatus]
-/// * [state] - Strongest first: out_of_service, cleaning (no open order), payment_requested, prebilled, ending_soon (a running clock is within ten minutes of its planned end), waiting_long (a kitchen item waited past its station's threshold), playing (a clock is running), ordered, occupied, reserved (no open order and a booking starts within the hour), available.
+/// * [state] - Strongest first: out_of_service, cleaning (no open order), payment_requested, prebilled, ending_soon (a running clock is within ten minutes of its planned end, or past the end of its package), waiting_long (a kitchen item waited past its station's threshold), playing (a clock is running), ordered, occupied, reserved (no open order and a booking starts within the hour), available.
 /// * [guestCount]
 /// * [seatedMinutes] - Minutes since the oldest open order was opened, on the server clock.
 /// * [subtotal]
@@ -92,7 +92,7 @@ abstract class ResourceBoardTile
   ResourceBoardTileManualStatusEnum get manualStatus;
   // enum manualStatusEnum {  available,  cleaning,  out_of_service,  };
 
-  /// Strongest first: out_of_service, cleaning (no open order), payment_requested, prebilled, ending_soon (a running clock is within ten minutes of its planned end), waiting_long (a kitchen item waited past its station's threshold), playing (a clock is running), ordered, occupied, reserved (no open order and a booking starts within the hour), available.
+  /// Strongest first: out_of_service, cleaning (no open order), payment_requested, prebilled, ending_soon (a running clock is within ten minutes of its planned end, or past the end of its package), waiting_long (a kitchen item waited past its station's threshold), playing (a clock is running), ordered, occupied, reserved (no open order and a booking starts within the hour), available.
   @BuiltValueField(wireName: r'state')
   ResourceBoardTileStateEnum get state;
   // enum stateEnum {  available,  reserved,  occupied,  ordered,  waiting_long,  playing,  ending_soon,  payment_requested,  prebilled,  cleaning,  out_of_service,  };
@@ -565,7 +565,7 @@ class ResourceBoardTileManualStatusEnum extends EnumClass {
       _$resourceBoardTileManualStatusEnumValueOf(name);
 }
 
-/// Strongest first: out_of_service, cleaning (no open order), payment_requested, prebilled, ending_soon (a running clock is within ten minutes of its planned end), waiting_long (a kitchen item waited past its station's threshold), playing (a clock is running), ordered, occupied, reserved (no open order and a booking starts within the hour), available.
+/// Strongest first: out_of_service, cleaning (no open order), payment_requested, prebilled, ending_soon (a running clock is within ten minutes of its planned end, or past the end of its package), waiting_long (a kitchen item waited past its station's threshold), playing (a clock is running), ordered, occupied, reserved (no open order and a booking starts within the hour), available.
 class ResourceBoardTileStateEnum extends EnumClass {
   @BuiltValueEnumConst(wireName: r'available')
   static const ResourceBoardTileStateEnum available =

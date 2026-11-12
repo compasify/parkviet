@@ -3,8 +3,10 @@
 //
 
 // ignore_for_file: unused_element
+import 'package:pos_api/src/model/timed_package.dart';
 import 'package:pos_api/src/model/timed_quote.dart';
 import 'package:built_collection/built_collection.dart';
+import 'package:pos_api/src/model/timed_minutes_card.dart';
 import 'package:pos_api/src/model/timed_segment.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
@@ -14,6 +16,9 @@ part 'timed_session.g.dart';
 /// The clock of a room's play time, with its stretches and quote. Every time is the server's.
 ///
 /// Properties:
+/// * [pausedAt] - Since when the clock is paused; null unless paused.
+/// * [package]
+/// * [minutesCard]
 /// * [id]
 /// * [status]
 /// * [resourceId]
@@ -31,6 +36,16 @@ part 'timed_session.g.dart';
 @BuiltValue()
 abstract class TimedSession
     implements Built<TimedSession, TimedSessionBuilder> {
+  /// Since when the clock is paused; null unless paused.
+  @BuiltValueField(wireName: r'paused_at')
+  DateTime? get pausedAt;
+
+  @BuiltValueField(wireName: r'package')
+  TimedPackage? get package;
+
+  @BuiltValueField(wireName: r'minutes_card')
+  TimedMinutesCard? get minutesCard;
+
   @BuiltValueField(wireName: r'id')
   String get id;
 
@@ -98,6 +113,27 @@ class _$TimedSessionSerializer implements PrimitiveSerializer<TimedSession> {
     TimedSession object, {
     FullType specifiedType = FullType.unspecified,
   }) sync* {
+    yield r'paused_at';
+    yield object.pausedAt == null
+        ? null
+        : serializers.serialize(
+            object.pausedAt,
+            specifiedType: const FullType.nullable(DateTime),
+          );
+    yield r'package';
+    yield object.package == null
+        ? null
+        : serializers.serialize(
+            object.package,
+            specifiedType: const FullType.nullable(TimedPackage),
+          );
+    yield r'minutes_card';
+    yield object.minutesCard == null
+        ? null
+        : serializers.serialize(
+            object.minutesCard,
+            specifiedType: const FullType.nullable(TimedMinutesCard),
+          );
     yield r'id';
     yield serializers.serialize(
       object.id,
@@ -199,6 +235,30 @@ class _$TimedSessionSerializer implements PrimitiveSerializer<TimedSession> {
       final key = serializedList[i] as String;
       final value = serializedList[i + 1];
       switch (key) {
+        case r'paused_at':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(DateTime),
+          ) as DateTime?;
+          if (valueDes == null) continue;
+          result.pausedAt = valueDes;
+          break;
+        case r'package':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(TimedPackage),
+          ) as TimedPackage?;
+          if (valueDes == null) continue;
+          result.package.replace(valueDes);
+          break;
+        case r'minutes_card':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(TimedMinutesCard),
+          ) as TimedMinutesCard?;
+          if (valueDes == null) continue;
+          result.minutesCard.replace(valueDes);
+          break;
         case r'id':
           final valueDes = serializers.deserialize(
             value,

@@ -24,6 +24,11 @@ import 'package:pos_api/src/model/area.dart';
 import 'package:pos_api/src/model/area_input.dart';
 import 'package:pos_api/src/model/area_list.dart';
 import 'package:pos_api/src/model/area_result.dart';
+import 'package:pos_api/src/model/attendant_assignment.dart';
+import 'package:pos_api/src/model/attendant_assignment_list.dart';
+import 'package:pos_api/src/model/attendant_assignment_result.dart';
+import 'package:pos_api/src/model/attendant_assignment_start_input.dart';
+import 'package:pos_api/src/model/attendant_staff.dart';
 import 'package:pos_api/src/model/available_resource.dart';
 import 'package:pos_api/src/model/bottle_keep.dart';
 import 'package:pos_api/src/model/bottle_keep_actor.dart';
@@ -345,11 +350,14 @@ import 'package:pos_api/src/model/table_split_orders.dart';
 import 'package:pos_api/src/model/table_split_result.dart';
 import 'package:pos_api/src/model/table_tax_category.dart';
 import 'package:pos_api/src/model/tax_row.dart';
+import 'package:pos_api/src/model/timed_minutes_card.dart';
+import 'package:pos_api/src/model/timed_package.dart';
 import 'package:pos_api/src/model/timed_quote.dart';
 import 'package:pos_api/src/model/timed_quote_line.dart';
 import 'package:pos_api/src/model/timed_segment.dart';
 import 'package:pos_api/src/model/timed_segment_edit_input.dart';
 import 'package:pos_api/src/model/timed_session.dart';
+import 'package:pos_api/src/model/timed_session_approval_input.dart';
 import 'package:pos_api/src/model/timed_session_command.dart';
 import 'package:pos_api/src/model/timed_session_command_result.dart';
 import 'package:pos_api/src/model/timed_session_move_input.dart';
@@ -397,6 +405,11 @@ part 'serializers.g.dart';
   AreaInput,
   AreaList,
   AreaResult,
+  AttendantAssignment,
+  AttendantAssignmentList,
+  AttendantAssignmentResult,
+  AttendantAssignmentStartInput,
+  AttendantStaff,
   AvailableResource,
   BottleKeep,
   BottleKeepActor,
@@ -722,11 +735,14 @@ part 'serializers.g.dart';
   TableSplitResult,
   TableTaxCategory,
   TaxRow,
+  TimedMinutesCard,
+  TimedPackage,
   TimedQuote,
   TimedQuoteLine,
   TimedSegment,
   TimedSegmentEditInput,
   TimedSession,
+  TimedSessionApprovalInput,
   TimedSessionCommand,
   TimedSessionCommandResult,
   TimedSessionMoveInput,
@@ -961,6 +977,10 @@ Serializers serializers = (_$serializers.toBuilder()
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(MenuItemAllOfVariants)]),
         () => ListBuilder<MenuItemAllOfVariants>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(AttendantAssignment)]),
+        () => ListBuilder<AttendantAssignment>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(PlatformOrderLineInput)]),

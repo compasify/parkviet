@@ -175,7 +175,7 @@ module Spree
             'played_minutes' => session.played_minutes, 'billed_minutes' => session.billed_minutes,
             'hours' => Timed::Lines.hours(session.billed_minutes.to_i).to_s('F'),
             'bands' => session.timed_quote_lines.map do |row|
-              { 'label' => row.label, 'starts_at' => row.starts_at.iso8601, 'ends_at' => row.ends_at.iso8601, 'minutes' => row.minutes,
+              { 'kind' => row.kind, 'label' => row.label, 'starts_at' => row.starts_at.iso8601, 'ends_at' => row.ends_at.iso8601, 'minutes' => row.minutes,
                 'price_per_hour' => money(row.price_per_hour), 'surcharge_percent' => row.surcharge_percent.to_s('F'), 'amount' => money(row.amount) }
             end
           }

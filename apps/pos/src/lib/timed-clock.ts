@@ -69,6 +69,17 @@ export const TIMED_FAILURE_REASONS = [
   'segment_open',
   'reason_required',
   'time_required',
+  'timed_session_paused',
+  'timed_session_not_paused',
+  'approval_required',
+  'timed_package_unknown',
+  'stored_value_card_unknown',
+  'stored_value_closed',
+  'stored_value_insufficient',
+  'stored_value_changed',
+  'timed_card_charged',
+  'attendant_busy',
+  'attendant_not_member',
 ] as const;
 
 export function timedFailureKey(reason: string | null): string | null {
