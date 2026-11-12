@@ -159,7 +159,7 @@ function HealthCard({ data }: { data: SystemStatus }) {
         : data.backup.last_at
           ? t('systemStatus.backupValue', {
               at: formatTime(data.backup.last_at),
-              count: data.backup.count,
+              files: data.backup.count,
             })
           : t('systemStatus.backupNone'),
     },

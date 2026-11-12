@@ -20,7 +20,9 @@ for (const enabled of [false, true]) test(`branch module settings render server 
   await installDashboardShell(page, { authenticated: true, write: false });
   await page.goto('/store_1/branches/branch_main');
   const list = page.getByRole('list', { name: 'Danh sách chức năng của chi nhánh' });
-  await expect(list.locator('li[data-module]')).toHaveCount(4);
+  // Every module the catalogue offers, plus the unknown server module.
+  const offered = BUSINESS_PROFILES.modules.filter((item) => item.status === 'available').length;
+  await expect(list.locator('li[data-module]')).toHaveCount(offered + 1);
   await expect(list.locator('[data-module="retail.traceability"]')).toContainText(enabled ? 'Đang bật' : 'Đang tắt');
   await expect(list.locator('[data-module="future.module"]')).toContainText('future.module');
   await expect(list.getByRole('button')).toHaveCount(0);

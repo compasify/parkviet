@@ -85,13 +85,15 @@ test('coming-soon interest never creates food branch; wholesale, optional regist
   await expect(page.getByRole('alert')).toContainText('Chọn một ngành POS đang hỗ trợ');
   await page.getByRole('button', { name: 'Không', exact: true }).click();
   await expect(page.getByRole('status').filter({ hasText: 'Đã ghi nhận bạn quan tâm Karaoke, Bida' })).toBeVisible();
-  await page.getByRole('radio', { name: 'Khác', exact: true }).check();
+  // A supported profile that suggests credit sales, which stay off until ticked.
+  await page.getByRole('radio', { name: 'Vật liệu xây dựng', exact: true }).check();
   await next(page); await page.getByRole('radio', { name: 'Có bán sỉ', exact: true }).check(); await next(page);
-  await page.getByLabel('Tên chi nhánh', { exact: true }).fill('Tạp hóa Bến Xe'); await chooseLocation(page);
+  await page.getByLabel('Tên chi nhánh', { exact: true }).fill('Vật liệu Bến Xe'); await chooseLocation(page);
   await page.getByLabel('Tên quầy đầu tiên (không bắt buộc)').fill(''); await page.getByRole('checkbox', { name: /Cấp cho tôi toàn quyền/ }).uncheck(); await next(page);
+  await expect(page.getByRole('checkbox', { name: 'Bán ghi nợ', exact: true })).not.toBeChecked();
   await page.getByRole('checkbox', { name: 'Bán ghi nợ', exact: true }).check(); await next(page);
   await page.getByRole('button', { name: 'Tạo cửa hàng', exact: true }).last().click(); await expect(page).not.toHaveURL(/\/setup/);
-  expect(state.posts[0].body).toMatchObject({ profile_key: 'khac', wholesale: true, interests: ['karaoke_bida'], grant_self: false, features: ['credit'] });
+  expect(state.posts[0].body).toMatchObject({ profile_key: 'vat_lieu_xay_dung', wholesale: true, interests: ['karaoke_bida'], grant_self: false, features: ['credit'] });
   expect(state.posts[0].body).not.toHaveProperty('register');
 });
 

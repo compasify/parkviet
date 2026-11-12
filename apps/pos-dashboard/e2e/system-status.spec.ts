@@ -81,7 +81,7 @@ test('flags what needs a look when the address is unset and work is stuck', asyn
 test('is listed in store settings for administrators', async ({ page }) => {
   await install(page, healthy);
   await page.goto('/store_1/settings');
-  await page.getByRole('link', { name: 'Thông tin server' }).click();
+  await page.getByRole('complementary', { name: 'Settings navigation' }).getByRole('link', { name: 'Thông tin server' }).click();
   await expect(page).toHaveURL(/\/store_1\/settings\/system$/);
 });
 
@@ -89,7 +89,7 @@ test('stays closed to staff without store administration', async ({ page }) => {
   const calls = await install(page, healthy, { read: false, write: false });
   await page.goto('/store_1/settings/system');
 
-  await expect(page.getByText('Bạn không có quyền xem trang này.')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Không có quyền truy cập', exact: true })).toBeVisible();
   expect(calls).toEqual([]);
 });
 

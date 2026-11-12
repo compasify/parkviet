@@ -54,7 +54,7 @@ test('a branch row opens its page with every tab and the selection follows the b
   await page.getByRole('table').getByRole('button', { name: /^Siêu thị Hiền/ }).click();
   await expect(page).toHaveURL(/\/store_1\/branches\/branch_main\?.*branch=branch_main/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Siêu thị Hiền');
-  await expect(tabs(page)).toHaveText(['Tổng quan', 'Quầy', 'Nhân viên & quyền', 'Hàng bán', 'Chức năng', 'Thanh toán', 'In ấn']);
+  await expect(tabs(page)).toHaveText(['Tổng quan', 'Quầy', 'Nhân viên & quyền', 'Hàng bán', 'Chức năng', 'Thanh toán', 'In ấn', 'Bếp & bar', 'Nền tảng giao hàng', 'Phần cứng']);
   await expect(page.getByText('Kho hàng trung tâm', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Sửa thông tin', exact: true })).toBeEnabled();
   await page.screenshot({ path: testInfo.outputPath('branch-overview.png'), fullPage: true });
@@ -71,10 +71,10 @@ test('old branch-setting URLs open the matching tab of the selected branch', asy
   await page.goto('/store_1/branches/branch_main/label-formats'); await expect(page).toHaveURL(/\/store_1\/branches\/branch_main\/features(?:\?|$)/);
 });
 
-test('a branch manager reaches only the overview and features of their branch', async ({ page }) => {
+test('a branch manager reaches only the branch-management tabs of their branch', async ({ page }) => {
   const state = await install(page, 'manager'); await page.goto('/store_1/features?branch=branch_main');
   await expect(page).toHaveURL(/\/store_1\/branches\/branch_main\/features/);
-  await expect(tabs(page)).toHaveText(['Tổng quan', 'Chức năng']);
+  await expect(tabs(page)).toHaveText(['Tổng quan', 'Chức năng', 'Nền tảng giao hàng', 'Phần cứng']);
   await expect(page.getByRole('button', { name: 'Sửa thông tin', exact: true })).toHaveCount(0);
   await expect(page.getByRole('group', { name: 'Mẫu tem cân' })).toHaveCount(0);
   await page.goto('/store_1/branches/branch_main/payments?branch=branch_main');

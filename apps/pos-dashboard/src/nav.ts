@@ -125,21 +125,22 @@ const groups: { key: string; labelKey: string; icon: NavEntry['icon']; children:
     ],
   },
 ]
+// Settings entries are relative to the store's /settings page.
 const settings = [
   { key: 'setup', labelKey: 'setup.title', path: '/setup', icon: Settings },
   {
     key: 'store-model',
     labelKey: 'businessModel.storeTitle',
-    path: '/settings/business-model',
+    path: '/business-model',
     icon: Store,
   },
   {
     key: 'einvoice-settings',
     labelKey: 'einvoiceSettings.title',
-    path: '/settings/einvoice',
+    path: '/einvoice',
     icon: ReceiptText,
   },
-  { key: 'system', labelKey: 'systemStatus.title', path: '/settings/system', icon: Server },
+  { key: 'system', labelKey: 'systemStatus.title', path: '/system', icon: Server },
 ] satisfies { key: PosPage; labelKey: string; path: string; icon: typeof Settings }[]
 settingsNav.addGroup({ key: 'pos', labelKey: 'posDashboard.title' })
 const keys = ['home', ...groups.map((group) => group.key), 'pos-settings']
