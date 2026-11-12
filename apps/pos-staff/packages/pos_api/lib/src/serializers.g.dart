@@ -252,6 +252,11 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(OwnerBranch.serializer)
       ..add(OwnerBranchList.serializer)
       ..add(OwnerHourRow.serializer)
+      ..add(OwnerOpenOrder.serializer)
+      ..add(OwnerOpenOrderLine.serializer)
+      ..add(OwnerOpenOrderLineKitchenEnum.serializer)
+      ..add(OwnerOpenOrderResult.serializer)
+      ..add(OwnerOpenOrderStatusEnum.serializer)
       ..add(OwnerOpenUnit.serializer)
       ..add(OwnerOpenUnitList.serializer)
       ..add(OwnerOpenUnitStatusEnum.serializer)
@@ -911,6 +916,9 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(OwnerBranch)]),
           () => ListBuilder<OwnerBranch>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(OwnerOpenOrderLine)]),
+          () => ListBuilder<OwnerOpenOrderLine>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(OwnerOpenUnit)]),
           () => ListBuilder<OwnerOpenUnit>())

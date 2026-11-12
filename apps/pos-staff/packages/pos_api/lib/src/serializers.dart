@@ -206,6 +206,9 @@ import 'package:pos_api/src/model/owner_alert_list.dart';
 import 'package:pos_api/src/model/owner_branch.dart';
 import 'package:pos_api/src/model/owner_branch_list.dart';
 import 'package:pos_api/src/model/owner_hour_row.dart';
+import 'package:pos_api/src/model/owner_open_order.dart';
+import 'package:pos_api/src/model/owner_open_order_line.dart';
+import 'package:pos_api/src/model/owner_open_order_result.dart';
 import 'package:pos_api/src/model/owner_open_unit.dart';
 import 'package:pos_api/src/model/owner_open_unit_list.dart';
 import 'package:pos_api/src/model/owner_source_row.dart';
@@ -664,6 +667,9 @@ part 'serializers.g.dart';
   OwnerBranch,
   OwnerBranchList,
   OwnerHourRow,
+  OwnerOpenOrder,
+  OwnerOpenOrderLine,
+  OwnerOpenOrderResult,
   OwnerOpenUnit,
   OwnerOpenUnitList,
   OwnerSourceRow,
@@ -1183,6 +1189,10 @@ Serializers serializers = (_$serializers.toBuilder()
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(String)]),
         () => ListBuilder<String>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(OwnerOpenOrderLine)]),
+        () => ListBuilder<OwnerOpenOrderLine>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(StationRoute)]),

@@ -6,14 +6,17 @@ import '../../core/api_client.dart';
 import '../../core/session.dart';
 
 /// What the owner's phone reads of the branches the person watches: the
-/// day so far, the open orders, the alerts, and this phone's push
-/// registration.
+/// day so far, the open orders and their lines, the alerts, and this
+/// phone's push registration.
 abstract interface class OwnerWatchApi {
   Future<List<OwnerBranch>> branches();
 
   Future<OwnerToday> today(String branchId);
 
   Future<List<OwnerOpenUnit>> openUnits(String branchId);
+
+  /// One open order's lines, read only.
+  Future<OwnerOpenOrder> openOrder(String branchId, String workspaceId);
 
   Future<List<OwnerAlert>> alerts(String branchId);
 
@@ -46,6 +49,15 @@ class ApiOwnerWatchApi implements OwnerWatchApi {
       (await client.call(
         (api) => api.posOwnerOpenUnits(branchId: branchId),
       )).data.toList();
+
+  @override
+  Future<OwnerOpenOrder> openOrder(String branchId, String workspaceId) async =>
+      (await client.call(
+        (api) => api.posOwnerOpenUnitShow(
+          branchId: branchId,
+          workspaceId: workspaceId,
+        ),
+      )).data;
 
   @override
   Future<List<OwnerAlert>> alerts(String branchId) async => (await client.call(

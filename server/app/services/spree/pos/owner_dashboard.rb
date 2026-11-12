@@ -40,10 +40,53 @@ module Spree
         rows.map do |workspace|
           late, count = waiting.fetch(workspace.id, [false, 0])
           { workspace_id: workspace.prefixed_id, resource_id: workspace.resource&.prefixed_id,
-            label: workspace.resource&.name || workspace.tab_name.presence || workspace.table_label.presence || workspace.order&.number,
+            label: label(workspace),
             service_mode: workspace.service_mode, status: workspace.operational_status, guest_count: workspace.guest_count,
             opened_at: workspace.created_at.iso8601, minutes_open: ((now - workspace.created_at) / 60).floor,
             total: money(workspace.order&.total), kitchen_waiting: count, kitchen_late: late }
+        end
+      end
+
+      # One open order of the branch, read only: what it holds, how much each
+      # line comes to after its discounts, and how far the kitchen got.
+      def open_unit(store:, staff:, branch:, workspace_id:)
+        reader!(store, staff, branch)
+        workspace = Workspace.locate(open_workspaces(branch).includes(:order, :resource), workspace_id) || raise(ActiveRecord::RecordNotFound)
+        order = workspace.order
+        sales = SaleLine.where(workspace_id: workspace.id).index_by(&:line_item_id)
+        kitchen = workspace.shared_service? ? workspace.kitchen_status_by_line : nil
+        lines = order.line_items.includes(:discounts, variant: :product).to_a.sort_by(&:id)
+        {
+          workspace_id: workspace.prefixed_id, label: label(workspace), order_number: workspace.order_number,
+          order_source: workspace.order_source, service_mode: workspace.service_mode, status: workspace.operational_status,
+          guest_count: workspace.guest_count, opened_at: workspace.created_at.iso8601,
+          minutes_open: ((Workspace.database_now - workspace.created_at) / 60).floor,
+          total: money(order.total), currency: order.currency,
+          lines: lines.map do |line|
+            sale = sales[line.id]
+            { id: line.prefixed_id, name: line.variant.product.name, quantity: money(sale&.sale_quantity || line.quantity),
+              unit: sale&.sale_unit_code, amount: money(line.amount + line.discounts.sum(&:amount)),
+              kitchen: kitchen_state(sale, kitchen) }
+          end
+        }
+      end
+
+      def label(workspace)
+        workspace.resource&.name || workspace.tab_name.presence || workspace.table_label.presence || workspace.order&.number
+      end
+
+      # unsent: some of it is not with the kitchen yet; waiting: new or being
+      # made; then ready and served. none: no kitchen for this line or order.
+      def kitchen_state(sale, kitchen)
+        return 'none' if sale.nil? || kitchen.nil?
+        return 'unsent' if sale.pending_kitchen_quantity.positive?
+
+        sent = kitchen.fetch(sale.id, {})
+        quantity = ->(status) { BigDecimal(sent[status] || '0') }
+        if (quantity['new'] + quantity['preparing']).positive? then 'waiting'
+        elsif quantity['ready'].positive? then 'ready'
+        elsif quantity['served'].positive? then 'served'
+        else 'none'
         end
       end
 

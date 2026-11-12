@@ -49,6 +49,30 @@ RSpec.describe 'POS owner app', type: :request do
     expect(response.parsed_body['data'].first).to include('total' => '45000.0', 'kitchen_waiting' => 0, 'kitchen_late' => false)
   end
 
+  it 'shows one open order of the branch with its lines, read only, and nothing of another branch' do
+    product = stocked_product(store, branch, price: 45_000)
+    open = open_sale(store, branch, cashier: cashier, product: product, quantity: 2)
+    headers = bearer(owner)
+
+    get "/api/v3/admin/pos/owner/open_units/#{open.workspace.prefixed_id}", headers: headers, params: { branch_id: branch.prefixed_id }
+    expect(response).to have_http_status(:ok), response.body
+    expect_pos_schema!(response, 'OwnerOpenOrder')
+    order = response.parsed_body['data']
+    expect(order).to include('workspace_id' => open.workspace.prefixed_id, 'order_source' => 'counter', 'status' => 'editing',
+                             'total' => '90000.0', 'currency' => 'VND')
+    expect(order['lines']).to eq([{ 'id' => open.workspace.order.line_items.sole.prefixed_id, 'name' => product.name, 'quantity' => '2.0',
+                                    'unit' => 'item', 'amount' => '90000.0', 'kitchen' => 'none' }])
+
+    other = credit_branch(store)
+    Spree::Pos::StaffMembership.create!(store: store, branch: other, staff: owner, capabilities: [Spree::Pos::Capabilities::REPORT_READ],
+                                        status: 'active')
+    get "/api/v3/admin/pos/owner/open_units/#{open.workspace.prefixed_id}", headers: headers, params: { branch_id: other.prefixed_id }
+    expect(response).to have_http_status(:not_found)
+
+    get "/api/v3/admin/pos/owner/open_units/#{open.workspace.prefixed_id}", headers: bearer(cashier), params: { branch_id: branch.prefixed_id }
+    expect(response).to have_http_status(:forbidden)
+  end
+
   it 'refuses the day of a branch to someone without the report capability' do
     get '/api/v3/admin/pos/owner/today', headers: bearer(cashier), params: { branch_id: branch.prefixed_id }
     expect(response).to have_http_status(:forbidden)
@@ -64,6 +88,7 @@ RSpec.describe 'POS owner app', type: :request do
     get '/api/v3/admin/pos/owner/branches', headers: bearer(owner)
     expect_pos_schema!(response, 'OwnerBranch')
     expect(response.parsed_body['data'].pluck('id')).to contain_exactly(branch.prefixed_id, other.prefixed_id)
+    expect(response.parsed_body['data'].pluck('can_manage_reservations')).to eq([false, false])
 
     device, = pair_owner_device!(branch)
     session = Spree::Pos::DeviceStaffSession.new(staff: owner)

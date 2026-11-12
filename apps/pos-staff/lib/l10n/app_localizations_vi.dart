@@ -1723,4 +1723,48 @@ class AppLocalizationsVi extends AppLocalizations {
   String ownerPushLastError(String error) {
     return 'Lỗi gần nhất: $error';
   }
+
+  @override
+  String get ownerOrderLines => 'Các món';
+
+  @override
+  String get ownerOrderEmpty => 'Đơn chưa có món.';
+
+  @override
+  String get ownerOrderClosed => 'Đơn này không còn mở.';
+
+  @override
+  String get ownerLineUnsent => 'Chưa gửi bếp';
+
+  @override
+  String get ownerLineWaiting => 'Bếp đang làm';
+
+  @override
+  String get ownerLineReady => 'Đã xong';
+
+  @override
+  String get ownerLineServed => 'Đã phục vụ';
+
+  @override
+  String get ownerReservationConfirm => 'Xác nhận';
+
+  @override
+  String get ownerReservationConfirmed => 'Đã xác nhận với khách';
+
+  @override
+  String get ownerReservationConfirmDone => 'Đã xác nhận đặt bàn.';
+
+  @override
+  String get ownerReservationCancel => 'Hủy đặt bàn';
+
+  @override
+  String ownerReservationCancelAsk(String name, String time) {
+    return 'Hủy đặt bàn của $name lúc $time? Bàn được trả lại; cọc vẫn giữ đến khi hoàn hoặc giữ cọc.';
+  }
+
+  @override
+  String get ownerReservationCancelDone => 'Đã hủy đặt bàn.';
+
+  @override
+  String get ownerReservationNotWaiting => 'Đặt bàn này không còn chờ khách.';
 }

@@ -203,6 +203,9 @@ lib/src/model/owner_alert_list.dart
 lib/src/model/owner_branch.dart
 lib/src/model/owner_branch_list.dart
 lib/src/model/owner_hour_row.dart
+lib/src/model/owner_open_order.dart
+lib/src/model/owner_open_order_line.dart
+lib/src/model/owner_open_order_result.dart
 lib/src/model/owner_open_unit.dart
 lib/src/model/owner_open_unit_list.dart
 lib/src/model/owner_source_row.dart

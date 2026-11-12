@@ -17,6 +17,7 @@ part 'owner_branch.g.dart';
 /// * [timezone]
 /// * [canReadReports]
 /// * [canApprove]
+/// * [canManageReservations] - May confirm and cancel the branch's bookings.
 @BuiltValue()
 abstract class OwnerBranch implements Built<OwnerBranch, OwnerBranchBuilder> {
   @BuiltValueField(wireName: r'id')
@@ -36,6 +37,10 @@ abstract class OwnerBranch implements Built<OwnerBranch, OwnerBranchBuilder> {
 
   @BuiltValueField(wireName: r'can_approve')
   bool get canApprove;
+
+  /// May confirm and cancel the branch's bookings.
+  @BuiltValueField(wireName: r'can_manage_reservations')
+  bool get canManageReservations;
 
   OwnerBranch._();
 
@@ -88,6 +93,11 @@ class _$OwnerBranchSerializer implements PrimitiveSerializer<OwnerBranch> {
     yield r'can_approve';
     yield serializers.serialize(
       object.canApprove,
+      specifiedType: const FullType(bool),
+    );
+    yield r'can_manage_reservations';
+    yield serializers.serialize(
+      object.canManageReservations,
       specifiedType: const FullType(bool),
     );
   }
@@ -156,6 +166,13 @@ class _$OwnerBranchSerializer implements PrimitiveSerializer<OwnerBranch> {
             specifiedType: const FullType(bool),
           ) as bool;
           result.canApprove = valueDes;
+          break;
+        case r'can_manage_reservations':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(bool),
+          ) as bool;
+          result.canManageReservations = valueDes;
           break;
         default:
           unhandled.add(key);

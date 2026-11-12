@@ -169,6 +169,7 @@ Class | Method | HTTP request | Description
 [*DefaultApi*](doc/DefaultApi.md) | [**posModifierGroups**](doc/DefaultApi.md#posmodifiergroups) | **GET** /api/v3/admin/pos/modifier_groups | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posOwnerAlerts**](doc/DefaultApi.md#posowneralerts) | **GET** /api/v3/admin/pos/owner/alerts | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posOwnerBranches**](doc/DefaultApi.md#posownerbranches) | **GET** /api/v3/admin/pos/owner/branches | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posOwnerOpenUnitShow**](doc/DefaultApi.md#posowneropenunitshow) | **GET** /api/v3/admin/pos/owner/open_units/{workspace_id} | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posOwnerOpenUnits**](doc/DefaultApi.md#posowneropenunits) | **GET** /api/v3/admin/pos/owner/open_units | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posOwnerToday**](doc/DefaultApi.md#posownertoday) | **GET** /api/v3/admin/pos/owner/today | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posPaymentRequest**](doc/DefaultApi.md#pospaymentrequest) | **POST** /api/v3/admin/pos/workspaces/{workspace_id}/payment_request | 
@@ -209,6 +210,7 @@ Class | Method | HTTP request | Description
 [*DefaultApi*](doc/DefaultApi.md) | [**posReportPlatforms**](doc/DefaultApi.md#posreportplatforms) | **GET** /api/v3/admin/pos/reports/platforms | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posReservationAvailability**](doc/DefaultApi.md#posreservationavailability) | **GET** /api/v3/admin/pos/reservations/availability | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posReservationCancel**](doc/DefaultApi.md#posreservationcancel) | **POST** /api/v3/admin/pos/reservations/{id}/cancel | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posReservationConfirm**](doc/DefaultApi.md#posreservationconfirm) | **POST** /api/v3/admin/pos/reservations/{id}/confirm | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posReservationCreate**](doc/DefaultApi.md#posreservationcreate) | **POST** /api/v3/admin/pos/reservations | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posReservationDepositForfeit**](doc/DefaultApi.md#posreservationdepositforfeit) | **POST** /api/v3/admin/pos/reservations/deposits/{deposit_id}/forfeit | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posReservationDepositRefund**](doc/DefaultApi.md#posreservationdepositrefund) | **POST** /api/v3/admin/pos/reservations/deposits/{deposit_id}/refund | 
@@ -467,6 +469,9 @@ Class | Method | HTTP request | Description
  - [OwnerBranch](doc/OwnerBranch.md)
  - [OwnerBranchList](doc/OwnerBranchList.md)
  - [OwnerHourRow](doc/OwnerHourRow.md)
+ - [OwnerOpenOrder](doc/OwnerOpenOrder.md)
+ - [OwnerOpenOrderLine](doc/OwnerOpenOrderLine.md)
+ - [OwnerOpenOrderResult](doc/OwnerOpenOrderResult.md)
  - [OwnerOpenUnit](doc/OwnerOpenUnit.md)
  - [OwnerOpenUnitList](doc/OwnerOpenUnitList.md)
  - [OwnerSourceRow](doc/OwnerSourceRow.md)

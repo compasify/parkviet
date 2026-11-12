@@ -41,7 +41,7 @@ module Spree
           guest_name: guest_name, phone: phone, party_size: party_size, note: note,
           starts_at: starts_at.iso8601, ends_at: ends_at.iso8601, revision: revision,
           customer_id: customer_profile&.prefixed_id, workspace_id: workspace&.prefixed_id,
-          seated_at: seated_at&.iso8601, canceled_at: canceled_at&.iso8601,
+          confirmed_at: confirmed_at&.iso8601, seated_at: seated_at&.iso8601, canceled_at: canceled_at&.iso8601,
           resources: holds.map { |hold| hold.resource.to_ref },
           deposits: deposits.map(&:to_pos),
           deposit_held: money(deposits.select { |row| row.status == 'held' }.sum(&:amount))

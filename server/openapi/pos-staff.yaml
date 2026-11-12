@@ -1101,6 +1101,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/reservations/{id}/confirm:
+    post:
+      operationId: posReservationConfirm
+      description: >
+        Marks a waiting booking as confirmed with the guest (`confirmed_at`);
+        `pos.reservation.manage`. Its tables, time, deposits and revision stay.
+        Confirming again answers the booking unchanged.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: The booking
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationResult'
+        '409':
+          description: Refused; `error.details.reason` is `reservation_not_booked`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/v3/admin/pos/reservations/{id}/cancel:
     post:
       operationId: posReservationCancel
@@ -5266,6 +5289,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OwnerOpenUnitList'
+  /api/v3/admin/pos/owner/open_units/{workspace_id}:
+    get:
+      operationId: posOwnerOpenUnitShow
+      description: >
+        One open order of the branch, read only: its table or source, and each
+        line's quantity, amount after its discounts and kitchen state. Needs
+        `pos.report.read`; an order that closed or belongs to another branch
+        is not found.
+      parameters:
+        - $ref: '#/components/parameters/ReportBranch'
+        - name: workspace_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OwnerOpenOrderResult'
   /api/v3/admin/pos/owner/alerts:
     get:
       operationId: posOwnerAlerts
@@ -9590,7 +9635,7 @@ components:
       type: object
       additionalProperties: false
       required: [id, branch_id, status, source, guest_name, phone, party_size, note, starts_at, ends_at, revision, customer_id,
-                 workspace_id, seated_at, canceled_at, resources, deposits, deposit_held]
+                 workspace_id, confirmed_at, seated_at, canceled_at, resources, deposits, deposit_held]
       properties:
         id:
           type: string
@@ -9624,6 +9669,10 @@ components:
         workspace_id:
           type: [string, 'null']
           description: The order the party was seated at.
+        confirmed_at:
+          type: [string, 'null']
+          format: date-time
+          description: When the booking was confirmed with the guest.
         seated_at:
           type: [string, 'null']
           format: date-time
@@ -11624,7 +11673,7 @@ components:
     OwnerBranch:
       type: object
       additionalProperties: false
-      required: [id, name, code, timezone, can_read_reports, can_approve]
+      required: [id, name, code, timezone, can_read_reports, can_approve, can_manage_reservations]
       properties:
         id:
           type: string
@@ -11638,6 +11687,9 @@ components:
           type: boolean
         can_approve:
           type: boolean
+        can_manage_reservations:
+          type: boolean
+          description: May confirm and cancel the branch's bookings.
     OwnerBranchList:
       type: object
       required: [data]
@@ -11762,6 +11814,69 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/OwnerOpenUnit'
+    OwnerOpenOrderLine:
+      type: object
+      additionalProperties: false
+      required: [id, name, quantity, unit, amount, kitchen]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        quantity:
+          type: string
+        unit:
+          type: [string, 'null']
+          description: The sale unit; `item` for a count.
+        amount:
+          type: string
+          description: After the line's discounts.
+        kitchen:
+          type: string
+          enum: [none, unsent, waiting, ready, served]
+          description: >
+            `unsent` while some of it is not with the kitchen yet; `waiting`
+            while some is new or being made; `none` without a kitchen.
+    OwnerOpenOrder:
+      type: object
+      additionalProperties: false
+      required: [workspace_id, label, order_number, order_source, service_mode, status, guest_count, opened_at, minutes_open, total,
+                 currency, lines]
+      properties:
+        workspace_id:
+          type: string
+        label:
+          type: [string, 'null']
+        order_number:
+          type: [string, 'null']
+        order_source:
+          type: string
+        service_mode:
+          type: [string, 'null']
+        status:
+          type: string
+          enum: [editing, parked]
+        guest_count:
+          type: [integer, 'null']
+        opened_at:
+          type: string
+          format: date-time
+        minutes_open:
+          type: integer
+        total:
+          type: string
+        currency:
+          type: string
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/OwnerOpenOrderLine'
+    OwnerOpenOrderResult:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/OwnerOpenOrder'
     OwnerAlert:
       type: object
       additionalProperties: false

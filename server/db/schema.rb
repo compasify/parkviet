@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_12_130000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_12_140000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gist"
   enable_extension "pg_catalog.plpgsql"
@@ -4343,6 +4343,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_130000) do
     t.datetime "canceled_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.datetime "confirmed_at"
     t.index ["branch_id", "starts_at"], name: "idx_pos_reservations_branch_time"
     t.index ["created_by_id"], name: "index_spree_pos_reservations_on_created_by_id"
     t.index ["customer_profile_id"], name: "index_spree_pos_reservations_on_customer_profile_id"

@@ -529,5 +529,19 @@
   "ownerPushNoToken": "This build has no background notifications; you hear events only while the app is open.",
   "ownerPushNoRelay": "The store has no push relay; you hear events only while the app is open.",
   "ownerPushReady": "Notifications carry only the kind of event, never amounts or names.",
-  "ownerPushLastError": "Last error: {error}"
+  "ownerPushLastError": "Last error: {error}",
+  "ownerOrderLines": "Items",
+  "ownerOrderEmpty": "No items yet.",
+  "ownerOrderClosed": "This order is no longer open.",
+  "ownerLineUnsent": "Not sent to the kitchen",
+  "ownerLineWaiting": "In the kitchen",
+  "ownerLineReady": "Ready",
+  "ownerLineServed": "Served",
+  "ownerReservationConfirm": "Confirm",
+  "ownerReservationConfirmed": "Confirmed with the guest",
+  "ownerReservationConfirmDone": "Booking confirmed.",
+  "ownerReservationCancel": "Cancel booking",
+  "ownerReservationCancelAsk": "Cancel {name}'s booking at {time}? The table is let go; the deposit stays held until refunded or kept.",
+  "ownerReservationCancelDone": "Booking canceled.",
+  "ownerReservationNotWaiting": "This booking is no longer waiting."
 }

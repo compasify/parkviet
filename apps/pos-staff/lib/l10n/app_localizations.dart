@@ -3007,6 +3007,90 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Lỗi gần nhất: {error}'**
   String ownerPushLastError(String error);
+
+  /// No description provided for @ownerOrderLines.
+  ///
+  /// In vi, this message translates to:
+  /// **'Các món'**
+  String get ownerOrderLines;
+
+  /// No description provided for @ownerOrderEmpty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đơn chưa có món.'**
+  String get ownerOrderEmpty;
+
+  /// No description provided for @ownerOrderClosed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đơn này không còn mở.'**
+  String get ownerOrderClosed;
+
+  /// No description provided for @ownerLineUnsent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa gửi bếp'**
+  String get ownerLineUnsent;
+
+  /// No description provided for @ownerLineWaiting.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bếp đang làm'**
+  String get ownerLineWaiting;
+
+  /// No description provided for @ownerLineReady.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã xong'**
+  String get ownerLineReady;
+
+  /// No description provided for @ownerLineServed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã phục vụ'**
+  String get ownerLineServed;
+
+  /// No description provided for @ownerReservationConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác nhận'**
+  String get ownerReservationConfirm;
+
+  /// No description provided for @ownerReservationConfirmed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã xác nhận với khách'**
+  String get ownerReservationConfirmed;
+
+  /// No description provided for @ownerReservationConfirmDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã xác nhận đặt bàn.'**
+  String get ownerReservationConfirmDone;
+
+  /// No description provided for @ownerReservationCancel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hủy đặt bàn'**
+  String get ownerReservationCancel;
+
+  /// No description provided for @ownerReservationCancelAsk.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hủy đặt bàn của {name} lúc {time}? Bàn được trả lại; cọc vẫn giữ đến khi hoàn hoặc giữ cọc.'**
+  String ownerReservationCancelAsk(String name, String time);
+
+  /// No description provided for @ownerReservationCancelDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã hủy đặt bàn.'**
+  String get ownerReservationCancelDone;
+
+  /// No description provided for @ownerReservationNotWaiting.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đặt bàn này không còn chờ khách.'**
+  String get ownerReservationNotWaiting;
 }
 
 class _AppLocalizationsDelegate

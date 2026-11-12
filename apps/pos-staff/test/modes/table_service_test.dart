@@ -40,6 +40,26 @@ class FakeOwnerApi implements OwnerApi {
     );
   }
 
+  Reservation _change(String reservationId, void Function(ReservationBuilder b) update) {
+    final row = rows.firstWhere((row) => row.id == reservationId).rebuild(update);
+    rows = [for (final old in rows) old.id == reservationId ? row : old];
+    return row;
+  }
+
+  @override
+  Future<Reservation> confirm(String reservationId) async {
+    calls.add('confirm:$reservationId');
+    if (failure != null) throw failure!;
+    return _change(reservationId, (b) => b.confirmedAt = DateTime.utc(2026, 11, 12, 9));
+  }
+
+  @override
+  Future<Reservation> cancel(String reservationId) async {
+    calls.add('cancel:$reservationId');
+    if (failure != null) throw failure!;
+    return _change(reservationId, (b) => b.status = ReservationStatusEnum.canceled);
+  }
+
   @override
   Future<Reservation> refundDeposit(String depositId) async {
     calls.add('refund:$depositId');
@@ -279,5 +299,62 @@ void main() {
     await tester.pumpAndSettle();
     expect(api.calls, ['refund:dep_res_1', 'forfeit:dep_res_2']);
     expect(find.textContaining('đã giữ cọc'), findsOneWidget);
+  });
+
+  testWidgets('someone who books confirms a waiting booking and cancels another', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(800, 1200));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final api = FakeOwnerApi([
+      reservationOf('res_1', status: 'booked', depositStatus: 'held'),
+      reservationOf('res_2', status: 'booked', depositStatus: 'held', guest: 'Anh Minh'),
+      reservationOf('res_3', status: 'seated', depositStatus: 'held', guest: 'Chị Hoa'),
+    ]);
+    await tester.pumpWidget(
+      localized(
+        Scaffold(
+          body: OwnerReservations(api: api, branchId: 'posbranch_1', canManage: true),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('owner-reservation-confirm-res_3')), findsNothing, reason: 'a seated party is no longer waiting');
+    expect(find.byKey(const Key('owner-reservation-cancel-res_3')), findsNothing);
+
+    await tester.tap(find.byKey(const Key('owner-reservation-confirm-res_1')));
+    await tester.pumpAndSettle();
+    expect(find.text('Đã xác nhận đặt bàn.'), findsOneWidget);
+    expect(find.textContaining('Đã xác nhận với khách'), findsOneWidget);
+    expect(find.byKey(const Key('owner-reservation-confirm-res_1')), findsNothing);
+    ScaffoldMessenger.of(tester.element(find.byType(Scaffold))).removeCurrentSnackBar();
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('owner-reservation-cancel-res_2')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Hủy đặt bàn của Anh Minh'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('owner-reservation-cancel-confirm')));
+    await tester.pumpAndSettle();
+    expect(api.calls, ['confirm:res_1', 'cancel:res_2']);
+    expect(find.text('Đã hủy đặt bàn.'), findsOneWidget);
+    expect(find.byKey(const Key('owner-reservation-cancel-res_2')), findsNothing);
+    ScaffoldMessenger.of(tester.element(find.byType(Scaffold))).removeCurrentSnackBar();
+    await tester.pumpAndSettle();
+
+    api.failure = const AppFailure.conflict(reason: 'reservation_not_booked');
+    await tester.tap(find.byKey(const Key('owner-reservation-cancel-res_1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('owner-reservation-cancel-confirm')));
+    await tester.pumpAndSettle();
+    expect(find.text('Đặt bàn này không còn chờ khách.'), findsOneWidget);
+  });
+
+  testWidgets('without the right to book, the owner sees bookings but cannot change them', (tester) async {
+    final api = FakeOwnerApi([reservationOf('res_1', status: 'booked', depositStatus: 'held')]);
+    await tester.pumpWidget(localized(Scaffold(body: OwnerReservations(api: api, branchId: 'posbranch_1'))));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('owner-reservation-res_1')), findsOneWidget);
+    expect(find.byKey(const Key('owner-reservation-confirm-res_1')), findsNothing);
+    ScaffoldMessenger.of(tester.element(find.byType(Scaffold))).removeCurrentSnackBar();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('owner-reservation-cancel-res_1')), findsNothing);
   });
 }

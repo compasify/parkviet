@@ -27,6 +27,7 @@ part 'reservation.g.dart';
 /// * [revision] - Approvals to refund or keep a deposit are bound to it.
 /// * [customerId]
 /// * [workspaceId] - The order the party was seated at.
+/// * [confirmedAt] - When the booking was confirmed with the guest.
 /// * [seatedAt]
 /// * [canceledAt]
 /// * [resources]
@@ -77,6 +78,10 @@ abstract class Reservation implements Built<Reservation, ReservationBuilder> {
   /// The order the party was seated at.
   @BuiltValueField(wireName: r'workspace_id')
   String? get workspaceId;
+
+  /// When the booking was confirmed with the guest.
+  @BuiltValueField(wireName: r'confirmed_at')
+  DateTime? get confirmedAt;
 
   @BuiltValueField(wireName: r'seated_at')
   DateTime? get seatedAt;
@@ -193,6 +198,13 @@ class _$ReservationSerializer implements PrimitiveSerializer<Reservation> {
         : serializers.serialize(
             object.workspaceId,
             specifiedType: const FullType.nullable(String),
+          );
+    yield r'confirmed_at';
+    yield object.confirmedAt == null
+        ? null
+        : serializers.serialize(
+            object.confirmedAt,
+            specifiedType: const FullType.nullable(DateTime),
           );
     yield r'seated_at';
     yield object.seatedAt == null
@@ -349,6 +361,14 @@ class _$ReservationSerializer implements PrimitiveSerializer<Reservation> {
           ) as String?;
           if (valueDes == null) continue;
           result.workspaceId = valueDes;
+          break;
+        case r'confirmed_at':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(DateTime),
+          ) as DateTime?;
+          if (valueDes == null) continue;
+          result.confirmedAt = valueDes;
           break;
         case r'seated_at':
           final valueDes = serializers.deserialize(

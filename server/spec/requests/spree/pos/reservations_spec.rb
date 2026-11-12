@@ -116,6 +116,29 @@ RSpec.describe 'POS reservations', type: :request do
     expect(response).to have_http_status(:created), response.body
   end
 
+  it 'confirms a waiting booking once, keeping its revision, and only for those who book' do
+    booked = book(small)['data']
+    expect(booked['confirmed_at']).to be_nil
+
+    post "/api/v3/admin/pos/reservations/#{booked['id']}/confirm", headers: headers(cashier), as: :json
+    expect(response).to have_http_status(:forbidden)
+
+    post "/api/v3/admin/pos/reservations/#{booked['id']}/confirm", headers: headers, as: :json
+    expect(response).to have_http_status(:ok), response.body
+    expect_pos_schema!(response, 'Reservation')
+    confirmed = response.parsed_body['data']
+    expect(confirmed).to include('status' => 'booked', 'revision' => booked['revision'], 'confirmed_at' => be_present)
+
+    post "/api/v3/admin/pos/reservations/#{booked['id']}/confirm", headers: headers, as: :json
+    expect(response.parsed_body.dig('data', 'confirmed_at')).to eq(confirmed['confirmed_at'])
+    expect(Spree::Pos::AuditEntry.where(action: 'reservation.confirm').count).to eq(1)
+
+    post "/api/v3/admin/pos/reservations/#{booked['id']}/cancel", headers: headers, as: :json, params: {}
+    post "/api/v3/admin/pos/reservations/#{booked['id']}/confirm", headers: headers, as: :json
+    expect(response).to have_http_status(:conflict)
+    expect(response.parsed_body.dig('error', 'details')).to include('reason' => 'reservation_not_booked')
+  end
+
   it 'is closed to a branch without bookings and to staff who do not book' do
     set_pos_module(branch, 'fnb.reservations', false)
     body = book(small)

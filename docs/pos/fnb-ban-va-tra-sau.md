@@ -79,9 +79,9 @@ Không ai chạm trong thời gian chờ thì kiosk hỏi "Bạn còn đó khôn
 Ghép một điện thoại ở trang **Thiết bị** với mode **Chủ quán**, đăng nhập bằng PIN của người có quyền **Duyệt** (`pos.approval.grant`) và/hoặc **Xem báo cáo** (`pos.report.read`). App hiện từng chi nhánh người đó được giao (chọn ở đầu màn, máy nhớ lựa chọn), gồm năm tab:
 
 - **Hôm nay**: doanh thu, doanh thu thuần, số đơn và theo kênh lấy đúng từ báo cáo bán hàng của ngày kinh doanh, kèm doanh thu theo giờ, đơn đang mở, ca đang mở, đơn hủy và món hủy.
-- **Đang mở**: bàn/đơn đang mở, mở bao lâu, đang bao nhiêu tiền, món chờ bếp; ô đỏ là có món trễ quá ngưỡng của khu bếp.
+- **Đang mở**: bàn/đơn đang mở, mở bao lâu, đang bao nhiêu tiền, món chờ bếp; ô đỏ là có món trễ quá ngưỡng của khu bếp. Chạm một ô để xem các món của đơn (chỉ xem): số lượng, tiền sau giảm giá và món đã gửi bếp / đang làm / xong / đã phục vụ.
 - **Duyệt**: yêu cầu đang chờ (ai xin, việc gì, bàn/đơn nào, bao nhiêu, lý do, hết hạn lúc nào). **Đồng ý** cần vân tay hoặc khuôn mặt; máy không có thì hỏi xác nhận. **Từ chối** có thể kèm lý do. Người xin không tự duyệt được yêu cầu của mình.
-- **Đặt bàn**: lượt đặt hôm nay, hoàn hoặc giữ cọc.
+- **Đặt bàn**: lượt đặt hôm nay, hoàn hoặc giữ cọc. Người có quyền **Đặt bàn** (`pos.reservation.manage`) ở chi nhánh còn **Xác nhận** lượt đặt đang chờ (đã gọi lại khách) hoặc **Hủy đặt bàn** (trả bàn; cọc vẫn giữ đến khi hoàn hoặc giữ cọc).
 - **Cảnh báo**: món chờ bếp quá lâu, chênh lệch két khi đóng ca, nhiều món bị hủy trong một giờ, lệnh in hoặc hóa đơn điện tử lỗi, doanh thu năm chạm 90% và 100% ngưỡng 1 tỷ. Server quét mỗi phút và chỉ báo mỗi việc một lần.
 
 **Gửi chủ duyệt.** Khi thu ngân (`apps/pos`) hoặc máy phục vụ bị từ chối vì cần quản lý duyệt — giảm giá, đổi giá, hủy món đã báo bếp, in lại phiếu tạm tính, sửa giờ hoặc tạm dừng lâu, hoàn/giữ cọc, ví suất ăn, chai gửi, sửa hoa hồng xe — màn có nút **Gửi chủ duyệt**. Yêu cầu chờ tối đa 10 phút. Chủ đồng ý thì máy gửi tự làm tiếp với mã duyệt vừa cấp, như mã gõ tay; đơn đổi trước khi chủ bấm thì yêu cầu hết hạn và phải gửi lại. Gõ mã duyệt tay vẫn dùng được như trước.

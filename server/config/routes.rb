@@ -281,6 +281,7 @@ Rails.application.routes.draw do
             get 'owner/branches', to: 'owner#branches'
             get 'owner/today', to: 'owner#today'
             get 'owner/open_units', to: 'owner#open_units'
+            get 'owner/open_units/:workspace_id', to: 'owner#open_unit'
             get 'owner/alerts', to: 'owner#alerts'
             get 'push_registration', to: 'push_registrations#show'
             put 'push_registration', to: 'push_registrations#update'
@@ -296,6 +297,7 @@ Rails.application.routes.draw do
             resources :reservations, only: [:index, :show, :create, :update] do
               get :availability, on: :collection
               member do
+                post :confirm
                 post :cancel
                 post :seat
                 post :deposits, action: :take_deposit

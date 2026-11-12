@@ -1724,4 +1724,48 @@ class AppLocalizationsEn extends AppLocalizations {
   String ownerPushLastError(String error) {
     return 'Last error: $error';
   }
+
+  @override
+  String get ownerOrderLines => 'Items';
+
+  @override
+  String get ownerOrderEmpty => 'No items yet.';
+
+  @override
+  String get ownerOrderClosed => 'This order is no longer open.';
+
+  @override
+  String get ownerLineUnsent => 'Not sent to the kitchen';
+
+  @override
+  String get ownerLineWaiting => 'In the kitchen';
+
+  @override
+  String get ownerLineReady => 'Ready';
+
+  @override
+  String get ownerLineServed => 'Served';
+
+  @override
+  String get ownerReservationConfirm => 'Confirm';
+
+  @override
+  String get ownerReservationConfirmed => 'Confirmed with the guest';
+
+  @override
+  String get ownerReservationConfirmDone => 'Booking confirmed.';
+
+  @override
+  String get ownerReservationCancel => 'Cancel booking';
+
+  @override
+  String ownerReservationCancelAsk(String name, String time) {
+    return 'Cancel $name\'s booking at $time? The table is let go; the deposit stays held until refunded or kept.';
+  }
+
+  @override
+  String get ownerReservationCancelDone => 'Booking canceled.';
+
+  @override
+  String get ownerReservationNotWaiting => 'This booking is no longer waiting.';
 }

@@ -167,6 +167,8 @@ class _$Reservation extends Reservation {
   @override
   final String? workspaceId;
   @override
+  final DateTime? confirmedAt;
+  @override
   final DateTime? seatedAt;
   @override
   final DateTime? canceledAt;
@@ -196,6 +198,7 @@ class _$Reservation extends Reservation {
       required this.revision,
       this.customerId,
       this.workspaceId,
+      this.confirmedAt,
       this.seatedAt,
       this.canceledAt,
       required this.resources,
@@ -227,6 +230,7 @@ class _$Reservation extends Reservation {
         revision == other.revision &&
         customerId == other.customerId &&
         workspaceId == other.workspaceId &&
+        confirmedAt == other.confirmedAt &&
         seatedAt == other.seatedAt &&
         canceledAt == other.canceledAt &&
         resources == other.resources &&
@@ -251,6 +255,7 @@ class _$Reservation extends Reservation {
     _$hash = $jc(_$hash, revision.hashCode);
     _$hash = $jc(_$hash, customerId.hashCode);
     _$hash = $jc(_$hash, workspaceId.hashCode);
+    _$hash = $jc(_$hash, confirmedAt.hashCode);
     _$hash = $jc(_$hash, seatedAt.hashCode);
     _$hash = $jc(_$hash, canceledAt.hashCode);
     _$hash = $jc(_$hash, resources.hashCode);
@@ -277,6 +282,7 @@ class _$Reservation extends Reservation {
           ..add('revision', revision)
           ..add('customerId', customerId)
           ..add('workspaceId', workspaceId)
+          ..add('confirmedAt', confirmedAt)
           ..add('seatedAt', seatedAt)
           ..add('canceledAt', canceledAt)
           ..add('resources', resources)
@@ -342,6 +348,10 @@ class ReservationBuilder implements Builder<Reservation, ReservationBuilder> {
   String? get workspaceId => _$this._workspaceId;
   set workspaceId(String? workspaceId) => _$this._workspaceId = workspaceId;
 
+  DateTime? _confirmedAt;
+  DateTime? get confirmedAt => _$this._confirmedAt;
+  set confirmedAt(DateTime? confirmedAt) => _$this._confirmedAt = confirmedAt;
+
   DateTime? _seatedAt;
   DateTime? get seatedAt => _$this._seatedAt;
   set seatedAt(DateTime? seatedAt) => _$this._seatedAt = seatedAt;
@@ -391,6 +401,7 @@ class ReservationBuilder implements Builder<Reservation, ReservationBuilder> {
       _revision = $v.revision;
       _customerId = $v.customerId;
       _workspaceId = $v.workspaceId;
+      _confirmedAt = $v.confirmedAt;
       _seatedAt = $v.seatedAt;
       _canceledAt = $v.canceledAt;
       _resources = $v.resources.toBuilder();
@@ -441,6 +452,7 @@ class ReservationBuilder implements Builder<Reservation, ReservationBuilder> {
                 revision, r'Reservation', 'revision'),
             customerId: customerId,
             workspaceId: workspaceId,
+            confirmedAt: confirmedAt,
             seatedAt: seatedAt,
             canceledAt: canceledAt,
             resources: resources.build(),

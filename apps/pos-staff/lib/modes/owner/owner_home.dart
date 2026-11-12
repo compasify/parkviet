@@ -270,6 +270,18 @@ class _OwnerHomeState extends State<OwnerHome>
     await _loadPending();
   }
 
+  Future<void> _openOrder(OwnerBranch branch, OwnerOpenUnit unit) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => OwnerOpenOrderSheet(
+        watch: widget.watch,
+        branchId: branch.id,
+        workspaceId: unit.workspaceId,
+      ),
+    );
+  }
+
   Future<void> _openPush() async {
     await showModalBottomSheet<void>(
       context: context,
@@ -385,7 +397,10 @@ class _OwnerHomeState extends State<OwnerHome>
                     ? _Note(l10n.ownerNoReports)
                     : _open == null
                     ? const _Loading()
-                    : OwnerOpenUnitsView(units: _open!),
+                    : OwnerOpenUnitsView(
+                        units: _open!,
+                        onOpen: (unit) => _openOrder(branch, unit),
+                      ),
               ),
               _Refreshable(
                 onRefresh: _loadPending,
@@ -411,6 +426,7 @@ class _OwnerHomeState extends State<OwnerHome>
                 key: ValueKey('reservations-${branch.id}'),
                 api: widget.reservations,
                 branchId: branch.id,
+                canManage: branch.canManageReservations,
               ),
               _Refreshable(
                 onRefresh: _loadAlerts,
@@ -651,11 +667,13 @@ String orderSourceLabel(AppLocalizations l10n, String source) =>
       _ => l10n.ownerSourceOther,
     };
 
-/// The open orders, oldest first, with how long and how much.
+/// The open orders, oldest first, with how long and how much; a tap shows
+/// an order's lines.
 class OwnerOpenUnitsView extends StatelessWidget {
-  const OwnerOpenUnitsView({super.key, required this.units});
+  const OwnerOpenUnitsView({super.key, required this.units, this.onOpen});
 
   final List<OwnerOpenUnit> units;
+  final void Function(OwnerOpenUnit unit)? onOpen;
 
   @override
   Widget build(BuildContext context) {
@@ -676,24 +694,30 @@ class OwnerOpenUnitsView extends StatelessWidget {
                 color: unit.kitchenLate
                     ? theme.colorScheme.errorContainer
                     : null,
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        unit.label ?? l10n.ownerTakeaway,
-                        style: theme.textTheme.titleMedium,
-                      ),
-                      Text(l10n.ownerMinutesOpen(unit.minutesOpen)),
-                      Text(moneyLabel(money(unit.total))),
-                      if (unit.kitchenWaiting > 0)
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: onOpen == null ? null : () => onOpen!(unit),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         Text(
-                          unit.kitchenLate
-                              ? l10n.ownerKitchenLate(unit.kitchenWaiting)
-                              : l10n.ownerKitchenWaiting(unit.kitchenWaiting),
+                          unit.label ?? l10n.ownerTakeaway,
+                          style: theme.textTheme.titleMedium,
                         ),
-                    ],
+                        Text(l10n.ownerMinutesOpen(unit.minutesOpen)),
+                        Text(moneyLabel(money(unit.total))),
+                        if (unit.kitchenWaiting > 0)
+                          Text(
+                            unit.kitchenLate
+                                ? l10n.ownerKitchenLate(unit.kitchenWaiting)
+                                : l10n.ownerKitchenWaiting(
+                                    unit.kitchenWaiting,
+                                  ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -703,6 +727,150 @@ class OwnerOpenUnitsView extends StatelessWidget {
     );
   }
 }
+
+/// One open order's lines, read from the server when shown: what was
+/// ordered, how many, how much after discounts and how far the kitchen got.
+class OwnerOpenOrderSheet extends StatefulWidget {
+  const OwnerOpenOrderSheet({
+    super.key,
+    required this.watch,
+    required this.branchId,
+    required this.workspaceId,
+  });
+
+  final OwnerWatchApi watch;
+  final String branchId;
+  final String workspaceId;
+
+  @override
+  State<OwnerOpenOrderSheet> createState() => _OwnerOpenOrderSheetState();
+}
+
+class _OwnerOpenOrderSheetState extends State<OwnerOpenOrderSheet> {
+  OwnerOpenOrder? _order;
+  AppFailure? _failure;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_load());
+  }
+
+  Future<void> _load() async {
+    try {
+      final order = await widget.watch.openOrder(
+        widget.branchId,
+        widget.workspaceId,
+      );
+      if (mounted) setState(() => (_order = order, _failure = null));
+    } on AppFailure catch (failure) {
+      if (mounted) setState(() => _failure = failure);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final order = _order;
+    final failure = _failure;
+    return SafeArea(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * 0.8,
+        ),
+        child: failure != null
+            ? Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  failure is NotFoundFailure
+                      ? l10n.ownerOrderClosed
+                      : ownerFailureMessage(l10n, failure),
+                  key: const Key('owner-order-failure'),
+                ),
+              )
+            : order == null
+            ? const _Loading()
+            : ListView(
+                key: Key('owner-order-${order.workspaceId}'),
+                shrinkWrap: true,
+                padding: const EdgeInsets.all(16),
+                children: [
+                  Text(
+                    order.label ?? l10n.ownerTakeaway,
+                    style: theme.textTheme.titleLarge,
+                  ),
+                  Text(
+                    [
+                      orderSourceLabel(l10n, order.orderSource),
+                      if (order.guestCount != null)
+                        l10n.waiterGuests(order.guestCount!),
+                      l10n.ownerMinutesOpen(order.minutesOpen),
+                    ].join(' · '),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(l10n.ownerOrderLines, style: theme.textTheme.titleMedium),
+                  if (order.lines.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      child: Text(l10n.ownerOrderEmpty),
+                    ),
+                  for (final line in order.lines)
+                    ListTile(
+                      key: Key('owner-order-line-${line.id}'),
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      title: Text('${quantityLabel(line)} × ${line.name}'),
+                      subtitle: switch (kitchenLabel(l10n, line.kitchen)) {
+                        final label? => Text(label),
+                        null => null,
+                      },
+                      trailing: Text(moneyLabel(money(line.amount))),
+                    ),
+                  const Divider(),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          l10n.ownerSales,
+                          style: theme.textTheme.titleMedium,
+                        ),
+                      ),
+                      Text(
+                        moneyLabel(money(order.total)),
+                        key: const Key('owner-order-total'),
+                        style: theme.textTheme.titleMedium,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+}
+
+/// "2", "1.5 kg": the count without a trailing ".0", with its unit unless
+/// it is counted in items.
+String quantityLabel(OwnerOpenOrderLine line) {
+  final value = num.tryParse(line.quantity) ?? 0;
+  final count = value == value.truncate()
+      ? value.truncate().toString()
+      : value.toString();
+  final unit = line.unit;
+  return unit == null || unit == 'item' ? count : '$count $unit';
+}
+
+String? kitchenLabel(
+  AppLocalizations l10n,
+  OwnerOpenOrderLineKitchenEnum state,
+) => switch (state) {
+  OwnerOpenOrderLineKitchenEnum.unsent => l10n.ownerLineUnsent,
+  OwnerOpenOrderLineKitchenEnum.waiting => l10n.ownerLineWaiting,
+  OwnerOpenOrderLineKitchenEnum.ready => l10n.ownerLineReady,
+  OwnerOpenOrderLineKitchenEnum.served => l10n.ownerLineServed,
+  _ => null,
+};
 
 /// One approval waiting for the owner: who asks, for what, on which order,
 /// how much and until when.

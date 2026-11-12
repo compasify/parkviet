@@ -19,6 +19,8 @@ class _$OwnerBranch extends OwnerBranch {
   final bool canReadReports;
   @override
   final bool canApprove;
+  @override
+  final bool canManageReservations;
 
   factory _$OwnerBranch([void Function(OwnerBranchBuilder)? updates]) =>
       (OwnerBranchBuilder()..update(updates))._build();
@@ -29,7 +31,8 @@ class _$OwnerBranch extends OwnerBranch {
       required this.code,
       required this.timezone,
       required this.canReadReports,
-      required this.canApprove})
+      required this.canApprove,
+      required this.canManageReservations})
       : super._();
   @override
   OwnerBranch rebuild(void Function(OwnerBranchBuilder) updates) =>
@@ -47,7 +50,8 @@ class _$OwnerBranch extends OwnerBranch {
         code == other.code &&
         timezone == other.timezone &&
         canReadReports == other.canReadReports &&
-        canApprove == other.canApprove;
+        canApprove == other.canApprove &&
+        canManageReservations == other.canManageReservations;
   }
 
   @override
@@ -59,6 +63,7 @@ class _$OwnerBranch extends OwnerBranch {
     _$hash = $jc(_$hash, timezone.hashCode);
     _$hash = $jc(_$hash, canReadReports.hashCode);
     _$hash = $jc(_$hash, canApprove.hashCode);
+    _$hash = $jc(_$hash, canManageReservations.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -71,7 +76,8 @@ class _$OwnerBranch extends OwnerBranch {
           ..add('code', code)
           ..add('timezone', timezone)
           ..add('canReadReports', canReadReports)
-          ..add('canApprove', canApprove))
+          ..add('canApprove', canApprove)
+          ..add('canManageReservations', canManageReservations))
         .toString();
   }
 }
@@ -104,6 +110,11 @@ class OwnerBranchBuilder implements Builder<OwnerBranch, OwnerBranchBuilder> {
   bool? get canApprove => _$this._canApprove;
   set canApprove(bool? canApprove) => _$this._canApprove = canApprove;
 
+  bool? _canManageReservations;
+  bool? get canManageReservations => _$this._canManageReservations;
+  set canManageReservations(bool? canManageReservations) =>
+      _$this._canManageReservations = canManageReservations;
+
   OwnerBranchBuilder() {
     OwnerBranch._defaults(this);
   }
@@ -117,6 +128,7 @@ class OwnerBranchBuilder implements Builder<OwnerBranch, OwnerBranchBuilder> {
       _timezone = $v.timezone;
       _canReadReports = $v.canReadReports;
       _canApprove = $v.canApprove;
+      _canManageReservations = $v.canManageReservations;
       _$v = null;
     }
     return this;
@@ -149,6 +161,8 @@ class OwnerBranchBuilder implements Builder<OwnerBranch, OwnerBranchBuilder> {
               canReadReports, r'OwnerBranch', 'canReadReports'),
           canApprove: BuiltValueNullFieldError.checkNotNull(
               canApprove, r'OwnerBranch', 'canApprove'),
+          canManageReservations: BuiltValueNullFieldError.checkNotNull(
+              canManageReservations, r'OwnerBranch', 'canManageReservations'),
         );
     replace(_$result);
     return _$result;

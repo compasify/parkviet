@@ -119,6 +119,7 @@ class FakeWatch implements OwnerWatchApi {
         'timezone': 'Asia/Ho_Chi_Minh',
         'can_read_reports': reports,
         'can_approve': true,
+        'can_manage_reservations': false,
       }),
   ];
 
@@ -173,6 +174,45 @@ class FakeWatch implements OwnerWatchApi {
     }),
   ];
 
+  AppFailure? orderFailure;
+
+  @override
+  Future<OwnerOpenOrder> openOrder(String branchId, String workspaceId) async {
+    calls.add('order:$branchId:$workspaceId');
+    if (orderFailure case final error?) throw error;
+    return parse(OwnerOpenOrder.serializer, {
+      'workspace_id': workspaceId,
+      'label': 'Bàn 5',
+      'order_number': null,
+      'order_source': 'counter',
+      'service_mode': 'table',
+      'status': 'editing',
+      'guest_count': 2,
+      'opened_at': '2026-11-12T10:00:00Z',
+      'minutes_open': 42,
+      'total': '45000.0',
+      'currency': 'VND',
+      'lines': [
+        {
+          'id': 'li_1',
+          'name': 'Phở bò',
+          'quantity': '2.0',
+          'unit': 'item',
+          'amount': '30000.0',
+          'kitchen': 'waiting',
+        },
+        {
+          'id': 'li_2',
+          'name': 'Bia',
+          'quantity': '1.5',
+          'unit': 'l',
+          'amount': '15000.0',
+          'kitchen': 'none',
+        },
+      ],
+    });
+  }
+
   @override
   Future<List<OwnerAlert>> alerts(String branchId) async {
     calls.add('alerts:$branchId');
@@ -208,6 +248,14 @@ class FakeWatch implements OwnerWatchApi {
 class FakeBookings implements OwnerApi {
   @override
   Future<List<Reservation>> reservations(String branchId) async => [];
+
+  @override
+  Future<Reservation> confirm(String reservationId) =>
+      throw UnimplementedError();
+
+  @override
+  Future<Reservation> cancel(String reservationId) =>
+      throw UnimplementedError();
 
   @override
   Future<Reservation> refundDeposit(String depositId) =>
@@ -396,6 +444,34 @@ void main() {
         (await SharedPreferences.getInstance()).getString('owner.branch_id'),
         'posbranch_2',
       );
+    },
+  );
+
+  testWidgets(
+    'shows the lines of an open order on a tap, and says when it closed',
+    (tester) async {
+      final home = await pumpHome(tester, tab: OwnerTab.open);
+      await tester.tap(find.byKey(const Key('owner-open-posws_1')));
+      await tester.pumpAndSettle();
+      expect(home.watch.calls, contains('order:posbranch_1:posws_1'));
+      expect(find.byKey(const Key('owner-order-posws_1')), findsOneWidget);
+      expect(find.text('2 × Phở bò'), findsOneWidget);
+      expect(find.text('Bếp đang làm'), findsOneWidget);
+      expect(find.text('1.5 l × Bia'), findsOneWidget);
+      expect(find.text('30.000đ'), findsOneWidget);
+      expect(
+        tester.widget<Text>(find.byKey(const Key('owner-order-total'))).data,
+        '45.000đ',
+      );
+
+      Navigator.of(
+        tester.element(find.byKey(const Key('owner-order-posws_1'))),
+      ).pop();
+      await tester.pumpAndSettle();
+      home.watch.orderFailure = const AppFailure.notFound('not_found');
+      await tester.tap(find.byKey(const Key('owner-open-posws_1')));
+      await tester.pumpAndSettle();
+      expect(find.text('Đơn này không còn mở.'), findsOneWidget);
     },
   );
 

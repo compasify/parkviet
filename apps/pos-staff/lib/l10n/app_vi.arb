@@ -600,5 +600,20 @@
   "ownerPushNoRelay": "Cửa hàng chưa cài dịch vụ chuyển tiếp thông báo; bạn chỉ nhận sự kiện khi app đang mở.",
   "ownerPushReady": "Thông báo chỉ mang loại sự kiện, không kèm số tiền hay tên khách.",
   "ownerPushLastError": "Lỗi gần nhất: {error}",
-  "@ownerPushLastError": {"placeholders": {"error": {"type": "String"}}}
+  "@ownerPushLastError": {"placeholders": {"error": {"type": "String"}}},
+  "ownerOrderLines": "Các món",
+  "ownerOrderEmpty": "Đơn chưa có món.",
+  "ownerOrderClosed": "Đơn này không còn mở.",
+  "ownerLineUnsent": "Chưa gửi bếp",
+  "ownerLineWaiting": "Bếp đang làm",
+  "ownerLineReady": "Đã xong",
+  "ownerLineServed": "Đã phục vụ",
+  "ownerReservationConfirm": "Xác nhận",
+  "ownerReservationConfirmed": "Đã xác nhận với khách",
+  "ownerReservationConfirmDone": "Đã xác nhận đặt bàn.",
+  "ownerReservationCancel": "Hủy đặt bàn",
+  "ownerReservationCancelAsk": "Hủy đặt bàn của {name} lúc {time}? Bàn được trả lại; cọc vẫn giữ đến khi hoàn hoặc giữ cọc.",
+  "@ownerReservationCancelAsk": {"placeholders": {"name": {"type": "String"}, "time": {"type": "String"}}},
+  "ownerReservationCancelDone": "Đã hủy đặt bàn.",
+  "ownerReservationNotWaiting": "Đặt bàn này không còn chờ khách."
 }

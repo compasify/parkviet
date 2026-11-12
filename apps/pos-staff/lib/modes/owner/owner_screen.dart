@@ -21,11 +21,15 @@ import 'owner_home.dart';
 import 'owner_watch_api.dart';
 
 /// What the owner's phone asks of the server about bookings, as the person
-/// signed in with their PIN: the day's bookings, and a deposit refunded or kept. The owner
-/// may grant approvals, so neither asks for a code; anyone else is refused
-/// with `approval_required`.
+/// signed in with their PIN: the day's bookings, a booking confirmed with the guest or canceled,
+/// and a deposit refunded or kept. The owner may grant approvals, so a deposit asks for no code;
+/// anyone else is refused with `approval_required`.
 abstract interface class OwnerApi {
   Future<List<Reservation>> reservations(String branchId);
+
+  Future<Reservation> confirm(String reservationId);
+
+  Future<Reservation> cancel(String reservationId);
 
   Future<Reservation> refundDeposit(String depositId);
 
@@ -41,6 +45,20 @@ class ApiOwnerApi implements OwnerApi {
   @override
   Future<List<Reservation>> reservations(String branchId) async =>
       (await client.call((api) => api.posReservationList(branchId: branchId))).data.toList();
+
+  @override
+  Future<Reservation> confirm(String reservationId) async => (await client.call(
+    (api) => api.posReservationConfirm(idempotencyKey: _uuid.v4(), id: reservationId),
+  )).data;
+
+  @override
+  Future<Reservation> cancel(String reservationId) async => (await client.call(
+    (api) => api.posReservationCancel(
+      idempotencyKey: _uuid.v4(),
+      id: reservationId,
+      reservationCancelInput: ReservationCancelInput((b) => b.status = ReservationCancelInputStatusEnum.canceled),
+    ),
+  )).data;
 
   @override
   Future<Reservation> refundDeposit(String depositId) async => (await client.call(
@@ -118,12 +136,14 @@ class OwnerScreen extends ConsumerWidget {
   }
 }
 
-/// The day's bookings of the branch, with their deposits.
+/// The day's bookings of the branch, with their deposits. Someone who books at the branch also
+/// confirms a waiting booking with the guest or cancels it.
 class OwnerReservations extends StatefulWidget {
-  const OwnerReservations({super.key, required this.api, required this.branchId});
+  const OwnerReservations({super.key, required this.api, required this.branchId, this.canManage = false});
 
   final OwnerApi api;
   final String branchId;
+  final bool canManage;
 
   @override
   State<OwnerReservations> createState() => _OwnerReservationsState();
@@ -186,6 +206,42 @@ class _OwnerReservationsState extends State<OwnerReservations> {
     }
   }
 
+  Future<void> _change(Reservation reservation, {required bool cancel}) async {
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    if (cancel) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialog) => AlertDialog(
+          content: Text(l10n.ownerReservationCancelAsk(reservation.guestName, clockLabel(reservation.startsAt))),
+          actions: [
+            TextButton(onPressed: () => Navigator.of(dialog).pop(false), child: Text(l10n.ownerKeep)),
+            FilledButton(
+              key: const Key('owner-reservation-cancel-confirm'),
+              onPressed: () => Navigator.of(dialog).pop(true),
+              child: Text(l10n.ownerReservationCancel),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+    }
+    setState(() => _busy = true);
+    try {
+      final updated = cancel ? await widget.api.cancel(reservation.id) : await widget.api.confirm(reservation.id);
+      if (!mounted) return;
+      setState(() => _rows = [for (final row in _rows ?? const <Reservation>[]) row.id == updated.id ? updated : row]);
+      messenger.showSnackBar(
+        SnackBar(content: Text(cancel ? l10n.ownerReservationCancelDone : l10n.ownerReservationConfirmDone)),
+      );
+    } on AppFailure catch (failure) {
+      messenger.showSnackBar(SnackBar(content: Text(reservationFailureMessage(l10n, failure))));
+      unawaited(_load());
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -218,6 +274,9 @@ class _OwnerReservationsState extends State<OwnerReservations> {
             _ReservationCard(
               reservation: reservation,
               busy: _busy,
+              canManage: widget.canManage,
+              onConfirm: () => _change(reservation, cancel: false),
+              onCancel: () => _change(reservation, cancel: true),
               onRefund: (deposit) => _resolve(reservation, deposit, refund: true),
               onForfeit: (deposit) => _resolve(reservation, deposit, refund: false),
             ),
@@ -226,6 +285,17 @@ class _OwnerReservationsState extends State<OwnerReservations> {
     );
   }
 }
+
+/// HH:mm of a time on this phone.
+String clockLabel(DateTime at) {
+  final local = at.toLocal();
+  return '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
+}
+
+String reservationFailureMessage(AppLocalizations l10n, AppFailure failure) => switch (failure) {
+  ConflictFailure(reason: 'reservation_not_booked') => l10n.ownerReservationNotWaiting,
+  _ => waiterFailureMessage(l10n, failure),
+};
 
 String reservationStatusLabel(AppLocalizations l10n, ReservationStatusEnum status) => switch (status) {
   ReservationStatusEnum.seated => l10n.reservationSeated,
@@ -246,20 +316,26 @@ class _ReservationCard extends StatelessWidget {
   const _ReservationCard({
     required this.reservation,
     required this.busy,
+    required this.canManage,
+    required this.onConfirm,
+    required this.onCancel,
     required this.onRefund,
     required this.onForfeit,
   });
 
   final Reservation reservation;
   final bool busy;
+  final bool canManage;
+  final VoidCallback onConfirm;
+  final VoidCallback onCancel;
   final void Function(ReservationDeposit deposit) onRefund;
   final void Function(ReservationDeposit deposit) onForfeit;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final local = reservation.startsAt.toLocal();
-    final time = '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
+    final time = clockLabel(reservation.startsAt);
+    final waiting = reservation.status == ReservationStatusEnum.booked;
     return Card(
       key: Key('owner-reservation-${reservation.id}'),
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -275,9 +351,27 @@ class _ReservationCard extends StatelessWidget {
             Text(
               [
                 reservationStatusLabel(l10n, reservation.status),
+                if (waiting && reservation.confirmedAt != null) l10n.ownerReservationConfirmed,
                 ...reservation.resources.map((row) => row.name),
               ].join(' · '),
             ),
+            if (canManage && waiting)
+              Wrap(
+                spacing: 8,
+                children: [
+                  if (reservation.confirmedAt == null)
+                    FilledButton.tonal(
+                      key: Key('owner-reservation-confirm-${reservation.id}'),
+                      onPressed: busy ? null : onConfirm,
+                      child: Text(l10n.ownerReservationConfirm),
+                    ),
+                  OutlinedButton(
+                    key: Key('owner-reservation-cancel-${reservation.id}'),
+                    onPressed: busy ? null : onCancel,
+                    child: Text(l10n.ownerReservationCancel),
+                  ),
+                ],
+              ),
             for (final deposit in reservation.deposits) ...[
               const SizedBox(height: 4),
               Text(l10n.ownerDeposit(moneyLabel(money(deposit.amount)), depositStatusLabel(l10n, deposit.status))),

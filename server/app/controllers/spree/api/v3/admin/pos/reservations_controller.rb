@@ -6,7 +6,7 @@ module Spree
       module Admin
         module Pos
           # A branch's bookings: the day's list, free tables for a time, and
-          # booking, changing, cancelling and seating a party. Deposits are
+          # booking, changing, confirming, cancelling and seating a party. Deposits are
           # taken here and refunded or kept with an approval.
           class ReservationsController < BaseController
             scoped_resource :pos_orders
@@ -59,6 +59,12 @@ module Spree
                 Spree::Pos::Reservations::Update.call(store: current_store, staff: current_user, key: key, reservation_id: params[:id],
                                                       attributes: attributes,
                                                       resource_ids: params.key?(:resource_ids) ? Array(params[:resource_ids]) : nil)
+              end
+            end
+
+            def confirm
+              command do |key|
+                Spree::Pos::Reservations::Confirm.call(store: current_store, staff: current_user, key: key, reservation_id: params[:id])
               end
             end
 
