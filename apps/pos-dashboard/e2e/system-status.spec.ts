@@ -81,7 +81,8 @@ test('flags what needs a look when the address is unset and work is stuck', asyn
 test('is listed in store settings for administrators', async ({ page }) => {
   await install(page, healthy);
   await page.goto('/store_1/settings');
-  await page.getByRole('complementary', { name: 'Settings navigation' }).getByRole('link', { name: 'Thông tin server' }).click();
+  // Wide screens list the settings in a side navigation, narrow ones in the page.
+  await page.getByRole('link', { name: 'Thông tin server' }).first().click();
   await expect(page).toHaveURL(/\/store_1\/settings\/system$/);
 });
 
