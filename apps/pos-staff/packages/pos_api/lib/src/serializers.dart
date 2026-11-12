@@ -345,6 +345,16 @@ import 'package:pos_api/src/model/table_split_orders.dart';
 import 'package:pos_api/src/model/table_split_result.dart';
 import 'package:pos_api/src/model/table_tax_category.dart';
 import 'package:pos_api/src/model/tax_row.dart';
+import 'package:pos_api/src/model/timed_quote.dart';
+import 'package:pos_api/src/model/timed_quote_line.dart';
+import 'package:pos_api/src/model/timed_segment.dart';
+import 'package:pos_api/src/model/timed_segment_edit_input.dart';
+import 'package:pos_api/src/model/timed_session.dart';
+import 'package:pos_api/src/model/timed_session_command.dart';
+import 'package:pos_api/src/model/timed_session_command_result.dart';
+import 'package:pos_api/src/model/timed_session_move_input.dart';
+import 'package:pos_api/src/model/timed_session_result.dart';
+import 'package:pos_api/src/model/timed_session_start_input.dart';
 import 'package:pos_api/src/model/tip_split_rule.dart';
 import 'package:pos_api/src/model/vehicle_commission_snapshot.dart';
 import 'package:pos_api/src/model/vehicle_type.dart';
@@ -712,6 +722,16 @@ part 'serializers.g.dart';
   TableSplitResult,
   TableTaxCategory,
   TaxRow,
+  TimedQuote,
+  TimedQuoteLine,
+  TimedSegment,
+  TimedSegmentEditInput,
+  TimedSession,
+  TimedSessionCommand,
+  TimedSessionCommandResult,
+  TimedSessionMoveInput,
+  TimedSessionResult,
+  TimedSessionStartInput,
   TipSplitRule,
   VehicleCommissionSnapshot,
   VehicleType,
@@ -796,6 +816,10 @@ Serializers serializers = (_$serializers.toBuilder()
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(WorkspaceLine)]),
         () => ListBuilder<WorkspaceLine>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(TimedSegment)]),
+        () => ListBuilder<TimedSegment>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(MenuItemConfig)]),
@@ -925,6 +949,10 @@ Serializers serializers = (_$serializers.toBuilder()
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(KitchenStation)]),
         () => ListBuilder<KitchenStation>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(TimedQuoteLine)]),
+        () => ListBuilder<TimedQuoteLine>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(CourseLabel)]),

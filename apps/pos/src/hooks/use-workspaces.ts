@@ -708,6 +708,28 @@ export function useWorkspaces(
         throw error;
       }
     },
+    // A clock command that needs no lease (stop, correcting a stretch): the
+    // server takes the time and answers the room's order, kept here.
+    async clockCommand(
+      method: 'POST' | 'PATCH',
+      path: string,
+      body: Record<string, unknown> = {},
+    ): Promise<PosWorkspace> {
+      const key = crypto.randomUUID();
+      try {
+        const result = await session.request<{ data: { workspace: PosWorkspace } }>(method, path, {
+          body: { ...body, idempotency_key: key },
+          idempotencyKey: key,
+        });
+        const workspace = result.data.workspace;
+        await acceptWorkspace(workspace);
+        channel?.postMessage(workspaceHint(workspace.id));
+        return workspace;
+      } catch (error) {
+        abandonIfNeeded(error);
+        throw error;
+      }
+    },
     async moveTable(workspace: PosWorkspace, resourceId: string) {
       const body = {
         expected_revision: workspace.revision,

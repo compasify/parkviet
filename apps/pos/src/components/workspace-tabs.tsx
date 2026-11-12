@@ -15,7 +15,12 @@ import { commandQueue } from '../lib/command-queue';
 import { MEAL_ACCOUNTS_MODULE } from '../lib/meal-accounts';
 import { resolveScan, type ScanOutcome } from '../lib/measured-label';
 import { soldOutVariantIds } from '../lib/menu-selection';
-import { type PosLineItem, type PosWorkspace, writesLocked } from '../lib/pos-context';
+import {
+  type PosLineItem,
+  type PosTimedSegment,
+  type PosWorkspace,
+  writesLocked,
+} from '../lib/pos-context';
 import {
   describeFailure,
   leaseConflict,
@@ -71,6 +76,7 @@ import { PrebillDialog } from './prebill-dialog';
 import { ReservationDepositNote } from './reservation-deposit-note';
 import { ScanInput } from './scan-input';
 import { useScannerCalibration } from './scanner-calibration';
+import { SegmentEditDialog } from './segment-edit-dialog';
 import { ServiceModeControl } from './service-mode-control';
 import { TabList } from './tab-list';
 import { TableOrderBar } from './table-actions';
@@ -684,6 +690,11 @@ export function WorkspaceTabs() {
   const [prebillOpen, setPrebillOpen] = useState(false);
   // The sent line whose items are being voided.
   const [voiding, setVoiding] = useState<PosLineItem | null>(null);
+  // The stretch of a room's clock whose times are being corrected.
+  const [editingSegment, setEditingSegment] = useState<{
+    sessionId: string;
+    segment: PosTimedSegment;
+  } | null>(null);
   const kitchenOn = data?.modules?.['fnb.kitchen'] === true;
   // Course, seat and buffet cover of the next dishes, per table order.
   const [placementOf, setPlacementOf] = useState<{ id: string; value: TablePlacement } | null>(
@@ -1025,6 +1036,14 @@ export function WorkspaceTabs() {
             const started = await workspaces.startClock(table.id, table.orders.length === 0);
             selectOrder(started.id);
           }}
+          onCheckoutClock={async (sessionId) => {
+            // The clock stops first, so the payment takes the billed time.
+            const stopped = await workspaces.clockCommand(
+              'POST',
+              `/pos/timed_sessions/${sessionId}/stop`,
+            );
+            selectOrder(stopped.id);
+          }}
         />
       ) : (
         <>
@@ -1365,6 +1384,13 @@ export function WorkspaceTabs() {
                     disabledReason={lockReason}
                     appendOnly={canAppend && !busy}
                     onVoid={kitchenOn && !active.payments ? setVoiding : undefined}
+                    onEditSegment={
+                      canRunClock(data) && !workspaceIsSettled(active)
+                        ? (line, segment) =>
+                            line.timed_session &&
+                            setEditingSegment({ sessionId: line.timed_session.id, segment })
+                        : undefined
+                    }
                     onStale={() => void workspaces.refresh()}
                     canApplyDiscount={Boolean(data?.capabilities.includes('pos.discount.apply'))}
                     canOverridePrice={Boolean(data?.capabilities.includes('pos.price.override'))}
@@ -1416,6 +1442,21 @@ export function WorkspaceTabs() {
                         )
                       }
                       onClose={() => setVoiding(null)}
+                    />
+                  ) : null}
+                  {editingSegment ? (
+                    <SegmentEditDialog
+                      key={editingSegment.segment.id}
+                      segment={editingSegment.segment}
+                      canEdit={Boolean(data?.capabilities.includes('pos.timed.edit'))}
+                      onSave={(input) =>
+                        workspaces.clockCommand(
+                          'PATCH',
+                          `/pos/timed_sessions/${editingSegment.sessionId}/segments/${editingSegment.segment.id}`,
+                          input,
+                        )
+                      }
+                      onClose={() => setEditingSegment(null)}
                     />
                   ) : null}
                   {lockReason && isEditor ? (

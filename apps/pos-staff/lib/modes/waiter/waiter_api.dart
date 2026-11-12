@@ -82,6 +82,21 @@ abstract interface class WaiterApi {
   /// Pours from a kept bottle for free: its new level, the ml poured and a
   /// photo (JPEG bytes) of the bottle.
   Future<BottleKeep> pour(String id, {required int levelPercent, int? ml, String? workspaceId, List<int>? photo});
+
+  /// What the person signed in may do at the branch, from the device's context.
+  Future<Set<String>> capabilities(String branchId);
+
+  /// Starts a room's clock on the server's time. A room without an open
+  /// order gets one, its lease held by [editorId]; a room with several
+  /// names the order to bill ([workspaceId]).
+  Future<TimedSessionCommand> startClock(String branchId, String resourceId,
+      {required String editorId, String? workspaceId});
+
+  /// Stops a clock now on the server's time; its line is billed.
+  Future<TimedSessionCommand> stopClock(String sessionId);
+
+  /// Moves a running clock and the room's order to a free room.
+  Future<TimedSessionCommand> moveClock(String sessionId, String resourceId);
 }
 
 /// [WaiterApi] over the generated client.
@@ -311,6 +326,38 @@ class ApiWaiterApi implements WaiterApi {
                 photo: photo == null
                     ? null
                     : MultipartFile.fromBytes(photo, filename: 'bottle.jpg', contentType: DioMediaType('image', 'jpeg')),
+              )))
+          .data;
+
+  @override
+  Future<Set<String>> capabilities(String branchId) async {
+    final context = await client.call((api) => api.posContext(branchId: branchId));
+    return {...context.capabilities};
+  }
+
+  @override
+  Future<TimedSessionCommand> startClock(String branchId, String resourceId,
+          {required String editorId, String? workspaceId}) async =>
+      (await client.call((api) => api.posTimedSessionStart(
+                idempotencyKey: _key,
+                resourceId: resourceId,
+                timedSessionStartInput: TimedSessionStartInput((b) => b
+                  ..branchId = branchId
+                  ..editorId = editorId
+                  ..workspaceId = workspaceId),
+              )))
+          .data;
+
+  @override
+  Future<TimedSessionCommand> stopClock(String sessionId) async =>
+      (await client.call((api) => api.posTimedSessionStop(idempotencyKey: _key, id: sessionId))).data;
+
+  @override
+  Future<TimedSessionCommand> moveClock(String sessionId, String resourceId) async =>
+      (await client.call((api) => api.posTimedSessionMove(
+                idempotencyKey: _key,
+                id: sessionId,
+                timedSessionMoveInput: TimedSessionMoveInput((b) => b..resourceId = resourceId),
               )))
           .data;
 }

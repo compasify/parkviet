@@ -29,6 +29,7 @@
   "receiptDueOn": "Due on",
   "receiptCustomer": "Customer",
   "receiptTime": "Time",
+  "receiptTimedEstimate": "Estimated up to {{time}}: {{amount}}",
   "receiptBusinessDate": "Business date",
   "receiptCashier": "Cashier",
   "receiptOrderNumber": "Original order",

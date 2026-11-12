@@ -1,15 +1,15 @@
 import { expect, type Page, test } from '@playwright/test';
-import { BUSINESS_PROFILES, profileOf } from './support/business-profiles';
+import { BUSINESS_PROFILES, profileOf, withComingSoon } from './support/business-profiles';
 import { installDashboardShell } from './support/dashboard';
 import { randomUUID } from 'node:crypto';
 import { liveExpect, liveStoreApi, requireLiveOnboarding } from './support/live-onboarding';
 
-function world() { return { canSetup: true, lose: 0, branches: [] as Array<Record<string, unknown>>, locations: [{ id: 'sloc_main', name: 'Kho chính', active: true }, { id: 'sloc_other', name: 'Kho phụ', active: true }, { id: 'sloc_old', name: 'Kho cũ', active: false }], posts: [] as Array<{ key: string | null; body: Record<string, unknown> }>, results: new Map<string, { data: unknown }>() }; }
+function world() { return { canSetup: true, lose: 0, branches: [] as Array<Record<string, unknown>>, locations: [{ id: 'sloc_main', name: 'Kho chính', active: true }, { id: 'sloc_other', name: 'Kho phụ', active: true }, { id: 'sloc_old', name: 'Kho cũ', active: false }], posts: [] as Array<{ key: string | null; body: Record<string, unknown> }>, results: new Map<string, { data: unknown }>(), profiles: BUSINESS_PROFILES }; }
 async function install(page: Page, state: ReturnType<typeof world>, redirect = false) {
   await page.route('**/api/v3/admin/**', async (route) => {
     const request = route.request(); const url = new URL(request.url()); const path = url.pathname.replace('/api/v3/admin', '');
     if (path === '/pos/context') return route.fulfill({ json: { staff: { id: 'staff_admin', full_name: 'Chủ cửa hàng' }, store: { id: 'store_1', name: 'Cửa hàng mới', currency: 'VND', timezone: 'Asia/Ho_Chi_Minh' }, administration: { read: true, write: state.canSetup }, capabilities: [], branches: state.branches, registers: [], selection: { branch_id: url.searchParams.get('branch_id'), register_id: null }, onboarding: { required: !state.branches.length, can_setup: state.canSetup } } });
-    if (path === '/pos/business_profiles') return route.fulfill({ json: { data: BUSINESS_PROFILES } });
+    if (path === '/pos/business_profiles') return route.fulfill({ json: { data: state.profiles } });
     if (path === '/pos/configuration/locations') return route.fulfill({ json: { data: state.locations, meta: { next: null } } });
     if (path === '/pos/context/branches' || path === '/pos/branches') return route.fulfill({ json: { data: state.branches, meta: { next: null } } });
     if (path === '/pos/onboarding' && request.method() === 'POST') {
@@ -79,7 +79,8 @@ test('lost onboarding result locks answers and closing until same-key same-body 
 });
 
 test('coming-soon interest never creates food branch; wholesale, optional register and risky feature are explicit', async ({ page }) => {
-  const state = world(); await install(page, state);
+  // A profile not open yet is recorded as an interest.
+  const state = world(); state.profiles = withComingSoon('karaoke_bida'); await install(page, state);
   await page.getByRole('radio', { name: 'Karaoke, Bida', exact: true }).check(); await next(page);
   await expect(page.getByRole('alert')).toContainText('Chọn một ngành POS đang hỗ trợ');
   await page.getByRole('button', { name: 'Không', exact: true }).click();

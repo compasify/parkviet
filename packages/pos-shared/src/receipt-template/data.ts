@@ -739,6 +739,20 @@ function placeData(place: PrintPlace) {
   };
 }
 
+// A clock still running is not on the order yet: its line shows the
+// server's quote and the time it was read ("Tạm tính đến 22:40: …").
+function timedEstimate(
+  line: PosLineItem,
+  money: (value: string | null | undefined) => string,
+  t: Translate,
+  timeZone: string,
+): string[] {
+  const quote = line.timed_session?.quote;
+  if (line.kind !== 'timed' || !quote || quote.final === true || !str(quote.as_of)) return [];
+  const time = formatDocumentTime(quote.as_of, timeZone).slice(-5);
+  return [t('receiptTimedEstimate', { time, amount: money(str(quote.amount)) })];
+}
+
 // A provisional bill of an open order: server figures as they stand, always
 // labelled as not paid and never numbered as a receipt.
 export function prebillData(
@@ -767,7 +781,7 @@ export function prebillData(
       amount: money(amount),
       amountCell: bare(amount, currency),
       trace,
-      notes: menuNotes(line as unknown as Doc),
+      notes: [...menuNotes(line as unknown as Doc), ...timedEstimate(line, money, t, timeZone)],
     };
   });
   const totalRows: DataRow<TotalField>[] = [];

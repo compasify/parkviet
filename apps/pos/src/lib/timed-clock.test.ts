@@ -7,9 +7,11 @@ import {
   clockOffset,
   elapsedSeconds,
   formatElapsed,
+  fromLocalInput,
   isRunning,
   TIMED_FAILURE_REASONS,
   timedFailureKey,
+  toLocalInput,
 } from './timed-clock';
 
 describe('room clock', () => {
@@ -70,5 +72,20 @@ describe('room clock', () => {
         expect((bundle as Record<string, unknown>)[`timedFailure_${reason}`]).toEqual(
           expect.any(String),
         );
+  });
+});
+
+describe('datetime-local values', () => {
+  it('shows a server time on this device and sends it back unchanged', () => {
+    const value = toLocalInput('2026-11-12T14:30:00Z');
+    expect(value).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/);
+    expect(fromLocalInput(value)).toBe('2026-11-12T14:30:00.000Z');
+  });
+
+  it('keeps empty and broken values empty', () => {
+    expect(toLocalInput(null)).toBe('');
+    expect(toLocalInput('not a time')).toBe('');
+    expect(fromLocalInput('')).toBeNull();
+    expect(fromLocalInput('nope')).toBeNull();
   });
 });

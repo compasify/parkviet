@@ -362,7 +362,90 @@ class FakeWaiterApi implements WaiterApi {
           ..levelPercent = levelPercent
           ..status = levelPercent == 0 ? BottleKeepStatusEnum.finished : BottleKeepStatusEnum.kept);
       });
+
+  /// What the person signed in may do in the fake branch.
+  Set<String> branchCapabilities = const {};
+
+  @override
+  Future<Set<String>> capabilities(String branchId) async => branchCapabilities;
+
+  @override
+  Future<TimedSessionCommand> startClock(String branchId, String resourceId,
+          {required String editorId, String? workspaceId}) =>
+      _answer('start-clock:$resourceId:${workspaceId ?? '-'}', () => clockCommand('postimed_new'));
+
+  @override
+  Future<TimedSessionCommand> stopClock(String sessionId) =>
+      _answer('stop-clock:$sessionId', () => clockCommand(sessionId, status: 'stopped', amount: '100000.0'));
+
+  @override
+  Future<TimedSessionCommand> moveClock(String sessionId, String resourceId) =>
+      _answer('move-clock:$sessionId:$resourceId', () => clockCommand(sessionId));
 }
+
+/// A clock of a room as the board shows it.
+Map<String, Object?> timedJson(String id,
+        {String workspaceId = 'posws_1',
+        String status = 'running',
+        String startedAt = '2026-11-12T11:20:00.000+07:00',
+        String amount = '75000.0'}) =>
+    {
+      'id': id,
+      'workspace_id': workspaceId,
+      'status': status,
+      'started_at': startedAt,
+      'stopped_at': status == 'stopped' ? '2026-11-12T12:00:00.000+07:00' : null,
+      'planned_end_at': null,
+      'played_minutes': 40,
+      'quote_amount': amount,
+      'ending_soon': false,
+    };
+
+/// A room or billiard table on the board, with its clock.
+Map<String, Object?> roomJson(
+  String id, {
+  required String name,
+  String state = 'available',
+  String kind = 'room',
+  List<Map<String, Object?>> orders = const [],
+  Map<String, Object?>? timed,
+}) =>
+    {
+      ...tileJson(id, name: name, state: state, orders: orders),
+      'kind': kind,
+      'next_reservation': null,
+      'buffet_ends_at': null,
+      'timed': timed,
+    };
+
+/// A clock command's answer: the room's order and the clock.
+TimedSessionCommand clockCommand(String id, {String status = 'running', String amount = '0.0'}) =>
+    parse(TimedSessionCommand.serializer, {
+      'workspace': {
+        'id': 'posws_1',
+        'revision': 4,
+        'operational_status': 'editing',
+        'service_mode': 'timed',
+        'business_date': '2026-11-12',
+        'totals': {'taxes': <Object?>[]},
+      },
+      'timed_session': {
+        'id': id,
+        'status': status,
+        'resource_id': 'posres_1',
+        'resource_name': 'P1',
+        'started_at': '2026-11-12T11:20:00.000+07:00',
+        'stopped_at': status == 'stopped' ? '2026-11-12T12:00:00.000+07:00' : null,
+        'planned_end_at': null,
+        'played_minutes': 40,
+        'billed_minutes': 45,
+        'amount': amount,
+        'currency': 'VND',
+        'quote_version': 1,
+        'segments': <Object?>[],
+        'quote': null,
+      },
+    });
 
 Map<String, Object?> tabJson(String id, {required String name, String total = '250000.0'}) => {
       'id': id,

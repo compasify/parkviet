@@ -1110,4 +1110,65 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get waiterBottleLevelRaised =>
       'Rót không làm mức tăng; quản lý sửa mức nếu nhập sai.';
+
+  @override
+  String get waiterRoomsTitle => 'Phòng';
+
+  @override
+  String get waiterRoomsNone => 'Chi nhánh chưa có phòng hay bàn chơi.';
+
+  @override
+  String get waiterStatePlaying => 'Đang tính giờ';
+
+  @override
+  String get waiterStateEndingSoon => 'Sắp hết giờ';
+
+  @override
+  String get waiterClockStart => 'Bắt đầu tính giờ';
+
+  @override
+  String get waiterClockStop => 'Dừng giờ';
+
+  @override
+  String waiterClockStopConfirm(String room) {
+    return 'Dừng giờ $room? Tiền giờ được chốt theo giờ máy chủ.';
+  }
+
+  @override
+  String get waiterClockMove => 'Chuyển phòng';
+
+  @override
+  String waiterClockMoveTo(String room) {
+    return 'Chuyển $room sang';
+  }
+
+  @override
+  String get waiterClockMoveNone => 'Không có phòng trống để chuyển.';
+
+  @override
+  String get waiterClockOpenOrder => 'Mở đơn của phòng';
+
+  @override
+  String waiterClockQuote(String amount) {
+    return 'Tạm tính $amount';
+  }
+
+  @override
+  String waiterClockStopped(String amount) {
+    return 'Đã dừng giờ, tiền giờ $amount.';
+  }
+
+  @override
+  String get waiterClockRunning => 'Phòng này đang tính giờ.';
+
+  @override
+  String get waiterClockNoRatePlan =>
+      'Phòng này chưa có bảng giá giờ. Báo quản lý thêm bảng giá.';
+
+  @override
+  String get waiterClockPickOrder =>
+      'Phòng có nhiều đơn mở; chọn đơn cần tính giờ.';
+
+  @override
+  String get waiterClockAlreadyStopped => 'Giờ của phòng này đã dừng.';
 }

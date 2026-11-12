@@ -14,6 +14,7 @@ import type {
   PosMenu,
   PosMenuItem,
   PosModifierSelection,
+  PosTimedSegment,
   PosWorkspace,
 } from '../lib/pos-context';
 import { MAX_COUNT_QUANTITY, parseCountQuantity, parseMeasuredQuantity } from '../lib/quantity';
@@ -43,6 +44,7 @@ export function OrderLines({
   appendOnly = false,
   onVoid,
   onStale,
+  onEditSegment,
 }: {
   workspace: PosWorkspace;
   disabled: boolean;
@@ -88,6 +90,8 @@ export function OrderLines({
   onVoid?: (line: PosLineItem) => void;
   // Someone else changed a line first: reload the order.
   onStale?: () => void;
+  // Corrects a stretch of a play-time line's clock: the edit-time dialog.
+  onEditSegment?: (line: PosLineItem, segment: PosTimedSegment) => void;
 }) {
   const { t } = useTranslation();
   const [quantities, setQuantities] = useState<Record<string, string>>({});
@@ -224,7 +228,7 @@ export function OrderLines({
                       ) : null}
                       <LineTrace line={line} />
                       <MenuLineDetail line={line} />
-                      <TimedLineDetail line={line} />
+                      <TimedLineDetail line={line} onEditSegment={onEditSegment} />
                       {sent > 0 ? (
                         <span className="basket-line-kitchen" title={sentTitle}>
                           <PosIcon name="check" /> {t('kitchenSentBadge', { count: sent })}
@@ -519,7 +523,13 @@ function sameSelections(line: PosLineItem): PosModifierSelection[] | null {
 
 // A play-time line's clock: how long the room was played and, once stopped,
 // the bands it was billed at. Every time is the server's.
-function TimedLineDetail({ line }: { line: PosLineItem }) {
+function TimedLineDetail({
+  line,
+  onEditSegment,
+}: {
+  line: PosLineItem;
+  onEditSegment?: (line: PosLineItem, segment: PosTimedSegment) => void;
+}) {
   const { t, i18n } = useTranslation();
   const timed = line.timed_session;
   if (line.kind !== 'timed' || !timed) return null;
@@ -527,6 +537,8 @@ function TimedLineDetail({ line }: { line: PosLineItem }) {
     new Date(value).toLocaleTimeString(i18n.language, { hour: '2-digit', minute: '2-digit' });
   const played = timed.quote?.played_minutes ?? timed.played_minutes ?? 0;
   const bands = timed.quote?.lines ?? [];
+  const running = timed.status !== 'stopped';
+  const asOf = running && timed.quote && !timed.quote.final ? timed.quote.as_of : undefined;
   return (
     <span className="basket-line-menu basket-line-timed">
       <span className="basket-line-label">
@@ -548,6 +560,36 @@ function TimedLineDetail({ line }: { line: PosLineItem }) {
             </span>
           ))
         : null}
+      {asOf && timed.quote ? (
+        <span className="basket-line-label basket-line-estimate">
+          {t('timedEstimateAt', {
+            time: clock(asOf),
+            amount: formatMoney(timed.quote.amount, timed.currency ?? 'VND'),
+          })}
+        </span>
+      ) : null}
+      {(timed.segments ?? [])
+        .filter((segment) => segment.kind === 'play')
+        .map((segment) => (
+          <span key={segment.id} className="basket-line-label basket-line-segment">
+            {t('timedSegment', {
+              room: segment.resource_name ?? '',
+              from: clock(segment.started_at),
+              to: segment.ended_at ? clock(segment.ended_at) : t('timedSegmentRunning'),
+            })}
+            {segment.edited ? ` · ${t('timedSegmentEdited')}` : ''}
+            {onEditSegment ? (
+              <button
+                type="button"
+                className="link-button"
+                aria-label={`${t('timedEditSegment')} ${segment.resource_name ?? ''} ${clock(segment.started_at)}`}
+                onClick={() => onEditSegment(line, segment)}
+              >
+                {t('timedEditSegment')}
+              </button>
+            ) : null}
+          </span>
+        ))}
     </span>
   );
 }

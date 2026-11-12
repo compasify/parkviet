@@ -446,6 +446,18 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(TableSplitResult.serializer)
       ..add(TableTaxCategory.serializer)
       ..add(TaxRow.serializer)
+      ..add(TimedQuote.serializer)
+      ..add(TimedQuoteLine.serializer)
+      ..add(TimedSegment.serializer)
+      ..add(TimedSegmentEditInput.serializer)
+      ..add(TimedSegmentKindEnum.serializer)
+      ..add(TimedSession.serializer)
+      ..add(TimedSessionCommand.serializer)
+      ..add(TimedSessionCommandResult.serializer)
+      ..add(TimedSessionMoveInput.serializer)
+      ..add(TimedSessionResult.serializer)
+      ..add(TimedSessionStartInput.serializer)
+      ..add(TimedSessionStatusEnum.serializer)
       ..add(TipSplitRule.serializer)
       ..add(TipSplitRuleModeEnum.serializer)
       ..add(VehicleCommissionSnapshot.serializer)
@@ -929,6 +941,12 @@ Serializers _$serializers = (Serializers().toBuilder()
           const FullType(BuiltList,
               const [const FullType(TableSettingsInputCourseLabelsInner)]),
           () => ListBuilder<TableSettingsInputCourseLabelsInner>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(TimedQuoteLine)]),
+          () => ListBuilder<TimedQuoteLine>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(TimedSegment)]),
+          () => ListBuilder<TimedSegment>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(VehicleVisit)]),
           () => ListBuilder<VehicleVisit>())

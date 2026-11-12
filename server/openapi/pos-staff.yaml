@@ -4214,6 +4214,164 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/resources/{resource_id}/timed_sessions:
+    post:
+      operationId: posTimedSessionStart
+      description: >
+        Starts the clock of a karaoke room or billiard table on the server's
+        clock; the request carries no time. A room without an open order gets
+        a `timed` order, its lease held by `editor_id`. A room with several
+        open orders needs `workspace_id`. Needs `timed_billing` and
+        `pos.timed.operate`.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - name: resource_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TimedSessionStartInput'
+      responses:
+        '201':
+          description: The room's order and its running clock
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimedSessionCommandResult'
+        '409':
+          description: >
+            Refused; `error.details.reason` is `timed_session_running`,
+            `rate_plan_missing`, `workspace_required` (with `workspace_ids`),
+            `planned_end_invalid`, `table_unavailable`, `workspace_closed` or
+            `module_disabled`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/timed_sessions/{id}:
+    get:
+      operationId: posTimedSessionShow
+      description: A clock with its stretches and, while it runs, its quote up to now on the server's clock.
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: The clock
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimedSessionResult'
+  /api/v3/admin/pos/timed_sessions/{id}/quote:
+    get:
+      operationId: posTimedSessionQuote
+      description: The same as reading the clock, for screens that refresh the price every minute.
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: The clock
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimedSessionResult'
+  /api/v3/admin/pos/timed_sessions/{id}/stop:
+    post:
+      operationId: posTimedSessionStop
+      description: >
+        Stops a clock now on the server's clock and bills its line. A clock
+        that already stopped is answered as it is. Needs no lease.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: The order and the stopped clock
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimedSessionCommandResult'
+        '409':
+          description: Refused; `error.details.reason` is `workspace_closed` or `snapshot_locked`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/timed_sessions/{id}/move:
+    post:
+      operationId: posTimedSessionMove
+      description: >
+        Moves a running clock and the room's order to a free room. The
+        stretch on the old room keeps its price; the next one runs at the
+        new room's plan. Needs no lease.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TimedSessionMoveInput'
+      responses:
+        '200':
+          description: The order and the clock
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimedSessionCommandResult'
+        '409':
+          description: >
+            Refused; `error.details.reason` is `same_table`, `table_occupied`,
+            `table_unavailable`, `timed_session_running`, `timed_session_stopped`,
+            `rate_plan_missing`, `workspace_closed` or `module_disabled`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/timed_sessions/{id}/segments/{segment_id}:
+    patch:
+      operationId: posTimedSegmentUpdate
+      description: >
+        Corrects when a stretch started or ended, with a reason. Needs
+        `pos.timed.edit` or a manager's approval for `timed.edit_segment`
+        bound to the order's revision. The running stretch only moves its
+        start. A stopped clock is billed again.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/Id'
+        - name: segment_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TimedSegmentEditInput'
+      responses:
+        '200':
+          description: The order and the clock
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimedSessionCommandResult'
+        '409':
+          description: >
+            Refused; `error.details.reason` is `approval_required` (with
+            `action`), `reason_required`, `time_required`, `time_invalid`,
+            `time_in_future`, `segment_open`, `segment_overlap` or
+            `workspace_closed`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 components:
   parameters:
     Id:
@@ -9240,3 +9398,191 @@ components:
         visit_id:
           type: [string, 'null']
           description: An open visit of the order's branch; empty takes the order off.
+    TimedSessionStartInput:
+      type: object
+      required: [branch_id, editor_id]
+      properties:
+        branch_id:
+          type: string
+        editor_id:
+          type: string
+          description: Holds the lease of the order opened for a room that has none.
+        workspace_id:
+          type: string
+          description: The order to bill when the room has several open orders.
+        guest_count:
+          type: integer
+          minimum: 0
+          maximum: 999
+        planned_end_at:
+          type: string
+          format: date-time
+          description: When the guests plan to leave; the room shows `ending_soon` ten minutes before.
+    TimedSessionMoveInput:
+      type: object
+      required: [resource_id]
+      properties:
+        resource_id:
+          type: string
+          description: A free room of the same branch.
+    TimedSegmentEditInput:
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          type: string
+          description: Why the times are corrected; kept in the audit.
+        started_at:
+          type: string
+          format: date-time
+        ended_at:
+          type: string
+          format: date-time
+          description: Only for a stretch that has ended.
+        approval_id:
+          type: string
+          description: A manager's approval for `timed.edit_segment`, for someone without `pos.timed.edit`.
+    TimedSegment:
+      type: object
+      additionalProperties: false
+      required: [id, kind, resource_id, resource_name, started_at, ended_at, rate_plan_id, rate_plan_name, rate_plan_version, edited]
+      description: A stretch of a clock on one room at one rate plan; an open stretch has no end.
+      properties:
+        id:
+          type: string
+        kind:
+          type: string
+          enum: [play, pause]
+        resource_id:
+          type: string
+        resource_name:
+          type: string
+        started_at:
+          type: string
+          format: date-time
+        ended_at:
+          type: [string, 'null']
+          format: date-time
+        rate_plan_id:
+          type: [string, 'null']
+        rate_plan_name:
+          type: [string, 'null']
+        rate_plan_version:
+          type: [integer, 'null']
+        edited:
+          type: boolean
+          description: Its times were corrected by hand.
+    TimedQuoteLine:
+      type: object
+      additionalProperties: false
+      required: [segment_id, starts_at, ends_at, day_type, label, price_per_hour, surcharge_percent, minutes, amount]
+      description: One time band of a quote, at one price.
+      properties:
+        segment_id:
+          type: [string, 'null']
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+        day_type:
+          type: [string, 'null']
+          description: weekday, weekend or holiday.
+        label:
+          type: [string, 'null']
+        price_per_hour:
+          type: string
+        surcharge_percent:
+          type: string
+        minutes:
+          type: integer
+        amount:
+          type: string
+    TimedQuote:
+      type: object
+      additionalProperties: false
+      required: [as_of, final, played_minutes, billed_minutes, amount, lines]
+      description: >
+        The price of a clock: up to `as_of` on the server's clock while it
+        runs (`final` false), as billed once stopped.
+      properties:
+        as_of:
+          type: string
+          format: date-time
+        final:
+          type: boolean
+        played_minutes:
+          type: integer
+        billed_minutes:
+          type: integer
+        amount:
+          type: string
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/TimedQuoteLine'
+    TimedSession:
+      type: object
+      additionalProperties: false
+      required: [id, status, resource_id, resource_name, started_at, stopped_at, planned_end_at, played_minutes, billed_minutes, amount, currency,
+                 quote_version, segments, quote]
+      description: The clock of a room's play time, with its stretches and quote. Every time is the server's.
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          enum: [running, paused, stopped]
+        resource_id:
+          type: string
+        resource_name:
+          type: string
+        started_at:
+          type: string
+          format: date-time
+        stopped_at:
+          type: [string, 'null']
+          format: date-time
+        planned_end_at:
+          type: [string, 'null']
+          format: date-time
+        played_minutes:
+          type: integer
+        billed_minutes:
+          type: integer
+        amount:
+          type: string
+          description: The billed amount once stopped.
+        currency:
+          type: string
+        quote_version:
+          type: integer
+        segments:
+          type: array
+          items:
+            $ref: '#/components/schemas/TimedSegment'
+        quote:
+          oneOf:
+            - $ref: '#/components/schemas/TimedQuote'
+            - type: 'null'
+    TimedSessionResult:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/TimedSession'
+    TimedSessionCommand:
+      type: object
+      required: [workspace, timed_session]
+      properties:
+        workspace:
+          $ref: '#/components/schemas/Workspace'
+        timed_session:
+          $ref: '#/components/schemas/TimedSession'
+    TimedSessionCommandResult:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/TimedSessionCommand'

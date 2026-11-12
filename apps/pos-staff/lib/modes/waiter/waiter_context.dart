@@ -40,11 +40,20 @@ class WaiterContext {
   /// bottles only where they run. Empty until read.
   final modules = ValueNotifier<Set<String>>(const {});
 
+  /// What the person signed in may do here: a room's clock is run only by
+  /// someone with `pos.timed.operate`. Empty until read.
+  final capabilities = ValueNotifier<Set<String>>(const {});
+
   Future<void> loadModules() async {
     try {
       modules.value = await api.modules(branchId);
     } on AppFailure {
       // The bar shortcuts stay hidden; the tables work as before.
+    }
+    try {
+      capabilities.value = await api.capabilities(branchId);
+    } on AppFailure {
+      // The clock commands stay hidden; the server checks anyway.
     }
   }
 
@@ -75,6 +84,7 @@ class WaiterContext {
     menu.dispose();
     voidReasons.dispose();
     modules.dispose();
+    capabilities.dispose();
   }
 }
 

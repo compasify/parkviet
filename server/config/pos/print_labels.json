@@ -61,6 +61,7 @@
   "receiptTemplates.print.name": "Tên hàng",
   "receiptTemplates.print.seller": "Người bán",
   "receiptTime": "Thời gian",
+  "receiptTimedEstimate": "Tạm tính đến {{time}}: {{amount}}",
   "receiptTotal": "Tổng cộng",
   "receiptVariance": "Chênh lệch",
   "receiptPlatform": "Nền tảng giao hàng",

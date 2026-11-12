@@ -63,10 +63,33 @@ export const TIMED_FAILURE_REASONS = [
   'timed_line',
   'planned_end_invalid',
   'timed_amount_unrepresentable',
+  'segment_overlap',
+  'time_in_future',
+  'time_invalid',
+  'segment_open',
+  'reason_required',
+  'time_required',
 ] as const;
 
 export function timedFailureKey(reason: string | null): string | null {
   return reason && (TIMED_FAILURE_REASONS as readonly string[]).includes(reason)
     ? `timedFailure_${reason}`
     : null;
+}
+
+// A server time as a `datetime-local` input shows it on this device
+// ("2026-11-12T21:30"); empty for no time.
+export function toLocalInput(value: string | null | undefined): string {
+  const time = value ? new Date(value) : null;
+  if (!time || Number.isNaN(time.getTime())) return '';
+  const pad = (part: number) => String(part).padStart(2, '0');
+  return `${time.getFullYear()}-${pad(time.getMonth() + 1)}-${pad(time.getDate())}T${pad(time.getHours())}:${pad(time.getMinutes())}`;
+}
+
+// A `datetime-local` value back as an ISO time for the server; null when
+// empty or not a time.
+export function fromLocalInput(value: string): string | null {
+  if (!value) return null;
+  const time = new Date(value);
+  return Number.isNaN(time.getTime()) ? null : time.toISOString();
 }

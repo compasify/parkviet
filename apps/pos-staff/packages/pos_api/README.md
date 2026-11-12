@@ -196,6 +196,12 @@ Class | Method | HTTP request | Description
 [*DefaultApi*](doc/DefaultApi.md) | [**posTableSettings**](doc/DefaultApi.md#postablesettings) | **GET** /api/v3/admin/pos/table_settings | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posTableSettingsUpdate**](doc/DefaultApi.md#postablesettingsupdate) | **PUT** /api/v3/admin/pos/table_settings | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posTableSplit**](doc/DefaultApi.md#postablesplit) | **POST** /api/v3/admin/pos/workspaces/{workspace_id}/split | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posTimedSegmentUpdate**](doc/DefaultApi.md#postimedsegmentupdate) | **PATCH** /api/v3/admin/pos/timed_sessions/{id}/segments/{segment_id} | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posTimedSessionMove**](doc/DefaultApi.md#postimedsessionmove) | **POST** /api/v3/admin/pos/timed_sessions/{id}/move | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posTimedSessionQuote**](doc/DefaultApi.md#postimedsessionquote) | **GET** /api/v3/admin/pos/timed_sessions/{id}/quote | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posTimedSessionShow**](doc/DefaultApi.md#postimedsessionshow) | **GET** /api/v3/admin/pos/timed_sessions/{id} | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posTimedSessionStart**](doc/DefaultApi.md#postimedsessionstart) | **POST** /api/v3/admin/pos/resources/{resource_id}/timed_sessions | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posTimedSessionStop**](doc/DefaultApi.md#postimedsessionstop) | **POST** /api/v3/admin/pos/timed_sessions/{id}/stop | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posVehicleVisitAdjust**](doc/DefaultApi.md#posvehiclevisitadjust) | **POST** /api/v3/admin/pos/vehicle_visits/{id}/adjust | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posVehicleVisitClose**](doc/DefaultApi.md#posvehiclevisitclose) | **POST** /api/v3/admin/pos/vehicle_visits/{id}/close | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posVehicleVisitList**](doc/DefaultApi.md#posvehiclevisitlist) | **GET** /api/v3/admin/pos/vehicle_visits | 
@@ -557,6 +563,16 @@ Class | Method | HTTP request | Description
  - [TableSplitResult](doc/TableSplitResult.md)
  - [TableTaxCategory](doc/TableTaxCategory.md)
  - [TaxRow](doc/TaxRow.md)
+ - [TimedQuote](doc/TimedQuote.md)
+ - [TimedQuoteLine](doc/TimedQuoteLine.md)
+ - [TimedSegment](doc/TimedSegment.md)
+ - [TimedSegmentEditInput](doc/TimedSegmentEditInput.md)
+ - [TimedSession](doc/TimedSession.md)
+ - [TimedSessionCommand](doc/TimedSessionCommand.md)
+ - [TimedSessionCommandResult](doc/TimedSessionCommandResult.md)
+ - [TimedSessionMoveInput](doc/TimedSessionMoveInput.md)
+ - [TimedSessionResult](doc/TimedSessionResult.md)
+ - [TimedSessionStartInput](doc/TimedSessionStartInput.md)
  - [TipSplitRule](doc/TipSplitRule.md)
  - [VehicleCommissionSnapshot](doc/VehicleCommissionSnapshot.md)
  - [VehicleType](doc/VehicleType.md)

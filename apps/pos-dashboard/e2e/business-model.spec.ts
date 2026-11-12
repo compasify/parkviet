@@ -1,5 +1,5 @@
 import { expect, type Page, test } from '@playwright/test';
-import { BUSINESS_PROFILES, profileOf } from './support/business-profiles';
+import { BUSINESS_PROFILES, profileOf, withComingSoon } from './support/business-profiles';
 import { installDashboardShell } from './support/dashboard';
 
 // Port of the configuration scenarios from POS. Selling scenarios intentionally
@@ -11,6 +11,7 @@ function world() {
     stored: { profile_key: 'khac', wholesale: false, interests: [] as string[] },
     writes: [] as Array<{ path: string; body: Record<string, unknown> }>,
     previews: [] as string[], moved: '', read: true, write: true, manager: false,
+    profiles: BUSINESS_PROFILES,
   };
 }
 async function install(page: Page, state: ReturnType<typeof world>, target = '/store_1/branches/branch_main') {
@@ -23,7 +24,7 @@ async function install(page: Page, state: ReturnType<typeof world>, target = '/s
     const ok = (data: unknown) => route.fulfill({ json: { data } });
     if (path === '/pos/context') return route.fulfill({ json: { staff: { id: 'staff_admin', full_name: 'Quản trị Hiền' }, store: { id: 'store_1', name: branch.name, currency: 'VND', timezone: branch.timezone }, administration: { read: state.read, write: state.write }, branches: [branch], registers: [], selection: { branch_id: url.searchParams.get('branch_id'), register_id: null }, capabilities: state.manager && url.searchParams.get('branch_id') === branch.id ? ['pos.topology.manage'] : [], profile: { key: branch.profile_key, version: 1 }, onboarding: { required: false, can_setup: state.write } } });
     if (request.method() !== 'GET') state.writes.push({ path, body });
-    if (path === '/pos/business_profiles') return ok(BUSINESS_PROFILES);
+    if (path === '/pos/business_profiles') return ok(state.profiles);
     if (path === '/pos/branches' || path === '/pos/context/branches') return ok([branch]);
     if (path === '/pos/branches/branch_main/modules') return ok({ branch_id: branch.id, modules: state.modules, settings: [{ module: 'retail.units', enabled: true, reason: 'backfill', changed_at: '2026-11-08T12:00:00Z', changed_by_name: null }] });
     if (path === '/pos/store_profile') {
@@ -118,7 +119,8 @@ test('module dependency is blocked, disable needs reason, enable confirms depend
 });
 
 test('store main profile stores wholesale and coming-soon interests without changing existing branch', async ({ page }) => {
-  const state = world(); await install(page, state, '/store_1/settings/business-model');
+  // A profile not open yet is recorded as an interest.
+  const state = world(); state.profiles = withComingSoon('karaoke_bida'); await install(page, state, '/store_1/settings/business-model');
   const section = page.getByRole('region', { name: 'Hồ sơ chính của cửa hàng' });
   await choose(page, 'Ngành mặc định cho chi nhánh mới', 'Nhà thuốc');
   await section.getByRole('checkbox', { name: /Có bán sỉ/ }).check();

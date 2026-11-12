@@ -342,6 +342,16 @@ lib/src/model/table_split_orders.dart
 lib/src/model/table_split_result.dart
 lib/src/model/table_tax_category.dart
 lib/src/model/tax_row.dart
+lib/src/model/timed_quote.dart
+lib/src/model/timed_quote_line.dart
+lib/src/model/timed_segment.dart
+lib/src/model/timed_segment_edit_input.dart
+lib/src/model/timed_session.dart
+lib/src/model/timed_session_command.dart
+lib/src/model/timed_session_command_result.dart
+lib/src/model/timed_session_move_input.dart
+lib/src/model/timed_session_result.dart
+lib/src/model/timed_session_start_input.dart
 lib/src/model/tip_split_rule.dart
 lib/src/model/vehicle_commission_snapshot.dart
 lib/src/model/vehicle_type.dart

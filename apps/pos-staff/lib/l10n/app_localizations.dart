@@ -1981,6 +1981,108 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Rót không làm mức tăng; quản lý sửa mức nếu nhập sai.'**
   String get waiterBottleLevelRaised;
+
+  /// No description provided for @waiterRoomsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Phòng'**
+  String get waiterRoomsTitle;
+
+  /// No description provided for @waiterRoomsNone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chi nhánh chưa có phòng hay bàn chơi.'**
+  String get waiterRoomsNone;
+
+  /// No description provided for @waiterStatePlaying.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang tính giờ'**
+  String get waiterStatePlaying;
+
+  /// No description provided for @waiterStateEndingSoon.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sắp hết giờ'**
+  String get waiterStateEndingSoon;
+
+  /// No description provided for @waiterClockStart.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bắt đầu tính giờ'**
+  String get waiterClockStart;
+
+  /// No description provided for @waiterClockStop.
+  ///
+  /// In vi, this message translates to:
+  /// **'Dừng giờ'**
+  String get waiterClockStop;
+
+  /// No description provided for @waiterClockStopConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Dừng giờ {room}? Tiền giờ được chốt theo giờ máy chủ.'**
+  String waiterClockStopConfirm(String room);
+
+  /// No description provided for @waiterClockMove.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chuyển phòng'**
+  String get waiterClockMove;
+
+  /// No description provided for @waiterClockMoveTo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chuyển {room} sang'**
+  String waiterClockMoveTo(String room);
+
+  /// No description provided for @waiterClockMoveNone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không có phòng trống để chuyển.'**
+  String get waiterClockMoveNone;
+
+  /// No description provided for @waiterClockOpenOrder.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mở đơn của phòng'**
+  String get waiterClockOpenOrder;
+
+  /// No description provided for @waiterClockQuote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tạm tính {amount}'**
+  String waiterClockQuote(String amount);
+
+  /// No description provided for @waiterClockStopped.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã dừng giờ, tiền giờ {amount}.'**
+  String waiterClockStopped(String amount);
+
+  /// No description provided for @waiterClockRunning.
+  ///
+  /// In vi, this message translates to:
+  /// **'Phòng này đang tính giờ.'**
+  String get waiterClockRunning;
+
+  /// No description provided for @waiterClockNoRatePlan.
+  ///
+  /// In vi, this message translates to:
+  /// **'Phòng này chưa có bảng giá giờ. Báo quản lý thêm bảng giá.'**
+  String get waiterClockNoRatePlan;
+
+  /// No description provided for @waiterClockPickOrder.
+  ///
+  /// In vi, this message translates to:
+  /// **'Phòng có nhiều đơn mở; chọn đơn cần tính giờ.'**
+  String get waiterClockPickOrder;
+
+  /// No description provided for @waiterClockAlreadyStopped.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giờ của phòng này đã dừng.'**
+  String get waiterClockAlreadyStopped;
 }
 
 class _AppLocalizationsDelegate

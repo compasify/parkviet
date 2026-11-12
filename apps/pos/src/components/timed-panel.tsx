@@ -37,6 +37,7 @@ export function TimedPanel({
   currency,
   locked,
   onStart,
+  onCheckout,
   onFailure,
 }: {
   table: BoardTable;
@@ -45,6 +46,8 @@ export function TimedPanel({
   currency: string;
   locked: boolean;
   onStart: (table: BoardTable) => Promise<unknown>;
+  // Stops the clock on the server, then opens the order's payment.
+  onCheckout?: (sessionId: string) => Promise<unknown>;
   onFailure: (failure: unknown, key: string | null) => void;
 }) {
   const { t, i18n } = useTranslation();
@@ -119,6 +122,16 @@ export function TimedPanel({
         >
           {t('timedStop')}
         </button>
+        {onCheckout ? (
+          <button
+            type="button"
+            title={t('timedCheckoutHint')}
+            disabled={busy || locked}
+            onClick={() => void act(() => onCheckout(timed.id))}
+          >
+            {t('timedCheckout')}
+          </button>
+        ) : null}
       </div>
       {targets.length > 0 ? (
         <div className="row timed-panel-move">

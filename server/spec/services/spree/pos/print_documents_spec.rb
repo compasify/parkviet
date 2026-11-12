@@ -112,9 +112,20 @@ RSpec.describe Spree::Pos::PrintDocuments do
        default_config['shift_closure']]
     }
   }
+  # A room whose clock still runs: the time line carries the server's quote
+  # and when it was read.
+  timed_workspace = workspace.merge(
+    'line_items' => workspace['line_items'] + [
+      { 'name' => 'Giờ hát', 'kind' => 'timed', 'quantity' => 1, 'price' => '0.0', 'amount' => '0.0',
+        'timed_session' => { 'id' => 'postimed_1', 'status' => 'running', 'resource_name' => 'VIP 1', 'started_at' => '2026-11-11T01:30:00Z',
+                             'stopped_at' => nil, 'quote' => { 'as_of' => '2026-11-11T03:04:05Z', 'final' => false, 'played_minutes' => 94,
+                                                                'billed_minutes' => 90, 'amount' => '300000.0', 'lines' => [] } } }
+    ]
+  )
   prebill_cases = {
-    'prebill-default' => -> { [default_config['prebill'], nil] },
-    'prebill-reprint-custom' => -> { [custom_config, described_class::REPRINT_BANNER] }
+    'prebill-default' => -> { [default_config['prebill'], nil, workspace] },
+    'prebill-reprint-custom' => -> { [custom_config, described_class::REPRINT_BANNER, workspace] },
+    'prebill-timed-running' => -> { [default_config['prebill'], nil, timed_workspace] }
   }
 
   def check_golden(path, content)
@@ -135,10 +146,10 @@ RSpec.describe Spree::Pos::PrintDocuments do
 
   prebill_cases.each do |name, build|
     it "builds the #{name} document" do
-      config, banner = instance_exec(&build)
-      document = described_class.prebill(workspace: workspace, place: place, config: config, now: now, time_zone: zone, banner: banner).as_json
+      config, banner, input = instance_exec(&build)
+      document = described_class.prebill(workspace: input, place: place, config: config, now: now, time_zone: zone, banner: banner).as_json
       check_golden(fixtures_dir.join("#{name}.json"),
-                   { 'input' => { 'workspace' => workspace, 'place' => place, 'now' => now.iso8601(3), 'timeZone' => zone, 'config' => config, 'banner' => banner },
+                   { 'input' => { 'workspace' => input, 'place' => place, 'now' => now.iso8601(3), 'timeZone' => zone, 'config' => config, 'banner' => banner },
                      'document' => document })
     end
   end

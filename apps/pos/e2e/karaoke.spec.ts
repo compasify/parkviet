@@ -14,8 +14,16 @@ const ROOMS = [
 ];
 const SERVER_NOW = '2026-11-12T14:40:00Z';
 
-type Clock = { id: string; resourceId: string; workspaceId: string; status: 'running' | 'stopped'; amount: string };
-type Recorded = { starts: Array<Record<string, unknown>>; stops: string[] };
+type Clock = {
+  id: string;
+  resourceId: string;
+  workspaceId: string;
+  status: 'running' | 'stopped';
+  amount: string;
+  // A start corrected by hand.
+  startedAt?: string;
+};
+type Recorded = { starts: Array<Record<string, unknown>>; stops: string[]; edits: Array<Record<string, unknown>> };
 
 function board(world: World, clocks: Clock[]) {
   return {
@@ -57,14 +65,57 @@ function session(clock: Clock) {
   return {
     id: clock.id, status: clock.status, resource_id: clock.resourceId, resource_name: 'P1',
     started_at: '2026-11-12T14:00:00Z', stopped_at: clock.status === 'stopped' ? SERVER_NOW : null,
-    played_minutes: 40, billed_minutes: 45, amount: clock.amount, currency: 'VND', segments: [],
-    quote: { final: clock.status === 'stopped', played_minutes: 40, billed_minutes: 45, amount: clock.amount, lines: [] },
+    played_minutes: 40, billed_minutes: 45, amount: clock.amount, currency: 'VND',
+    segments: [
+      {
+        id: `${clock.id}_seg`, kind: 'play', resource_id: clock.resourceId, resource_name: 'P1',
+        started_at: clock.startedAt ?? '2026-11-12T14:00:00Z', ended_at: clock.status === 'stopped' ? SERVER_NOW : null,
+        rate_plan_id: null, rate_plan_name: null, rate_plan_version: null, edited: Boolean(clock.startedAt),
+      },
+    ],
+    quote: {
+      as_of: SERVER_NOW, final: clock.status === 'stopped', played_minutes: 40, billed_minutes: 45, amount: clock.amount, lines: [],
+    },
   };
 }
 
+// The room's order as the server sends it: its time line carries the clock.
+function orderView(world: World, clocks: Clock[], workspaceId: string) {
+  const sheet = world.sheets.get(workspaceId);
+  if (!sheet) return null;
+  const view = serialize(world, sheet);
+  const clock = clocks.find((row) => row.workspaceId === workspaceId);
+  if (!clock) return view;
+  const line = {
+    id: `li_${clock.id}`, sale_line_id: `possl_${clock.id}`, variant_id: 'v_time', product_id: 'p_time', name: 'Giờ hát',
+    sku: '', quantity: 1, price: '0.0', unit_price: '0.0', list_price: '0.0', amount: '0.0', discounts: [], kind: 'timed',
+    timed_session: session(clock),
+  };
+  return { ...view, line_items: [...view.line_items, line] };
+}
+
 async function installClocks(page: Page, world: World): Promise<Recorded> {
-  const recorded: Recorded = { starts: [], stops: [] };
+  const recorded: Recorded = { starts: [], stops: [], edits: [] };
   const clocks: Clock[] = [];
+  await page.route('**/api/v3/admin/pos/workspaces/*', (route) => {
+    const id = /\/pos\/workspaces\/([^/]+)$/.exec(new URL(route.request().url()).pathname)?.[1];
+    const view = route.request().method() === 'GET' && id ? orderView(world, clocks, id) : null;
+    return view ? route.fulfill({ json: { data: view } }) : route.fallback();
+  });
+  await page.route('**/api/v3/admin/pos/timed_sessions/*/segments/*', (route) => {
+    const parts = new URL(route.request().url()).pathname.split('/');
+    const clock = clocks.find((row) => row.id === parts.at(-3));
+    if (!clock) return route.fulfill({ status: 404, json: { error: { code: 'missing', message: 'missing' } } });
+    const body = route.request().postDataJSON() as Record<string, unknown>;
+    recorded.edits.push(body);
+    if (!body.approval_id)
+      return route.fulfill({
+        status: 409,
+        json: { error: { code: 'conflict', message: 'approval', details: { reason: 'approval_required', action: 'timed.edit_segment' } } },
+      });
+    clock.startedAt = String(body.started_at);
+    return route.fulfill({ json: { data: { workspace: orderView(world, clocks, clock.workspaceId), timed_session: session(clock) } } });
+  });
   await page.route('**/api/v3/admin/pos/resource_board**', (route) =>
     route.fulfill({ json: { data: board(world, clocks) } }),
   );
@@ -81,7 +132,7 @@ async function installClocks(page: Page, world: World): Promise<Recorded> {
     });
     const clock: Clock = { id: `postimed_${clocks.length + 1}`, resourceId, workspaceId: sheet.id, status: 'running', amount: '75000.0' };
     clocks.push(clock);
-    return route.fulfill({ status: 201, json: { data: { workspace: serialize(world, sheet), timed_session: session(clock) } } });
+    return route.fulfill({ status: 201, json: { data: { workspace: orderView(world, clocks, sheet.id), timed_session: session(clock) } } });
   });
   await page.route('**/api/v3/admin/pos/timed_sessions/*/quote', (route) => {
     const id = new URL(route.request().url()).pathname.split('/').at(-2);
@@ -97,7 +148,9 @@ async function installClocks(page: Page, world: World): Promise<Recorded> {
     if (!clock) return route.fulfill({ status: 404, json: { error: { code: 'missing', message: 'missing' } } });
     clock.status = 'stopped';
     clock.amount = '100000.0';
-    return route.fulfill({ json: { data: { timed_session: session(clock) } } });
+    return route.fulfill({
+      json: { data: { workspace: orderView(world, clocks, clock.workspaceId), timed_session: session(clock) } },
+    });
   });
   return recorded;
 }
@@ -140,4 +193,62 @@ test('a room clock starts and stops on the server time', async ({ page }) => {
   await expect.poll(() => recorded.stops).toEqual(['postimed_1']);
   await expect(panel).toContainText('100.000');
   await expect(panel).toContainText('Đã dừng lúc');
+});
+
+test('checkout on a running room stops its clock first, then opens the payment', async ({ page }) => {
+  const world = newWorld({
+    capabilities: [...FULL_CASHIER, 'pos.table.serve', 'pos.timed.operate'],
+    modules: MODULES,
+    profile: { key: 'karaoke_bida', version: 3, display: { surface: 'resource_board' } },
+    menu: teaMenu(),
+  });
+  await installRetailApi(page, world);
+  const recorded = await installClocks(page, world);
+  await login(page);
+
+  await tile(page, 'P1').click();
+  const panel = page.getByRole('complementary', { name: 'P1' });
+  await panel.getByRole('button', { name: 'Bắt đầu tính giờ' }).click();
+  await expect.poll(() => recorded.starts.length).toBe(1);
+  await page.getByRole('button', { name: 'Sơ đồ bàn', exact: true }).click();
+  await tile(page, 'P1').click();
+
+  // No payment is tried while the clock runs: the server stops it first.
+  await panel.getByRole('button', { name: 'Thanh toán', exact: true }).click();
+  await expect.poll(() => recorded.stops).toEqual(['postimed_1']);
+  await expect(page.locator('#pos-checkout')).toBeVisible();
+});
+test("a stretch of a running clock is corrected with a manager's approval", async ({ page }) => {
+  const world = newWorld({
+    capabilities: [...FULL_CASHIER, 'pos.table.serve', 'pos.timed.operate'],
+    modules: MODULES,
+    profile: { key: 'karaoke_bida', version: 3, display: { surface: 'resource_board' } },
+    menu: teaMenu(),
+  });
+  await installRetailApi(page, world);
+  const recorded = await installClocks(page, world);
+  await login(page);
+
+  await tile(page, 'P1').click();
+  await page.getByRole('complementary', { name: 'P1' }).getByRole('button', { name: 'Bắt đầu tính giờ' }).click();
+  await expect.poll(() => recorded.starts.length).toBe(1);
+
+  // The time line shows its running quote and when the server read it.
+  await expect(page.getByText(/Tạm tính đến \d\d:\d\d: 75\.000/)).toBeVisible();
+  await page.getByRole('button', { name: /^Sửa giờ P1/ }).click();
+  const dialog = page.getByRole('dialog', { name: 'Sửa giờ P1' });
+  // A running stretch only moves its start.
+  await expect(dialog.getByLabel('Giờ ra')).toHaveCount(0);
+  await dialog.getByLabel('Giờ vào').fill('2026-11-12T20:45');
+  await dialog.getByLabel('Lý do').fill('Bật giờ trễ');
+  await dialog.getByLabel('Mã duyệt của quản lý').fill('posapproval_1');
+  await dialog.getByRole('button', { name: 'Lưu giờ' }).click();
+
+  await expect(dialog).toHaveCount(0);
+  expect(recorded.edits).toHaveLength(1);
+  expect(recorded.edits[0]).toEqual(
+    expect.objectContaining({ reason: 'Bật giờ trễ', approval_id: 'posapproval_1', started_at: expect.any(String) }),
+  );
+  expect(Object.keys(recorded.edits[0])).not.toContain('ended_at');
+  await expect(page.getByText('đã sửa')).toBeVisible();
 });

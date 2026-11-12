@@ -35,6 +35,7 @@ export function TableFloor({
   locked,
   onOpenTable,
   onStartClock,
+  onCheckoutClock,
   onSelectOrder,
 }: {
   branchId: string | null;
@@ -50,6 +51,8 @@ export function TableFloor({
   ) => Promise<unknown>;
   onSelectOrder: (workspaceId: string) => void;
   onStartClock?: (table: BoardTable) => Promise<unknown>;
+  // Stops a running clock, then opens its order's payment.
+  onCheckoutClock?: (sessionId: string) => Promise<unknown>;
 }) {
   const { t } = useTranslation();
   const board = useResourceBoard(branchId, true);
@@ -283,6 +286,7 @@ export function TableFloor({
                 currency={selected.currency ?? 'VND'}
                 locked={locked}
                 onStart={onStartClock}
+                onCheckout={onCheckoutClock}
                 onFailure={(failure, key) => {
                   setError(key ? t(key) : describeTableFailure(failure, t));
                   void commands.refreshBoard();

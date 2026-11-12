@@ -52,11 +52,13 @@ RSpec.describe 'POS timed sessions API', type: :request do
     id = body.dig('data', 'timed_session', 'id')
     expect(Time.iso8601(body.dig('data', 'timed_session', 'started_at'))).to eq(local('2026-11-12 10:00'))
     expect(body.dig('data', 'workspace', 'service_mode')).to eq('timed')
+    expect_pos_schema!(response, 'TimedSessionCommand')
 
     server_clock_at('2026-11-12 10:40')
     get "/api/v3/admin/pos/timed_sessions/#{id}/quote", headers: bearer(operator)
     expect(response).to have_http_status(:ok), response.body
     expect(response.parsed_body.dig('data', 'quote')).to include('played_minutes' => 40, 'billed_minutes' => 45, 'final' => false)
+    expect_pos_schema!(response, 'TimedSession')
 
     board = call(operator, :get, "resource_board?branch_id=#{branch.prefixed_id}")
     tile = board['data']['resources'].find { |row| row['id'] == room.prefixed_id }
@@ -66,6 +68,7 @@ RSpec.describe 'POS timed sessions API', type: :request do
     moved = call(operator, :post, "timed_sessions/#{id}/move", resource_id: vip.prefixed_id)
     expect(response).to have_http_status(:ok), response.body
     expect(moved.dig('data', 'timed_session', 'resource_id')).to eq(vip.prefixed_id)
+    expect_pos_schema!(response, 'TimedSessionCommand')
 
     server_clock_at('2026-11-12 11:00')
     stopped = call(operator, :post, "timed_sessions/#{id}/stop")
@@ -73,6 +76,9 @@ RSpec.describe 'POS timed sessions API', type: :request do
     # 40 minutes at 100 000 an hour, 20 at 200 000.
     expect(stopped.dig('data', 'timed_session')).to include('status' => 'stopped', 'billed_minutes' => 60, 'amount' => '133334.0')
     expect(stopped.dig('data', 'timed_session', 'quote', 'lines').map { |line| line['minutes'] }).to eq([40, 20])
+    expect_pos_schema!(response, 'TimedSessionCommand')
+    get "/api/v3/admin/pos/timed_sessions/#{id}", headers: bearer(operator)
+    expect_pos_schema!(response, 'TimedSession')
   end
 
   it 'corrects a stretch with a manager approval only' do
@@ -99,6 +105,7 @@ RSpec.describe 'POS timed sessions API', type: :request do
     body = call(operator, :patch, "timed_sessions/#{id}/segments/#{segment}", change.merge(approval_id: approval.prefixed_id))
     expect(response).to have_http_status(:ok), response.body
     expect(body.dig('data', 'timed_session')).to include('billed_minutes' => 75, 'amount' => '125000.0')
+    expect_pos_schema!(response, 'TimedSessionCommand')
   end
 
   it 'refuses people who do not run play time and a second clock on a room' do

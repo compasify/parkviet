@@ -1113,4 +1113,65 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get waiterBottleLevelRaised =>
       'A pour never raises the level; a manager corrects a mistake.';
+
+  @override
+  String get waiterRoomsTitle => 'Rooms';
+
+  @override
+  String get waiterRoomsNone => 'This branch has no rooms or billiard tables.';
+
+  @override
+  String get waiterStatePlaying => 'Clock running';
+
+  @override
+  String get waiterStateEndingSoon => 'Ending soon';
+
+  @override
+  String get waiterClockStart => 'Start the clock';
+
+  @override
+  String get waiterClockStop => 'Stop the clock';
+
+  @override
+  String waiterClockStopConfirm(String room) {
+    return 'Stop the clock of $room? The time is billed on the server\'s clock.';
+  }
+
+  @override
+  String get waiterClockMove => 'Move room';
+
+  @override
+  String waiterClockMoveTo(String room) {
+    return 'Move $room to';
+  }
+
+  @override
+  String get waiterClockMoveNone => 'No free room to move to.';
+
+  @override
+  String get waiterClockOpenOrder => 'Open the room\'s order';
+
+  @override
+  String waiterClockQuote(String amount) {
+    return 'So far $amount';
+  }
+
+  @override
+  String waiterClockStopped(String amount) {
+    return 'Clock stopped, time charge $amount.';
+  }
+
+  @override
+  String get waiterClockRunning => 'This room\'s clock is running.';
+
+  @override
+  String get waiterClockNoRatePlan =>
+      'This room has no rate plan. Ask a manager to add one.';
+
+  @override
+  String get waiterClockPickOrder =>
+      'This room has several open orders; pick the one to bill.';
+
+  @override
+  String get waiterClockAlreadyStopped => 'This room\'s clock has stopped.';
 }

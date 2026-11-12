@@ -15,6 +15,7 @@ import '../../l10n/app_localizations.dart';
 import '../mode_scaffold.dart';
 import 'bottle_pour_screen.dart';
 import 'guest_keypad.dart';
+import 'room_board_screen.dart';
 import 'tab_list_screen.dart';
 import 'table_order_screen.dart';
 import 'waiter_api.dart';
@@ -376,6 +377,13 @@ class _TableBoardState extends State<TableBoard> {
                 icon: const Icon(Icons.receipt_long),
                 onPressed: () => _push(TabListScreen(waiter: widget.waiter)),
               ),
+            if (modules.contains('timed_billing'))
+              IconButton(
+                key: const Key('waiter-rooms'),
+                tooltip: l10n.waiterRoomsTitle,
+                icon: const Icon(Icons.timer_outlined),
+                onPressed: () => _push(RoomBoardScreen(waiter: widget.waiter)),
+              ),
             if (modules.contains('fnb.bottle_keep'))
               IconButton(
                 key: const Key('waiter-bottles'),
@@ -567,6 +575,8 @@ String tableStateLabel(AppLocalizations l10n, ResourceBoardTileStateEnum state) 
       ResourceBoardTileStateEnum.prebilled => l10n.waiterStatePrebilled,
       ResourceBoardTileStateEnum.cleaning => l10n.waiterStateCleaning,
       ResourceBoardTileStateEnum.outOfService => l10n.waiterStateOut,
+      ResourceBoardTileStateEnum.playing => l10n.waiterStatePlaying,
+      ResourceBoardTileStateEnum.endingSoon => l10n.waiterStateEndingSoon,
       _ => state.name,
     };
 

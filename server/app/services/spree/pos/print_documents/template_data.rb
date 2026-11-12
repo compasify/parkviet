@@ -334,7 +334,7 @@ module Spree
             taxes_text: taxes_summary(totals&.dig('taxes'), currency),
             customer_name: customer&.dig(:name), customer_phone: customer&.dig(:phone), customer_address: customer&.dig(:address),
             meta: [row('time', t('receiptTime'), time), *customer_rows(customer), *delivery_meta_rows(delivery)],
-            lines: Array(workspace['line_items']).map { |line| prebill_line(line, currency) },
+            lines: Array(workspace['line_items']).map { |line| prebill_line(line, currency, time_zone) },
             line_labels: line_labels, signature_labels: signature_labels,
             totals: with_delivery_fee(prebill_totals(totals, currency, workspace['drink_credit']), delivery, currency),
             payments: prebill_payments(workspace['financial'], currency), pay_qr: nil,
@@ -353,7 +353,7 @@ module Spree
           delivery && { deliverer: str(delivery['deliverer']), fee: delivery['fee'] }
         end
 
-        def prebill_line(line, currency)
+        def prebill_line(line, currency, time_zone)
           price = line['unit_price'] || line['price']
           amount = line['item_net_amount'] || line['net_amount'] || line['amount']
           trace = Array(line['serial_codes']).map { |serial| t('receiptSerial', serial: serial) }
@@ -362,8 +362,19 @@ module Spree
             sku: str(line['sku']), quantity: Text.quantity(line['sale_quantity'] || line['quantity']),
             unit: str(line['sale_unit']), price: money(price, currency), price_cell: bare(price, currency),
             amount: money(amount, currency), amount_cell: bare(amount, currency), trace: trace,
-            notes: menu_notes(line)
+            notes: menu_notes(line) + timed_estimate(line, currency, time_zone)
           )
+        end
+
+        # A clock still running is not on the order yet: its line shows the
+        # server's quote and the time it was read ("Tạm tính đến 22:40: …").
+        def timed_estimate(line, currency, time_zone)
+          session = obj(line['timed_session'])
+          quote = obj(session&.dig('quote'))
+          return [] unless line['kind'] == 'timed' && quote && quote['final'] != true && str(quote['as_of'])
+
+          time = Time.iso8601(str(quote['as_of'])).in_time_zone(time_zone || Text::ZONE).strftime('%H:%M')
+          [t('receiptTimedEstimate', time: time, amount: money(str(quote['amount']), currency))]
         end
 
         # A VIP table's minimum spend shows as its own row; the drink credit

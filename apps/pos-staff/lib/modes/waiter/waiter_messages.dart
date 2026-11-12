@@ -21,6 +21,10 @@ String waiterFailureMessage(AppLocalizations l10n, AppFailure failure) => switch
       ConflictFailure(reason: 'tab_name_invalid') => l10n.waiterTabNameInvalid,
       ConflictFailure(reason: 'bottle_level_raised') => l10n.waiterBottleLevelRaised,
       ConflictFailure(reason: 'bottle_keep_closed') => l10n.waiterBottleClosed,
+      ConflictFailure(reason: 'timed_session_running') => l10n.waiterClockRunning,
+      ConflictFailure(reason: 'rate_plan_missing') => l10n.waiterClockNoRatePlan,
+      ConflictFailure(reason: 'workspace_required') => l10n.waiterClockPickOrder,
+      ConflictFailure(reason: 'timed_session_stopped') => l10n.waiterClockAlreadyStopped,
       ForbiddenFailure() => l10n.waiterForbidden,
       _ => failureMessage(l10n, failure),
     };

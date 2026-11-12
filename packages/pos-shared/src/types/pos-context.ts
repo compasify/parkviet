@@ -277,6 +277,18 @@ export type PosMenu = {
   etag: string;
 };
 
+// A stretch of a clock on one room; an open stretch has no end yet.
+export type PosTimedSegment = {
+  id: string;
+  kind: 'play' | 'pause';
+  resource_id?: string;
+  resource_name?: string;
+  started_at: string;
+  ended_at: string | null;
+  rate_plan_name?: string | null;
+  edited?: boolean;
+};
+
 // The clock of a play-time line, on the server's time: the running quote,
 // or the bands it was billed at once stopped.
 export type PosLineTimedSession = {
@@ -288,7 +300,12 @@ export type PosLineTimedSession = {
   played_minutes?: number | null;
   billed_minutes?: number | null;
   amount?: string;
+  currency?: string;
+  // The stretches of the clock: each room and rate it ran on.
+  segments?: PosTimedSegment[];
   quote?: {
+    // The server time the quote was read up to.
+    as_of?: string;
     final: boolean;
     played_minutes: number;
     billed_minutes: number;
