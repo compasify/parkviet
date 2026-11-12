@@ -58,9 +58,15 @@ Rails.application.config.to_prepare do
     modules.register(key: 'fnb.vehicle_commission', group: 'fnb', depends_on: [],
                      entrypoints: ['Spree::Api::V3::Admin::Pos::VehicleVisitsController', 'Spree::Pos::VehicleVisits::Close'])
 
+    # Play time on rooms and billiard tables: rate plans by time of day and
+    # kind of day, and clocks billed as a timed line of the room's order.
+    modules.register(key: 'timed_billing', group: 'fnb', depends_on: ['resources', 'fnb.tables'],
+                     entrypoints: ['Spree::Api::V3::Admin::Pos::TimedSessionsController', 'Spree::Pos::Timed::Start'])
+
     # Names only, so "coming soon" profiles can refer to them. No code, and
     # no branch can turn them on.
-    modules.planned 'timed_billing', group: 'fnb'
+    # Billiard table lights switched by relays.
+    modules.planned 'resources.iot_relay', group: 'fnb'
   end
 
   Spree::Pos::SaleLineKinds.define! do |kinds|

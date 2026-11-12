@@ -14,7 +14,9 @@ import { useTranslation } from 'react-i18next';
 import { useResourceBoard, useTableCommands } from '../hooks/use-resource-board';
 import { posFailureKey } from '../lib/request-failure';
 import { describeTableFailure, saveTableSurface } from '../lib/tables';
+import { clockOffset } from '../lib/timed-clock';
 import { TableTile } from './table-tile';
+import { TimedPanel } from './timed-panel';
 
 type StateFilter = TableState | 'open' | null;
 
@@ -29,20 +31,25 @@ export function TableFloor({
   surface,
   onSurface,
   canServe,
+  canTime = false,
   locked,
   onOpenTable,
+  onStartClock,
   onSelectOrder,
 }: {
   branchId: string | null;
   surface: PosTableSurface;
   onSurface: (surface: PosTableSurface) => void;
   canServe: boolean;
+  // Runs room clocks: the branch bills play time and the person may run it.
+  canTime?: boolean;
   locked: boolean;
   onOpenTable: (
     table: BoardTable,
     input: { guestCount: number | null; addOrder: boolean },
   ) => Promise<unknown>;
   onSelectOrder: (workspaceId: string) => void;
+  onStartClock?: (table: BoardTable) => Promise<unknown>;
 }) {
   const { t } = useTranslation();
   const board = useResourceBoard(branchId, true);
@@ -64,6 +71,7 @@ export function TableFloor({
   const counts = countStates(inArea);
   const openCount = inArea.filter((row) => row.orders.length > 0).length;
   const selected = tables.find((row) => row.id === selectedId) ?? null;
+  const offsetMs = clockOffset(board.data?.server_now, board.dataUpdatedAt);
 
   const guestCount = (): number | null | 'invalid' => {
     const raw = guests.trim();
@@ -115,6 +123,7 @@ export function TableFloor({
   const tile = (table: BoardTable, style?: CSSProperties) => (
     <TableTile
       table={table}
+      offsetMs={offsetMs}
       selected={table.id === selectedId}
       style={style}
       onSelect={(row) => {
@@ -147,7 +156,10 @@ export function TableFloor({
         </fieldset>
         <fieldset className="table-floor-surface">
           <legend className="visually-hidden">{t('tableSurface')}</legend>
-          {TABLE_SURFACES.map((value) => (
+          {TABLE_SURFACES.filter(
+            // The room board is for branches that bill play time.
+            (value) => value !== 'resource_board' || canTime || surface === value,
+          ).map((value) => (
             <button
               key={value}
               type="button"
@@ -262,6 +274,20 @@ export function TableFloor({
                   </li>
                 ))}
               </ul>
+            ) : null}
+            {canTime && onStartClock ? (
+              <TimedPanel
+                table={selected}
+                tables={tables}
+                offsetMs={offsetMs}
+                currency={selected.currency ?? 'VND'}
+                locked={locked}
+                onStart={onStartClock}
+                onFailure={(failure, key) => {
+                  setError(key ? t(key) : describeTableFailure(failure, t));
+                  void commands.refreshBoard();
+                }}
+              />
             ) : null}
             {selected.state !== 'out_of_service' && selected.state !== 'cleaning' && canServe ? (
               <div className="table-panel-open">

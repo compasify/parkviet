@@ -161,22 +161,26 @@ export function OrderLines({
               const labelled = Boolean(line.label_barcode);
               // Each unit of a serial line is one scanned serial: re-add to change it.
               const serialLine = line.trace?.mode === 'serial';
+              // Play time changes only through the room's clock.
+              const timedLine = line.kind === 'timed';
               // The kitchen has made this much already: the line may grow, not shrink.
               const sent = kitchenSent(line);
               // Without the lease only a line the kitchen has not heard about changes.
               const quantityLocked =
-                countDisabled || labelled || serialLine || (disabled && sent > 0);
+                countDisabled || labelled || serialLine || timedLine || (disabled && sent > 0);
               // What the kitchen has comes back only through a void.
               const voidable = sent > 0 && Boolean(onVoid) && !countDisabled;
               const sentTitle =
                 sent > 0
                   ? t(voidable ? 'kitchenSentVoid' : 'kitchenSentLocked', { count: sent })
                   : undefined;
-              const quantityTitle = labelled
-                ? t('saleLineLabelLocked')
-                : serialLine
-                  ? t('saleLineSerialLocked')
-                  : disabledReason;
+              const quantityTitle = timedLine
+                ? t('timedFailure_timed_line')
+                : labelled
+                  ? t('saleLineLabelLocked')
+                  : serialLine
+                    ? t('saleLineSerialLocked')
+                    : disabledReason;
               const targetId = line.sale_line_id ?? line.id;
               const inputValue =
                 quantities[line.id] ??
@@ -220,6 +224,7 @@ export function OrderLines({
                       ) : null}
                       <LineTrace line={line} />
                       <MenuLineDetail line={line} />
+                      <TimedLineDetail line={line} />
                       {sent > 0 ? (
                         <span className="basket-line-kitchen" title={sentTitle}>
                           <PosIcon name="check" /> {t('kitchenSentBadge', { count: sent })}
@@ -395,7 +400,7 @@ export function OrderLines({
                           </span>
                         );
                       })()}
-                      {line.sale_line_id && (canApplyDiscount || canOverridePrice) ? (
+                      {line.sale_line_id && !timedLine && (canApplyDiscount || canOverridePrice) ? (
                         <LinePriceEditor
                           key={`${line.id}:${line.unit_price ?? line.price}:${line.list_price ?? ''}`}
                           line={line}
@@ -449,7 +454,7 @@ export function OrderLines({
                         type="button"
                         title={sentTitle ?? disabledReason ?? t('removeItem')}
                         aria-label={`${t('removeItem')} ${line.name}`}
-                        disabled={voidable ? false : countDisabled || sent > 0}
+                        disabled={voidable ? false : countDisabled || timedLine || sent > 0}
                         onClick={() =>
                           voidable ? onVoid?.(line) : void run(line.id, () => onRemove(targetId))
                         }
@@ -510,6 +515,41 @@ function sameSelections(line: PosLineItem): PosModifierSelection[] | null {
   const rows = line.modifiers ?? [];
   if (rows.some((row) => row.option_id === null)) return null;
   return toSelections(linePicks(line));
+}
+
+// A play-time line's clock: how long the room was played and, once stopped,
+// the bands it was billed at. Every time is the server's.
+function TimedLineDetail({ line }: { line: PosLineItem }) {
+  const { t, i18n } = useTranslation();
+  const timed = line.timed_session;
+  if (line.kind !== 'timed' || !timed) return null;
+  const clock = (value: string) =>
+    new Date(value).toLocaleTimeString(i18n.language, { hour: '2-digit', minute: '2-digit' });
+  const played = timed.quote?.played_minutes ?? timed.played_minutes ?? 0;
+  const bands = timed.quote?.lines ?? [];
+  return (
+    <span className="basket-line-menu basket-line-timed">
+      <span className="basket-line-label">
+        {timed.resource_name ? `${timed.resource_name} · ` : ''}
+        {t('timedPlayed', { time: t('timedMinutes', { count: played }) })}
+        {timed.status === 'stopped' && timed.stopped_at
+          ? ` · ${t('timedStopped', { time: clock(timed.stopped_at) })}`
+          : ''}
+      </span>
+      {timed.status === 'stopped'
+        ? bands.map((band) => (
+            <span key={`${band.starts_at}:${band.ends_at}`} className="basket-line-label">
+              {band.label ? `${band.label} · ` : ''}
+              {t('timedLine', {
+                minutes: band.minutes,
+                from: clock(band.starts_at),
+                to: clock(band.ends_at),
+              })}
+            </span>
+          ))
+        : null}
+    </span>
+  );
 }
 
 // What the line was sold with: options, combo contents and the note.

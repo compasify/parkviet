@@ -31,6 +31,8 @@ module Spree
             # Parked and canceled tabs never pin serials or lots; a payment in
             # progress keeps holding them until it is resolved.
             Inventory::AllocateTraceability.release!(workspace) if status == 'canceled' || (status == 'parked' && !workspace.snapshot_locked?)
+            # A canceled order frees its rooms: their clocks stop now.
+            Timed::Stop.stop_all!(workspace, staff) if status == 'canceled'
             workspace.update!(operational_status: status, revision: workspace.revision + 1)
             AuditEntry.record!(store: workspace.store, actor: staff, action: "workspace.#{status}", subject: workspace)
             workspace.to_pos

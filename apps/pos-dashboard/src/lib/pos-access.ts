@@ -33,6 +33,7 @@ export type PosPage =
   | 'branch-kitchen'
   | 'branch-floor-plan'
   | 'branch-platforms'
+  | 'branch-rate-plans'
   | 'branch-hardware'
   | 'platform-settlement'
   | 'payment-methods'
@@ -83,6 +84,10 @@ export const canManageKitchen = (access: PosAccess) =>
 export const canManageResources = (access: PosAccess) =>
   canAdminister(access, true) || hasCapability(access, 'pos.resource.manage')
 const runsResources = (access: PosAccess) => access.context?.modules?.resources === true
+// The prices of play time, offered while the branch bills it (`timed_billing`).
+export const canManageRatePlans = (access: PosAccess) =>
+  canAdminister(access, true) || hasCapability(access, 'pos.rate_plan.manage')
+const billsPlayTime = (access: PosAccess) => access.context?.modules?.timed_billing === true
 // Order history is read by any staff member of the branch.
 export const canReadOrders = (access: PosAccess) => (access.context?.capabilities.length ?? 0) > 0
 // The received-funds ledger is read by collectors and resolvers; only
@@ -170,6 +175,8 @@ export function visibleNav(page: PosPage, access: PosAccess) {
   if (page === 'platform-settlement')
     return takesPlatformOrders(access) && canSettlePlatforms(access)
   if (page === 'branch-platforms') return canAdminister(access) || canManageBranch(access)
+  if (page === 'branch-rate-plans')
+    return billsPlayTime(access) && (canAdminister(access) || canManageRatePlans(access))
   // The hardware checklist reads printers, devices and server health.
   if (page === 'branch-hardware') return canAdminister(access) || canManageBranch(access)
   if (page === 'stock-alerts') return runsRecipes(access) && canReadStockAlerts(access)
@@ -255,6 +262,7 @@ export const BRANCH_TABS = [
   { key: 'kitchen', page: 'branch-kitchen', path: '/kitchen' },
   { key: 'floorPlan', page: 'branch-floor-plan', path: '/floor-plan' },
   { key: 'platforms', page: 'branch-platforms', path: '/platforms' },
+  { key: 'ratePlans', page: 'branch-rate-plans', path: '/rate-plans' },
   { key: 'hardware', page: 'branch-hardware', path: '/hardware' },
 ] as const satisfies readonly { key: string; page: PosPage; path: string }[]
 export type BranchTab = (typeof BRANCH_TABS)[number]['key']

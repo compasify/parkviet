@@ -66,6 +66,14 @@ module PosModuleHelpers
     row.update!(store_id: branch.store_id, enabled: enabled, reason: 'spec setup')
   end
 
+  # Keeps a registered module out of reach as if it were still planned, so
+  # the profiles needing it read coming soon: for examples about interests
+  # and refusing coming-soon profiles, now that every shipped one is open.
+  def treat_as_planned(key)
+    allow(Spree::Pos::Modules).to receive(:available?).and_call_original
+    allow(Spree::Pos::Modules).to receive(:available?).with(key).and_return(false)
+  end
+
   def self.enable_profile_modules!(branch)
     keys = Spree::Pos::BusinessProfiles.find(branch.profile_key)&.modules || Spree::Pos::Modules.available_keys
     keys &= Spree::Pos::Modules.available_keys

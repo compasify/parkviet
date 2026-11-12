@@ -7,6 +7,8 @@ import {
 } from '@parkviet/pos-shared/tables';
 import type { CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
+import { isRunning } from '../lib/timed-clock';
+import { TimedClock } from './timed-panel';
 
 // One table on the floor, as a tile in the grid or a shape on the plan. The
 // state is always written out beside its colour.
@@ -15,11 +17,14 @@ export function TableTile({
   selected,
   onSelect,
   style,
+  offsetMs = 0,
 }: {
   table: BoardTable;
   selected: boolean;
   onSelect: (table: BoardTable) => void;
   style?: CSSProperties;
+  // Server clock minus this device's, for a room clock.
+  offsetMs?: number;
 }) {
   const { t, i18n } = useTranslation();
   const state = t(tableStateKey(table.state));
@@ -61,6 +66,12 @@ export function TableTile({
       {table.subtotal != null && table.orders.length > 0 ? (
         <span className="table-tile-total">
           {formatMoney(table.subtotal, table.currency ?? 'VND')}
+        </span>
+      ) : null}
+      {table.timed && isRunning(table.timed) ? (
+        <span className="table-tile-flag table-tile-timed">
+          <TimedClock timed={table.timed} offsetMs={offsetMs} />{' '}
+          {formatMoney(table.timed.quote_amount, table.currency ?? 'VND')}
         </span>
       ) : null}
       {booking ? (

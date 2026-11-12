@@ -17,7 +17,14 @@ module Spree
         ['pack', 'Lốc', 'count', 'chai', 1, 0],
         ['case', 'Thùng', 'count', 'chai', 1, 0]
       ].map(&:freeze).freeze
-      DIMENSIONS = %w[mass volume count].freeze
+      DIMENSIONS = %w[mass volume count time].freeze
+      # Play time: counted in minutes, sold and invoiced in hours.
+      TIME_UNITS = [
+        ['phut', 'Phút', 'time', 'phut', 1, 0],
+        ['gio', 'Giờ', 'time', 'phut', 60, 3]
+      ].map(&:freeze).freeze
+      MINUTE_CODE = 'phut'
+      HOUR_CODE = 'gio'
       CODE_FORMAT = /\A[a-z][a-z0-9_]{0,15}\z/
       SAMPLES_PATH = 'config/pos/sample_units.yml'
 
@@ -47,6 +54,11 @@ module Spree
 
       def self.ensure_defaults!(store)
         create_missing!(store, DEFAULTS)
+      end
+
+      # The minute and the hour a timed line is counted and sold in.
+      def self.ensure_time_units!(store)
+        create_missing!(store, TIME_UNITS)
       end
 
       # Adds the named units (default or sample codes, see

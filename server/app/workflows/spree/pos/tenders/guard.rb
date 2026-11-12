@@ -43,8 +43,11 @@ module Spree
 
         # Payment is only taken while every serial/lot line holds its units:
         # lots are reserved FEFO here and every reservation is held until the
-        # draft completes, parks or cancels.
+        # draft completes, parks or cancels. Every path that takes or settles
+        # a payment passes here, so a running clock is refused here too: play
+        # time is billed only once its clock has stopped.
         def tracked_guard!(workspace)
+          Timed::Guard.stopped_before_payment!(workspace)
           Inventory::AllocateTraceability.ensure!(workspace, hold: true)
         end
       end

@@ -11,11 +11,18 @@ module Spree
       module Open
         module_function
 
-        def call(store:, staff:, key:, editor_id:, branch_id:, resource_id:, guest_count: nil, add_order: false)
+        # Rooms and tables billed by the time played open as `timed`.
+        SERVICE_MODES = %w[dine_in timed].freeze
+
+        def call(store:, staff:, key:, editor_id:, branch_id:, resource_id:, guest_count: nil, add_order: false, service_mode: 'dine_in')
+          service_mode = service_mode.to_s.presence || 'dine_in'
+          raise Conflict.new('The service mode is invalid.', reason: 'service_mode_invalid') unless SERVICE_MODES.include?(service_mode)
+
           editor_digest = Workspace.editor_digest(editor_id)
           add_order = add_order == true || add_order.to_s == 'true'
           payload = { 'command' => 'table.open', 'branch_id' => branch_id.to_s, 'resource_id' => resource_id.to_s,
                       'editor_digest' => editor_digest, 'guest_count' => guest_count&.to_s, 'add_order' => add_order }
+          payload['service_mode'] = service_mode unless service_mode == 'dine_in'
           branch = Branch.locate(Branch.for_store(store), branch_id) || raise(ActiveRecord::RecordNotFound)
           CommandExecutor.call(store: store, actor: staff, key: key, payload: payload, authorize: -> { Guard.serve!(store, staff, branch) }) do
             ModulePolicy.require!(branch, Guard::MODULE)
@@ -32,7 +39,7 @@ module Spree
 
             shift = Guard.booking_shift!(branch)
             workspace = Workspaces::Create.draft!(store: store, staff: staff, shift: shift, editor_digest: editor_digest,
-                                                  service_mode: 'dine_in', resource: resource, guest_count: count,
+                                                  service_mode: service_mode, resource: resource, guest_count: count,
                                                   table_label: Guard.next_label(resource))
             AuditEntry.record!(store: store, actor: staff, action: 'table.open', subject: workspace,
                                metadata: { resource_id: resource.prefixed_id, guest_count: count, table_label: workspace.table_label,

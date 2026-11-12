@@ -15,13 +15,23 @@ export type PosModuleUsage = Record<string, boolean>;
 export type PosCatalogView = 'cards' | 'list';
 
 // The selling screen a profile suggests. menu_grid still needs fnb.menu; the
-// table surfaces (the floor as tiles or as a plan) need fnb.tables; a bar's
-// tab list needs fnb.postpay.
-export type PosSellingSurface = 'catalog' | 'menu_grid' | 'table_grid' | 'floor_plan' | 'tab_list';
+// table surfaces (the floor as tiles, as a plan, or as a board of rooms with
+// their clocks) need fnb.tables; a bar's tab list needs fnb.postpay.
+export type PosSellingSurface =
+  | 'catalog'
+  | 'menu_grid'
+  | 'table_grid'
+  | 'floor_plan'
+  | 'resource_board'
+  | 'tab_list';
 
-export type PosTableSurface = 'table_grid' | 'floor_plan';
+export type PosTableSurface = 'table_grid' | 'floor_plan' | 'resource_board';
 
-export const TABLE_SURFACES: readonly PosTableSurface[] = ['table_grid', 'floor_plan'];
+export const TABLE_SURFACES: readonly PosTableSurface[] = [
+  'table_grid',
+  'floor_plan',
+  'resource_board',
+];
 
 const SELLING_SURFACES: readonly PosSellingSurface[] = [
   'catalog',
@@ -62,6 +72,7 @@ export const LABELLED_MODULES = [
   'fnb.pour_tracking',
   'fnb.meal_accounts',
   'fnb.vehicle_commission',
+  'timed_billing',
 ] as const;
 
 function record(value: unknown): Record<string, unknown> | null {

@@ -77,6 +77,8 @@ module Spree
       MEAL_SPONSOR_ACTION = 'meal_sponsor.charge'
       # A closed coach visit's guest count or commission changed.
       VEHICLE_VISIT_ADJUST_ACTION = 'vehicle_visit.adjust'
+      # A play session's start or end time changed (Timed::EditSegment).
+      TIMED_EDIT_ACTION = 'timed.edit_segment'
 
       def consume!(action:, amount:, currency:, revision:, subject:, requester:)
         raise Conflict, 'Approval subject is required.' unless SUBJECTS.include?(subject.class.name) && subject.persisted?

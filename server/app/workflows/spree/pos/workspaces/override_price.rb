@@ -20,6 +20,7 @@ module Spree
               line = Spree::LineItem.find_by_prefix_id(sale_line_id.to_s)
               line && SaleLine.find_by(workspace: workspace, line_item_id: line.id)
             end
+            Timed::Guard.not_timed!(sale_line, workspace)
             raise ActiveRecord::RecordNotFound if sale_line.nil?
             raise Conflict, 'Price override reason is required.' if reason.to_s.strip.blank? || reason.to_s.length > 200
 

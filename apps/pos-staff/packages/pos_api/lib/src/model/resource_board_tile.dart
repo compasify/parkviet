@@ -6,6 +6,7 @@
 import 'package:pos_api/src/model/resource_board_order.dart';
 import 'package:built_collection/built_collection.dart';
 import 'package:pos_api/src/model/resource_next_reservation.dart';
+import 'package:pos_api/src/model/resource_board_timed.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
 
@@ -14,6 +15,7 @@ part 'resource_board_tile.g.dart';
 /// ResourceBoardTile
 ///
 /// Properties:
+/// * [timed] - The room's clock of play time, when an open order has one.
 /// * [nextReservation] - The table's next active booking in the coming 12 hours.
 /// * [buffetEndsAt] - The earliest buffet end of the table's open orders.
 /// * [id]
@@ -28,7 +30,7 @@ part 'resource_board_tile.g.dart';
 /// * [h]
 /// * [rotation]
 /// * [manualStatus]
-/// * [state] - Strongest first: out_of_service, cleaning (no open order), payment_requested, prebilled, waiting_long (a kitchen item waited past its station's threshold), ordered, occupied, reserved (no open order and a booking starts within the hour), available.
+/// * [state] - Strongest first: out_of_service, cleaning (no open order), payment_requested, prebilled, ending_soon (a running clock is within ten minutes of its planned end), waiting_long (a kitchen item waited past its station's threshold), playing (a clock is running), ordered, occupied, reserved (no open order and a booking starts within the hour), available.
 /// * [guestCount]
 /// * [seatedMinutes] - Minutes since the oldest open order was opened, on the server clock.
 /// * [subtotal]
@@ -39,6 +41,10 @@ part 'resource_board_tile.g.dart';
 @BuiltValue()
 abstract class ResourceBoardTile
     implements Built<ResourceBoardTile, ResourceBoardTileBuilder> {
+  /// The room's clock of play time, when an open order has one.
+  @BuiltValueField(wireName: r'timed')
+  ResourceBoardTimed? get timed;
+
   /// The table's next active booking in the coming 12 hours.
   @BuiltValueField(wireName: r'next_reservation')
   ResourceNextReservation? get nextReservation;
@@ -86,10 +92,10 @@ abstract class ResourceBoardTile
   ResourceBoardTileManualStatusEnum get manualStatus;
   // enum manualStatusEnum {  available,  cleaning,  out_of_service,  };
 
-  /// Strongest first: out_of_service, cleaning (no open order), payment_requested, prebilled, waiting_long (a kitchen item waited past its station's threshold), ordered, occupied, reserved (no open order and a booking starts within the hour), available.
+  /// Strongest first: out_of_service, cleaning (no open order), payment_requested, prebilled, ending_soon (a running clock is within ten minutes of its planned end), waiting_long (a kitchen item waited past its station's threshold), playing (a clock is running), ordered, occupied, reserved (no open order and a booking starts within the hour), available.
   @BuiltValueField(wireName: r'state')
   ResourceBoardTileStateEnum get state;
-  // enum stateEnum {  available,  reserved,  occupied,  ordered,  waiting_long,  payment_requested,  prebilled,  cleaning,  out_of_service,  };
+  // enum stateEnum {  available,  reserved,  occupied,  ordered,  waiting_long,  playing,  ending_soon,  payment_requested,  prebilled,  cleaning,  out_of_service,  };
 
   @BuiltValueField(wireName: r'guest_count')
   int? get guestCount;
@@ -139,6 +145,13 @@ class _$ResourceBoardTileSerializer
     ResourceBoardTile object, {
     FullType specifiedType = FullType.unspecified,
   }) sync* {
+    yield r'timed';
+    yield object.timed == null
+        ? null
+        : serializers.serialize(
+            object.timed,
+            specifiedType: const FullType.nullable(ResourceBoardTimed),
+          );
     yield r'next_reservation';
     yield object.nextReservation == null
         ? null
@@ -288,6 +301,14 @@ class _$ResourceBoardTileSerializer
       final key = serializedList[i] as String;
       final value = serializedList[i + 1];
       switch (key) {
+        case r'timed':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(ResourceBoardTimed),
+          ) as ResourceBoardTimed?;
+          if (valueDes == null) continue;
+          result.timed.replace(valueDes);
+          break;
         case r'next_reservation':
           final valueDes = serializers.deserialize(
             value,
@@ -544,7 +565,7 @@ class ResourceBoardTileManualStatusEnum extends EnumClass {
       _$resourceBoardTileManualStatusEnumValueOf(name);
 }
 
-/// Strongest first: out_of_service, cleaning (no open order), payment_requested, prebilled, waiting_long (a kitchen item waited past its station's threshold), ordered, occupied, reserved (no open order and a booking starts within the hour), available.
+/// Strongest first: out_of_service, cleaning (no open order), payment_requested, prebilled, ending_soon (a running clock is within ten minutes of its planned end), waiting_long (a kitchen item waited past its station's threshold), playing (a clock is running), ordered, occupied, reserved (no open order and a booking starts within the hour), available.
 class ResourceBoardTileStateEnum extends EnumClass {
   @BuiltValueEnumConst(wireName: r'available')
   static const ResourceBoardTileStateEnum available =
@@ -561,6 +582,12 @@ class ResourceBoardTileStateEnum extends EnumClass {
   @BuiltValueEnumConst(wireName: r'waiting_long')
   static const ResourceBoardTileStateEnum waitingLong =
       _$resourceBoardTileStateEnum_waitingLong;
+  @BuiltValueEnumConst(wireName: r'playing')
+  static const ResourceBoardTileStateEnum playing =
+      _$resourceBoardTileStateEnum_playing;
+  @BuiltValueEnumConst(wireName: r'ending_soon')
+  static const ResourceBoardTileStateEnum endingSoon =
+      _$resourceBoardTileStateEnum_endingSoon;
   @BuiltValueEnumConst(wireName: r'payment_requested')
   static const ResourceBoardTileStateEnum paymentRequested =
       _$resourceBoardTileStateEnum_paymentRequested;

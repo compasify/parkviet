@@ -10,7 +10,9 @@ export const TABLE_STATES = [
   'reserved',
   'occupied',
   'ordered',
+  'playing',
   'waiting_long',
+  'ending_soon',
   'payment_requested',
   'prebilled',
   'cleaning',
@@ -59,6 +61,21 @@ export type NextReservation = {
   party_size: number;
 };
 
+// The clock of a room or billiard table (`timed_billing`): the running one,
+// else the last one stopped and not paid yet. Times are the server's.
+export type BoardTimed = {
+  id: string;
+  workspace_id: string | null;
+  status: 'running' | 'paused' | 'stopped';
+  started_at: string;
+  stopped_at: string | null;
+  planned_end_at: string | null;
+  played_minutes: number;
+  // The price up to the board's read (running) or as billed (stopped).
+  quote_amount: string;
+  ending_soon: boolean;
+};
+
 export type Placement = { x: number; y: number; w: number; h: number; rotation: number };
 
 export type BoardTable = Placement & {
@@ -79,6 +96,7 @@ export type BoardTable = Placement & {
   orders: BoardOrder[];
   next_reservation: NextReservation | null;
   buffet_ends_at: string | null;
+  timed: BoardTimed | null;
 };
 
 export type ResourceBoard = {
@@ -193,6 +211,26 @@ function table(value: unknown): BoardTable | null {
     }),
     next_reservation: nextReservation(source.next_reservation),
     buffet_ends_at: text(source.buffet_ends_at),
+    timed: boardTimed(source.timed),
+  };
+}
+
+const TIMED_STATUSES = ['running', 'paused', 'stopped'] as const;
+
+function boardTimed(value: unknown): BoardTimed | null {
+  const source = record(value);
+  if (!source || typeof source.id !== 'string' || typeof source.started_at !== 'string')
+    return null;
+  return {
+    id: source.id,
+    workspace_id: text(source.workspace_id),
+    status: oneOf(TIMED_STATUSES, source.status, 'stopped'),
+    started_at: source.started_at,
+    stopped_at: text(source.stopped_at),
+    planned_end_at: text(source.planned_end_at),
+    played_minutes: int(source.played_minutes),
+    quote_amount: text(source.quote_amount) ?? '0',
+    ending_soon: source.ending_soon === true,
   };
 }
 

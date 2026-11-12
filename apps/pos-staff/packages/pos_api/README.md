@@ -520,6 +520,7 @@ Class | Method | HTTP request | Description
  - [ResourceBoardOrder](doc/ResourceBoardOrder.md)
  - [ResourceBoardResult](doc/ResourceBoardResult.md)
  - [ResourceBoardTile](doc/ResourceBoardTile.md)
+ - [ResourceBoardTimed](doc/ResourceBoardTimed.md)
  - [ResourceInput](doc/ResourceInput.md)
  - [ResourceList](doc/ResourceList.md)
  - [ResourceManualStatusInput](doc/ResourceManualStatusInput.md)

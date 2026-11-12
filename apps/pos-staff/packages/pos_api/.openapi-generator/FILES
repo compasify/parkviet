@@ -305,6 +305,7 @@ lib/src/model/resource_board_area.dart
 lib/src/model/resource_board_order.dart
 lib/src/model/resource_board_result.dart
 lib/src/model/resource_board_tile.dart
+lib/src/model/resource_board_timed.dart
 lib/src/model/resource_input.dart
 lib/src/model/resource_list.dart
 lib/src/model/resource_manual_status_input.dart

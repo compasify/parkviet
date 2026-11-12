@@ -86,6 +86,7 @@ import { Route as AuthenticatedStoreIdBranchesBranchIdPaymentsRouteImport } from
 import { Route as AuthenticatedStoreIdBranchesBranchIdPlatformsRouteImport } from './routes/_authenticated/$storeId/branches/$branchId/platforms'
 import { Route as AuthenticatedStoreIdBranchesBranchIdPrintingRouteImport } from './routes/_authenticated/$storeId/branches/$branchId/printing'
 import { Route as AuthenticatedStoreIdBranchesBranchIdProductsRouteImport } from './routes/_authenticated/$storeId/branches/$branchId/products'
+import { Route as AuthenticatedStoreIdBranchesBranchIdRatePlansRouteImport } from './routes/_authenticated/$storeId/branches/$branchId/rate-plans'
 import { Route as AuthenticatedStoreIdBranchesBranchIdRegistersRouteImport } from './routes/_authenticated/$storeId/branches/$branchId/registers'
 import { Route as AuthenticatedStoreIdBranchesBranchIdStaffRouteImport } from './routes/_authenticated/$storeId/branches/$branchId/staff'
 import { Route as AuthenticatedStoreIdSettingsReceiptTemplatesIndexRouteImport } from './routes/_authenticated/$storeId/settings/receipt-templates/index'
@@ -547,6 +548,12 @@ const AuthenticatedStoreIdBranchesBranchIdProductsRoute =
     path: '/products',
     getParentRoute: () => AuthenticatedStoreIdBranchesBranchIdRoute,
   } as any)
+const AuthenticatedStoreIdBranchesBranchIdRatePlansRoute =
+  AuthenticatedStoreIdBranchesBranchIdRatePlansRouteImport.update({
+    id: '/rate-plans',
+    path: '/rate-plans',
+    getParentRoute: () => AuthenticatedStoreIdBranchesBranchIdRoute,
+  } as any)
 const AuthenticatedStoreIdBranchesBranchIdRegistersRoute =
   AuthenticatedStoreIdBranchesBranchIdRegistersRouteImport.update({
     id: '/registers',
@@ -648,6 +655,7 @@ export interface FileRoutesByFullPath {
   '/$storeId/branches/$branchId/platforms': typeof AuthenticatedStoreIdBranchesBranchIdPlatformsRoute
   '/$storeId/branches/$branchId/printing': typeof AuthenticatedStoreIdBranchesBranchIdPrintingRoute
   '/$storeId/branches/$branchId/products': typeof AuthenticatedStoreIdBranchesBranchIdProductsRoute
+  '/$storeId/branches/$branchId/rate-plans': typeof AuthenticatedStoreIdBranchesBranchIdRatePlansRoute
   '/$storeId/branches/$branchId/registers': typeof AuthenticatedStoreIdBranchesBranchIdRegistersRoute
   '/$storeId/branches/$branchId/staff': typeof AuthenticatedStoreIdBranchesBranchIdStaffRoute
   '/$storeId/settings/receipt-templates/$templateId': typeof AuthenticatedStoreIdSettingsReceiptTemplatesTemplateIdRoute
@@ -719,6 +727,7 @@ export interface FileRoutesByTo {
   '/$storeId/branches/$branchId/platforms': typeof AuthenticatedStoreIdBranchesBranchIdPlatformsRoute
   '/$storeId/branches/$branchId/printing': typeof AuthenticatedStoreIdBranchesBranchIdPrintingRoute
   '/$storeId/branches/$branchId/products': typeof AuthenticatedStoreIdBranchesBranchIdProductsRoute
+  '/$storeId/branches/$branchId/rate-plans': typeof AuthenticatedStoreIdBranchesBranchIdRatePlansRoute
   '/$storeId/branches/$branchId/registers': typeof AuthenticatedStoreIdBranchesBranchIdRegistersRoute
   '/$storeId/branches/$branchId/staff': typeof AuthenticatedStoreIdBranchesBranchIdStaffRoute
   '/$storeId/settings/receipt-templates/$templateId': typeof AuthenticatedStoreIdSettingsReceiptTemplatesTemplateIdRoute
@@ -803,6 +812,7 @@ export interface FileRoutesById {
   '/_authenticated/$storeId/branches/$branchId/platforms': typeof AuthenticatedStoreIdBranchesBranchIdPlatformsRoute
   '/_authenticated/$storeId/branches/$branchId/printing': typeof AuthenticatedStoreIdBranchesBranchIdPrintingRoute
   '/_authenticated/$storeId/branches/$branchId/products': typeof AuthenticatedStoreIdBranchesBranchIdProductsRoute
+  '/_authenticated/$storeId/branches/$branchId/rate-plans': typeof AuthenticatedStoreIdBranchesBranchIdRatePlansRoute
   '/_authenticated/$storeId/branches/$branchId/registers': typeof AuthenticatedStoreIdBranchesBranchIdRegistersRoute
   '/_authenticated/$storeId/branches/$branchId/staff': typeof AuthenticatedStoreIdBranchesBranchIdStaffRoute
   '/_authenticated/$storeId/settings/receipt-templates/$templateId': typeof AuthenticatedStoreIdSettingsReceiptTemplatesTemplateIdRoute
@@ -887,6 +897,7 @@ export interface FileRouteTypes {
     | '/$storeId/branches/$branchId/platforms'
     | '/$storeId/branches/$branchId/printing'
     | '/$storeId/branches/$branchId/products'
+    | '/$storeId/branches/$branchId/rate-plans'
     | '/$storeId/branches/$branchId/registers'
     | '/$storeId/branches/$branchId/staff'
     | '/$storeId/settings/receipt-templates/$templateId'
@@ -958,6 +969,7 @@ export interface FileRouteTypes {
     | '/$storeId/branches/$branchId/platforms'
     | '/$storeId/branches/$branchId/printing'
     | '/$storeId/branches/$branchId/products'
+    | '/$storeId/branches/$branchId/rate-plans'
     | '/$storeId/branches/$branchId/registers'
     | '/$storeId/branches/$branchId/staff'
     | '/$storeId/settings/receipt-templates/$templateId'
@@ -1041,6 +1053,7 @@ export interface FileRouteTypes {
     | '/_authenticated/$storeId/branches/$branchId/platforms'
     | '/_authenticated/$storeId/branches/$branchId/printing'
     | '/_authenticated/$storeId/branches/$branchId/products'
+    | '/_authenticated/$storeId/branches/$branchId/rate-plans'
     | '/_authenticated/$storeId/branches/$branchId/registers'
     | '/_authenticated/$storeId/branches/$branchId/staff'
     | '/_authenticated/$storeId/settings/receipt-templates/$templateId'
@@ -1595,6 +1608,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStoreIdBranchesBranchIdProductsRouteImport
       parentRoute: typeof AuthenticatedStoreIdBranchesBranchIdRoute
     }
+    '/_authenticated/$storeId/branches/$branchId/rate-plans': {
+      id: '/_authenticated/$storeId/branches/$branchId/rate-plans'
+      path: '/rate-plans'
+      fullPath: '/$storeId/branches/$branchId/rate-plans'
+      preLoaderRoute: typeof AuthenticatedStoreIdBranchesBranchIdRatePlansRouteImport
+      parentRoute: typeof AuthenticatedStoreIdBranchesBranchIdRoute
+    }
     '/_authenticated/$storeId/branches/$branchId/registers': {
       id: '/_authenticated/$storeId/branches/$branchId/registers'
       path: '/registers'
@@ -1637,6 +1657,7 @@ interface AuthenticatedStoreIdBranchesBranchIdRouteChildren {
   AuthenticatedStoreIdBranchesBranchIdPlatformsRoute: typeof AuthenticatedStoreIdBranchesBranchIdPlatformsRoute
   AuthenticatedStoreIdBranchesBranchIdPrintingRoute: typeof AuthenticatedStoreIdBranchesBranchIdPrintingRoute
   AuthenticatedStoreIdBranchesBranchIdProductsRoute: typeof AuthenticatedStoreIdBranchesBranchIdProductsRoute
+  AuthenticatedStoreIdBranchesBranchIdRatePlansRoute: typeof AuthenticatedStoreIdBranchesBranchIdRatePlansRoute
   AuthenticatedStoreIdBranchesBranchIdRegistersRoute: typeof AuthenticatedStoreIdBranchesBranchIdRegistersRoute
   AuthenticatedStoreIdBranchesBranchIdStaffRoute: typeof AuthenticatedStoreIdBranchesBranchIdStaffRoute
   AuthenticatedStoreIdBranchesBranchIdIndexRoute: typeof AuthenticatedStoreIdBranchesBranchIdIndexRoute
@@ -1664,6 +1685,8 @@ const AuthenticatedStoreIdBranchesBranchIdRouteChildren: AuthenticatedStoreIdBra
       AuthenticatedStoreIdBranchesBranchIdPrintingRoute,
     AuthenticatedStoreIdBranchesBranchIdProductsRoute:
       AuthenticatedStoreIdBranchesBranchIdProductsRoute,
+    AuthenticatedStoreIdBranchesBranchIdRatePlansRoute:
+      AuthenticatedStoreIdBranchesBranchIdRatePlansRoute,
     AuthenticatedStoreIdBranchesBranchIdRegistersRoute:
       AuthenticatedStoreIdBranchesBranchIdRegistersRoute,
     AuthenticatedStoreIdBranchesBranchIdStaffRoute:

@@ -16,6 +16,7 @@ const GROUPS: { key: string; capabilities: Capability[] }[] = [
       'pos.table.serve',
       'pos.reservation.manage',
       'pos.vehicle_visit.operate',
+      'pos.timed.operate',
     ],
   },
   {
@@ -40,6 +41,8 @@ const GROUPS: { key: string; capabilities: Capability[] }[] = [
       'pos.resource.manage',
       'pos.meal_account.manage',
       'pos.vehicle_visit.manage',
+      'pos.timed.edit',
+      'pos.rate_plan.manage',
     ],
   },
   { key: 'reports', capabilities: ['pos.report.read', 'pos.report.export'] },

@@ -41,6 +41,7 @@ import {
   tableOrderName,
   tableOrderOf,
 } from '../lib/tables';
+import { canRunClock } from '../lib/timed-clock';
 import { VEHICLE_COMMISSION_MODULE } from '../lib/vehicle-visits';
 import { workspaceHasContent, workspaceIsSettled, workspacePhase } from '../lib/workspace-content';
 import { createWorkspaceSerializer } from '../lib/workspace-serializer';
@@ -1019,6 +1020,11 @@ export function WorkspaceTabs() {
             selectOrder(created.id);
           }}
           onSelectOrder={selectOrder}
+          canTime={canRunClock(data)}
+          onStartClock={async (table) => {
+            const started = await workspaces.startClock(table.id, table.orders.length === 0);
+            selectOrder(started.id);
+          }}
         />
       ) : (
         <>

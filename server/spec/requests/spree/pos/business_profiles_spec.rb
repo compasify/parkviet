@@ -36,10 +36,11 @@ RSpec.describe 'POS business profiles', type: :request do
     it 'serves the catalog to any POS session, including cashiers without topology rights' do
       data = get_pos(staff_with(%w[read_pos_orders]), 'business_profiles')['data']
       expect(response).to have_http_status(:ok)
-      expect(data['version']).to eq(2)
+      expect(data['version']).to eq(3)
       expect(data['profiles'].size).to eq(19)
-      expect(data['profiles'].map { |row| row['status'] }.tally).to eq('available' => 18, 'coming_soon' => 1)
-      expect(data['profiles'].select { |row| row['status'] == 'coming_soon' }.pluck('key')).to contain_exactly('karaoke_bida')
+      expect(data['profiles'].map { |row| row['status'] }.tally).to eq('available' => 19)
+      expect(data['profiles'].find { |row| row['key'] == 'karaoke_bida' }).
+        to include('display' => { 'surface' => 'resource_board' }, 'status' => 'available')
       expect(data['profiles'].find { |row| row['key'] == 'quan_an' }['optional_modules']).
         to eq(%w[resources fnb.tables fnb.postpay fnb.service_charge])
       expect(data['profiles'].find { |row| row['key'] == 'nha_hang' }).
@@ -58,7 +59,8 @@ RSpec.describe 'POS business profiles', type: :request do
       )
       expect(data['modules']).to include(
         { 'key' => 'retail.measured', 'group' => 'retail', 'status' => 'available', 'depends_on' => ['retail.units'] },
-        { 'key' => 'timed_billing', 'group' => 'fnb', 'status' => 'planned', 'depends_on' => [] }
+        { 'key' => 'timed_billing', 'group' => 'fnb', 'status' => 'available', 'depends_on' => ['resources', 'fnb.tables'] },
+        { 'key' => 'resources.iot_relay', 'group' => 'fnb', 'status' => 'planned', 'depends_on' => [] }
       )
 
       get_pos(staff_with(%w[write_pos_topology]), 'business_profiles')
@@ -137,7 +139,7 @@ RSpec.describe 'POS business profiles', type: :request do
       expect(response).to have_http_status(:ok)
       expect(context['modules']).to eq('retail.units' => true, 'retail.measured' => false, 'retail.traceability' => false,
                                        'fnb.menu' => false, 'fnb.recipes' => false, 'fnb.kitchen' => false, 'fnb.order_number' => false, 'fnb.cup_label' => false, 'fnb.delivery_platforms' => false, 'resources' => false, 'fnb.tables' => false, 'fnb.postpay' => false, 'fnb.service_charge' => false,
-                                     'fnb.reservations' => false, 'fnb.bottle_keep' => false, 'fnb.pour_tracking' => false, 'fnb.meal_accounts' => false, 'fnb.vehicle_commission' => false)
+                                     'fnb.reservations' => false, 'fnb.bottle_keep' => false, 'fnb.pour_tracking' => false, 'fnb.meal_accounts' => false, 'fnb.vehicle_commission' => false, 'timed_billing' => false)
       expect(context['profile']).to eq('key' => 'khac', 'version' => 1, 'display' => { 'catalog_view' => 'cards' })
       expect(context['branches'].find { |row| row['id'] == branch.prefixed_id }).
         to include('profile_key' => 'khac', 'profile_version' => 1)

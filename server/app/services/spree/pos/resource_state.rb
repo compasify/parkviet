@@ -7,13 +7,18 @@ module Spree
     # here is stored except a table's cleaning / out-of-service mark.
     #
     # States, strongest first: out_of_service, cleaning (no open order),
-    # payment_requested, prebilled, waiting_long (a kitchen item waited past
-    # its station's late threshold), ordered (sent to the kitchen),
-    # occupied, available. A fixed number of queries whatever the number of
-    # tables: areas, tables, open orders (with the database clock), and only
-    # when orders are open, their kitchen items, payment requests and pre-bills.
+    # payment_requested, prebilled, ending_soon (a clock's planned end is
+    # near), waiting_long (a kitchen item waited past its station's late
+    # threshold), playing (a clock runs in the room), ordered (sent to the
+    # kitchen), occupied, available. A fixed number of queries whatever the
+    # number of tables: areas, tables, open orders (with the database clock),
+    # and only when orders are open, their kitchen items, payment requests and
+    # pre-bills; and only when they have clocks, the clocks and their prices.
     class ResourceState
-      STATES = %w[available reserved occupied ordered waiting_long payment_requested prebilled cleaning out_of_service].freeze
+      STATES = %w[available reserved occupied ordered playing waiting_long ending_soon payment_requested prebilled cleaning
+                  out_of_service].freeze
+      # A room shows ending soon this long before its clock's planned end.
+      ENDING_SOON = 10.minutes
       # A free table shows eserved this long before its next booking.
       RESERVED_AHEAD = 60.minutes
       # How far ahead a table's next booking is shown on its tile.
@@ -36,13 +41,14 @@ module Spree
         orders = open_orders
         now = @now || Workspace.database_now
         by_resource = orders.group_by { |row| row[:resource_id] }
+        clocks = timed_by_resource(orders, now)
         {
           branch_id: branch.prefixed_id,
           server_now: now.iso8601,
           areas: areas.map do |area|
             { id: area.prefixed_id, name: area.name, position: area.position, floor_width: area.floor_width, floor_height: area.floor_height }
           end,
-          resources: resources.map { |resource| tile(resource, area_refs, by_resource.fetch(resource.id, []), now) }
+          resources: resources.map { |resource| tile(resource, area_refs, by_resource.fetch(resource.id, []), now, clocks[resource.id]) }
         }
       end
 
@@ -54,7 +60,7 @@ module Spree
         rows = Workspace.where(branch_id: branch.id, operational_status: Workspace::OPEN_STATUSES).where.not(resource_id: nil).
                joins(:order).order(:id).
                pluck(:id, :resource_id, :table_label, :guest_count, :revision, :created_at, :operational_status,
-                     'spree_orders.total', 'spree_orders.currency', Arel.sql(BUFFET_ENDS), Arel.sql('clock_timestamp()'))
+                     'spree_orders.total', 'spree_orders.currency', Arel.sql(BUFFET_ENDS), Arel.sql(HAS_CLOCK), Arel.sql('clock_timestamp()'))
         return [] if rows.empty?
 
         @now = rows.first.last
@@ -62,13 +68,36 @@ module Spree
         kitchen = kitchen_by_workspace(ids)
         requests = PaymentRequest.open.where(workspace_id: ids).pluck(:workspace_id).to_set
         prebills = latest_prebills(ids)
-        rows.map do |id, resource_id, label, guests, revision, created_at, status, total, currency, buffet_ends, _now|
+        rows.map do |id, resource_id, label, guests, revision, created_at, status, total, currency, buffet_ends, clock, _now|
           print = prebills[id]
           { id: id, resource_id: resource_id, table_label: label, guest_count: guests, revision: revision, created_at: created_at,
             status: status, total: BigDecimal(total.to_s), currency: currency, kitchen: kitchen[id],
-            payment_requested: requests.include?(id), buffet_ends_at: buffet_ends,
+            payment_requested: requests.include?(id), buffet_ends_at: buffet_ends, clock: clock == true,
             prebilled: print && print[:status] == 'current' && print[:revision] == revision,
             edited_after_prebill: print.present? && !(print[:status] == 'current' && print[:revision] == revision) }
+        end
+      end
+
+      # The clock of each room with an open order: the running one, else the
+      # last one stopped and not paid yet, with its quote up to now.
+      def timed_by_resource(orders, now)
+        ids = orders.select { |row| row[:clock] }.map { |row| row[:id] }
+        return {} if ids.empty?
+
+        sessions = TimedSession.where(workspace_id: ids).
+                   includes(:branch, :resource, :timed_quote_lines, timed_segments: %i[resource rate_plan]).order(:id).to_a
+        return {} if sessions.empty?
+
+        book = Timed::Sessions.book_for(branch, sessions, now)
+        sessions.group_by(&:resource_id).transform_values do |list|
+          session = list.reverse.find(&:active?) || list.last
+          quote = session.active? ? Timed::Quote.call(session, now: now, book: book) : nil
+          { id: session.prefixed_id, workspace_id: workspace_ref(session.workspace_id), status: session.status,
+            started_at: session.started_at.iso8601, stopped_at: session.stopped_at&.iso8601,
+            planned_end_at: session.planned_end_at&.iso8601,
+            played_minutes: quote ? quote.played_minutes : session.played_minutes,
+            quote_amount: (quote ? quote.amount : session.amount || BigDecimal('0')).to_s('F'),
+            ending_soon: session.active? && session.planned_end_at.present? && session.planned_end_at <= now + ENDING_SOON }
         end
       end
 
@@ -104,6 +133,10 @@ module Spree
            AND rr.starts_at < (clock_timestamp() AT TIME ZONE 'UTC') + interval '#{BOOKING_WINDOW}'
          ORDER BY rr.starts_at LIMIT 1) AS next_booking
       SQL
+      # Whether an order has a clock, read with the orders.
+      HAS_CLOCK = <<~SQL.squish.freeze
+        EXISTS (SELECT 1 FROM spree_pos_timed_sessions ts WHERE ts.workspace_id = spree_pos_workspaces.id)
+      SQL
       # When the earliest buffet ticket of an order runs out, read with the orders.
       BUFFET_ENDS = <<~SQL.squish.freeze
         (SELECT MIN(sl.created_at + make_interval(mins => bt.duration_minutes)) FROM spree_pos_sale_lines sl
@@ -120,7 +153,7 @@ module Spree
           guest_name: data['guest_name'], party_size: data['party_size'] }
       end
 
-      def tile(resource, area_refs, orders, now)
+      def tile(resource, area_refs, orders, now, timed = nil)
         oldest = orders.map { |row| row[:created_at] }.min
         guests = orders.filter_map { |row| row[:guest_count] }
         booking = booking_of(resource)
@@ -129,7 +162,8 @@ module Spree
           id: resource.prefixed_id, area_id: area_refs[resource.area_id], name: resource.name, kind: resource.kind,
           capacity: resource.capacity, shape: resource.shape, x: resource.x, y: resource.y, w: resource.w, h: resource.h,
           rotation: resource.rotation, manual_status: resource.manual_status,
-          state: state_of(resource, orders, booking, now),
+          state: state_of(resource, orders, booking, now, timed),
+          timed: timed,
           next_reservation: booking, buffet_ends_at: buffet&.iso8601,
           guest_count: guests.empty? ? nil : guests.sum,
           seated_minutes: oldest && [((now - oldest) / 60).floor, 0].max,
@@ -152,7 +186,7 @@ module Spree
         "#{Workspace._prefix_id_prefix}_#{Spree::PrefixedId::SQIDS.encode([id])}"
       end
 
-      def state_of(resource, orders, booking = nil, now = nil)
+      def state_of(resource, orders, booking = nil, now = nil, timed = nil)
         return 'out_of_service' if resource.manual_status == 'out_of_service'
         if orders.empty?
           return 'cleaning' if resource.manual_status == 'cleaning'
@@ -162,7 +196,9 @@ module Spree
         end
         return 'payment_requested' if orders.any? { |row| row[:payment_requested] }
         return 'prebilled' if orders.any? { |row| row[:prebilled] }
+        return 'ending_soon' if timed&.dig(:ending_soon)
         return 'waiting_long' if orders.any? { |row| row[:kitchen]&.dig(:late) }
+        return 'playing' if timed && TimedSession::ACTIVE_STATUSES.include?(timed[:status])
         return 'ordered' if orders.any? { |row| row[:kitchen]&.dig(:sent) }
 
         'occupied'

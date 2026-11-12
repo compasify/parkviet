@@ -113,6 +113,8 @@ module Spree
         sale_lines = SaleLine.where(workspace_id: workspace.id).includes(:line_modifiers, :line_components).index_by(&:line_item_id)
         @traces = TraceAllocation.sold.where(sale_line_id: sale_lines.values.map(&:id)).includes(:serial_unit, :inventory_lot).
                   order(:id).group_by(&:sale_line_id)
+        timed_ids = sale_lines.values.select { |row| row.kind == Timed::Lines::KIND }.map(&:id)
+        @timed = timed_ids.empty? ? {} : TimedSession.where(sale_line_id: timed_ids).includes(:resource, :timed_quote_lines).index_by(&:sale_line_id)
         units = unit_names(workspace.store, sale_lines.values.flat_map { |row| [row.sale_unit_code, row.base_unit_code] })
         lines = order.line_items.includes(:discounts, variant: :product).sort_by(&:id).map do |line|
           sale_line(line, sale_lines[line.id], units)
@@ -158,7 +160,26 @@ module Spree
           'unit_price' => money(sale_line.unit_price),
           'conversion' => converted ? "#{quantity} #{sale_unit} = #{sale_line.base_quantity} #{base_unit}" : nil,
           'trace' => trace(sale_line)
-        ).merge(menu_details(sale_line))
+        ).merge(menu_details(sale_line)).merge(timed_details(sale_line))
+      end
+
+      # Play time: the room, time in and out, the minutes billed and the
+      # price of each time band. Other lines carry none of the keys.
+      def timed_details(sale_line)
+        session = sale_line.kind == Timed::Lines::KIND && @timed[sale_line.id]
+        return {} unless session
+
+        {
+          'timed' => {
+            'resource' => session.resource.name, 'started_at' => session.started_at.iso8601, 'stopped_at' => session.stopped_at&.iso8601,
+            'played_minutes' => session.played_minutes, 'billed_minutes' => session.billed_minutes,
+            'hours' => Timed::Lines.hours(session.billed_minutes.to_i).to_s('F'),
+            'bands' => session.timed_quote_lines.map do |row|
+              { 'label' => row.label, 'starts_at' => row.starts_at.iso8601, 'ends_at' => row.ends_at.iso8601, 'minutes' => row.minutes,
+                'price_per_hour' => money(row.price_per_hour), 'surcharge_percent' => row.surcharge_percent.to_s('F'), 'amount' => money(row.amount) }
+            end
+          }
+        }
       end
 
       # Options, combo contents and note of a menu line, printed as detail

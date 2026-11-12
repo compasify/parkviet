@@ -853,6 +853,12 @@ kbd { padding: var(--pos-s1); border: 1px solid var(--pos-border); border-radius
 .table-tile-ordered .table-tile-state, .table-state-badge.table-tile-ordered { background: var(--pos-blue); color: #fff; }
 .pos-layout .table-tile-waiting_long { border-left-color: #d29a1e; }
 .table-tile-waiting_long .table-tile-state, .table-state-badge.table-tile-waiting_long { background: #fff4d9; color: var(--pos-warning); }
+.pos-layout .table-tile-playing { border-left-color: #2f8f5b; }
+.table-tile-playing .table-tile-state, .table-state-badge.table-tile-playing { background: #2f8f5b; color: #fff; }
+.pos-layout .table-tile-ending_soon { border-left-color: #c2410c; }
+.table-tile-ending_soon .table-tile-state, .table-state-badge.table-tile-ending_soon { background: #ffedd5; color: #9a3412; }
+.table-tile-timed .timed-clock, .timed-panel-clock .timed-clock { font-variant-numeric: tabular-nums; font-weight: 600; }
+.timed-panel { display: grid; gap: 6px; margin: 8px 0; }
 .pos-layout .table-tile-payment_requested { border-left-color: var(--pos-danger); }
 .table-tile-payment_requested .table-tile-state, .table-state-badge.table-tile-payment_requested { background: #fff0ee; color: var(--pos-danger); }
 .pos-layout .table-tile-prebilled { border-left-color: #6b4fa8; }

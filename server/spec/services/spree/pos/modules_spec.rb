@@ -3,7 +3,7 @@
 # What boot registers for the F&B profiles that open first: every module they
 # need has code, the registry the initializer built passes its own checks
 # (dependencies registered and available, no cycle), and only profiles that
-# still need planned modules stay coming soon.
+# still need planned modules stay coming soon (none of the shipped ones now).
 RSpec.describe Spree::Pos::Modules do
   wave_one = %w[fnb.menu fnb.kitchen fnb.order_number fnb.cup_label fnb.recipes]
 
@@ -16,13 +16,14 @@ RSpec.describe Spree::Pos::Modules do
     end
   end
 
-  it 'registers resources, tables, pay-later and service charge, and keeps timed billing planned' do
-    %w[resources fnb.tables fnb.postpay fnb.service_charge].each do |key|
+  it 'registers resources, tables, pay-later, service charge and timed billing, and keeps relays planned' do
+    %w[resources fnb.tables fnb.postpay fnb.service_charge timed_billing].each do |key|
       expect(described_class.find(key).status).to eq('available'), key
       expect(described_class.find(key).entrypoints).not_to be_empty, key
     end
     expect(described_class.find('fnb.tables').depends_on).to eq(['resources'])
-    expect(described_class.find('timed_billing').status).to eq('planned')
+    expect(described_class.find('timed_billing').depends_on).to eq(['resources', 'fnb.tables'])
+    expect(described_class.find('resources.iot_relay').status).to eq('planned')
   end
 
   it 'passes the boot checks with the registry as registered' do
@@ -33,9 +34,9 @@ RSpec.describe Spree::Pos::Modules do
     end
   end
 
-  it 'opens the first- and second-wave profiles and keeps karaoke and billiards coming soon' do
+  it 'opens every F&B profile, karaoke and billiards included' do
     profiles = Spree::Pos::BusinessProfiles
-    expect(%w[cafe_tra_sua quan_an cang_tin_tram_dung nha_hang bar_pub_club].map { |key| profiles.fetch!(key).status }).to all(eq('available'))
-    expect(profiles.fetch!('karaoke_bida').status).to eq('coming_soon')
+    keys = %w[cafe_tra_sua quan_an cang_tin_tram_dung nha_hang bar_pub_club karaoke_bida]
+    expect(keys.map { |key| profiles.fetch!(key).status }).to all(eq('available'))
   end
 end

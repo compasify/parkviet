@@ -7600,8 +7600,13 @@ components:
       type: object
       additionalProperties: false
       required: [id, area_id, name, kind, capacity, shape, x, y, w, h, rotation, manual_status, state, guest_count, seated_minutes, subtotal, currency, payment_requested, edited_after_prebill, orders,
-                 next_reservation, buffet_ends_at]
+                 next_reservation, buffet_ends_at, timed]
       properties:
+        timed:
+          description: The room's clock of play time, when an open order has one.
+          oneOf:
+            - $ref: '#/components/schemas/ResourceBoardTimed'
+            - type: 'null'
         next_reservation:
           description: The table's next active booking in the coming 12 hours.
           oneOf:
@@ -7640,12 +7645,14 @@ components:
           enum: [available, cleaning, out_of_service]
         state:
           type: string
-          enum: [available, reserved, occupied, ordered, waiting_long, payment_requested, prebilled, cleaning, out_of_service]
+          enum: [available, reserved, occupied, ordered, waiting_long, playing, ending_soon, payment_requested, prebilled, cleaning, out_of_service]
           description: >
             Strongest first: out_of_service, cleaning (no open order),
-            payment_requested, prebilled, waiting_long (a kitchen item waited
-            past its station's threshold), ordered, occupied, reserved (no
-            open order and a booking starts within the hour), available.
+            payment_requested, prebilled, ending_soon (a running clock is
+            within ten minutes of its planned end), waiting_long (a kitchen
+            item waited past its station's threshold), playing (a clock is
+            running), ordered, occupied, reserved (no open order and a
+            booking starts within the hour), available.
         guest_count:
           type: [integer, 'null']
         seated_minutes:
@@ -7663,6 +7670,35 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ResourceBoardOrder'
+    ResourceBoardTimed:
+      type: object
+      additionalProperties: false
+      required: [id, workspace_id, status, started_at, stopped_at, planned_end_at, played_minutes, quote_amount, ending_soon]
+      properties:
+        id:
+          type: string
+        workspace_id:
+          type: [string, 'null']
+        status:
+          type: string
+          enum: [running, paused, stopped]
+        started_at:
+          type: string
+          format: date-time
+          description: Server time the clock started; show elapsed time from it with the server clock offset.
+        stopped_at:
+          type: [string, 'null']
+          format: date-time
+        planned_end_at:
+          type: [string, 'null']
+          format: date-time
+        played_minutes:
+          type: integer
+        quote_amount:
+          type: string
+          description: The price of the time so far on the server clock; final once stopped.
+        ending_soon:
+          type: boolean
     ResourceNextReservation:
       type: object
       additionalProperties: false

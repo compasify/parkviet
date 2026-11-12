@@ -683,6 +683,31 @@ export function useWorkspaces(
         throw error;
       }
     },
+    // Starts a room's clock on the server's time. A room without an open
+    // order gets a new one, its lease held by this page; otherwise the clock
+    // bills the room's open order.
+    async startClock(resourceId: string, opensOrder: boolean) {
+      const key = crypto.randomUUID();
+      try {
+        const result = await session.request<{ data: { workspace: PosWorkspace } }>(
+          'POST',
+          `/pos/resources/${resourceId}/timed_sessions`,
+          {
+            body: { branch_id: branchId, editor_id: editorId, idempotency_key: key },
+            idempotencyKey: key,
+          },
+        );
+        const workspace = result.data.workspace;
+        await acceptWorkspace(workspace);
+        if (opensOrder)
+          setOwned((current) => ({ ...current, [workspace.id]: workspace.lease_generation }));
+        channel?.postMessage(workspaceHint(workspace.id));
+        return workspace;
+      } catch (error) {
+        abandonIfNeeded(error);
+        throw error;
+      }
+    },
     async moveTable(workspace: PosWorkspace, resourceId: string) {
       const body = {
         expected_revision: workspace.revision,

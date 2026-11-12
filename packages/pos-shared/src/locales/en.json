@@ -81,6 +81,9 @@
   "capabilityMealAccountManage": "Manage meal accounts and sponsors",
   "capabilityVehicleVisitOperate": "Greet coaches and put orders on a visit",
   "capabilityVehicleVisitManage": "Manage coach commission: operators, rules, payouts, corrections",
+  "capabilityTimedOperate": "Start, stop and move room / billiard clocks",
+  "capabilityTimedEdit": "Correct a room's time in / out (no approval)",
+  "capabilityRatePlanManage": "Manage hourly rates, holidays and weekends",
   "tableState_available": "Free",
   "tableState_reserved": "Reserved",
   "reservationStatus_booked": "Waiting",
@@ -94,6 +97,8 @@
   "depositStatus_forfeited": "Kept",
   "tableState_occupied": "Seated",
   "tableState_ordered": "Ordered",
+  "tableState_playing": "Clock running",
+  "tableState_ending_soon": "Ending soon",
   "tableState_waiting_long": "Waiting long",
   "tableState_payment_requested": "Asked for the bill",
   "tableState_prebilled": "Pre-bill printed",
@@ -313,6 +318,12 @@
       "description": "Coach visits at a rest stop, orders sold to a coach, and commission paid to its driver per coach and per guest.",
       "off": "Driver commission is off at this branch.",
       "disabled": "Driver commission is off at this branch; the server opens no coach visits and puts no orders on them. Selling is not affected."
+    },
+    "timed_billing": {
+      "label": "Play time",
+      "description": "Bill karaoke rooms and billiard tables by the time played, on rate plans by time of day, weekdays, weekends and holidays; the server keeps the time.",
+      "off": "Play time is off at this branch.",
+      "disabled": "Play time is off at this branch; the server starts no clocks. Selling is not affected."
     }
   },
   "profiles": {

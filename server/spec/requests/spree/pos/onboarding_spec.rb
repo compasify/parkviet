@@ -8,6 +8,9 @@ require 'spree/api/testing_support/v3/base'
 # features they ticked. Branch rows here come from the workflow alone, and
 # features start at the product default (off).
 RSpec.describe 'POS onboarding', type: :request, pos_modules: :default, pos_features: :default do
+  # Interests and refusals need a coming-soon profile; karaoke stands in for one.
+  before { treat_as_planned('timed_billing') }
+
   let(:store) { Spree::Store.default }
   let(:password) { 'secret123' }
   let(:location) { create(:stock_location, store: store, backorderable_default: false) }
@@ -52,12 +55,12 @@ RSpec.describe 'POS onboarding', type: :request, pos_modules: :default, pos_feat
     expect(response).to have_http_status(:created)
 
     profile = Spree::Pos::StoreProfile.find_by!(store: store)
-    expect(profile).to have_attributes(profile_key: 'nha_thuoc', profile_version: 2, wholesale: true, interests: ['karaoke_bida'],
+    expect(profile).to have_attributes(profile_key: 'nha_thuoc', profile_version: 3, wholesale: true, interests: ['karaoke_bida'],
                                        changed_by_id: owner.id)
     expect(profile.onboarded_at).to be_present
     branch = Spree::Pos::Branch.find_by!(store: store, code: 'q1')
     # The profile's defaults fill what the request left out.
-    expect(branch).to have_attributes(profile_key: 'nha_thuoc', profile_version: 2, return_window_days: 7, lot_selection: 'fefo',
+    expect(branch).to have_attributes(profile_key: 'nha_thuoc', profile_version: 3, return_window_days: 7, lot_selection: 'fefo',
                                       status: 'active', stock_location_id: location.id)
     expect(Spree::Pos::BranchModule.where(branch: branch).pluck(:module_key, :enabled, :reason)).
       to contain_exactly(['retail.units', true, 'profile:nha_thuoc'], ['retail.traceability', true, 'profile:nha_thuoc'])
@@ -84,7 +87,7 @@ RSpec.describe 'POS onboarding', type: :request, pos_modules: :default, pos_feat
     expect(data['register']).to include('id' => register.prefixed_id)
     expect(data['membership']).to include('id' => membership.prefixed_id)
     expect(data['modules']).to eq('retail.units' => true, 'retail.measured' => false, 'retail.traceability' => true, 'fnb.menu' => false, 'fnb.recipes' => false, 'fnb.kitchen' => false, 'fnb.order_number' => false, 'fnb.cup_label' => false, 'fnb.delivery_platforms' => false, 'resources' => false, 'fnb.tables' => false, 'fnb.postpay' => false, 'fnb.service_charge' => false,
-                                     'fnb.reservations' => false, 'fnb.bottle_keep' => false, 'fnb.pour_tracking' => false, 'fnb.meal_accounts' => false, 'fnb.vehicle_commission' => false)
+                                     'fnb.reservations' => false, 'fnb.bottle_keep' => false, 'fnb.pour_tracking' => false, 'fnb.meal_accounts' => false, 'fnb.vehicle_commission' => false, 'timed_billing' => false)
     expect(data['features']).to include('traceability' => true, 'returns' => true, 'credit' => false, 'refunds' => false)
 
     first_body = response.parsed_body

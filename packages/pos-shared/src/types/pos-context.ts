@@ -277,6 +277,33 @@ export type PosMenu = {
   etag: string;
 };
 
+// The clock of a play-time line, on the server's time: the running quote,
+// or the bands it was billed at once stopped.
+export type PosLineTimedSession = {
+  id: string;
+  status: 'running' | 'paused' | 'stopped';
+  resource_name?: string;
+  started_at: string;
+  stopped_at: string | null;
+  played_minutes?: number | null;
+  billed_minutes?: number | null;
+  amount?: string;
+  quote?: {
+    final: boolean;
+    played_minutes: number;
+    billed_minutes: number;
+    amount: string;
+    lines?: Array<{
+      label?: string | null;
+      starts_at: string;
+      ends_at: string;
+      minutes: number;
+      price_per_hour?: string;
+      amount: string;
+    }>;
+  } | null;
+};
+
 export type PosLineItem = {
   id: string;
   variant_id: string;
@@ -291,7 +318,9 @@ export type PosLineItem = {
   net_amount?: string;
   item_net_amount?: string;
   sale_line_id: string | null;
-  kind?: 'ordinary' | 'measured' | 'tracked' | 'menu' | 'cover';
+  kind?: 'ordinary' | 'measured' | 'tracked' | 'menu' | 'cover' | 'timed';
+  // A play-time line's clock: it changes only through the clock, never by hand.
+  timed_session?: PosLineTimedSession | null;
   // A menu line's options, combo contents and note, copied at the time of sale.
   note?: string | null;
   modifiers?: PosLineModifier[];

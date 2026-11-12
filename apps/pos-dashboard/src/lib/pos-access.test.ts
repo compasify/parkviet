@@ -7,6 +7,7 @@ import {
   canManageEinvoices,
   canManageMealAccounts,
   canManageMenu,
+  canManageRatePlans,
   canManageResources,
   canSendReminders,
   canSetSoldOut,
@@ -180,6 +181,23 @@ describe('POS permission gates', () => {
     expect(routeAllowed('branch-floor-plan', reader)).toBe(true)
     expect(canManageResources(reader)).toBe(false)
     expect(canManageResources(staff([], true, ['write_pos_topology']))).toBe(true)
+  })
+  it('offers hourly rates to their managers while the branch bills play time', () => {
+    const staff = (capabilities: string[], timed: boolean, permissionKeys: string[] = []) => ({
+      permissionKeys,
+      context: {
+        selection: { branch_id: 'b', register_id: null },
+        capabilities,
+        modules: { timed_billing: timed },
+      } as unknown as PosContext,
+    })
+    expect(routeAllowed('branch-rate-plans', staff(['pos.rate_plan.manage'], true))).toBe(true)
+    expect(routeAllowed('branch-rate-plans', staff(['pos.rate_plan.manage'], false))).toBe(false)
+    expect(routeAllowed('branch-rate-plans', staff(['pos.timed.operate'], true))).toBe(false)
+    const reader = staff([], true, ['read_pos_topology'])
+    expect(routeAllowed('branch-rate-plans', reader)).toBe(true)
+    expect(canManageRatePlans(reader)).toBe(false)
+    expect(canManageRatePlans(staff(['pos.rate_plan.manage'], true))).toBe(true)
   })
   it('offers platform settlement to resolvers while the branch takes platform orders', () => {
     const resolver = (modules: Record<string, boolean>) => ({

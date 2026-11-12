@@ -46,6 +46,7 @@ module Spree
             execute(workspace:, staff:, key:, payload:) do
               validate_command!(workspace, staff, revision, lease_generation, editor_id)
               sale_line = sale_line!(workspace, sale_line_id)
+              Timed::Guard.not_timed!(sale_line, workspace)
               base_quantity = change_quantity!(workspace, sale_line, quantity, sale_quantity)
               finish!(workspace, staff, 'workspace.item.update', sale_line_id: sale_line.prefixed_id, quantity: base_quantity)
             end
@@ -56,6 +57,7 @@ module Spree
             execute(workspace:, staff:, key:, payload:) do
               validate_command!(workspace, staff, revision, lease_generation, editor_id)
               sale_line = sale_line!(workspace, sale_line_id)
+              Timed::Guard.not_timed!(sale_line, workspace)
               kitchen_sent!(workspace, sale_line, 0)
               sale_id = sale_line.prefixed_id
               remove_line!(workspace, sale_line)

@@ -123,6 +123,8 @@ module Spree
           Spree::TaxLine.where(line_item_id: line_item_ids).delete_all
           Spree::LineItem.where(id: line_item_ids).update_all(order_id: target.order_id, updated_at: Time.current)
           SaleLine.where(id: sale_lines.map(&:id)).update_all(workspace_id: target.id, order_id: target.order_id, updated_at: Time.current)
+          # A clock bills the order its line belongs to.
+          TimedSession.where(sale_line_id: sale_lines.map(&:id)).update_all(workspace_id: target.id, updated_at: Time.current)
         end
 
         def recalculate!(workspace)

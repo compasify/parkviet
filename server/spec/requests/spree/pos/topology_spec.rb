@@ -163,7 +163,7 @@ RSpec.describe 'POS topology', type: :request do
     # No store profile: `khac`, all three modules, no defaults (returns stay off).
     data = create_branch.call('q1')['data']
     expect(response).to have_http_status(:created)
-    expect(data).to include('profile_key' => 'khac', 'profile_version' => 2, 'return_window_days' => nil, 'lot_selection' => 'fefo')
+    expect(data).to include('profile_key' => 'khac', 'profile_version' => 3, 'return_window_days' => nil, 'lot_selection' => 'fefo')
     first = Spree::Pos::Branch.find_by_prefix_id!(data['id'])
     expect(Spree::Pos::BranchModule.where(branch: first).pluck(:module_key, :enabled, :reason)).to contain_exactly(
       ['retail.units', true, 'profile:khac'], ['retail.measured', true, 'profile:khac'], ['retail.traceability', true, 'profile:khac']
@@ -178,13 +178,15 @@ RSpec.describe 'POS topology', type: :request do
     second = Spree::Pos::Branch.find_by_prefix_id!(data['id'])
     expect(Spree::Pos::ModulePolicy.for_branch(second)).to eq('retail.units' => true, 'retail.measured' => false, 'retail.traceability' => true,
                                                               'fnb.menu' => false, 'fnb.recipes' => false, 'fnb.kitchen' => false, 'fnb.order_number' => false, 'fnb.cup_label' => false, 'fnb.delivery_platforms' => false, 'resources' => false, 'fnb.tables' => false, 'fnb.postpay' => false, 'fnb.service_charge' => false,
-                                     'fnb.reservations' => false, 'fnb.bottle_keep' => false, 'fnb.pour_tracking' => false, 'fnb.meal_accounts' => false, 'fnb.vehicle_commission' => false)
+                                     'fnb.reservations' => false, 'fnb.bottle_keep' => false, 'fnb.pour_tracking' => false, 'fnb.meal_accounts' => false, 'fnb.vehicle_commission' => false, 'timed_billing' => false)
     expect(Spree::Pos::UnitDefinition.for_store(store).pluck(:code)).to include('vien', 'vi', 'hop', 'chai')
 
     data = create_branch.call('q3', profile_key: 'thoi_trang', return_window_days: nil)['data']
     expect(data).to include('profile_key' => 'thoi_trang', 'return_window_days' => nil)
     expect(Spree::Pos::BranchModule.where(branch: Spree::Pos::Branch.find_by_prefix_id!(data['id']))).to be_empty
 
+    # A profile still coming soon is refused; karaoke stands in for one.
+    treat_as_planned('timed_billing')
     expect(create_branch.call('q4', profile_key: 'karaoke_bida').dig('error', 'details', 'reason')).to eq('profile_unavailable')
     expect(response).to have_http_status(:conflict)
     expect(create_branch.call('q4', profile_key: 'tiem_vang').dig('error', 'details', 'reason')).to eq('profile_unknown')

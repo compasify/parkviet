@@ -148,6 +148,8 @@ module Spree
         memo = {}
         # How far the kitchen got with each line of a table order, one query.
         kitchen = shared_service? ? kitchen_status_by_line : {}
+        # The clock of each timed line; no query for an order without one.
+        timed = Timed::Sessions.for_workspace(self, sale_lines.values.select { |sale| sale.kind == Timed::Lines::KIND }.map(&:id), now: now)
         traces = sale_lines.values.to_h do |sale|
           [sale.prefixed_id, Spree::Pos::Inventory::AllocateTraceability.line_trace(sale, branch, now: now, memo: memo,
                                                                                                  completed: operational_status == 'completed')]
@@ -184,6 +186,7 @@ module Spree
             }
             if sale
               row = core.merge(sale.to_pos(line)).merge(trace: traces[sale.prefixed_id])
+              row[:timed_session] = timed[sale.id] if sale.kind == Timed::Lines::KIND
               shared_service? ? row.merge(kitchen_status: kitchen.fetch(sale.id, {})) : row
             else
               core.merge(sale_line_id: nil, trace: nil)

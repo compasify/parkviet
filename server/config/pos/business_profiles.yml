@@ -39,7 +39,7 @@
 #
 # Bump `version` when a change to a profile should be offered to branches
 # already set up with it.
-version: 2
+version: 3
 profiles:
   tap_hoa_sieu_thi:
     group: retail
@@ -182,14 +182,17 @@ profiles:
     sample_units: []
     kitchen_stations: [prep, bar]
 
+  # Rooms and billiard tables billed by the time played, drinks and snacks
+  # on the room's order, and kept bottles.
   karaoke_bida:
     group: fnb
     order: 16
-    modules: [resources, timed_billing, fnb.menu, fnb.postpay, fnb.bottle_keep]
-    branch_defaults: {}
-    display: {}
-    recommended_features: []
+    modules: [resources, fnb.tables, timed_billing, fnb.menu, fnb.kitchen, fnb.postpay, fnb.bottle_keep]
+    branch_defaults: { kitchen_send_trigger: manual }
+    display: { surface: resource_board }
+    recommended_features: [vietqr]
     sample_units: []
+    kitchen_stations: [bar]
 
   # Tabs by guest name first, VIP tables on the floor plan, and the bottle-
   # keeping book. Measured pours need recipes and units, turned on by hand.

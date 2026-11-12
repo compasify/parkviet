@@ -70,7 +70,7 @@ module Spree
             logo_url: str(profile&.dig('logo_url')) }
         end
 
-        def sale_line(line, currency)
+        def sale_line(line, currency, zone = Text::ZONE)
           discount = str(line['discount'])
           amount = str(line['net_amount']) || str(line['amount'])
           price = str(line['unit_price'])
@@ -82,8 +82,23 @@ module Spree
             amount: money(amount, currency), amount_cell: bare(amount, currency),
             conversion: str(line['conversion']),
             trace: rows(line['trace']).map { |trace| trace_text(trace) }.reject(&:empty?),
-            notes: menu_notes(line)
+            notes: menu_notes(line) + timed_notes(obj(line['timed']), currency, zone)
           )
+        end
+
+        # Play time: the room with its time in and out, then each time band
+        # ("21:30–22:40 · 70 phút × 200.000 ₫/giờ").
+        def timed_notes(timed, currency, zone)
+          return [] unless timed
+
+          clock = ->(value) { str(value) ? Time.iso8601(str(value)).in_time_zone(zone).strftime('%H:%M') : '—' }
+          notes = ["#{str(timed['resource'])} · #{clock.call(timed['started_at'])}–#{clock.call(timed['stopped_at'])}"]
+          rows(timed['bands']).each do |band|
+            label = str(band['label'])
+            notes << ["#{clock.call(band['starts_at'])}–#{clock.call(band['ends_at'])}", label,
+                      "#{band['minutes']} phút × #{money(str(band['price_per_hour']), currency)}/giờ"].compact.join(' · ')
+          end
+          notes
         end
 
         # A menu line's options ("+ Trân châu ×2"), combo contents ("- Khoai
@@ -254,7 +269,8 @@ module Spree
           delivery_doc = obj(document['delivery'])
           delivery = delivery_doc && { deliverer: str(delivery_doc['deliverer']), fee: str(delivery_doc['fee']) }
           meta.concat(delivery_meta_rows(delivery))
-          parts[:lines] = rows(document['lines']).map { |line| sale_line(line, currency) }
+          zone = str(document['timezone']) || Text::ZONE
+          parts[:lines] = rows(document['lines']).map { |line| sale_line(line, currency, zone) }
           parts[:totals] = with_delivery_fee(sale_totals(document, currency), delivery, currency)
           parts[:payments] = sale_payments(document, currency)
           parts[:pay_qr] = pay_qr(obj(document['credit'])&.dig('pay_qr'))

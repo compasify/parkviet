@@ -102,6 +102,10 @@ const ResourceBoardTileStateEnum _$resourceBoardTileStateEnum_ordered =
     const ResourceBoardTileStateEnum._('ordered');
 const ResourceBoardTileStateEnum _$resourceBoardTileStateEnum_waitingLong =
     const ResourceBoardTileStateEnum._('waitingLong');
+const ResourceBoardTileStateEnum _$resourceBoardTileStateEnum_playing =
+    const ResourceBoardTileStateEnum._('playing');
+const ResourceBoardTileStateEnum _$resourceBoardTileStateEnum_endingSoon =
+    const ResourceBoardTileStateEnum._('endingSoon');
 const ResourceBoardTileStateEnum _$resourceBoardTileStateEnum_paymentRequested =
     const ResourceBoardTileStateEnum._('paymentRequested');
 const ResourceBoardTileStateEnum _$resourceBoardTileStateEnum_prebilled =
@@ -123,6 +127,10 @@ ResourceBoardTileStateEnum _$resourceBoardTileStateEnumValueOf(String name) {
       return _$resourceBoardTileStateEnum_ordered;
     case 'waitingLong':
       return _$resourceBoardTileStateEnum_waitingLong;
+    case 'playing':
+      return _$resourceBoardTileStateEnum_playing;
+    case 'endingSoon':
+      return _$resourceBoardTileStateEnum_endingSoon;
     case 'paymentRequested':
       return _$resourceBoardTileStateEnum_paymentRequested;
     case 'prebilled':
@@ -143,6 +151,8 @@ final BuiltSet<ResourceBoardTileStateEnum> _$resourceBoardTileStateEnumValues =
   _$resourceBoardTileStateEnum_occupied,
   _$resourceBoardTileStateEnum_ordered,
   _$resourceBoardTileStateEnum_waitingLong,
+  _$resourceBoardTileStateEnum_playing,
+  _$resourceBoardTileStateEnum_endingSoon,
   _$resourceBoardTileStateEnum_paymentRequested,
   _$resourceBoardTileStateEnum_prebilled,
   _$resourceBoardTileStateEnum_cleaning,
@@ -261,6 +271,8 @@ class _$ResourceBoardTileStateEnumSerializer
     'occupied': 'occupied',
     'ordered': 'ordered',
     'waitingLong': 'waiting_long',
+    'playing': 'playing',
+    'endingSoon': 'ending_soon',
     'paymentRequested': 'payment_requested',
     'prebilled': 'prebilled',
     'cleaning': 'cleaning',
@@ -272,6 +284,8 @@ class _$ResourceBoardTileStateEnumSerializer
     'occupied': 'occupied',
     'ordered': 'ordered',
     'waiting_long': 'waitingLong',
+    'playing': 'playing',
+    'ending_soon': 'endingSoon',
     'payment_requested': 'paymentRequested',
     'prebilled': 'prebilled',
     'cleaning': 'cleaning',
@@ -297,6 +311,8 @@ class _$ResourceBoardTileStateEnumSerializer
 }
 
 class _$ResourceBoardTile extends ResourceBoardTile {
+  @override
+  final ResourceBoardTimed? timed;
   @override
   final ResourceNextReservation? nextReservation;
   @override
@@ -347,7 +363,8 @@ class _$ResourceBoardTile extends ResourceBoardTile {
       (ResourceBoardTileBuilder()..update(updates))._build();
 
   _$ResourceBoardTile._(
-      {this.nextReservation,
+      {this.timed,
+      this.nextReservation,
       this.buffetEndsAt,
       required this.id,
       this.areaId,
@@ -382,6 +399,7 @@ class _$ResourceBoardTile extends ResourceBoardTile {
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
     return other is ResourceBoardTile &&
+        timed == other.timed &&
         nextReservation == other.nextReservation &&
         buffetEndsAt == other.buffetEndsAt &&
         id == other.id &&
@@ -409,6 +427,7 @@ class _$ResourceBoardTile extends ResourceBoardTile {
   @override
   int get hashCode {
     var _$hash = 0;
+    _$hash = $jc(_$hash, timed.hashCode);
     _$hash = $jc(_$hash, nextReservation.hashCode);
     _$hash = $jc(_$hash, buffetEndsAt.hashCode);
     _$hash = $jc(_$hash, id.hashCode);
@@ -438,6 +457,7 @@ class _$ResourceBoardTile extends ResourceBoardTile {
   @override
   String toString() {
     return (newBuiltValueToStringHelper(r'ResourceBoardTile')
+          ..add('timed', timed)
           ..add('nextReservation', nextReservation)
           ..add('buffetEndsAt', buffetEndsAt)
           ..add('id', id)
@@ -467,6 +487,11 @@ class _$ResourceBoardTile extends ResourceBoardTile {
 class ResourceBoardTileBuilder
     implements Builder<ResourceBoardTile, ResourceBoardTileBuilder> {
   _$ResourceBoardTile? _$v;
+
+  ResourceBoardTimedBuilder? _timed;
+  ResourceBoardTimedBuilder get timed =>
+      _$this._timed ??= ResourceBoardTimedBuilder();
+  set timed(ResourceBoardTimedBuilder? timed) => _$this._timed = timed;
 
   ResourceNextReservationBuilder? _nextReservation;
   ResourceNextReservationBuilder get nextReservation =>
@@ -572,6 +597,7 @@ class ResourceBoardTileBuilder
   ResourceBoardTileBuilder get _$this {
     final $v = _$v;
     if ($v != null) {
+      _timed = $v.timed?.toBuilder();
       _nextReservation = $v.nextReservation?.toBuilder();
       _buffetEndsAt = $v.buffetEndsAt;
       _id = $v.id;
@@ -617,6 +643,7 @@ class ResourceBoardTileBuilder
     try {
       _$result = _$v ??
           _$ResourceBoardTile._(
+            timed: _timed?.build(),
             nextReservation: _nextReservation?.build(),
             buffetEndsAt: buffetEndsAt,
             id: BuiltValueNullFieldError.checkNotNull(
@@ -657,6 +684,8 @@ class ResourceBoardTileBuilder
     } catch (_) {
       late String _$failedField;
       try {
+        _$failedField = 'timed';
+        _timed?.build();
         _$failedField = 'nextReservation';
         _nextReservation?.build();
 

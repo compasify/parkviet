@@ -308,6 +308,27 @@ Rails.application.routes.draw do
                 post :void
               end
             end
+            # Play time of karaoke rooms and billiard tables: the clocks, the
+            # branch's rate plans, holidays and weekend days.
+            post 'resources/:resource_id/timed_sessions', to: 'timed_sessions#create'
+            resources :timed_sessions, only: [:show] do
+              member do
+                get :quote
+                post :stop
+                post :move
+                patch 'segments/:segment_id', action: :update_segment
+              end
+            end
+            get 'rate_plans/special_days', to: 'rate_plans#special_days'
+            post 'rate_plans/special_days', to: 'rate_plans#create_special_day'
+            patch 'rate_plans/special_days/:special_day_id', to: 'rate_plans#update_special_day'
+            delete 'rate_plans/special_days/:special_day_id', to: 'rate_plans#destroy_special_day'
+            patch 'rate_plans/weekend_days', to: 'rate_plans#update_weekend_days'
+            resources :rate_plans, only: [:index, :create, :update] do
+              member do
+                get :preview
+              end
+            end
             get 'tips', to: 'tips#index'
             post 'tips/payout', to: 'tips#payout'
             # E-invoices of completed orders and the store's provider settings.

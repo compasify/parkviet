@@ -74,12 +74,18 @@ module Spree
       # still needs a second person on the cash out request, and a
       # correction after closing an approval.
       VEHICLE_VISIT_MANAGE = 'pos.vehicle_visit.manage'
+      # Play time on rooms and tables: start, stop and move a session's clock.
+      TIMED_OPERATE = 'pos.timed.operate'
+      # Changing a session's times without asking for an approval.
+      TIMED_EDIT = 'pos.timed.edit'
+      # A branch's rate plans and holidays.
+      RATE_PLAN_MANAGE = 'pos.rate_plan.manage'
       ASSIGNABLE = [MANAGE, OPEN_SHIFT, DISCOUNT, PRICE_OVERRIDE, CUSTOMER, PAYMENT, RESOLVE, RECOVER, APPROVE, TAKEOVER,
                     CREDIT_MANAGE, CREDIT_SELL, RETURN, CASH_MOVE, REPORT_READ, REPORT_EXPORT,
                     INVENTORY_MANAGE, INVENTORY_TRACE, DEVICE_MANAGE, PRINTER_MANAGE, MANAGE_MENU, SET_SOLD_OUT,
                     EINVOICE_MANAGE, OPERATE_KITCHEN, MANAGE_KITCHEN, TABLE_SERVE, RESOURCE_MANAGE, KITCHEN_VOID,
                     RESERVATION_MANAGE, EXPO_OPERATE, MEAL_ACCOUNT_MANAGE, VEHICLE_VISIT_OPERATE,
-                    VEHICLE_VISIT_MANAGE].freeze
+                    VEHICLE_VISIT_MANAGE, TIMED_OPERATE, TIMED_EDIT, RATE_PLAN_MANAGE].freeze
 
       def self.sanitize(values)
         Array(values).map(&:to_s).uniq

@@ -306,6 +306,7 @@ export 'package:pos_api/src/model/resource_board_area.dart';
 export 'package:pos_api/src/model/resource_board_order.dart';
 export 'package:pos_api/src/model/resource_board_result.dart';
 export 'package:pos_api/src/model/resource_board_tile.dart';
+export 'package:pos_api/src/model/resource_board_timed.dart';
 export 'package:pos_api/src/model/resource_input.dart';
 export 'package:pos_api/src/model/resource_list.dart';
 export 'package:pos_api/src/model/resource_manual_status_input.dart';

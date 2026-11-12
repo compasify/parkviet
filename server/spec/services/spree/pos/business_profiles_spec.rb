@@ -19,16 +19,16 @@ RSpec.describe Spree::Pos::BusinessProfiles do
   end
 
   describe 'the shipped catalog' do
-    it 'offers 13 retail profiles and five F&B profiles, keeping karaoke and billiards coming soon' do
+    it 'offers 13 retail profiles and six F&B profiles, every one available' do
       profiles = described_class.all
-      expect(described_class.version).to eq(2)
+      expect(described_class.version).to eq(3)
       expect(profiles.size).to eq(19)
       expect(profiles.map(&:order)).to eq((1..19).to_a)
       expect(profiles.select { |item| item.group == 'retail' }.map(&:status)).to all(eq('available'))
       fnb = profiles.select { |item| item.group == 'fnb' }.to_h { |item| [item.key, item.status] }
       expect(fnb).to eq('quan_an' => 'available', 'cafe_tra_sua' => 'available', 'cang_tin_tram_dung' => 'available',
-                        'karaoke_bida' => 'coming_soon', 'bar_pub_club' => 'available', 'nha_hang' => 'available')
-      expect(profiles.count(&:available?)).to eq(18)
+                        'karaoke_bida' => 'available', 'bar_pub_club' => 'available', 'nha_hang' => 'available')
+      expect(profiles.count(&:available?)).to eq(19)
       expect(profiles.map(&:key)).to include('tap_hoa_sieu_thi', 'nha_thuoc', 'vat_lieu_xay_dung', 'khac', 'nha_hang')
     end
 
@@ -66,7 +66,8 @@ RSpec.describe Spree::Pos::BusinessProfiles do
                                         include(key: 'fnb.order_number', status: 'available'),
                                         include(key: 'fnb.cup_label', status: 'available', depends_on: ['fnb.menu']),
                                         include(key: 'fnb.tables', status: 'available', depends_on: ['resources']),
-                                        include(key: 'timed_billing', status: 'planned'))
+                                        include(key: 'timed_billing', status: 'available', depends_on: ['resources', 'fnb.tables']),
+                                        include(key: 'resources.iot_relay', status: 'planned'))
       expect(data[:profiles].first.keys).
         to eq(%i[key group order status modules optional_modules branch_defaults display recommended_features sample_units kitchen_stations])
       expect(data[:tax_categories].map { |row| row[:code] }).to eq(%w[vat_food vat_special])
@@ -110,7 +111,10 @@ RSpec.describe Spree::Pos::BusinessProfiles do
       expect(bar.modules).not_to include('fnb.pour_tracking')
       expect(bar.branch_defaults).not_to have_key('service_charge_rate')
       [restaurant, bar].each { |item| expect(item.recommended_features).to eq(%w[vietqr customer_display]) }
-      expect(described_class.fetch!('karaoke_bida').status).to eq('coming_soon')
+      karaoke = described_class.fetch!('karaoke_bida')
+      expect(karaoke.status).to eq('available')
+      expect(karaoke.modules).to include('resources', 'fnb.tables', 'timed_billing', 'fnb.menu', 'fnb.postpay', 'fnb.bottle_keep')
+      expect(karaoke.display).to eq('surface' => 'resource_board')
     end
     it 'refuses an unknown profile' do
       expect { described_class.fetch!('teleport') }.to raise_error(Spree::Pos::Conflict) { |error| expect(error.reason).to eq('profile_unknown') }
@@ -198,7 +202,7 @@ RSpec.describe Spree::Pos::BusinessProfiles do
     end
 
     it 'counts a profile with a planned module as coming soon' do
-      built = described_class.build(catalog({ 'quan_an' => profile(group: 'retail', modules: ['timed_billing', 'retail.units']) }))
+      built = described_class.build(catalog({ 'quan_an' => profile(group: 'retail', modules: ['resources.iot_relay', 'retail.units']) }))
       expect(built.profiles.first.status).to eq('coming_soon')
     end
 
@@ -215,7 +219,7 @@ RSpec.describe Spree::Pos::BusinessProfiles do
                            'quan_an.optional_modules: unknown module "teleport".',
                            'quan_an.optional_modules: retail.units is already in modules.')
       expect(errors_of('quan_an' => profile(optional_modules: 'fnb.tables'))).to eq(['quan_an.optional_modules: must be a list.'])
-      built = described_class.build(catalog({ 'quan_an' => profile(optional_modules: ['timed_billing']) }))
+      built = described_class.build(catalog({ 'quan_an' => profile(optional_modules: ['resources.iot_relay']) }))
       expect(built.profiles.first.status).to eq('available')
     end
 
@@ -245,13 +249,14 @@ RSpec.describe Spree::Pos::BusinessProfiles do
 
     it 'registers the three retail modules, the F&B modules, the planned names, and freezes the registry' do
       expect(described_class.available_keys).to eq(%w[retail.units retail.measured retail.traceability fnb.menu fnb.recipes fnb.kitchen fnb.order_number fnb.cup_label fnb.delivery_platforms resources fnb.tables fnb.postpay fnb.service_charge
-                                                          fnb.reservations fnb.bottle_keep fnb.pour_tracking fnb.meal_accounts fnb.vehicle_commission])
+                                                          fnb.reservations fnb.bottle_keep fnb.pour_tracking fnb.meal_accounts fnb.vehicle_commission timed_billing])
       expect(described_class.find('fnb.recipes').depends_on).to eq(%w[fnb.menu retail.units])
       expect(described_class.find('retail.measured').depends_on).to eq(['retail.units'])
       expect(described_class.available?('fnb.menu')).to be(true)
       expect(described_class.find('fnb.tables').depends_on).to eq(['resources'])
-      expect(described_class.known?('timed_billing')).to be(true)
-      expect(described_class.available?('timed_billing')).to be(false)
+      expect(described_class.find('timed_billing').depends_on).to eq(['resources', 'fnb.tables'])
+      expect(described_class.known?('resources.iot_relay')).to be(true)
+      expect(described_class.available?('resources.iot_relay')).to be(false)
       expect(described_class.find('fnb.kitchen').depends_on).to eq(['fnb.menu'])
       expect(described_class.all).to all(be_frozen)
       expect { described_class.send(:registry)['retail.extra'] = nil }.to raise_error(FrozenError)

@@ -23,6 +23,8 @@ module Spree
 
             to.lock!
             Guard.usable!(to)
+            # A clock running in the room moves with its guests.
+            Timed::Guard.follow!(workspace, from, to)
             workspace.update!(resource: to, table_label: Guard.next_label(to, except: workspace.id), revision: workspace.revision + 1)
             AuditEntry.record!(store: workspace.store, actor: staff, action: 'table.move', subject: workspace,
                                metadata: { from_resource_id: from.prefixed_id, to_resource_id: to.prefixed_id, table_label: workspace.table_label })

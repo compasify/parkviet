@@ -8,6 +8,9 @@ require_relative '../../../support/pos_trace_helpers'
 # concurrent change, and the store's main profile only sets the default of
 # new branches.
 RSpec.describe 'POS branch profiles', type: :request, pos_modules: :default do
+  # Interests and refusals need a coming-soon profile; karaoke stands in for one.
+  before { treat_as_planned('timed_billing') }
+
   include PosTraceHelpers
 
   let(:store) { Spree::Store.default }
@@ -59,7 +62,7 @@ RSpec.describe 'POS branch profiles', type: :request, pos_modules: :default do
     tracked_product
     data = preview(manager, 'nha_thuoc')['data']
     expect(response).to have_http_status(:ok)
-    expect(data).to include('branch_id' => branch.prefixed_id, 'from' => 'khac', 'to' => 'nha_thuoc', 'profile_version' => 2)
+    expect(data).to include('branch_id' => branch.prefixed_id, 'from' => 'khac', 'to' => 'nha_thuoc', 'profile_version' => 3)
     expect(data['modules']).to eq('enable' => [], 'disable' => ['retail.measured'],
                                   'in_use' => { 'retail.measured' => { 'measured_variants' => 0, 'labelled_variants' => 0, 'label_formats' => 0 } })
     # return_window_days 30 differs from 7, lot_selection cashier_pick from fefo.
@@ -121,9 +124,9 @@ RSpec.describe 'POS branch profiles', type: :request, pos_modules: :default do
     tracked_product
     data = apply(manager, 'nha_thuoc', apply_modules: true, apply_defaults: ['lot_selection'])['data']
     expect(response).to have_http_status(:ok)
-    expect(branch.reload).to have_attributes(profile_key: 'nha_thuoc', profile_version: 2, lot_selection: 'fefo', return_window_days: 30)
+    expect(branch.reload).to have_attributes(profile_key: 'nha_thuoc', profile_version: 3, lot_selection: 'fefo', return_window_days: 30)
     expect(data['modules']).to eq('retail.units' => true, 'retail.measured' => false, 'retail.traceability' => true, 'fnb.menu' => false, 'fnb.recipes' => false, 'fnb.kitchen' => false, 'fnb.order_number' => false, 'fnb.cup_label' => false, 'fnb.delivery_platforms' => false, 'resources' => false, 'fnb.tables' => false, 'fnb.postpay' => false, 'fnb.service_charge' => false,
-                                     'fnb.reservations' => false, 'fnb.bottle_keep' => false, 'fnb.pour_tracking' => false, 'fnb.meal_accounts' => false, 'fnb.vehicle_commission' => false)
+                                     'fnb.reservations' => false, 'fnb.bottle_keep' => false, 'fnb.pour_tracking' => false, 'fnb.meal_accounts' => false, 'fnb.vehicle_commission' => false, 'timed_billing' => false)
     expect(data['applied']).to eq(
       'modules' => { 'enabled' => [], 'disabled' => ['retail.measured'] },
       'defaults' => [{ 'field' => 'lot_selection', 'from' => 'cashier_pick', 'to' => 'fefo' }],
@@ -145,7 +148,7 @@ RSpec.describe 'POS branch profiles', type: :request, pos_modules: :default do
     # Without apply_modules the modules stay as they are, even for a profile with none.
     data = apply(manager, 'thoi_trang', expected: 'nha_thuoc')['data']
     expect(data['modules']).to eq('retail.units' => true, 'retail.measured' => false, 'retail.traceability' => true, 'fnb.menu' => false, 'fnb.recipes' => false, 'fnb.kitchen' => false, 'fnb.order_number' => false, 'fnb.cup_label' => false, 'fnb.delivery_platforms' => false, 'resources' => false, 'fnb.tables' => false, 'fnb.postpay' => false, 'fnb.service_charge' => false,
-                                     'fnb.reservations' => false, 'fnb.bottle_keep' => false, 'fnb.pour_tracking' => false, 'fnb.meal_accounts' => false, 'fnb.vehicle_commission' => false)
+                                     'fnb.reservations' => false, 'fnb.bottle_keep' => false, 'fnb.pour_tracking' => false, 'fnb.meal_accounts' => false, 'fnb.vehicle_commission' => false, 'timed_billing' => false)
     expect(data['applied']).to include('modules' => { 'enabled' => [], 'disabled' => [] }, 'defaults' => [])
     expect(branch.reload).to have_attributes(profile_key: 'thoi_trang', return_window_days: 30)
 

@@ -308,6 +308,7 @@ import 'package:pos_api/src/model/resource_board_area.dart';
 import 'package:pos_api/src/model/resource_board_order.dart';
 import 'package:pos_api/src/model/resource_board_result.dart';
 import 'package:pos_api/src/model/resource_board_tile.dart';
+import 'package:pos_api/src/model/resource_board_timed.dart';
 import 'package:pos_api/src/model/resource_input.dart';
 import 'package:pos_api/src/model/resource_list.dart';
 import 'package:pos_api/src/model/resource_manual_status_input.dart';
@@ -673,6 +674,7 @@ part 'serializers.g.dart';
   ResourceBoardOrder,
   ResourceBoardResult,
   ResourceBoardTile,
+  ResourceBoardTimed,
   ResourceInput,
   ResourceList,
   ResourceManualStatusInput,

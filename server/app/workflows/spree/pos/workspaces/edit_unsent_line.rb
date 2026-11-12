@@ -58,6 +58,7 @@ module Spree
         def current_line!(workspace, sale_line_id, row_version)
           sale_line = SaleLine.locate(SaleLine.where(workspace_id: workspace.id), sale_line_id)
           sale_line&.lock!
+          Timed::Guard.not_timed!(sale_line, workspace)
           return sale_line if sale_line && sale_line.row_version.to_s == row_version.to_s
 
           raise Conflict.new('Someone else just changed this line.', revision: workspace.revision, reason: 'line_changed',
@@ -69,6 +70,7 @@ module Spree
         def unsent_line!(workspace, sale_line_id, row_version)
           sale_line = SaleLine.locate(SaleLine.where(workspace_id: workspace.id), sale_line_id)
           sale_line&.lock!
+          Timed::Guard.not_timed!(sale_line, workspace)
           if sale_line.nil? || sale_line.row_version.to_s != row_version.to_s
             raise Conflict.new('Someone else just changed this line.', revision: workspace.revision, reason: 'line_changed',
                                                                          details: { sale_line: sale_line && current(sale_line) })

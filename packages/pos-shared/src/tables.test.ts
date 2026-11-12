@@ -75,6 +75,39 @@ describe('resource board', () => {
     expect(countStates(board.resources)).toMatchObject({ ordered: 1, available: 2, cleaning: 0 });
   });
 
+  it('reads a room clock and drops a malformed one', () => {
+    const read = normalizeResourceBoard({
+      resources: [
+        {
+          id: 'posres_9',
+          state: 'playing',
+          timed: {
+            id: 'postimed_1',
+            workspace_id: 'w9',
+            status: 'running',
+            started_at: '2026-11-12T14:30:00Z',
+            played_minutes: 40,
+            quote_amount: '75000.0',
+          },
+        },
+        { id: 'posres_10', state: 'ending_soon', timed: { id: 'postimed_2' } },
+      ],
+    });
+    expect(read.resources[0]).toMatchObject({
+      state: 'playing',
+      timed: {
+        id: 'postimed_1',
+        status: 'running',
+        played_minutes: 40,
+        quote_amount: '75000.0',
+        planned_end_at: null,
+        ending_soon: false,
+      },
+    });
+    expect(read.resources[1]).toMatchObject({ state: 'ending_soon', timed: null });
+    expect(board.resources[0].timed).toBeNull();
+  });
+
   it('labels every state in both languages', () => {
     for (const state of TABLE_STATES)
       for (const bundle of [vi, en])
