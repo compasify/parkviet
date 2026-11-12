@@ -8,11 +8,13 @@ module Spree
       # Staff need a role on the branch's store and an active membership there
       # granting a capability that reads that branch's work: opening a shift or
       # taking over are exactly what `visible_workspaces` admits, and approvers
-      # are who `approval.requested` is for. `visible_branches` is deliberately
+      # are who `approval.requested` is for, as deciders of guest orders are
+      # who `guest_order.created` is for. `visible_branches` is deliberately
       # not the rule: a store-wide topology permission lists every branch but
       # reads no workspace in any of them.
       class Principal
-        STAFF_CAPABILITIES = [Capabilities::OPEN_SHIFT, Capabilities::TAKEOVER, Capabilities::APPROVE].freeze
+        STAFF_CAPABILITIES = [Capabilities::OPEN_SHIFT, Capabilities::TAKEOVER, Capabilities::APPROVE,
+                              Capabilities::GUEST_ORDER_DECIDE].freeze
 
         attr_reader :kind, :device, :staff
 

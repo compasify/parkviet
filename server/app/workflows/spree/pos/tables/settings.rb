@@ -22,6 +22,8 @@ module Spree
             course_labels: CourseLabel.to_pos(branch),
             bottle_keep_days: branch.bottle_keep_days, tips_as_revenue: branch.tips_as_revenue,
             tip_split: TipSplitRule.for(branch).to_pos.except(:branch_id),
+            qr_order_mode: branch.qr_order_mode, qr_order_auto_limit: branch.qr_order_auto_limit&.to_s('F'),
+            qr_order_auto_max_items: branch.qr_order_auto_max_items,
             tax_categories: Spree::TaxCategory.where(store_id: branch.store_id).order(:name, :id).limit(100).map do |category|
               { id: category.prefixed_id, name: category.name, tax_code: category.tax_code.presence, is_default: category.is_default == true }
             end }
@@ -70,6 +72,28 @@ module Spree
           rule.save!
         end
 
+        # How guests' QR orders are taken. Straight to the kitchen needs an
+        # amount limit: an order above it, or with more items than allowed,
+        # waits for staff like any other.
+        def qr_order!(branch, values)
+          branch.qr_order_mode = values['qr_order_mode'].to_s if values.key?('qr_order_mode')
+          if values.key?('qr_order_auto_limit')
+            limit = values['qr_order_auto_limit'].to_s.strip
+            branch.qr_order_auto_limit = limit.empty? ? nil : (Record.money(limit) || raise(Conflict.new('The limit is invalid.', reason: 'qr_order_settings_invalid')))
+          end
+          if values.key?('qr_order_auto_max_items')
+            count = Integer(values['qr_order_auto_max_items'].to_s, 10) rescue nil # rubocop:disable Style/RescueModifier
+            raise Conflict.new('The item count is invalid.', reason: 'qr_order_settings_invalid') unless count&.between?(1, 50)
+
+            branch.qr_order_auto_max_items = count
+          end
+          valid = Branch::QR_ORDER_MODES.include?(branch.qr_order_mode) && (branch.qr_order_auto_limit.nil? || branch.qr_order_auto_limit.positive?)
+          raise Conflict.new('The QR order settings are invalid.', reason: 'qr_order_settings_invalid') unless valid
+          return unless branch.qr_order_mode == 'direct_to_kitchen' && branch.qr_order_auto_limit.nil?
+
+          raise Conflict.new('Sending guest orders straight to the kitchen needs an amount limit.', reason: 'qr_order_limit_required')
+        end
+
         # The names of the courses, numbered from 1; an empty list goes back
         # to the defaults.
         def labels!(branch, rows)
@@ -93,7 +117,8 @@ module Spree
           values = attributes.to_h.stringify_keys.slice('table_register_id', 'service_charge_rate', 'service_charge_applies_to',
                                                          'service_charge_tax_category_id', 'reservation_grace_minutes',
                                                          'reservation_duration_minutes', 'reservation_fee_product_id', 'course_labels',
-                                                         'bottle_keep_days', 'tips_as_revenue', 'tip_split')
+                                                         'bottle_keep_days', 'tips_as_revenue', 'tip_split', 'qr_order_mode',
+                                                         'qr_order_auto_limit', 'qr_order_auto_max_items')
           payload = { 'command' => 'table_settings.update', 'branch_id' => branch.prefixed_id, 'attributes' => values }
           CommandExecutor.call(store: store, actor: staff, key: key, payload: payload, authorize: -> { manage!(store, staff, branch) }) do
             branch.lock!
@@ -116,6 +141,7 @@ module Spree
             end
             reservations!(store, branch, values)
             bar!(branch, values)
+            qr_order!(branch, values)
             branch.save!
             labels!(branch, values['course_labels']) if values.key?('course_labels')
             after = to_pos(branch)

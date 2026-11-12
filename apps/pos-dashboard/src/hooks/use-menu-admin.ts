@@ -16,6 +16,8 @@ import { useSession } from './use-session'
 
 export type MenuItemConfig = Omit<PosMenuItem, 'image_url' | 'sold_out' | 'variants'> & {
   variants: { id: string; name: string | null; sku: string | null; price: string | null }[]
+  // Guests may order the item from the table's QR code (default on).
+  qr_orderable?: boolean
 }
 
 export type MenuSchedule = {

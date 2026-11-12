@@ -21,6 +21,16 @@ const RealtimeEventEventEnum _$realtimeEventEventEnum_resourcePeriodUpdated =
     const RealtimeEventEventEnum._('resourcePeriodUpdated');
 const RealtimeEventEventEnum _$realtimeEventEventEnum_approvalPeriodRequested =
     const RealtimeEventEventEnum._('approvalPeriodRequested');
+const RealtimeEventEventEnum _$realtimeEventEventEnum_guestOrderPeriodCreated =
+    const RealtimeEventEventEnum._('guestOrderPeriodCreated');
+const RealtimeEventEventEnum _$realtimeEventEventEnum_guestOrderPeriodUpdated =
+    const RealtimeEventEventEnum._('guestOrderPeriodUpdated');
+const RealtimeEventEventEnum
+    _$realtimeEventEventEnum_guestRequestPeriodCreated =
+    const RealtimeEventEventEnum._('guestRequestPeriodCreated');
+const RealtimeEventEventEnum
+    _$realtimeEventEventEnum_guestRequestPeriodUpdated =
+    const RealtimeEventEventEnum._('guestRequestPeriodUpdated');
 
 RealtimeEventEventEnum _$realtimeEventEventEnumValueOf(String name) {
   switch (name) {
@@ -38,6 +48,14 @@ RealtimeEventEventEnum _$realtimeEventEventEnumValueOf(String name) {
       return _$realtimeEventEventEnum_resourcePeriodUpdated;
     case 'approvalPeriodRequested':
       return _$realtimeEventEventEnum_approvalPeriodRequested;
+    case 'guestOrderPeriodCreated':
+      return _$realtimeEventEventEnum_guestOrderPeriodCreated;
+    case 'guestOrderPeriodUpdated':
+      return _$realtimeEventEventEnum_guestOrderPeriodUpdated;
+    case 'guestRequestPeriodCreated':
+      return _$realtimeEventEventEnum_guestRequestPeriodCreated;
+    case 'guestRequestPeriodUpdated':
+      return _$realtimeEventEventEnum_guestRequestPeriodUpdated;
     default:
       throw ArgumentError(name);
   }
@@ -52,6 +70,10 @@ final BuiltSet<RealtimeEventEventEnum> _$realtimeEventEventEnumValues =
   _$realtimeEventEventEnum_printJobPeriodCreated,
   _$realtimeEventEventEnum_resourcePeriodUpdated,
   _$realtimeEventEventEnum_approvalPeriodRequested,
+  _$realtimeEventEventEnum_guestOrderPeriodCreated,
+  _$realtimeEventEventEnum_guestOrderPeriodUpdated,
+  _$realtimeEventEventEnum_guestRequestPeriodCreated,
+  _$realtimeEventEventEnum_guestRequestPeriodUpdated,
 ]);
 
 const RealtimeEventAlertEnum _$realtimeEventAlertEnum_endingSoon =
@@ -96,6 +118,10 @@ class _$RealtimeEventEventEnumSerializer
     'printJobPeriodCreated': 'print_job.created',
     'resourcePeriodUpdated': 'resource.updated',
     'approvalPeriodRequested': 'approval.requested',
+    'guestOrderPeriodCreated': 'guest_order.created',
+    'guestOrderPeriodUpdated': 'guest_order.updated',
+    'guestRequestPeriodCreated': 'guest_request.created',
+    'guestRequestPeriodUpdated': 'guest_request.updated',
   };
   static const Map<Object, String> _fromWire = const <Object, String>{
     'workspace.updated': 'workspacePeriodUpdated',
@@ -105,6 +131,10 @@ class _$RealtimeEventEventEnumSerializer
     'print_job.created': 'printJobPeriodCreated',
     'resource.updated': 'resourcePeriodUpdated',
     'approval.requested': 'approvalPeriodRequested',
+    'guest_order.created': 'guestOrderPeriodCreated',
+    'guest_order.updated': 'guestOrderPeriodUpdated',
+    'guest_request.created': 'guestRequestPeriodCreated',
+    'guest_request.updated': 'guestRequestPeriodUpdated',
   };
 
   @override

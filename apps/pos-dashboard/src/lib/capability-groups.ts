@@ -17,6 +17,7 @@ const GROUPS: { key: string; capabilities: Capability[] }[] = [
       'pos.reservation.manage',
       'pos.vehicle_visit.operate',
       'pos.timed.operate',
+      'pos.guest_order.decide',
     ],
   },
   {

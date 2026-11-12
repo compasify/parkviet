@@ -55,7 +55,16 @@ iOS dừng app khi app chạy nền hoặc khi màn hình tắt. iPhone làm má
 
 **Khuyến nghị:** dùng máy Android cho máy phục vụ dùng chung, màn bếp và trạm in.
 
-## 7. Dữ liệu thử trên máy phát triển
+## 7. Khách gọi món qua QR trên bàn
+
+1. Bật module **Gọi món qua QR** của chi nhánh và tính năng **Gọi món qua QR** (`qr_order`). Cần cả hai.
+2. Ở tab **Sơ đồ bàn**, phần **Gọi món qua QR**, chọn cách nhận đơn: **Chờ nhân viên duyệt rồi mới vào bếp** (mặc định) hoặc **Gửi thẳng vào bếp trong hạn mức**. Kiểu thứ hai bắt buộc nhập hạn mức tiền mỗi đơn, và có thể đặt số món tối đa. Đơn vượt hạn mức vẫn chờ duyệt.
+3. Ở thẻ **Mã QR tại bàn**, tạo mã cho từng bàn. Có thể in tem ra máy in hóa đơn của chi nhánh, hoặc chỉ hiện mã để lưu ảnh hay sao chép đường dẫn. Đường dẫn chỉ hiện một lần. **Tạo mã mới** làm tem cũ, và mọi điện thoại đã quét tem cũ, ngừng dùng được ngay. Dùng khi tem bị chụp lại, hoặc khi cần in lại.
+4. Ở trang **Thực đơn**, bỏ chọn **Khách được gọi món này qua QR tại bàn** với món không bán qua QR.
+
+Khách quét mã, xem thực đơn và giá, chọn món, tùy chọn, ghi chú rồi gửi đơn; khách cũng gọi được phục vụ hoặc tính tiền. Bàn chưa mở thì khách chỉ xem thực đơn. Đơn chờ duyệt hiện ở khay **Đơn từ QR** trên màn bán (`apps/pos`) và nút **Đơn từ QR** trên máy phục vụ; duyệt thì món vào đơn của bàn và báo bếp, từ chối thì cần lý do và khách đọc được lý do. Người duyệt cần quyền **Duyệt / từ chối món khách gọi qua QR**. Khách không trả tiền qua QR: thu ngân vẫn thu như đơn bàn.
+
+## 8. Dữ liệu thử trên máy phát triển
 
 Seed demo tạo một nhà hàng mẫu cho cửa hàng mặc định:
 

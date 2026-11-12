@@ -9,7 +9,7 @@ RSpec.describe 'POS web apps', type: :request do
   around do |example|
     Dir.mktmpdir do |dir|
       @dist = {}
-      { 'POS_WEB_DIST_PATH' => 'pos', 'POS_ADMIN_DIST_PATH' => 'pos-admin' }.each do |variable, name|
+      { 'POS_WEB_DIST_PATH' => 'pos', 'POS_ADMIN_DIST_PATH' => 'pos-admin', 'TABLE_ORDER_DIST_PATH' => 'table' }.each do |variable, name|
         root = File.join(dir, name)
         FileUtils.mkdir_p(File.join(root, 'assets'))
         File.write(File.join(root, 'index.html'), "<html>#{name}</html>")
@@ -51,6 +51,18 @@ RSpec.describe 'POS web apps', type: :request do
 
     get '/pos-admin/assets/app-abc123.js'
     expect(response.body).to eq("console.log('pos-admin')")
+  end
+
+  it "serves the guests' QR order page at /table without sending its address on" do
+    get '/table/t/sticker-code'
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to eq('<html>table</html>')
+    expect(response.headers['Referrer-Policy']).to eq('no-referrer')
+
+    get '/table/assets/app-abc123.js'
+    expect(response.body).to eq("console.log('table')")
+    expect(Rails.application.routes.recognize_path('/api/v3/pos_guest/menu', method: :get)).
+      to include(controller: 'spree/pos/guest_views', action: 'menu')
   end
 
   it 'refuses paths outside the bundle' do

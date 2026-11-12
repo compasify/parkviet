@@ -1222,4 +1222,72 @@ class AppLocalizationsEn extends AppLocalizations {
   String waiterAlertPauseTooLong(String room) {
     return '$room has been paused too long';
   }
+
+  @override
+  String get waiterGuestTitle => 'QR orders';
+
+  @override
+  String get waiterGuestAllAreas => 'All areas';
+
+  @override
+  String get waiterGuestMyArea => 'My area';
+
+  @override
+  String get waiterGuestEmpty => 'No guest orders or requests are waiting.';
+
+  @override
+  String waiterGuestWaiting(int count) {
+    return '$count waiting';
+  }
+
+  @override
+  String get waiterGuestAccept => 'Accept';
+
+  @override
+  String get waiterGuestReject => 'Reject';
+
+  @override
+  String get waiterGuestRejectTitle => 'Reason';
+
+  @override
+  String get waiterGuestRejectHint =>
+      'The guest reads this reason on their phone.';
+
+  @override
+  String get waiterGuestRejectSoldOut => 'Sold out';
+
+  @override
+  String get waiterGuestRejectKitchenClosed => 'The kitchen is closed';
+
+  @override
+  String get waiterGuestRejectAskStaff => 'Please ask our staff';
+
+  @override
+  String waiterGuestAccepted(String table) {
+    return 'Added to the order of $table and sent to the kitchen.';
+  }
+
+  @override
+  String waiterGuestRejected(String table) {
+    return 'Rejected the order of $table.';
+  }
+
+  @override
+  String waiterGuestCallStaff(String table) {
+    return '$table calls staff';
+  }
+
+  @override
+  String waiterGuestRequestBill(String table) {
+    return '$table asks for the bill';
+  }
+
+  @override
+  String get waiterGuestDone => 'Done';
+
+  @override
+  String get waiterGuestNoDecide => 'You may not accept guest QR orders.';
+
+  @override
+  String get waiterGuestArrived => 'A guest ordered or called staff by QR';
 }

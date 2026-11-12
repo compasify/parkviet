@@ -27,7 +27,10 @@ import {
   ModelSelect,
   ModelState,
 } from '../components/setup/model-ui'
+import { TableCodesCard } from '../components/table-codes-card'
 import {
+  QR_ORDER_MODES,
+  type QrOrderMode,
   type TableSettings,
   TIP_SPLIT_MODES,
   type TipSplit,
@@ -46,8 +49,11 @@ import {
   FLOOR_MIN,
   freeSpot,
   placementDraft,
+  QR_MAX_ITEMS,
   readFloorSize,
   readKeepDays,
+  readQrLimit,
+  readQrMaxItems,
   readServiceChargeRate,
   readTableDraft,
   SERVICE_CHARGE_MAX,
@@ -69,6 +75,8 @@ const REFUSALS = [
   'bottle_keep_days_invalid',
   'tip_split_invalid',
   'minimum_spend_invalid',
+  'qr_order_settings_invalid',
+  'qr_order_limit_required',
 ] as const
 const NEW = 'new'
 const DEFAULT_FLOOR = { width: 24, height: 16 }
@@ -103,7 +111,7 @@ function useAttempt(t: T) {
 // The floor plan of one branch: its areas, the tables drawn on each area's
 // grid, and the table service settings (table register, service charge).
 export function BranchFloorPlanTab() {
-  const { branch } = useBranchScope()
+  const { branch, modules } = useBranchScope()
   const { permissionKeys } = usePermissions()
   const { context } = usePosSession()
   const access = { permissionKeys, context: context.data }
@@ -111,6 +119,9 @@ export function BranchFloorPlanTab() {
     <div className="space-y-6">
       <FloorCard write={canManageResources(access)} />
       <TableSettingsCard write={canManageBranch(access, branch.id)} />
+      {modules?.['fnb.qr_order'] === true ? (
+        <TableCodesCard write={canManageResources(access)} />
+      ) : null}
     </div>
   )
 }
@@ -766,9 +777,15 @@ type SettingsDraft = {
   keepDays: string
   tipsAsRevenue: boolean
   tipSplit: TipSplit
+  qrMode: QrOrderMode
+  qrLimit: string
+  qrMaxItems: string
 }
 
 const settingsDraftOf = (settings: TableSettings): SettingsDraft => ({
+  qrMode: settings.qr_order_mode,
+  qrLimit: settings.qr_order_auto_limit?.replace(/\.0+$/, '') ?? '',
+  qrMaxItems: String(settings.qr_order_auto_max_items),
   register: settings.table_register_id ?? '',
   rate: settings.service_charge_rate ?? '',
   modes: settings.service_charge_applies_to,
@@ -872,6 +889,81 @@ function BarSettings({
   )
 }
 
+// How guests' QR orders reach the kitchen: staff confirm each one, or orders
+// within an amount and an item count go straight there. The second needs an
+// amount; staff still see every order either way.
+function QrOrderSettings({
+  draft,
+  write,
+  limitInvalid,
+  maxItemsInvalid,
+  onChange,
+}: {
+  draft: SettingsDraft
+  write: boolean
+  limitInvalid: boolean
+  maxItemsInvalid: boolean
+  onChange: (patch: Partial<SettingsDraft>) => void
+}) {
+  const { t } = useTranslation()
+  const limitId = useId()
+  const countId = useId()
+  return (
+    <fieldset className="space-y-4">
+      <legend className="text-sm font-medium">{t('floorPlan.qrOrder')}</legend>
+      <ModelSelect
+        label={t('floorPlan.qrOrderMode')}
+        value={draft.qrMode}
+        disabled={!write}
+        hint={t('floorPlan.qrOrderModeHint')}
+        options={QR_ORDER_MODES.map((mode) => ({
+          value: mode,
+          label: t(`floorPlan.qrMode_${mode}`),
+        }))}
+        onChange={(mode) => onChange({ qrMode: mode as QrOrderMode })}
+      />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="flex flex-col gap-2">
+          <Label htmlFor={limitId}>{t('floorPlan.qrOrderLimit')}</Label>
+          <Input
+            id={limitId}
+            inputMode="numeric"
+            value={draft.qrLimit}
+            disabled={!write}
+            aria-invalid={limitInvalid}
+            aria-describedby={`${limitId}-hint`}
+            onChange={(event) => onChange({ qrLimit: event.target.value })}
+          />
+          <small
+            id={`${limitId}-hint`}
+            className={limitInvalid ? 'text-destructive' : 'text-muted-foreground'}
+          >
+            {t(limitInvalid ? 'floorPlan.qrOrderLimitInvalid' : 'floorPlan.qrOrderLimitHint')}
+          </small>
+        </div>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor={countId}>{t('floorPlan.qrOrderMaxItems')}</Label>
+          <Input
+            id={countId}
+            inputMode="numeric"
+            value={draft.qrMaxItems}
+            disabled={!write}
+            aria-invalid={maxItemsInvalid}
+            aria-describedby={`${countId}-hint`}
+            onChange={(event) => onChange({ qrMaxItems: event.target.value })}
+          />
+          <small
+            id={`${countId}-hint`}
+            className={maxItemsInvalid ? 'text-destructive' : 'text-muted-foreground'}
+          >
+            {t('floorPlan.qrOrderMaxItemsHint', { max: QR_MAX_ITEMS })}
+          </small>
+        </div>
+      </div>
+    </fieldset>
+  )
+}
+
 // The register whose open shift table orders are booked on and, while the
 // branch runs the service charge, its rate, service modes and tax category.
 function TableSettingsCard({ write }: { write: boolean }) {
@@ -882,6 +974,7 @@ function TableSettingsCard({ write }: { write: boolean }) {
   const serviceCharge = modules?.['fnb.service_charge'] === true
   const bottleKeep = modules?.['fnb.bottle_keep'] === true
   const tips = modules?.['fnb.postpay'] === true
+  const qrOrder = modules?.['fnb.qr_order'] === true
   const roles = useStaffRoles(write && tips)
   const mutation = useFloorPlanWrite()
   const { notice, attempt } = useAttempt(t)
@@ -890,6 +983,11 @@ function TableSettingsCard({ write }: { write: boolean }) {
   const current = draft ?? (loaded ? settingsDraftOf(loaded) : null)
   const rate = current ? readServiceChargeRate(current.rate) : null
   const keepDays = current ? readKeepDays(current.keepDays) : null
+  const qrLimit = current ? readQrLimit(current.qrLimit) : null
+  const qrMaxItems = current ? readQrMaxItems(current.qrMaxItems) : undefined
+  const qrLimitInvalid =
+    qrLimit === undefined || (current?.qrMode === 'direct_to_kitchen' && qrLimit === null)
+  const qrInvalid = qrOrder && (qrLimitInvalid || qrMaxItems === undefined)
 
   const edit = (patch: Partial<SettingsDraft>) =>
     setDraft((value) => {
@@ -900,7 +998,7 @@ function TableSettingsCard({ write }: { write: boolean }) {
   const save = (event: FormEvent) => {
     event.preventDefault()
     if (!current || !draft || mutation.isPending || (serviceCharge && rate === undefined)) return
-    if (bottleKeep && keepDays === undefined) return
+    if ((bottleKeep && keepDays === undefined) || qrInvalid) return
     void attempt(async () => {
       await mutation.mutateAsync({
         method: 'PUT',
@@ -917,6 +1015,13 @@ function TableSettingsCard({ write }: { write: boolean }) {
             : {}),
           ...(bottleKeep && keepDays ? { bottle_keep_days: keepDays } : {}),
           ...(tips ? { tips_as_revenue: current.tipsAsRevenue, tip_split: current.tipSplit } : {}),
+          ...(qrOrder
+            ? {
+                qr_order_mode: current.qrMode,
+                qr_order_auto_limit: qrLimit ?? null,
+                qr_order_auto_max_items: qrMaxItems,
+              }
+            : {}),
         },
       })
       setDraft(null)
@@ -1034,6 +1139,15 @@ function TableSettingsCard({ write }: { write: boolean }) {
               onChange={edit}
             />
           ) : null}
+          {qrOrder ? (
+            <QrOrderSettings
+              draft={current}
+              write={write}
+              limitInvalid={qrLimitInvalid}
+              maxItemsInvalid={qrMaxItems === undefined}
+              onChange={edit}
+            />
+          ) : null}
           {write ? (
             <Button
               type="submit"
@@ -1041,7 +1155,8 @@ function TableSettingsCard({ write }: { write: boolean }) {
                 mutation.isPending ||
                 !draft ||
                 (serviceCharge && rate === undefined) ||
-                (bottleKeep && keepDays === undefined)
+                (bottleKeep && keepDays === undefined) ||
+                qrInvalid
               }
             >
               {t('floorPlan.saveSettings')}

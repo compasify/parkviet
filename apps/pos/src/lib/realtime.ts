@@ -117,6 +117,15 @@ export function invalidationsFor(
         { queryKey: ['pos', 'kitchen-tickets', scope.generation] },
         { queryKey: ['pos', 'kitchen-orders', scope.generation] },
       ];
+    // Guests' orders and requests from the table QR: the counter's tray.
+    case 'guest_order.created':
+    case 'guest_order.updated':
+    case 'guest_request.created':
+    case 'guest_request.updated':
+      return [
+        { queryKey: ['pos', 'guest-orders', scope.generation] },
+        { queryKey: ['pos', 'guest-requests', scope.generation] },
+      ];
     // Claims, prints and cancels of a job; other resources (tables among
     // them) announce through this event too and concern the floor instead.
     case 'resource.updated':

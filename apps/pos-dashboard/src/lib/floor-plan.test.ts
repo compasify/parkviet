@@ -6,6 +6,8 @@ import {
   nudgePlacement,
   readFloorSize,
   readKeepDays,
+  readQrLimit,
+  readQrMaxItems,
   readServiceChargeRate,
   readTableDraft,
   shiftPlacement,
@@ -140,5 +142,24 @@ describe('floor plan forms', () => {
     expect(readServiceChargeRate('50.01')).toBeUndefined()
     expect(readServiceChargeRate('5.123')).toBeUndefined()
     expect(readServiceChargeRate('ten')).toBeUndefined()
+  })
+})
+
+describe('QR order limits', () => {
+  it('reads an amount in đồng with or without thousand separators', () => {
+    expect(readQrLimit('')).toBeNull()
+    expect(readQrLimit('500.000')).toBe('500000')
+    expect(readQrLimit(' 1,200,000 ')).toBe('1200000')
+    expect(readQrLimit('0')).toBeUndefined()
+    expect(readQrLimit('-5')).toBeUndefined()
+    expect(readQrLimit('abc')).toBeUndefined()
+  })
+
+  it('takes 1 to 50 items', () => {
+    expect(readQrMaxItems('10')).toBe(10)
+    expect(readQrMaxItems('50')).toBe(50)
+    expect(readQrMaxItems('0')).toBeUndefined()
+    expect(readQrMaxItems('51')).toBeUndefined()
+    expect(readQrMaxItems('')).toBeUndefined()
   })
 })

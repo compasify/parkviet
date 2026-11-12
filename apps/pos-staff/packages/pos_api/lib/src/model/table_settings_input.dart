@@ -18,6 +18,9 @@ part 'table_settings_input.g.dart';
 /// * [serviceChargeRate]
 /// * [serviceChargeAppliesTo]
 /// * [serviceChargeTaxCategoryId]
+/// * [qrOrderMode]
+/// * [qrOrderAutoLimit] - Required for direct_to_kitchen.
+/// * [qrOrderAutoMaxItems]
 /// * [reservationGraceMinutes]
 /// * [reservationDurationMinutes]
 /// * [reservationFeeProductId]
@@ -41,6 +44,17 @@ abstract class TableSettingsInput
 
   @BuiltValueField(wireName: r'service_charge_tax_category_id')
   String? get serviceChargeTaxCategoryId;
+
+  @BuiltValueField(wireName: r'qr_order_mode')
+  TableSettingsInputQrOrderModeEnum? get qrOrderMode;
+  // enum qrOrderModeEnum {  staff_approval,  direct_to_kitchen,  };
+
+  /// Required for direct_to_kitchen.
+  @BuiltValueField(wireName: r'qr_order_auto_limit')
+  String? get qrOrderAutoLimit;
+
+  @BuiltValueField(wireName: r'qr_order_auto_max_items')
+  int? get qrOrderAutoMaxItems;
 
   @BuiltValueField(wireName: r'reservation_grace_minutes')
   int? get reservationGraceMinutes;
@@ -113,6 +127,27 @@ class _$TableSettingsInputSerializer
       yield serializers.serialize(
         object.serviceChargeTaxCategoryId,
         specifiedType: const FullType.nullable(String),
+      );
+    }
+    if (object.qrOrderMode != null) {
+      yield r'qr_order_mode';
+      yield serializers.serialize(
+        object.qrOrderMode,
+        specifiedType: const FullType(TableSettingsInputQrOrderModeEnum),
+      );
+    }
+    if (object.qrOrderAutoLimit != null) {
+      yield r'qr_order_auto_limit';
+      yield serializers.serialize(
+        object.qrOrderAutoLimit,
+        specifiedType: const FullType.nullable(String),
+      );
+    }
+    if (object.qrOrderAutoMaxItems != null) {
+      yield r'qr_order_auto_max_items';
+      yield serializers.serialize(
+        object.qrOrderAutoMaxItems,
+        specifiedType: const FullType(int),
       );
     }
     if (object.reservationGraceMinutes != null) {
@@ -209,6 +244,31 @@ class _$TableSettingsInputSerializer
           if (valueDes == null) continue;
           result.serviceChargeTaxCategoryId = valueDes;
           break;
+        case r'qr_order_mode':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType:
+                const FullType.nullable(TableSettingsInputQrOrderModeEnum),
+          ) as TableSettingsInputQrOrderModeEnum?;
+          if (valueDes == null) continue;
+          result.qrOrderMode = valueDes;
+          break;
+        case r'qr_order_auto_limit':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.qrOrderAutoLimit = valueDes;
+          break;
+        case r'qr_order_auto_max_items':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(int),
+          ) as int?;
+          if (valueDes == null) continue;
+          result.qrOrderAutoMaxItems = valueDes;
+          break;
         case r'reservation_grace_minutes':
           final valueDes = serializers.deserialize(
             value,
@@ -302,4 +362,23 @@ class TableSettingsInputServiceChargeAppliesToEnum extends EnumClass {
       _$tableSettingsInputServiceChargeAppliesToEnumValues;
   static TableSettingsInputServiceChargeAppliesToEnum valueOf(String name) =>
       _$tableSettingsInputServiceChargeAppliesToEnumValueOf(name);
+}
+
+class TableSettingsInputQrOrderModeEnum extends EnumClass {
+  @BuiltValueEnumConst(wireName: r'staff_approval')
+  static const TableSettingsInputQrOrderModeEnum staffApproval =
+      _$tableSettingsInputQrOrderModeEnum_staffApproval;
+  @BuiltValueEnumConst(wireName: r'direct_to_kitchen')
+  static const TableSettingsInputQrOrderModeEnum directToKitchen =
+      _$tableSettingsInputQrOrderModeEnum_directToKitchen;
+
+  static Serializer<TableSettingsInputQrOrderModeEnum> get serializer =>
+      _$tableSettingsInputQrOrderModeEnumSerializer;
+
+  const TableSettingsInputQrOrderModeEnum._(String name) : super(name);
+
+  static BuiltSet<TableSettingsInputQrOrderModeEnum> get values =>
+      _$tableSettingsInputQrOrderModeEnumValues;
+  static TableSettingsInputQrOrderModeEnum valueOf(String name) =>
+      _$tableSettingsInputQrOrderModeEnumValueOf(name);
 }

@@ -117,6 +117,11 @@ Class | Method | HTTP request | Description
 [*DefaultApi*](doc/DefaultApi.md) | [**posEinvoiceSettingsSave**](doc/DefaultApi.md#poseinvoicesettingssave) | **PUT** /api/v3/admin/pos/einvoice_settings | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posEinvoiceSummary**](doc/DefaultApi.md#poseinvoicesummary) | **GET** /api/v3/admin/pos/einvoices/summary | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posEinvoices**](doc/DefaultApi.md#poseinvoices) | **GET** /api/v3/admin/pos/einvoices | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posGuestOrderAccept**](doc/DefaultApi.md#posguestorderaccept) | **POST** /api/v3/admin/pos/guest_orders/{id}/accept | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posGuestOrderList**](doc/DefaultApi.md#posguestorderlist) | **GET** /api/v3/admin/pos/guest_orders | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posGuestOrderReject**](doc/DefaultApi.md#posguestorderreject) | **POST** /api/v3/admin/pos/guest_orders/{id}/reject | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posGuestRequestDone**](doc/DefaultApi.md#posguestrequestdone) | **POST** /api/v3/admin/pos/guest_requests/{id}/done | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posGuestRequestList**](doc/DefaultApi.md#posguestrequestlist) | **GET** /api/v3/admin/pos/guest_requests | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posHardwareStatus**](doc/DefaultApi.md#poshardwarestatus) | **GET** /api/v3/admin/pos/hardware_status | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posKitchenAllDayBump**](doc/DefaultApi.md#poskitchenalldaybump) | **POST** /api/v3/admin/pos/kitchen/all_day/bump | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posKitchenBoard**](doc/DefaultApi.md#poskitchenboard) | **GET** /api/v3/admin/pos/kitchen/board | 
@@ -193,6 +198,8 @@ Class | Method | HTTP request | Description
 [*DefaultApi*](doc/DefaultApi.md) | [**posStockAlertSet**](doc/DefaultApi.md#posstockalertset) | **PUT** /api/v3/admin/pos/stock_alerts | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posStockAlerts**](doc/DefaultApi.md#posstockalerts) | **GET** /api/v3/admin/pos/stock_alerts | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posSystemStatus**](doc/DefaultApi.md#possystemstatus) | **GET** /api/v3/admin/pos/system_status | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posTableCodeIssue**](doc/DefaultApi.md#postablecodeissue) | **POST** /api/v3/admin/pos/table_codes | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posTableCodeList**](doc/DefaultApi.md#postablecodelist) | **GET** /api/v3/admin/pos/table_codes | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posTableMerge**](doc/DefaultApi.md#postablemerge) | **POST** /api/v3/admin/pos/workspaces/{workspace_id}/merge | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posTableMove**](doc/DefaultApi.md#postablemove) | **POST** /api/v3/admin/pos/workspaces/{workspace_id}/move | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posTableOpen**](doc/DefaultApi.md#postableopen) | **POST** /api/v3/admin/pos/tables/{resource_id}/open | 
@@ -303,6 +310,17 @@ Class | Method | HTTP request | Description
  - [ErrorResponse](doc/ErrorResponse.md)
  - [ErrorResponseError](doc/ErrorResponseError.md)
  - [ErrorResponseErrorDetails](doc/ErrorResponseErrorDetails.md)
+ - [GuestOrder](doc/GuestOrder.md)
+ - [GuestOrderAcceptMeta](doc/GuestOrderAcceptMeta.md)
+ - [GuestOrderAcceptResult](doc/GuestOrderAcceptResult.md)
+ - [GuestOrderItem](doc/GuestOrderItem.md)
+ - [GuestOrderList](doc/GuestOrderList.md)
+ - [GuestOrderModifier](doc/GuestOrderModifier.md)
+ - [GuestOrderRejectInput](doc/GuestOrderRejectInput.md)
+ - [GuestOrderResult](doc/GuestOrderResult.md)
+ - [GuestRequest](doc/GuestRequest.md)
+ - [GuestRequestList](doc/GuestRequestList.md)
+ - [GuestRequestResult](doc/GuestRequestResult.md)
  - [HardwareCheck](doc/HardwareCheck.md)
  - [HardwareDevice](doc/HardwareDevice.md)
  - [HardwareDisplays](doc/HardwareDisplays.md)
@@ -558,6 +576,12 @@ Class | Method | HTTP request | Description
  - [SystemStatusServer](doc/SystemStatusServer.md)
  - [SystemStatusVersion](doc/SystemStatusVersion.md)
  - [SystemStatusVietqr](doc/SystemStatusVietqr.md)
+ - [TableCode](doc/TableCode.md)
+ - [TableCodeEntry](doc/TableCodeEntry.md)
+ - [TableCodeIssueInput](doc/TableCodeIssueInput.md)
+ - [TableCodeIssueMeta](doc/TableCodeIssueMeta.md)
+ - [TableCodeIssueResult](doc/TableCodeIssueResult.md)
+ - [TableCodeList](doc/TableCodeList.md)
  - [TableMergeInput](doc/TableMergeInput.md)
  - [TableMoveInput](doc/TableMoveInput.md)
  - [TableOpenInput](doc/TableOpenInput.md)

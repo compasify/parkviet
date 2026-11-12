@@ -25,6 +25,7 @@ part 'menu_item.g.dart';
 /// * [showComponentsOnKds]
 /// * [position]
 /// * [active]
+/// * [qrOrderable] - Guests may order it from the table QR.
 /// * [taxCategoryId]
 /// * [modifierGroupIds]
 /// * [components]
@@ -113,6 +114,13 @@ class _$MenuItemSerializer implements PrimitiveSerializer<MenuItem> {
       object.soldOut,
       specifiedType: const FullType(bool),
     );
+    if (object.qrOrderable != null) {
+      yield r'qr_orderable';
+      yield serializers.serialize(
+        object.qrOrderable,
+        specifiedType: const FullType(bool),
+      );
+    }
     yield r'image_url';
     yield object.imageUrl == null
         ? null
@@ -241,6 +249,14 @@ class _$MenuItemSerializer implements PrimitiveSerializer<MenuItem> {
             specifiedType: const FullType(bool),
           ) as bool;
           result.soldOut = valueDes;
+          break;
+        case r'qr_orderable':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(bool),
+          ) as bool?;
+          if (valueDes == null) continue;
+          result.qrOrderable = valueDes;
           break;
         case r'image_url':
           final valueDes = serializers.deserialize(

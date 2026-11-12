@@ -56,9 +56,38 @@ final BuiltSet<TableSettingsInputServiceChargeAppliesToEnum>
   _$tableSettingsInputServiceChargeAppliesToEnum_timed,
 ]);
 
+const TableSettingsInputQrOrderModeEnum
+    _$tableSettingsInputQrOrderModeEnum_staffApproval =
+    const TableSettingsInputQrOrderModeEnum._('staffApproval');
+const TableSettingsInputQrOrderModeEnum
+    _$tableSettingsInputQrOrderModeEnum_directToKitchen =
+    const TableSettingsInputQrOrderModeEnum._('directToKitchen');
+
+TableSettingsInputQrOrderModeEnum _$tableSettingsInputQrOrderModeEnumValueOf(
+    String name) {
+  switch (name) {
+    case 'staffApproval':
+      return _$tableSettingsInputQrOrderModeEnum_staffApproval;
+    case 'directToKitchen':
+      return _$tableSettingsInputQrOrderModeEnum_directToKitchen;
+    default:
+      throw ArgumentError(name);
+  }
+}
+
+final BuiltSet<TableSettingsInputQrOrderModeEnum>
+    _$tableSettingsInputQrOrderModeEnumValues = BuiltSet<
+        TableSettingsInputQrOrderModeEnum>(const <TableSettingsInputQrOrderModeEnum>[
+  _$tableSettingsInputQrOrderModeEnum_staffApproval,
+  _$tableSettingsInputQrOrderModeEnum_directToKitchen,
+]);
+
 Serializer<TableSettingsInputServiceChargeAppliesToEnum>
     _$tableSettingsInputServiceChargeAppliesToEnumSerializer =
     _$TableSettingsInputServiceChargeAppliesToEnumSerializer();
+Serializer<TableSettingsInputQrOrderModeEnum>
+    _$tableSettingsInputQrOrderModeEnumSerializer =
+    _$TableSettingsInputQrOrderModeEnumSerializer();
 
 class _$TableSettingsInputServiceChargeAppliesToEnumSerializer
     implements
@@ -101,6 +130,36 @@ class _$TableSettingsInputServiceChargeAppliesToEnumSerializer
           _fromWire[serialized] ?? (serialized is String ? serialized : ''));
 }
 
+class _$TableSettingsInputQrOrderModeEnumSerializer
+    implements PrimitiveSerializer<TableSettingsInputQrOrderModeEnum> {
+  static const Map<String, Object> _toWire = const <String, Object>{
+    'staffApproval': 'staff_approval',
+    'directToKitchen': 'direct_to_kitchen',
+  };
+  static const Map<Object, String> _fromWire = const <Object, String>{
+    'staff_approval': 'staffApproval',
+    'direct_to_kitchen': 'directToKitchen',
+  };
+
+  @override
+  final Iterable<Type> types = const <Type>[TableSettingsInputQrOrderModeEnum];
+  @override
+  final String wireName = 'TableSettingsInputQrOrderModeEnum';
+
+  @override
+  Object serialize(
+          Serializers serializers, TableSettingsInputQrOrderModeEnum object,
+          {FullType specifiedType = FullType.unspecified}) =>
+      _toWire[object.name] ?? object.name;
+
+  @override
+  TableSettingsInputQrOrderModeEnum deserialize(
+          Serializers serializers, Object serialized,
+          {FullType specifiedType = FullType.unspecified}) =>
+      TableSettingsInputQrOrderModeEnum.valueOf(
+          _fromWire[serialized] ?? (serialized is String ? serialized : ''));
+}
+
 class _$TableSettingsInput extends TableSettingsInput {
   @override
   final String branchId;
@@ -113,6 +172,12 @@ class _$TableSettingsInput extends TableSettingsInput {
       serviceChargeAppliesTo;
   @override
   final String? serviceChargeTaxCategoryId;
+  @override
+  final TableSettingsInputQrOrderModeEnum? qrOrderMode;
+  @override
+  final String? qrOrderAutoLimit;
+  @override
+  final int? qrOrderAutoMaxItems;
   @override
   final int? reservationGraceMinutes;
   @override
@@ -132,6 +197,9 @@ class _$TableSettingsInput extends TableSettingsInput {
       this.serviceChargeRate,
       this.serviceChargeAppliesTo,
       this.serviceChargeTaxCategoryId,
+      this.qrOrderMode,
+      this.qrOrderAutoLimit,
+      this.qrOrderAutoMaxItems,
       this.reservationGraceMinutes,
       this.reservationDurationMinutes,
       this.reservationFeeProductId,
@@ -155,6 +223,9 @@ class _$TableSettingsInput extends TableSettingsInput {
         serviceChargeRate == other.serviceChargeRate &&
         serviceChargeAppliesTo == other.serviceChargeAppliesTo &&
         serviceChargeTaxCategoryId == other.serviceChargeTaxCategoryId &&
+        qrOrderMode == other.qrOrderMode &&
+        qrOrderAutoLimit == other.qrOrderAutoLimit &&
+        qrOrderAutoMaxItems == other.qrOrderAutoMaxItems &&
         reservationGraceMinutes == other.reservationGraceMinutes &&
         reservationDurationMinutes == other.reservationDurationMinutes &&
         reservationFeeProductId == other.reservationFeeProductId &&
@@ -169,6 +240,9 @@ class _$TableSettingsInput extends TableSettingsInput {
     _$hash = $jc(_$hash, serviceChargeRate.hashCode);
     _$hash = $jc(_$hash, serviceChargeAppliesTo.hashCode);
     _$hash = $jc(_$hash, serviceChargeTaxCategoryId.hashCode);
+    _$hash = $jc(_$hash, qrOrderMode.hashCode);
+    _$hash = $jc(_$hash, qrOrderAutoLimit.hashCode);
+    _$hash = $jc(_$hash, qrOrderAutoMaxItems.hashCode);
     _$hash = $jc(_$hash, reservationGraceMinutes.hashCode);
     _$hash = $jc(_$hash, reservationDurationMinutes.hashCode);
     _$hash = $jc(_$hash, reservationFeeProductId.hashCode);
@@ -185,6 +259,9 @@ class _$TableSettingsInput extends TableSettingsInput {
           ..add('serviceChargeRate', serviceChargeRate)
           ..add('serviceChargeAppliesTo', serviceChargeAppliesTo)
           ..add('serviceChargeTaxCategoryId', serviceChargeTaxCategoryId)
+          ..add('qrOrderMode', qrOrderMode)
+          ..add('qrOrderAutoLimit', qrOrderAutoLimit)
+          ..add('qrOrderAutoMaxItems', qrOrderAutoMaxItems)
           ..add('reservationGraceMinutes', reservationGraceMinutes)
           ..add('reservationDurationMinutes', reservationDurationMinutes)
           ..add('reservationFeeProductId', reservationFeeProductId)
@@ -226,6 +303,21 @@ class TableSettingsInputBuilder
   set serviceChargeTaxCategoryId(String? serviceChargeTaxCategoryId) =>
       _$this._serviceChargeTaxCategoryId = serviceChargeTaxCategoryId;
 
+  TableSettingsInputQrOrderModeEnum? _qrOrderMode;
+  TableSettingsInputQrOrderModeEnum? get qrOrderMode => _$this._qrOrderMode;
+  set qrOrderMode(TableSettingsInputQrOrderModeEnum? qrOrderMode) =>
+      _$this._qrOrderMode = qrOrderMode;
+
+  String? _qrOrderAutoLimit;
+  String? get qrOrderAutoLimit => _$this._qrOrderAutoLimit;
+  set qrOrderAutoLimit(String? qrOrderAutoLimit) =>
+      _$this._qrOrderAutoLimit = qrOrderAutoLimit;
+
+  int? _qrOrderAutoMaxItems;
+  int? get qrOrderAutoMaxItems => _$this._qrOrderAutoMaxItems;
+  set qrOrderAutoMaxItems(int? qrOrderAutoMaxItems) =>
+      _$this._qrOrderAutoMaxItems = qrOrderAutoMaxItems;
+
   int? _reservationGraceMinutes;
   int? get reservationGraceMinutes => _$this._reservationGraceMinutes;
   set reservationGraceMinutes(int? reservationGraceMinutes) =>
@@ -261,6 +353,9 @@ class TableSettingsInputBuilder
       _serviceChargeRate = $v.serviceChargeRate;
       _serviceChargeAppliesTo = $v.serviceChargeAppliesTo?.toBuilder();
       _serviceChargeTaxCategoryId = $v.serviceChargeTaxCategoryId;
+      _qrOrderMode = $v.qrOrderMode;
+      _qrOrderAutoLimit = $v.qrOrderAutoLimit;
+      _qrOrderAutoMaxItems = $v.qrOrderAutoMaxItems;
       _reservationGraceMinutes = $v.reservationGraceMinutes;
       _reservationDurationMinutes = $v.reservationDurationMinutes;
       _reservationFeeProductId = $v.reservationFeeProductId;
@@ -294,6 +389,9 @@ class TableSettingsInputBuilder
             serviceChargeRate: serviceChargeRate,
             serviceChargeAppliesTo: _serviceChargeAppliesTo?.build(),
             serviceChargeTaxCategoryId: serviceChargeTaxCategoryId,
+            qrOrderMode: qrOrderMode,
+            qrOrderAutoLimit: qrOrderAutoLimit,
+            qrOrderAutoMaxItems: qrOrderAutoMaxItems,
             reservationGraceMinutes: reservationGraceMinutes,
             reservationDurationMinutes: reservationDurationMinutes,
             reservationFeeProductId: reservationFeeProductId,

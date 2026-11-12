@@ -4513,6 +4513,185 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AttendantAssignmentResult'
+  /api/v3/admin/pos/guest_orders:
+    get:
+      operationId: posGuestOrderList
+      description: >
+        Guests' orders from the table QR at a branch: pending ones (whose
+        table order is still open) by default, or those decided in the last
+        day with `status`. Needs `pos.guest_order.decide`, `pos.table.serve`
+        or `pos.shift.open` at the branch.
+      parameters:
+        - name: branch_id
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [pending, accepted, rejected, expired]
+        - name: workspace_id
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: area_id
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: The guest orders, oldest first
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GuestOrderList'
+  /api/v3/admin/pos/guest_orders/{id}/accept:
+    post:
+      operationId: posGuestOrderAccept
+      description: >
+        Adds the items to the table's order as the caller, through the same
+        add command as a waiter (no lease, priced again), and sends the new
+        lines to the kitchen. Items sold out or closed to guests since are
+        left out with their reason; with nothing left the order is rejected.
+        Needs `pos.guest_order.decide`.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: The decided guest order, the table's order and how many kitchen tickets were sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GuestOrderAcceptResult'
+        '409':
+          description: >
+            Refused; `error.details.reason` is `guest_order_decided`,
+            `qr_order_unavailable`, `snapshot_locked` or a reason of adding items
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/guest_orders/{id}/reject:
+    post:
+      operationId: posGuestOrderReject
+      description: Turns a guest's order down; the guest reads the reason. Needs `pos.guest_order.decide`.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GuestOrderRejectInput'
+      responses:
+        '200':
+          description: The rejected guest order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GuestOrderResult'
+        '409':
+          description: Refused; `error.details.reason` is `guest_order_decided`, `reason_required` or `reason_invalid`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/guest_requests:
+    get:
+      operationId: posGuestRequestList
+      description: >
+        Open calls for staff and bill requests from the table QR at a branch,
+        oldest first. Same access as the guest orders.
+      parameters:
+        - name: branch_id
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: area_id
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The open requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GuestRequestList'
+  /api/v3/admin/pos/guest_requests/{id}/done:
+    post:
+      operationId: posGuestRequestDone
+      description: Marks a request taken care of; a request already done is answered as it is.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: The request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GuestRequestResult'
+  /api/v3/admin/pos/table_codes:
+    get:
+      operationId: posTableCodeList
+      description: >
+        The active tables of a branch with their QR code, if any. Needs
+        `write_pos_topology`, `pos.resource.manage` or `pos.topology.manage`.
+      parameters:
+        - name: branch_id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The tables
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableCodeList'
+    post:
+      operationId: posTableCodeIssue
+      description: >
+        Issues a new QR code for a table and revokes the old one with every
+        guest session it opened. `meta.token` and `meta.url` are answered
+        only by the request that issued them; a replay answers null. With
+        `printer_id` the sticker is queued to that printer (`table_qr`).
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TableCodeIssueInput'
+      responses:
+        '201':
+          description: The new code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableCodeIssueResult'
 components:
   parameters:
     Id:
@@ -4619,6 +4798,10 @@ components:
             - print_job.created
             - resource.updated
             - approval.requested
+            - guest_order.created
+            - guest_order.updated
+            - guest_request.created
+            - guest_request.updated
         id:
           type: string
         branch_id:
@@ -5072,6 +5255,9 @@ components:
           type: integer
         active:
           type: boolean
+        qr_orderable:
+          type: boolean
+          description: Guests may order it from the table QR.
         tax_category_id:
           type: [string, 'null']
         modifier_group_ids:
@@ -8089,6 +8275,16 @@ components:
         tips_as_revenue:
           type: boolean
           description: Whether the reports count tips as revenue.
+        qr_order_mode:
+          type: string
+          enum: [staff_approval, direct_to_kitchen]
+          description: How guests' orders from the table QR are taken.
+        qr_order_auto_limit:
+          type: [string, 'null']
+          description: The largest guest order that goes straight to the kitchen.
+        qr_order_auto_max_items:
+          type: integer
+          description: The most items a guest order may have to go straight to the kitchen.
         tip_split:
           $ref: '#/components/schemas/TipSplitRule'
         branch_id:
@@ -8141,6 +8337,16 @@ components:
             enum: [counter, dine_in, takeaway, delivery, tab, timed]
         service_charge_tax_category_id:
           type: [string, 'null']
+        qr_order_mode:
+          type: string
+          enum: [staff_approval, direct_to_kitchen]
+        qr_order_auto_limit:
+          type: [string, 'null']
+          description: Required for direct_to_kitchen.
+        qr_order_auto_max_items:
+          type: integer
+          minimum: 1
+          maximum: 50
         reservation_grace_minutes:
           type: integer
           minimum: 1
@@ -9899,3 +10105,250 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/TimedSessionCommand'
+    GuestOrderItem:
+      type: object
+      additionalProperties: false
+      required: [variant_id, menu_item_id, name, size, quantity, unit_price, amount, note, modifiers]
+      properties:
+        variant_id:
+          type: string
+        menu_item_id:
+          type: string
+        name:
+          type: string
+        size:
+          type: [string, 'null']
+        quantity:
+          type: integer
+        unit_price:
+          type: string
+          description: The server's price per unit with options when the guest sent it.
+        amount:
+          type: string
+        note:
+          type: [string, 'null']
+        outcome:
+          type: [string, 'null']
+          enum: [added, left_out, null]
+        reason:
+          type: [string, 'null']
+          description: Why an item was left out, `item_sold_out` or `item_unavailable`.
+        modifiers:
+          type: array
+          items:
+            $ref: '#/components/schemas/GuestOrderModifier'
+    GuestOrderModifier:
+      type: object
+      additionalProperties: false
+      required: [option_id, name, quantity]
+      properties:
+        option_id:
+          type: string
+        name:
+          type: string
+        quantity:
+          type: integer
+    GuestOrder:
+      type: object
+      additionalProperties: false
+      required: [id, branch_id, workspace_id, resource_id, table_name, area_id, status, automatic, items, quoted_total, currency,
+                 item_count, reject_reason, decided_by_id, decided_by_name, decided_at, created_at]
+      properties:
+        id:
+          type: string
+        branch_id:
+          type: string
+        workspace_id:
+          type: string
+        resource_id:
+          type: string
+        table_name:
+          type: string
+          description: The table and the letter of its order.
+        area_id:
+          type: [string, 'null']
+        status:
+          type: string
+          enum: [pending, accepted, rejected, expired]
+        automatic:
+          type: boolean
+          description: Accepted by the branch's straight-to-kitchen mode.
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/GuestOrderItem'
+        quoted_total:
+          type: string
+        currency:
+          type: string
+        item_count:
+          type: integer
+        reject_reason:
+          type: [string, 'null']
+        decided_by_id:
+          type: [string, 'null']
+        decided_by_name:
+          type: [string, 'null']
+        decided_at:
+          type: [string, 'null']
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+    GuestOrderList:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/GuestOrder'
+        meta:
+          type: object
+          additionalProperties: true
+    GuestOrderResult:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/GuestOrder'
+    GuestOrderAcceptMeta:
+      type: object
+      properties:
+        workspace:
+          $ref: '#/components/schemas/Workspace'
+        kitchen_ticket_count:
+          type: integer
+    GuestOrderAcceptResult:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/GuestOrder'
+        meta:
+          $ref: '#/components/schemas/GuestOrderAcceptMeta'
+    GuestOrderRejectInput:
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          type: string
+          maxLength: 200
+    GuestRequest:
+      type: object
+      additionalProperties: false
+      required: [id, branch_id, resource_id, table_name, area_id, workspace_id, kind, status, handled_by_name, handled_at, created_at]
+      properties:
+        id:
+          type: string
+        branch_id:
+          type: string
+        resource_id:
+          type: string
+        table_name:
+          type: string
+        area_id:
+          type: [string, 'null']
+        workspace_id:
+          type: [string, 'null']
+        kind:
+          type: string
+          enum: [call_staff, request_bill]
+        status:
+          type: string
+          enum: [open, done]
+        handled_by_name:
+          type: [string, 'null']
+        handled_at:
+          type: [string, 'null']
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+    GuestRequestList:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/GuestRequest'
+        meta:
+          type: object
+          additionalProperties: true
+    GuestRequestResult:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/GuestRequest'
+    TableCode:
+      type: object
+      additionalProperties: false
+      required: [id, resource_id, status, rotated_at, revoked_at]
+      properties:
+        id:
+          type: string
+        resource_id:
+          type: string
+        status:
+          type: string
+          enum: [active, revoked]
+        rotated_at:
+          type: string
+          format: date-time
+        revoked_at:
+          type: [string, 'null']
+          format: date-time
+    TableCodeEntry:
+      type: object
+      additionalProperties: false
+      required: [resource_id, name, area_id, table_code]
+      properties:
+        resource_id:
+          type: string
+        name:
+          type: string
+        area_id:
+          type: string
+        table_code:
+          oneOf:
+            - $ref: '#/components/schemas/TableCode'
+            - type: 'null'
+    TableCodeList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/TableCodeEntry'
+    TableCodeIssueInput:
+      type: object
+      required: [resource_id]
+      properties:
+        resource_id:
+          type: string
+        printer_id:
+          type: [string, 'null']
+    TableCodeIssueMeta:
+      type: object
+      required: [token, url]
+      properties:
+        token:
+          type: [string, 'null']
+          description: The code's token; shown once.
+        url:
+          type: [string, 'null']
+          description: What the sticker's QR holds.
+        print_job:
+          type: [object, 'null']
+          additionalProperties: true
+    TableCodeIssueResult:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/TableCode'
+        meta:
+          $ref: '#/components/schemas/TableCodeIssueMeta'

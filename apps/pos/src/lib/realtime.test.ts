@@ -69,6 +69,20 @@ describe('menu invalidation', () => {
   });
 });
 
+describe('guest order invalidation', () => {
+  it('reads the QR tray again when a guest orders, calls or staff decide', () => {
+    const orders = ['pos', 'guest-orders', 3, 'br_1'];
+    const requests = ['pos', 'guest-requests', 3, 'br_1'];
+    for (const name of ['guest_order.created', 'guest_order.updated']) {
+      expect(matched(event({ event: name, id: 'posguestorder_1' }), orders)).toBe(true);
+    }
+    for (const name of ['guest_request.created', 'guest_request.updated']) {
+      expect(matched(event({ event: name, id: 'posguestreq_1' }), requests)).toBe(true);
+    }
+    expect(matched(event({ event: 'menu.sold_out', id: 'posmenuitem_1' }), orders)).toBe(false);
+  });
+});
+
 const list = ['pos', 'workspaces', 3, 'store_1', 'br_1', null, 1];
 const selected = (id: string) => ['pos', 'workspaces', 3, 'store_1', 'selected', 'br_1', null, id];
 

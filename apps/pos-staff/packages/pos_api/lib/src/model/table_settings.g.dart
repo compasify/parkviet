@@ -6,6 +6,32 @@ part of 'table_settings.dart';
 // BuiltValueGenerator
 // **************************************************************************
 
+const TableSettingsQrOrderModeEnum
+    _$tableSettingsQrOrderModeEnum_staffApproval =
+    const TableSettingsQrOrderModeEnum._('staffApproval');
+const TableSettingsQrOrderModeEnum
+    _$tableSettingsQrOrderModeEnum_directToKitchen =
+    const TableSettingsQrOrderModeEnum._('directToKitchen');
+
+TableSettingsQrOrderModeEnum _$tableSettingsQrOrderModeEnumValueOf(
+    String name) {
+  switch (name) {
+    case 'staffApproval':
+      return _$tableSettingsQrOrderModeEnum_staffApproval;
+    case 'directToKitchen':
+      return _$tableSettingsQrOrderModeEnum_directToKitchen;
+    default:
+      throw ArgumentError(name);
+  }
+}
+
+final BuiltSet<TableSettingsQrOrderModeEnum>
+    _$tableSettingsQrOrderModeEnumValues =
+    BuiltSet<TableSettingsQrOrderModeEnum>(const <TableSettingsQrOrderModeEnum>[
+  _$tableSettingsQrOrderModeEnum_staffApproval,
+  _$tableSettingsQrOrderModeEnum_directToKitchen,
+]);
+
 const TableSettingsServiceChargeAppliesToEnum
     _$tableSettingsServiceChargeAppliesToEnum_counter =
     const TableSettingsServiceChargeAppliesToEnum._('counter');
@@ -56,9 +82,41 @@ final BuiltSet<TableSettingsServiceChargeAppliesToEnum>
   _$tableSettingsServiceChargeAppliesToEnum_timed,
 ]);
 
+Serializer<TableSettingsQrOrderModeEnum>
+    _$tableSettingsQrOrderModeEnumSerializer =
+    _$TableSettingsQrOrderModeEnumSerializer();
 Serializer<TableSettingsServiceChargeAppliesToEnum>
     _$tableSettingsServiceChargeAppliesToEnumSerializer =
     _$TableSettingsServiceChargeAppliesToEnumSerializer();
+
+class _$TableSettingsQrOrderModeEnumSerializer
+    implements PrimitiveSerializer<TableSettingsQrOrderModeEnum> {
+  static const Map<String, Object> _toWire = const <String, Object>{
+    'staffApproval': 'staff_approval',
+    'directToKitchen': 'direct_to_kitchen',
+  };
+  static const Map<Object, String> _fromWire = const <Object, String>{
+    'staff_approval': 'staffApproval',
+    'direct_to_kitchen': 'directToKitchen',
+  };
+
+  @override
+  final Iterable<Type> types = const <Type>[TableSettingsQrOrderModeEnum];
+  @override
+  final String wireName = 'TableSettingsQrOrderModeEnum';
+
+  @override
+  Object serialize(Serializers serializers, TableSettingsQrOrderModeEnum object,
+          {FullType specifiedType = FullType.unspecified}) =>
+      _toWire[object.name] ?? object.name;
+
+  @override
+  TableSettingsQrOrderModeEnum deserialize(
+          Serializers serializers, Object serialized,
+          {FullType specifiedType = FullType.unspecified}) =>
+      TableSettingsQrOrderModeEnum.valueOf(
+          _fromWire[serialized] ?? (serialized is String ? serialized : ''));
+}
 
 class _$TableSettingsServiceChargeAppliesToEnumSerializer
     implements PrimitiveSerializer<TableSettingsServiceChargeAppliesToEnum> {
@@ -114,6 +172,12 @@ class _$TableSettings extends TableSettings {
   @override
   final bool? tipsAsRevenue;
   @override
+  final TableSettingsQrOrderModeEnum? qrOrderMode;
+  @override
+  final String? qrOrderAutoLimit;
+  @override
+  final int? qrOrderAutoMaxItems;
+  @override
   final TipSplitRule? tipSplit;
   @override
   final String branchId;
@@ -139,6 +203,9 @@ class _$TableSettings extends TableSettings {
       required this.courseLabels,
       this.bottleKeepDays,
       this.tipsAsRevenue,
+      this.qrOrderMode,
+      this.qrOrderAutoLimit,
+      this.qrOrderAutoMaxItems,
       this.tipSplit,
       required this.branchId,
       this.tableRegisterId,
@@ -164,6 +231,9 @@ class _$TableSettings extends TableSettings {
         courseLabels == other.courseLabels &&
         bottleKeepDays == other.bottleKeepDays &&
         tipsAsRevenue == other.tipsAsRevenue &&
+        qrOrderMode == other.qrOrderMode &&
+        qrOrderAutoLimit == other.qrOrderAutoLimit &&
+        qrOrderAutoMaxItems == other.qrOrderAutoMaxItems &&
         tipSplit == other.tipSplit &&
         branchId == other.branchId &&
         tableRegisterId == other.tableRegisterId &&
@@ -182,6 +252,9 @@ class _$TableSettings extends TableSettings {
     _$hash = $jc(_$hash, courseLabels.hashCode);
     _$hash = $jc(_$hash, bottleKeepDays.hashCode);
     _$hash = $jc(_$hash, tipsAsRevenue.hashCode);
+    _$hash = $jc(_$hash, qrOrderMode.hashCode);
+    _$hash = $jc(_$hash, qrOrderAutoLimit.hashCode);
+    _$hash = $jc(_$hash, qrOrderAutoMaxItems.hashCode);
     _$hash = $jc(_$hash, tipSplit.hashCode);
     _$hash = $jc(_$hash, branchId.hashCode);
     _$hash = $jc(_$hash, tableRegisterId.hashCode);
@@ -202,6 +275,9 @@ class _$TableSettings extends TableSettings {
           ..add('courseLabels', courseLabels)
           ..add('bottleKeepDays', bottleKeepDays)
           ..add('tipsAsRevenue', tipsAsRevenue)
+          ..add('qrOrderMode', qrOrderMode)
+          ..add('qrOrderAutoLimit', qrOrderAutoLimit)
+          ..add('qrOrderAutoMaxItems', qrOrderAutoMaxItems)
           ..add('tipSplit', tipSplit)
           ..add('branchId', branchId)
           ..add('tableRegisterId', tableRegisterId)
@@ -247,6 +323,21 @@ class TableSettingsBuilder
   bool? get tipsAsRevenue => _$this._tipsAsRevenue;
   set tipsAsRevenue(bool? tipsAsRevenue) =>
       _$this._tipsAsRevenue = tipsAsRevenue;
+
+  TableSettingsQrOrderModeEnum? _qrOrderMode;
+  TableSettingsQrOrderModeEnum? get qrOrderMode => _$this._qrOrderMode;
+  set qrOrderMode(TableSettingsQrOrderModeEnum? qrOrderMode) =>
+      _$this._qrOrderMode = qrOrderMode;
+
+  String? _qrOrderAutoLimit;
+  String? get qrOrderAutoLimit => _$this._qrOrderAutoLimit;
+  set qrOrderAutoLimit(String? qrOrderAutoLimit) =>
+      _$this._qrOrderAutoLimit = qrOrderAutoLimit;
+
+  int? _qrOrderAutoMaxItems;
+  int? get qrOrderAutoMaxItems => _$this._qrOrderAutoMaxItems;
+  set qrOrderAutoMaxItems(int? qrOrderAutoMaxItems) =>
+      _$this._qrOrderAutoMaxItems = qrOrderAutoMaxItems;
 
   TipSplitRuleBuilder? _tipSplit;
   TipSplitRuleBuilder get tipSplit =>
@@ -300,6 +391,9 @@ class TableSettingsBuilder
       _courseLabels = $v.courseLabels.toBuilder();
       _bottleKeepDays = $v.bottleKeepDays;
       _tipsAsRevenue = $v.tipsAsRevenue;
+      _qrOrderMode = $v.qrOrderMode;
+      _qrOrderAutoLimit = $v.qrOrderAutoLimit;
+      _qrOrderAutoMaxItems = $v.qrOrderAutoMaxItems;
       _tipSplit = $v.tipSplit?.toBuilder();
       _branchId = $v.branchId;
       _tableRegisterId = $v.tableRegisterId;
@@ -342,6 +436,9 @@ class TableSettingsBuilder
             courseLabels: courseLabels.build(),
             bottleKeepDays: bottleKeepDays,
             tipsAsRevenue: tipsAsRevenue,
+            qrOrderMode: qrOrderMode,
+            qrOrderAutoLimit: qrOrderAutoLimit,
+            qrOrderAutoMaxItems: qrOrderAutoMaxItems,
             tipSplit: _tipSplit?.build(),
             branchId: BuiltValueNullFieldError.checkNotNull(
                 branchId, r'TableSettings', 'branchId'),

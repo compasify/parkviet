@@ -23,6 +23,9 @@ export const POS_FEATURES = [
   // Delivery orders: a sale is marked for delivery (deliverer, delivery fee)
   // and waits in "Đơn cần giao" until it is delivered.
   'delivery',
+  // Guests order from the table's QR code; the branch also needs the
+  // `fnb.qr_order` module.
+  'qr_order',
 ] as const;
 
 export type PosFeature = (typeof POS_FEATURES)[number];

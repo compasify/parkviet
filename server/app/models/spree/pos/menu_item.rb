@@ -65,7 +65,7 @@ module Spree
         {
           id: prefixed_id, product_id: product.prefixed_id, name: product.name, kind: kind,
           menu_category_id: menu_category&.prefixed_id, kitchen_category: kitchen_category, cup_label: cup_label,
-          show_components_on_kds: show_components_on_kds, position: position, active: active,
+          show_components_on_kds: show_components_on_kds, position: position, active: active, qr_orderable: qr_orderable,
           tax_category_id: product.tax_category.try(:prefixed_id),
           modifier_group_ids: menu_item_modifier_groups.map { |row| row.modifier_group.prefixed_id },
           components: combo_components.map(&:to_pos),

@@ -249,7 +249,7 @@ RSpec.describe Spree::Pos::BusinessProfiles do
 
     it 'registers the three retail modules, the F&B modules, and freezes the registry' do
       expect(described_class.available_keys).to eq(%w[retail.units retail.measured retail.traceability fnb.menu fnb.recipes fnb.kitchen fnb.order_number fnb.cup_label fnb.delivery_platforms resources fnb.tables fnb.postpay fnb.service_charge
-                                                          fnb.reservations fnb.bottle_keep fnb.pour_tracking fnb.meal_accounts fnb.vehicle_commission timed_billing])
+                                                          fnb.reservations fnb.bottle_keep fnb.pour_tracking fnb.meal_accounts fnb.vehicle_commission fnb.qr_order timed_billing])
       expect(described_class.find('fnb.recipes').depends_on).to eq(%w[fnb.menu retail.units])
       expect(described_class.find('retail.measured').depends_on).to eq(['retail.units'])
       expect(described_class.available?('fnb.menu')).to be(true)

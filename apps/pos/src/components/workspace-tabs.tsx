@@ -60,6 +60,7 @@ import { DeliveryForm } from './delivery-form';
 import { DiscountForm } from './discount-form';
 import { DisplayPinControl } from './display-pin-control';
 import { GuestNameField } from './guest-name-field';
+import { GuestOrderTray } from './guest-order-tray';
 import { KitchenHistory } from './kitchen-history';
 import { MealBanner } from './meal-banner';
 import { MenuGrid } from './menu-grid';
@@ -225,6 +226,15 @@ export function WorkspaceTabs() {
   const cupLabels = data?.modules?.['fnb.cup_label'] === true;
   // Delivery platform orders typed in at the counter; they keep to their own tray.
   const platformOrders = data?.modules?.['fnb.delivery_platforms'] === true;
+  // Guests ordering from the table's QR: their orders and calls wait in a tray.
+  const guestOrders =
+    data?.modules?.['fnb.qr_order'] === true &&
+    contextFeature(data, 'qr_order') &&
+    Boolean(
+      data?.capabilities.some((capability) =>
+        ['pos.guest_order.decide', 'pos.table.serve', 'pos.shift.open'].includes(capability),
+      ),
+    );
   // Table service: the floor (tiles or plan, chosen per device) beside selling.
   const [savedSurface, setSavedSurface] = useState(() => savedTableSurface());
   const tableSurface = tableSurfaceOf(data, savedSurface);
@@ -999,6 +1009,13 @@ export function WorkspaceTabs() {
             data?.shift && data.shift.owner_id === data.staff.id && !locked && !channelUnavailable,
           )}
           canCollect={Boolean(data?.capabilities.includes('pos.payment.collect'))}
+        />
+      ) : null}
+      {guestOrders && selectionComplete ? (
+        <GuestOrderTray
+          key={`guest:${storeId}:${selection.branchId}`}
+          branchId={selection.branchId}
+          canDecide={Boolean(data?.capabilities.includes('pos.guest_order.decide')) && !locked}
         />
       ) : null}
       {showTabs ? (

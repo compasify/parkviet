@@ -2155,6 +2155,120 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'{room} tạm dừng quá lâu'**
   String waiterAlertPauseTooLong(String room);
+
+  /// No description provided for @waiterGuestTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đơn từ QR'**
+  String get waiterGuestTitle;
+
+  /// No description provided for @waiterGuestAllAreas.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mọi khu'**
+  String get waiterGuestAllAreas;
+
+  /// No description provided for @waiterGuestMyArea.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khu tôi theo dõi'**
+  String get waiterGuestMyArea;
+
+  /// No description provided for @waiterGuestEmpty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không có đơn hay yêu cầu nào của khách đang chờ.'**
+  String get waiterGuestEmpty;
+
+  /// No description provided for @waiterGuestWaiting.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} đang chờ'**
+  String waiterGuestWaiting(int count);
+
+  /// No description provided for @waiterGuestAccept.
+  ///
+  /// In vi, this message translates to:
+  /// **'Duyệt'**
+  String get waiterGuestAccept;
+
+  /// No description provided for @waiterGuestReject.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ chối'**
+  String get waiterGuestReject;
+
+  /// No description provided for @waiterGuestRejectTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lý do từ chối'**
+  String get waiterGuestRejectTitle;
+
+  /// No description provided for @waiterGuestRejectHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách đọc được lý do này trên điện thoại.'**
+  String get waiterGuestRejectHint;
+
+  /// No description provided for @waiterGuestRejectSoldOut.
+  ///
+  /// In vi, this message translates to:
+  /// **'Món đã hết'**
+  String get waiterGuestRejectSoldOut;
+
+  /// No description provided for @waiterGuestRejectKitchenClosed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bếp đã đóng'**
+  String get waiterGuestRejectKitchenClosed;
+
+  /// No description provided for @waiterGuestRejectAskStaff.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vui lòng gọi nhân viên'**
+  String get waiterGuestRejectAskStaff;
+
+  /// No description provided for @waiterGuestAccepted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã thêm vào đơn {table} và báo bếp.'**
+  String waiterGuestAccepted(String table);
+
+  /// No description provided for @waiterGuestRejected.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã từ chối đơn của {table}.'**
+  String waiterGuestRejected(String table);
+
+  /// No description provided for @waiterGuestCallStaff.
+  ///
+  /// In vi, this message translates to:
+  /// **'{table} gọi phục vụ'**
+  String waiterGuestCallStaff(String table);
+
+  /// No description provided for @waiterGuestRequestBill.
+  ///
+  /// In vi, this message translates to:
+  /// **'{table} yêu cầu thanh toán'**
+  String waiterGuestRequestBill(String table);
+
+  /// No description provided for @waiterGuestDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã xử lý'**
+  String get waiterGuestDone;
+
+  /// No description provided for @waiterGuestNoDecide.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn chưa có quyền duyệt đơn khách gọi qua QR.'**
+  String get waiterGuestNoDecide;
+
+  /// No description provided for @waiterGuestArrived.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách vừa gọi món hoặc gọi phục vụ qua QR'**
+  String get waiterGuestArrived;
 }
 
 class _AppLocalizationsDelegate

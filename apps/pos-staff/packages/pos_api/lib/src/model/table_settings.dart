@@ -21,6 +21,9 @@ part 'table_settings.g.dart';
 /// * [courseLabels]
 /// * [bottleKeepDays] - How many days a guest's bottle is kept.
 /// * [tipsAsRevenue] - Whether the reports count tips as revenue.
+/// * [qrOrderMode] - How guests' orders from the table QR are taken.
+/// * [qrOrderAutoLimit] - The largest guest order that goes straight to the kitchen.
+/// * [qrOrderAutoMaxItems] - The most items a guest order may have to go straight to the kitchen.
 /// * [tipSplit]
 /// * [branchId]
 /// * [tableRegisterId] - The register whose open shift table orders are booked on.
@@ -53,6 +56,19 @@ abstract class TableSettings
   /// Whether the reports count tips as revenue.
   @BuiltValueField(wireName: r'tips_as_revenue')
   bool? get tipsAsRevenue;
+
+  /// How guests' orders from the table QR are taken.
+  @BuiltValueField(wireName: r'qr_order_mode')
+  TableSettingsQrOrderModeEnum? get qrOrderMode;
+  // enum qrOrderModeEnum {  staff_approval,  direct_to_kitchen,  };
+
+  /// The largest guest order that goes straight to the kitchen.
+  @BuiltValueField(wireName: r'qr_order_auto_limit')
+  String? get qrOrderAutoLimit;
+
+  /// The most items a guest order may have to go straight to the kitchen.
+  @BuiltValueField(wireName: r'qr_order_auto_max_items')
+  int? get qrOrderAutoMaxItems;
 
   @BuiltValueField(wireName: r'tip_split')
   TipSplitRule? get tipSplit;
@@ -138,6 +154,27 @@ class _$TableSettingsSerializer implements PrimitiveSerializer<TableSettings> {
       yield serializers.serialize(
         object.tipsAsRevenue,
         specifiedType: const FullType(bool),
+      );
+    }
+    if (object.qrOrderMode != null) {
+      yield r'qr_order_mode';
+      yield serializers.serialize(
+        object.qrOrderMode,
+        specifiedType: const FullType(TableSettingsQrOrderModeEnum),
+      );
+    }
+    if (object.qrOrderAutoLimit != null) {
+      yield r'qr_order_auto_limit';
+      yield serializers.serialize(
+        object.qrOrderAutoLimit,
+        specifiedType: const FullType.nullable(String),
+      );
+    }
+    if (object.qrOrderAutoMaxItems != null) {
+      yield r'qr_order_auto_max_items';
+      yield serializers.serialize(
+        object.qrOrderAutoMaxItems,
+        specifiedType: const FullType(int),
       );
     }
     if (object.tipSplit != null) {
@@ -254,6 +291,31 @@ class _$TableSettingsSerializer implements PrimitiveSerializer<TableSettings> {
           if (valueDes == null) continue;
           result.tipsAsRevenue = valueDes;
           break;
+        case r'qr_order_mode':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType:
+                const FullType.nullable(TableSettingsQrOrderModeEnum),
+          ) as TableSettingsQrOrderModeEnum?;
+          if (valueDes == null) continue;
+          result.qrOrderMode = valueDes;
+          break;
+        case r'qr_order_auto_limit':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.qrOrderAutoLimit = valueDes;
+          break;
+        case r'qr_order_auto_max_items':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(int),
+          ) as int?;
+          if (valueDes == null) continue;
+          result.qrOrderAutoMaxItems = valueDes;
+          break;
         case r'tip_split':
           final valueDes = serializers.deserialize(
             value,
@@ -336,6 +398,26 @@ class _$TableSettingsSerializer implements PrimitiveSerializer<TableSettings> {
     );
     return result.build();
   }
+}
+
+/// How guests' orders from the table QR are taken.
+class TableSettingsQrOrderModeEnum extends EnumClass {
+  @BuiltValueEnumConst(wireName: r'staff_approval')
+  static const TableSettingsQrOrderModeEnum staffApproval =
+      _$tableSettingsQrOrderModeEnum_staffApproval;
+  @BuiltValueEnumConst(wireName: r'direct_to_kitchen')
+  static const TableSettingsQrOrderModeEnum directToKitchen =
+      _$tableSettingsQrOrderModeEnum_directToKitchen;
+
+  static Serializer<TableSettingsQrOrderModeEnum> get serializer =>
+      _$tableSettingsQrOrderModeEnumSerializer;
+
+  const TableSettingsQrOrderModeEnum._(String name) : super(name);
+
+  static BuiltSet<TableSettingsQrOrderModeEnum> get values =>
+      _$tableSettingsQrOrderModeEnumValues;
+  static TableSettingsQrOrderModeEnum valueOf(String name) =>
+      _$tableSettingsQrOrderModeEnumValueOf(name);
 }
 
 class TableSettingsServiceChargeAppliesToEnum extends EnumClass {

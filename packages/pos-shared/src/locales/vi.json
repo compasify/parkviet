@@ -88,6 +88,7 @@
   "capabilityTimedOperate": "Bật, tắt, chuyển giờ phòng / bàn bida",
   "capabilityTimedEdit": "Sửa giờ vào / ra của phòng (không cần duyệt)",
   "capabilityRatePlanManage": "Quản lý bảng giá giờ, ngày lễ, cuối tuần",
+  "capabilityGuestOrderDecide": "Duyệt / từ chối món khách gọi qua QR",
   "tableState_available": "Trống",
   "tableState_reserved": "Đã đặt",
   "reservationStatus_booked": "Đang chờ",
@@ -323,6 +324,12 @@
       "off": "Chi nhánh chưa bật chức năng Hoa hồng tài xế.",
       "disabled": "Chi nhánh chưa bật Hoa hồng tài xế; máy chủ không mở lượt xe và không gắn đơn vào xe. Việc bán hàng không bị ảnh hưởng."
     },
+    "fnb_qr_order": {
+      "label": "Gọi món qua QR",
+      "description": "Khách quét mã QR dán trên bàn để xem thực đơn, gọi món, gọi phục vụ và yêu cầu thanh toán; đơn chờ nhân viên duyệt rồi mới vào bếp.",
+      "off": "Chi nhánh chưa bật chức năng Gọi món qua QR.",
+      "disabled": "Chi nhánh chưa bật Gọi món qua QR; máy chủ không nhận đơn từ điện thoại khách. Việc bán hàng không bị ảnh hưởng."
+    },
     "timed_billing": {
       "label": "Tính giờ",
       "description": "Tính tiền giờ phòng karaoke, bàn bida theo bảng giá khung giờ, ngày thường, cuối tuần và ngày lễ; giờ do máy chủ tính.",
@@ -470,6 +477,7 @@
   "debtReminderMore_other": "- và {{count}} đơn khác",
   "debtReminderThanks": "Anh/chị chuyển khoản giúp cửa hàng nhé. Cảm ơn anh/chị nhiều ạ!",
   "featureDisabled_delivery": "Giao hàng vừa bị tắt ở chi nhánh; máy chủ không ghi nhận. Đơn vẫn bán tại quầy bình thường.",
+  "featureDisabled_qr_order": "Gọi món qua QR vừa bị tắt ở chi nhánh; máy chủ không ghi nhận. Nhân viên vẫn gọi món tại bàn bình thường.",
   "receiptDelivery": "Giao hàng",
   "receiptDeliveryYes": "Giao tận nhà",
   "receiptDeliveryFee": "Phí giao hàng"

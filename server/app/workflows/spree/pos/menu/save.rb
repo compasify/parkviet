@@ -8,7 +8,7 @@ module Spree
       # audited as `<resource>.change` with the operation.
       module Save
         CATEGORY_FIELDS = %w[name position color active].freeze
-        ITEM_FIELDS = %w[kind kitchen_category cup_label show_components_on_kds position active drink_credit].freeze
+        ITEM_FIELDS = %w[kind kitchen_category cup_label show_components_on_kds position active drink_credit qr_orderable].freeze
         GROUP_FIELDS = %w[name min_select max_select allow_quantity position].freeze
         OPTION_FIELDS = %w[name price_delta default_selected position active].freeze
         SCHEDULE_FIELDS = %w[name days_of_week starts_at ends_at active label].freeze

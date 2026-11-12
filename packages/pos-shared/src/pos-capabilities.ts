@@ -35,6 +35,7 @@ export const posCapabilities = [
   ['pos.timed.operate', 'capabilityTimedOperate'],
   ['pos.timed.edit', 'capabilityTimedEdit'],
   ['pos.rate_plan.manage', 'capabilityRatePlanManage'],
+  ['pos.guest_order.decide', 'capabilityGuestOrderDecide'],
 ] as const;
 
 export const sensitiveCapabilities = [

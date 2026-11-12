@@ -26,7 +26,15 @@ export type TableSettings = {
   // The store's tax categories, sent with the settings so a branch manager
   // without the store's tax settings can still choose the charge's.
   tax_categories: TaxCategoryOption[]
+  // Guests ordering from the table's QR code: staff confirm every order, or
+  // orders within the amount and item limits go straight to the kitchen.
+  qr_order_mode: QrOrderMode
+  qr_order_auto_limit: string | null
+  qr_order_auto_max_items: number
 }
+
+export const QR_ORDER_MODES = ['staff_approval', 'direct_to_kitchen'] as const
+export type QrOrderMode = (typeof QR_ORDER_MODES)[number]
 
 export type TaxCategoryOption = { id: string; name: string }
 
@@ -94,6 +102,12 @@ export const useTableSettings = (branchId: string) =>
         : null,
       tips_as_revenue: source.tips_as_revenue === true,
       tip_split: tipSplitOf(source.tip_split),
+      qr_order_mode:
+        QR_ORDER_MODES.find((mode) => mode === source.qr_order_mode) ?? 'staff_approval',
+      qr_order_auto_limit: textOrNull(source.qr_order_auto_limit),
+      qr_order_auto_max_items: Number.isInteger(source.qr_order_auto_max_items)
+        ? (source.qr_order_auto_max_items as number)
+        : 10,
       tax_categories: rows(source.tax_categories).flatMap((row) => {
         const item = row as { id?: unknown; name?: unknown }
         return typeof item.id === 'string' && typeof item.name === 'string'
@@ -116,5 +130,36 @@ export function useFloorPlanWrite() {
     successMessage: false,
     errorMessage: false,
     onSuccess: () => client.invalidateQueries({ queryKey: posKey(storeId, 'floor-plan') }),
+  })
+}
+
+// A table's QR code as the branch lists it: no token, only whether the
+// table has a code and when it was last printed.
+export type TableCodeRow = {
+  resource_id: string
+  name: string
+  area_id: string
+  table_code: { id: string; status: string; rotated_at: string } | null
+}
+
+export const useTableCodes = (branchId: string, enabled: boolean) => {
+  const { storeId } = useSession()
+  return useQuery({
+    queryKey: posKey(storeId, 'floor-plan', 'table-codes', branchId),
+    enabled,
+    queryFn: async (): Promise<TableCodeRow[]> =>
+      rows(await getData('/pos/table_codes', { branch_id: branchId })).flatMap((row) => {
+        const item = row as Partial<TableCodeRow>
+        return typeof item.resource_id === 'string' && typeof item.name === 'string'
+          ? [
+              {
+                resource_id: item.resource_id,
+                name: item.name,
+                area_id: typeof item.area_id === 'string' ? item.area_id : '',
+                table_code: item.table_code ?? null,
+              },
+            ]
+          : []
+      }),
   })
 }

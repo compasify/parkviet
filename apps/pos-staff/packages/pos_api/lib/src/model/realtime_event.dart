@@ -25,7 +25,7 @@ abstract class RealtimeEvent
     implements Built<RealtimeEvent, RealtimeEventBuilder> {
   @BuiltValueField(wireName: r'event')
   RealtimeEventEventEnum get event;
-  // enum eventEnum {  workspace.updated,  kitchen_ticket.updated,  menu.sold_out,  payment.requested,  print_job.created,  resource.updated,  approval.requested,  };
+  // enum eventEnum {  workspace.updated,  kitchen_ticket.updated,  menu.sold_out,  payment.requested,  print_job.created,  resource.updated,  approval.requested,  guest_order.created,  guest_order.updated,  guest_request.created,  guest_request.updated,  };
 
   @BuiltValueField(wireName: r'id')
   String get id;
@@ -258,6 +258,18 @@ class RealtimeEventEventEnum extends EnumClass {
   @BuiltValueEnumConst(wireName: r'approval.requested')
   static const RealtimeEventEventEnum approvalPeriodRequested =
       _$realtimeEventEventEnum_approvalPeriodRequested;
+  @BuiltValueEnumConst(wireName: r'guest_order.created')
+  static const RealtimeEventEventEnum guestOrderPeriodCreated =
+      _$realtimeEventEventEnum_guestOrderPeriodCreated;
+  @BuiltValueEnumConst(wireName: r'guest_order.updated')
+  static const RealtimeEventEventEnum guestOrderPeriodUpdated =
+      _$realtimeEventEventEnum_guestOrderPeriodUpdated;
+  @BuiltValueEnumConst(wireName: r'guest_request.created')
+  static const RealtimeEventEventEnum guestRequestPeriodCreated =
+      _$realtimeEventEventEnum_guestRequestPeriodCreated;
+  @BuiltValueEnumConst(wireName: r'guest_request.updated')
+  static const RealtimeEventEventEnum guestRequestPeriodUpdated =
+      _$realtimeEventEventEnum_guestRequestPeriodUpdated;
 
   static Serializer<RealtimeEventEventEnum> get serializer =>
       _$realtimeEventEventEnumSerializer;

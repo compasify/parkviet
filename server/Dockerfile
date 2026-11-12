@@ -51,11 +51,12 @@ RUN mkdir -p /rails-src /dashboard-src /seller-dashboard-src && \
     touch /seller-dashboard-src/.spree-custom-app; \
   fi
 
-# ParkViet POS web apps: the counter (apps/pos) and POS administration
-# (apps/pos-dashboard), with the shared package they link to. The relative
+# ParkViet POS web apps: the counter (apps/pos), POS administration
+# (apps/pos-dashboard) and the guests' QR order page (apps/table-order),
+# with the shared package the first two link to. The relative
 # layout is kept because both link `../../packages/pos-shared`.
 RUN mkdir -p /pos-web-src/apps /pos-web-src/packages && \
-  for app in pos pos-dashboard; do \
+  for app in pos pos-dashboard table-order; do \
     if [ -f "/ctx/apps/$app/package.json" ]; then cp -R "/ctx/apps/$app" "/pos-web-src/apps/$app"; fi; \
   done && \
   if [ -f /ctx/packages/pos-shared/package.json ]; then \
@@ -127,7 +128,7 @@ FROM docker.io/library/node:$NODE_VERSION-slim AS pos-web
 
 WORKDIR /pos-web
 COPY --from=ctx /pos-web-src /pos-web
-RUN corepack enable pnpm && mkdir -p /out/pos /out/pos-admin && \
+RUN corepack enable pnpm && mkdir -p /out/pos /out/pos-admin /out/table && \
   if [ -f packages/pos-shared/package.json ]; then \
     (cd packages/pos-shared && pnpm install --frozen-lockfile); \
   fi && \
@@ -138,6 +139,10 @@ RUN corepack enable pnpm && mkdir -p /out/pos /out/pos-admin && \
   if [ -f apps/pos-dashboard/package.json ]; then \
     (cd apps/pos-dashboard && pnpm install --frozen-lockfile && \
       VITE_BASE_PATH=/pos-admin/ pnpm build && cp -R dist/. /out/pos-admin/); \
+  fi && \
+  if [ -f apps/table-order/package.json ]; then \
+    (cd apps/table-order && pnpm install --frozen-lockfile && \
+      VITE_BASE_PATH=/table/ pnpm build && cp -R dist/. /out/table/); \
   fi
 
 FROM docker.io/library/ruby:$RUBY_VERSION-slim AS base
@@ -233,11 +238,14 @@ COPY --chown=rails:rails --from=seller-dashboard /seller-dashboard/dist /rails/s
 ENV SPREE_SELLER_PANEL_DIST_PATH="/rails/seller-dashboard"
 
 # ParkViet POS web apps (see the pos-web stage above), served by
-# Spree::Pos::SellingAppController at /pos and AdminAppController at /pos-admin.
+# Spree::Pos::SellingAppController at /pos, AdminAppController at /pos-admin and
+# TableOrderAppController at /table.
 COPY --chown=rails:rails --from=pos-web /out/pos /rails/pos-web
 COPY --chown=rails:rails --from=pos-web /out/pos-admin /rails/pos-admin
+COPY --chown=rails:rails --from=pos-web /out/table /rails/table-order
 ENV POS_WEB_DIST_PATH="/rails/pos-web" \
-  POS_ADMIN_DIST_PATH="/rails/pos-admin"
+  POS_ADMIN_DIST_PATH="/rails/pos-admin" \
+  TABLE_ORDER_DIST_PATH="/rails/table-order"
 
 # Release label shown on the POS system status page; set with
 # `--build-arg PARKVIET_VERSION=<tag>` (deploy/scripts/install-lan.sh does).

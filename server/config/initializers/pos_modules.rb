@@ -58,6 +58,11 @@ Rails.application.config.to_prepare do
     modules.register(key: 'fnb.vehicle_commission', group: 'fnb', depends_on: [],
                      entrypoints: ['Spree::Api::V3::Admin::Pos::VehicleVisitsController', 'Spree::Pos::VehicleVisits::Close'])
 
+    # Guests order from their phone by the table's QR code; staff accept each
+    # order (or the branch sends small ones straight to the kitchen).
+    modules.register(key: 'fnb.qr_order', group: 'fnb', depends_on: ['fnb.menu', 'fnb.tables'],
+                     entrypoints: ['Spree::Pos::GuestViewsController', 'Spree::Pos::GuestOrders::Submit'])
+
     # Play time on rooms and billiard tables: rate plans by time of day and
     # kind of day, and clocks billed as a timed line of the room's order.
     modules.register(key: 'timed_billing', group: 'fnb', depends_on: ['resources', 'fnb.tables'],

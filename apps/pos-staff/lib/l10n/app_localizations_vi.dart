@@ -1218,4 +1218,74 @@ class AppLocalizationsVi extends AppLocalizations {
   String waiterAlertPauseTooLong(String room) {
     return '$room tạm dừng quá lâu';
   }
+
+  @override
+  String get waiterGuestTitle => 'Đơn từ QR';
+
+  @override
+  String get waiterGuestAllAreas => 'Mọi khu';
+
+  @override
+  String get waiterGuestMyArea => 'Khu tôi theo dõi';
+
+  @override
+  String get waiterGuestEmpty =>
+      'Không có đơn hay yêu cầu nào của khách đang chờ.';
+
+  @override
+  String waiterGuestWaiting(int count) {
+    return '$count đang chờ';
+  }
+
+  @override
+  String get waiterGuestAccept => 'Duyệt';
+
+  @override
+  String get waiterGuestReject => 'Từ chối';
+
+  @override
+  String get waiterGuestRejectTitle => 'Lý do từ chối';
+
+  @override
+  String get waiterGuestRejectHint =>
+      'Khách đọc được lý do này trên điện thoại.';
+
+  @override
+  String get waiterGuestRejectSoldOut => 'Món đã hết';
+
+  @override
+  String get waiterGuestRejectKitchenClosed => 'Bếp đã đóng';
+
+  @override
+  String get waiterGuestRejectAskStaff => 'Vui lòng gọi nhân viên';
+
+  @override
+  String waiterGuestAccepted(String table) {
+    return 'Đã thêm vào đơn $table và báo bếp.';
+  }
+
+  @override
+  String waiterGuestRejected(String table) {
+    return 'Đã từ chối đơn của $table.';
+  }
+
+  @override
+  String waiterGuestCallStaff(String table) {
+    return '$table gọi phục vụ';
+  }
+
+  @override
+  String waiterGuestRequestBill(String table) {
+    return '$table yêu cầu thanh toán';
+  }
+
+  @override
+  String get waiterGuestDone => 'Đã xử lý';
+
+  @override
+  String get waiterGuestNoDecide =>
+      'Bạn chưa có quyền duyệt đơn khách gọi qua QR.';
+
+  @override
+  String get waiterGuestArrived => 'Khách vừa gọi món hoặc gọi phục vụ qua QR';
 }

@@ -72,6 +72,7 @@ export const LABELLED_MODULES = [
   'fnb.pour_tracking',
   'fnb.meal_accounts',
   'fnb.vehicle_commission',
+  'fnb.qr_order',
   'timed_billing',
 ] as const;
 

@@ -88,6 +88,7 @@
   "capabilityTimedOperate": "Start, stop and move room / billiard clocks",
   "capabilityTimedEdit": "Correct a room's time in / out (no approval)",
   "capabilityRatePlanManage": "Manage hourly rates, holidays and weekends",
+  "capabilityGuestOrderDecide": "Accept / reject what guests order by QR",
   "tableState_available": "Free",
   "tableState_reserved": "Reserved",
   "reservationStatus_booked": "Waiting",
@@ -323,6 +324,12 @@
       "off": "Driver commission is off at this branch.",
       "disabled": "Driver commission is off at this branch; the server opens no coach visits and puts no orders on them. Selling is not affected."
     },
+    "fnb_qr_order": {
+      "label": "QR ordering",
+      "description": "Guests scan the QR code on the table to read the menu, order, call staff and ask for the bill; orders wait for staff before they reach the kitchen.",
+      "off": "QR ordering is off at this branch.",
+      "disabled": "QR ordering is off at this branch; the server takes no orders from guests’ phones. Selling is not affected."
+    },
     "timed_billing": {
       "label": "Play time",
       "description": "Bill karaoke rooms and billiard tables by the time played, on rate plans by time of day, weekdays, weekends and holidays; the server keeps the time.",
@@ -470,6 +477,7 @@
   "debtReminderMore_other": "- and {{count}} more orders",
   "debtReminderThanks": "Please transfer when convenient. Thank you so much!",
   "featureDisabled_delivery": "Delivery was just switched off at the branch; nothing was recorded. The order can still be sold at the counter.",
+  "featureDisabled_qr_order": "QR ordering was just switched off at the branch; nothing was recorded. Staff can still order at the table.",
   "receiptDelivery": "Delivery",
   "receiptDeliveryYes": "To the door",
   "receiptDeliveryFee": "Delivery fee"

@@ -97,6 +97,21 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(ErrorResponse.serializer)
       ..add(ErrorResponseError.serializer)
       ..add(ErrorResponseErrorDetails.serializer)
+      ..add(GuestOrder.serializer)
+      ..add(GuestOrderAcceptMeta.serializer)
+      ..add(GuestOrderAcceptResult.serializer)
+      ..add(GuestOrderItem.serializer)
+      ..add(GuestOrderItemOutcomeEnum.serializer)
+      ..add(GuestOrderList.serializer)
+      ..add(GuestOrderModifier.serializer)
+      ..add(GuestOrderRejectInput.serializer)
+      ..add(GuestOrderResult.serializer)
+      ..add(GuestOrderStatusEnum.serializer)
+      ..add(GuestRequest.serializer)
+      ..add(GuestRequestKindEnum.serializer)
+      ..add(GuestRequestList.serializer)
+      ..add(GuestRequestResult.serializer)
+      ..add(GuestRequestStatusEnum.serializer)
       ..add(HardwareCheck.serializer)
       ..add(HardwareCheckKeyEnum.serializer)
       ..add(HardwareCheckStatusEnum.serializer)
@@ -434,6 +449,13 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(SystemStatusServerTlsModeEnum.serializer)
       ..add(SystemStatusVersion.serializer)
       ..add(SystemStatusVietqr.serializer)
+      ..add(TableCode.serializer)
+      ..add(TableCodeEntry.serializer)
+      ..add(TableCodeIssueInput.serializer)
+      ..add(TableCodeIssueMeta.serializer)
+      ..add(TableCodeIssueResult.serializer)
+      ..add(TableCodeList.serializer)
+      ..add(TableCodeStatusEnum.serializer)
       ..add(TableMergeInput.serializer)
       ..add(TableMoveInput.serializer)
       ..add(TableOpenInput.serializer)
@@ -443,7 +465,9 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(TableSettings.serializer)
       ..add(TableSettingsInput.serializer)
       ..add(TableSettingsInputCourseLabelsInner.serializer)
+      ..add(TableSettingsInputQrOrderModeEnum.serializer)
       ..add(TableSettingsInputServiceChargeAppliesToEnum.serializer)
+      ..add(TableSettingsQrOrderModeEnum.serializer)
       ..add(TableSettingsResult.serializer)
       ..add(TableSettingsServiceChargeAppliesToEnum.serializer)
       ..add(TableSplitInput.serializer)
@@ -593,6 +617,30 @@ Serializers _$serializers = (Serializers().toBuilder()
           const FullType(
               BuiltList, const [const FullType(EinvoiceTotalsTaxesInner)]),
           () => ListBuilder<EinvoiceTotalsTaxesInner>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GuestOrder)]),
+          () => ListBuilder<GuestOrder>())
+      ..addBuilderFactory(
+          const FullType(BuiltMap, const [
+            const FullType(String),
+            const FullType.nullable(JsonObject)
+          ]),
+          () => MapBuilder<String, JsonObject?>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GuestOrderItem)]),
+          () => ListBuilder<GuestOrderItem>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GuestOrderModifier)]),
+          () => ListBuilder<GuestOrderModifier>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GuestRequest)]),
+          () => ListBuilder<GuestRequest>())
+      ..addBuilderFactory(
+          const FullType(BuiltMap, const [
+            const FullType(String),
+            const FullType.nullable(JsonObject)
+          ]),
+          () => MapBuilder<String, JsonObject?>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(HardwareCheck)]),
           () => ListBuilder<HardwareCheck>())
@@ -949,6 +997,9 @@ Serializers _$serializers = (Serializers().toBuilder()
           const FullType(BuiltList, const [const FullType(ContextBranch)]),
           () => ListBuilder<ContextBranch>())
       ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(TableCodeEntry)]),
+          () => ListBuilder<TableCodeEntry>())
+      ..addBuilderFactory(
           const FullType(BuiltList, const [
             const FullType(TableSettingsInputServiceChargeAppliesToEnum)
           ]),
@@ -1003,6 +1054,12 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
           () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltMap, const [
+            const FullType(String),
+            const FullType.nullable(JsonObject)
+          ]),
+          () => MapBuilder<String, JsonObject?>())
       ..addBuilderFactory(
           const FullType(BuiltMap, const [
             const FullType(String),

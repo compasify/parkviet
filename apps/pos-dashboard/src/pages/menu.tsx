@@ -710,6 +710,7 @@ function ItemDialog({
   const [categoryId, setCategoryId] = useState(item?.menu_category_id ?? '')
   const [kitchen, setKitchen] = useState(item?.kitchen_category ?? '')
   const [cupLabel, setCupLabel] = useState(item?.cup_label === true)
+  const [qrOrderable, setQrOrderable] = useState(item?.qr_orderable !== false)
   const [drinkCredit, setDrinkCredit] = useState(item?.drink_credit?.replace(/\.0+$/, '') ?? '')
   const [creditCategories, setCreditCategories] = useState(
     (item?.drink_credit_categories ?? []).join(', '),
@@ -750,6 +751,7 @@ function ItemDialog({
                 menu_category_id: categoryId || null,
                 kitchen_category: kitchen.trim() || null,
                 cup_label: cupLabel,
+                qr_orderable: qrOrderable,
                 drink_credit: drinkCredit.trim() || null,
                 drink_credit_categories: creditCategories
                   .split(',')
@@ -844,6 +846,11 @@ function ItemDialog({
             </TopologyField>
           ) : null}
           <CheckField label={t('menuAdmin.cupLabel')} checked={cupLabel} onChange={setCupLabel} />
+          <CheckField
+            label={t('menuAdmin.qrOrderable')}
+            checked={qrOrderable}
+            onChange={setQrOrderable}
+          />
           {kind === 'single' ? (
             <fieldset className="space-y-2">
               <legend className="text-sm font-medium">{t('menuAdmin.groups')}</legend>

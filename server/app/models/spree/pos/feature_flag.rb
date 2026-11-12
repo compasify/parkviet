@@ -16,9 +16,10 @@ module Spree
       # `quick_credit` refines `credit` and works only while `credit` is on
       # too: the cashier approves their own credit sale (one-person shops).
       # `delivery` marks sales as orders to deliver (deliverer, delivery fee,
-      # pending until delivered).
+      # pending until delivered). `qr_order` opens the table QR to guests'
+      # phones (a public page), on top of the `fnb.qr_order` module.
       FEATURES = %w[credit returns refunds exchanges traceability customer_display cash_moves exports vietqr edit_lease
-                    quick_credit delivery].freeze
+                    quick_credit delivery qr_order].freeze
 
       belongs_to :store, class_name: 'Spree::Store'
       belongs_to :branch, class_name: 'Spree::Pos::Branch', optional: true

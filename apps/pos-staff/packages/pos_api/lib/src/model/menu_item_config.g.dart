@@ -92,6 +92,9 @@ abstract class MenuItemConfigBuilder {
   bool? get active;
   set active(bool? active);
 
+  bool? get qrOrderable;
+  set qrOrderable(bool? qrOrderable);
+
   String? get taxCategoryId;
   set taxCategoryId(String? taxCategoryId);
 
@@ -124,6 +127,8 @@ class _$$MenuItemConfig extends $MenuItemConfig {
   @override
   final bool active;
   @override
+  final bool? qrOrderable;
+  @override
   final String? taxCategoryId;
   @override
   final BuiltList<String> modifierGroupIds;
@@ -144,6 +149,7 @@ class _$$MenuItemConfig extends $MenuItemConfig {
       required this.showComponentsOnKds,
       required this.position,
       required this.active,
+      this.qrOrderable,
       this.taxCategoryId,
       required this.modifierGroupIds,
       required this.components})
@@ -169,6 +175,7 @@ class _$$MenuItemConfig extends $MenuItemConfig {
         showComponentsOnKds == other.showComponentsOnKds &&
         position == other.position &&
         active == other.active &&
+        qrOrderable == other.qrOrderable &&
         taxCategoryId == other.taxCategoryId &&
         modifierGroupIds == other.modifierGroupIds &&
         components == other.components;
@@ -187,6 +194,7 @@ class _$$MenuItemConfig extends $MenuItemConfig {
     _$hash = $jc(_$hash, showComponentsOnKds.hashCode);
     _$hash = $jc(_$hash, position.hashCode);
     _$hash = $jc(_$hash, active.hashCode);
+    _$hash = $jc(_$hash, qrOrderable.hashCode);
     _$hash = $jc(_$hash, taxCategoryId.hashCode);
     _$hash = $jc(_$hash, modifierGroupIds.hashCode);
     _$hash = $jc(_$hash, components.hashCode);
@@ -207,6 +215,7 @@ class _$$MenuItemConfig extends $MenuItemConfig {
           ..add('showComponentsOnKds', showComponentsOnKds)
           ..add('position', position)
           ..add('active', active)
+          ..add('qrOrderable', qrOrderable)
           ..add('taxCategoryId', taxCategoryId)
           ..add('modifierGroupIds', modifierGroupIds)
           ..add('components', components))
@@ -263,6 +272,11 @@ class $MenuItemConfigBuilder
   bool? get active => _$this._active;
   set active(covariant bool? active) => _$this._active = active;
 
+  bool? _qrOrderable;
+  bool? get qrOrderable => _$this._qrOrderable;
+  set qrOrderable(covariant bool? qrOrderable) =>
+      _$this._qrOrderable = qrOrderable;
+
   String? _taxCategoryId;
   String? get taxCategoryId => _$this._taxCategoryId;
   set taxCategoryId(covariant String? taxCategoryId) =>
@@ -298,6 +312,7 @@ class $MenuItemConfigBuilder
       _showComponentsOnKds = $v.showComponentsOnKds;
       _position = $v.position;
       _active = $v.active;
+      _qrOrderable = $v.qrOrderable;
       _taxCategoryId = $v.taxCategoryId;
       _modifierGroupIds = $v.modifierGroupIds.toBuilder();
       _components = $v.components.toBuilder();
@@ -342,6 +357,7 @@ class $MenuItemConfigBuilder
                 position, r'$MenuItemConfig', 'position'),
             active: BuiltValueNullFieldError.checkNotNull(
                 active, r'$MenuItemConfig', 'active'),
+            qrOrderable: qrOrderable,
             taxCategoryId: taxCategoryId,
             modifierGroupIds: modifierGroupIds.build(),
             components: components.build(),

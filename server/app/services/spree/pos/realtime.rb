@@ -14,6 +14,10 @@ module Spree
         print_job.created
         resource.updated
         approval.requested
+        guest_order.created
+        guest_order.updated
+        guest_request.created
+        guest_request.updated
       ].freeze
 
       # `refs` may only point at other records, so no caller can slip money,

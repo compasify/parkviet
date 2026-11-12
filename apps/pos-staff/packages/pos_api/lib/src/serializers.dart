@@ -80,6 +80,17 @@ import 'package:pos_api/src/model/einvoice_totals_taxes_inner.dart';
 import 'package:pos_api/src/model/error_response.dart';
 import 'package:pos_api/src/model/error_response_error.dart';
 import 'package:pos_api/src/model/error_response_error_details.dart';
+import 'package:pos_api/src/model/guest_order.dart';
+import 'package:pos_api/src/model/guest_order_accept_meta.dart';
+import 'package:pos_api/src/model/guest_order_accept_result.dart';
+import 'package:pos_api/src/model/guest_order_item.dart';
+import 'package:pos_api/src/model/guest_order_list.dart';
+import 'package:pos_api/src/model/guest_order_modifier.dart';
+import 'package:pos_api/src/model/guest_order_reject_input.dart';
+import 'package:pos_api/src/model/guest_order_result.dart';
+import 'package:pos_api/src/model/guest_request.dart';
+import 'package:pos_api/src/model/guest_request_list.dart';
+import 'package:pos_api/src/model/guest_request_result.dart';
 import 'package:pos_api/src/model/hardware_check.dart';
 import 'package:pos_api/src/model/hardware_device.dart';
 import 'package:pos_api/src/model/hardware_displays.dart';
@@ -335,6 +346,12 @@ import 'package:pos_api/src/model/system_status_realtime.dart';
 import 'package:pos_api/src/model/system_status_server.dart';
 import 'package:pos_api/src/model/system_status_version.dart';
 import 'package:pos_api/src/model/system_status_vietqr.dart';
+import 'package:pos_api/src/model/table_code.dart';
+import 'package:pos_api/src/model/table_code_entry.dart';
+import 'package:pos_api/src/model/table_code_issue_input.dart';
+import 'package:pos_api/src/model/table_code_issue_meta.dart';
+import 'package:pos_api/src/model/table_code_issue_result.dart';
+import 'package:pos_api/src/model/table_code_list.dart';
 import 'package:pos_api/src/model/table_merge_input.dart';
 import 'package:pos_api/src/model/table_move_input.dart';
 import 'package:pos_api/src/model/table_open_input.dart';
@@ -461,6 +478,17 @@ part 'serializers.g.dart';
   ErrorResponse,
   ErrorResponseError,
   ErrorResponseErrorDetails,
+  GuestOrder,
+  GuestOrderAcceptMeta,
+  GuestOrderAcceptResult,
+  GuestOrderItem,
+  GuestOrderList,
+  GuestOrderModifier,
+  GuestOrderRejectInput,
+  GuestOrderResult,
+  GuestRequest,
+  GuestRequestList,
+  GuestRequestResult,
   HardwareCheck,
   HardwareDevice,
   HardwareDisplays,
@@ -720,6 +748,12 @@ part 'serializers.g.dart';
   SystemStatusServer,
   SystemStatusVersion,
   SystemStatusVietqr,
+  TableCode,
+  TableCodeEntry,
+  TableCodeIssueInput,
+  TableCodeIssueMeta,
+  TableCodeIssueResult,
+  TableCodeList,
   TableMergeInput,
   TableMoveInput,
   TableOpenInput,
@@ -787,33 +821,13 @@ Serializers serializers = (_$serializers.toBuilder()
         () => ListBuilder<KitchenSendSummary>(),
       )
       ..addBuilderFactory(
-        const FullType(BuiltList, [FullType(StationRoute)]),
-        () => ListBuilder<StationRoute>(),
-      )
-      ..addBuilderFactory(
         const FullType(
             BuiltList, [FullType(PosPrinterStations200ResponseDataInner)]),
         () => ListBuilder<PosPrinterStations200ResponseDataInner>(),
       )
       ..addBuilderFactory(
-        const FullType(BuiltList, [FullType(Workspace)]),
-        () => ListBuilder<Workspace>(),
-      )
-      ..addBuilderFactory(
-        const FullType(BuiltList, [FullType(EinvoiceLine)]),
-        () => ListBuilder<EinvoiceLine>(),
-      )
-      ..addBuilderFactory(
         const FullType(BuiltList, [FullType(KitchenHistoryEntry)]),
         () => ListBuilder<KitchenHistoryEntry>(),
-      )
-      ..addBuilderFactory(
-        const FullType(BuiltList, [FullType(BottleKeepEvent)]),
-        () => ListBuilder<BottleKeepEvent>(),
-      )
-      ..addBuilderFactory(
-        const FullType(BuiltList, [FullType(PlatformSettleOrderInput)]),
-        () => ListBuilder<PlatformSettleOrderInput>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(EinvoiceSettingsProvidersInner)]),
@@ -830,20 +844,8 @@ Serializers serializers = (_$serializers.toBuilder()
         () => ListBuilder<BuiltMap<String, JsonObject>>(),
       )
       ..addBuilderFactory(
-        const FullType(BuiltList, [FullType(WorkspaceLine)]),
-        () => ListBuilder<WorkspaceLine>(),
-      )
-      ..addBuilderFactory(
-        const FullType(BuiltList, [FullType(TimedSegment)]),
-        () => ListBuilder<TimedSegment>(),
-      )
-      ..addBuilderFactory(
         const FullType(BuiltList, [FullType(MenuItemConfig)]),
         () => ListBuilder<MenuItemConfig>(),
-      )
-      ..addBuilderFactory(
-        const FullType(BuiltList, [FullType(ModifierGroup)]),
-        () => ListBuilder<ModifierGroup>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(CatalogItem)]),
@@ -870,20 +872,12 @@ Serializers serializers = (_$serializers.toBuilder()
         () => ListBuilder<MenuItemConfigComponentsInner>(),
       )
       ..addBuilderFactory(
-        const FullType(BuiltList, [FullType(DeviceStaffMember)]),
-        () => ListBuilder<DeviceStaffMember>(),
-      )
-      ..addBuilderFactory(
-        const FullType(BuiltList, [FullType(EinvoiceTotalsTaxesInner)]),
-        () => ListBuilder<EinvoiceTotalsTaxesInner>(),
+        const FullType(BuiltList, [FullType(GuestOrderModifier)]),
+        () => ListBuilder<GuestOrderModifier>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(ReadyFeedItem)]),
         () => ListBuilder<ReadyFeedItem>(),
-      )
-      ..addBuilderFactory(
-        const FullType(BuiltList, [FullType(PrintLinesOneOf1ColumnsInner)]),
-        () => ListBuilder<PrintLinesOneOf1ColumnsInner>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(KitchenTicketItemModifier)]),
@@ -895,36 +889,12 @@ Serializers serializers = (_$serializers.toBuilder()
         () => ListBuilder<PosRecipeSaveRequestIngredientsInner>(),
       )
       ..addBuilderFactory(
-        const FullType(BuiltList, [FullType(ReservationDeposit)]),
-        () => ListBuilder<ReservationDeposit>(),
-      )
-      ..addBuilderFactory(
         const FullType(BuiltList, [FullType(BuffetTierItem)]),
         () => ListBuilder<BuffetTierItem>(),
       )
       ..addBuilderFactory(
-        const FullType(BuiltList, [FullType(HardwareStation)]),
-        () => ListBuilder<HardwareStation>(),
-      )
-      ..addBuilderFactory(
-        const FullType(BuiltList, [FullType(KitchenHeldLine)]),
-        () => ListBuilder<KitchenHeldLine>(),
-      )
-      ..addBuilderFactory(
-        const FullType(BuiltList, [FullType(PlatformReportRow)]),
-        () => ListBuilder<PlatformReportRow>(),
-      )
-      ..addBuilderFactory(
         const FullType(BuiltList, [FullType(WorkspaceTotalsTaxesInner)]),
         () => ListBuilder<WorkspaceTotalsTaxesInner>(),
-      )
-      ..addBuilderFactory(
-        const FullType(BuiltList, [FullType(MealWindow)]),
-        () => ListBuilder<MealWindow>(),
-      )
-      ..addBuilderFactory(
-        const FullType(BuiltList, [FullType(WorkspaceSummary)]),
-        () => ListBuilder<WorkspaceSummary>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(KitchenMenuItem)]),
@@ -939,14 +909,6 @@ Serializers serializers = (_$serializers.toBuilder()
         () => ListBuilder<IngredientUsageRow>(),
       )
       ..addBuilderFactory(
-        const FullType(BuiltList, [FullType(AppendItem)]),
-        () => ListBuilder<AppendItem>(),
-      )
-      ..addBuilderFactory(
-        const FullType(BuiltList, [FullType(Resource)]),
-        () => ListBuilder<Resource>(),
-      )
-      ..addBuilderFactory(
         const FullType(BuiltList, [FullType(TableTaxCategory)]),
         () => ListBuilder<TableTaxCategory>(),
       )
@@ -959,10 +921,6 @@ Serializers serializers = (_$serializers.toBuilder()
         () => ListBuilder<KitchenTicketItem>(),
       )
       ..addBuilderFactory(
-        const FullType(BuiltList, [FullType(StockAlert)]),
-        () => ListBuilder<StockAlert>(),
-      )
-      ..addBuilderFactory(
         const FullType(BuiltList, [FullType(KitchenStation)]),
         () => ListBuilder<KitchenStation>(),
       )
@@ -971,20 +929,16 @@ Serializers serializers = (_$serializers.toBuilder()
         () => ListBuilder<TimedQuoteLine>(),
       )
       ..addBuilderFactory(
-        const FullType(BuiltList, [FullType(CourseLabel)]),
-        () => ListBuilder<CourseLabel>(),
-      )
-      ..addBuilderFactory(
         const FullType(BuiltList, [FullType(MenuItemAllOfVariants)]),
         () => ListBuilder<MenuItemAllOfVariants>(),
       )
       ..addBuilderFactory(
-        const FullType(BuiltList, [FullType(AttendantAssignment)]),
-        () => ListBuilder<AttendantAssignment>(),
-      )
-      ..addBuilderFactory(
         const FullType(BuiltList, [FullType(PlatformOrderLineInput)]),
         () => ListBuilder<PlatformOrderLineInput>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(GuestOrderItem)]),
+        () => ListBuilder<GuestOrderItem>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(BottleKeep)]),
@@ -995,28 +949,12 @@ Serializers serializers = (_$serializers.toBuilder()
         () => ListBuilder<ModifierGroupOptionsInner>(),
       )
       ..addBuilderFactory(
-        const FullType(BuiltMap, [FullType(String), FullType(int)]),
-        () => MapBuilder<String, int>(),
-      )
-      ..addBuilderFactory(
-        const FullType(BuiltList, [FullType(Area)]),
-        () => ListBuilder<Area>(),
-      )
-      ..addBuilderFactory(
         const FullType(BuiltList, [FullType(MealAccount)]),
         () => ListBuilder<MealAccount>(),
       )
       ..addBuilderFactory(
-        const FullType(BuiltList, [FullType(MenuMarginRow)]),
-        () => ListBuilder<MenuMarginRow>(),
-      )
-      ..addBuilderFactory(
         const FullType(BuiltList, [FullType(PrintJob)]),
         () => ListBuilder<PrintJob>(),
-      )
-      ..addBuilderFactory(
-        const FullType(BuiltList, [FullType(ResourceBoardArea)]),
-        () => ListBuilder<ResourceBoardArea>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(PlatformOrder)]),
@@ -1039,10 +977,6 @@ Serializers serializers = (_$serializers.toBuilder()
         () => ListBuilder<RecipeOwnerVersionsInner>(),
       )
       ..addBuilderFactory(
-        const FullType(BuiltList, [FullType(ContextBranch)]),
-        () => ListBuilder<ContextBranch>(),
-      )
-      ..addBuilderFactory(
         const FullType(BuiltList, [FullType(LineModifier)]),
         () => ListBuilder<LineModifier>(),
       )
@@ -1053,14 +987,6 @@ Serializers serializers = (_$serializers.toBuilder()
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(KitchenHistoryItem)]),
         () => ListBuilder<KitchenHistoryItem>(),
-      )
-      ..addBuilderFactory(
-        const FullType(BuiltList, [FullType(Einvoice)]),
-        () => ListBuilder<Einvoice>(),
-      )
-      ..addBuilderFactory(
-        const FullType(BuiltList, [FullType(HardwareDevice)]),
-        () => ListBuilder<HardwareDevice>(),
       )
       ..addBuilderFactory(
         const FullType(
@@ -1078,6 +1004,163 @@ Serializers serializers = (_$serializers.toBuilder()
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(HardwareCheck)]),
         () => ListBuilder<HardwareCheck>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(KitchenExpoItem)]),
+        () => ListBuilder<KitchenExpoItem>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(EinvoiceSetting)]),
+        () => ListBuilder<EinvoiceSetting>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(PrintLinesOneOf1RowsInner)]),
+        () => ListBuilder<PrintLinesOneOf1RowsInner>(),
+      )
+      ..addBuilderFactory(
+        const FullType(
+            BuiltMap, [FullType(String), FullType.nullable(JsonObject)]),
+        () => MapBuilder<String, JsonObject?>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(PlatformSetting)]),
+        () => ListBuilder<PlatformSetting>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(KitchenAllDayRow)]),
+        () => ListBuilder<KitchenAllDayRow>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(String)]),
+        () => ListBuilder<String>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(StationRoute)]),
+        () => ListBuilder<StationRoute>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(Workspace)]),
+        () => ListBuilder<Workspace>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(EinvoiceLine)]),
+        () => ListBuilder<EinvoiceLine>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(BottleKeepEvent)]),
+        () => ListBuilder<BottleKeepEvent>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(PlatformSettleOrderInput)]),
+        () => ListBuilder<PlatformSettleOrderInput>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(WorkspaceLine)]),
+        () => ListBuilder<WorkspaceLine>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(TimedSegment)]),
+        () => ListBuilder<TimedSegment>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(ModifierGroup)]),
+        () => ListBuilder<ModifierGroup>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(TableCodeEntry)]),
+        () => ListBuilder<TableCodeEntry>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(DeviceStaffMember)]),
+        () => ListBuilder<DeviceStaffMember>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(EinvoiceTotalsTaxesInner)]),
+        () => ListBuilder<EinvoiceTotalsTaxesInner>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(PrintLinesOneOf1ColumnsInner)]),
+        () => ListBuilder<PrintLinesOneOf1ColumnsInner>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(ReservationDeposit)]),
+        () => ListBuilder<ReservationDeposit>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(HardwareStation)]),
+        () => ListBuilder<HardwareStation>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(KitchenHeldLine)]),
+        () => ListBuilder<KitchenHeldLine>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(PlatformReportRow)]),
+        () => ListBuilder<PlatformReportRow>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(MealWindow)]),
+        () => ListBuilder<MealWindow>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(WorkspaceSummary)]),
+        () => ListBuilder<WorkspaceSummary>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(AppendItem)]),
+        () => ListBuilder<AppendItem>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(Resource)]),
+        () => ListBuilder<Resource>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(StockAlert)]),
+        () => ListBuilder<StockAlert>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(CourseLabel)]),
+        () => ListBuilder<CourseLabel>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(AttendantAssignment)]),
+        () => ListBuilder<AttendantAssignment>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltMap, [FullType(String), FullType(int)]),
+        () => MapBuilder<String, int>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(Area)]),
+        () => ListBuilder<Area>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(MenuMarginRow)]),
+        () => ListBuilder<MenuMarginRow>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(ResourceBoardArea)]),
+        () => ListBuilder<ResourceBoardArea>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(GuestRequest)]),
+        () => ListBuilder<GuestRequest>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(ContextBranch)]),
+        () => ListBuilder<ContextBranch>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(Einvoice)]),
+        () => ListBuilder<Einvoice>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(HardwareDevice)]),
+        () => ListBuilder<HardwareDevice>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(GuestOrder)]),
+        () => ListBuilder<GuestOrder>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(AvailableResource)]),
@@ -1104,14 +1187,6 @@ Serializers serializers = (_$serializers.toBuilder()
         () => ListBuilder<VehicleVisit>(),
       )
       ..addBuilderFactory(
-        const FullType(BuiltList, [FullType(KitchenExpoItem)]),
-        () => ListBuilder<KitchenExpoItem>(),
-      )
-      ..addBuilderFactory(
-        const FullType(BuiltList, [FullType(EinvoiceSetting)]),
-        () => ListBuilder<EinvoiceSetting>(),
-      )
-      ..addBuilderFactory(
         const FullType(BuiltList, [FullType(KitchenHeldCourse)]),
         () => ListBuilder<KitchenHeldCourse>(),
       )
@@ -1132,33 +1207,12 @@ Serializers serializers = (_$serializers.toBuilder()
         () => ListBuilder<KitchenTicketItemComponentsInner>(),
       )
       ..addBuilderFactory(
-        const FullType(BuiltList, [FullType(PrintLinesOneOf1RowsInner)]),
-        () => ListBuilder<PrintLinesOneOf1RowsInner>(),
-      )
-      ..addBuilderFactory(
-        const FullType(
-            BuiltMap, [FullType(String), FullType.nullable(JsonObject)]),
-        () => MapBuilder<String, JsonObject?>(),
-      )
-      ..addBuilderFactory(
         const FullType(BuiltList, [FullType(KitchenExpoOrder)]),
         () => ListBuilder<KitchenExpoOrder>(),
       )
       ..addBuilderFactory(
-        const FullType(BuiltList, [FullType(PlatformSetting)]),
-        () => ListBuilder<PlatformSetting>(),
-      )
-      ..addBuilderFactory(
-        const FullType(BuiltList, [FullType(KitchenAllDayRow)]),
-        () => ListBuilder<KitchenAllDayRow>(),
-      )
-      ..addBuilderFactory(
         const FullType(BuiltMap, [FullType(String), FullType(bool)]),
         () => MapBuilder<String, bool>(),
-      )
-      ..addBuilderFactory(
-        const FullType(BuiltList, [FullType(String)]),
-        () => ListBuilder<String>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(Reservation)]),

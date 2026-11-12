@@ -252,6 +252,14 @@ Rails.application.routes.draw do
             end
             get 'resource_board', to: 'resource_boards#show'
             get 'table_settings', to: 'table_settings#show'
+            # Table QR codes, and what guests order and ask for from them.
+            get 'table_codes', to: 'table_codes#index'
+            post 'table_codes', to: 'table_codes#create'
+            get 'guest_orders', to: 'guest_orders#index'
+            post 'guest_orders/:id/accept', to: 'guest_orders#accept'
+            post 'guest_orders/:id/reject', to: 'guest_orders#reject'
+            get 'guest_requests', to: 'guest_requests#index'
+            post 'guest_requests/:id/done', to: 'guest_requests#done'
             put 'table_settings', to: 'table_settings#update'
             post 'tables/:resource_id/open', to: 'tables#open_table'
             # Bookings of tables and rooms, free tables for a time, and deposits.
@@ -516,6 +524,14 @@ Rails.application.routes.draw do
   post 'api/v3/pos_display/ack', to: 'spree/pos/display_views#ack', defaults: { format: 'json' }
   post 'api/v3/pos_display/pair', to: 'spree/pos/display_views#pair', defaults: { format: 'json' }
 
+  # A guest's phone at a table (QR order): the guest-token API outside the Admin API.
+  post 'api/v3/pos_guest/session', to: 'spree/pos/guest_views#open_session', defaults: { format: 'json' }
+  get 'api/v3/pos_guest/session', to: 'spree/pos/guest_views#show_session', defaults: { format: 'json' }
+  get 'api/v3/pos_guest/menu', to: 'spree/pos/guest_views#menu', defaults: { format: 'json' }
+  get 'api/v3/pos_guest/order', to: 'spree/pos/guest_views#order', defaults: { format: 'json' }
+  post 'api/v3/pos_guest/guest_orders', to: 'spree/pos/guest_views#create_order', defaults: { format: 'json' }
+  post 'api/v3/pos_guest/requests', to: 'spree/pos/guest_views#create_request', defaults: { format: 'json' }
+
   post 'api/v3/pos_device/pair', to: 'spree/pos/device_api/pairings#create', defaults: { format: 'json' }
   get 'api/v3/pos_device/me', to: 'spree/pos/device_api/me#show', defaults: { format: 'json' }
   get 'api/v3/pos_device/staff', to: 'spree/pos/device_api/staff_sessions#index', defaults: { format: 'json' }
@@ -546,6 +562,9 @@ Rails.application.routes.draw do
   get '/pos/*path', to: 'spree/pos/selling_app#show', format: false
   get '/pos-admin', to: 'spree/pos/admin_app#show', as: :pos_admin_app
   get '/pos-admin/*path', to: 'spree/pos/admin_app#show', format: false
+  # The guests' QR order page (apps/table-order), opened from a table's sticker.
+  get '/table', to: 'spree/pos/table_order_app#show', as: :pos_table_order_app
+  get '/table/*path', to: 'spree/pos/table_order_app#show', format: false
 
   root to: redirect(status: 302) { Spree::Stores::DashboardUrl.call.presence || '/dashboard' }
 

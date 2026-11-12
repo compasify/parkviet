@@ -80,12 +80,14 @@ module Spree
       TIMED_EDIT = 'pos.timed.edit'
       # A branch's rate plans and holidays.
       RATE_PLAN_MANAGE = 'pos.rate_plan.manage'
+      # Accepting or rejecting what guests ordered from the table QR.
+      GUEST_ORDER_DECIDE = 'pos.guest_order.decide'
       ASSIGNABLE = [MANAGE, OPEN_SHIFT, DISCOUNT, PRICE_OVERRIDE, CUSTOMER, PAYMENT, RESOLVE, RECOVER, APPROVE, TAKEOVER,
                     CREDIT_MANAGE, CREDIT_SELL, RETURN, CASH_MOVE, REPORT_READ, REPORT_EXPORT,
                     INVENTORY_MANAGE, INVENTORY_TRACE, DEVICE_MANAGE, PRINTER_MANAGE, MANAGE_MENU, SET_SOLD_OUT,
                     EINVOICE_MANAGE, OPERATE_KITCHEN, MANAGE_KITCHEN, TABLE_SERVE, RESOURCE_MANAGE, KITCHEN_VOID,
                     RESERVATION_MANAGE, EXPO_OPERATE, MEAL_ACCOUNT_MANAGE, VEHICLE_VISIT_OPERATE,
-                    VEHICLE_VISIT_MANAGE, TIMED_OPERATE, TIMED_EDIT, RATE_PLAN_MANAGE].freeze
+                    VEHICLE_VISIT_MANAGE, TIMED_OPERATE, TIMED_EDIT, RATE_PLAN_MANAGE, GUEST_ORDER_DECIDE].freeze
 
       def self.sanitize(values)
         Array(values).map(&:to_s).uniq

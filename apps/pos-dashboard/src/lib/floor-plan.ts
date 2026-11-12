@@ -208,3 +208,22 @@ export function readKeepDays(value: string): number | null | undefined {
   const days = Number(text)
   return days >= 1 && days <= BOTTLE_KEEP_DAYS_MAX ? days : undefined
 }
+
+// The amount up to which a guest's QR order goes straight to the kitchen, as
+// typed in đồng ("500.000" or "500000"). Null when blank; undefined when it
+// is not a whole positive amount.
+export function readQrLimit(value: string): string | null | undefined {
+  const text = value.trim().replace(/[.,\s]/g, '')
+  if (!text) return null
+  if (!/^\d{1,12}$/.test(text)) return undefined
+  return Number(text) > 0 ? String(Number(text)) : undefined
+}
+
+// How many items such an order may hold: 1 to 50.
+export const QR_MAX_ITEMS = 50
+export function readQrMaxItems(value: string): number | undefined {
+  const text = value.trim()
+  if (!/^\d{1,2}$/.test(text)) return undefined
+  const count = Number(text)
+  return count >= 1 && count <= QR_MAX_ITEMS ? count : undefined
+}

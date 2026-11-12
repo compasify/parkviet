@@ -11,7 +11,7 @@ Hướng dẫn cho người lắp đặt. Mỗi quán chạy ParkViet trên **m�
 | [`scripts/install-lan.sh`](../../deploy/scripts/install-lan.sh) | Cài lần đầu và cập nhật |
 | [`scripts/backup.sh`](../../deploy/scripts/backup.sh), [`scripts/restore.sh`](../../deploy/scripts/restore.sh) | Sao lưu hằng đêm, thử khôi phục, khôi phục |
 
-Image build từ [`server/Dockerfile`](../../server/Dockerfile), gồm API, Spree Dashboard, quầy thu ngân (`apps/pos`, ở `/pos/`) và quản trị POS (`apps/pos-dashboard`, ở `/pos-admin/`). Mọi thứ cùng một origin nên không cần CORS. `spree build --production` của Spree CLI build cùng image này; CLI không có lệnh triển khai, nên stack chạy bằng `docker compose` trên máy đích.
+Image build từ [`server/Dockerfile`](../../server/Dockerfile), gồm API, Spree Dashboard, quầy thu ngân (`apps/pos`, ở `/pos/`) quản trị POS (`apps/pos-dashboard`, ở `/pos-admin/`) và trang khách gọi món qua QR (`apps/table-order`, ở `/table/`; image tự đặt `TABLE_ORDER_DIST_PATH`). Trên server LAN, khách phải vào Wi‑Fi của quán mới mở được QR trên bàn. Mọi thứ cùng một origin nên không cần CORS. `spree build --production` của Spree CLI build cùng image này; CLI không có lệnh triển khai, nên stack chạy bằng `docker compose` trên máy đích.
 
 Các lệnh dưới đây chạy trong thư mục `deploy/` của bản checkout, với:
 

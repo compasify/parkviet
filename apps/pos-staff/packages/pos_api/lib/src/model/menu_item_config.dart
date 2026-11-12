@@ -24,6 +24,7 @@ part 'menu_item_config.g.dart';
 /// * [showComponentsOnKds]
 /// * [position]
 /// * [active]
+/// * [qrOrderable] - Guests may order it from the table QR.
 /// * [taxCategoryId]
 /// * [modifierGroupIds]
 /// * [components]
@@ -59,6 +60,10 @@ abstract class MenuItemConfig {
 
   @BuiltValueField(wireName: r'active')
   bool get active;
+
+  /// Guests may order it from the table QR.
+  @BuiltValueField(wireName: r'qr_orderable')
+  bool? get qrOrderable;
 
   @BuiltValueField(wireName: r'tax_category_id')
   String? get taxCategoryId;
@@ -141,6 +146,13 @@ class _$MenuItemConfigSerializer
       object.active,
       specifiedType: const FullType(bool),
     );
+    if (object.qrOrderable != null) {
+      yield r'qr_orderable';
+      yield serializers.serialize(
+        object.qrOrderable,
+        specifiedType: const FullType(bool),
+      );
+    }
     yield r'tax_category_id';
     yield object.taxCategoryId == null
         ? null
@@ -301,6 +313,14 @@ class _$$MenuItemConfigSerializer
             specifiedType: const FullType(bool),
           ) as bool;
           result.active = valueDes;
+          break;
+        case r'qr_orderable':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(bool),
+          ) as bool?;
+          if (valueDes == null) continue;
+          result.qrOrderable = valueDes;
           break;
         case r'tax_category_id':
           final valueDes = serializers.deserialize(

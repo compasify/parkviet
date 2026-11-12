@@ -15,6 +15,9 @@ import '../../l10n/app_localizations.dart';
 import '../mode_scaffold.dart';
 import 'bottle_pour_screen.dart';
 import 'guest_keypad.dart';
+import 'guest_orders/guest_inbox.dart';
+import 'guest_orders/guest_orders_api.dart';
+import 'guest_orders/guest_orders_screen.dart';
 import 'room_board_screen.dart';
 import 'tab_list_screen.dart';
 import 'table_order_screen.dart';
@@ -24,6 +27,8 @@ import 'waiter_messages.dart';
 import 'waiter_state.dart';
 
 final waiterApiProvider = Provider<WaiterApi>((ref) => ApiWaiterApi(ref.watch(apiClientProvider)));
+
+final guestOrdersApiProvider = Provider<GuestOrdersApi>((ref) => ApiGuestOrdersApi(ref.watch(apiClientProvider)));
 
 /// This phone as an editor of orders, for the whole run of the app.
 final waiterEditorIdProvider = Provider<String>((ref) => const Uuid().v4());
@@ -67,6 +72,7 @@ class WaiterScreen extends ConsumerStatefulWidget {
 class _WaiterScreenState extends ConsumerState<WaiterScreen> {
   WaiterContext? _context;
   ReadyWatcher? _ready;
+  GuestInbox? _guests;
 
   @override
   void initState() {
@@ -85,7 +91,15 @@ class _WaiterScreenState extends ConsumerState<WaiterScreen> {
     );
     unawaited(_context!.menu.load());
     unawaited(_context!.loadVoidReasons());
-    unawaited(_context!.loadModules());
+    _guests = GuestInbox(
+      api: ref.read(guestOrdersApiProvider),
+      branchId: session.me.branch.id,
+      events: _context!.events,
+      onArrive: () => ref.read(waiterAlertProvider)(),
+    );
+    unawaited(_context!.loadModules().then((_) {
+      if (_context?.modules.value.contains('fnb.qr_order') ?? false) unawaited(_guests?.refresh());
+    }));
     _ready = ReadyWatcher(api: api, onAnnounce: (_) => ref.read(waiterAlertProvider)());
     _startReady(realtime?.subscribed);
   }
@@ -97,6 +111,7 @@ class _WaiterScreenState extends ConsumerState<WaiterScreen> {
 
   @override
   void dispose() {
+    _guests?.dispose();
     _ready?.dispose();
     _context?.dispose();
     super.dispose();
@@ -118,6 +133,7 @@ class _WaiterScreenState extends ConsumerState<WaiterScreen> {
     return TableBoard(
       waiter: waiter,
       ready: ready,
+      guests: _guests,
       onFollow: _follow,
     );
   }
@@ -125,11 +141,14 @@ class _WaiterScreenState extends ConsumerState<WaiterScreen> {
 
 /// The table grid with its filters and the ready banner.
 class TableBoard extends StatefulWidget {
-  const TableBoard({super.key, required this.waiter, required this.ready, required this.onFollow});
+  const TableBoard({super.key, required this.waiter, required this.ready, required this.onFollow, this.guests});
 
   final WaiterContext waiter;
   final ReadyWatcher ready;
   final Future<void> Function(String? areaId) onFollow;
+
+  /// Guests' QR orders and calls, shown where the branch runs `fnb.qr_order`.
+  final GuestInbox? guests;
 
   @override
   State<TableBoard> createState() => _TableBoardState();
@@ -370,6 +389,27 @@ class _TableBoardState extends State<TableBoard> {
         ValueListenableBuilder<Set<String>>(
           valueListenable: widget.waiter.modules,
           builder: (context, modules, _) => Row(mainAxisSize: MainAxisSize.min, children: [
+            if (modules.contains('fnb.qr_order') && widget.guests != null)
+              ListenableBuilder(
+                listenable: Listenable.merge([widget.guests!.orders, widget.guests!.requests]),
+                builder: (context, _) {
+                  final waiting = widget.guests!.waiting;
+                  return IconButton(
+                    key: const Key('waiter-guest-orders'),
+                    tooltip: l10n.waiterGuestTitle,
+                    icon: Badge(
+                      isLabelVisible: waiting > 0,
+                      label: Text('$waiting', semanticsLabel: l10n.waiterGuestWaiting(waiting)),
+                      child: const Icon(Icons.qr_code_2),
+                    ),
+                    onPressed: () => _push(GuestOrdersScreen(
+                      inbox: widget.guests!,
+                      canDecide: widget.waiter.capabilities.value.contains('pos.guest_order.decide'),
+                      followedAreaId: widget.ready.areaId,
+                    )),
+                  );
+                },
+              ),
             if (modules.contains('fnb.postpay'))
               IconButton(
                 key: const Key('waiter-tabs'),

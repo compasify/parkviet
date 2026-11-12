@@ -1,0 +1,512 @@
+openapi: 3.1.0
+info:
+  title: Parkviet POS guest API
+  version: '1'
+  description: >
+    The public contract of a guest's phone at a table (the QR order page,
+    apps/table-order, served by the same server at /table). The code printed
+    on the table opens a session; every other call takes
+    `Authorization: Guest <token>`, never a staff token, an API key or a URL
+    parameter. Guests' orders wait for staff, or go straight to the kitchen
+    within the branch's limits; no money is taken here. Responses are sent
+    with `Cache-Control: no-store` and `Referrer-Policy: no-referrer`.
+    Errors are `{ error: { code, message, details } }`; `code` is one of
+    `table_code_invalid`, `session_invalid`, `session_expired`,
+    `qr_order_unavailable`, `table_closed`, `item_sold_out`,
+    `item_unavailable`, `too_many_pending`, `guest_order_invalid`,
+    `modifier_min`, `modifier_max`, `modifier_unknown`, `note_too_long`,
+    `idempotency_key_required`, `idempotency_key_reused`,
+    `guest_request_invalid` or `rate_limited`.
+paths:
+  /api/v3/pos_guest/session:
+    post:
+      operationId: guestSessionOpen
+      description: >
+        Exchanges the table's code for a session. At a table with an open
+        order the session orders onto that order (`status: open`) and ends
+        with it; otherwise it reads the menu and calls staff only
+        (`status: table_closed`). Ten attempts per minute per client address.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GuestSessionInput'
+      responses:
+        '201':
+          description: The session and its token, shown once
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    allOf:
+                      - $ref: '#/components/schemas/GuestSession'
+                      - type: object
+                        required: [token]
+                        properties:
+                          token:
+                            type: string
+        '404':
+          $ref: '#/components/responses/GuestError'
+        '429':
+          $ref: '#/components/responses/GuestError'
+    get:
+      operationId: guestSessionShow
+      responses:
+        '200':
+          description: The session
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/GuestSession'
+        '401':
+          $ref: '#/components/responses/GuestError'
+  /api/v3/pos_guest/menu:
+    get:
+      operationId: guestMenu
+      description: The items guests may order at the branch now, with today's sold-out marks.
+      responses:
+        '200':
+          description: The menu
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/GuestMenu'
+        '401':
+          $ref: '#/components/responses/GuestError'
+  /api/v3/pos_guest/order:
+    get:
+      operationId: guestTable
+      description: >
+        What is on the table's order (names, quantities, kitchen state, the
+        price list subtotal), this phone's orders and its open requests.
+      responses:
+        '200':
+          description: The table
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/GuestTable'
+        '401':
+          $ref: '#/components/responses/GuestError'
+  /api/v3/pos_guest/guest_orders:
+    post:
+      operationId: guestOrderSubmit
+      description: >
+        Sends items to staff. Prices come from the server's menu; a price in
+        the body is ignored. The same key answers the same order. At most
+        three pending orders per phone, five orders per minute.
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            maxLength: 200
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GuestOrderInput'
+      responses:
+        '201':
+          description: The order
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/GuestOrder'
+        '401':
+          $ref: '#/components/responses/GuestError'
+        '409':
+          $ref: '#/components/responses/GuestError'
+        '429':
+          $ref: '#/components/responses/GuestError'
+  /api/v3/pos_guest/requests:
+    post:
+      operationId: guestRequestCreate
+      description: >
+        Calls staff, or asks for the bill (only with an open order). Asking
+        again while a request of the kind is open answers that request.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GuestRequestInput'
+      responses:
+        '201':
+          description: The request
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/GuestRequest'
+        '401':
+          $ref: '#/components/responses/GuestError'
+        '409':
+          $ref: '#/components/responses/GuestError'
+security:
+  - guest: []
+components:
+  securitySchemes:
+    guest:
+      type: http
+      scheme: Guest
+  responses:
+    GuestError:
+      description: Refused
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/GuestError'
+  schemas:
+    GuestError:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: object
+              additionalProperties: true
+    GuestSessionInput:
+      type: object
+      required: [table_code]
+      properties:
+        table_code:
+          type: string
+          maxLength: 64
+    GuestSession:
+      type: object
+      additionalProperties: true
+      required: [id, status, expires_at, table, branch, currency, approval, timed]
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          enum: [open, table_closed]
+        expires_at:
+          type: string
+          format: date-time
+        table:
+          type: object
+          additionalProperties: false
+          required: [name, kind]
+          properties:
+            name:
+              type: string
+            kind:
+              type: string
+              enum: [table, room, billiard, vip]
+        branch:
+          type: object
+          additionalProperties: false
+          required: [name, store_name]
+          properties:
+            name:
+              type: string
+            store_name:
+              type: string
+        currency:
+          type: string
+        approval:
+          type: string
+          enum: [staff_approval, direct_to_kitchen]
+          description: Whether staff confirm each order first.
+        timed:
+          type: boolean
+          description: The table is a room billed by play time.
+    GuestMenu:
+      type: object
+      additionalProperties: false
+      required: [currency, categories, items, modifier_groups, etag]
+      properties:
+        currency:
+          type: string
+        etag:
+          type: string
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/GuestMenuCategory'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/GuestMenuItem'
+        modifier_groups:
+          type: array
+          items:
+            $ref: '#/components/schemas/GuestModifierGroup'
+    GuestMenuCategory:
+      type: object
+      additionalProperties: false
+      required: [id, name, position, color]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        position:
+          type: integer
+        color:
+          type: [string, 'null']
+    GuestMenuItem:
+      type: object
+      additionalProperties: false
+      required: [id, name, kind, menu_category_id, position, image_url, sold_out, modifier_group_ids, components, variants]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        kind:
+          type: string
+          enum: [single, combo]
+        menu_category_id:
+          type: [string, 'null']
+        position:
+          type: integer
+        image_url:
+          type: [string, 'null']
+        sold_out:
+          type: boolean
+        modifier_group_ids:
+          type: array
+          items:
+            type: string
+        components:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [name, quantity]
+            properties:
+              name:
+                type: string
+              quantity:
+                type: integer
+        variants:
+          type: array
+          items:
+            $ref: '#/components/schemas/GuestMenuVariant'
+    GuestMenuVariant:
+      type: object
+      additionalProperties: false
+      required: [id, name, price, price_label]
+      properties:
+        id:
+          type: string
+        name:
+          type: [string, 'null']
+        price:
+          type: string
+        price_label:
+          type: [string, 'null']
+    GuestModifierGroup:
+      type: object
+      additionalProperties: false
+      required: [id, name, min_select, max_select, allow_quantity, required, options]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        min_select:
+          type: integer
+        max_select:
+          type: integer
+        allow_quantity:
+          type: boolean
+        required:
+          type: boolean
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/GuestModifierOption'
+    GuestModifierOption:
+      type: object
+      additionalProperties: false
+      required: [id, name, price_delta, default_selected]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        price_delta:
+          type: string
+        default_selected:
+          type: boolean
+    GuestOrderInput:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items:
+            type: object
+            required: [variant_id]
+            properties:
+              variant_id:
+                type: string
+              quantity:
+                type: integer
+                minimum: 1
+                maximum: 20
+              note:
+                type: [string, 'null']
+                maxLength: 200
+              modifiers:
+                type: array
+                items:
+                  type: object
+                  required: [option_id]
+                  properties:
+                    option_id:
+                      type: string
+                    quantity:
+                      type: integer
+                      minimum: 1
+    GuestOrder:
+      type: object
+      additionalProperties: false
+      required: [id, status, reject_reason, items, quoted_total, currency, created_at]
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          enum: [pending, accepted, rejected, expired]
+        reject_reason:
+          type: [string, 'null']
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/GuestOrderItem'
+        quoted_total:
+          type: string
+        currency:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    GuestOrderItem:
+      type: object
+      additionalProperties: false
+      required: [name, size, quantity, amount, options]
+      properties:
+        name:
+          type: string
+        size:
+          type: [string, 'null']
+        quantity:
+          type: integer
+        amount:
+          type: string
+        note:
+          type: [string, 'null']
+        outcome:
+          type: [string, 'null']
+          enum: [added, left_out, null]
+        options:
+          type: array
+          items:
+            type: string
+    GuestTable:
+      type: object
+      additionalProperties: false
+      required: [lines, subtotal, has_timed, orders, requests]
+      properties:
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/GuestTableLine'
+        subtotal:
+          type: [string, 'null']
+          description: Items at their menu price, before discounts and charges; play time not included.
+        has_timed:
+          type: boolean
+          description: The order has play time, priced when the bill is made.
+        orders:
+          type: array
+          items:
+            $ref: '#/components/schemas/GuestOrder'
+        requests:
+          type: array
+          items:
+            $ref: '#/components/schemas/GuestRequest'
+    GuestTableLine:
+      type: object
+      additionalProperties: false
+      required: [name, size, quantity, options, amount, kitchen]
+      properties:
+        name:
+          type: string
+        size:
+          type: [string, 'null']
+        quantity:
+          type: string
+        options:
+          type: array
+          items:
+            type: string
+        amount:
+          type: string
+        kitchen:
+          type: string
+          enum: [waiting, sent, preparing, ready, served]
+    GuestRequestInput:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+          enum: [call_staff, request_bill]
+    GuestRequest:
+      type: object
+      additionalProperties: false
+      required: [id, kind, status, created_at]
+      properties:
+        id:
+          type: string
+        kind:
+          type: string
+          enum: [call_staff, request_bill]
+        status:
+          type: string
+          enum: [open, done]
+        created_at:
+          type: string
+          format: date-time

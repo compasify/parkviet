@@ -178,7 +178,8 @@ RSpec.describe 'POS topology', type: :request do
     second = Spree::Pos::Branch.find_by_prefix_id!(data['id'])
     expect(Spree::Pos::ModulePolicy.for_branch(second)).to eq('retail.units' => true, 'retail.measured' => false, 'retail.traceability' => true,
                                                               'fnb.menu' => false, 'fnb.recipes' => false, 'fnb.kitchen' => false, 'fnb.order_number' => false, 'fnb.cup_label' => false, 'fnb.delivery_platforms' => false, 'resources' => false, 'fnb.tables' => false, 'fnb.postpay' => false, 'fnb.service_charge' => false,
-                                     'fnb.reservations' => false, 'fnb.bottle_keep' => false, 'fnb.pour_tracking' => false, 'fnb.meal_accounts' => false, 'fnb.vehicle_commission' => false, 'timed_billing' => false)
+                                     'fnb.reservations' => false, 'fnb.bottle_keep' => false, 'fnb.pour_tracking' => false, 'fnb.meal_accounts' => false, 'fnb.vehicle_commission' => false, 'fnb.qr_order' => false,
+          'timed_billing' => false)
     expect(Spree::Pos::UnitDefinition.for_store(store).pluck(:code)).to include('vien', 'vi', 'hop', 'chai')
 
     data = create_branch.call('q3', profile_key: 'thoi_trang', return_window_days: nil)['data']

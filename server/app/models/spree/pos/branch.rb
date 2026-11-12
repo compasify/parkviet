@@ -55,6 +55,12 @@ module Spree
       validates :kitchen_send_trigger, inclusion: { in: %w[on_complete manual] }
       # Percent of the items after discounts; nil means no service charge.
       validates :service_charge_rate, numericality: { greater_than: 0, less_than_or_equal_to: 50 }, allow_nil: true
+      # How guests' orders from the table QR are taken: each approved by staff,
+      # or within the limits added and sent to the kitchen by themselves.
+      QR_ORDER_MODES = %w[staff_approval direct_to_kitchen].freeze
+      validates :qr_order_mode, inclusion: { in: QR_ORDER_MODES }
+      validates :qr_order_auto_limit, numericality: { greater_than: 0 }, allow_nil: true
+      validates :qr_order_auto_max_items, numericality: { only_integer: true, in: 1..50 }
       validate :void_reasons_are_codes
       validate :locations_belong_to_store
       validate :table_settings_of_store
