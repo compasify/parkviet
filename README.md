@@ -1,30 +1,89 @@
-# parkviet
+# ParkViet
 
-## Giới thiệu ParkViet v2
+**Phần mềm bán hàng cho cửa hàng, quán ăn và doanh nghiệp Việt Nam.** Website: [parkviet.com](https://parkviet.com)
 
-**ParkViet v2 được xây dựng trên nền tảng [Spree Commerce](https://spreecommerce.org)** — một nền tảng mã nguồn mở dành cho thương mại điện tử. Thay vì xây dựng lại mọi thứ từ đầu, ParkViet sử dụng nền tảng sẵn có của Spree và sẽ thường xuyên cập nhật, bám sát cách tổ chức và phát triển hệ thống của Spree để tiếp nhận các cải tiến, tính năng mới và bản vá bảo mật.
+ParkViet giúp người bán quản lý việc bán tại quầy, bán online, kho hàng, công nợ và báo cáo trên cùng một hệ thống. Hệ thống được làm theo cách kinh doanh của người Việt: thu tiền bằng mã VietQR, ghi nợ cho khách quen, nhận đơn qua Facebook và Zalo, giao hàng cho cư dân, in hóa đơn điện tử, bán theo bàn, theo giờ và theo suất ăn.
 
-Trọng tâm của ParkViet là **phát triển các ứng dụng và tiện ích phù hợp với thị trường Việt Nam, cách kinh doanh và nhu cầu sử dụng của người Việt**, chẳng hạn như:
+## Sản phẩm
 
-- **Ứng dụng bán hàng tại cửa hàng (POS):** hỗ trợ nhân viên tạo đơn và phục vụ khách ngay tại quầy. Xem [chức năng POS](apps/pos/README.md#chức-năng).
-- **Các phương thức thanh toán phổ biến tại Việt Nam:** hướng tới tích hợp chuyển khoản ngân hàng, mã QR, ví điện tử và các dịch vụ thanh toán trong nước. Chuyển khoản VietQR đã có qua gem [`spree_vietqr`](https://github.com/compasify/spree_vietqr).
-- **Quản lý bán hàng đa kênh tại một nơi:** tập trung đơn hàng, sản phẩm và tồn kho từ website, cửa hàng và các sàn thương mại điện tử, giúp người bán không phải quản lý từng kênh riêng lẻ.
-- **Đồng bộ hàng hóa lên nhiều sàn:** hướng tới kết nối Shopee, Lazada, TikTok Shop và website để đăng bán sản phẩm, cập nhật giá và số lượng tồn kho, hạn chế bán vượt số hàng thực có.
-- **Tích hợp quản lý quảng cáo:** kết nối các kênh như Facebook, Google và TikTok để theo dõi chi phí, đơn hàng và doanh thu liên quan đến quảng cáo, giúp người bán đánh giá hiệu quả trên cùng một hệ thống.
-- **Xử lý đơn hàng in theo yêu cầu (POD):** kết nối đơn vị sản xuất và giao hàng để chuyển mẫu thiết kế, yêu cầu in, theo dõi tiến độ sản xuất, đóng gói và vận chuyển đến khách. Người bán có thể kinh doanh áo, cốc hoặc các sản phẩm cá nhân hóa mà không cần tự giữ hàng sẵn.
-- **Kết nối vận chuyển và theo dõi giao hàng:** tạo đơn giao hàng, in vận đơn, theo dõi trạng thái và đối soát tiền thu hộ (COD) với các đơn vị vận chuyển tại Việt Nam.
-- **Quản lý nhiều kho và chi nhánh:** theo dõi hàng hóa ở từng địa điểm, điều chuyển hàng giữa các kho và hỗ trợ chọn nơi xuất hàng phù hợp cho mỗi đơn.
-- **Chăm sóc khách hàng và khách hàng thân thiết:** lưu lịch sử mua hàng, quản lý điểm thưởng, ưu đãi và hỗ trợ gửi thông báo qua các kênh quen thuộc như Zalo, email hoặc tin nhắn.
-- **Hỗ trợ đổi trả và hoàn tiền:** tiếp nhận yêu cầu, theo dõi hàng trả về, cập nhật tồn kho và quản lý việc hoàn tiền để cửa hàng xử lý nhất quán giữa các kênh bán.
-- **Kết nối hóa đơn điện tử và phần mềm kế toán:** giảm việc nhập liệu lặp lại, hỗ trợ chuyển thông tin bán hàng sang các công cụ doanh nghiệp đang sử dụng.
-- **Bán sỉ và bán cho đại lý:** hỗ trợ bảng giá theo nhóm khách hàng, đơn hàng số lượng lớn và theo dõi công nợ phù hợp với cách kinh doanh của doanh nghiệp.
-- **Thống kê, phân tích và báo cáo kinh doanh:** tập trung số liệu từ các kênh bán hàng, kho hàng và quảng cáo, trình bày bằng các báo cáo và biểu đồ dễ hiểu. Nhờ đó, cá nhân và doanh nghiệp có thể nhìn rõ tình hình kinh doanh, theo dõi xu hướng và đưa ra phương án phù hợp dựa trên số liệu thay vì chỉ dựa vào cảm tính. Ví dụ, biểu đồ tăng trưởng đơn hàng và tốc độ bán của từng sản phẩm giúp cân nhắc thời điểm nhập thêm hàng; số liệu về chi phí quảng cáo, đơn hàng và doanh thu giúp quyết định có nên chạy thêm quảng cáo, điều chỉnh ngân sách hay tạm dừng những chiến dịch chưa hiệu quả.
+| Ứng dụng | Dành cho ai | Làm được gì |
+| --- | --- | --- |
+| **ParkViet POS** (`apps/pos`) | Thu ngân | Bán tại quầy, thu tiền, ghi nợ, trả hàng, đóng ca, in phiếu. Chạy trên trình duyệt, máy tính bảng hoặc máy POS. |
+| **Quản trị POS** (`apps/pos-dashboard`) | Chủ cửa hàng, quản lý | Thiết lập cửa hàng theo ngành, chi nhánh, quầy, nhân viên và quyền, thực đơn, máy in, thiết bị, mẫu phiếu, hóa đơn điện tử, báo cáo. |
+| **ParkViet Nhân viên** (`apps/pos-staff`) | Phục vụ, bếp, chủ quán | App di động (Flutter) với các chế độ máy phục vụ, màn bếp, trạm in, kiosk tự gọi món và app chủ quán (duyệt từ xa, cảnh báo, xem đơn đang mở). |
+| **Gọi món bằng QR** (`apps/table-order`) | Khách tại bàn | Khách quét mã QR trên bàn, xem thực đơn và gửi món xuống bếp, không cần cài app. |
+| **Website bán hàng** (`apps/storefront`) | Khách mua online | Cửa hàng trực tuyến cho người bán. |
+| **Bảng quản trị** (`apps/dashboard`) | Quản lý bán hàng online | Sản phẩm, đơn hàng, khách hàng, kho, khuyến mãi. |
 
-Ví dụ, một cửa hàng có thể quản lý việc bán tại quầy, trên website và trên Shopee trong cùng một hệ thống. Khi có đơn mới, số hàng còn lại được cập nhật giữa các kênh; nhân viên tiếp tục xử lý đóng gói, giao hàng và theo dõi tiền thu về mà không phải nhập lại đơn ở nhiều nơi.
+## POS hỗ trợ những ngành nào?
 
-Với một cửa hàng POD, đơn mua áo in thiết kế riêng có thể được chuyển đến đối tác sản xuất, sau đó cập nhật tiến độ in và mã vận đơn về hệ thống để người bán theo dõi từ lúc đặt hàng đến khi khách nhận hàng.
+Khi thiết lập cửa hàng, chủ cửa hàng chọn ngành. ParkViet tự bật các chức năng mà ngành đó cần và gợi ý sẵn cấu hình ban đầu. Mỗi chi nhánh chọn ngành riêng và đổi được sau này.
 
-ParkViet sẽ tận dụng những khả năng mở rộng mà Spree hỗ trợ để bổ sung ứng dụng, kết nối dịch vụ và phát triển thêm tính năng khi nhu cầu kinh doanh thay đổi. Hiểu đơn giản: **Spree cung cấp nền tảng thương mại, còn ParkViet tập trung làm cho nền tảng đó phù hợp và dễ sử dụng hơn tại Việt Nam.**
+Hiện có **19 ngành** chia làm hai nhóm.
+
+### Bán lẻ: 13 ngành
+
+| Ngành | Chức năng bật sẵn |
+| --- | --- |
+| Tạp hóa & Siêu thị | Đơn vị quy đổi, hàng cân, serial / lô / hạn dùng |
+| Nông sản & Thực phẩm | Đơn vị quy đổi, hàng cân, serial / lô / hạn dùng |
+| Nhà thuốc | Đơn vị quy đổi, lô và hạn dùng |
+| Mẹ & Bé | Đơn vị quy đổi, lô và hạn dùng |
+| Điện tử & Điện máy | Serial / lô |
+| Xe & Máy móc | Serial / lô |
+| Mỹ phẩm | Lô và hạn dùng |
+| Vật liệu xây dựng | Đơn vị quy đổi |
+| Nội thất & Gia dụng | Đơn vị quy đổi |
+| Sách & Văn phòng phẩm | Đơn vị quy đổi |
+| Thời trang | Bán hàng cơ bản, sản phẩm nhiều màu và cỡ |
+| Hoa & Quà tặng | Bán hàng cơ bản |
+| Khác | Bật đủ các chức năng bán lẻ để tự chọn |
+
+### Ăn uống & Giải trí: 6 ngành
+
+| Ngành | Cách bán |
+| --- | --- |
+| Cafe, Trà sữa | Gọi món tại quầy, số gọi, in tem ly, công thức trừ nguyên liệu, đơn từ app giao đồ ăn |
+| Quán ăn | Trả tiền trước với số gọi, hoặc có bàn phục vụ và trả sau; công thức, đơn từ app giao đồ ăn |
+| Nhà hàng | Sơ đồ bàn, trả tiền sau, phí phục vụ, đặt bàn |
+| Bar, Pub & Club | Bán theo bàn và theo tab, chi tiêu tối thiểu, gửi chai, rót theo ly, tiền tip |
+| Karaoke, Bida | Tính tiền theo giờ, tạm dừng giờ, thẻ phút, khuyến mãi theo khung giờ, gửi chai |
+| Căng tin & Trạm dừng nghỉ | Số gọi, suất ăn và ví cho nhân viên hoặc đơn vị bao ăn, hoa hồng cho tài xế xe khách |
+
+Mọi ngành ăn uống đều dùng chung thực đơn có tùy chọn (đường, đá, topping…), giá theo khung giờ, màn bếp hoặc máy in bếp theo từng khu, gọi món bằng QR tại bàn, kiosk tự gọi món, app chủ quán và hàng đợi bán tiền mặt khi mất mạng. Xem thêm [Bán tại bàn và trả tiền sau](docs/pos/fnb-ban-va-tra-sau.md).
+
+## POS làm được gì?
+
+POS phục vụ nhiều chi nhánh, nhiều quầy, và mở được nhiều đơn cùng lúc trên một quầy. Mô tả chi tiết từng nhóm nằm trong [README của POS](apps/pos/README.md).
+
+- [Bán hàng](apps/pos/README.md#bán-hàng): tìm hoặc quét mã vạch, hàng cân bằng tem EAN-13, đơn vị quy đổi, hàng theo serial / lô, khách hàng, giảm giá, nhiều đơn song song.
+  - **Địa chỉ giao hàng của khách:** gõ tự do, tìm kiếm được, sửa ngay trên màn hình bán, in trên biên nhận và phiếu tạm tính.
+  - **Đơn giao hàng:** ghi người giao và phí giao. Trang **Đơn cần giao** cho người giao gọi khách, xem số còn nợ, bấm **Đã giao**.
+  - **Nguồn đơn:** mỗi đơn gắn nguồn Tại quầy / Facebook / Zalo / Khác.
+- [Thanh toán](apps/pos/README.md#thanh-toán): tiền mặt, chuyển khoản, VietQR tự đối soát qua SePay / PayOS, chia nhiều phương thức.
+  - **VietQR trả sau:** đơn ghi nợ in kèm mã VietQR cho đúng số tiền còn nợ. Khách chuyển khoản thì khoản thu được ghi tự động. Nút **Gửi Zalo** gửi ảnh mã QR cho khách.
+- [Bán chịu và thu nợ](apps/pos/README.md#bán-chịu-và-thu-nợ): hạn mức, duyệt ghi nợ, ghi nợ nhanh, tuổi nợ, thu nợ cho nhiều đơn, **nhắc nợ qua Zalo** kèm một mã QR cho cả số nợ.
+- [Trả hàng, hoàn tiền, đổi hàng](apps/pos/README.md#trả-hàng-hoàn-tiền-đổi-hàng).
+- [Tồn kho truy xuất](apps/pos/README.md#tồn-kho-truy-xuất-serial--lô--hạn-dùng): serial, lô, hạn dùng (xuất hàng gần hết hạn trước), nhập, chuyển, kiểm kê, thu hồi.
+- [Ca và sổ quỹ](apps/pos/README.md#ca-và-sổ-quỹ): mở / đóng ca, đếm tiền không xem trước số liệu, thu chi két có người xác nhận.
+- [Báo cáo](apps/pos/README.md#báo-cáo): doanh số (theo cả nguồn đơn), thực thu, tiền mặt, công nợ, đóng ca, xuất CSV.
+- [Biên nhận và in](apps/pos/README.md#biên-nhận-và-in), [màn hình khách](apps/pos/README.md#màn-hình-khách), [máy quét](apps/pos/README.md#máy-quét).
+- **Hóa đơn điện tử:** mỗi món lên hóa đơn với thuế suất riêng. Xem [nhà cung cấp hóa đơn điện tử](docs/einvoice-providers.md).
+- [Quản trị](apps/pos/README.md#quản-trị) và [phân quyền](apps/pos/README.md#quyền) theo chi nhánh.
+
+Các tính năng có rủi ro (bán chịu, ghi nợ nhanh, giao hàng…) mặc định tắt. Chủ cửa hàng bật cho cả cửa hàng và tắt riêng được ở từng chi nhánh. Những gì POS chưa làm được nằm ở mục [Giới hạn hiện tại](apps/pos/README.md#giới-hạn-hiện-tại).
+
+### Thiết lập một quán ăn uống
+
+Mọi bước dưới đây làm trong **Quản trị POS**.
+
+1. **Chọn ngành** ở **Thiết lập cửa hàng**. Wizard thêm bước **Thiết lập quán**: đặt tên khu bếp (Bếp, Quầy pha chế…), chọn thuế suất cho đồ ăn, đồ uống, rượu bia, và chọn lúc gửi món xuống bếp.
+2. **Thực đơn:** nhóm món, món, nhóm tùy chọn, giá theo khung giờ. Thu ngân đánh dấu món hết ngay trên màn hình bán.
+3. **Khu bếp và máy in:** khai báo máy in hóa đơn, máy in bếp, máy in tem.
+4. **Thiết bị:** ghép app ParkViet Nhân viên làm màn bếp, trạm in, máy phục vụ hoặc kiosk. Tab **Phần cứng** của chi nhánh cho biết máy in nào đã in được, khu bếp nào còn thiếu màn hay máy in, và hóa đơn điện tử đã cấu hình chưa.
+5. **Công thức:** gắn nguyên liệu cho món, bán xong thì tồn nguyên liệu tự trừ.
+
+Cài đặt máy in LAN / Bluetooth / Sunmi xem [README của ParkViet Nhân viên](apps/pos-staff/README.md). Chạy POS trên mạng nội bộ của quán hoặc trên VPS, và cách xử lý khi mất mạng, xem [Triển khai POS trên LAN hoặc VPS](docs/deploy/pos-lan-vps.md).
 
 ## Câu chuyện sử dụng: bán đồ ăn nhà làm trong chung cư
 
@@ -47,7 +106,7 @@ Một gia đình nấu đồ ăn nhà làm bán cho hàng xóm trong khu chung c
 3. **Ghi nợ nhanh:** khách hẹn trả sau, người bán ghi toàn bộ hoặc phần còn lại vào nợ chỉ trong một bước. Khách lần đầu nợ thì tài khoản nợ được mở tự động, hạn mức vẫn được kiểm tra.
 4. **In phiếu:** phiếu in tên khách, số điện thoại, địa chỉ, người giao, phí giao và **mã VietQR trả sau** cho đúng số tiền còn nợ. Có thể bấm **Gửi Zalo** để gửi ảnh mã QR cho khách.
 5. **Đi giao:** người giao mở trang **Đơn cần giao**, bấm số điện thoại để gọi khi đến nơi, xem số tiền khách còn nợ, giao xong bấm **Đã giao**.
-6. **Tiền về:** khách quét mã chuyển khoản. Webhook SePay nhận giao dịch có nội dung `TN<số đơn>` và tự ghi nhận khoản thu, không cần dò tin báo ngân hàng.
+6. **Tiền về:** khách quét mã chuyển khoản. SePay báo giao dịch có nội dung `TN<số đơn>` và ParkViet tự ghi nhận khoản thu, không cần dò tin báo ngân hàng.
 7. **Cuối tuần nhắc nợ:** mở **Khách đang nợ**, xem ai nợ bao lâu, lần nhắc gần nhất là khi nào. Bấm **Nhắc nợ qua Zalo** để có sẵn tin nhắn lịch sự liệt kê các đơn chưa trả, kèm một mã QR cho cả số nợ.
 8. **Xem kênh nào bán tốt:** báo cáo doanh số **Theo nguồn đơn** cho biết số đơn, doanh số và số còn nợ của Facebook, Zalo và bán trực tiếp.
 
@@ -58,278 +117,104 @@ Một gia đình nấu đồ ăn nhà làm bán cho hàng xóm trong khu chung c
 - [ ] `vietqr`: chuyển khoản VietQR, để in mã trả sau.
 - [ ] `delivery`: đơn giao hàng và trang Đơn cần giao.
 - [ ] Cấp cho người tạo đơn (kể cả chủ cửa hàng nếu tự đứng bán) quyền **Thu tiền** và **Bán ghi nợ** (`pos.credit.sell`) ở **Cấu hình → Nhân viên & quyền**. Thiếu quyền này thì nút **Ghi nợ** không hiện.
-- [ ] Kết nối webhook SePay với tài khoản nhận tiền ở **Settings → VietQR** để khoản thu được ghi tự động.
+- [ ] Kết nối SePay với tài khoản nhận tiền ở **Settings → VietQR** để khoản thu được ghi tự động.
 
 Đọc thêm: [Bán hàng qua Facebook, Zalo, ship cư dân, hàng treo cửa, thu tiền QR sau](https://parkviet.com/blog/ban-do-an-chung-cu-voi-parkviet).
 
-## Tiến độ phát triển
+## Thanh toán VietQR
 
-Cập nhật 08/11/2026. Nhánh phát triển chính là `v2`.
+Chuyển khoản VietQR có qua gem [`spree_vietqr`](https://github.com/compasify/spree_vietqr), gắn vào dự án dưới dạng git submodule tại `server/vendor/gems/spree_vietqr`.
 
-**Nền tảng:** Spree **6.0.3** ([release notes](https://github.com/spree/spree/releases/tag/v6.0.3)). Dự án đã eject, nên API được build từ `server/` và có thể tùy biến trực tiếp.
+- **Cấu hình:** tạo phương thức thanh toán VietQR ở **Settings → Payment methods**, sau đó thêm tài khoản nhận tiền và xem thông báo ngân hàng ở **Settings → VietQR**.
+- **Trên POS:** chọn VietQR thì quầy và màn hình khách đều hiện mã QR. Khi SePay hoặc PayOS báo đã nhận tiền, thu ngân bấm **Kết thúc**. Nếu ngân hàng chưa báo, thu ngân nhập mã giao dịch bằng tay. Chi nhánh phải bật tính năng **Chuyển khoản VietQR**.
+- **PayOS chưa bật cho POS:** PayOS lấy chữ số trong số đơn làm mã đơn, nên cần kiểm tra với số đơn POS trước.
 
-| Hạng mục | Trạng thái | Chi tiết |
-| --- | --- | --- |
-| **POS bán tại quầy** (`apps/pos`) | Phase 1–11 đã xong. Sẵn sàng triển khai; UAT thiết bị và quy trình tại cửa hàng do người dùng tự thực hiện khi vận hành. | [Giới thiệu POS](apps/pos/README.md) · [Kế hoạch](plans/261101-1649-retail-pos-multi-store-multi-order/plan.md) |
-| **Chuyển khoản VietQR** | Đã có: gem Spree 6, trang quản trị và thanh toán VietQR trên POS. | Gem [`compasify/spree_vietqr`](https://github.com/compasify/spree_vietqr) · [Kế hoạch](plans/261108-0934-vietqr-spree6-pos/plan.md) |
-| **Tách từng gói hàng cùng mã khác giá/lô** | Đã có trên POS: mỗi gói là một dòng riêng, chỉ gộp khi thu ngân chọn gộp và cùng giá/lô; sửa, xóa, trả hàng, hoàn tiền theo từng gói. Còn chờ UAT với hàng mẫu tại cửa hàng. Đơn web/admin vẫn gộp theo mã như Spree gốc. | [Kế hoạch](plans/261103-pos-goi-hang-truy-xuat/plan.md) |
-| Các mục còn lại ở trên (đa kênh, đồng bộ sàn, quảng cáo, POD, vận chuyển, hóa đơn điện tử…) | Chưa bắt đầu. | — |
+## Tiến độ
 
-### POS đã có những gì?
+Cập nhật 12/11/2026. Nhánh phát triển chính là `v2`.
 
-POS phục vụ nhiều chi nhánh, nhiều quầy, và cho mở nhiều đơn cùng lúc trên một quầy. Mỗi nhóm chức năng có mô tả chi tiết trong README của POS:
+| Hạng mục | Trạng thái |
+| --- | --- |
+| **POS bán lẻ**: 13 ngành | Đã xong, sẵn sàng triển khai. Thử thiết bị và quy trình tại cửa hàng làm khi vận hành. [Kế hoạch](plans/261101-1649-retail-pos-multi-store-multi-order/plan.md) |
+| **POS ăn uống & giải trí**: 6 ngành | Đã có đủ chức năng. Còn cần chạy thử tại quán với thiết bị thật, thông báo đẩy cho app chủ quán và xác nhận cách hạch toán thuế với kế toán. [Kế hoạch](plans/261109-1812-pos-fnb-giai-tri/plan.md) |
+| **Chuyển khoản VietQR** | Đã có trên POS và trang quản trị. [Kế hoạch](plans/261108-0934-vietqr-spree6-pos/plan.md) |
+| **Tách gói hàng cùng mã khác giá / lô** | Đã có trên POS, còn chờ thử với hàng mẫu tại cửa hàng. [Kế hoạch](plans/261103-pos-goi-hang-truy-xuat/plan.md) |
 
-- [Bán hàng](apps/pos/README.md#bán-hàng): tìm hoặc quét mã vạch, hàng cân bằng tem EAN-13, đơn vị quy đổi, hàng theo serial/lô, khách hàng, giảm giá, nhiều đơn song song.
-  - **Địa chỉ giao hàng của khách:** mỗi khách một địa chỉ dạng chữ tự do, tìm kiếm được, sửa ngay trên màn hình bán; in dưới tên khách trên biên nhận, phiếu tạm tính và phiếu thanh toán; mẫu in có biến `{customer.phone}`, `{customer.address}`.
-  - **Đơn giao hàng** (công tắc `delivery`): đánh dấu đơn cần giao, nhập tên người giao và phí giao (nếu có, cộng vào tổng tiền và công nợ). Đơn đã xong vẫn ở trạng thái "Chờ giao" cho đến khi bấm "Đã giao" ở trang **Đơn cần giao** (bấm số điện thoại để gọi, có địa chỉ, số còn nợ/đã trả). Biên nhận in người giao và phí giao.
-  - **Nguồn đơn:** mỗi đơn gắn nguồn Tại quầy / Facebook / Zalo / Khác.
-- [Thanh toán](apps/pos/README.md#thanh-toán): tiền mặt, chuyển khoản xác nhận tay, VietQR tự đối soát qua webhook SePay/PayOS, chia nhiều phương thức, sổ tiền chưa phân bổ.
-  - **VietQR trả sau:** đơn ghi nợ in kèm mã VietQR không hết hạn cho đúng số tiền còn nợ, nội dung chuyển khoản `TN<số đơn>`. Webhook SePay tự ghi nhận khoản thu (trả một phần thì giảm nợ, trả dư thì trừ vào nợ cũ hơn, mỗi giao dịch ngân hàng chỉ ghi một lần, có nhật ký). Tài khoản chỉ dùng PayOS vẫn in được mã nhưng phải ghi nhận thu nợ bằng tay. Nút **Gửi Zalo** mở bảng chia sẻ kèm ảnh QR, máy không hỗ trợ thì chép vào bộ nhớ tạm.
-- [Bán chịu và thu nợ](apps/pos/README.md#bán-chịu-và-thu-nợ): hạn mức, duyệt ghi nợ, tuổi nợ, thu nợ cho nhiều đơn.
-  - **Ghi nợ nhanh** (công tắc `quick_credit`, cần bật `credit`): thu ngân có quyền bán chịu ghi phần chưa trả vào nợ trong một bước, không cần người thứ hai duyệt. Lần đầu dùng, hệ thống tự mở tài khoản nợ cho khách (hạn mức mặc định 2.000.000 ₫, 30 ngày); vẫn chặn khi vượt hạn mức.
-  - **Nhắc nợ:** danh sách **Khách đang nợ** hiện số điện thoại, địa chỉ, số ngày nợ/quá hạn và lần nhắc gần nhất. Nút **Nhắc nợ qua Zalo** soạn sẵn tin nhắn lịch sự liệt kê các đơn chưa trả, kèm một mã VietQR cho toàn bộ số nợ (webhook trừ vào đơn cũ nhất trước). Mỗi lần nhắc đều được ghi lại.
-- [Trả hàng, hoàn tiền, đổi hàng](apps/pos/README.md#trả-hàng-hoàn-tiền-đổi-hàng).
-- [Tồn kho truy xuất](apps/pos/README.md#tồn-kho-truy-xuất-serial--lô--hạn-dùng): serial, lô, hạn dùng (FEFO), nhập, chuyển, kiểm kê, thu hồi.
-- [Ca và sổ quỹ](apps/pos/README.md#ca-và-sổ-quỹ): mở/đóng ca, đếm mù, thu/chi két có người xác nhận.
-- [Báo cáo](apps/pos/README.md#báo-cáo): doanh số, thực thu, tiền mặt, công nợ, đóng ca, xuất CSV.
-  - Báo cáo doanh số có thêm mục **Theo nguồn đơn** (số đơn, doanh số gộp, số còn nợ), lọc và cột nguồn đơn, cột nguồn trong CSV, chọn nhanh khoảng ngày.
-- [Biên nhận và in](apps/pos/README.md#biên-nhận-và-in), [màn hình khách](apps/pos/README.md#màn-hình-khách), [máy quét](apps/pos/README.md#máy-quét).
-- [Quản trị](apps/pos/README.md#quản-trị) và [phân quyền](apps/pos/README.md#quyền) theo chi nhánh.
+### Đang hướng tới
 
-Những gì POS chưa làm được (thẻ, driver máy in, thử với thiết bị thật…) nằm ở mục [Giới hạn hiện tại](apps/pos/README.md#giới-hạn-hiện-tại). Các tính năng rủi ro mặc định tắt; bật cho cả cửa hàng và tắt riêng được ở từng chi nhánh. Các công tắc mới (`quick_credit`, `delivery`) cũng vậy.
+- **Bán đa kênh tại một nơi:** gom đơn, sản phẩm và tồn kho từ website, cửa hàng và các sàn.
+- **Đồng bộ hàng lên sàn:** Shopee, Lazada, TikTok Shop; cập nhật giá và tồn để không bán vượt số hàng có.
+- **Quản lý quảng cáo:** Facebook, Google, TikTok; theo dõi chi phí, đơn và doanh thu từ quảng cáo.
+- **In theo yêu cầu (POD):** chuyển mẫu thiết kế cho đơn vị sản xuất, theo dõi tiến độ in, đóng gói và giao hàng.
+- **Kết nối vận chuyển:** tạo đơn giao, in vận đơn, theo dõi trạng thái và đối soát tiền thu hộ (COD).
+- **Khách hàng thân thiết:** điểm thưởng, ưu đãi, gửi thông báo qua Zalo, email, tin nhắn.
+- **Kết nối phần mềm kế toán:** chuyển số liệu bán hàng sang công cụ doanh nghiệp đang dùng.
+- **Bán sỉ và đại lý:** bảng giá theo nhóm khách, đơn số lượng lớn, công nợ đại lý.
+- **Báo cáo kinh doanh:** gom số liệu bán hàng, kho và quảng cáo thành biểu đồ dễ hiểu, giúp quyết định khi nào nhập thêm hàng hay có nên chạy thêm quảng cáo.
 
-### Bán hàng F&B (cafe, quán ăn, căng tin)
+## Tính năng kế thừa từ Spree Commerce
 
-Năm ngành ăn uống chọn được khi thiết lập cửa hàng: **Cafe, Trà sữa**, **Quán ăn** (trả tiền trước, hoặc có bàn phục vụ), **Căng tin & Trạm dừng nghỉ**, **Nhà hàng** và **Bar, Pub & Club** (bán theo bàn). Karaoke, bida vẫn là "Sắp hỗ trợ". Sơ đồ bàn, máy phục vụ, trả tiền sau và phí phục vụ xem [Bán tại bàn và trả tiền sau](docs/pos/fnb-ban-va-tra-sau.md). Mọi màn quản trị dưới đây nằm trong bảng quản trị POS (`apps/pos-dashboard`).
-
-1. **Chọn ngành:** ở **Thiết lập cửa hàng**, chọn một trong ba ngành trên. Wizard thêm bước **Thiết lập quán**: đặt tên các khu bếp (Bếp, Quầy pha chế; căng tin chỉ có Bếp; tối đa 4 khu), chọn thuế suất cho đồ ăn, đồ uống và cho rượu, bia, chọn lúc gửi món xuống bếp (khi thanh toán xong, hoặc khi thu ngân bấm Gửi bếp). Chi nhánh đã có thì đổi ngành ở **Cấu hình → Chi nhánh → Mô hình kinh doanh**.
-2. **Thực đơn và tùy chọn:** nhập ở trang **Thực đơn**: nhóm món, món (gắn với sản phẩm), nhóm tùy chọn (đường, đá, topping…), giá theo khung giờ. Thu ngân đánh dấu món hết ngay trên lưới thực đơn. Món mới lấy thuế suất đồ ăn, đồ uống đã chọn trong wizard; đổi riêng từng món ở ô **Thuế suất**. Không có thực đơn mẫu.
-3. **Khu bếp và máy in:** sửa khu bếp ở tab **Bếp & bar** của chi nhánh, khai báo máy in hóa đơn, máy in bếp, máy in tem ở tab **In ấn**.
-4. **Ghép màn bếp, trạm in, màn khách:** tạo thiết bị và mã ghép ở trang **Thiết bị**, rồi ghép app ParkViet Nhân viên ở mode màn bếp hoặc trạm in. Tab **Phần cứng** của chi nhánh (wizard mở thẳng tới đây sau khi tạo quán) đọc từ server xem từng máy in đã in thành công chưa, khu bếp nào chưa có màn hay máy in, trạm in còn liên lạc không, màn khách đã ghép chưa, server có ra được internet không và hóa đơn điện tử đã cấu hình chưa.
-5. **Số gọi và tem ly:** quầy bán từ lưới thực đơn; mỗi đơn có số gọi theo ngày kinh doanh (bắt đầu lại từ 1 khi qua giờ cắt ngày), màn khách hiện "Đang làm" / "Mời nhận". Cafe in tem ly cho các món bật **In tem ly**.
-6. **Công thức:** gắn nguyên liệu cho món trong trang **Thực đơn**; bán xong thì tồn nguyên liệu được trừ theo công thức.
-7. **Hóa đơn điện tử:** cấu hình ở **Cài đặt → Hóa đơn điện tử**. Món đồ ăn, đồ uống và món rượu, bia lên hóa đơn với thuế suất riêng của từng món.
-
-Lệnh và cấu hình kỹ thuật không chép lại ở đây: chạy app, sinh client và in qua LAN / Bluetooth / Sunmi xem [README của ParkViet Nhân viên](apps/pos-staff/README.md); cài server LAN, ghép app trên LAN, đường ra internet và xử lý khi mất mạng xem [Triển khai POS trên LAN hoặc VPS](docs/deploy/pos-lan-vps.md); nhà cung cấp hóa đơn điện tử xem [docs/einvoice-providers.md](docs/einvoice-providers.md).
-
-### VietQR
-
-Gem [`spree_vietqr`](https://github.com/compasify/spree_vietqr) (bản 1.0.0 cho Spree 6, nhánh `master`) được gắn vào dự án dưới dạng git submodule tại `server/vendor/gems/spree_vietqr`. Bản cho Spree 5 vẫn giữ ở tag `v0.1.0-spree5` và nhánh `spree-5-stable`.
-
-- **Cấu hình** trong bảng quản trị: tạo phương thức thanh toán VietQR ở **Settings → Payment methods**, sau đó thêm tài khoản nhận tiền và xem thông báo ngân hàng ở **Settings → VietQR**.
-- **Trên POS:** chọn VietQR thì quầy và màn hình khách đều hiện mã QR. Khi webhook SePay hoặc PayOS báo đã nhận tiền, thu ngân bấm **Kết thúc**. Nếu ngân hàng chưa báo, thu ngân có thể nhập mã giao dịch bằng tay. Chi nhánh phải bật tính năng **Chuyển khoản VietQR**.
-- **Chưa bật PayOS cho POS:** PayOS lấy chữ số trong số đơn làm `orderCode`, nên cần kiểm tra với số đơn POS trước.
-
-## Spree 6.0 đã cung cấp những gì?
-
-ParkViet v2 không bắt đầu từ con số không. Spree 6.0 đã cung cấp các chức năng nền tảng để vận hành một hệ thống bán hàng, từ quản lý sản phẩm đến xử lý đơn hàng và chăm sóc sau bán:
+ParkViet được xây trên [Spree Commerce](https://spreecommerce.org) **6.0.3**, một nền tảng thương mại điện tử mã nguồn mở. ParkViet bám theo các bản cập nhật của Spree để nhận cải tiến và bản vá bảo mật, và dành công sức cho những gì người bán Việt Nam cần. Các chức năng sau có sẵn từ nền tảng:
 
 | Nhóm tính năng | Có thể làm gì? |
 | --- | --- |
 | **Quản lý sản phẩm** | Tạo sản phẩm với tên, mô tả, hình ảnh và nhiều lựa chọn như kích thước, màu sắc; quản lý mã hàng và giá cho từng lựa chọn. |
-| **Danh mục và bộ sưu tập** | Sắp xếp hàng hóa theo nhóm, tạo bộ sưu tập theo mùa hoặc chương trình bán hàng để khách dễ tìm sản phẩm. |
+| **Danh mục và bộ sưu tập** | Sắp xếp hàng hóa theo nhóm, tạo bộ sưu tập theo mùa hoặc chương trình bán hàng. |
 | **Tìm kiếm và lọc sản phẩm** | Tìm theo từ khóa, lọc theo giá, danh mục, lựa chọn sản phẩm và tình trạng còn hàng. |
-| **Giá bán và bảng giá** | Quản lý giá theo loại tiền, thị trường, nhóm khách hàng hoặc số lượng mua; hỗ trợ giá ưu đãi và lịch áp dụng bảng giá. |
-| **Giỏ hàng và đặt hàng** | Cho khách thêm sản phẩm vào giỏ, nhập địa chỉ, chọn cách nhận hàng và thanh toán để hoàn tất đơn mua. |
-| **Quản lý đơn hàng** | Theo dõi thông tin đơn, trạng thái thanh toán và tình hình xử lý giao hàng; hỗ trợ tạo đơn thay khách và hủy đơn theo điều kiện. |
-| **Khách hàng** | Quản lý tài khoản, thông tin liên hệ, địa chỉ và lịch sử mua hàng; phân nhóm khách hàng để áp dụng chính sách phù hợp. |
-| **Tồn kho và nhiều kho hàng** | Theo dõi số lượng theo từng sản phẩm và địa điểm, giữ hàng trong quá trình thanh toán, điều chuyển hàng và hỗ trợ đặt hàng khi hết hàng nếu được cho phép. |
-| **Khuyến mãi và mã giảm giá** | Thiết lập điều kiện ưu đãi, mã giảm giá và các chương trình như giảm giá sản phẩm hoặc miễn phí giao hàng. |
-| **Thanh toán và hoàn tiền** | Quản lý phương thức thanh toán, theo dõi giao dịch, thu tiền và hoàn tiền; có cơ chế kết nối thêm các cổng thanh toán. |
-| **Giao hàng và xử lý đơn** | Cấu hình khu vực, phương thức và phí giao hàng; chia đơn để giao từng phần, quản lý thông tin theo dõi giao hàng và hỗ trợ nhận hàng tại điểm bán. |
-| **Đổi trả và khiếu nại** | Quản lý yêu cầu trả hàng, đổi sản phẩm hoặc xử lý hàng lỗi, thiếu hàng; hỗ trợ nhận lại hàng, nhập lại kho và hoàn tiền theo quy trình. |
-| **Thuế và các khoản phí** | Thiết lập thuế theo khu vực, giá đã gồm hoặc chưa gồm thuế và các khoản phí liên quan đến đơn hàng. |
-| **Nhiều ngôn ngữ và loại tiền** | Hỗ trợ dịch nội dung sản phẩm, quản lý giá bằng nhiều loại tiền và thiết lập chính sách theo thị trường. |
-| **Quản lý kênh bán** | Chọn sản phẩm được bán trên từng kênh, lên lịch hiển thị và ghi nhận đơn hàng theo kênh. Đây là nền tảng để phát triển bán hàng đa kênh, chưa đồng nghĩa với việc đã kết nối các sàn tại Việt Nam. |
-| **Trang quản trị và phân quyền** | Có trang quản trị cho nhân viên, với vai trò và quyền truy cập để giới hạn ai được xem hoặc thay đổi từng nhóm thông tin. |
-| **Kết nối và mở rộng** | Có các cổng kết nối phần mềm (API) và cơ chế gửi thông báo khi dữ liệu thay đổi, giúp xây dựng ứng dụng riêng hoặc kết nối với dịch vụ bên ngoài. |
+| **Giá bán và bảng giá** | Giá theo loại tiền, thị trường, nhóm khách hàng hoặc số lượng mua; giá ưu đãi và lịch áp dụng bảng giá. |
+| **Giỏ hàng và đặt hàng** | Khách thêm sản phẩm vào giỏ, nhập địa chỉ, chọn cách nhận hàng và thanh toán. |
+| **Quản lý đơn hàng** | Theo dõi đơn, trạng thái thanh toán và giao hàng; tạo đơn thay khách, hủy đơn theo điều kiện. |
+| **Khách hàng** | Tài khoản, thông tin liên hệ, địa chỉ, lịch sử mua hàng, phân nhóm khách hàng. |
+| **Tồn kho và nhiều kho hàng** | Số lượng theo sản phẩm và địa điểm, giữ hàng khi thanh toán, điều chuyển hàng, đặt trước khi hết hàng. |
+| **Khuyến mãi và mã giảm giá** | Điều kiện ưu đãi, mã giảm giá, giảm giá sản phẩm, miễn phí giao hàng. |
+| **Thanh toán và hoàn tiền** | Phương thức thanh toán, giao dịch, thu tiền, hoàn tiền; kết nối thêm cổng thanh toán. |
+| **Giao hàng** | Khu vực, phương thức và phí giao; chia đơn giao từng phần, mã theo dõi, nhận hàng tại điểm bán. |
+| **Đổi trả và khiếu nại** | Yêu cầu trả hàng, đổi sản phẩm, xử lý hàng lỗi, nhập lại kho và hoàn tiền. |
+| **Thuế và các khoản phí** | Thuế theo khu vực, giá đã gồm hoặc chưa gồm thuế. |
+| **Nhiều ngôn ngữ và loại tiền** | Dịch nội dung sản phẩm, giá bằng nhiều loại tiền, chính sách theo thị trường. |
+| **Kênh bán** | Chọn sản phẩm bán trên từng kênh, lên lịch hiển thị, ghi nhận đơn theo kênh. Đây là nền móng cho bán đa kênh, chưa phải kết nối sàn. |
+| **Trang quản trị và phân quyền** | Vai trò và quyền truy cập cho nhân viên. |
+| **Kết nối và mở rộng** | API và thông báo khi dữ liệu thay đổi (webhook) để kết nối dịch vụ bên ngoài. |
 
-Ngoài các chức năng trên, Spree 6.0 còn có khả năng hỗ trợ **sản phẩm số** như tệp tải về, **bán sỉ cho doanh nghiệp** và **mô hình sàn có nhiều người bán**. Việc sử dụng từng mô hình cần được thiết lập phù hợp; một số giải pháp mở rộng hoặc dịch vụ liên quan có thể cần cài thêm, trả phí hoặc có giấy phép riêng.
+Nền tảng còn hỗ trợ **sản phẩm số**, **bán sỉ cho doanh nghiệp** và **sàn nhiều người bán** (`apps/seller-dashboard`). Một số mô hình cần thiết lập thêm, và một số tiện ích mở rộng có thể cần trả phí hoặc có giấy phép riêng. Tham khảo [tài liệu Spree](https://spreecommerce.org/docs).
 
-Tham khảo thêm tại [tài liệu Spree](https://spreecommerce.org/docs), trong đó có hướng dẫn về [sản phẩm](https://spreecommerce.org/docs/developer/core-concepts/products), [tồn kho](https://spreecommerce.org/docs/developer/core-concepts/inventory) và [kênh bán hàng](https://spreecommerce.org/docs/developer/core-concepts/channels).
-
-## Bắt đầu
+## Dành cho lập trình viên
 
 ### Yêu cầu
 
-- [Docker](https://docs.docker.com/get-docker/) đã cài và đang chạy
-- Mã nguồn kèm submodule: gem [`spree_vietqr`](https://github.com/compasify/spree_vietqr) (thanh toán chuyển khoản VietQR) nằm ở `server/vendor/gems/spree_vietqr`. Clone bằng `git clone --recurse-submodules`, hoặc chạy `git submodule update --init` trong bản clone sẵn có. Thiếu thư mục này thì API không build được.
+- [Docker](https://docs.docker.com/get-docker/) đã cài và đang chạy.
+- Mã nguồn kèm submodule `server/vendor/gems/spree_vietqr`: clone bằng `git clone --recurse-submodules`, hoặc chạy `git submodule update --init` trong bản clone sẵn có. Thiếu thư mục này thì API không build được.
 
-### Chạy API Spree
+### Chạy hệ thống
 
 ```bash
-cd parkviet
 pnpm spree dev
 ```
 
-Lần chạy đầu tiên tự hoàn tất thiết lập — kéo image Spree mới nhất, seed cơ sở dữ liệu và cấu hình khóa API.
+Lần chạy đầu tự tải image, tạo dữ liệu ban đầu và cấu hình khóa API. Khi các service đã chạy:
 
-Đợi các service khỏe mạnh, sau đó mở:
+| Ứng dụng | Địa chỉ |
+| --- | --- |
+| Bảng quản trị | http://localhost:5173 (lần đầu mở liên kết thiết lập để tạo tài khoản quản trị) |
+| POS | http://localhost:5175 |
+| Quản trị POS | http://localhost:5176 |
+| Bảng người bán | http://localhost:5174 (`pnpm --dir apps/seller-dashboard run dev`) |
+| Website bán hàng | http://localhost:3001 (`pnpm --dir apps/storefront run dev`) |
+| API | http://localhost:3000/api/v3/store |
 
-- **Bảng quản trị:** http://localhost:5173 — tự động khởi động bởi `spree dev`
-  - Lần chạy đầu tiên mở liên kết thiết lập để tạo tài khoản quản trị
-- **POS (bán tại quầy):** http://localhost:5175 — tự khởi động cùng bảng quản trị khi chạy `spree dev` (tắt bằng `SPREE_POS_DEV=0`)
-- **Quản trị POS:** http://localhost:5176 — tự khởi động cùng POS khi chạy `spree dev` (cùng tắt bằng `SPREE_POS_DEV=0`)
-- **Bảng người bán (sàn):** http://localhost:5174 — chạy bằng `cd apps/seller-dashboard && pnpm run dev`
-- **API cửa hàng:** http://localhost:3000/api/v3/store
+POS và Quản trị POS khởi động cùng `spree dev`; tắt bằng `SPREE_POS_DEV=0`. App ParkViet Nhân viên chạy theo [README riêng](apps/pos-staff/README.md).
 
-### Chạy cửa hàng trực tuyến
+### Cấu trúc và quy ước
 
-Các phụ thuộc đã được cài trong bước thiết lập — chỉ cần khởi động:
-
-```bash
-cd apps/storefront
-pnpm run dev
-```
-
-Mở http://localhost:3001
-
-### Bảng quản trị
-
-`apps/dashboard/` là bảng quản trị của bạn — một ứng dụng React có thể tùy biến (plugin, trang riêng, chỉnh bảng) với tải lại trực tiếp. `spree dev` tự khởi động cùng API; để chạy riêng:
+Mỗi thư mục trong `apps/` và `server/` có hướng dẫn riêng; đọc [AGENTS.md](AGENTS.md) trước khi sửa code. Các lệnh thường dùng:
 
 ```bash
-cd apps/dashboard
-pnpm run dev
+pnpm spree migrate                         # chạy migration
+pnpm spree console                         # console backend
+pnpm spree rspec spec/path/to/file_spec.rb # chạy test của phần vừa sửa
+pnpm spree --help                          # mọi lệnh
 ```
 
-Mở http://localhost:5173 và đăng nhập bằng email và mật khẩu quản trị đã chọn trong lần chạy đầu.
+Chỉ chạy test cho phần mình sửa. GitHub Actions chạy toàn bộ rspec và e2e mỗi lần push.
 
-Khi triển khai, image sản xuất sẽ build bảng quản trị và phục vụ tại `/dashboard` trên cùng origin với API (`pnpm spree build --production`).
-
-Để tìm hiểu cách thêm trang, chỉnh bảng hoặc xây plugin, xem [tài liệu bảng quản trị](https://spreecommerce.org/docs/developer/dashboard/overview).
-
-### Chạy không dùng Docker (máy local)
-
-Nếu bạn đã có sẵn PostgreSQL và Redis (ví dụ đã cấu hình trong `server/.env`), có thể chạy trực tiếp mà không cần Docker:
-
-**Yêu cầu:**
-- PostgreSQL và Redis đang chạy
-- Ruby và Node.js/pnpm
-- Đã cấu hình `server/.env` (DATABASE_*, SECRET_KEY_BASE, ...)
-
-**1. Cài gem và migrate cơ sở dữ liệu:**
-```bash
-cd server
-bundle install
-bundle exec rails db:migrate
-```
-
-**2. Chạy API server:**
-```bash
-cd server
-bundle exec rails server
-```
-Mở http://localhost:3000
-
-**3. Chạy bảng quản trị:**
-```bash
-cd apps/dashboard
-pnpm dev
-```
-Mở http://localhost:5173
-
-**4. (Tùy chọn) Chạy tác vụ nền (Solid Queue):**
-```bash
-cd server
-bundle exec rails solid_queue:start
-```
-
-> Lưu ý: Solid Queue không chạy trong Puma (để tránh crash fork trên macOS). Đã set `SOLID_QUEUE_IN_PUMA=false` trong `server/.env`.
-
-## Tùy biến API Spree
-
-Thư mục `server/` là API Spree — một ứng dụng Rails đầy đủ phục vụ Store và Admin API (cùng tác vụ nền và email giao dịch) mà cửa hàng trực tuyến và bảng quản trị giao tiếp. Mặc định, dự án chạy từ image Docker dựng sẵn. Để chuyển sang build từ bản sao local:
-
-```bash
-pnpm spree eject
-```
-
-Lệnh này rebuild image Docker từ `server/` và khởi động lại service. Sau đó bạn có thể:
-
-- **Tùy biến API** bằng cách sửa các tệp trong `server/`
-- **Thêm extension** với `spree add <extension>`
-- **Thêm tài nguyên mới** với `spree generate model <name> <attributes>`
-
-## Dòng lệnh Spree
-
-Dự án này dùng [`@spree/cli`](https://spreecommerce.org/docs/developer/cli/quickstart) để quản lý API Spree.
-
-### Service
-
-| Lệnh | Mô tả |
-|---------|-------------|
-| `spree dev` | Chạy ứng dụng ở foreground — truyền log, Ctrl+C dừng. Lần chạy đầu tự hoàn tất thiết lập |
-| `spree stop` | Dừng service API |
-| `spree upgrade` | Nâng cấp Spree — server, cơ sở dữ liệu và các gói `@spree/*` |
-| `spree eject` | Chuyển từ image dựng sẵn sang build từ `server/` |
-| `spree build --production` | Build image sản xuất — bao gồm `apps/dashboard` nếu có |
-| `spree logs` | Xem log web server |
-| `spree logs worker` | Xem log tác vụ nền |
-| `spree console` | Mở console backend tương tác |
-
-### Dữ liệu
-
-| Lệnh | Mô tả |
-|---------|-------------|
-| `spree migrate` | Cài migration Spree đang chờ, sau đó chạy cùng migration của bạn |
-| `spree seed` | Seed cơ sở dữ liệu |
-| `spree sample-data` | Tải sản phẩm mẫu, danh mục, hình ảnh |
-
-### Người dùng & Khóa API
-
-| Lệnh | Mô tả |
-|---------|-------------|
-| `spree user create` | Tạo người dùng quản trị |
-| `spree api-key create` | Tạo khóa API publishable hoặc secret |
-| `spree api-key list` | Liệt kê tất cả khóa API |
-| `spree api-key revoke <id>` | Thu hồi khóa API (ID từ `api-key list`) |
-
-### Trình sinh mã
-
-| Lệnh | Mô tả |
-|---------|-------------|
-| `spree generate model Brand name:string slug:string:uniq` | Sinh model cơ sở dữ liệu mới |
-| `spree generate api_resource Brand name:string slug:string:uniq` | Sinh tài nguyên API Spree mới |
-| `spree generate subscriber OmsOrderSync order.placed` | Sinh subscriber sự kiện mới |
-| `spree generate migration AddPositionToSpreeBrands position:integer` | Sinh migration mới |
-
-### Admin API
-
-Thiết lập dự án tạo khóa secret chỉ đọc vào `.spree/credentials.json` (đã gitignore), nên client Admin API hoạt động ngay. Nếu bỏ qua bước thiết lập, `spree api` sẽ tạo khóa khi dùng lần đầu:
-
-```bash
-pnpm spree api get products
-pnpm spree api get "orders?q[status_eq]=complete"
-pnpm spree api endpoints          # liệt kê endpoint + scope yêu cầu
-pnpm spree api status             # hiển thị thông tin xác thực + khả năng kết nối server
-```
-
-Khóa mặc định chỉ đọc. Để ghi, tạo khóa secret có scope và truyền qua `SPREE_API_KEY`:
-
-```bash
-pnpm spree api-key create --scopes write_products
-SPREE_API_KEY=sk_... pnpm spree api post products --data '{"name":"New product","prices":[{"currency":"USD","amount":"29.99"}]}'
-```
-
-| Lệnh | Mô tả |
-|---------|-------------|
-| `spree api get/post/patch/delete <path>` | Gọi Admin API trực tiếp |
-| `spree api endpoints` | Liệt kê endpoint Admin API cùng scope yêu cầu |
-| `spree auth login --profile <name>` | Lưu thông tin xác thực có tên cho cửa hàng từ xa |
-
-> **Chạy `spree` trực tiếp.** Các lệnh trên dùng `pnpm` vì `@spree/cli` là phụ thuộc local của dự án. Bạn cũng có thể chạy các script package (ví dụ `pnpm run api -- get products`), hoặc cài CLI toàn cục để dùng lệnh `spree` trần:
->
-> ```bash
-> pnpm add -g @spree/cli
-> spree api get products
-> ```
-
-## Tìm hiểu thêm
-
-- [Tài liệu Spree](https://spreecommerce.org/docs)
-- [Discord Spree](https://discord.spreecommerce.org)
-- [Store API Reference](https://spreecommerce.org/docs/api-reference/store-api/introduction)
-- [Admin API Reference](https://spreecommerce.org/docs/api-reference/admin-api/introduction)
-- [CLI Reference](https://spreecommerce.org/docs/developer/cli/quickstart)
-- [Spree GitHub](https://github.com/spree/spree)
+Tài liệu nền tảng: [Spree docs](https://spreecommerce.org/docs) · [Store API](https://spreecommerce.org/docs/api-reference/store-api/introduction) · [Admin API](https://spreecommerce.org/docs/api-reference/admin-api/introduction) · [CLI](https://spreecommerce.org/docs/developer/cli/quickstart).
