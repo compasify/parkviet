@@ -27,7 +27,9 @@ ParkViet giúp người bán quản lý việc bán tại quầy, bán online, k
 | **ParkViet Nhân viên** (`apps/pos-staff`) | Phục vụ, bếp, chủ quán | App di động (Flutter) với các chế độ máy phục vụ, màn bếp, trạm in, kiosk tự gọi món và app chủ quán (duyệt từ xa, cảnh báo, xem đơn đang mở). |
 | **Gọi món bằng QR** (`apps/table-order`) | Khách tại bàn | Khách quét mã QR trên bàn, xem thực đơn và gửi món xuống bếp, không cần cài app. |
 | **Website bán hàng** (`apps/storefront`) | Khách mua online | Cửa hàng trực tuyến cho người bán. |
-| **Bảng quản trị** (`apps/dashboard`) | Quản lý bán hàng online | Sản phẩm, đơn hàng, khách hàng, kho, khuyến mãi. |
+| **Cổng bán sỉ** (`apps/storefront`, trang `/wholesale`) | Đại lý, khách mua sỉ | Đăng ký tài khoản sỉ chờ duyệt, xem giá sỉ sau khi đăng nhập, đặt nhanh theo mã hàng, giỏ hàng sỉ riêng. |
+| **Bảng người bán** (`apps/seller-dashboard`) | Người bán trên sàn | Mỗi người bán tự quản lý sản phẩm và đơn hàng của mình khi chạy mô hình sàn nhiều người bán. |
+| **Bảng quản trị** (`apps/dashboard`) | Quản lý bán hàng online | Sản phẩm, đơn hàng, khách hàng, kho, khuyến mãi, bảng giá theo nhóm khách và quy cách đặt hàng sỉ cho từng mặt hàng. |
 
 ## POS hỗ trợ những ngành nào?
 
