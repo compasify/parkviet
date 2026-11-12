@@ -2,7 +2,7 @@
 
 RSpec.describe 'POS sandbox payment qualification' do
   it 'does not place a cart when the test payment covers only half the total' do
-    cart = create(:cart_ready_to_complete)
+    cart = create_cart_ready_to_complete
     expect(cart.total).to be > 0
     cart.payments.first.update!(amount: cart.total / 2)
 
@@ -13,7 +13,7 @@ RSpec.describe 'POS sandbox payment qualification' do
   end
 
   it 'invalidates the previous checkout payment when another test payment is created' do
-    cart = create(:cart_ready_to_complete)
+    cart = create_cart_ready_to_complete
     payment = cart.payments.first
     first_amount = (cart.total / 2).round(2)
     payment.update!(amount: first_amount)

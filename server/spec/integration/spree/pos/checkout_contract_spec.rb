@@ -21,7 +21,7 @@ RSpec.describe 'POS core checkout qualification' do
   end
 
   it 'refuses a prepared checkout without an email instead of creating an order' do
-    cart = create(:cart_ready_to_complete)
+    cart = create_cart_ready_to_complete
     cart.update!(email: nil)
 
     requirements = Spree::Checkout::Requirements.new(cart).call(completion: true)
@@ -33,7 +33,7 @@ RSpec.describe 'POS core checkout qualification' do
   end
 
   it 'places and replays the same order for a fully prepared test checkout' do
-    cart = create(:cart_ready_to_complete)
+    cart = create_cart_ready_to_complete
 
     first = Spree.carts_complete_workflow.call(cart: cart)
     expect(first).to be_success

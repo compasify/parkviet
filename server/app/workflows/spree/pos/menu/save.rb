@@ -42,7 +42,7 @@ module Spree
             record.menu_category = category!(store, attributes['menu_category_id']) if attributes.key?('menu_category_id')
             if attributes.key?('tax_category_id')
               assign_tax_category!(store, record.product, attributes['tax_category_id'])
-            elsif record.new_record? && record.product.tax_category_id.nil?
+            elsif record.new_record? && unassigned_tax_category?(record.product)
               default_tax_category!(store, record.product)
             end
             new_item = record.new_record?
@@ -150,6 +150,11 @@ module Spree
           end
 
           product.update!(tax_category: category)
+        end
+
+        # Spree gives a new product its default tax category; that is not a choice.
+        def unassigned_tax_category?(product)
+          product.tax_category_id.nil? || product.tax_category&.is_default?
         end
 
         # A new item whose product has no tax category takes the store's

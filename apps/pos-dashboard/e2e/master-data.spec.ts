@@ -83,7 +83,7 @@ test('units convert to a base unit of their dimension and refuse disabling while
 test('staff roles group capabilities, confirm sensitive grants and refuse deleting a role in use', async ({ page }) => {
   const state = await install(page); await page.goto('/store_1/staff-roles');
   await page.getByRole('button', { name: 'Thêm nhóm quyền', exact: true }).click(); const dialog = page.getByRole('dialog');
-  await expect(dialog.getByRole('group', { name: 'Bán hàng', exact: true }).getByRole('checkbox')).toHaveCount(6);
+  await expect(dialog.getByRole('group', { name: 'Bán hàng', exact: true }).getByRole('checkbox')).toHaveCount(11);
   await dialog.getByLabel('Tên hiển thị').fill('Quản lý ca'); await dialog.getByRole('checkbox', { name: 'Thu/chi tiền mặt trong két', exact: true }).check();
   const save = dialog.getByRole('button', { name: 'Lưu', exact: true }); await expect(save).toBeDisabled();
   await dialog.getByRole('checkbox', { name: 'Tôi xác nhận', exact: false }).check(); await save.click(); await expect(dialog).toHaveCount(0);
