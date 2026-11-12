@@ -7,7 +7,7 @@ ParkViet giúp người bán quản lý việc bán tại quầy, bán online, k
 ## Vì sao chọn ParkViet?
 
 - **Miễn phí 100%, mọi tính năng.** Không có gói trả phí, không khóa tính năng, không giới hạn số chi nhánh, quầy, nhân viên hay đơn hàng.
-- **Mã nguồn mở.** Toàn bộ mã nguồn công khai tại [github.com/parkviet/parkviet](https://github.com/parkviet/parkviet). Ai cũng xem được hệ thống làm gì với dữ liệu của mình.
+- **Mã nguồn mở, giấy phép MIT.** Toàn bộ mã nguồn công khai tại [github.com/parkviet/parkviet](https://github.com/parkviet/parkviet). Theo [giấy phép MIT](LICENSE), bạn được dùng, sửa, phân phối và dùng cho mục đích thương mại mà không phải trả phí. Ai cũng xem được hệ thống làm gì với dữ liệu của mình.
 - **Tự do phát triển thêm.** Mỗi ngành hàng, mỗi đơn vị có cách bán riêng. Bạn được sửa và bổ sung tính năng cho đúng nhu cầu của mình, không phải chờ nhà cung cấp.
 - **Được hỗ trợ miễn phí.** Hỏi đáp, hướng dẫn cài đặt và sử dụng không mất phí. Liên hệ qua [parkviet.com](https://parkviet.com) hoặc mở issue trên GitHub.
 - **Dữ liệu là của bạn.** Cài trên máy chủ của quán (mạng LAN) hoặc VPS riêng. Đơn hàng, khách hàng và công nợ nằm trên máy của bạn, không gửi về bên thứ ba.
