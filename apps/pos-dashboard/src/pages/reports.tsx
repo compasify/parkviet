@@ -61,6 +61,7 @@ const BUSINESS_DATED = new Set<PosReportType>([
   'platforms',
   'meals',
   'meal_statement',
+  'vehicle_commissions',
 ])
 type Notice = { text: string; failed: boolean } | null
 

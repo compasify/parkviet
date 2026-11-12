@@ -69,6 +69,14 @@ describe('report requests', () => {
     expect(dashboardReportTypes({}, true)).not.toContain('meals')
   })
 
+  it('lists the coach commission report while the branch runs coach visits', () => {
+    expect(dashboardReportTypes({ 'fnb.vehicle_commission': true }, false)).toContain(
+      'vehicle_commissions',
+    )
+    expect(dashboardReportTypes({}, true)).not.toContain('vehicle_commissions')
+    expect(reportColumns('vehicle_commissions')).not.toContain('driver_phone')
+  })
+
   it('refuses a reversed or too long range', () => {
     expect(
       reportRequest('receipts', { from: '2026-11-10', to: '2026-11-01' }, 'x', 's').rangeValid,

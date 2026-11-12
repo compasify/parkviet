@@ -633,6 +633,8 @@ export type PosWorkspace = {
   guest_name?: string | null;
   // A bar tab (service mode tab): the guest's name it is found by.
   tab_name?: string | null;
+  // A rest stop (`fnb.vehicle_commission`): the coach visit the order is sold to.
+  vehicle_visit_id?: string | null;
   // A VIP table's minimum spend and the fee making up the shortfall.
   minimum_spend?: { minimum: string; amount: string; waived: boolean } | null;
   // The drink credit of door tickets and what the drinks used of it.

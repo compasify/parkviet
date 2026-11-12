@@ -85,6 +85,11 @@ production:
   pos_expire_bottle_keeps:
     class: Spree::Pos::BottleKeeps::ExpireJob
     schedule: 15 4 * * * Asia/Ho_Chi_Minh
+  # POS coach visits past their window close and keep their commission
+  # (never pays).
+  pos_close_stale_vehicle_visits:
+    class: Spree::Pos::CloseStaleVehicleVisitsJob
+    schedule: every 5 minutes
   # POS print queue: return jobs whose print station lease ran out.
   pos_release_print_claims:
     class: Spree::Pos::ReleasePrintClaimsJob

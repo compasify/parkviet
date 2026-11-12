@@ -79,6 +79,8 @@
   "capabilityReservationManage": "Nhận đặt bàn",
   "capabilityExpoOperate": "Điều phối ra món (expo)",
   "capabilityMealAccountManage": "Quản lý tài khoản suất ăn và đơn vị chi trả",
+  "capabilityVehicleVisitOperate": "Đón xe, gắn đơn vào lượt xe",
+  "capabilityVehicleVisitManage": "Quản lý hoa hồng xe: nhà xe, quy tắc, chi, sửa lượt",
   "tableState_available": "Trống",
   "tableState_reserved": "Đã đặt",
   "reservationStatus_booked": "Đang chờ",
@@ -305,6 +307,12 @@
       "description": "Nhận diện người ăn bằng mã nhân viên, ví trả trước, đơn vị chi trả ghi nợ và trợ giá theo suất.",
       "off": "Chi nhánh chưa bật chức năng Tài khoản suất ăn.",
       "disabled": "Chi nhánh chưa bật Tài khoản suất ăn; máy chủ không ghi suất và không trừ ví. Việc bán hàng không bị ảnh hưởng."
+    },
+    "fnb_vehicle_commission": {
+      "label": "Hoa hồng tài xế",
+      "description": "Ghi lượt xe ở trạm dừng, gắn đơn vào xe, tính và chi hoa hồng cho tài xế / phụ xe theo xe và theo khách.",
+      "off": "Chi nhánh chưa bật chức năng Hoa hồng tài xế.",
+      "disabled": "Chi nhánh chưa bật Hoa hồng tài xế; máy chủ không mở lượt xe và không gắn đơn vào xe. Việc bán hàng không bị ảnh hưởng."
     }
   },
   "profiles": {

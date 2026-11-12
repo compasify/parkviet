@@ -35,6 +35,7 @@ module Spree
               return create_for_reservation(branch, requester) if params[:reservation_id].present?
               return create_for_bottle_keep(branch, requester) if params[:bottle_keep_id].present?
               return create_for_meal_account(branch, requester) if params[:meal_account_id].present?
+              return create_for_vehicle_visit(branch, requester) if params[:vehicle_visit_id].present?
 
               subject = Spree::Pos::Workspace.locate(
                 Spree::Pos::Workspace.for_store(current_store).where(branch_id: branch.id), params[:workspace_id]
@@ -64,6 +65,9 @@ module Spree
               end
               if (Spree::Pos::Approval::MEAL_ACTIONS + [Spree::Pos::Approval::MEAL_SPONSOR_ACTION]).include?(params[:action_name].to_s)
                 raise Spree::Pos::Conflict, 'Meal approvals are granted on the meal account.'
+              end
+              if params[:action_name].to_s == Spree::Pos::Approval::VEHICLE_VISIT_ADJUST_ACTION
+                raise Spree::Pos::Conflict, 'Coach visit approvals are granted on the visit.'
               end
 
               amount = money_or_nil
@@ -174,6 +178,31 @@ module Spree
               audit!('approval.grant', approval, action: approval.action, revision: approval.revision)
               Spree::Pos::Realtime.publish(branch, 'approval.requested', id: approval.prefixed_id,
                                                                          refs: { meal_account_id: subject.prefixed_id })
+              render json: { data: approval.to_pos }, status: :created
+            end
+
+            # A closed coach visit's correction, bound to the visit's version.
+            def create_for_vehicle_visit(branch, requester)
+              subject = Spree::Pos::VehicleVisit.locate(Spree::Pos::VehicleVisit.for_store(current_store).where(branch_id: branch.id),
+                                                        params[:vehicle_visit_id])
+              raise ActiveRecord::RecordNotFound if subject.nil?
+              unless params[:action_name].to_s == Spree::Pos::Approval::VEHICLE_VISIT_ADJUST_ACTION
+                raise Spree::Pos::Conflict, 'A coach visit takes correction approvals only.'
+              end
+
+              requester_policy = Spree::Pos::AccessPolicy.new(store: current_store, staff: requester)
+              allowed = Spree::Pos::Approval::REQUESTER_CAPABILITIES.fetch(subject.class.name).any? { |key| requester_policy.allows?(branch, key) }
+              raise CanCan::AccessDenied unless allowed
+              raise Spree::Pos::Conflict.new('Revision is stale.', revision: subject.revision) unless params[:revision].to_s == subject.revision.to_s
+
+              approval = Spree::Pos::Approval.create!(
+                store: current_store, branch: branch, approver: current_user, requester: requester,
+                subject_type: subject.class.name, subject_id: subject.id, action: params[:action_name],
+                revision: params[:revision].to_s, expires_at: params[:expires_at], status: 'active'
+              )
+              audit!('approval.grant', approval, action: approval.action, revision: approval.revision)
+              Spree::Pos::Realtime.publish(branch, 'approval.requested', id: approval.prefixed_id,
+                                                                         refs: { vehicle_visit_id: subject.prefixed_id })
               render json: { data: approval.to_pos }, status: :created
             end
 

@@ -76,6 +76,21 @@ describe('POS permission gates', () => {
     }
     expect(canManageMealAccounts(at(['pos.meal_account.manage'], false))).toBe(true)
   })
+  it('offers the coach commission set-up where the branch runs it, to its managers', () => {
+    const at = (capabilities: string[], on: boolean, permissionKeys: string[] = []) => ({
+      permissionKeys,
+      context: {
+        capabilities,
+        modules: { 'fnb.vehicle_commission': on },
+      } as unknown as PosContext,
+    })
+    expect(visibleNav('vehicle-commission', at(['pos.vehicle_visit.manage'], true))).toBe(true)
+    expect(visibleNav('vehicle-commission', at([], true, ['write_pos_topology']))).toBe(true)
+    expect(routeAllowed('vehicle-commission', at(['pos.vehicle_visit.manage'], true))).toBe(true)
+    // Greeting coaches at the counter is not setting their commission.
+    expect(visibleNav('vehicle-commission', at(['pos.vehicle_visit.operate'], true))).toBe(false)
+    expect(visibleNav('vehicle-commission', at(['pos.vehicle_visit.manage'], false))).toBe(false)
+  })
   it('fails closed before permissions/context arrive', () => {
     expect(visibleNav('features', { permissionKeys: [] })).toBe(false)
     expect(visibleNav('branches', { permissionKeys: [] })).toBe(false)

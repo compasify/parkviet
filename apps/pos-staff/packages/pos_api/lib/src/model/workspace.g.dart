@@ -108,6 +108,8 @@ class _$Workspace extends Workspace {
   @override
   final String? tabName;
   @override
+  final String? vehicleVisitId;
+  @override
   final WorkspaceMinimumSpend? minimumSpend;
   @override
   final WorkspaceDrinkCredit? drinkCredit;
@@ -145,6 +147,7 @@ class _$Workspace extends Workspace {
       this.orderNumber,
       this.guestName,
       this.tabName,
+      this.vehicleVisitId,
       this.minimumSpend,
       this.drinkCredit,
       this.resource,
@@ -178,6 +181,7 @@ class _$Workspace extends Workspace {
         orderNumber == other.orderNumber &&
         guestName == other.guestName &&
         tabName == other.tabName &&
+        vehicleVisitId == other.vehicleVisitId &&
         minimumSpend == other.minimumSpend &&
         drinkCredit == other.drinkCredit &&
         resource == other.resource &&
@@ -204,6 +208,7 @@ class _$Workspace extends Workspace {
     _$hash = $jc(_$hash, orderNumber.hashCode);
     _$hash = $jc(_$hash, guestName.hashCode);
     _$hash = $jc(_$hash, tabName.hashCode);
+    _$hash = $jc(_$hash, vehicleVisitId.hashCode);
     _$hash = $jc(_$hash, minimumSpend.hashCode);
     _$hash = $jc(_$hash, drinkCredit.hashCode);
     _$hash = $jc(_$hash, resource.hashCode);
@@ -232,6 +237,7 @@ class _$Workspace extends Workspace {
           ..add('orderNumber', orderNumber)
           ..add('guestName', guestName)
           ..add('tabName', tabName)
+          ..add('vehicleVisitId', vehicleVisitId)
           ..add('minimumSpend', minimumSpend)
           ..add('drinkCredit', drinkCredit)
           ..add('resource', resource)
@@ -289,6 +295,11 @@ class WorkspaceBuilder implements Builder<Workspace, WorkspaceBuilder> {
   String? _tabName;
   String? get tabName => _$this._tabName;
   set tabName(String? tabName) => _$this._tabName = tabName;
+
+  String? _vehicleVisitId;
+  String? get vehicleVisitId => _$this._vehicleVisitId;
+  set vehicleVisitId(String? vehicleVisitId) =>
+      _$this._vehicleVisitId = vehicleVisitId;
 
   WorkspaceMinimumSpendBuilder? _minimumSpend;
   WorkspaceMinimumSpendBuilder get minimumSpend =>
@@ -370,6 +381,7 @@ class WorkspaceBuilder implements Builder<Workspace, WorkspaceBuilder> {
       _orderNumber = $v.orderNumber;
       _guestName = $v.guestName;
       _tabName = $v.tabName;
+      _vehicleVisitId = $v.vehicleVisitId;
       _minimumSpend = $v.minimumSpend?.toBuilder();
       _drinkCredit = $v.drinkCredit?.toBuilder();
       _resource = $v.resource?.toBuilder();
@@ -418,6 +430,7 @@ class WorkspaceBuilder implements Builder<Workspace, WorkspaceBuilder> {
             orderNumber: orderNumber,
             guestName: guestName,
             tabName: tabName,
+            vehicleVisitId: vehicleVisitId,
             minimumSpend: _minimumSpend?.build(),
             drinkCredit: _drinkCredit?.build(),
             resource: _resource?.build(),

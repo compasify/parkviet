@@ -44,6 +44,7 @@ import { Route as AuthenticatedStoreIdStaffRouteImport } from './routes/_authent
 import { Route as AuthenticatedStoreIdStaffRolesRouteImport } from './routes/_authenticated/$storeId/staff-roles'
 import { Route as AuthenticatedStoreIdStockAlertsRouteImport } from './routes/_authenticated/$storeId/stock-alerts'
 import { Route as AuthenticatedStoreIdUnitsRouteImport } from './routes/_authenticated/$storeId/units'
+import { Route as AuthenticatedStoreIdVehicleCommissionRouteImport } from './routes/_authenticated/$storeId/vehicle-commission'
 import { Route as AuthenticatedStoreIdBranchesIndexRouteImport } from './routes/_authenticated/$storeId/branches/index'
 import { Route as AuthenticatedStoreIdBranchesBranchIdRouteImport } from './routes/_authenticated/$storeId/branches/$branchId'
 import { Route as AuthenticatedStoreIdFundsIndexRouteImport } from './routes/_authenticated/$storeId/funds/index'
@@ -64,6 +65,7 @@ import { Route as AuthenticatedStoreIdReportsMenu_marginRouteImport } from './ro
 import { Route as AuthenticatedStoreIdReportsPlatformsRouteImport } from './routes/_authenticated/$storeId/reports/platforms'
 import { Route as AuthenticatedStoreIdReportsReceiptsRouteImport } from './routes/_authenticated/$storeId/reports/receipts'
 import { Route as AuthenticatedStoreIdReportsReceivablesRouteImport } from './routes/_authenticated/$storeId/reports/receivables'
+import { Route as AuthenticatedStoreIdReportsVehicle_commissionsRouteImport } from './routes/_authenticated/$storeId/reports/vehicle_commissions'
 import { Route as AuthenticatedStoreIdSettingsIndexRouteImport } from './routes/_authenticated/$storeId/settings/index'
 import { Route as AuthenticatedStoreIdSettingsBusinessModelRouteImport } from './routes/_authenticated/$storeId/settings/business-model'
 import { Route as AuthenticatedStoreIdSettingsEinvoiceRouteImport } from './routes/_authenticated/$storeId/settings/einvoice'
@@ -293,6 +295,12 @@ const AuthenticatedStoreIdUnitsRoute =
     path: '/units',
     getParentRoute: () => AuthenticatedStoreIdRoute,
   } as any)
+const AuthenticatedStoreIdVehicleCommissionRoute =
+  AuthenticatedStoreIdVehicleCommissionRouteImport.update({
+    id: '/vehicle-commission',
+    path: '/vehicle-commission',
+    getParentRoute: () => AuthenticatedStoreIdRoute,
+  } as any)
 const AuthenticatedStoreIdBranchesIndexRoute =
   AuthenticatedStoreIdBranchesIndexRouteImport.update({
     id: '/',
@@ -411,6 +419,12 @@ const AuthenticatedStoreIdReportsReceivablesRoute =
   AuthenticatedStoreIdReportsReceivablesRouteImport.update({
     id: '/receivables',
     path: '/receivables',
+    getParentRoute: () => AuthenticatedStoreIdReportsRoute,
+  } as any)
+const AuthenticatedStoreIdReportsVehicle_commissionsRoute =
+  AuthenticatedStoreIdReportsVehicle_commissionsRouteImport.update({
+    id: '/vehicle_commissions',
+    path: '/vehicle_commissions',
     getParentRoute: () => AuthenticatedStoreIdReportsRoute,
   } as any)
 const AuthenticatedStoreIdSettingsIndexRoute =
@@ -592,6 +606,7 @@ export interface FileRoutesByFullPath {
   '/$storeId/staff-roles': typeof AuthenticatedStoreIdStaffRolesRoute
   '/$storeId/stock-alerts': typeof AuthenticatedStoreIdStockAlertsRoute
   '/$storeId/units': typeof AuthenticatedStoreIdUnitsRoute
+  '/$storeId/vehicle-commission': typeof AuthenticatedStoreIdVehicleCommissionRoute
   '/$storeId/': typeof AuthenticatedStoreIdIndexRoute
   '/$storeId/branches/$branchId': typeof AuthenticatedStoreIdBranchesBranchIdRouteWithChildren
   '/$storeId/funds/attention': typeof AuthenticatedStoreIdFundsAttentionRoute
@@ -607,6 +622,7 @@ export interface FileRoutesByFullPath {
   '/$storeId/reports/platforms': typeof AuthenticatedStoreIdReportsPlatformsRoute
   '/$storeId/reports/receipts': typeof AuthenticatedStoreIdReportsReceiptsRoute
   '/$storeId/reports/receivables': typeof AuthenticatedStoreIdReportsReceivablesRoute
+  '/$storeId/reports/vehicle_commissions': typeof AuthenticatedStoreIdReportsVehicle_commissionsRoute
   '/$storeId/settings/business-model': typeof AuthenticatedStoreIdSettingsBusinessModelRoute
   '/$storeId/settings/einvoice': typeof AuthenticatedStoreIdSettingsEinvoiceRoute
   '/$storeId/settings/receipt-templates': typeof AuthenticatedStoreIdSettingsReceiptTemplatesRouteWithChildren
@@ -663,6 +679,7 @@ export interface FileRoutesByTo {
   '/$storeId/staff-roles': typeof AuthenticatedStoreIdStaffRolesRoute
   '/$storeId/stock-alerts': typeof AuthenticatedStoreIdStockAlertsRoute
   '/$storeId/units': typeof AuthenticatedStoreIdUnitsRoute
+  '/$storeId/vehicle-commission': typeof AuthenticatedStoreIdVehicleCommissionRoute
   '/$storeId': typeof AuthenticatedStoreIdIndexRoute
   '/$storeId/funds/attention': typeof AuthenticatedStoreIdFundsAttentionRoute
   '/$storeId/inventory/$tab': typeof AuthenticatedStoreIdInventoryTabRoute
@@ -677,6 +694,7 @@ export interface FileRoutesByTo {
   '/$storeId/reports/platforms': typeof AuthenticatedStoreIdReportsPlatformsRoute
   '/$storeId/reports/receipts': typeof AuthenticatedStoreIdReportsReceiptsRoute
   '/$storeId/reports/receivables': typeof AuthenticatedStoreIdReportsReceivablesRoute
+  '/$storeId/reports/vehicle_commissions': typeof AuthenticatedStoreIdReportsVehicle_commissionsRoute
   '/$storeId/settings/business-model': typeof AuthenticatedStoreIdSettingsBusinessModelRoute
   '/$storeId/settings/einvoice': typeof AuthenticatedStoreIdSettingsEinvoiceRoute
   '/$storeId/settings/setup': typeof AuthenticatedStoreIdSettingsSetupRoute
@@ -743,6 +761,7 @@ export interface FileRoutesById {
   '/_authenticated/$storeId/staff-roles': typeof AuthenticatedStoreIdStaffRolesRoute
   '/_authenticated/$storeId/stock-alerts': typeof AuthenticatedStoreIdStockAlertsRoute
   '/_authenticated/$storeId/units': typeof AuthenticatedStoreIdUnitsRoute
+  '/_authenticated/$storeId/vehicle-commission': typeof AuthenticatedStoreIdVehicleCommissionRoute
   '/_authenticated/$storeId/': typeof AuthenticatedStoreIdIndexRoute
   '/_authenticated/$storeId/branches/$branchId': typeof AuthenticatedStoreIdBranchesBranchIdRouteWithChildren
   '/_authenticated/$storeId/funds/attention': typeof AuthenticatedStoreIdFundsAttentionRoute
@@ -758,6 +777,7 @@ export interface FileRoutesById {
   '/_authenticated/$storeId/reports/platforms': typeof AuthenticatedStoreIdReportsPlatformsRoute
   '/_authenticated/$storeId/reports/receipts': typeof AuthenticatedStoreIdReportsReceiptsRoute
   '/_authenticated/$storeId/reports/receivables': typeof AuthenticatedStoreIdReportsReceivablesRoute
+  '/_authenticated/$storeId/reports/vehicle_commissions': typeof AuthenticatedStoreIdReportsVehicle_commissionsRoute
   '/_authenticated/$storeId/settings/business-model': typeof AuthenticatedStoreIdSettingsBusinessModelRoute
   '/_authenticated/$storeId/settings/einvoice': typeof AuthenticatedStoreIdSettingsEinvoiceRoute
   '/_authenticated/$storeId/settings/receipt-templates': typeof AuthenticatedStoreIdSettingsReceiptTemplatesRouteWithChildren
@@ -825,6 +845,7 @@ export interface FileRouteTypes {
     | '/$storeId/staff-roles'
     | '/$storeId/stock-alerts'
     | '/$storeId/units'
+    | '/$storeId/vehicle-commission'
     | '/$storeId/'
     | '/$storeId/branches/$branchId'
     | '/$storeId/funds/attention'
@@ -840,6 +861,7 @@ export interface FileRouteTypes {
     | '/$storeId/reports/platforms'
     | '/$storeId/reports/receipts'
     | '/$storeId/reports/receivables'
+    | '/$storeId/reports/vehicle_commissions'
     | '/$storeId/settings/business-model'
     | '/$storeId/settings/einvoice'
     | '/$storeId/settings/receipt-templates'
@@ -896,6 +918,7 @@ export interface FileRouteTypes {
     | '/$storeId/staff-roles'
     | '/$storeId/stock-alerts'
     | '/$storeId/units'
+    | '/$storeId/vehicle-commission'
     | '/$storeId'
     | '/$storeId/funds/attention'
     | '/$storeId/inventory/$tab'
@@ -910,6 +933,7 @@ export interface FileRouteTypes {
     | '/$storeId/reports/platforms'
     | '/$storeId/reports/receipts'
     | '/$storeId/reports/receivables'
+    | '/$storeId/reports/vehicle_commissions'
     | '/$storeId/settings/business-model'
     | '/$storeId/settings/einvoice'
     | '/$storeId/settings/setup'
@@ -975,6 +999,7 @@ export interface FileRouteTypes {
     | '/_authenticated/$storeId/staff-roles'
     | '/_authenticated/$storeId/stock-alerts'
     | '/_authenticated/$storeId/units'
+    | '/_authenticated/$storeId/vehicle-commission'
     | '/_authenticated/$storeId/'
     | '/_authenticated/$storeId/branches/$branchId'
     | '/_authenticated/$storeId/funds/attention'
@@ -990,6 +1015,7 @@ export interface FileRouteTypes {
     | '/_authenticated/$storeId/reports/platforms'
     | '/_authenticated/$storeId/reports/receipts'
     | '/_authenticated/$storeId/reports/receivables'
+    | '/_authenticated/$storeId/reports/vehicle_commissions'
     | '/_authenticated/$storeId/settings/business-model'
     | '/_authenticated/$storeId/settings/einvoice'
     | '/_authenticated/$storeId/settings/receipt-templates'
@@ -1275,6 +1301,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStoreIdUnitsRouteImport
       parentRoute: typeof AuthenticatedStoreIdRoute
     }
+    '/_authenticated/$storeId/vehicle-commission': {
+      id: '/_authenticated/$storeId/vehicle-commission'
+      path: '/vehicle-commission'
+      fullPath: '/$storeId/vehicle-commission'
+      preLoaderRoute: typeof AuthenticatedStoreIdVehicleCommissionRouteImport
+      parentRoute: typeof AuthenticatedStoreIdRoute
+    }
     '/_authenticated/$storeId/branches/': {
       id: '/_authenticated/$storeId/branches/'
       path: '/'
@@ -1413,6 +1446,13 @@ declare module '@tanstack/react-router' {
       path: '/receivables'
       fullPath: '/$storeId/reports/receivables'
       preLoaderRoute: typeof AuthenticatedStoreIdReportsReceivablesRouteImport
+      parentRoute: typeof AuthenticatedStoreIdReportsRoute
+    }
+    '/_authenticated/$storeId/reports/vehicle_commissions': {
+      id: '/_authenticated/$storeId/reports/vehicle_commissions'
+      path: '/vehicle_commissions'
+      fullPath: '/$storeId/reports/vehicle_commissions'
+      preLoaderRoute: typeof AuthenticatedStoreIdReportsVehicle_commissionsRouteImport
       parentRoute: typeof AuthenticatedStoreIdReportsRoute
     }
     '/_authenticated/$storeId/settings/': {
@@ -1735,6 +1775,7 @@ interface AuthenticatedStoreIdReportsRouteChildren {
   AuthenticatedStoreIdReportsPlatformsRoute: typeof AuthenticatedStoreIdReportsPlatformsRoute
   AuthenticatedStoreIdReportsReceiptsRoute: typeof AuthenticatedStoreIdReportsReceiptsRoute
   AuthenticatedStoreIdReportsReceivablesRoute: typeof AuthenticatedStoreIdReportsReceivablesRoute
+  AuthenticatedStoreIdReportsVehicle_commissionsRoute: typeof AuthenticatedStoreIdReportsVehicle_commissionsRoute
   AuthenticatedStoreIdReportsIndexRoute: typeof AuthenticatedStoreIdReportsIndexRoute
 }
 
@@ -1758,6 +1799,8 @@ const AuthenticatedStoreIdReportsRouteChildren: AuthenticatedStoreIdReportsRoute
       AuthenticatedStoreIdReportsReceiptsRoute,
     AuthenticatedStoreIdReportsReceivablesRoute:
       AuthenticatedStoreIdReportsReceivablesRoute,
+    AuthenticatedStoreIdReportsVehicle_commissionsRoute:
+      AuthenticatedStoreIdReportsVehicle_commissionsRoute,
     AuthenticatedStoreIdReportsIndexRoute:
       AuthenticatedStoreIdReportsIndexRoute,
   }
@@ -1865,6 +1908,7 @@ interface AuthenticatedStoreIdRouteChildren {
   AuthenticatedStoreIdStaffRolesRoute: typeof AuthenticatedStoreIdStaffRolesRoute
   AuthenticatedStoreIdStockAlertsRoute: typeof AuthenticatedStoreIdStockAlertsRoute
   AuthenticatedStoreIdUnitsRoute: typeof AuthenticatedStoreIdUnitsRoute
+  AuthenticatedStoreIdVehicleCommissionRoute: typeof AuthenticatedStoreIdVehicleCommissionRoute
   AuthenticatedStoreIdIndexRoute: typeof AuthenticatedStoreIdIndexRoute
 }
 
@@ -1908,6 +1952,8 @@ const AuthenticatedStoreIdRouteChildren: AuthenticatedStoreIdRouteChildren = {
   AuthenticatedStoreIdStaffRolesRoute: AuthenticatedStoreIdStaffRolesRoute,
   AuthenticatedStoreIdStockAlertsRoute: AuthenticatedStoreIdStockAlertsRoute,
   AuthenticatedStoreIdUnitsRoute: AuthenticatedStoreIdUnitsRoute,
+  AuthenticatedStoreIdVehicleCommissionRoute:
+    AuthenticatedStoreIdVehicleCommissionRoute,
   AuthenticatedStoreIdIndexRoute: AuthenticatedStoreIdIndexRoute,
 }
 

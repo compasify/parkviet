@@ -17,7 +17,13 @@ export const REPORT_LIMIT = 50
 // meal time, counter and sponsor with the refused attempts, and a sponsor's
 // statement for a period (which needs a sponsor).
 export const MEAL_REPORT_TYPES = ['meals', 'meal_statement'] as const
-export type PosReportType = ReportType | (typeof MEAL_REPORT_TYPES)[number]
+// A rest stop's coach commission by day, bus operator and plate, offered while
+// the branch runs coach visits.
+export const VEHICLE_REPORT_TYPES = ['vehicle_commissions'] as const
+export type PosReportType =
+  | ReportType
+  | (typeof MEAL_REPORT_TYPES)[number]
+  | (typeof VEHICLE_REPORT_TYPES)[number]
 export const MEAL_RESULTS = ['ok', 'duplicate', 'limit', 'window', 'revoked', 'unknown'] as const
 
 // The report tabs of the selected branch. The statement picks a sponsor, so
@@ -31,6 +37,7 @@ export function dashboardReportTypes(
     ...reportTypesFor(modules),
     ...(meals ? (['meals'] as const) : []),
     ...(meals && readsSponsors ? (['meal_statement'] as const) : []),
+    ...(modules?.['fnb.vehicle_commission'] === true ? VEHICLE_REPORT_TYPES : []),
   ]
 }
 
@@ -111,6 +118,18 @@ export const REPORT_COLUMNS: Record<PosReportType, string[]> = {
     'sponsor_amount',
     'employee_amount',
   ],
+  vehicle_commissions: [
+    'business_date',
+    'bus_operator',
+    'plate',
+    'visits',
+    'guests',
+    'revenue',
+    'commission_amount',
+    'paid',
+    'unpaid',
+    'commission_rate',
+  ],
 }
 
 export const RETURN_COLUMNS = [
@@ -151,10 +170,13 @@ export const MONEY_COLUMNS = new Set([
   'commission_actual',
   'sponsor_amount',
   'employee_amount',
+  'commission_amount',
+  'paid',
+  'unpaid',
 ])
 
 // Percent figures (one decimal) of rows and summaries.
-export const PERCENT_COLUMNS = new Set(['margin_rate'])
+export const PERCENT_COLUMNS = new Set(['margin_rate', 'commission_rate'])
 
 export const TIME_COLUMNS = new Set([
   'sold_at',

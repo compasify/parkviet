@@ -41,6 +41,7 @@ import {
   tableOrderName,
   tableOrderOf,
 } from '../lib/tables';
+import { VEHICLE_COMMISSION_MODULE } from '../lib/vehicle-visits';
 import { workspaceHasContent, workspaceIsSettled, workspacePhase } from '../lib/workspace-content';
 import { createWorkspaceSerializer } from '../lib/workspace-serializer';
 import { readLayout } from '../lib/workspace-storage';
@@ -73,6 +74,7 @@ import { ServiceModeControl } from './service-mode-control';
 import { TabList } from './tab-list';
 import { TableOrderBar } from './table-actions';
 import { TableFloor } from './table-floor';
+import { VehicleVisitBar } from './vehicle-visit-bar';
 import { VoidItemDialog } from './void-item-dialog';
 
 type ScanPlan = { workspace?: PosWorkspace } & (
@@ -224,6 +226,8 @@ export function WorkspaceTabs() {
   const mealAccounts = data?.modules?.[MEAL_ACCOUNTS_MODULE] === true;
   const mealQuery = useWorkspaceMeal(active, mealAccounts);
   const meal = mealAccounts ? (mealQuery.data?.meal ?? null) : null;
+  // Rest stop: orders go on the coach that brought the guests.
+  const vehicleCommission = data?.modules?.[VEHICLE_COMMISSION_MODULE] === true;
   const activeTable = tableOrderOf(active);
   const tablist = useRef<HTMLDivElement>(null);
   const discountDetailsRef = useRef<HTMLDetailsElement>(null);
@@ -1086,6 +1090,20 @@ export function WorkspaceTabs() {
                       : undefined
                   }
                   barcodeNotice={menuSurface ? scanNotice : null}
+                />
+              ) : null}
+              {vehicleCommission ? (
+                <VehicleVisitBar
+                  key={`vehicle-bar:${storeId}:${selection.branchId}`}
+                  branchId={selection.branchId}
+                  staffId={staffId}
+                  storeId={storeId}
+                  workspace={active}
+                  disabled={!editable || channelUnavailable}
+                  onAttach={(visitId) => {
+                    if (!active) return Promise.reject(new Error('workspace-required'));
+                    return command(active, (current) => workspaces.vehicleVisit(current, visitId));
+                  }}
                 />
               ) : null}
               {menuSurface ? (

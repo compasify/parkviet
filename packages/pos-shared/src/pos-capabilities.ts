@@ -30,6 +30,8 @@ export const posCapabilities = [
   ['pos.reservation.manage', 'capabilityReservationManage'],
   ['pos.expo.operate', 'capabilityExpoOperate'],
   ['pos.meal_account.manage', 'capabilityMealAccountManage'],
+  ['pos.vehicle_visit.operate', 'capabilityVehicleVisitOperate'],
+  ['pos.vehicle_visit.manage', 'capabilityVehicleVisitManage'],
 ] as const;
 
 export const sensitiveCapabilities = [
@@ -56,4 +58,5 @@ export const sensitiveCapabilities = [
   'pos.kitchen.void',
   'pos.resource.manage',
   'pos.meal_account.manage',
+  'pos.vehicle_visit.manage',
 ];

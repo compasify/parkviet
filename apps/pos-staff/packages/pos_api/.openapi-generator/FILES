@@ -30,6 +30,7 @@ lib/src/model/bottle_keep_result.dart
 lib/src/model/buffet_tier.dart
 lib/src/model/buffet_tier_item.dart
 lib/src/model/buffet_tier_list.dart
+lib/src/model/bus_operator_ref.dart
 lib/src/model/call_board.dart
 lib/src/model/call_board_preparing_inner.dart
 lib/src/model/call_board_ready_inner.dart
@@ -341,6 +342,16 @@ lib/src/model/table_split_result.dart
 lib/src/model/table_tax_category.dart
 lib/src/model/tax_row.dart
 lib/src/model/tip_split_rule.dart
+lib/src/model/vehicle_commission_snapshot.dart
+lib/src/model/vehicle_type.dart
+lib/src/model/vehicle_visit.dart
+lib/src/model/vehicle_visit_adjust_input.dart
+lib/src/model/vehicle_visit_list.dart
+lib/src/model/vehicle_visit_open_input.dart
+lib/src/model/vehicle_visit_pay_input.dart
+lib/src/model/vehicle_visit_result.dart
+lib/src/model/vehicle_visit_update_input.dart
+lib/src/model/vehicle_visit_void_input.dart
 lib/src/model/workspace.dart
 lib/src/model/workspace_create_input.dart
 lib/src/model/workspace_drink_credit.dart
@@ -357,5 +368,6 @@ lib/src/model/workspace_summary.dart
 lib/src/model/workspace_summary_list.dart
 lib/src/model/workspace_totals.dart
 lib/src/model/workspace_totals_taxes_inner.dart
+lib/src/model/workspace_vehicle_visit_input.dart
 lib/src/serializers.dart
 pubspec.yaml

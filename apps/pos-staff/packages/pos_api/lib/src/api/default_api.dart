@@ -154,10 +154,18 @@ import 'package:pos_api/src/model/table_settings_input.dart';
 import 'package:pos_api/src/model/table_settings_result.dart';
 import 'package:pos_api/src/model/table_split_input.dart';
 import 'package:pos_api/src/model/table_split_result.dart';
+import 'package:pos_api/src/model/vehicle_visit_adjust_input.dart';
+import 'package:pos_api/src/model/vehicle_visit_list.dart';
+import 'package:pos_api/src/model/vehicle_visit_open_input.dart';
+import 'package:pos_api/src/model/vehicle_visit_pay_input.dart';
+import 'package:pos_api/src/model/vehicle_visit_result.dart';
+import 'package:pos_api/src/model/vehicle_visit_update_input.dart';
+import 'package:pos_api/src/model/vehicle_visit_void_input.dart';
 import 'package:pos_api/src/model/workspace_create_input.dart';
 import 'package:pos_api/src/model/workspace_meal_result.dart';
 import 'package:pos_api/src/model/workspace_result.dart';
 import 'package:pos_api/src/model/workspace_summary_list.dart';
+import 'package:pos_api/src/model/workspace_vehicle_visit_input.dart';
 
 class DefaultApi {
   final Dio _dio;
@@ -12039,6 +12047,778 @@ class DefaultApi {
     );
   }
 
+  /// posVehicleVisitAdjust
+  /// Corrects a closed, unpaid visit&#39;s guests (commission worked out again with the rule it closed with) or its commission, with a note. Always needs an &#x60;approval_id&#x60; of &#x60;vehicle_visit.adjust&#x60; granted by someone else on this visit&#39;s revision.
+  ///
+  /// Parameters:
+  /// * [idempotencyKey]
+  /// * [id]
+  /// * [vehicleVisitAdjustInput]
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [VehicleVisitResult] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<VehicleVisitResult>> posVehicleVisitAdjust({
+    required String idempotencyKey,
+    required String id,
+    required VehicleVisitAdjustInput vehicleVisitAdjustInput,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v3/admin/pos/vehicle_visits/{id}/adjust'.replaceAll(
+        '{' r'id' '}',
+        encodeQueryParameter(_serializers, id, const FullType(String))
+            .toString());
+    final _options = Options(
+      method: r'POST',
+      headers: <String, dynamic>{
+        r'Idempotency-Key': idempotencyKey,
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[],
+        ...?extra,
+      },
+      contentType: 'application/json',
+      validateStatus: validateStatus,
+    );
+
+    dynamic _bodyData;
+
+    try {
+      const _type = FullType(VehicleVisitAdjustInput);
+      _bodyData =
+          _serializers.serialize(vehicleVisitAdjustInput, specifiedType: _type);
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _options.compose(
+          _dio.options,
+          _path,
+        ),
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    final _response = await _dio.request<Object>(
+      _path,
+      data: _bodyData,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    VehicleVisitResult? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(VehicleVisitResult),
+            ) as VehicleVisitResult;
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<VehicleVisitResult>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// posVehicleVisitClose
+  /// \&quot;The coach left\&quot;: closes the visit and keeps its commission, worked out from the rule in force, the guests and the revenue of its completed orders. Editing the rule later changes nothing here.
+  ///
+  /// Parameters:
+  /// * [idempotencyKey]
+  /// * [id]
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [VehicleVisitResult] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<VehicleVisitResult>> posVehicleVisitClose({
+    required String idempotencyKey,
+    required String id,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v3/admin/pos/vehicle_visits/{id}/close'.replaceAll(
+        '{' r'id' '}',
+        encodeQueryParameter(_serializers, id, const FullType(String))
+            .toString());
+    final _options = Options(
+      method: r'POST',
+      headers: <String, dynamic>{
+        r'Idempotency-Key': idempotencyKey,
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[],
+        ...?extra,
+      },
+      validateStatus: validateStatus,
+    );
+
+    final _response = await _dio.request<Object>(
+      _path,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    VehicleVisitResult? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(VehicleVisitResult),
+            ) as VehicleVisitResult;
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<VehicleVisitResult>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// posVehicleVisitList
+  /// A rest stop&#39;s coach visits at a branch (&#x60;fnb.vehicle_commission&#x60;), newest first. &#x60;status&#x60; takes one or several of open, closed, paid, voided (comma separated); &#x60;q&#x60; part of a plate. The driver&#39;s phone and transfer references are masked unless the reader manages visits (&#x60;pos.vehicle_visit.manage&#x60;).
+  ///
+  /// Parameters:
+  /// * [branchId]
+  /// * [status]
+  /// * [businessDate]
+  /// * [q]
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [VehicleVisitList] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<VehicleVisitList>> posVehicleVisitList({
+    required String branchId,
+    String? status,
+    Date? businessDate,
+    String? q,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v3/admin/pos/vehicle_visits';
+    final _options = Options(
+      method: r'GET',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[],
+        ...?extra,
+      },
+      validateStatus: validateStatus,
+    );
+
+    final _queryParameters = <String, dynamic>{
+      r'branch_id':
+          encodeQueryParameter(_serializers, branchId, const FullType(String)),
+      if (status != null)
+        r'status':
+            encodeQueryParameter(_serializers, status, const FullType(String)),
+      if (businessDate != null)
+        r'business_date': encodeQueryParameter(
+            _serializers, businessDate, const FullType(Date)),
+      if (q != null)
+        r'q': encodeQueryParameter(_serializers, q, const FullType(String)),
+    };
+
+    final _response = await _dio.request<Object>(
+      _path,
+      options: _options,
+      queryParameters: _queryParameters,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    VehicleVisitList? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(VehicleVisitList),
+            ) as VehicleVisitList;
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<VehicleVisitList>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// posVehicleVisitOpen
+  /// A coach arrived: opens its visit. It closes by itself after the branch&#39;s visit window. The same plate already open today is allowed and answered with the warning &#x60;plate_open_today&#x60;.
+  ///
+  /// Parameters:
+  /// * [idempotencyKey]
+  /// * [vehicleVisitOpenInput]
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [VehicleVisitResult] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<VehicleVisitResult>> posVehicleVisitOpen({
+    required String idempotencyKey,
+    required VehicleVisitOpenInput vehicleVisitOpenInput,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v3/admin/pos/vehicle_visits';
+    final _options = Options(
+      method: r'POST',
+      headers: <String, dynamic>{
+        r'Idempotency-Key': idempotencyKey,
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[],
+        ...?extra,
+      },
+      contentType: 'application/json',
+      validateStatus: validateStatus,
+    );
+
+    dynamic _bodyData;
+
+    try {
+      const _type = FullType(VehicleVisitOpenInput);
+      _bodyData =
+          _serializers.serialize(vehicleVisitOpenInput, specifiedType: _type);
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _options.compose(
+          _dio.options,
+          _path,
+        ),
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    final _response = await _dio.request<Object>(
+      _path,
+      data: _bodyData,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    VehicleVisitResult? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(VehicleVisitResult),
+            ) as VehicleVisitResult;
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<VehicleVisitResult>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// posVehicleVisitPay
+  /// Pays the commission once. &#x60;cash&#x60; asks for a cash out on the payer&#39;s own open shift, confirmed by a second person; &#x60;transfer&#x60; records the bank reference. A visit whose cash out was canceled can be paid again.
+  ///
+  /// Parameters:
+  /// * [idempotencyKey]
+  /// * [id]
+  /// * [vehicleVisitPayInput]
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [VehicleVisitResult] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<VehicleVisitResult>> posVehicleVisitPay({
+    required String idempotencyKey,
+    required String id,
+    required VehicleVisitPayInput vehicleVisitPayInput,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v3/admin/pos/vehicle_visits/{id}/pay'.replaceAll(
+        '{' r'id' '}',
+        encodeQueryParameter(_serializers, id, const FullType(String))
+            .toString());
+    final _options = Options(
+      method: r'POST',
+      headers: <String, dynamic>{
+        r'Idempotency-Key': idempotencyKey,
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[],
+        ...?extra,
+      },
+      contentType: 'application/json',
+      validateStatus: validateStatus,
+    );
+
+    dynamic _bodyData;
+
+    try {
+      const _type = FullType(VehicleVisitPayInput);
+      _bodyData =
+          _serializers.serialize(vehicleVisitPayInput, specifiedType: _type);
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _options.compose(
+          _dio.options,
+          _path,
+        ),
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    final _response = await _dio.request<Object>(
+      _path,
+      data: _bodyData,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    VehicleVisitResult? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(VehicleVisitResult),
+            ) as VehicleVisitResult;
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<VehicleVisitResult>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// posVehicleVisitShow
+  /// One coach visit with its commission snapshot.
+  ///
+  /// Parameters:
+  /// * [id]
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [VehicleVisitResult] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<VehicleVisitResult>> posVehicleVisitShow({
+    required String id,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v3/admin/pos/vehicle_visits/{id}'.replaceAll(
+        '{' r'id' '}',
+        encodeQueryParameter(_serializers, id, const FullType(String))
+            .toString());
+    final _options = Options(
+      method: r'GET',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[],
+        ...?extra,
+      },
+      validateStatus: validateStatus,
+    );
+
+    final _response = await _dio.request<Object>(
+      _path,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    VehicleVisitResult? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(VehicleVisitResult),
+            ) as VehicleVisitResult;
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<VehicleVisitResult>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// posVehicleVisitUpdate
+  /// Changes an open visit: guests, plate, type, operator, driver. A closed visit is corrected with &#x60;adjust&#x60;.
+  ///
+  /// Parameters:
+  /// * [idempotencyKey]
+  /// * [id]
+  /// * [vehicleVisitUpdateInput]
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [VehicleVisitResult] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<VehicleVisitResult>> posVehicleVisitUpdate({
+    required String idempotencyKey,
+    required String id,
+    required VehicleVisitUpdateInput vehicleVisitUpdateInput,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v3/admin/pos/vehicle_visits/{id}'.replaceAll(
+        '{' r'id' '}',
+        encodeQueryParameter(_serializers, id, const FullType(String))
+            .toString());
+    final _options = Options(
+      method: r'PATCH',
+      headers: <String, dynamic>{
+        r'Idempotency-Key': idempotencyKey,
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[],
+        ...?extra,
+      },
+      contentType: 'application/json',
+      validateStatus: validateStatus,
+    );
+
+    dynamic _bodyData;
+
+    try {
+      const _type = FullType(VehicleVisitUpdateInput);
+      _bodyData =
+          _serializers.serialize(vehicleVisitUpdateInput, specifiedType: _type);
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _options.compose(
+          _dio.options,
+          _path,
+        ),
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    final _response = await _dio.request<Object>(
+      _path,
+      data: _bodyData,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    VehicleVisitResult? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(VehicleVisitResult),
+            ) as VehicleVisitResult;
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<VehicleVisitResult>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// posVehicleVisitVoid
+  /// Cancels an unpaid visit with a reason.
+  ///
+  /// Parameters:
+  /// * [idempotencyKey]
+  /// * [id]
+  /// * [vehicleVisitVoidInput]
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [VehicleVisitResult] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<VehicleVisitResult>> posVehicleVisitVoid({
+    required String idempotencyKey,
+    required String id,
+    required VehicleVisitVoidInput vehicleVisitVoidInput,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v3/admin/pos/vehicle_visits/{id}/void'.replaceAll(
+        '{' r'id' '}',
+        encodeQueryParameter(_serializers, id, const FullType(String))
+            .toString());
+    final _options = Options(
+      method: r'POST',
+      headers: <String, dynamic>{
+        r'Idempotency-Key': idempotencyKey,
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[],
+        ...?extra,
+      },
+      contentType: 'application/json',
+      validateStatus: validateStatus,
+    );
+
+    dynamic _bodyData;
+
+    try {
+      const _type = FullType(VehicleVisitVoidInput);
+      _bodyData =
+          _serializers.serialize(vehicleVisitVoidInput, specifiedType: _type);
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _options.compose(
+          _dio.options,
+          _path,
+        ),
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    final _response = await _dio.request<Object>(
+      _path,
+      data: _bodyData,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    VehicleVisitResult? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(VehicleVisitResult),
+            ) as VehicleVisitResult;
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<VehicleVisitResult>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
   /// posWorkspaceAddItem
   /// Adds a line. A menu item at a branch running &#x60;fnb.menu&#x60; is priced by the server from its options: send &#x60;modifiers&#x60; ([ModifierSelection], omitted for the item&#39;s default options) and &#x60;note&#x60;, never a price. Two lines merge (&#x60;merge: true&#x60;) only with the same options and note. Refused with 409 &#x60;menu_item_sold_out&#x60;, &#x60;menu_item_hidden&#x60;, &#x60;modifier_min&#x60;, &#x60;modifier_max&#x60;, &#x60;modifier_unknown&#x60;, or &#x60;module_disabled&#x60; when options are sent where the menu is off.
   ///
@@ -13696,6 +14476,112 @@ class DefaultApi {
     }
 
     return Response<PosWorkspaceCreate201Response>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// posWorkspaceVehicleVisit
+  /// Puts the order on an open coach visit of its branch, or takes it off (&#x60;visit_id&#x60; empty). Only before the order completes; the order&#39;s price does not change.
+  ///
+  /// Parameters:
+  /// * [idempotencyKey]
+  /// * [workspaceId]
+  /// * [workspaceVehicleVisitInput]
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [WorkspaceResult] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<WorkspaceResult>> posWorkspaceVehicleVisit({
+    required String idempotencyKey,
+    required String workspaceId,
+    required WorkspaceVehicleVisitInput workspaceVehicleVisitInput,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v3/admin/pos/workspaces/{workspace_id}/vehicle_visit'
+        .replaceAll(
+            '{' r'workspace_id' '}',
+            encodeQueryParameter(
+                    _serializers, workspaceId, const FullType(String))
+                .toString());
+    final _options = Options(
+      method: r'PUT',
+      headers: <String, dynamic>{
+        r'Idempotency-Key': idempotencyKey,
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[],
+        ...?extra,
+      },
+      contentType: 'application/json',
+      validateStatus: validateStatus,
+    );
+
+    dynamic _bodyData;
+
+    try {
+      const _type = FullType(WorkspaceVehicleVisitInput);
+      _bodyData = _serializers.serialize(workspaceVehicleVisitInput,
+          specifiedType: _type);
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _options.compose(
+          _dio.options,
+          _path,
+        ),
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    final _response = await _dio.request<Object>(
+      _path,
+      data: _bodyData,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    WorkspaceResult? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(WorkspaceResult),
+            ) as WorkspaceResult;
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<WorkspaceResult>(
       data: _responseData,
       headers: _response.headers,
       isRedirect: _response.isRedirect,

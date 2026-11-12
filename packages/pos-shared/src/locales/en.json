@@ -79,6 +79,8 @@
   "capabilityReservationManage": "Take bookings",
   "capabilityExpoOperate": "Run the pass (expo)",
   "capabilityMealAccountManage": "Manage meal accounts and sponsors",
+  "capabilityVehicleVisitOperate": "Greet coaches and put orders on a visit",
+  "capabilityVehicleVisitManage": "Manage coach commission: operators, rules, payouts, corrections",
   "tableState_available": "Free",
   "tableState_reserved": "Reserved",
   "reservationStatus_booked": "Waiting",
@@ -305,6 +307,12 @@
       "description": "Find eaters by employee code, prepaid wallets, sponsors that pay on credit and per-meal subsidies.",
       "off": "Meal accounts are off at this branch.",
       "disabled": "Meal accounts are off at this branch; the server records no meals and takes nothing from wallets. Selling is not affected."
+    },
+    "fnb_vehicle_commission": {
+      "label": "Driver commission",
+      "description": "Coach visits at a rest stop, orders sold to a coach, and commission paid to its driver per coach and per guest.",
+      "off": "Driver commission is off at this branch.",
+      "disabled": "Driver commission is off at this branch; the server opens no coach visits and puts no orders on them. Selling is not affected."
     }
   },
   "profiles": {

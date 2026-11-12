@@ -18,6 +18,7 @@ import { ReturnExchangePage } from './pages/return-exchange';
 import { SalePage } from './pages/sale';
 import { ShiftsPage } from './pages/shifts';
 import { TipsPage } from './pages/tips';
+import { VehicleVisitsPage } from './pages/vehicle-visits';
 
 const rootRoute = createRootRoute({
   component: () => <Outlet />,
@@ -104,6 +105,13 @@ const mealAccountsRoute = createRoute({
   component: MealAccountsPage,
 });
 
+// A rest stop's coach visits: closing, the commission and paying the driver.
+const vehicleVisitsRoute = createRoute({
+  getParentRoute: () => authedRoute,
+  path: '/vehicle-visits',
+  component: VehicleVisitsPage,
+});
+
 // The tips of a business day and paying them to the staff.
 const tipsRoute = createRoute({
   getParentRoute: () => authedRoute,
@@ -144,6 +152,7 @@ export const router = createRouter({
       reservationsRoute,
       bottleKeepsRoute,
       mealAccountsRoute,
+      vehicleVisitsRoute,
       tipsRoute,
       receiptsRoute,
     ]),

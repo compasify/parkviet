@@ -808,6 +808,36 @@ export function useWorkspaces(
         throw error;
       }
     },
+    // Puts the order on a coach visit at a rest stop, or takes it off (null).
+    // The order's price never changes; the commission is the stop's expense.
+    async vehicleVisit(workspace: PosWorkspace, visitId: string | null) {
+      const body = {
+        expected_revision: workspace.revision,
+        lease_generation: workspace.lease_generation,
+        editor_id: editorId,
+        visit_id: visitId,
+      };
+      const key = crypto.randomUUID();
+      try {
+        const result = await commandQueue.enqueue(workspace.id, key, commandDigest(body), () =>
+          session.request<{ data: PosWorkspace }>(
+            'PUT',
+            `/pos/workspaces/${workspace.id}/vehicle_visit`,
+            { body: { ...body, idempotency_key: key }, idempotencyKey: key },
+          ),
+        );
+        await acceptWorkspace(result.data);
+        channel?.postMessage(workspaceHint(result.data.id));
+        return result.data;
+      } catch (error) {
+        if (leaseConflict(error)?.reason === 'lease_stale') {
+          release(workspace.id);
+          void refresh();
+        }
+        abandonIfNeeded(error);
+        throw error;
+      }
+    },
     // A buffet ticket per guest: a `cover` line of the tier.
     async addBuffetCover(workspace: PosWorkspace, tierId: string, guests: number) {
       return (

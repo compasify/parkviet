@@ -48,6 +48,7 @@ export type PosPage =
   | 'einvoice-settings'
   | 'meal-accounts'
   | 'meal-sponsors'
+  | 'vehicle-commission'
   // Server information: store administrators (the default branch below).
   | 'system'
 export function canAdminister(access: PosAccess, write = false) {
@@ -152,7 +153,16 @@ export const runsMealAccounts = (access: PosAccess) =>
   access.context?.modules?.['fnb.meal_accounts'] === true
 export const canManageMealAccounts = (access: PosAccess) =>
   canAdminister(access, true) || hasCapability(access, 'pos.meal_account.manage')
+// A rest stop's coach commission set-up (operators, rules, the visit window)
+// is kept by store administrators or coach visit managers of the selected
+// branch while it runs coach visits. Paying drivers is counter work.
+export const runsVehicleCommission = (access: PosAccess) =>
+  access.context?.modules?.['fnb.vehicle_commission'] === true
+export const canManageVehicleCommission = (access: PosAccess) =>
+  canAdminister(access, true) || hasCapability(access, 'pos.vehicle_visit.manage')
 export function visibleNav(page: PosPage, access: PosAccess) {
+  if (page === 'vehicle-commission')
+    return runsVehicleCommission(access) && canManageVehicleCommission(access)
   if (page === 'meal-accounts' || page === 'meal-sponsors')
     return runsMealAccounts(access) && canManageMealAccounts(access)
   if (page === 'einvoices') return issuesEinvoices(access) && canReadEinvoices(access)

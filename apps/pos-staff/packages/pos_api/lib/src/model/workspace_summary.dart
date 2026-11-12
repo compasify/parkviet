@@ -24,6 +24,7 @@ part 'workspace_summary.g.dart';
 /// * [orderNumber]
 /// * [guestName]
 /// * [tabName] - The guest's name a bar tab is found by.
+/// * [vehicleVisitId]
 /// * [resource]
 /// * [openedAt]
 /// * [total]
@@ -57,6 +58,9 @@ abstract class WorkspaceSummary
   /// The guest's name a bar tab is found by.
   @BuiltValueField(wireName: r'tab_name')
   String? get tabName;
+
+  @BuiltValueField(wireName: r'vehicle_visit_id')
+  String? get vehicleVisitId;
 
   @BuiltValueField(wireName: r'resource')
   ResourceRef? get resource;
@@ -141,6 +145,13 @@ class _$WorkspaceSummarySerializer
       yield r'tab_name';
       yield serializers.serialize(
         object.tabName,
+        specifiedType: const FullType.nullable(String),
+      );
+    }
+    if (object.vehicleVisitId != null) {
+      yield r'vehicle_visit_id';
+      yield serializers.serialize(
+        object.vehicleVisitId,
         specifiedType: const FullType.nullable(String),
       );
     }
@@ -253,6 +264,14 @@ class _$WorkspaceSummarySerializer
           ) as String?;
           if (valueDes == null) continue;
           result.tabName = valueDes;
+          break;
+        case r'vehicle_visit_id':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.vehicleVisitId = valueDes;
           break;
         case r'resource':
           final valueDes = serializers.deserialize(

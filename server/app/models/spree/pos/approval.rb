@@ -34,7 +34,7 @@ module Spree
       # a changed subject invalidates the approval.
       SUBJECTS = %w[Spree::Pos::Workspace Spree::Pos::ReturnOperation Spree::Pos::RefundRequest Spree::Pos::Shift
                     Spree::Pos::InventoryAdjustment Spree::Pos::Reservation Spree::Pos::BottleKeep
-                    Spree::Pos::MealAccount].freeze
+                    Spree::Pos::MealAccount Spree::Pos::VehicleVisit].freeze
       # Who may ask for an approval at the branch: sellers, and return staff
       # for returns and refunds.
       REQUESTER_CAPABILITIES = {
@@ -49,6 +49,8 @@ module Spree
         'Spree::Pos::BottleKeep' => [Capabilities::OPEN_SHIFT, Capabilities::TABLE_SERVE],
         # A wallet refund or correction, or a meal past the account's limits.
         'Spree::Pos::MealAccount' => [Capabilities::MEAL_ACCOUNT_MANAGE, Capabilities::OPEN_SHIFT],
+        # A coach visit's guests or commission corrected after closing.
+        'Spree::Pos::VehicleVisit' => [Capabilities::VEHICLE_VISIT_MANAGE],
         # Sellers, and the people serving a table (only table orders are theirs to edit).
         'Spree::Pos::Workspace' => [Capabilities::OPEN_SHIFT, Capabilities::TABLE_SERVE]
       }.freeze
@@ -73,6 +75,8 @@ module Spree
       # A sponsor's part of a meal sold on its credit account: recorded by
       # the cashier as the order completes and consumed at once.
       MEAL_SPONSOR_ACTION = 'meal_sponsor.charge'
+      # A closed coach visit's guest count or commission changed.
+      VEHICLE_VISIT_ADJUST_ACTION = 'vehicle_visit.adjust'
 
       def consume!(action:, amount:, currency:, revision:, subject:, requester:)
         raise Conflict, 'Approval subject is required.' unless SUBJECTS.include?(subject.class.name) && subject.persisted?

@@ -173,7 +173,7 @@ Rails.application.routes.draw do
             get 'shift_closures/open', to: 'shifts/closures#open'
             get 'cash_reconciliations/candidates', to: 'cash_reconciliations#candidates'
             resources :cash_reconciliations, only: [:index, :create]
-            get 'reports/:report', to: 'reports#show', as: :report, constraints: { report: /sales|receipts|cashbook|receivables|closures|ingredient_usage|menu_margin|platforms|bar|meals|meal_statement/ }
+            get 'reports/:report', to: 'reports#show', as: :report, constraints: { report: /sales|receipts|cashbook|receivables|closures|ingredient_usage|menu_margin|platforms|bar|meals|meal_statement|vehicle_commissions/ }
             resources :exports, only: [:index, :show, :create] do
               member do
                 post :download_link
@@ -292,6 +292,20 @@ Rails.application.routes.draw do
                 post :top_ups, action: :top_up
                 post :refund
                 post :adjust
+              end
+            end
+            # A rest stop: coach visits, the bus operators and the commission
+            # rules paying their drivers.
+            resources :bus_operators, only: [:index, :create, :update]
+            resources :commission_rules, only: [:index, :create, :update]
+            get 'vehicle_visits/settings', to: 'vehicle_visits#settings'
+            patch 'vehicle_visits/settings', to: 'vehicle_visits#update_settings'
+            resources :vehicle_visits, only: [:index, :show, :create, :update] do
+              member do
+                post :close
+                post :pay
+                post :adjust
+                post :void
               end
             end
             get 'tips', to: 'tips#index'
@@ -426,6 +440,8 @@ Rails.application.routes.draw do
               get 'meal', to: 'workspaces/meals#show'
               post 'meal_swipes', to: 'workspaces/meals#swipe'
               post 'meal_wallet', to: 'workspaces/meals#pay'
+              # The coach visit of a rest stop the order was sold to.
+              put 'vehicle_visit', to: 'workspaces/vehicle_visits#update'
               member do
                 post 'discount/clear', to: 'workspaces/discounts#clear'
                 post :park

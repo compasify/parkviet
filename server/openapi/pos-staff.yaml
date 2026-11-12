@@ -3983,6 +3983,237 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/vehicle_visits:
+    get:
+      operationId: posVehicleVisitList
+      description: >
+        A rest stop's coach visits at a branch (`fnb.vehicle_commission`),
+        newest first. `status` takes one or several of open, closed, paid,
+        voided (comma separated); `q` part of a plate. The driver's phone and
+        transfer references are masked unless the reader manages visits
+        (`pos.vehicle_visit.manage`).
+      parameters:
+        - $ref: '#/components/parameters/ReportBranch'
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: business_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: q
+          in: query
+          schema:
+            type: string
+            maxLength: 20
+      responses:
+        '200':
+          description: The visits
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VehicleVisitList'
+    post:
+      operationId: posVehicleVisitOpen
+      description: >
+        A coach arrived: opens its visit. It closes by itself after the
+        branch's visit window. The same plate already open today is allowed
+        and answered with the warning `plate_open_today`.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VehicleVisitOpenInput'
+      responses:
+        '201':
+          description: The visit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VehicleVisitResult'
+        '409':
+          description: >
+            Refused; `error.details.reason` is `vehicle_plate_invalid`,
+            `vehicle_type_invalid`, `vehicle_guests_invalid`,
+            `bus_operator_archived` or `module_disabled`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/vehicle_visits/{id}:
+    get:
+      operationId: posVehicleVisitShow
+      description: One coach visit with its commission snapshot.
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: The visit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VehicleVisitResult'
+    patch:
+      operationId: posVehicleVisitUpdate
+      description: >
+        Changes an open visit: guests, plate, type, operator, driver. A
+        closed visit is corrected with `adjust`.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VehicleVisitUpdateInput'
+      responses:
+        '200':
+          description: The visit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VehicleVisitResult'
+        '409':
+          description: Refused; `error.details.reason` is `vehicle_visit_changed`, `vehicle_visit_closed` or a field reason
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/vehicle_visits/{id}/close:
+    post:
+      operationId: posVehicleVisitClose
+      description: >
+        "The coach left": closes the visit and keeps its commission, worked
+        out from the rule in force, the guests and the revenue of its
+        completed orders. Editing the rule later changes nothing here.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: The closed visit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VehicleVisitResult'
+  /api/v3/admin/pos/vehicle_visits/{id}/pay:
+    post:
+      operationId: posVehicleVisitPay
+      description: >
+        Pays the commission once. `cash` asks for a cash out on the payer's
+        own open shift, confirmed by a second person; `transfer` records the
+        bank reference. A visit whose cash out was canceled can be paid again.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VehicleVisitPayInput'
+      responses:
+        '200':
+          description: The paid visit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VehicleVisitResult'
+        '409':
+          description: >
+            Refused; `error.details.reason` is `vehicle_visit_paid`,
+            `vehicle_visit_open`, `vehicle_commission_zero`, `shift_required`,
+            `insufficient_cash`, `transfer_reference_required` or
+            `feature_disabled`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/vehicle_visits/{id}/adjust:
+    post:
+      operationId: posVehicleVisitAdjust
+      description: >
+        Corrects a closed, unpaid visit's guests (commission worked out again
+        with the rule it closed with) or its commission, with a note. Always
+        needs an `approval_id` of `vehicle_visit.adjust` granted by someone
+        else on this visit's revision.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VehicleVisitAdjustInput'
+      responses:
+        '200':
+          description: The corrected visit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VehicleVisitResult'
+        '409':
+          description: Refused; `error.details.reason` is `approval_required`, `vehicle_visit_changed` or `vehicle_visit_paid`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/vehicle_visits/{id}/void:
+    post:
+      operationId: posVehicleVisitVoid
+      description: Cancels an unpaid visit with a reason.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VehicleVisitVoidInput'
+      responses:
+        '200':
+          description: The voided visit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VehicleVisitResult'
+  /api/v3/admin/pos/workspaces/{workspace_id}/vehicle_visit:
+    put:
+      operationId: posWorkspaceVehicleVisit
+      description: >
+        Puts the order on an open coach visit of its branch, or takes it off
+        (`visit_id` empty). Only before the order completes; the order's
+        price does not change.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/WorkspaceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkspaceVehicleVisitInput'
+      responses:
+        '200':
+          description: The order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceResult'
+        '409':
+          description: Refused; `error.details.reason` is `workspace_completed`, `vehicle_visit_closed`, `lease_stale` or `module_disabled`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 components:
   parameters:
     Id:
@@ -4225,6 +4456,9 @@ components:
           type: [string, 'null']
           maxLength: 60
           description: The guest's name of a bar tab (`service_mode` tab).
+        vehicle_visit_id:
+          type: [string, 'null']
+          description: The coach visit of a rest stop the order is sold to (`fnb.vehicle_commission`).
         minimum_spend:
           description: A VIP table's minimum spend and the fee making up the shortfall.
           oneOf:
@@ -8334,6 +8568,8 @@ components:
         tab_name:
           type: [string, 'null']
           description: The guest's name a bar tab is found by.
+        vehicle_visit_id:
+          type: [string, 'null']
         resource:
           oneOf:
             - $ref: '#/components/schemas/ResourceRef'
@@ -8741,3 +8977,230 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/MealWalletPay'
+    VehicleType:
+      type: string
+      enum: [seat_16, seat_29, seat_45, other]
+    VehicleVisit:
+      type: object
+      additionalProperties: false
+      required: [id, branch_id, plate, vehicle_type, guest_count, arrived_at, closes_at, status, business_date, currency, revision]
+      properties:
+        id:
+          type: string
+        branch_id:
+          type: string
+        bus_operator:
+          oneOf:
+            - $ref: '#/components/schemas/BusOperatorRef'
+            - type: 'null'
+        plate:
+          type: string
+          description: Upper case letters and digits only.
+        vehicle_type:
+          $ref: '#/components/schemas/VehicleType'
+        driver_name:
+          type: [string, 'null']
+        driver_phone:
+          type: [string, 'null']
+          description: Masked to the last four digits unless the reader manages visits.
+        guest_count:
+          type: integer
+          minimum: 0
+          maximum: 999
+        arrived_at:
+          type: string
+          format: date-time
+        closes_at:
+          type: string
+          format: date-time
+          description: When the visit closes by itself if still open.
+        closed_at:
+          type: [string, 'null']
+          format: date-time
+        auto_closed:
+          type: boolean
+        status:
+          type: string
+          enum: [open, closed, paid, voided]
+        business_date:
+          type: string
+          format: date
+        opened_by_name:
+          type: [string, 'null']
+        revenue_amount:
+          type: [string, 'null']
+          description: Total of the visit's completed orders when it closed.
+        commission_amount:
+          type: [string, 'null']
+        currency:
+          type: string
+        commission:
+          description: >
+            The snapshot kept at closing: the rule's values, guests, revenue,
+            the parts per vehicle and per guest, `amount`, `qualified` and
+            `reason` (no_rule, min_guests, min_revenue), and any corrections.
+          oneOf:
+            - $ref: '#/components/schemas/VehicleCommissionSnapshot'
+            - type: 'null'
+        paid_at:
+          type: [string, 'null']
+          format: date-time
+        payout_method:
+          type: [string, 'null']
+          enum: [cash, transfer, null]
+        payout_status:
+          type: [string, 'null']
+          enum: [requested, paid, canceled, null]
+          description: A cash payout is `requested` until a second person confirms it.
+        cash_movement_request_id:
+          type: [string, 'null']
+        transfer_reference:
+          type: [string, 'null']
+        void_reason:
+          type: [string, 'null']
+        note:
+          type: [string, 'null']
+        revision:
+          type: integer
+        workspaces_count:
+          type: [integer, 'null']
+        warnings:
+          type: array
+          items:
+            type: string
+            enum: [plate_open_today]
+    VehicleCommissionSnapshot:
+      type: object
+      additionalProperties: true
+      properties:
+        amount:
+          type: string
+        qualified:
+          type: boolean
+        reason:
+          type: [string, 'null']
+        guest_count:
+          type: integer
+        revenue:
+          type: string
+    BusOperatorRef:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+    VehicleVisitList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/VehicleVisit'
+    VehicleVisitResult:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/VehicleVisit'
+    VehicleVisitOpenInput:
+      type: object
+      required: [branch_id, plate]
+      properties:
+        branch_id:
+          type: string
+        plate:
+          type: string
+          maxLength: 20
+        vehicle_type:
+          $ref: '#/components/schemas/VehicleType'
+        bus_operator_id:
+          type: string
+        driver_name:
+          type: string
+          maxLength: 120
+        driver_phone:
+          type: string
+          maxLength: 32
+        guest_count:
+          type: integer
+          minimum: 0
+          maximum: 999
+        note:
+          type: string
+          maxLength: 500
+    VehicleVisitUpdateInput:
+      type: object
+      required: [expected_revision]
+      properties:
+        expected_revision:
+          type: integer
+        plate:
+          type: string
+          maxLength: 20
+        vehicle_type:
+          $ref: '#/components/schemas/VehicleType'
+        bus_operator_id:
+          type: string
+        driver_name:
+          type: string
+          maxLength: 120
+        driver_phone:
+          type: string
+          maxLength: 32
+        guest_count:
+          type: integer
+          minimum: 0
+          maximum: 999
+        note:
+          type: string
+          maxLength: 500
+    VehicleVisitPayInput:
+      type: object
+      required: [payout_method]
+      properties:
+        payout_method:
+          type: string
+          enum: [cash, transfer]
+        transfer_reference:
+          type: string
+          maxLength: 120
+    VehicleVisitAdjustInput:
+      type: object
+      required: [expected_revision, note, approval_id]
+      properties:
+        expected_revision:
+          type: integer
+        guest_count:
+          type: integer
+          minimum: 0
+          maximum: 999
+        commission_amount:
+          type: string
+        note:
+          type: string
+          maxLength: 200
+        approval_id:
+          type: string
+    VehicleVisitVoidInput:
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          type: string
+          maxLength: 200
+    WorkspaceVehicleVisitInput:
+      type: object
+      required: [expected_revision, lease_generation, editor_id]
+      properties:
+        expected_revision:
+          type: integer
+        lease_generation:
+          type: integer
+        editor_id:
+          type: string
+        visit_id:
+          type: [string, 'null']
+          description: An open visit of the order's branch; empty takes the order off.

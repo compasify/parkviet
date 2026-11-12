@@ -36,6 +36,7 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(BuffetTierItem.serializer)
       ..add(BuffetTierList.serializer)
       ..add(BuffetTierStatusEnum.serializer)
+      ..add(BusOperatorRef.serializer)
       ..add(CallBoard.serializer)
       ..add(CallBoardPreparingInner.serializer)
       ..add(CallBoardReadyInner.serializer)
@@ -445,6 +446,21 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(TaxRow.serializer)
       ..add(TipSplitRule.serializer)
       ..add(TipSplitRuleModeEnum.serializer)
+      ..add(VehicleCommissionSnapshot.serializer)
+      ..add(VehicleType.serializer)
+      ..add(VehicleVisit.serializer)
+      ..add(VehicleVisitAdjustInput.serializer)
+      ..add(VehicleVisitList.serializer)
+      ..add(VehicleVisitOpenInput.serializer)
+      ..add(VehicleVisitPayInput.serializer)
+      ..add(VehicleVisitPayInputPayoutMethodEnum.serializer)
+      ..add(VehicleVisitPayoutMethodEnum.serializer)
+      ..add(VehicleVisitPayoutStatusEnum.serializer)
+      ..add(VehicleVisitResult.serializer)
+      ..add(VehicleVisitStatusEnum.serializer)
+      ..add(VehicleVisitUpdateInput.serializer)
+      ..add(VehicleVisitVoidInput.serializer)
+      ..add(VehicleVisitWarningsEnum.serializer)
       ..add(Workspace.serializer)
       ..add(WorkspaceCreateInput.serializer)
       ..add(WorkspaceCreateInputServiceModeEnum.serializer)
@@ -466,6 +482,7 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(WorkspaceSummaryList.serializer)
       ..add(WorkspaceTotals.serializer)
       ..add(WorkspaceTotalsTaxesInner.serializer)
+      ..add(WorkspaceVehicleVisitInput.serializer)
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(AppendItem)]),
           () => ListBuilder<AppendItem>())
@@ -910,6 +927,13 @@ Serializers _$serializers = (Serializers().toBuilder()
           const FullType(BuiltList,
               const [const FullType(TableSettingsInputCourseLabelsInner)]),
           () => ListBuilder<TableSettingsInputCourseLabelsInner>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(VehicleVisit)]),
+          () => ListBuilder<VehicleVisit>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(VehicleVisitWarningsEnum)]),
+          () => ListBuilder<VehicleVisitWarningsEnum>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(Workspace)]),
           () => ListBuilder<Workspace>())

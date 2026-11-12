@@ -142,6 +142,8 @@ export type Sheet = {
   kitchenSends?: Array<{ id: string; sequence: number; sent_at: string; items: number }>;
   // The booking seated at the table, as the server sends it.
   reservation?: Record<string, unknown> | null;
+  // The coach visit the order was put on at a rest stop (nb.vehicle_commission).
+  vehicleVisitId?: string | null;
 };
 
 type Funds = {
@@ -458,6 +460,7 @@ export function serialize(world: World, sheet: Sheet) {
     ...(sheet.tabName ? { service_mode: 'tab', tab_name: sheet.tabName, opened_at: '2026-11-12T13:00:00Z' } : {}),
     ...(sheet.minimumSpend ? { minimum_spend: sheet.minimumSpend } : {}),
     ...(sheet.drinkCredit ? { drink_credit: sheet.drinkCredit } : {}),
+    ...(sheet.vehicleVisitId !== undefined ? { vehicle_visit_id: sheet.vehicleVisitId } : {}),
     ...(sheet.table
       ? {
           service_mode: 'dine_in',

@@ -29,6 +29,8 @@ module Spree
       belongs_to :lease_holder, class_name: staff_class_name, optional: true
       # The table or room the order is served at. Moving tables changes it.
       belongs_to :resource, class_name: 'Spree::Pos::Resource', optional: true
+      # The coach visit of a rest stop whose guests this order was sold to.
+      belongs_to :vehicle_visit, class_name: 'Spree::Pos::VehicleVisit', optional: true
 
       validates :operational_status, inclusion: { in: %w[editing parked canceled completed] }
       validates :note, length: { maximum: 1000 }
@@ -114,6 +116,7 @@ module Spree
           guest_count: guest_count,
           table_label: table_label,
           tab_name: tab_name,
+          vehicle_visit_id: VehicleVisit.prefixed_for(vehicle_visit_id),
           opened_at: created_at&.iso8601,
           total: money(order.total)
         }

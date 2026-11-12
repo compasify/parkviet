@@ -8,6 +8,7 @@ import type { PosContext } from '../lib/pos-context';
 import { posDashboardUrl } from '../lib/pos-dashboard-url';
 import { canReadReceivables } from '../lib/receivables';
 import { canProcessReturns } from '../lib/returns';
+import { VEHICLE_COMMISSION_MODULE } from '../lib/vehicle-visits';
 import { PosIcon } from './pos-icon';
 
 // The header account menu: the counter pages, the POS dashboard pages,
@@ -110,6 +111,12 @@ export function UserMenu({
         ['pos.meal_account.manage', 'pos.shift.open', 'pos.payment.collect'].some(has) ? (
           <Link to="/meal-accounts" {...item}>
             {t('mealAccountsNav')}
+          </Link>
+        ) : null}
+        {data.modules?.[VEHICLE_COMMISSION_MODULE] === true &&
+        ['pos.vehicle_visit.operate', 'pos.vehicle_visit.manage'].some(has) ? (
+          <Link to="/vehicle-visits" {...item}>
+            {t('vehicleVisitsNav')}
           </Link>
         ) : null}
         {data.modules?.['fnb.postpay'] === true && has('pos.payment.resolve') ? (

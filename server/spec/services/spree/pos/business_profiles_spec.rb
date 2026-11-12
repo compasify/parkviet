@@ -82,7 +82,7 @@ RSpec.describe Spree::Pos::BusinessProfiles do
       expect(quan_an.modules).to include('fnb.menu', 'fnb.kitchen', 'fnb.order_number', 'fnb.recipes', 'retail.measured', 'fnb.delivery_platforms')
       expect(quan_an.recommended_features).to eq(%w[vietqr credit delivery])
       canteen = described_class.fetch!('cang_tin_tram_dung')
-      expect(canteen.modules).to contain_exactly('fnb.menu', 'fnb.kitchen', 'fnb.order_number', 'retail.units', 'fnb.meal_accounts')
+      expect(canteen.modules).to contain_exactly('fnb.menu', 'fnb.kitchen', 'fnb.order_number', 'retail.units', 'fnb.meal_accounts', 'fnb.vehicle_commission')
       expect(canteen.kitchen_stations).to eq(['prep'])
       [cafe, quan_an, canteen].each do |item|
         expect(item.display).to eq('surface' => 'menu_grid')
@@ -245,7 +245,7 @@ RSpec.describe Spree::Pos::BusinessProfiles do
 
     it 'registers the three retail modules, the F&B modules, the planned names, and freezes the registry' do
       expect(described_class.available_keys).to eq(%w[retail.units retail.measured retail.traceability fnb.menu fnb.recipes fnb.kitchen fnb.order_number fnb.cup_label fnb.delivery_platforms resources fnb.tables fnb.postpay fnb.service_charge
-                                                          fnb.reservations fnb.bottle_keep fnb.pour_tracking fnb.meal_accounts])
+                                                          fnb.reservations fnb.bottle_keep fnb.pour_tracking fnb.meal_accounts fnb.vehicle_commission])
       expect(described_class.find('fnb.recipes').depends_on).to eq(%w[fnb.menu retail.units])
       expect(described_class.find('retail.measured').depends_on).to eq(['retail.units'])
       expect(described_class.available?('fnb.menu')).to be(true)

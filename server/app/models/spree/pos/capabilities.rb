@@ -67,11 +67,19 @@ module Spree
       # them, and ask for a wallet refund or correction (which still needs an
       # approval). Topping a wallet up is taking money (pos.payment.collect).
       MEAL_ACCOUNT_MANAGE = 'pos.meal_account.manage'
+      # A rest stop's coach visits: open one and put orders on it.
+      VEHICLE_VISIT_OPERATE = 'pos.vehicle_visit.operate'
+      # Bus operators, commission rules, closing, paying out, correcting and
+      # voiding visits, and reading drivers' phone numbers. Paying in cash
+      # still needs a second person on the cash out request, and a
+      # correction after closing an approval.
+      VEHICLE_VISIT_MANAGE = 'pos.vehicle_visit.manage'
       ASSIGNABLE = [MANAGE, OPEN_SHIFT, DISCOUNT, PRICE_OVERRIDE, CUSTOMER, PAYMENT, RESOLVE, RECOVER, APPROVE, TAKEOVER,
                     CREDIT_MANAGE, CREDIT_SELL, RETURN, CASH_MOVE, REPORT_READ, REPORT_EXPORT,
                     INVENTORY_MANAGE, INVENTORY_TRACE, DEVICE_MANAGE, PRINTER_MANAGE, MANAGE_MENU, SET_SOLD_OUT,
                     EINVOICE_MANAGE, OPERATE_KITCHEN, MANAGE_KITCHEN, TABLE_SERVE, RESOURCE_MANAGE, KITCHEN_VOID,
-                    RESERVATION_MANAGE, EXPO_OPERATE, MEAL_ACCOUNT_MANAGE].freeze
+                    RESERVATION_MANAGE, EXPO_OPERATE, MEAL_ACCOUNT_MANAGE, VEHICLE_VISIT_OPERATE,
+                    VEHICLE_VISIT_MANAGE].freeze
 
       def self.sanitize(values)
         Array(values).map(&:to_s).uniq

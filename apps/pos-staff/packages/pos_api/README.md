@@ -196,6 +196,14 @@ Class | Method | HTTP request | Description
 [*DefaultApi*](doc/DefaultApi.md) | [**posTableSettings**](doc/DefaultApi.md#postablesettings) | **GET** /api/v3/admin/pos/table_settings | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posTableSettingsUpdate**](doc/DefaultApi.md#postablesettingsupdate) | **PUT** /api/v3/admin/pos/table_settings | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posTableSplit**](doc/DefaultApi.md#postablesplit) | **POST** /api/v3/admin/pos/workspaces/{workspace_id}/split | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posVehicleVisitAdjust**](doc/DefaultApi.md#posvehiclevisitadjust) | **POST** /api/v3/admin/pos/vehicle_visits/{id}/adjust | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posVehicleVisitClose**](doc/DefaultApi.md#posvehiclevisitclose) | **POST** /api/v3/admin/pos/vehicle_visits/{id}/close | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posVehicleVisitList**](doc/DefaultApi.md#posvehiclevisitlist) | **GET** /api/v3/admin/pos/vehicle_visits | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posVehicleVisitOpen**](doc/DefaultApi.md#posvehiclevisitopen) | **POST** /api/v3/admin/pos/vehicle_visits | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posVehicleVisitPay**](doc/DefaultApi.md#posvehiclevisitpay) | **POST** /api/v3/admin/pos/vehicle_visits/{id}/pay | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posVehicleVisitShow**](doc/DefaultApi.md#posvehiclevisitshow) | **GET** /api/v3/admin/pos/vehicle_visits/{id} | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posVehicleVisitUpdate**](doc/DefaultApi.md#posvehiclevisitupdate) | **PATCH** /api/v3/admin/pos/vehicle_visits/{id} | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posVehicleVisitVoid**](doc/DefaultApi.md#posvehiclevisitvoid) | **POST** /api/v3/admin/pos/vehicle_visits/{id}/void | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posWorkspaceAddItem**](doc/DefaultApi.md#posworkspaceadditem) | **POST** /api/v3/admin/pos/workspaces/{id}/items | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posWorkspaceAppendItems**](doc/DefaultApi.md#posworkspaceappenditems) | **POST** /api/v3/admin/pos/workspaces/{workspace_id}/items/append | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posWorkspaceChecklist**](doc/DefaultApi.md#posworkspacechecklist) | **POST** /api/v3/admin/pos/workspaces/{workspace_id}/checklist | 
@@ -213,6 +221,7 @@ Class | Method | HTTP request | Description
 [*DefaultApi*](doc/DefaultApi.md) | [**posWorkspaceMealWalletPay**](doc/DefaultApi.md#posworkspacemealwalletpay) | **POST** /api/v3/admin/pos/workspaces/{workspace_id}/meal_wallet | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posWorkspaceRemoveUnsentLine**](doc/DefaultApi.md#posworkspaceremoveunsentline) | **DELETE** /api/v3/admin/pos/workspaces/{workspace_id}/sale_lines/{id} | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posWorkspaceShow**](doc/DefaultApi.md#posworkspaceshow) | **GET** /api/v3/admin/pos/workspaces/{id} | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posWorkspaceVehicleVisit**](doc/DefaultApi.md#posworkspacevehiclevisit) | **PUT** /api/v3/admin/pos/workspaces/{workspace_id}/vehicle_visit | 
 
 
 ## Documentation For Models
@@ -237,6 +246,7 @@ Class | Method | HTTP request | Description
  - [BuffetTier](doc/BuffetTier.md)
  - [BuffetTierItem](doc/BuffetTierItem.md)
  - [BuffetTierList](doc/BuffetTierList.md)
+ - [BusOperatorRef](doc/BusOperatorRef.md)
  - [CallBoard](doc/CallBoard.md)
  - [CallBoardPreparingInner](doc/CallBoardPreparingInner.md)
  - [CallBoardReadyInner](doc/CallBoardReadyInner.md)
@@ -547,6 +557,16 @@ Class | Method | HTTP request | Description
  - [TableTaxCategory](doc/TableTaxCategory.md)
  - [TaxRow](doc/TaxRow.md)
  - [TipSplitRule](doc/TipSplitRule.md)
+ - [VehicleCommissionSnapshot](doc/VehicleCommissionSnapshot.md)
+ - [VehicleType](doc/VehicleType.md)
+ - [VehicleVisit](doc/VehicleVisit.md)
+ - [VehicleVisitAdjustInput](doc/VehicleVisitAdjustInput.md)
+ - [VehicleVisitList](doc/VehicleVisitList.md)
+ - [VehicleVisitOpenInput](doc/VehicleVisitOpenInput.md)
+ - [VehicleVisitPayInput](doc/VehicleVisitPayInput.md)
+ - [VehicleVisitResult](doc/VehicleVisitResult.md)
+ - [VehicleVisitUpdateInput](doc/VehicleVisitUpdateInput.md)
+ - [VehicleVisitVoidInput](doc/VehicleVisitVoidInput.md)
  - [Workspace](doc/Workspace.md)
  - [WorkspaceCreateInput](doc/WorkspaceCreateInput.md)
  - [WorkspaceDrinkCredit](doc/WorkspaceDrinkCredit.md)
@@ -563,6 +583,7 @@ Class | Method | HTTP request | Description
  - [WorkspaceSummaryList](doc/WorkspaceSummaryList.md)
  - [WorkspaceTotals](doc/WorkspaceTotals.md)
  - [WorkspaceTotalsTaxesInner](doc/WorkspaceTotalsTaxesInner.md)
+ - [WorkspaceVehicleVisitInput](doc/WorkspaceVehicleVisitInput.md)
 
 
 ## Documentation For Authorization

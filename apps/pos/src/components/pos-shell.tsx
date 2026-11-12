@@ -35,7 +35,7 @@ import { UserMenu } from './user-menu';
 
 // Counter pages other than selling, by their path.
 const COUNTER_PAGES =
-  /\/(returns|shifts|collect|receipts|reservations|bottle-keeps|meal-accounts|tips)(\/|$)/;
+  /\/(returns|shifts|collect|receipts|reservations|bottle-keeps|meal-accounts|vehicle-visits|tips)(\/|$)/;
 
 export function PosShell() {
   return (
@@ -68,9 +68,11 @@ function ShellFrame() {
               ? t('bottleKeepsNav')
               : pathname.endsWith('/meal-accounts')
                 ? t('mealAccountsNav')
-                : pathname.endsWith('/tips')
-                  ? t('tipsNav')
-                  : t('sellingArea');
+                : pathname.endsWith('/vehicle-visits')
+                  ? t('vehicleVisitsNav')
+                  : pathname.endsWith('/tips')
+                    ? t('tipsNav')
+                    : t('sellingArea');
   const isSale = !COUNTER_PAGES.test(pathname);
   // A store not set up yet, seen by someone who may set it up, is pointed at
   // the setup wizard of the POS dashboard instead of the branch picker dialog.

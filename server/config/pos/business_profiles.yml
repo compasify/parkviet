@@ -203,11 +203,12 @@ profiles:
     sample_units: []
     kitchen_stations: [prep, bar]
 
-  # Meal accounts by employee code, prepaid wallets and company sponsors.
+  # Meal accounts by employee code, prepaid wallets and company sponsors,
+  # and coach visits with their drivers' commission at rest stops.
   cang_tin_tram_dung:
     group: fnb
     order: 18
-    modules: [fnb.menu, fnb.kitchen, fnb.order_number, retail.units, fnb.meal_accounts]
+    modules: [fnb.menu, fnb.kitchen, fnb.order_number, retail.units, fnb.meal_accounts, fnb.vehicle_commission]
     branch_defaults: { kitchen_send_trigger: on_complete }
     display: { surface: menu_grid }
     recommended_features: [vietqr, customer_display]

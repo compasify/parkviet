@@ -54,6 +54,9 @@ Rails.application.config.to_prepare do
     # and company sponsors that pay on credit.
     modules.register(key: 'fnb.meal_accounts', group: 'fnb', depends_on: [],
                      entrypoints: ['Spree::Api::V3::Admin::Pos::MealAccountsController', 'Spree::Pos::MealAccounts::Swipe'])
+    # A rest stop's coach visits and the commission paid to their drivers.
+    modules.register(key: 'fnb.vehicle_commission', group: 'fnb', depends_on: [],
+                     entrypoints: ['Spree::Api::V3::Admin::Pos::VehicleVisitsController', 'Spree::Pos::VehicleVisits::Close'])
 
     # Names only, so "coming soon" profiles can refer to them. No code, and
     # no branch can turn them on.

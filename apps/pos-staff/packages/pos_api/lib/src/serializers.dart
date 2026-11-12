@@ -34,6 +34,7 @@ import 'package:pos_api/src/model/bottle_keep_result.dart';
 import 'package:pos_api/src/model/buffet_tier.dart';
 import 'package:pos_api/src/model/buffet_tier_item.dart';
 import 'package:pos_api/src/model/buffet_tier_list.dart';
+import 'package:pos_api/src/model/bus_operator_ref.dart';
 import 'package:pos_api/src/model/call_board.dart';
 import 'package:pos_api/src/model/call_board_preparing_inner.dart';
 import 'package:pos_api/src/model/call_board_ready_inner.dart';
@@ -344,6 +345,16 @@ import 'package:pos_api/src/model/table_split_result.dart';
 import 'package:pos_api/src/model/table_tax_category.dart';
 import 'package:pos_api/src/model/tax_row.dart';
 import 'package:pos_api/src/model/tip_split_rule.dart';
+import 'package:pos_api/src/model/vehicle_commission_snapshot.dart';
+import 'package:pos_api/src/model/vehicle_type.dart';
+import 'package:pos_api/src/model/vehicle_visit.dart';
+import 'package:pos_api/src/model/vehicle_visit_adjust_input.dart';
+import 'package:pos_api/src/model/vehicle_visit_list.dart';
+import 'package:pos_api/src/model/vehicle_visit_open_input.dart';
+import 'package:pos_api/src/model/vehicle_visit_pay_input.dart';
+import 'package:pos_api/src/model/vehicle_visit_result.dart';
+import 'package:pos_api/src/model/vehicle_visit_update_input.dart';
+import 'package:pos_api/src/model/vehicle_visit_void_input.dart';
 import 'package:pos_api/src/model/workspace.dart';
 import 'package:pos_api/src/model/workspace_create_input.dart';
 import 'package:pos_api/src/model/workspace_drink_credit.dart';
@@ -360,6 +371,7 @@ import 'package:pos_api/src/model/workspace_summary.dart';
 import 'package:pos_api/src/model/workspace_summary_list.dart';
 import 'package:pos_api/src/model/workspace_totals.dart';
 import 'package:pos_api/src/model/workspace_totals_taxes_inner.dart';
+import 'package:pos_api/src/model/workspace_vehicle_visit_input.dart';
 
 part 'serializers.g.dart';
 
@@ -384,6 +396,7 @@ part 'serializers.g.dart';
   BuffetTier,
   BuffetTierItem,
   BuffetTierList,
+  BusOperatorRef,
   CallBoard,
   CallBoardPreparingInner,
   CallBoardReadyInner,
@@ -698,6 +711,16 @@ part 'serializers.g.dart';
   TableTaxCategory,
   TaxRow,
   TipSplitRule,
+  VehicleCommissionSnapshot,
+  VehicleType,
+  VehicleVisit,
+  VehicleVisitAdjustInput,
+  VehicleVisitList,
+  VehicleVisitOpenInput,
+  VehicleVisitPayInput,
+  VehicleVisitResult,
+  VehicleVisitUpdateInput,
+  VehicleVisitVoidInput,
   Workspace,
   WorkspaceCreateInput,
   WorkspaceDrinkCredit,
@@ -714,6 +737,7 @@ part 'serializers.g.dart';
   WorkspaceSummaryList,
   WorkspaceTotals,
   WorkspaceTotalsTaxesInner,
+  WorkspaceVehicleVisitInput,
 ])
 Serializers serializers = (_$serializers.toBuilder()
       ..addBuilderFactory(
@@ -1024,6 +1048,10 @@ Serializers serializers = (_$serializers.toBuilder()
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(CallBoardReadyInner)]),
         () => ListBuilder<CallBoardReadyInner>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(VehicleVisit)]),
+        () => ListBuilder<VehicleVisit>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(KitchenExpoItem)]),

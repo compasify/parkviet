@@ -26,6 +26,8 @@ class _$WorkspaceSummary extends WorkspaceSummary {
   @override
   final String? tabName;
   @override
+  final String? vehicleVisitId;
+  @override
   final ResourceRef? resource;
   @override
   final DateTime? openedAt;
@@ -46,6 +48,7 @@ class _$WorkspaceSummary extends WorkspaceSummary {
       this.orderNumber,
       this.guestName,
       this.tabName,
+      this.vehicleVisitId,
       this.resource,
       this.openedAt,
       required this.total})
@@ -71,6 +74,7 @@ class _$WorkspaceSummary extends WorkspaceSummary {
         orderNumber == other.orderNumber &&
         guestName == other.guestName &&
         tabName == other.tabName &&
+        vehicleVisitId == other.vehicleVisitId &&
         resource == other.resource &&
         openedAt == other.openedAt &&
         total == other.total;
@@ -88,6 +92,7 @@ class _$WorkspaceSummary extends WorkspaceSummary {
     _$hash = $jc(_$hash, orderNumber.hashCode);
     _$hash = $jc(_$hash, guestName.hashCode);
     _$hash = $jc(_$hash, tabName.hashCode);
+    _$hash = $jc(_$hash, vehicleVisitId.hashCode);
     _$hash = $jc(_$hash, resource.hashCode);
     _$hash = $jc(_$hash, openedAt.hashCode);
     _$hash = $jc(_$hash, total.hashCode);
@@ -107,6 +112,7 @@ class _$WorkspaceSummary extends WorkspaceSummary {
           ..add('orderNumber', orderNumber)
           ..add('guestName', guestName)
           ..add('tabName', tabName)
+          ..add('vehicleVisitId', vehicleVisitId)
           ..add('resource', resource)
           ..add('openedAt', openedAt)
           ..add('total', total))
@@ -155,6 +161,11 @@ class WorkspaceSummaryBuilder
   String? get tabName => _$this._tabName;
   set tabName(String? tabName) => _$this._tabName = tabName;
 
+  String? _vehicleVisitId;
+  String? get vehicleVisitId => _$this._vehicleVisitId;
+  set vehicleVisitId(String? vehicleVisitId) =>
+      _$this._vehicleVisitId = vehicleVisitId;
+
   ResourceRefBuilder? _resource;
   ResourceRefBuilder get resource => _$this._resource ??= ResourceRefBuilder();
   set resource(ResourceRefBuilder? resource) => _$this._resource = resource;
@@ -183,6 +194,7 @@ class WorkspaceSummaryBuilder
       _orderNumber = $v.orderNumber;
       _guestName = $v.guestName;
       _tabName = $v.tabName;
+      _vehicleVisitId = $v.vehicleVisitId;
       _resource = $v.resource?.toBuilder();
       _openedAt = $v.openedAt;
       _total = $v.total;
@@ -224,6 +236,7 @@ class WorkspaceSummaryBuilder
             orderNumber: orderNumber,
             guestName: guestName,
             tabName: tabName,
+            vehicleVisitId: vehicleVisitId,
             resource: _resource?.build(),
             openedAt: openedAt,
             total: BuiltValueNullFieldError.checkNotNull(

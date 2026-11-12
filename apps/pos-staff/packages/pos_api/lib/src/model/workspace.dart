@@ -33,6 +33,7 @@ part 'workspace.g.dart';
 /// * [orderNumber] - Call number (`fnb.order_number`), 1, 2, 3… per branch and business date, given at the first kitchen send or at completion and kept.
 /// * [guestName] - The name the counter calls out with the call number.
 /// * [tabName] - The guest's name of a bar tab (`service_mode` tab).
+/// * [vehicleVisitId] - The coach visit of a rest stop the order is sold to (`fnb.vehicle_commission`).
 /// * [minimumSpend] - A VIP table's minimum spend and the fee making up the shortfall.
 /// * [drinkCredit] - The drink credit of the order's door tickets.
 /// * [resource] - The table of a table order (`fnb.tables`).
@@ -78,6 +79,10 @@ abstract class Workspace implements Built<Workspace, WorkspaceBuilder> {
   /// The guest's name of a bar tab (`service_mode` tab).
   @BuiltValueField(wireName: r'tab_name')
   String? get tabName;
+
+  /// The coach visit of a rest stop the order is sold to (`fnb.vehicle_commission`).
+  @BuiltValueField(wireName: r'vehicle_visit_id')
+  String? get vehicleVisitId;
 
   /// A VIP table's minimum spend and the fee making up the shortfall.
   @BuiltValueField(wireName: r'minimum_spend')
@@ -197,6 +202,13 @@ class _$WorkspaceSerializer implements PrimitiveSerializer<Workspace> {
       yield r'tab_name';
       yield serializers.serialize(
         object.tabName,
+        specifiedType: const FullType.nullable(String),
+      );
+    }
+    if (object.vehicleVisitId != null) {
+      yield r'vehicle_visit_id';
+      yield serializers.serialize(
+        object.vehicleVisitId,
         specifiedType: const FullType.nullable(String),
       );
     }
@@ -374,6 +386,14 @@ class _$WorkspaceSerializer implements PrimitiveSerializer<Workspace> {
           ) as String?;
           if (valueDes == null) continue;
           result.tabName = valueDes;
+          break;
+        case r'vehicle_visit_id':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.vehicleVisitId = valueDes;
           break;
         case r'minimum_spend':
           final valueDes = serializers.deserialize(

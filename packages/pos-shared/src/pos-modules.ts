@@ -61,6 +61,7 @@ export const LABELLED_MODULES = [
   'fnb.bottle_keep',
   'fnb.pour_tracking',
   'fnb.meal_accounts',
+  'fnb.vehicle_commission',
 ] as const;
 
 function record(value: unknown): Record<string, unknown> | null {

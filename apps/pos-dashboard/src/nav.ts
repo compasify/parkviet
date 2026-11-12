@@ -1,5 +1,6 @@
 import { type NavEntry, nav, settingsNav, usePermissions } from '@spree/dashboard-core'
 import {
+  Bus,
   ChartColumn,
   HandCoins,
   IdCard,
@@ -71,6 +72,18 @@ const groups: { key: string; labelKey: string; icon: NavEntry['icon']; children:
     children: [
       { key: 'meal-accounts', labelKey: 'mealAccounts.title', path: '/meal-accounts' },
       { key: 'meal-sponsors', labelKey: 'mealSponsors.title', path: '/meal-sponsors' },
+    ],
+  },
+  {
+    key: 'rest-stop',
+    labelKey: 'vehicleCommission.nav',
+    icon: Bus,
+    children: [
+      {
+        key: 'vehicle-commission',
+        labelKey: 'vehicleCommission.title',
+        path: '/vehicle-commission',
+      },
     ],
   },
   {
