@@ -181,17 +181,115 @@ Câu hỏi mở 2 đã chốt ngày 09/11/2026: **chưa làm thẻ** (RFID hay Q
 
 ### Tiêu chí xong
 
-- [ ] Nhận diện được người ăn bằng mã nhân viên hoặc tìm theo tên, qua một service `Resolve` duy nhất.
-- [ ] Ghi suất kiểm hạn mức, khung giờ, ghi suất trùng ở server; âm báo phân biệt được ba kết quả.
-- [ ] Nạp, trừ, hoàn và điều chỉnh ví đều đi qua lõi tiền; số dư khớp sổ.
-- [ ] Đơn vị chi trả ghi nợ tự duyệt trong hạn mức; xuất bảng kê theo kỳ; thu nợ bằng luồng hiện có.
-- [ ] Trợ giá chia đúng hai phần, hóa đơn vẫn là một.
-- [ ] Đã có hook số dư thấp trong outbox.
+- [x] Nhận diện được người ăn bằng mã nhân viên hoặc tìm theo tên, qua một service `Resolve` duy nhất.
+- [x] Ghi suất kiểm hạn mức, khung giờ, ghi suất trùng ở server; âm báo phân biệt được ba kết quả.
+- [x] Nạp, trừ, hoàn và điều chỉnh ví đều đi qua lõi tiền; số dư khớp sổ.
+- [x] Đơn vị chi trả ghi nợ tự duyệt trong hạn mức; xuất bảng kê theo kỳ; thu nợ bằng luồng hiện có.
+- [x] Trợ giá chia đúng hai phần, hóa đơn vẫn là một.
+- [x] Đã có hook số dư thấp trong outbox.
 - [ ] OpenAPI, spec và e2e đều xanh.
 
 ### Để sau: thẻ suất ăn
 
 Chưa làm trong plan này (đã chốt 09/11/2026). Khi có khách cần, thêm bảng `spree_pos_meal_cards` (`meal_account_id`, `kind` `qr | rfid`, `token_digest` unique theo store, `last4`, `issued_at`, `revoked_at`) và một nhánh tra thẻ trong `MealAccounts::Resolve`. Giá trị thẻ chỉ lưu digest, giống `DisplayPairing`. Đầu đọc RFID kiểu bàn phím gõ vào ô nhập đã có, nên màn bán không phải sửa.
+
+### Kết quả
+
+Đã làm:
+
+- **Dữ liệu.** Có ba migration:
+  - `20261112050000_create_spree_pos_stored_value_accounts`: ví và sổ ví. Sổ ví có check theo loại dòng: `top_up` dương và có khoản nhận; `spend` âm và có allocation; `refund` âm và có payout; `adjust` khác 0. Allocation và payout là unique.
+  - `…050100_create_spree_pos_meal_accounts`: đơn vị chi trả, tài khoản suất ăn và lượt ghi suất.
+  - `…050200_allow_meal_reports_in_spree_pos_export_requests`.
+
+  Cả ba đã chạy ở DB dev và test. `schema.rb` dựng lại từ HEAD cộng các bảng mới, vẫn đủ 210 check constraint. Model mới: `StoredValueAccount`, `StoredValueEntry`, `MealSponsor`, `MealAccount`, `MealSwipe`.
+- **Ví** (`StoredValue`, theo `docs/adr/0003-pos-vi-suat-an.md`):
+  - `MealWallets::TopUp` nhận tiền mặt hoặc `bank_manual` thành một `ReceivedFunds` không có đơn, vào ca đang mở của người thu, và in phiếu nạp.
+  - `MealWallets::Pay` (`workspaces/:id/meal_wallet`) allocate các khoản nạp vào đơn, khoản cũ trước. Mỗi phần là một core `Payment` đã hoàn tất cộng một `FundsAllocation`, kèm một dòng `spend`.
+  - `MealWallets::Refund` hoàn bằng `LiabilityPayout`, người thứ hai xác nhận.
+  - `MealWallets::Adjust` sửa số dư trong khoảng từ 0 tới phần còn của các khoản nạp. Hoàn và điều chỉnh tiêu thụ approval `meal_wallet.refund` / `meal_wallet.adjust`, gắn với tài khoản theo revision và số tiền.
+  - Mọi lệnh khóa hàng ví trước, rồi mới khóa khoản nhận. Đảo allocation, hoặc payout thất bại / bị hủy, trả tiền lại vào ví bằng dòng `adjust`.
+- **Nhận diện và ghi suất.** `MealAccounts::Resolve` là chỗ duy nhất nhận diện người ăn: mã nhân viên khớp đúng, hoặc tối đa 8 gợi ý theo tên, luôn trong store hiện tại. API `meal_accounts/resolve` giới hạn 120 lần một phút cho mỗi nhân viên (429 `meal_resolve_rate_limited`). `MealAccounts::Swipe` khóa hàng tài khoản rồi kiểm theo thứ tự:
+  1. tài khoản bị khóa (`meal_account_locked`);
+  2. trùng trong 60 giây (`meal_duplicate_swipe`);
+  3. ngoài khung giờ (`meal_outside_window`, có khung qua nửa đêm);
+  4. quá suất ngày hoặc quá suất của khung (`meal_daily_limit`).
+
+  Vượt khung giờ hoặc hạn mức cần approval `meal_account.override_limit`. Mọi lần ghi, cả lần bị từ chối, đều để lại một dòng `meal_swipes`. Ghi được thì người ăn thành khách của đơn. Đơn bị hủy, hoặc đổi khách, thì suất được trả lại.
+- **Đơn vị chi trả và trợ giá.**
+  - `MealSponsors::Save` lưu đơn vị chi trả. Hạn mức và số ngày nợ đi qua `Credit::Configure`.
+  - `MealAccounts::SplitPlan` chia phần đơn vị trả và phần người ăn trả:
+    - theo `pay_mode`: `wallet`, `sponsor`, `sponsor_subsidy`;
+    - trợ giá cố định hoặc theo phần trăm;
+    - trần trợ giá mỗi ngày tính theo các đơn đã hoàn tất trong ngày của người ăn.
+  - `complete` với `meal_sponsor: true` (`MealAccounts::ChargeSponsor`) ghi phần đơn vị chi trả thành `ReceivableEntry` debit:
+    - trong cùng lệnh hoàn tất, dưới khóa tài khoản công nợ;
+    - kèm một `CreditReservation` committed và một approval tự tiêu thụ, vì ràng buộc của debit cần chúng;
+    - không cần quản lý duyệt từng suất.
+
+    Vượt hạn mức báo `sponsor_limit`. Phần người ăn chưa trả đúng báo `meal_split_unpaid`. Vẫn chỉ có một đơn, nên vẫn một hóa đơn. Thu nợ đi qua luồng công nợ hiện có.
+- **Báo cáo.** `meals` cho số suất theo ngày, khung giờ, quầy, đơn vị chi trả và kết quả; tóm tắt có số lần bị từ chối theo lý do. `meal_statement` (cần `meal_sponsor_id`) là bảng kê kỳ, khớp với các debit trong sổ công nợ. Cả hai xuất CSV qua `ExportRequest`.
+- **Nhập CSV.** `meal_accounts/import` nhận đủ hoặc không nhận dòng nào. Khi từ chối, câu trả lời liệt kê lỗi theo dòng và cột. Giới hạn 5000 dòng, 2 MB.
+- **Số dư thấp.** Khi trả bằng ví làm số dư xuống dưới ngưỡng, hệ thống ghi outbox `meal_wallet.low_balance`. Mỗi lần nạp ghi `meal_wallet.topped_up`.
+- **Module, quyền, API.** Module `fnb.meal_accounts` đã đăng ký và bật trong hồ sơ `cang_tin_tram_dung`. Capability mới là `pos.meal_account.manage`; dashboard có 31 quyền. Approval mới gắn với `MealAccount`, xin qua `approvals` với `meal_account_id`. Có route `meal_accounts` (list, show, create, update, `entries`, `top_ups`, `refund`, `adjust`, `resolve`, `import`), `meal_sponsors` và `workspaces/:id/meal|meal_swipes|meal_wallet`. `pos-staff.yaml` có các schema tên riêng: `MealAccount`, `MealStatus`, `MealSplitPlan`, `MealResolve`, `MealSwipe*`, `MealWalletPay*`, `WorkspaceMeal*`. Client Dart đã sinh lại.
+- **Web `apps/pos`.**
+  - Ô quét trên màn bán, chỉ hiện khi bật module (`scan-input.tsx`):
+    - luôn giữ focus;
+    - Enter thì tra mã: khớp đúng là ghi suất, nhiều kết quả thì hiện danh sách chọn, không khớp mà giống mã vạch thì chuyển sang tra mã vạch hàng.
+  - `scan-sounds.ts` có ba âm (ghi được, trùng, lỗi), bật / tắt theo máy.
+  - `meal-banner.tsx` hiện tên, mã, nhóm, số dư, số suất còn, cảnh báo số dư thấp và phần chia, cùng nút thanh toán một chạm: trả phần người ăn bằng ví rồi hoàn tất, có `meal_sponsor` khi đơn vị chi trả có phần.
+  - Bảng thanh toán thường cũng hoàn tất với `meal_sponsor` khi đơn có phần của đơn vị chi trả.
+  - Trang `/meal-accounts`: tra cứu, lịch sử ví, nạp (in phiếu), hoàn và điều chỉnh có ô mã duyệt.
+  - Chuỗi vi / en.
+- **Dashboard.**
+  - Trang Tài khoản suất ăn: danh sách và lọc, thêm / sửa có khung giờ, khóa / mở khóa, nhập CSV có lỗi theo dòng, lịch sử ví chỉ xem.
+  - Trang Đơn vị chi trả: hạn mức, trợ giá, ngày chốt kỳ, xuất bảng kê theo kỳ, nút thu nợ dẫn tới trang công nợ.
+  - Hai tab báo cáo `meals` và `meal_statement`.
+  - Nhóm menu "Căng tin".
+- **Tài liệu.** `docs/adr/0003-pos-vi-suat-an.md` ghi ví là tiền giữ hộ, đơn vị chi trả là công nợ, kèm ghi chú pháp lý về số dư ví.
+
+Lệch so với kế hoạch:
+
+- Không thêm tender kind `meal_wallet` / `meal_sponsor` và không sửa `pos_payment_method.rb`:
+  - Trả bằng ví là lệnh riêng `meal_wallet`, làm như trừ cọc: tiền đã nhận lúc nạp nên không tạo tender mới.
+  - Phần đơn vị chi trả là cờ `meal_sponsor` của `complete`, ghi nợ ngay khi hoàn tất.
+  - Kiểm "đủ hai phần" là `meal_split_unpaid`.
+- Không có bảng và lookup thẻ (`meal_cards`, `MealCards::Resolve`), theo mục "Để sau".
+- Swipe không từ chối vì thiếu số dư (không có kết quả `insufficient`). Thu ngân thấy `wallet_covers` và cho người ăn trả phần thiếu bằng tender thường. Có thêm kết quả `window` cho ngoài khung giờ. Thời gian chặn trùng là hằng 60 giây.
+- Bảng kê là báo cáo `meal_statement` qua luồng export sẵn có, theo chi nhánh. Không có route `meal_sponsors/:id/statements` hay service `MealSponsors::Statement` riêng.
+- Đơn không lưu cột tài khoản suất ăn. Tài khoản của đơn suy ra từ lượt ghi suất còn tính, nên context POS và giới hạn query không đổi.
+- Giới hạn tần suất của `Resolve` tính theo nhân viên đăng nhập, không theo thiết bị.
+- Tài khoản mới (cả khi nhập CSV) cần số điện thoại hoặc email, vì hồ sơ khách bắt buộc có liên hệ.
+- Tham số vượt hạn mức trên API là `override_limit`. Tên `override` trùng annotation của Dart nên client không biên dịch được.
+- Trang Đơn vị chi trả nằm ở dashboard, không ở `apps/pos`: đây là màn quản trị.
+- Constraint loại báo cáo của export trước đây thiếu `bar` (từ phần 9B); migration mới thêm cả `bar` và hai loại mới.
+- Ghi nợ đơn vị chi trả chỉ cần module `fnb.meal_accounts`, không kiểm feature `credit` của chi nhánh. Hạn mức vẫn do người có `pos.credit.manage` đặt.
+
+Lệnh và kết quả:
+
+- `pnpm spree migrate` rồi `pnpm spree exec bin/rails db:test:prepare`: chạy được, schema còn đủ 210 check constraint.
+- `pnpm spree rspec` các spec mới: `spec/workflows/spree/pos/meal_accounts/swipe_spec.rb` (7/0), `wallet_spec.rb` (6/0), `sponsor_spec.rb` (3/0), `spec/integration/spree/pos/meal_swipe_race_spec.rb` (1/0), `spec/requests/spree/pos/meal_accounts_spec.rb` (6/0). Chạy lại cả nhóm lần cuối: 23/0.
+- Spec module và hồ sơ (branch_modules, branch_profiles, business_profiles request và service, onboarding, topology, module_policy): 72/0.
+- Spec quanh phần lõi đã sửa (`Complete`, `AssignCustomer`, `ReverseAllocation`, `LiabilityPayouts::Resolve`, approvals, reports, capabilities): `credit_race`, `credit_receivables`, `quick_credit`, `returns_refunds`, `credit_returns`, `credit_sales`, `funds_conservation`, `refunds`, `reservations/deposits`, `printers`, `security`, `sale_guards`, `workspace_discounts`, `bottle_keeps`, `settlement_race`, `reports`: 140/0.
+- Sau khi đổi `pos-staff.yaml`: `meal_accounts_spec`, `devices_spec`, `print_documents_spec`: 25/0.
+- `packages/pos-shared`: `pnpm test` 280 qua, `pnpm typecheck` và `pnpm lint` sạch.
+- `apps/pos`:
+  - `pnpm lint` và `pnpm typecheck` sạch, `pnpm test` 300 qua.
+  - `playwright test e2e/meal-accounts.spec.ts --project desktop`: 2/2. Spec kiểm nhập mã + Enter → thanh toán một chạm → in bill, và quét trùng phát âm báo trùng.
+  - Chạy thêm `split-tender`, `full-retail`, `bar-tabs`, `user-menu`, `credit-collections`, `catalog-scan`, `fnb-menu`, `branch-modules`, `reservations`: 45 qua, 1 bỏ qua. `reservations` lỗi một lần khi chạy song song và qua khi chạy riêng.
+- `apps/pos-dashboard`: `pnpm lint` và `pnpm typecheck` sạch, `pnpm test` 115 qua.
+- `apps/pos-staff`: `tool/gen_api.sh` sinh lại client; `flutter analyze` không có lỗi; `flutter test` 137 qua.
+
+Còn mở:
+
+- Chưa chạy e2e dashboard (`administration.spec.ts` đếm 31 quyền), vì cổng 5176 đang dùng cho dashboard của developer. Tiêu chí "OpenAPI, spec và e2e đều xanh" vì vậy chưa tick.
+- Chưa có báo cáo tổng số dư ví theo store (rủi ro "ví trả trước là nghĩa vụ phải trả"). Hiện chỉ xem được số dư từng tài khoản.
+- Ghi chú pháp lý ở ADR 0003 cần kế toán và tư vấn pháp lý của khách xác nhận trước khi triển khai: ví đóng chỉ dùng trong căng tin, và cách xử lý số dư khi nghỉ việc.
+- Chưa đo thời gian ghi suất ở bài đo tải (mục tiêu < 300 ms trên server LAN). Chưa thử đầu đọc mã vạch / RFID thật.
+- Web chưa có luồng xin duyệt để vượt hạn mức hay khung giờ khi ghi suất; quầy chỉ báo lý do. API đã nhận `override_limit` và `approval_id`.
+- Phiếu nạp ví in qua máy in LAN của quầy hoặc trình duyệt, chưa xếp vào hàng đợi in của trạm in. Nạp chuyển khoản trùng mã giao dịch chỉ báo trùng, chưa có bước xác nhận vẫn nhận.
+- Chưa có thông báo thật khi số dư thấp; outbox mới ghi sự kiện để dùng sau.
+- Toàn bộ thay đổi chưa commit; controller sẽ commit. Chưa chạy full rspec / e2e: để GitHub Actions chạy.
 
 ## Phần 10B: Hoa hồng tài xế / phụ xe ở trạm dừng
 
