@@ -52,7 +52,7 @@ Plan kế thừa kiến trúc lõi + module + hồ sơ ngành ([kiến trúc đa
 | Hình thức phục vụ | `Workspace.service_mode`: `counter`, `dine_in`, `takeaway`, `delivery`, `tab`, `timed` |
 | Kiểu dòng | `SaleLine.kind` mở rộng qua registry `Spree::Pos::SaleLineKinds`. Đã có: `ordinary`, `measured`, `tracked`. Thêm: `menu`, `timed`, `cover` |
 | Thiết bị | `Spree::Pos::Device` (`spree_pos_devices`), mode: `waiter`, `kds`, `expo`, `kiosk`, `print_station`, `owner`, `bridge` |
-| Realtime | `Spree::Pos::BranchChannel` + `Spree::Pos::Realtime.publish(branch, event, payload)` sau commit. Sự kiện: `workspace.updated`, `kitchen_ticket.updated`, `menu.sold_out`, `payment.requested`, `print_job.created`, `resource.updated`, `approval.requested`; các phase sau thêm `guest_order.created`, `guest_request.created` (12A), `owner_alert.created` (12C), `relay.command` (11C) |
+| Realtime | `Spree::Pos::BranchChannel` + `Spree::Pos::Realtime.publish(branch, event, payload)` sau commit. Sự kiện: `workspace.updated`, `kitchen_ticket.updated`, `menu.sold_out`, `payment.requested`, `print_job.created`, `resource.updated`, `approval.requested`; các phase sau thêm `guest_order.created`, `guest_request.created` (12A), `owner_alert.created` (12C) |
 | In | `Spree::Pos::Printer`, `Spree::Pos::PrintJob`, tài liệu trung lập `PrintDocument` v1. Loại phiếu: `receipt`, `prebill`, `kitchen_ticket`, `void_ticket`, `cup_label`, `checklist`, `table_qr`, `test`. `Printer.command_language`: `escpos` hoặc `tspl` |
 | Bếp | `KitchenStation` (`prep`, `bar`, `expo`), `StationRoute`, `KitchenTicket` (bất biến), `KitchenTicketItem` |
 | Bàn / phòng | `Area`, `Resource` (`table`, `room`, `billiard`, `vip`) |
@@ -62,7 +62,7 @@ Plan kế thừa kiến trúc lõi + module + hồ sơ ngành ([kiến trúc đa
 | Ai được sửa đơn | `AccessPolicy#can_edit_workspace?` (phần 8A). Lệnh ghi đơn từ phục vụ, kiosk, QR order đều qua helper này, không kiểm `shift.owner` trực tiếp |
 | Ngày kinh doanh | `Branch.business_day_cutoff`, `business_date` trên Workspace và Shift, service `Spree::Pos::BusinessDay` |
 | Nguồn đơn mới | `Workspace::ORDER_SOURCES` thêm `kiosk` (12B), `grabfood`, `shopeefood` (7C) |
-| Module | Đã có tên: `fnb.menu`, `fnb.kitchen`, `fnb.order_number`, `fnb.recipes`, `resources`, `fnb.tables`, `fnb.postpay`, `fnb.service_charge`, `timed_billing`. Thêm: `fnb.cup_label` (7B), `fnb.reservations` (9A), `fnb.bottle_keep`, `fnb.pour_tracking` (9B), `fnb.meal_accounts` (10A), `fnb.qr_order` (12A), `fnb.kiosk` (12B), `fnb.delivery_platforms` (7C), `resources.iot_relay` (11C), `fnb.vehicle_commission` (10B) |
+| Module | Đã có tên: `fnb.menu`, `fnb.kitchen`, `fnb.order_number`, `fnb.recipes`, `resources`, `fnb.tables`, `fnb.postpay`, `fnb.service_charge`, `timed_billing`. Thêm: `fnb.cup_label` (7B), `fnb.reservations` (9A), `fnb.bottle_keep`, `fnb.pour_tracking` (9B), `fnb.meal_accounts` (10A), `fnb.qr_order` (12A), `fnb.kiosk` (12B), `fnb.delivery_platforms` (7C), `fnb.vehicle_commission` (10B) |
 | Ví / thẻ nạp | `Spree::Pos::StoredValue` (phần 10A), phần 11B dùng lại cho thẻ nạp tiền / giờ |
 | App Flutter | `apps/pos-staff`, package `parkviet_staff`, client sinh ra ở `apps/pos-staff/packages/pos_api` |
 
@@ -84,7 +84,7 @@ Ngày 11/11/2026, các phase chưa làm được gộp theo module: 24 phase cũ
 | 8 | F2 | [Bàn, phục vụ, mở đợt 2](./phase-08-ban-phuc-vu-mo-dot-2.md) | 8A bàn, trả sau; 8B nhiều máy cùng sửa đơn; 8C app phục vụ, KDS đầy đủ; 8D mở ngành đợt 2 | 26 ngày | 5, 7 |
 | 9 | F4 | [Nhà hàng nâng cao, bar](./phase-09-nha-hang-bar.md) | 9A nhà hàng nâng cao; 9B bar, pub, club | 16 ngày | 8 |
 | 10 | F4 | [Căng tin và trạm dừng](./phase-10-can-tin-tram-dung.md) | 10A tài khoản suất ăn, ví; 10B hoa hồng tài xế | 11 ngày | 8 |
-| 11 | F3–F5 | [Tính giờ, karaoke, bida](./phase-11-tinh-gio-giai-tri.md) | 11A tính giờ; 11B karaoke / bida nâng cao; 11C relay đèn bida | 17 ngày | 5, 8, 10 |
+| 11 | F3–F5 | [Tính giờ, karaoke, bida](./phase-11-tinh-gio-giai-tri.md) | 11A tính giờ; 11B karaoke / bida nâng cao | 13 ngày | 5, 8, 10 |
 | 12 | F5 | [Kênh khách, chủ quán, offline](./phase-12-kenh-khach-chu-quan-offline.md) | 12A QR order; 12B kiosk; 12C app chủ quán; 12D offline thu ngân | 23 ngày | 3, 5, 8 |
 
 Thứ tự:
@@ -108,7 +108,7 @@ flowchart LR
   end
   subgraph Flutter[apps/pos-staff]
     S2[Phục vụ] --- S3[KDS bếp/bar] --- S4[Chạy bàn]
-    S7[Kiosk] --- S8[Chủ quán] --- PS[Trạm in] --- BR[Bridge relay]
+    S7[Kiosk] --- S8[Chủ quán] --- PS[Trạm in]
   end
   subgraph Server[Server LAN hoặc VPS]
     API[POS API + OpenAPI] --> CORE[Lõi: Workspace → Order → tender → complete]

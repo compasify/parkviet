@@ -2,7 +2,7 @@
 phase: 11
 title: "Tính giờ, karaoke, bida"
 status: pending
-effort: "17 ngày"
+effort: "13 ngày"
 dependsOn: [5, 8, 10]
 ---
 
@@ -10,13 +10,12 @@ dependsOn: [5, 8, 10]
 
 ## Overview
 
-Cả ba phần thuộc module `timed_billing`: tính giờ cơ bản, tính năng nâng cao, và relay đèn bida.
+Cả hai phần thuộc module `timed_billing`: tính giờ cơ bản và tính năng nâng cao.
 
 | Phần | Nội dung | Effort |
 |---|---|---|
 | 11A | Tính giờ karaoke / bida | 9 ngày |
 | 11B | Karaoke / bida nâng cao | 4 ngày |
-| 11C | Relay đèn bida | 4 ngày |
 
 ## Cách làm
 
@@ -238,7 +237,8 @@ Migration `create_spree_pos_timed_sessions_and_segments`:
 - `resource_board` dùng lại `TableFloor` / `TableTile` cùng `timed-panel.tsx`, không tạo `resource-board` / `resource-tile` / `timed-line` / `segment-edit-dialog`. Các hành động nằm ở panel khi chọn ô, không đặt ngay trên ô. Bộ lọc Đang chơi / Sắp hết giờ đi theo bộ lọc trạng thái sẵn có.
 - `receipt_template_variables.json` không đổi: phòng, giờ vào / ra và khung giá in thành dòng ghi chú của dòng giờ.
 - Bộ spec bảng của `Quote` có 20 ca bảng cùng các ví dụ riêng, tổng 36 ví dụ. Plan yêu cầu ít nhất 25 ca bảng; các ca thêm phủ phần còn lại (qua 0h, lễ, chuyển phòng, block 1 phút, tối thiểu).
-- Spec dịch vụ hồ sơ và module dùng `treat_as_planned('timed_billing')` cho các ca "sắp có" / interest, vì giờ không còn hồ sơ nào sắp có. `resources.iot_relay` là module `planned` thay chỗ.- Tab Phòng nằm ở `apps/pos-staff/lib/modes/waiter/room_board_screen.dart` và test ở `test/modes/waiter/room_board_test.dart`, theo cấu trúc sẵn có của chế độ waiter, không ở `lib/features/waiter/rooms/**`. Tab là màn mở từ nút trên thanh tiêu đề, giống Tab đang mở và Rót rượu gửi.
+- Spec dịch vụ hồ sơ và module dùng `treat_as_planned('timed_billing')` cho các ca "sắp có" / interest, vì giờ không còn hồ sơ nào sắp có. `resources.iot_relay` là module `planned` thay chỗ (sau đó đã bỏ cùng phần relay đèn).
+- Tab Phòng nằm ở `apps/pos-staff/lib/modes/waiter/room_board_screen.dart` và test ở `test/modes/waiter/room_board_test.dart`, theo cấu trúc sẵn có của chế độ waiter, không ở `lib/features/waiter/rooms/**`. Tab là màn mở từ nút trên thanh tiêu đề, giống Tab đang mở và Rót rượu gửi.
 - Phiếu tạm tính không cộng tiền giờ tạm vào tổng. Tổng vẫn là số của đơn trên server; tiền giờ tạm chỉ in ở ghi chú "Tạm tính đến HH:MM" của dòng giờ, vì dòng giờ chỉ được ghi tiền khi dừng (Q3).
 - Không có hộp "Sửa giờ" riêng trên Flutter: plan chỉ đặt Sửa giờ trên màn đơn của `apps/pos`.
 
@@ -263,7 +263,7 @@ Phần này bổ sung các tính năng nâng cao cho `timed_billing` (phần 11A
 
 Thẻ nạp tiền và thẻ nạp giờ dùng service `StoredValue` của [phần 10A](./phase-10-can-tin-tram-dung.md), nên phải làm sau phần 10A. Bảng phase của `plan.md` đã ghi phụ thuộc này.
 
-Relay đèn bida là [phần 11C](./phase-11-tinh-gio-giai-tri.md). Đặt phòng kèm cọc dùng `fnb.reservations` của [phần 9A](./phase-09-nha-hang-bar.md).
+Đặt phòng kèm cọc dùng `fnb.reservations` của [phần 9A](./phase-09-nha-hang-bar.md).
 
 ### Quyết định
 
@@ -393,102 +393,125 @@ Relay đèn bida là [phần 11C](./phase-11-tinh-gio-giai-tri.md). Đặt phòn
 
 ### Tiêu chí xong
 
-- [ ] Tạm dừng / tiếp tục tính đúng tiền, có audit, và có duyệt khi dừng lâu.
-- [ ] Gói giờ đếm ngược. S1 và app phục vụ nhận cảnh báo sắp hết giờ.
-- [ ] Thẻ nạp tiền và thẻ nạp giờ đi qua lõi tiền; doanh thu chỉ ghi khi đã dùng dịch vụ.
-- [ ] Sổ tiếp viên và báo cáo giờ phục vụ.
-- [ ] Mở phiên ngoài giờ hoạt động có cảnh báo.
-- [ ] Giờ vàng và tặng phút hiện đúng trên bill và hóa đơn.
-- [ ] OpenAPI, spec và e2e đều xanh; spec ví của phần 10A không hồi quy.
+- [x] Tạm dừng / tiếp tục tính đúng tiền, có audit, và có duyệt khi dừng lâu.
+- [x] Gói giờ đếm ngược. S1 và app phục vụ nhận cảnh báo sắp hết giờ.
+- [x] Thẻ nạp tiền và thẻ nạp giờ đi qua lõi tiền; doanh thu chỉ ghi khi đã dùng dịch vụ.
+- [x] Sổ tiếp viên và báo cáo giờ phục vụ.
+- [x] Mở phiên ngoài giờ hoạt động có cảnh báo.
+- [ ] Giờ vàng và tặng phút hiện đúng trên bill và hóa đơn. Bill (màn đơn, phiếu in) đã đạt và có test. Hóa đơn điện tử chưa có spec riêng cho đoạn tặng (xem Còn mở).
+- [ ] OpenAPI, spec và e2e đều xanh; spec ví của phần 10A không hồi quy. OpenAPI, spec liên quan, spec ví và e2e `apps/pos` đã xanh. E2E `apps/pos-dashboard` chưa chạy được (xem Còn mở).
 
-## Phần 11C: Relay đèn bida
+### Kết quả
 
-### Overview
+11C bỏ theo quyết định của developer: không làm relay đèn / `iot_relay`, và đã gỡ các phần đã chuẩn bị cho nó (module `resources.iot_relay`, kind thiết bị relay cùng spec và client liên quan).
 
-Bàn bida bật đèn khi phiên chơi bắt đầu và tắt đèn khi kết thúc, có thời gian ân hạn để khách dọn cơ. Relay nằm **ngoài đường tiền**: lỗi relay không bao giờ chặn mở phiên, tính giờ hay thanh toán. Giờ chơi vẫn tính theo `TimedSession` / `TimedSegment` ở server (phần 11A), không theo trạng thái đèn.
+**Đã làm**
 
-### Quyết định
+- Dữ liệu, 5 migration:
+  - `20261112090000_add_pause_package_to_spree_pos_timed_sessions`: `ended_reason` và `promotion_id` trên đoạn; `prepaid_minutes`, gói, `paused_at` và thẻ giờ trên phiên.
+  - `20261112090100_create_spree_pos_timed_promotions`.
+  - `20261112090200_extend_spree_pos_stored_value_accounts`: kind `money | minutes`, `card_digest`, phút.
+  - `20261112090300_create_spree_pos_attendant_assignments`.
+  - `20261112090400_add_operating_windows_to_spree_pos_branches`: `operating_windows`, `max_pause_minutes`.
 
-| # | Quyết định |
+  Đã chạy `db:test:prepare`. `schema.rb` lên 228 check constraint.
+- Workflow `timed/pause`, `timed/resume`:
+  - idempotent theo key, có audit;
+  - tiếp tục sau lần dừng quá `max_pause_minutes` cần approval `timed.long_pause`, hoặc quyền `pos.timed.edit`.
+- `TimedSessions::AlertJob` (`recurring.yml`, mỗi phút) phát `resource.updated` kèm `alert` (`ending_soon`, `ended_package`, `pause_too_long`), mỗi mốc một lần. Job không đổi tiền.
+- `Timed::Quote` chia đoạn có giá theo thứ tự gói → thẻ giờ → khung giá → tặng. Gói tính trọn giá kể cả khi khách về sớm, và mốc hết gói dời theo thời gian tạm dừng. `TimedPromotion` (`bonus_after`, `bonus_with_package`) theo loại phòng và khung giờ. Đoạn tặng giá 0 vẫn tính vào số phút của dòng giờ.
+- `StoredValue` thêm kind `money` và `minutes`. Thẻ giờ được trừ theo giá mỗi phút của từng lô nạp, lô cũ trước. Các workflow `stored_value_cards/{top_up,pay,refund,adjust,guard}` và `timed/apply_minutes_card`:
+  - mọi khoản tiền đi qua `ReceivedFunds` và allocation;
+  - refund và adjust cần approval, có audit;
+  - mã thẻ chỉ lưu digest.
+
+  Ví căng tin (kind `meal`) không đổi hành vi.
+- `AttendantAssignments::{Start, Stop}`. Dừng phiên thì kết thúc lượt phục vụ trên phiên đó. Báo cáo `reports/attendants` chỉ xem trên màn hình, không xuất file.
+- `OperatingHours`: mở phiên ngoài khung giờ chỉ trả `warnings: ['outside_operating_hours']`. `resource_board` có cờ `outside_operating_hours`. `Timed::SaveSettings` lưu khung giờ hoạt động và ngưỡng tạm dừng.
+- Hồ sơ `business_profiles.yml` lên version 4; `karaoke_bida` có `operating_windows` 08:00–24:00.
+- API:
+  - `timed_sessions/:id/pause` và `resume`;
+  - `timed_promotions`;
+  - `stored_value_accounts` (index, show, create, `POST lookup`, entries, top_ups, refund, adjust);
+  - `workspaces/:id/stored_value_payments`;
+  - `attendant_assignments` (index, `candidates`, create, stop);
+  - `rate_plans/timed_settings`;
+  - `reports/attendants`.
+- `server/openapi/pos-staff.yaml`:
+  - schema có tên cho pause / resume / approval, sổ tiếp viên, gói, thẻ giờ và cảnh báo realtime;
+  - các trường mới của `ResourceBoardTimed` và `ResourceBoard`.
+
+  Đã sinh lại client Dart (`tool/gen_api.sh`).
+- In: phiếu ghi từng đoạn Gói / Thẻ giờ / Tặng. Nhãn mới nằm trong `print_labels.json`.
+- `packages/pos-shared`:
+  - `BoardTimed` có `paused_at`, `prepaid_minutes`, `played_seconds`, `package_ended`, `pause_too_long`;
+  - thêm `clockPlayedSeconds` và `clockSecondsLeft`;
+  - kiểu dòng giờ có gói, thẻ giờ và kind của đoạn.
+- `apps/pos` (thu ngân):
+  - Panel phòng: chọn gói và quẹt thẻ giờ khi mở phiên, kèm hộp xác nhận khi mở ngoài giờ hoạt động. Panel có Tạm dừng / Tính giờ tiếp, ô mã duyệt khi dừng quá lâu, đếm ngược gói, áp thẻ giờ và sổ tiếp viên (gán / kết thúc).
+  - Ô phòng hiện "đang dừng" và viền cảnh báo khi hết gói hoặc dừng quá lâu. Bộ lọc "Sắp hết giờ" vẫn dùng trạng thái `ending_soon` của server.
+  - Bill hiện từng đoạn Gói / Thẻ giờ / Tặng; đoạn tặng không ghi tiền.
+  - Trang **Thẻ nạp** (`/stored-value`, `pages/stored-value.tsx`, `hooks/use-stored-value.ts`, `lib/stored-value.ts`, mục trong menu tài khoản):
+    - tra thẻ bằng mã quét (`POST lookup`), xem số dư, phút còn lại và lịch sử;
+    - nạp thêm bằng tiền mặt hoặc chuyển khoản;
+    - bán thẻ mới bằng một bước tender trên ca của chính thu ngân;
+    - in phiếu.
+  - Bước "Trả bằng thẻ tiền" trong thanh toán: đọc thẻ trước, rồi gọi `stored_value_payments` bằng `card_id`.
+  - Lệnh đồng hồ làm mới đơn của phòng, để bill hiện giá ngay sau khi dừng.
+- `apps/pos-dashboard`, tab "Giá giờ" của chi nhánh:
+  - form bảng giá có thêm gói giờ trả trước; nhãn giờ vàng là nhãn khung giá đã có;
+  - thẻ "Giờ hoạt động và tạm dừng";
+  - thẻ "Khuyến mãi giờ": danh sách, thêm, ngừng.
+
+  Báo cáo **Tiếp viên** nằm ở `/reports/attendants`, chỉ hiện khi chi nhánh bật `timed_billing`, không có nút xuất. Fixture e2e `business-profiles.ts` lên version 4 kèm `operating_windows`.
+- `apps/pos-staff`, chế độ waiter:
+  - Tạm dừng / Tiếp tục khi có quyền; tiếp tục sau dừng lâu báo cần quản lý duyệt.
+  - Ô có trạng thái đang dừng và số phút gói còn lại.
+  - "Tôi phục vụ phòng này" gán lượt tiếp viên.
+  - Snackbar realtime "{phòng} còn 10 phút", hết gói và dừng quá lâu.
+- Spec mới:
+  - `spec/workflows/spree/pos/timed/pause_package_promotion_spec.rb`, 11 ví dụ: 19:00–21:00 dừng 20:00–20:15 tính 105 phút; gói 120 chơi 135 phút; `ending_soon` một lần; tặng 15 phút sau 120 phút; mở lúc 0:30 có warning.
+  - `spec/workflows/spree/pos/stored_value_cards_spec.rb`, 9 ví dụ: thẻ 600 phút giá 500 000 dùng 90 phút thì allocate 75 000 và còn 510 phút; thiếu phút thì phần còn lại tính theo bảng giá.
+  - `spec/requests/spree/pos/timed_operations_spec.rb`, 5 ví dụ, có kiểm schema.
+- Test client mới: `apps/pos/src/lib/stored-value.test.ts`, các ca thêm trong `rate-plans.test.ts`, `report-table.test.ts` và `tables.test.ts`, 6 widget test trong `room_board_test.dart`. E2E `karaoke.spec.ts` có ca: mở phòng kèm gói, sắp hết giờ, tạm dừng, tiếp tục, dừng, bill có đoạn tặng.
+
+**Lệnh đã chạy**
+
+| Lệnh | Kết quả |
 |---|---|
-| Q1 | Hai loại relay ở bản đầu: **Shelly** (HTTP local API, Gen2 RPC `Switch.Set`) và **HLK-SW16** (TCP, 16 kênh, lệnh nhị phân). Interface `Spree::Pos::Relays::Driver` (`set(channel, on)`, `state(channel)`), mỗi loại một driver; thêm loại khác chỉ là thêm driver. |
-| Q2 | **Ai gửi lệnh:** nếu server chạy LAN cùng mạng với relay (D5), server gửi trực tiếp từ job nền. Nếu server là VPS, server không với tới relay; một thiết bị Flutter mode `bridge` đặt ở quán nhận lệnh qua `BranchChannel` và gửi ra relay trong LAN, rồi báo kết quả về server. Mỗi `RelayDevice` ghi rõ `executor` (`server` \| `bridge`). |
-| Q3 | Sự kiện: `TimedSession` bắt đầu / tiếp tục → bật; tạm dừng (phần 11B) → giữ đèn theo cấu hình (`pause_light`: `on` \| `off`); kết thúc / thanh toán → hẹn tắt sau `grace_seconds` (mặc định 120). Mở lại phiên trong ân hạn thì hủy lệnh tắt. |
-| Q4 | **Điều khiển tay:** nhân viên có quyền bật / tắt đèn từng bàn trên bảng phòng, ghi `AuditEntry` (`relay.manual`). Bật tay khi bàn không có phiên thì hiện cảnh báo "đèn bật không có phiên" sau 5 phút (chống bật đèn chơi chui). |
-| Q5 | **An toàn điện:** relay chỉ đóng / ngắt mạch điều khiển; tải đèn bàn bida lớn phải qua **contactor** do thợ điện lắp. Plan chỉ ghi yêu cầu này vào tài liệu cài đặt và màn cấu hình; phần mềm không thay được yêu cầu điện. Mặc định khi relay mất điều khiển: giữ nguyên trạng thái, không tự tắt giữa trận. |
+| `pnpm spree exec bin/rails db:test:prepare` (sau migrate) | xong |
+| `pnpm spree rspec spec/workflows/spree/pos/timed/pause_package_promotion_spec.rb` | 11 ví dụ, 0 lỗi |
+| `pnpm spree rspec spec/workflows/spree/pos/stored_value_cards_spec.rb` | 9 ví dụ, 0 lỗi |
+| `pnpm spree rspec spec/requests/spree/pos/timed_operations_spec.rb` | 5 ví dụ, 0 lỗi |
+| `pnpm spree rspec spec/requests/spree/pos/timed_sessions_spec.rb spec/requests/spree/pos/resource_board_spec.rb spec/requests/spree/pos/devices_spec.rb` | 10 ví dụ, 0 lỗi |
+| Lô cuối: karaoke_scenario, timed_race, authentication, branch_modules, branch_profiles, business_profiles (request và service), devices, meal_accounts (request và `spec/workflows/spree/pos/meal_accounts`), onboarding, resource_board, timed_operations, timed_sessions, topology, quote, module_policy, modules, print_documents, `spec/workflows/spree/pos/timed`, stored_value_cards | 214 ví dụ, 0 lỗi |
+| `pnpm --dir apps/pos typecheck` / `lint` / `test` | sạch / sạch / 315 test qua |
+| `pnpm --dir apps/pos exec playwright test e2e/karaoke.spec.ts --project desktop` | 4 qua |
+| `pnpm --dir apps/pos exec playwright test e2e/karaoke.spec.ts --project tablet --project mobile` | 8 qua |
+| `pnpm --dir apps/pos-dashboard typecheck` / `lint` / `test` | sạch / sạch / 129 test qua |
+| `tsc` riêng cho `apps/pos-dashboard/e2e/support/business-profiles.ts` | sạch |
+| `pnpm --dir packages/pos-shared typecheck` / `lint` / `test` | sạch / sạch / 284 test qua |
+| `apps/pos-staff`: `tool/gen_api.sh`, `flutter gen-l10n`, `flutter analyze`, `flutter test` | sinh lại / sinh lại / không có lỗi / 152 test qua |
 
-### Dữ liệu
+**Lệch so với plan**
 
-- `spree_pos_relay_devices`: `store_id`, `branch_id`, `name`, `driver` (`shelly` \| `hlk_sw16`), `address` (host:port trong LAN), `credentials_ciphertext` (nếu Shelly bật mật khẩu), `executor` (`server` \| `bridge`), `bridge_device_id` (Device mode `bridge`), `status` (`online` \| `offline` \| `disabled`), `last_seen_at`, `last_error`.
-- `spree_pos_relay_channels`: `relay_device_id`, `channel` (số kênh), `resource_id` (unique), `pause_light`, `grace_seconds`.
-- `spree_pos_relay_commands`: `relay_channel_id`, `desired_state` (on/off), `reason` (`session_start` \| `session_resume` \| `session_pause` \| `session_end` \| `manual`), `run_at`, `status` (`queued` \| `sent` \| `confirmed` \| `failed` \| `canceled`), `attempts`, `error`, `actor_id`. Idempotent theo (`relay_channel_id`, sự kiện nguồn).
+- Trang **Khuyến mãi giờ** là thẻ trong tab "Giá giờ" của `apps/pos-dashboard`. Báo cáo **Tiếp viên** là một tab của trang báo cáo dashboard. Hai màn này không nằm ở `apps/pos/src/pages/timed-promotions.tsx`, vì quy tắc của repo đặt cài đặt và báo cáo ở dashboard.
+- Tra thẻ dùng `POST stored_value_accounts/lookup`, để mã thẻ không nằm trong URL. Bán thẻ mới gửi một lần với một key, không đi qua sổ khôi phục lệnh tiền trên máy, vì mã thẻ không được lưu trên thiết bị. Nếu gửi lại một lệnh bán đã thành công, server từ chối là `stored_value_card_taken`, và thu ngân quét lại thẻ để tra. Nạp thêm và trả bằng thẻ đi qua `runFinancialCommand` bằng id thẻ.
+- Dừng giờ khi đang tạm dừng quá lâu dùng lại approval `timed.long_pause`.
+- Panel thu ngân liệt kê gói của mọi bảng giá đang dùng; server kiểm gói có thuộc bảng giá của phòng.
+- Thêm endpoint `attendant_assignments/candidates` (nhân viên đang làm ở chi nhánh), để chọn tiếp viên khi gán.
+- Endpoint thẻ nạp và khuyến mãi không có trong `pos-staff.yaml`. File này chỉ mô tả các endpoint app phục vụ dùng.
+- Mode `owner` không có màn duyệt riêng: màn duyệt chung thuộc phần 12C.
+- Spec không chốt thời gian của bảng `resource_board`, vì `ResourceState` đọc `clock_timestamp()` của database khi có đơn mở. Spec kiểm job, sự kiện phát ra và model.
 
-### Server
+**Còn mở**
 
-- Subscriber trên sự kiện tính giờ của phần 11A (`resource.updated` / sự kiện phiên) → `Spree::Pos::Relays::Schedule` tạo `RelayCommand` (lệnh tắt có `run_at = now + grace`).
-- `Spree::Pos::RelayCommandJob` (Solid Queue): với `executor = server` gọi driver, đọc lại `state` để xác nhận; với `executor = bridge` phát sự kiện `relay.command` (mới) trên `BranchChannel` chỉ tới thiết bị bridge của chi nhánh.
-- Endpoint cho bridge: `POST api/v3/admin/pos/relay_commands/:id/result` (xác thực bằng credential thiết bị mode `bridge`, phase 2).
-- Retry 3 lần cách 5 giây; thất bại thì `failed`, phát `owner_alert.created` (phần 12C) và hiện biểu tượng lỗi trên ô bàn của bảng phòng.
-- Health check mỗi phút cho relay `server` và heartbeat của bridge; quá 2 phút không thấy thì `offline`.
-- Endpoint nhân viên: CRUD relay / kênh, kiểm thử bật tắt (`test`), bật / tắt tay một bàn. Quyền mới `pos.relay.manage` (cấu hình) và `pos.relay.operate` (bật tắt tay).
-
-### Flutter (`apps/pos-staff`, chế độ `bridge`)
-
-- Màn tối giản: tên chi nhánh, danh sách relay và trạng thái, nhật ký 50 lệnh gần nhất.
-- Nhận `relay.command`, gửi HTTP (Shelly) hoặc TCP socket (HLK-SW16) trong LAN, báo kết quả.
-- Chạy nền: Android foreground service + `wakelock_plus`; khuyến nghị thiết bị Android cắm sạc cố định. iOS không hỗ trợ chạy nền lâu dài nên mode `bridge` chỉ bật trên Android (ghi rõ trong màn ghép thiết bị).
-- Khi mất kết nối server, bridge **không tự đổi** trạng thái relay.
-
-### Client web `apps/pos`
-
-- Cài đặt chi nhánh → Relay: thêm relay, chọn driver, địa chỉ, executor, gán kênh ↔ bàn, nút kiểm thử, cảnh báo contactor.
-- Bảng phòng (phần 11A): biểu tượng đèn trên ô bàn (bật / tắt / lỗi / offline), menu bật / tắt tay.
-
-### File
-
-| File | Hành động |
-|---|---|
-| `server/db/migrate/*_create_spree_pos_relay_devices.rb`, `*_relay_channels.rb`, `*_relay_commands.rb` | Tạo |
-| `server/app/models/spree/pos/relay_device.rb`, `relay_channel.rb`, `relay_command.rb` | Tạo |
-| `server/app/services/spree/pos/relays/driver.rb`, `shelly_driver.rb`, `hlk_sw16_driver.rb`, `schedule.rb` | Tạo |
-| `server/app/jobs/spree/pos/relay_command_job.rb`, `relay_health_job.rb` | Tạo |
-| `server/app/subscribers/spree/pos/relay_session_subscriber.rb` | Tạo, đăng ký trong `config/initializers/spree.rb` |
-| `server/app/controllers/spree/api/v3/admin/pos/relay_devices_controller.rb`, `relay_commands_controller.rb` | Tạo |
-| `server/config/initializers/pos_modules.rb`, `capabilities.rb`, `server/openapi/pos-staff.yaml` | Sửa |
-| `apps/pos-staff/lib/features/bridge/`, `android/.../BridgeForegroundService.kt` | Tạo |
-| `apps/pos/src/pages/settings/relays.tsx`, `components/resource-light-indicator.tsx` | Tạo |
-
-### Các bước
-
-1. Migration, model, driver Shelly / HLK-SW16 với spec dùng server giả (WEBrick / TCP server trong spec).
-2. `Schedule` + subscriber: spec bật khi bắt đầu, tắt sau ân hạn, hủy tắt khi mở lại trong ân hạn.
-3. Job chạy lệnh, retry, health, cảnh báo.
-4. Đường bridge: sự kiện, endpoint kết quả, Flutter mode `bridge` (Android).
-5. UI cài đặt và chỉ báo đèn trên bảng phòng.
-6. Tài liệu lắp đặt: contactor, IP tĩnh cho relay, cùng VLAN với server / bridge.
-
-### Kiểm thử
-
-- `pnpm spree rspec spec/services/spree/pos/relays/ spec/jobs/spree/pos/relay_command_job_spec.rb spec/requests/spree/pos/relay_devices_spec.rb`.
-- Spec quan trọng: relay lỗi không làm hỏng mở phiên / thanh toán (lệnh tính giờ vẫn thành công, chỉ ghi `failed`).
-- Flutter: unit test mã hóa lệnh HLK-SW16; integration test với Shelly giả lập.
-- Thử thật trên một Shelly Plus 1 và một HLK-SW16 trước khi đánh dấu xong.
-
-### Rủi ro
-
-| Rủi ro | Giảm thiểu |
-|---|---|
-| Đèn tắt giữa trận do lỗi | Chỉ tắt theo sự kiện kết thúc; mất điều khiển thì giữ nguyên trạng thái; có điều khiển tay. |
-| Chơi chui bằng cách bật đèn tay | Bật tay có audit và cảnh báo khi không có phiên. |
-| VPS không với tới relay | Executor `bridge` trên Android tại quán. |
-| Tải điện lớn làm hỏng relay | Bắt buộc contactor, ghi trên màn cấu hình và tài liệu. |
-
-### Tiêu chí xong
-
-- [ ] Bắt đầu phiên bật đèn, kết thúc tắt sau ân hạn, với cả executor server và bridge.
-- [ ] Lỗi relay hiện trên bảng phòng và gửi cảnh báo, không chặn nghiệp vụ.
-- [ ] Bật / tắt tay có quyền và audit.
-- [ ] Đã thử trên thiết bị thật hai loại relay.
+- Hóa đơn điện tử cho đoạn tặng chưa có spec riêng. Dòng giờ ghi 135 phút (gồm 15 phút tặng) với tiền 300 000, nên hóa đơn xuất theo số lượng của dòng; chưa kiểm trực tiếp đầu ra của hóa đơn điện tử.
+- Playwright của `apps/pos-dashboard` chưa chạy, vì cổng 5176 do dev server của developer giữ. Fixture hồ sơ version 4 đã qua `tsc`; CI chạy e2e dashboard.
+- Kind thiết bị `bridge` vẫn giữ (không thuộc phần relay đã bỏ).
+- Rubocop còn `Metrics/ParameterLists` ở các workflow mới, giống các workflow sẵn có; rubocop không phải cổng CI.
+- Đầu đọc thẻ / QR thật, chạy thử tại quán và xác nhận thuế cho thẻ nạp tiền chưa làm.
+- Full suite rspec và e2e chưa chạy local, theo quy định; CI chạy.
 
 ## Tiêu chí xong của plan
 

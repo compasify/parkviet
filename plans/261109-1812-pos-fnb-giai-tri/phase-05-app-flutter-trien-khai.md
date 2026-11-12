@@ -36,7 +36,7 @@ Phần này dựng app Flutter nhiều chế độ `apps/pos-staff` (package `pa
 - realtime;
 - i18n.
 
-Chế độ đầu tiên chạy thật là **trạm in** (`print_station`): nhận `PrintJob` và in ra máy in Sunmi tích hợp, ESC/POS qua LAN và ESC/POS qua Bluetooth. Các chế độ khác chỉ là màn giữ chỗ, và các phase sau làm thật: KDS ở phần 7A, phục vụ ở phần 8C, chạy bàn ở phần 9A, kiosk ở phần 12B, chủ quán ở phần 12C, bridge ở phần 11C.
+Chế độ đầu tiên chạy thật là **trạm in** (`print_station`): nhận `PrintJob` và in ra máy in Sunmi tích hợp, ESC/POS qua LAN và ESC/POS qua Bluetooth. Các chế độ khác chỉ là màn giữ chỗ, và các phase sau làm thật: KDS ở phần 7A, phục vụ ở phần 8C, chạy bàn ở phần 9A, kiosk ở phần 12B, chủ quán ở phần 12C.
 
 ### Quyết định
 

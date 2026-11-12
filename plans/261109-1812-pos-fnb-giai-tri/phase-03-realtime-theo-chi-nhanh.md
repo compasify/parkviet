@@ -30,7 +30,7 @@ Hiện trạng đã kiểm:
    Khi thiết bị bị thu hồi hoặc `generation` đổi, server ngắt kết nối bằng `ActionCable.server.remote_connections.where(device_id:).disconnect`.
 3. **Sự kiện mỏng** chỉ gồm: `{ event, id, branch_id, revision?, lease_generation?, at, refs }`.
    - Không kèm tiền, tên khách hay nội dung món. Client gọi lại API để lấy dữ liệu.
-   - Danh sách sự kiện đúng theo plan.md: `workspace.updated`, `kitchen_ticket.updated`, `menu.sold_out`, `payment.requested`, `print_job.created`, `resource.updated`, `approval.requested`. Các phase sau thêm sự kiện của mình vào `EVENTS` (ví dụ `guest_order.created`, `guest_request.created`, `owner_alert.created`, `relay.command`) và cập nhật danh sách trong plan.md.
+   - Danh sách sự kiện đúng theo plan.md: `workspace.updated`, `kitchen_ticket.updated`, `menu.sold_out`, `payment.requested`, `print_job.created`, `resource.updated`, `approval.requested`. Các phase sau thêm sự kiện của mình vào `EVENTS` (ví dụ `guest_order.created`, `guest_request.created`, `owner_alert.created`) và cập nhật danh sách trong plan.md.
    - Phase này đã phát `workspace.updated` và `approval.requested`. Các phase sau tự phát sự kiện của mình.
 4. **Thời điểm phát:** `Spree::Pos::Realtime.publish(branch, event, payload)` chỉ broadcast **sau khi commit**, dùng `ActiveRecord.after_all_transactions_commit` (Rails 7.2+), tránh báo một thay đổi bị rollback. Lỗi broadcast chỉ được log, không làm fail lệnh.
 5. **Dự phòng:** client vẫn poll, nhưng giãn ra 60 giây khi socket đang mở và trở về chu kỳ cũ khi socket rớt. Mỗi lần kết nối lại thì refetch toàn bộ query đang mở, vì có thể đã lỡ sự kiện.
