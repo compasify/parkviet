@@ -4,6 +4,20 @@
 
 ParkViet giúp người bán quản lý việc bán tại quầy, bán online, kho hàng, công nợ và báo cáo trên cùng một hệ thống. Hệ thống được làm theo cách kinh doanh của người Việt: thu tiền bằng mã VietQR, ghi nợ cho khách quen, nhận đơn qua Facebook và Zalo, giao hàng cho cư dân, in hóa đơn điện tử, bán theo bàn, theo giờ và theo suất ăn.
 
+## Vì sao chọn ParkViet?
+
+- **Miễn phí 100%, mọi tính năng.** Không có gói trả phí, không khóa tính năng, không giới hạn số chi nhánh, quầy, nhân viên hay đơn hàng.
+- **Mã nguồn mở.** Toàn bộ mã nguồn công khai tại [github.com/parkviet/parkviet](https://github.com/parkviet/parkviet). Ai cũng xem được hệ thống làm gì với dữ liệu của mình.
+- **Tự do phát triển thêm.** Mỗi ngành hàng, mỗi đơn vị có cách bán riêng. Bạn được sửa và bổ sung tính năng cho đúng nhu cầu của mình, không phải chờ nhà cung cấp.
+- **Được hỗ trợ miễn phí.** Hỏi đáp, hướng dẫn cài đặt và sử dụng không mất phí. Liên hệ qua [parkviet.com](https://parkviet.com) hoặc mở issue trên GitHub.
+- **Dữ liệu là của bạn.** Cài trên máy chủ của quán (mạng LAN) hoặc VPS riêng. Đơn hàng, khách hàng và công nợ nằm trên máy của bạn, không gửi về bên thứ ba.
+- **Bảo mật thật sự, không chỉ là lời hứa.**
+  - Phân quyền theo từng chi nhánh và từng việc: thu tiền, bán chịu, trả hàng, xem báo cáo… Nhân viên chỉ thấy và làm được phần được giao.
+  - Thao tác về tiền (thu chi két, ghi nợ, hoàn tiền, xóa món đã gửi bếp) cần người có quyền duyệt và đều được ghi nhật ký.
+  - Các tính năng có rủi ro mặc định tắt, chủ cửa hàng tự bật khi cần.
+  - Mã nguồn công khai nên ai cũng kiểm tra được, và mỗi lần thay đổi đều phải qua bộ kiểm thử tự động.
+- **Vibecode mà không làm hỏng tính năng.** Mỗi thư mục trong dự án có file hướng dẫn (`AGENTS.md`) cho các công cụ AI viết code như Claude Code, Cursor, Codex. File này chỉ cách chạy, những quy tắc không được phá và test nào cần chạy. Hơn 2.600 bài kiểm thử tự động chạy trên GitHub mỗi lần đẩy code, nên tính năng có sẵn bị hỏng hay lỗ hổng phân quyền mới đều bị phát hiện trước khi đưa vào dùng. Xem [Dành cho lập trình viên](#dành-cho-lập-trình-viên).
+
 ## Sản phẩm
 
 | Ứng dụng | Dành cho ai | Làm được gì |
