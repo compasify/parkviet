@@ -4,6 +4,12 @@
 
 ParkViet giúp người bán quản lý việc bán tại quầy, bán online, kho hàng, công nợ và báo cáo trên cùng một hệ thống. Hệ thống được làm theo cách kinh doanh của người Việt: thu tiền bằng mã VietQR, ghi nợ cho khách quen, nhận đơn qua Facebook và Zalo, giao hàng cho cư dân, in hóa đơn điện tử, bán theo bàn, theo giờ và theo suất ăn.
 
+<p align="center">
+  <a href="https://parkviet.com">
+    <img src="docs/images/parkviet-homepage.png" alt="Trang chủ ParkViet" width="100%">
+  </a>
+</p>
+
 ## Vì sao chọn ParkViet?
 
 - **Miễn phí 100%, mọi tính năng.** Không có gói trả phí, không khóa tính năng, không giới hạn số chi nhánh, quầy, nhân viên hay đơn hàng.
