@@ -282,11 +282,114 @@ Một tablet hoặc màn đứng chạy app Flutter ở chế độ `kiosk`. Kh�
 
 ### Tiêu chí xong
 
-- [ ] Khách tự order, trả QR, nhận phiếu số gọi; thu ngân không phải chạm vào.
-- [ ] Trả tại quầy tạo đơn park, thu ngân thu tiền và hoàn tất bình thường.
-- [ ] Tài khoản dịch vụ kiosk bị chặn ở mọi lệnh ngoài danh sách.
+- [x] Khách tự order, trả QR, nhận phiếu số gọi; thu ngân không phải chạm vào.
+- [x] Trả tại quầy tạo đơn park, thu ngân thu tiền và hoàn tất bình thường.
+- [x] Tài khoản dịch vụ kiosk bị chặn ở mọi lệnh ngoài danh sách.
 - [ ] Android lock task và iOS Guided Access được kiểm và cảnh báo.
 - [ ] Spec, test Flutter, e2e xanh.
+
+### Kết quả
+
+Trạng thái: xong phần code. Ba tiêu chí đầu đã được spec chứng minh. Tiêu chí khóa máy chưa tick vì code đã có nhưng chưa thử trên Android / iPad thật. Tiêu chí test chưa tick vì chưa có Flutter integration test với server, chưa chạy được e2e `apps/pos-dashboard`, và full suite chờ CI.
+
+**Đã làm**
+
+- Server:
+  - Migration `20261112120000_add_kiosk_self_ordering`:
+    - `spree_pos_registers.kind` (`counter` | `kiosk`, check constraint);
+    - `spree_pos_staff_memberships.service_account` và `device_id` (unique, check `service_account = (device_id IS NOT NULL)`);
+    - cấu hình chi nhánh `kiosk_idle_seconds` (15–600, mặc định 60), `kiosk_qr_timeout_seconds` (60–900, mặc định 180), `kiosk_kitchen_before_payment` (mặc định false);
+    - `Workspace::ORDER_SOURCES` thêm `kiosk`, nên `Reports::Sales#by_source` tách được doanh thu kiosk.
+  - `Kiosks::Provision`:
+    - ghép thiết bị mode `kiosk` chỉ với quầy loại kiosk, rồi tạo tài khoản dịch vụ (vai trò `pos-kiosk-service`);
+    - thu hồi thiết bị thì tắt tài khoản;
+    - tài khoản không đăng nhập bằng PIN và không hiện trong danh sách nhân viên;
+    - thu ngân không mở ca trên quầy kiosk.
+  - `Kiosks::Policy`, kiểm trong `AccessPolicy` và `CommandExecutor`:
+    - capability bị cắt về danh sách kiosk dù membership có gì;
+    - mọi lệnh ngoài danh sách bị từ chối.
+  - Các chặn riêng cho tài khoản dịch vụ:
+    - `Tenders::Prepare` chỉ nhận VietQR;
+    - `Tenders::Confirm` chỉ nhận evidence `vietqr_webhook`, không nhận tip;
+    - `Workspaces::Complete` không cho bán thiếu tiền (sponsor).
+  - `Kiosks::Order`:
+    - đặt đơn với giá do server tính, chặn món hết và ca đóng, chạy lại an toàn với cùng Idempotency-Key;
+    - QR: chuẩn bị tender, theo dõi, và chỉ khi webhook đã khớp mới confirm + complete. Sau complete thì có số gọi, gửi bếp và in phiếu;
+    - "Trả tại quầy" (khách chọn, hoặc QR hết hạn) trả QR lại, park đơn kèm số gọi và in phiếu số gọi + số tiền phải trả. Bếp chỉ nhận trước khi chi nhánh bật `kiosk_kitchen_before_payment`;
+    - hủy đơn chưa trả khi idle.
+  - `Kiosks::Handoff`:
+    - thu ngân xem danh sách đơn kiosk đang chờ;
+    - thu ngân lấy đơn về ca mình (rebind), rồi thu tiền và complete như thường; bếp nhận món lúc đó;
+    - hủy đơn bỏ dở;
+    - đơn bỏ dở mà ngân hàng đã trả thì được thanh toán khi thu ngân lấy về.
+  - `Kiosks::Shifts`: quản lý mở / đóng ca kiosk, ca không tiền mặt, đóng với số đếm 0. `Kiosks::Settings` đọc / ghi cấu hình trong khoảng cho phép. `Kiosks::Printing` in trên máy in receipt của trạm in gắn quầy kiosk, sau commit; máy in hỏng không chặn bán.
+  - API thiết bị `api/v3/pos_device/kiosk/*`:
+    - `state`, `menu`, `orders`, `orders/{id}`, `finish`, `pay_at_counter`, `cancel`;
+    - lệnh ghi bắt buộc `Idempotency-Key`;
+    - rate limit 30 ghi / 120 đọc mỗi phút;
+    - thiết bị khác mode bị từ chối, và token kiosk không dùng được trên API nhân viên.
+  - API admin:
+    - `admin/pos/kiosk_settings` (GET / PUT, chỉ quản lý);
+    - `admin/pos/kiosks/{register_id}/shift` và `shift/close`;
+    - `admin/pos/kiosk_orders` (index, take, cancel);
+    - `registers` nhận `kind` khi tạo, và giữ `kind` của quầy đã dùng.
+  - Module `fnb.kiosk` trong `config/initializers/pos_modules.rb`. Realtime `kiosk.updated`, `kiosk_order.waiting`. OpenAPI `server/openapi/pos-staff.yaml` có schema đặt tên cho mọi endpoint mới.
+- `packages/pos-shared`: `KIOSK_ORDER_SOURCE`, `PosRegister.kind`, nhãn module `fnb.kiosk` vi / en.
+- `apps/pos`:
+  - khay "Đơn từ kiosk" trên màn bán, hiện khi module bật và người dùng có quyền thu: số gọi, số phút chờ, nút lấy đơn về ca để thu tiền, hủy đơn bỏ dở kèm lý do;
+  - sự kiện realtime làm mới khay;
+  - nguồn đơn `kiosk` cố định như đơn nền tảng.
+- `apps/pos-dashboard`:
+  - thẻ "Kiosk tự order" trong trang Quầy, khi module bật: idle, timeout QR, báo bếp trước khi trả, danh sách quầy kiosk với mở / đóng ca;
+  - sơ đồ quầy có cột và ô chọn loại quầy (không đổi được khi sửa);
+  - ghép thiết bị kiosk chỉ cho chọn quầy kiosk.
+- `apps/pos-staff` (Flutter, chế độ kiosk):
+  - sinh lại `pos_api` bằng `tool/gen_api.sh`;
+  - `lib/modes/kiosk/`:
+    - `KioskFlow` đi các bước Chào → Thực đơn → Giỏ → QR đếm ngược → Số gọi lớn → tự quay về sau 20 giây;
+    - modifier dùng lại `ModifierSheet` của chế độ phục vụ qua adapter;
+    - idle hỏi "Bạn còn đó không?" 10 giây rồi hủy đơn chưa trả và xóa giỏ;
+    - poll QR 2 giây, QR hết hạn thì chuyển trả tại quầy;
+    - mất mạng thì giữ giỏ, hiện "Đang kết nối lại" và gửi lại với cùng key;
+    - ca đóng thì hiện "Tạm ngưng".
+  - Trợ năng và ngôn ngữ: chữ phóng tối thiểu 1.45, vùng chạm 64 dp, nhãn Semantics, chế độ "với tới thấp", chuyển vi / en.
+  - Khóa máy:
+    - channel `parkviet/kiosk` (Android `KioskLockChannel.kt`: lock task / screen pinning; iOS `AppDelegate.swift`: kiểm Guided Access);
+    - `wakelock_plus` giữ màn sáng;
+    - cảnh báo khi máy chưa khóa;
+    - giữ lâu vào tiêu đề để vào màn quản lý, có nút "Mở khóa màn hình kiosk" sau khi nhập PIN quản lý.
+- Docs: mục "8. Kiosk tự order" trong [`docs/pos/fnb-ban-va-tra-sau.md`](../../docs/pos/fnb-ban-va-tra-sau.md).
+
+**Lệnh và kết quả**
+
+- `pnpm spree rspec spec/workflows/spree/pos/kiosks/`: 14 examples, 0 failures.
+- `pnpm spree rspec spec/requests/spree/pos/kiosk_spec.rb`: 8 examples, 0 failures.
+- Lần chạy chung 44 spec liên quan (devices, tenders confirm / prepare, workspaces complete, access policy, module policy, profiles, onboarding, topology, order sources, realtime, guest views, …): 404 examples, 1 failure. Lỗi là `order_sources_spec.rb` chưa có nguồn `kiosk`; đã sửa và chạy lại 7/0. Chạy lại spec topology: xanh.
+- `packages/pos-shared`: typecheck, lint ok; vitest 284 passed.
+- `apps/pos`: typecheck, lint ok; vitest 322 passed. `pnpm --dir apps/pos exec playwright test e2e/kiosk-orders.spec.ts --project desktop`: 1 passed.
+- `apps/pos-dashboard`: typecheck, lint ok; vitest 134 passed; build ok.
+- `apps/pos-staff`: `flutter analyze` không lỗi; `flutter test` 166 passed (gồm 10 test mới ở `test/modes/kiosk/kiosk_test.dart`).
+
+**Lệch so với plan**
+
+- Một migration thay cho hai.
+- Ca kiosk do quản lý mở, nhưng owner là tài khoản dịch vụ của kiosk, không phải quản lý. Làm vậy để tender và complete của kiosk đi đúng ca của nó; audit vẫn ghi quản lý mở / đóng.
+- API trạng thái nằm ở `api/v3/pos_device/kiosk/state` (xác thực bằng token thiết bị), không phải `admin/pos/kiosk/state`. Kiosk gọi endpoint riêng của mình thay vì `tenders/prepare` / `confirm` / `complete` trực tiếp. Bên trong vẫn đi qua các workflow đó dưới tài khoản dịch vụ.
+- Kiosk poll 2 giây, không nghe `BranchChannel`.
+- "Đơn bỏ dở" (quá 30 phút) được tính khi đọc danh sách, không dùng job đánh dấu.
+- Cài đặt kiosk nằm trong `apps/pos-dashboard` (trang Quầy), không phải `apps/pos/src/pages/settings/kiosk.tsx`, theo quy ước dự án như phần 12A. Màn bán dùng khay "Đơn từ kiosk" thay cho bộ lọc.
+- Code Flutter ở `lib/modes/kiosk/`, không phải `lib/features/kiosk/`. Kênh iOS nằm trong `AppDelegate.swift`, không có file `KioskChannel.swift` riêng.
+- Thực đơn kiosk gồm mọi món đang bán, trừ món đổi bằng credit đồ uống; không có cờ "bán trên kiosk" riêng.
+- Ảnh QR lấy từ `qr_url` của server.
+
+**Còn mở**
+
+- Thử trên Android thật (Device Owner / screen pinning), iPad bật Guided Access, máy in trạm thật, và pilot tại quán.
+- Flutter integration test với server test (webhook giả lập khớp) chưa có. Luồng đầu-cuối hiện do request / workflow spec phủ, còn widget test dùng API giả.
+- E2e `apps/pos-dashboard` chưa chạy được vì cổng 5176 đang dùng cho dev server. Chờ CI.
+- Tài khoản dịch vụ là một user Spree, nên vẫn hiện trong danh sách user của Spree admin (đã ẩn khỏi danh sách nhân viên POS).
+- Quầy kiosk vẫn hiện trong danh sách chọn quầy của thu ngân; mở ca ở đó bị server từ chối.
+- Full suite rspec / e2e chạy trên CI.
 
 ## Phần 12C: App chủ quán
 
