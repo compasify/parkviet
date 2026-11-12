@@ -235,4 +235,4 @@ Tài liệu nền tảng: [Spree docs](https://spreecommerce.org/docs) · [Store
 
 ### Giấy phép
 
-ParkViet phát hành theo [GNU LGPL v3](LICENSE). Spree Commerce và các thư viện đi kèm giữ giấy phép riêng của chúng.
+ParkViet phát hành theo [giấy phép MIT](LICENSE). Spree Commerce và các thư viện đi kèm giữ giấy phép riêng của chúng.
