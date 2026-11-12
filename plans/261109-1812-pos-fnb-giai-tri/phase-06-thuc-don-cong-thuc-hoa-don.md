@@ -1,7 +1,7 @@
 ---
 phase: 6
 title: "Thực đơn, công thức, hóa đơn điện tử"
-status: pending
+status: in-progress
 effort: "20 ngày"
 dependsOn: [1]
 ---

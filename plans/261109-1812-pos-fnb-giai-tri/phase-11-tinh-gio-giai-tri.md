@@ -1,7 +1,7 @@
 ---
 phase: 11
 title: "Tính giờ, karaoke, bida"
-status: pending
+status: in-progress
 effort: "13 ngày"
 dependsOn: [5, 8, 10]
 ---

@@ -1,7 +1,7 @@
 ---
 phase: 10
 title: "Căng tin và trạm dừng"
-status: pending
+status: in-progress
 effort: "11 ngày"
 dependsOn: [8]
 ---

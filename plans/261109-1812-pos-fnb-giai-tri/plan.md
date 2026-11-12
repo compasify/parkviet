@@ -72,20 +72,20 @@ Tên bảng theo mẫu `spree_pos_<số nhiều>`, có prefixed ID (`has_prefix_
 
 Ngày 11/11/2026, các phase chưa làm được gộp theo module: 24 phase cũ (5–28) thành 8 plan (5–12). Nội dung từng phase cũ giữ nguyên thành một phần trong plan mới, ký hiệu số plan kèm chữ cái, ví dụ phần 8B.
 
-| # | Đợt | Plan | Gồm | Effort | Phụ thuộc |
-|---|---|---|---|---|---|
-| 1 | F0 | [ADR và nền đơn hàng F&B](./phase-01-adr-nen-don-hang-fnb.md) | | 6 ngày | – |
-| 2 | F0 | [Thiết bị, ghép mã, PIN nhân viên](./phase-02-thiet-bi-ghep-ma-pin.md) | | 5 ngày | – |
-| 3 | F0 | [Realtime theo chi nhánh](./phase-03-realtime-theo-chi-nhanh.md) | | 4 ngày | 2 |
-| 4 | F0 | [Hàng đợi in và máy in](./phase-04-hang-doi-in-may-in.md) | | 6 ngày | 2, 3 |
-| 5 | F0 | [App Flutter và triển khai server](./phase-05-app-flutter-trien-khai.md) | 5A khung app, trạm in; 5B server LAN / VPS | 13 ngày | 2, 3, 4 |
-| 6 | F1 | [Thực đơn, công thức, hóa đơn điện tử](./phase-06-thuc-don-cong-thuc-hoa-don.md) | 6A thực đơn, modifier, combo; 6B công thức, trừ kho; 6C hóa đơn điện tử | 20 ngày | 1 |
-| 7 | F1 | [Bếp, quầy trả trước, mở đợt 1](./phase-07-bep-quay-mo-dot-1.md) | 7A bếp, KDS; 7B số gọi, tem ly, màn khách; 7C đơn nền tảng nhập tay; 7D mở ngành đợt 1 | 19 ngày | 1, 3, 4, 5, 6 |
-| 8 | F2 | [Bàn, phục vụ, mở đợt 2](./phase-08-ban-phuc-vu-mo-dot-2.md) | 8A bàn, trả sau; 8B nhiều máy cùng sửa đơn; 8C app phục vụ, KDS đầy đủ; 8D mở ngành đợt 2 | 26 ngày | 5, 7 |
-| 9 | F4 | [Nhà hàng nâng cao, bar](./phase-09-nha-hang-bar.md) | 9A nhà hàng nâng cao; 9B bar, pub, club | 16 ngày | 8 |
-| 10 | F4 | [Căng tin và trạm dừng](./phase-10-can-tin-tram-dung.md) | 10A tài khoản suất ăn, ví; 10B hoa hồng tài xế | 11 ngày | 8 |
-| 11 | F3–F5 | [Tính giờ, karaoke, bida](./phase-11-tinh-gio-giai-tri.md) | 11A tính giờ; 11B karaoke / bida nâng cao | 13 ngày | 5, 8, 10 |
-| 12 | F5 | [Kênh khách, chủ quán, offline](./phase-12-kenh-khach-chu-quan-offline.md) | 12A QR order; 12B kiosk; 12C app chủ quán; 12D offline thu ngân | 23 ngày | 3, 5, 8 |
+| # | Đợt | Plan | Gồm | Effort | Phụ thuộc | Trạng thái |
+|---|---|---|---|---|---|---|
+| 1 | F0 | [ADR và nền đơn hàng F&B](./phase-01-adr-nen-don-hang-fnb.md) | | 6 ngày | – | đang làm |
+| 2 | F0 | [Thiết bị, ghép mã, PIN nhân viên](./phase-02-thiet-bi-ghep-ma-pin.md) | | 5 ngày | – | đang làm |
+| 3 | F0 | [Realtime theo chi nhánh](./phase-03-realtime-theo-chi-nhanh.md) | | 4 ngày | 2 | xong |
+| 4 | F0 | [Hàng đợi in và máy in](./phase-04-hang-doi-in-may-in.md) | | 6 ngày | 2, 3 | đang làm |
+| 5 | F0 | [App Flutter và triển khai server](./phase-05-app-flutter-trien-khai.md) | 5A khung app, trạm in; 5B server LAN / VPS | 13 ngày | 2, 3, 4 | đang làm |
+| 6 | F1 | [Thực đơn, công thức, hóa đơn điện tử](./phase-06-thuc-don-cong-thuc-hoa-don.md) | 6A thực đơn, modifier, combo; 6B công thức, trừ kho; 6C hóa đơn điện tử | 20 ngày | 1 | đang làm |
+| 7 | F1 | [Bếp, quầy trả trước, mở đợt 1](./phase-07-bep-quay-mo-dot-1.md) | 7A bếp, KDS; 7B số gọi, tem ly, màn khách; 7C đơn nền tảng nhập tay; 7D mở ngành đợt 1 | 19 ngày | 1, 3, 4, 5, 6 | đang làm |
+| 8 | F2 | [Bàn, phục vụ, mở đợt 2](./phase-08-ban-phuc-vu-mo-dot-2.md) | 8A bàn, trả sau; 8B nhiều máy cùng sửa đơn; 8C app phục vụ, KDS đầy đủ; 8D mở ngành đợt 2 | 26 ngày | 5, 7 | đang làm |
+| 9 | F4 | [Nhà hàng nâng cao, bar](./phase-09-nha-hang-bar.md) | 9A nhà hàng nâng cao; 9B bar, pub, club | 16 ngày | 8 | đang làm |
+| 10 | F4 | [Căng tin và trạm dừng](./phase-10-can-tin-tram-dung.md) | 10A tài khoản suất ăn, ví; 10B hoa hồng tài xế | 11 ngày | 8 | đang làm |
+| 11 | F3–F5 | [Tính giờ, karaoke, bida](./phase-11-tinh-gio-giai-tri.md) | 11A tính giờ; 11B karaoke / bida nâng cao | 13 ngày | 5, 8, 10 | đang làm |
+| 12 | F5 | [Kênh khách, chủ quán, offline](./phase-12-kenh-khach-chu-quan-offline.md) | 12A QR order; 12B kiosk; 12C app chủ quán; 12D offline thu ngân | 23 ngày | 3, 5, 8 | đang làm |
 
 Thứ tự:
 - Plan 5 và plan 6 không phụ thuộc nhau; plan 7 cần cả hai. Plan 8 làm sau plan 7.
@@ -157,3 +157,35 @@ flowchart LR
 5. **Gửi rượu và tiếp viên:** chỉ ghi sổ, không đụng tiền, không vào bill (phần 9B và 11B).
 
 Không còn câu hỏi mở.
+
+## Còn mở sau các phase (12/11/2026)
+
+Code của 12 phase đã viết xong, nhưng plan chưa đóng: chưa review toàn bộ diff và chưa chạy full suite. Các việc còn mở dưới đây lấy từ mục "Còn mở" của từng phase.
+
+- **Review và full suite:** chưa review toàn bộ diff của plan. Full suite rspec và e2e không chạy local; chúng chạy trên GitHub Actions.
+- **E2e `apps/pos-dashboard`:** chưa chạy, vì cổng 5176 đang dùng cho dev server của developer. Phần sửa nằm ở `administration.spec.ts` (số ô quyền), `setup`, `business-model`, `system-status`, `branch-printers`, `platform-settlement` và các màn menu, công thức, bar, hoa hồng, báo cáo (phase 4, 6–12). Một số e2e `apps/pos` cũng chưa viết: bếp (7A), chuyển / gộp / tách bàn (8A).
+- **Phần cứng thật:**
+  - chưa thử Sunmi, Xprinter LAN / Bluetooth, máy in tem TSPL, Epson / Star, tablet KDS, iPhone / Android, đầu đọc thẻ / QR (phase 4, 5, 7–12);
+  - chưa đo độ trễ realtime ≤ 2 giây trong LAN (3, 7, 8, 9);
+  - `integration_test` của Flutter chưa chạy, vì không có emulator;
+  - chưa build iOS, chưa chạy CI build;
+  - kiosk chưa thử lock task / Guided Access (12B).
+- **Triển khai:**
+  - stack LAN / VPS thật, `caddy validate`, tunnel cloudflared và VietQR sandbox (polling chưa làm), checklist rút WAN (5B);
+  - app web mở được khi server tắt nhờ service worker (12D) chưa thử với bản build do Rails / Caddy phục vụ.
+- **Pilot quán thử:** chưa có. Chưa đo các chỉ số rollout (7D, 8D, 9–12).
+- **Thuế, kế toán, pháp lý:**
+  - adapter VNPT, MISA, Viettel thật; đăng ký hóa đơn điện tử; đối chiếu nguyên văn NĐ 254 / TT 91; ký hiệu MTT; tip và phí phục vụ trên hóa đơn; hóa đơn điều chỉnh và 04/SS (6C);
+  - khấu trừ TNCN hoa hồng tài xế (10B);
+  - thuế thẻ nạp (11B);
+  - hóa đơn điện tử phát hành sau khi đồng bộ đơn offline (12D).
+- **Push:** FCM / APNs native, `PushTokenSource` thật và dịch vụ relay chưa có (12C).
+- **Chức năng còn thiếu đã ghi:**
+  - 6: màn xử lý chênh lệch công thức, giá vốn bình quân;
+  - 7: quét mã trên lưới thực đơn, cần quyết định;
+  - 8: màn `void_reasons`, ô chọn trạm expo, khôi phục khu / bàn, thông báo nền Flutter;
+  - 9: bộ đếm buffet, gợi ý gửi rượu;
+  - 10: nút duyệt sửa lượt xe tại POS;
+  - 11: nút ngay trên ô phòng;
+  - 12A: build `apps/table-order` trên CI;
+  - 12D: manifest / icon, sửa đơn offline (`edited`) trên giao diện, in thẳng ePOS / WebPRNT khi offline.

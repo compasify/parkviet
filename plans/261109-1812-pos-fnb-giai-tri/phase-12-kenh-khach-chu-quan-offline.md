@@ -1,7 +1,7 @@
 ---
 phase: 12
 title: "Kênh khách, chủ quán, offline"
-status: pending
+status: in-progress
 effort: "23 ngày"
 dependsOn: [3, 5, 8]
 ---
@@ -607,13 +607,139 @@ Khi thu ngân web (`apps/pos`) không kết nối được server (server LAN t�
 ### Tiêu chí xong
 
 - [ ] `apps/pos` mở được và bán đơn tiền mặt trả trước khi server không truy cập được.
-- [ ] Khi server trở lại, đơn đồng bộ đúng thứ tự, không trùng, ca đúng tiền.
-- [ ] Đơn lệch giá / hết món / ca đóng vào màn xem lại và được xử lý bằng luồng có duyệt.
-- [ ] Mọi tính năng ngoài phạm vi offline bị khóa có lý do hiển thị.
-- [ ] Server spec, vitest, Playwright, build xanh.
+- [x] Khi server trở lại, đơn đồng bộ đúng thứ tự, không trùng, ca đúng tiền.
+- [x] Đơn lệch giá / hết món / ca đóng vào màn xem lại và được xử lý bằng luồng có duyệt.
+- [x] Mọi tính năng ngoài phạm vi offline bị khóa có lý do hiển thị.
+- [x] Server spec, vitest, Playwright, build xanh.
+
+### Kết quả
+
+**Đã làm**
+
+- **Server.**
+  - Migration `20261112150000_create_spree_pos_offline_sales.rb` tạo bảng `spree_pos_offline_sales`:
+    - `offline_id` unique theo store, số tạm, `client_sold_at`, độ lệch đồng hồ và cờ `clock_check`;
+    - `payload` (chỉ các dòng), tiền đã thu và tiền khách đưa;
+    - `status`, `workspace_id` (unique), lý do và chi tiết xem lại;
+    - người, lúc và cách xử lý.
+  - Bảng có 6 check constraint mới, nâng tổng từ 252 lên 258. `schema.rb` chỉ giữ phần mới.
+  - Model `Spree::Pos::OfflineSale` (`posoffline_`). Module `Spree::Pos::OfflineSales` gom quy tắc chung: khóa `offline:<offline_id>`, kiểm dòng theo luật đơn QR, món còn bán, dựng đơn nháp, trả tiền mặt rồi complete.
+  - `OfflineSales::Ingest` chạy trong một `CommandExecutor` với key `offline:<offline_id>`; các lệnh con có key suy ra từ đó. Trình tự: `Workspaces::Create.draft!` → `ManageLineItem.add` (`merge: false`) → `Tenders::Prepare` / `Confirm` tiền mặt (`cash_count`) → `Workspaces::Complete`.
+    - Server tính lại giá. Tổng khác tiền đã thu thì đơn được park, ghi chú tiền đã thu, lý do `price_changed`.
+    - Ca đã đóng, giờ bán lệch ca, món ngừng bán hoặc hết món cũng vào `needs_review`, không tạo đơn.
+    - `Conflict` trong chuỗi thành `sale_refused`, không raise ra client.
+    - Phát lại cùng key trả đúng kết quả cũ. Bếp và tem ly không in lại khi phát lại.
+  - `OfflineSales::Resolve`: chỉ thu ngân đã thu tiền xử lý được đơn, bằng một trong ba cách:
+    - `accept_collected`: một `Approval` `workspace.override_price` bằng tổng đã thu, rồi `OverridePrice.apply!` từng dòng lệch;
+    - `current_price`: thu theo giá hiện tại;
+    - `edited`: bán dòng khác.
+
+    Đơn chưa có order thì order mới vào ca đang mở của thu ngân.
+  - `OfflineSales::Reject`: người có `pos.approval.grant` từ chối, kèm lý do. Đơn park bị hủy và có audit. Tiền mặt thành chênh lệch ca.
+  - Endpoint:
+    - `GET offline_snapshot?register_id=` có ETag / 304 và `no-store`;
+    - `POST offline_sales`, idempotent;
+    - `GET offline_sales?branch_id=&status=`: cashier chỉ thấy đơn của mình;
+    - `POST offline_sales/:id/resolve`, `POST offline_sales/:id/reject`.
+  - `Workspaces::OverridePrice.apply!` tách từ `call`. Báo cáo bán hàng thêm cột `sold_offline_at` và hai dòng tổng `offline_orders`, `offline_total`.
+  - OpenAPI có 5 operation và 8 schema mới. Client Dart đã sinh lại.
+- **`apps/pos`.**
+  - `lib/offline-store.ts`: IndexedDB `parkviet-pos-offline` gồm hai phần.
+    - `meta` giữ snapshot của quầy và bộ đếm số tạm theo quầy và ngày. Bộ đếm đọc và ghi trong một transaction.
+    - `sales` giữ hàng đợi. Không lưu token hay email.
+  - `lib/offline-sales.ts`:
+    - luật offline: snapshot quá 12 giờ hoặc ca chưa mở thì không bán;
+    - giới hạn hàng đợi 200 đơn hoặc 24 giờ;
+    - giới hạn dòng 20 / 20 / 50;
+    - số tạm `OFF-<mã quầy>-<yyMMdd>-<nnn>`;
+    - tính tiền theo đơn vị phần trăm đồng.
+  - `lib/offline-sync.ts`: gửi lần lượt theo `client_sold_at`, mỗi lần một đơn, mỗi đơn một key. Có khóa `navigator.locks` giữa các tab. Xử lý kết quả:
+    - lỗi mạng, 5xx, 429 hoặc lệnh đang chạy: dừng, lần sau gửi lại;
+    - 401: dừng, chờ đăng nhập;
+    - 4xx khác: đánh dấu `failed`, giữ trên máy và chỉ gửi lại khi thu ngân bấm;
+    - server đã nhận đơn (hoàn tất hoặc chờ xem lại): xóa khỏi máy.
+  - `lib/connectivity.ts`: request không có phản hồi thì hỏi server. Hai lần không trả lời là offline. Khi offline thì hỏi lại mỗi 15 giây. Có kèm sự kiện `online` / `offline` của trình duyệt.
+  - `session-coordinator.ts`: `resume()` không đăng xuất khi không có phản hồi. Đăng xuất chủ động thì xóa snapshot; đơn đã xếp hàng vẫn giữ.
+  - Màn `/offline` (`pages/offline-sale.tsx`, nằm ngoài shell đăng nhập):
+    - lưới món hiện có (`MenuGrid` thêm `menuData`) và `ModifierSheet`;
+    - giỏ có nút −/+, ô khách đưa, tiền thừa, nút **Thu tiền mặt**;
+    - phiếu tạm in qua adapter trình duyệt ("PHIẾU TẠM – CHƯA ĐỒNG BỘ", số tạm, tiền khách đưa và tiền thừa);
+    - danh sách các việc không làm được khi offline;
+    - không bán khi snapshot hỏng, quá cũ, ca đóng, hàng đợi đầy hoặc trình duyệt không lưu được dữ liệu.
+  - `OfflineBanner` trong shell:
+    - làm mới snapshot mỗi 10 phút, khi ca đổi và khi có mạng lại;
+    - hiện link **Bán offline (chỉ tiền mặt)** khi mất mạng;
+    - hiện số đơn chờ đồng bộ (nút **Gửi ngay**) và số đơn bị từ chối (nút **Gửi lại**);
+    - hiện link **N đơn offline cần xem lại**.
+
+    Màn đăng nhập cũng hiện link bán offline khi có snapshot dùng được.
+  - Màn `/offline-review` (`pages/offline-review.tsx`):
+    - **Giữ giá đã thu**, với mã duyệt hoặc **Gửi chủ duyệt**;
+    - **Thu theo giá hiện tại**, có ô tổng tiền mặt đã thu;
+    - **Từ chối đơn**, chỉ cho người có quyền duyệt.
+  - PWA: plugin nhỏ trong `vite.config.ts` sinh `sw.js` cho bản build. Service worker precache file của bản build, lấy trang từ mạng trước rồi mới lấy `index.html` đã lưu, và không chặn `/api` hay `/cable`. Mỗi bản build có cache riêng.
+
+    `lib/service-worker.ts` chỉ đăng ký ở bản production. `AppUpdatePrompt` hiện "Có bản mới của POS. Tải lại" và không tự reload.
+- **`apps/pos-dashboard`**: cột báo cáo `sold_offline_at` (giờ) và hai dòng tổng, có bản vi và en.
+- **Tài liệu**: `docs/pos/fnb-ban-va-tra-sau.md` §10 "Bán offline khi mất mạng" (phạm vi, giới hạn, đồng bộ, xem lại, chống gian lận, service worker). Mục dữ liệu thử chuyển thành §11.
+
+**Lệnh và kết quả**
+
+- `pnpm spree rspec spec/workflows/spree/pos/offline_sales/` — 14 examples, 0 failures.
+- `pnpm spree rspec spec/requests/spree/pos/offline_sales_spec.rb` — 5, 0.
+- Spec của các file server đã sửa, chạy chung — 101 examples, 0 failures:
+  - `reports_spec`, `sale_guards_spec`, `sale_lines_spec`;
+  - `workspaces/complete_spec`, `workspaces/manage_line_item_spec`, `cup_labels/issue_spec`;
+  - `owner_spec`, `order_sources_spec`, `devices_spec`, `print_documents_spec`.
+- `kiosks/kiosk_policy_spec`, `scale_labels_spec`, `package_split_spec`, `approval_requests_spec`, `authentication_spec` — 34, 0.
+- Rubocop: đã autocorrect các file server mới. Còn `Metrics/ParameterLists` giống các workflow sẵn có.
+- `apps/pos`:
+  - `pnpm lint` và `pnpm typecheck` sạch.
+  - `pnpm test` — 346 passed. Mới: `offline-sales.test.ts` 8, `offline-sync.test.ts` 5, `connectivity.test.ts` 4, `session-coordinator.test.ts` +1.
+  - `playwright test e2e/offline-sales.spec.ts --project desktop --project tablet --project mobile` — 6 passed. Kịch bản:
+    - mất mạng → bán 3 đơn tiền mặt → có mạng;
+    - phản hồi đầu bị mất và được gửi lại cùng key;
+    - 2 đơn hoàn tất; đơn có giá đổi vào màn xem lại rồi được thu theo giá hiện tại;
+    - tiền ca bằng 98.000;
+    - không có snapshot thì không có lối vào.
+  - E2e liên quan: `fnb-menu`, `full-retail`, `auth`, `feature-recovery`, `lease-recovery`, `concurrency-chaos`, `fnb-wave1` — 25 passed, 2 skipped (real API). `accessibility`, `pages-polish`, `ui-polish`, `realtime` — 8 passed, 1 skipped.
+  - `vite build` ra thư mục tạm: có `sw.js`, precache `index.html` cùng JS và CSS. Thư mục tạm đã xóa, `dist/` sẵn có không bị đụng.
+- `apps/pos-staff`:
+  - `tool/gen_api.sh` sinh lại client;
+  - `flutter analyze` không lỗi;
+  - `flutter test` — 177 passed.
+- `apps/pos-dashboard`: `pnpm lint` và `pnpm typecheck` sạch; `pnpm test` — 136 passed.
+
+**Lệch so với plan**
+
+- Không thêm `idb` hay `vite-plugin-pwa`. `pnpm add` báo `ERR_PNPM_UNEXPECTED_STORE`: `node_modules` được cài bằng store v11, còn pnpm 10.33.4 của máy đòi store v10. Thay vào đó:
+  - IndexedDB viết trực tiếp, theo mẫu `financial-recovery.ts`;
+  - service worker do plugin 40 dòng trong `vite.config.ts` sinh ra;
+  - chưa có web manifest và icon cài app.
+- File nằm ở `src/lib/offline-*.ts` và `src/lib/connectivity.ts`, `service-worker.ts` (theo cách đặt file phẳng của `src/lib`), không trong thư mục `lib/offline/`.
+- Hàng đợi trên máy chỉ có `pending` / `failed`. Server đã nhận đơn thì máy xóa đơn; trạng thái `completed` / `needs_review` đọc từ server.
+- Snapshot và ngữ cảnh gộp thành một bản ghi của quầy gần nhất, không tách `catalog_snapshot` / `context_snapshot`.
+- Ca đã đóng hoặc món ngừng bán thì không tạo workspace lúc phát lại. Order được tạo khi thu ngân xử lý, trên ca đang mở của họ. Plan ghi "quản lý gán ca".
+- Màn offline nằm ngoài shell đăng nhập, để mở được sau khi tải lại lúc mất mạng.
+  - Không đồng bộ từ màn offline, vì không biết chắc ai đang đăng nhập. Máy chỉ đồng bộ ở màn bán, theo nhân viên của context.
+- Máy hỏi server bằng `GET offline_snapshot` không kèm token, thay cho `/up`. Server trả 401 nghĩa là vẫn tới được. Dev server Vite chỉ proxy `/api` và `/cable`.
+- Client không gửi `If-None-Match`, vì SDK không nhận header riêng. Server vẫn trả 304 khi có header.
+- Không có sự kiện realtime mới: màn xem lại hỏi lại mỗi 2 phút. Snapshot không làm mới theo sự kiện thực đơn, chỉ theo lịch 10 phút, khi đổi ca và khi có mạng lại.
+- Màn xem lại chưa có giao diện cho `edited` (server đã có). Phiếu tạm in qua hộp thoại trình duyệt, chưa in thẳng ePOS / WebPRNT.
+- Từ chối do người có quyền duyệt làm. Tiền mặt của đơn bị từ chối hiện là tiền thừa khi đếm két và xử lý qua đối soát tiền muộn.
+
+**Còn mở**
+
+- Tiêu chí đầu chưa tick: phần "bán khi server không truy cập được" đã qua e2e trên trang đang mở. Còn phần "mở app khi server tắt" thì chưa thử bản build có service worker do Rails / Caddy phục vụ. Cũng chưa kiểm header `Cache-Control: no-cache` của `sw.js`.
+- Web manifest và icon cài app. Giao diện `edited`. Làm mới snapshot theo sự kiện thực đơn. In thẳng ePOS / WebPRNT khi offline.
+- Dashboard chưa có trang theo dõi đơn offline. E2e báo cáo của `apps/pos-dashboard` chưa chạy, vì cổng 5176 đang dùng cho dev server.
+- Kế toán / thuế cần duyệt việc hóa đơn điện tử máy tính tiền chỉ phát hành sau khi đồng bộ, và phiếu tạm khi offline.
+- Chi nhánh có thuế bổ sung theo giá thì mọi đơn offline sẽ vào màn xem lại: máy chỉ ước giá theo thực đơn, không tính thuế.
+- Thử trên máy thật, mất Wi-Fi thật với server LAN, và pilot tại quán.
+- Full suite rspec / e2e chạy trên CI.
 
 ## Tiêu chí xong của plan
 
-- [ ] Mọi tiêu chí trong các phần đã đạt, hoặc được ghi rõ là còn mở kèm lý do.
+- [x] Mọi tiêu chí trong các phần đã đạt, hoặc được ghi rõ là còn mở kèm lý do.
 - [ ] Đã review toàn bộ diff của plan và xử lý các phát hiện.
 - [ ] Full suite của các phía bị đổi đã chạy và kết quả được ghi vào mục Kết quả.

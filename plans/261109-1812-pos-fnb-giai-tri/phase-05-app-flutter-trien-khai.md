@@ -1,7 +1,7 @@
 ---
 phase: 5
 title: "App Flutter và triển khai server"
-status: pending
+status: in-progress
 effort: "13 ngày"
 dependsOn: [2, 3, 4]
 ---

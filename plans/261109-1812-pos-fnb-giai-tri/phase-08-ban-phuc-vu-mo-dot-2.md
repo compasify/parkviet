@@ -1,7 +1,7 @@
 ---
 phase: 8
 title: "Bàn, phục vụ, mở đợt 2"
-status: pending
+status: in-progress
 effort: "26 ngày"
 dependsOn: [5, 7]
 ---

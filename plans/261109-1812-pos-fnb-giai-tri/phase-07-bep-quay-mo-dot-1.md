@@ -1,7 +1,7 @@
 ---
 phase: 7
 title: "Bếp, quầy trả trước, mở đợt 1"
-status: pending
+status: in-progress
 effort: "19 ngày"
 dependsOn: [1, 3, 4, 5, 6]
 ---

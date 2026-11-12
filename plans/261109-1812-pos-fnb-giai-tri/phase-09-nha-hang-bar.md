@@ -1,7 +1,7 @@
 ---
 phase: 9
 title: "Nhà hàng nâng cao, bar"
-status: pending
+status: in-progress
 effort: "16 ngày"
 dependsOn: [8]
 ---
