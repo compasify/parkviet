@@ -121,11 +121,81 @@ Khách quét QR dán trên bàn hoặc trong phòng karaoke, xem thực đơn tr
 
 ### Tiêu chí xong
 
-- [ ] Khách quét QR bàn đang mở, gửi đơn, nhân viên duyệt trên web hoặc Flutter, món xuống KDS đúng trạm.
-- [ ] Bàn đóng thì mọi phiên khách của bàn đó bị từ chối.
-- [ ] Chế độ thẳng bếp hoạt động trong hạn mức, vượt hạn mức chuyển sang chờ duyệt.
-- [ ] Gọi phục vụ / yêu cầu thanh toán hiện realtime ở S1 và S2.
+- [x] Khách quét QR bàn đang mở, gửi đơn, nhân viên duyệt trên web hoặc Flutter, món xuống KDS đúng trạm.
+- [x] Bàn đóng thì mọi phiên khách của bàn đó bị từ chối.
+- [x] Chế độ thẳng bếp hoạt động trong hạn mức, vượt hạn mức chuyển sang chờ duyệt.
+- [x] Gọi phục vụ / yêu cầu thanh toán hiện realtime ở S1 và S2.
 - [ ] Request spec, vitest, e2e xanh; OpenAPI cập nhật.
+
+### Kết quả
+
+Trạng thái: xong phần lớn. Tiêu chí cuối còn mở vì e2e của `apps/pos-dashboard` chưa chạy được trên máy này, và chưa có script build CI cho `apps/table-order` (xem "Còn mở").
+
+**Đã làm**
+
+- Server:
+  - Migration `20261112110000`–`20261112110400`: bốn bảng `spree_pos_table_codes`, `spree_pos_guest_sessions`, `spree_pos_guest_orders`, `spree_pos_guest_requests`, và cấu hình QR trong `table_settings`: `qr_order_mode`, `qr_order_auto_limit`, `qr_order_auto_max_items`. Check constraint giữ trong `schema.rb`.
+  - Model `TableCode`, `GuestSession`, `GuestOrder`, `GuestRequest`. Mỗi bàn chỉ có một mã active. Token chỉ lưu digest SHA-256. Phiên hết hạn sau 4 giờ, khi đơn bàn đóng, hoặc khi xoay mã. Idempotency key unique theo phiên. Tối đa 3 đơn chờ mỗi phiên.
+  - API khách `Spree::Pos::GuestViewsController`:
+    - xác thực `Authorization: Guest <token>`, header `no_store`;
+    - rate limit: mở phiên 10/phút/địa chỉ, gửi đơn 5/phút/phiên, yêu cầu 10/phút/phiên;
+    - không nhận JWT nhân viên hay API key;
+    - đóng khi tắt module hoặc cờ;
+    - thực đơn chỉ gồm món `qr_orderable`, kèm trạng thái hết món;
+    - phần "Bàn của tôi" không lộ tên nhân viên hay giảm giá;
+    - giá do server tính lại.
+  - Workflow:
+    - `GuestOrders::Submit`, `Accept`, `Reject`, `Guard`: `Accept` đi qua lệnh thêm dòng thường và `CommandExecutor` dưới danh tính người duyệt, báo bếp phần chênh lệch, bỏ dòng hết món giữa chừng, từ chối khi không còn dòng;
+    - `GuestSessions::Open`, `GuestRequests::Create` / `Done`;
+    - `TableCodes::Issue`: tạo / xoay mã, in tem qua hàng đợi in, loại phiếu mới `table_qr`.
+  - Endpoint nhân viên `admin/pos/guest_orders` (index, accept, reject), `guest_requests` (index, done), `table_codes` (index, issue).
+  - Quyền mới `pos.guest_order.decide`. Module `fnb.qr_order`, cờ `qr_order` (mặc định tắt).
+  - Audit `guest_order.accept` / `reject` và `table_code.rotate`. Realtime `guest_order.created` / `updated`, `guest_request.created` / `updated`.
+  - OpenAPI: sửa `server/openapi/pos-staff.yaml`, thêm `server/openapi/pos-guest.yaml`.
+- `apps/table-order` (mới): Vite + React 19, i18n vi / en, 4 màn (Thực đơn, Món + modifier, Giỏ, Bàn của tôi).
+  - Đọc mã từ `/table/t/<code>` rồi `replaceState` xóa khỏi thanh địa chỉ. Token trong `sessionStorage`. Mã bị quên ngay khi phiên đã đặt món, nên điện thoại rời bàn không âm thầm vào đơn của khách sau.
+  - Poll 5 giây. Modifier min / max / bắt buộc port sang `src/lib/modifiers.ts`. Giỏ không gửi giá. Idempotency key giữ theo giỏ khi gửi lại.
+  - Server Rails phục vụ dưới `/table/` (`TableOrderAppController`, `Referrer-Policy: no-referrer`). `server/Dockerfile` build app này cùng `apps/pos` và `apps/pos-dashboard`.
+- `apps/pos`: khay "Đơn từ QR" trên màn bán, có badge số đơn chờ. Duyệt / Từ chối kèm lý do mẫu, đóng yêu cầu gọi phục vụ / thanh toán. Sự kiện realtime làm mới khay.
+- `apps/pos-dashboard`: phần "Gọi món qua QR" trong tab Sơ đồ bàn: chế độ, hạn mức tiền, số món tối đa. Thẻ "Mã QR tại bàn": tạo / xoay mã, in tem, hiện QR và đường dẫn một lần. Cờ "Khách được gọi món này qua QR tại bàn" trong trang Thực đơn. Quyền mới trong nhóm bán hàng.
+- `packages/pos-shared`: capability, feature `qr_order`, nhãn module `fnb.qr_order`.
+- `apps/pos-staff` (Flutter, chế độ waiter): sinh lại `pos_api`. `GuestInbox` nghe sự kiện khách và rung khi có đơn / yêu cầu mới. Màn "Đơn từ QR" lọc khu mình / mọi khu, duyệt, từ chối kèm lý do, đóng yêu cầu. Nút có badge trên bảng bàn.
+- Docs: mục "Khách gọi món qua QR trên bàn" trong [`docs/pos/fnb-ban-va-tra-sau.md`](../../docs/pos/fnb-ban-va-tra-sau.md). Đường `/table/` và yêu cầu Wi‑Fi quán trong [`docs/deploy/pos-lan-vps.md`](../../docs/deploy/pos-lan-vps.md).
+
+**Lệnh và kết quả**
+
+- `pnpm spree rspec` với spec model `guest_session`, `spec/workflows/spree/pos/guest_orders/` và `spec/requests/spree/pos/guest_views_spec.rb`, cùng các spec module / profile / onboarding / topology / devices / print_documents / authentication / feature_flags / realtime / web_apps / table_settings / menu: 180 examples, 0 failures. Chạy riêng `web_apps_spec.rb`: 7/0.
+- `packages/pos-shared`: typecheck, lint ok; vitest 284 passed.
+- `apps/pos-dashboard`: typecheck, lint ok; test 131 passed; build ok.
+- `apps/pos`:
+  - typecheck, lint ok; test 318 passed;
+  - `pnpm --dir apps/pos exec playwright test e2e/guest-orders.spec.ts e2e/platform-orders.spec.ts --project desktop`: 2 passed;
+  - e2e feature-flags, branch-modules, realtime, tables, karaoke (desktop): 16 passed.
+- `apps/table-order`: typecheck, lint ok; vitest 14 passed; Playwright `--project mobile` 4 passed, `--project desktop` 4 passed; build ok (~95 KB gzip JS).
+- `apps/pos-staff`: `tool/gen_api.sh` ok; `flutter analyze` không lỗi; `flutter test` 156 passed (gồm 4 test mới ở `test/modes/waiter/guest_orders_test.dart`).
+
+**Lệch so với plan**
+
+- Thẳng bếp duyệt tự động dưới danh tính chủ ca của workspace bàn, không dùng "thiết bị hệ thống" (chưa có danh tính đó). Audit ghi là tự động. Hạn mức gồm cả số món tối đa (`qr_order_auto_max_items`).
+- Thêm sự kiện `.updated` cho đơn / yêu cầu khách, để các màn nhân viên bỏ đơn đã được người khác xử lý.
+- Bàn chưa mở thì vẫn mở phiên "chỉ xem thực đơn". Trang có nút thử lại bằng mã đã lưu, thay vì bắt quét lại. Phiên gắn với đơn bàn mở sớm nhất.
+- Cài đặt QR và in / xoay mã nằm trong `apps/pos-dashboard` (tab Sơ đồ bàn), không ở `apps/pos`, theo quy ước dự án: cài đặt chi nhánh không quay lại màn bán.
+- SPA phục vụ từ thư mục do `TABLE_ORDER_DIST_PATH` chỉ (image đặt sẵn), không phải `server/public/table/`, giống `/pos` và `/pos-admin`.
+- "In lại" là xoay mã: token gốc không được lưu, nên không in lại được tem cũ.
+- Token mã bàn có trong access log của lần mở `/table/t/<code>` đầu tiên.
+- Karaoke dùng cờ `qr_orderable` của món, không có thực đơn riêng theo phòng.
+- `request_bill` chỉ báo nhân viên, không tạo PaymentRequest. Khách không trả tiền qua QR (D7).
+- Code Flutter ở `lib/modes/waiter/guest_orders/` (theo cấu trúc hiện có), không phải `lib/features/waiter/guest_orders/`. Đã chạy `flutter gen-l10n` cho chuỗi mới.
+- API khách chỉ mở khi cả module `fnb.qr_order` lẫn cờ `qr_order` đều bật.
+
+**Còn mở**
+
+- E2e `apps/pos-dashboard` (`administration.spec.ts` đổi số checkbox thành 37) chưa chạy được: cổng 5176 đang dùng cho dev server. Chờ CI.
+- Chưa thêm script build `apps/table-order` vào workflow CI (`.github/` ngoài phạm vi sửa). Image Docker đã build app này.
+- Playwright đầu-cuối trên API thật (quét QR → thu ngân duyệt → dòng hiện trong workspace và KDS) chưa có. Luồng này hiện chỉ được request spec `guest_views_spec.rb` phủ. E2e của `apps/table-order` và `apps/pos` dùng fixture.
+- Bảng dự án trong `AGENTS.md` ở gốc chưa có dòng `apps/table-order` (không sửa file gốc). App có `apps/table-order/AGENTS.md` riêng.
+- Thử trên điện thoại thật, máy in tem thật và pilot tại quán.
+- Full suite rspec / e2e chạy trên CI.
 
 ## Phần 12B: Kiosk tự order
 
