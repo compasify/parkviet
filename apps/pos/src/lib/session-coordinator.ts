@@ -20,6 +20,13 @@ function isRateLimited(error: unknown) {
   return (error as { status?: unknown } | null)?.status === 429;
 }
 
+// The request never got an answer (no network, server out of reach): that
+// says nothing about the session either.
+function isUnanswered(error: unknown) {
+  const failure = error as { status?: unknown; response?: { status?: unknown } } | null;
+  return typeof failure?.status !== 'number' && typeof failure?.response?.status !== 'number';
+}
+
 export type SessionStatus = 'anonymous' | 'authenticated';
 
 export type SessionSnapshot = {
@@ -253,7 +260,10 @@ export function createSessionCoordinator(options: {
       try {
         await refresh();
       } catch (error) {
-        if (error instanceof SessionSuperseded || isRateLimited(error)) return;
+        // Offline, the cashier stays signed in: queued work and the open
+        // screen survive until the server answers again.
+        if (error instanceof SessionSuperseded || isRateLimited(error) || isUnanswered(error))
+          return;
         clearLocal(generation + 1);
       }
     },

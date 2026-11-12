@@ -12,6 +12,8 @@ import { CollectPage } from './pages/collect';
 import { CustomerDisplayPage } from './pages/customer-display';
 import { LoginPage } from './pages/login';
 import { MealAccountsPage } from './pages/meal-accounts';
+import { OfflineReviewPage } from './pages/offline-review';
+import { OfflineSalePage } from './pages/offline-sale';
 import { ReceiptPage } from './pages/receipt';
 import { ReservationsPage } from './pages/reservations';
 import { ReturnExchangePage } from './pages/return-exchange';
@@ -142,6 +144,23 @@ const receiptsRoute = createRoute({
   component: ReceiptPage,
 });
 
+// Offline sales the server holds for review, finished by the cashier who
+// took the cash or rejected by a manager.
+const offlineReviewRoute = createRoute({
+  getParentRoute: () => authedRoute,
+  path: '/offline-review',
+  component: OfflineReviewPage,
+});
+
+// Cash sales while the server is out of reach. Outside the signed-in shell
+// on purpose: after a reload offline there is no session to restore, and
+// the page sells only from the register's stored snapshot.
+const offlineSaleRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/offline',
+  component: OfflineSalePage,
+});
+
 const customerDisplayRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/display',
@@ -152,6 +171,7 @@ export const router = createRouter({
   routeTree: rootRoute.addChildren([
     loginRoute,
     customerDisplayRoute,
+    offlineSaleRoute,
     authedRoute.addChildren([
       saleRoute,
       returnsRoute,
@@ -164,6 +184,7 @@ export const router = createRouter({
       vehicleVisitsRoute,
       tipsRoute,
       receiptsRoute,
+      offlineReviewRoute,
     ]),
   ]),
   basepath: import.meta.env.BASE_URL.replace(/\/$/, '') || '/',

@@ -935,3 +935,24 @@ kbd { padding: var(--pos-s1); border: 1px solid var(--pos-border); border-radius
 .reservation-block { position: absolute; top: 2px; bottom: 2px; padding: 0 6px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: var(--pos-small); line-height: 24px; border-radius: var(--pos-radius); background: #1f8a7a; color: #fff; }
 .reservation-block-seated { background: var(--pos-blue); }
 @media (max-width: 767px) { .table-floor-body { grid-template-columns: minmax(0, 1fr); } }
+
+/* Offline selling: the banner in the shell, the cash-only sale screen and the review list. */
+.offline-banner { display: flex; flex-wrap: wrap; align-items: center; gap: var(--pos-s3); padding: var(--pos-s2) var(--pos-s3); border: 1px solid var(--pos-warning); border-radius: var(--pos-radius); background: #fff8e8; color: var(--pos-ink); }
+.offline-banner-sell { font-weight: 700; }
+.offline-sale .header { flex-wrap: wrap; gap: var(--pos-s3); }
+.offline-sale-place { color: var(--pos-muted); }
+.offline-sale-rules { padding: var(--pos-s2) var(--pos-s3); border-left: 4px solid var(--pos-warning); background: #fff8e8; }
+.offline-blocked ul { margin: var(--pos-s2) 0 0; padding-left: var(--pos-s5); }
+.offline-sale-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 360px); gap: var(--pos-s4); align-items: start; }
+.offline-cart { display: grid; gap: var(--pos-s3); padding: var(--pos-s4); background: var(--pos-surface); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); }
+.offline-cart-lines { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--pos-s2); }
+.offline-cart-lines li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: var(--pos-s2); align-items: center; }
+.offline-line-name small { display: block; color: var(--pos-muted); }
+.offline-line-qty { display: inline-flex; align-items: center; gap: var(--pos-s1); }
+.offline-line-qty button { min-width: var(--pos-target); }
+.offline-total { font-size: var(--pos-heading); }
+.offline-review-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--pos-s3); }
+.offline-review-card { display: grid; gap: var(--pos-s2); padding: var(--pos-s4); background: var(--pos-surface); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); }
+.offline-review-card h3 small { color: var(--pos-muted); font-weight: 400; }
+.offline-review-actions, .offline-review-reject { display: flex; flex-wrap: wrap; gap: var(--pos-s3); align-items: end; }
+@media (max-width: 767px) { .offline-sale-body { grid-template-columns: 1fr; } }.offline-sale-heading { margin: 0; font-size: var(--pos-page-title); }

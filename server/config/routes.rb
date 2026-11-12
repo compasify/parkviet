@@ -270,6 +270,13 @@ Rails.application.routes.draw do
             get 'kiosk_orders', to: 'kiosk_orders#index'
             post 'kiosk_orders/:id/take', to: 'kiosk_orders#take'
             post 'kiosk_orders/:id/cancel', to: 'kiosk_orders#cancel'
+            # Cash sales a counter made offline: its snapshot to sell from,
+            # the replay of each sale, and the review of those that differ.
+            get 'offline_snapshot', to: 'offline_snapshots#show'
+            get 'offline_sales', to: 'offline_sales#index'
+            post 'offline_sales', to: 'offline_sales#create'
+            post 'offline_sales/:id/resolve', to: 'offline_sales#resolve'
+            post 'offline_sales/:id/reject', to: 'offline_sales#reject'
             # Approvals asked for from another device, the owner app's reads,
             # its push token and the store's push relay.
             get 'approval_requests', to: 'approval_requests#index'

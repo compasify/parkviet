@@ -2,6 +2,7 @@ import { Outlet, useLocation, useNavigate } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useBranchEvents } from '../hooks/use-branch-events';
+import { useConnectivity } from '../hooks/use-offline';
 import { useReceiptTemplates } from '../hooks/use-receipt-templates';
 import { useSession } from '../hooks/use-session';
 import { session } from '../lib/app-session';
@@ -24,8 +25,10 @@ import {
   INTENTS_CHANGED,
   scopedIntents,
 } from '../lib/uncertain-intents';
+import { AppUpdatePrompt } from './app-update-prompt';
 import { ContextSelector } from './context-selector';
 import { ContextSetupDialog } from './context-setup-dialog';
+import { OfflineBanner } from './offline-banner';
 import { OpenShiftDialog } from './open-shift-dialog';
 import { PosIcon } from './pos-icon';
 import { RealtimeDot } from './pos-page';
@@ -35,7 +38,7 @@ import { UserMenu } from './user-menu';
 
 // Counter pages other than selling, by their path.
 const COUNTER_PAGES =
-  /\/(returns|shifts|collect|receipts|reservations|bottle-keeps|meal-accounts|stored-value|vehicle-visits|tips)(\/|$)/;
+  /\/(returns|shifts|collect|receipts|reservations|bottle-keeps|meal-accounts|stored-value|vehicle-visits|tips|offline-review)(\/|$)/;
 
 export function PosShell() {
   return (
@@ -74,7 +77,9 @@ function ShellFrame() {
                     ? t('vehicleVisitsNav')
                     : pathname.endsWith('/tips')
                       ? t('tipsNav')
-                      : t('sellingArea');
+                      : pathname.endsWith('/offline-review')
+                        ? t('offlineReviewTitle')
+                        : t('sellingArea');
   const isSale = !COUNTER_PAGES.test(pathname);
   // A store not set up yet, seen by someone who may set it up, is pointed at
   // the setup wizard of the POS dashboard instead of the branch picker dialog.
@@ -112,6 +117,7 @@ function ShellFrame() {
     };
   }, []);
   const [online, setOnline] = useState(() => globalThis.navigator?.onLine !== false);
+  const server = useConnectivity();
   const [busy, setBusy] = useState(false);
   const [calibrating, setCalibrating] = useState(false);
   const [logoutError, setLogoutError] = useState('');
@@ -269,7 +275,7 @@ function ShellFrame() {
     context.data && hasUncertainIntents(context.data.staff.id, context.data.store.id);
   // Payment attention lives in the POS dashboard (new tab, see UserMenu).
   const attentionUrl = posDashboardUrl(store?.id, 'funds/attention', selection.branchId);
-  const offline = !online || failure === 'offline';
+  const offline = !online || !server.online || failure === 'offline';
   const connection = offline
     ? t('connectionOffline')
     : context.isPending
@@ -377,6 +383,15 @@ function ShellFrame() {
               ) : null}
             </p>
           ) : null}
+          <OfflineBanner
+            staffId={context.data?.staff.id ?? null}
+            storeId={context.data?.store.id ?? null}
+            branchId={selection.branchId}
+            registerId={selection.registerId}
+            shiftId={context.data?.shift?.id ?? null}
+            menuOn={context.data?.modules?.['fnb.menu'] === true}
+            offline={offline}
+          />
           {isSale && context.data && writesLocked(context.data, selection) ? (
             <p className="error" role="status">
               {t('writesLocked')}
@@ -388,6 +403,7 @@ function ShellFrame() {
             must not block the controls beneath them (only their own links and
             buttons take clicks). */}
         <div className="pos-floating-alerts" aria-live="polite">
+          <AppUpdatePrompt />
           {uncertain ? (
             <p className="error" role="status">
               {t('uncertainWarning')}

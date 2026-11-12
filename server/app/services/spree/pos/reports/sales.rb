@@ -9,8 +9,9 @@ module Spree
       # never reduce the sale rows; the summary shows them separately.
       class Sales < Base
         ENUMS = { 'section' => %w[sales returns], 'order_source' => Workspace::ORDER_SOURCES }.freeze
+        # `sold_offline_at`: when the counter sold an order it replayed after selling offline.
         COLUMNS = %w[order_number sold_at business_date order_source register shift_id cashier item_total adjustment_total
-                     total currency].freeze
+                     total currency sold_offline_at].freeze
 
         # Sales belong to the business date stamped on the workspace, not the
         # calendar day of completed_at. Returns stay on the time they were received.
@@ -41,6 +42,7 @@ module Spree
           returns_total = returns.sum(:entitlement_total)
           { orders: sales.count, sales_total: money(sales_total), returns: returns.count,
             returns_total: money(returns_total), net_sales: money(sales_total - returns_total),
+            offline_orders: offline_sales.count, offline_total: money(offline_sales.sum('spree_orders.total')),
             by_source: by_source }
         end
 
@@ -74,6 +76,11 @@ module Spree
 
         private
 
+        # The sales that were made offline and replayed later.
+        def offline_sales
+          sales.where(id: Workspace.where(id: OfflineSale.where(status: 'completed').select(:workspace_id)).select(:order_id))
+        end
+
         def sales
           workspaces = Workspace.where(branch_id: branch.id).where(shift_id: scope.shifts.select(:id))
           workspaces = workspaces.where(order_source: filters['order_source']) if filters['order_source']
@@ -103,6 +110,7 @@ module Spree
 
         def sale_rows(orders)
           workspaces = Workspace.where(order_id: orders.map(&:id)).includes(:register, shift: :owner).index_by(&:order_id)
+          offline = OfflineSale.where(workspace_id: workspaces.values.map(&:id), status: 'completed').pluck(:workspace_id, :client_sold_at).to_h
           orders.map do |order|
             workspace = workspaces[order.id]
             { order_number: order.number, sold_at: local(order.completed_at),
@@ -110,7 +118,8 @@ module Spree
               register: workspace&.register&.code,
               shift_id: workspace&.shift&.prefixed_id, cashier: StaffName.call(workspace&.shift&.owner),
               item_total: money(order.item_total), adjustment_total: money(order.adjustment_total),
-              total: money(order.total), currency: order.currency }
+              total: money(order.total), currency: order.currency,
+              sold_offline_at: workspace && offline[workspace.id] ? local(offline[workspace.id]) : nil }
           end
         end
 

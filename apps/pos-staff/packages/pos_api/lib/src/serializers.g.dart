@@ -246,6 +246,26 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(ModifierGroupOptionsInner.serializer)
       ..add(ModifierPick.serializer)
       ..add(ModifierSelection.serializer)
+      ..add(OfflineSale.serializer)
+      ..add(OfflineSaleInput.serializer)
+      ..add(OfflineSaleLine.serializer)
+      ..add(OfflineSaleLineModifiersInner.serializer)
+      ..add(OfflineSaleRejectInput.serializer)
+      ..add(OfflineSaleResolutionEnum.serializer)
+      ..add(OfflineSaleResolveInput.serializer)
+      ..add(OfflineSaleResolveInputModeEnum.serializer)
+      ..add(OfflineSaleResult.serializer)
+      ..add(OfflineSaleReviewReasonEnum.serializer)
+      ..add(OfflineSaleStaff.serializer)
+      ..add(OfflineSaleStatusEnum.serializer)
+      ..add(OfflineSnapshot.serializer)
+      ..add(OfflineSnapshotBranch.serializer)
+      ..add(OfflineSnapshotOffline.serializer)
+      ..add(OfflineSnapshotOfflineReasonEnum.serializer)
+      ..add(OfflineSnapshotRegister.serializer)
+      ..add(OfflineSnapshotShift.serializer)
+      ..add(OfflineSnapshotStaff.serializer)
+      ..add(OfflineSnapshotStore.serializer)
       ..add(OwnerAlert.serializer)
       ..add(OwnerAlertKindEnum.serializer)
       ..add(OwnerAlertList.serializer)
@@ -349,6 +369,8 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(PosMenuSoldOut200Response.serializer)
       ..add(PosMenuSoldOutRequest.serializer)
       ..add(PosModifierGroups200Response.serializer)
+      ..add(PosOfflineSales200Response.serializer)
+      ..add(PosOfflineSnapshot200Response.serializer)
       ..add(PosPrintJobCancel200Response.serializer)
       ..add(PosPrintJobCreate201Response.serializer)
       ..add(PosPrintJobCreateRequest.serializer)
@@ -911,6 +933,28 @@ Serializers _$serializers = (Serializers().toBuilder()
           const FullType(BuiltList, const [const FullType(ModifierSelection)]),
           () => ListBuilder<ModifierSelection>())
       ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(OfflineSale)]),
+          () => ListBuilder<OfflineSale>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(OfflineSaleLine)]),
+          () => ListBuilder<OfflineSaleLine>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(OfflineSaleLine)]),
+          () => ListBuilder<OfflineSaleLine>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(OfflineSaleLine)]),
+          () => ListBuilder<OfflineSaleLine>())
+      ..addBuilderFactory(
+          const FullType(BuiltMap, const [
+            const FullType(String),
+            const FullType.nullable(JsonObject)
+          ]),
+          () => MapBuilder<String, JsonObject?>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(OfflineSaleLineModifiersInner)]),
+          () => ListBuilder<OfflineSaleLineModifiersInner>())
+      ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(OwnerAlert)]),
           () => ListBuilder<OwnerAlert>())
       ..addBuilderFactory(
@@ -1227,7 +1271,11 @@ Serializers _$serializers = (Serializers().toBuilder()
           () => MapBuilder<String, JsonObject?>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(KitchenTicketItem)]),
-          () => ListBuilder<KitchenTicketItem>()))
+          () => ListBuilder<KitchenTicketItem>())
+      ..addBuilderFactory(
+          const FullType(BuiltMap,
+              const [const FullType(String), const FullType.nullable(String)]),
+          () => MapBuilder<String, String?>()))
     .build();
 
 // ignore_for_file: deprecated_member_use_from_same_package,type=lint

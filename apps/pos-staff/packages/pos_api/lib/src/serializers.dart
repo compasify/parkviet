@@ -201,6 +201,21 @@ import 'package:pos_api/src/model/modifier_group.dart';
 import 'package:pos_api/src/model/modifier_group_options_inner.dart';
 import 'package:pos_api/src/model/modifier_pick.dart';
 import 'package:pos_api/src/model/modifier_selection.dart';
+import 'package:pos_api/src/model/offline_sale.dart';
+import 'package:pos_api/src/model/offline_sale_input.dart';
+import 'package:pos_api/src/model/offline_sale_line.dart';
+import 'package:pos_api/src/model/offline_sale_line_modifiers_inner.dart';
+import 'package:pos_api/src/model/offline_sale_reject_input.dart';
+import 'package:pos_api/src/model/offline_sale_resolve_input.dart';
+import 'package:pos_api/src/model/offline_sale_result.dart';
+import 'package:pos_api/src/model/offline_sale_staff.dart';
+import 'package:pos_api/src/model/offline_snapshot.dart';
+import 'package:pos_api/src/model/offline_snapshot_branch.dart';
+import 'package:pos_api/src/model/offline_snapshot_offline.dart';
+import 'package:pos_api/src/model/offline_snapshot_register.dart';
+import 'package:pos_api/src/model/offline_snapshot_shift.dart';
+import 'package:pos_api/src/model/offline_snapshot_staff.dart';
+import 'package:pos_api/src/model/offline_snapshot_store.dart';
 import 'package:pos_api/src/model/owner_alert.dart';
 import 'package:pos_api/src/model/owner_alert_list.dart';
 import 'package:pos_api/src/model/owner_branch.dart';
@@ -284,6 +299,8 @@ import 'package:pos_api/src/model/pos_menu_items200_response.dart';
 import 'package:pos_api/src/model/pos_menu_sold_out200_response.dart';
 import 'package:pos_api/src/model/pos_menu_sold_out_request.dart';
 import 'package:pos_api/src/model/pos_modifier_groups200_response.dart';
+import 'package:pos_api/src/model/pos_offline_sales200_response.dart';
+import 'package:pos_api/src/model/pos_offline_snapshot200_response.dart';
 import 'package:pos_api/src/model/pos_print_job_cancel200_response.dart';
 import 'package:pos_api/src/model/pos_print_job_create201_response.dart';
 import 'package:pos_api/src/model/pos_print_job_create_request.dart';
@@ -662,6 +679,21 @@ part 'serializers.g.dart';
   ModifierGroupOptionsInner,
   ModifierPick,
   ModifierSelection,
+  OfflineSale,
+  OfflineSaleInput,
+  OfflineSaleLine,
+  OfflineSaleLineModifiersInner,
+  OfflineSaleRejectInput,
+  OfflineSaleResolveInput,
+  OfflineSaleResult,
+  OfflineSaleStaff,
+  OfflineSnapshot,
+  OfflineSnapshotBranch,
+  OfflineSnapshotOffline,
+  OfflineSnapshotRegister,
+  OfflineSnapshotShift,
+  OfflineSnapshotStaff,
+  OfflineSnapshotStore,
   OwnerAlert,
   OwnerAlertList,
   OwnerBranch,
@@ -745,6 +777,8 @@ part 'serializers.g.dart';
   PosMenuSoldOut200Response,
   PosMenuSoldOutRequest,
   PosModifierGroups200Response,
+  PosOfflineSales200Response,
+  PosOfflineSnapshot200Response,
   PosPrintJobCancel200Response,
   PosPrintJobCreate201Response,
   PosPrintJobCreateRequest,
@@ -972,6 +1006,10 @@ Serializers serializers = (_$serializers.toBuilder()
         () => ListBuilder<MenuItemConfig>(),
       )
       ..addBuilderFactory(
+        const FullType(BuiltMap, [FullType(String), FullType.nullable(String)]),
+        () => MapBuilder<String, String?>(),
+      )
+      ..addBuilderFactory(
         const FullType(BuiltList, [FullType(CatalogItem)]),
         () => ListBuilder<CatalogItem>(),
       )
@@ -1158,6 +1196,10 @@ Serializers serializers = (_$serializers.toBuilder()
         () => ListBuilder<HardwareCheck>(),
       )
       ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(OfflineSaleLineModifiersInner)]),
+        () => ListBuilder<OfflineSaleLineModifiersInner>(),
+      )
+      ..addBuilderFactory(
         const FullType(BuiltList, [FullType(KitchenExpoItem)]),
         () => ListBuilder<KitchenExpoItem>(),
       )
@@ -1231,6 +1273,10 @@ Serializers serializers = (_$serializers.toBuilder()
         () => ListBuilder<WorkspaceLine>(),
       )
       ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(OfflineSaleLine)]),
+        () => ListBuilder<OfflineSaleLine>(),
+      )
+      ..addBuilderFactory(
         const FullType(BuiltList, [FullType(TimedSegment)]),
         () => ListBuilder<TimedSegment>(),
       )
@@ -1257,6 +1303,10 @@ Serializers serializers = (_$serializers.toBuilder()
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(ReservationDeposit)]),
         () => ListBuilder<ReservationDeposit>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(OfflineSale)]),
+        () => ListBuilder<OfflineSale>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(HardwareStation)]),

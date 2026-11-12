@@ -5095,6 +5095,163 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TableCodeIssueResult'
+  /api/v3/admin/pos/offline_snapshot:
+    get:
+      operationId: posOfflineSnapshot
+      description: >
+        What a counter stores to keep selling cash sales while the server is
+        out of reach: the seller, their open shift on the register, the menu
+        with today's prices and sold-out marks, and the receipt header.
+        `offline.allowed` is false (with `offline.reason`) when this counter
+        may not sell offline. Answers 304 for a matching `If-None-Match`.
+        Needs `pos.shift.open` and `pos.payment` at the register's branch.
+      parameters:
+        - name: register_id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The snapshot
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/OfflineSnapshot'
+        '304':
+          description: The counter's snapshot is current
+  /api/v3/admin/pos/offline_sales:
+    get:
+      operationId: posOfflineSales
+      description: >
+        Offline sales of a branch in one status (`needs_review` by default),
+        oldest sale first. A manager (`pos.approve`) sees everyone's; a
+        cashier their own.
+      parameters:
+        - name: branch_id
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [needs_review, completed, rejected]
+      responses:
+        '200':
+          description: The sales
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/OfflineSale'
+    post:
+      operationId: posOfflineSaleIngest
+      description: >
+        Replays one cash sale the counter made offline, as the cashier who
+        made it, on its shift. The key must be `offline:<offline_id>`: any
+        replay of the same sale answers the same sale and records cash once.
+        The server prices the lines again; a sale that still fits completes
+        now (business date, order number and e-invoice are the server's),
+        otherwise it waits in `needs_review` with `review_reason`.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OfflineSaleInput'
+      responses:
+        '200':
+          description: The sale as it stands now
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OfflineSaleResult'
+        '409':
+          description: >
+            Refused; `error.details.reason` is `offline_key_mismatch`,
+            `offline_sale_invalid`, `offline_cash_short`, `offline_sale_taken`
+            or a reused key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/offline_sales/{id}/resolve:
+    post:
+      operationId: posOfflineSaleResolve
+      description: >
+        The cashier who took the cash finishes a sale waiting for review on
+        their open shift: `accept_collected` keeps the collected prices (an
+        approval of `workspace.override_price` for the collected total, bound
+        to the parked order's revision, unless they may override prices),
+        `current_price` charges today's prices, `edited` sells other lines.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OfflineSaleResolveInput'
+      responses:
+        '200':
+          description: The completed sale
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OfflineSaleResult'
+        '409':
+          description: >
+            Refused; `error.details.reason` is `approval_required`,
+            `offline_sale_settled`, `offline_sale_no_order`, `offline_total_mismatch`,
+            `offline_cash_short`, `no_open_shift` or a reason of the commands inside
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/offline_sales/{id}/reject:
+    post:
+      operationId: posOfflineSaleReject
+      description: >
+        A manager (`pos.approve`) rejects a sale waiting for review, with a
+        reason. Its parked order is canceled; the cash it took shows as the
+        shift's overage and is placed through late cash reconciliation.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OfflineSaleRejectInput'
+      responses:
+        '200':
+          description: The rejected sale
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OfflineSaleResult'
+        '409':
+          description: Refused; `error.details.reason` is `reason_required` or `offline_sale_settled`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/v3/admin/pos/approval_requests:
     get:
       operationId: posApprovalRequestList
@@ -11996,3 +12153,258 @@ components:
           type: string
           minLength: 32
           maxLength: 512
+    OfflineSnapshot:
+      type: object
+      additionalProperties: false
+      required: [store, branch, register, staff, shift, offline, menu, etag, generated_at, max_age_seconds]
+      properties:
+        store:
+          type: object
+          required: [id, name, currency, profile]
+          properties:
+            id:
+              type: string
+            name:
+              type: [string, 'null']
+            currency:
+              type: string
+            profile:
+              type: object
+              additionalProperties:
+                type: [string, 'null']
+        branch:
+          type: object
+          required: [id, name, code, timezone]
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+            code:
+              type: string
+            timezone:
+              type: [string, 'null']
+        register:
+          type: object
+          required: [id, name, code]
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+            code:
+              type: string
+        staff:
+          type: object
+          required: [id, name]
+          properties:
+            id:
+              type: string
+            name:
+              type: [string, 'null']
+        shift:
+          oneOf:
+            - type: 'null'
+            - type: object
+              required: [id, opened_at]
+              properties:
+                id:
+                  type: string
+                opened_at:
+                  type: [string, 'null']
+                  format: date-time
+        offline:
+          type: object
+          required: [allowed, reason]
+          properties:
+            allowed:
+              type: boolean
+            reason:
+              type: [string, 'null']
+              enum: [menu_disabled, register_not_counter, shift_closed, cash_unavailable, null]
+        menu:
+          oneOf:
+            - type: 'null'
+            - $ref: '#/components/schemas/Menu'
+        etag:
+          type: string
+        generated_at:
+          type: string
+          format: date-time
+        max_age_seconds:
+          type: integer
+          description: How long a counter may sell from this snapshot without the server.
+    OfflineSaleLine:
+      type: object
+      required: [variant_id, quantity, unit_price]
+      properties:
+        variant_id:
+          type: string
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 20
+        unit_price:
+          type: string
+          description: The unit price the counter showed, options included; only compared, never charged.
+        name:
+          type: [string, 'null']
+          maxLength: 120
+        note:
+          type: [string, 'null']
+          maxLength: 200
+        modifiers:
+          type: array
+          items:
+            type: object
+            required: [option_id]
+            properties:
+              option_id:
+                type: string
+              quantity:
+                type: integer
+    OfflineSaleInput:
+      type: object
+      required: [offline_id, provisional_number, register_id, shift_id, client_sold_at, total, handed_amount, lines]
+      properties:
+        offline_id:
+          type: string
+          format: uuid
+        provisional_number:
+          type: string
+          pattern: '^OFF-[A-Za-z0-9-]{1,32}$'
+        register_id:
+          type: string
+        shift_id:
+          type: string
+        client_sold_at:
+          type: string
+          format: date-time
+        client_now:
+          type: string
+          format: date-time
+          description: The counter's clock when it sends; not part of the replayed command.
+        total:
+          type: string
+          description: The total the counter collected.
+        handed_amount:
+          type: string
+          description: The cash the customer handed, at least the total.
+        lines:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/OfflineSaleLine'
+    OfflineSaleResolveInput:
+      type: object
+      required: [mode]
+      properties:
+        mode:
+          type: string
+          enum: [accept_collected, current_price, edited]
+        approval_id:
+          type: string
+        handed_amount:
+          type: string
+        lines:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/OfflineSaleLine'
+        note:
+          type: string
+          maxLength: 200
+    OfflineSaleRejectInput:
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          type: string
+          maxLength: 200
+    OfflineSaleResult:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/OfflineSale'
+    OfflineSale:
+      type: object
+      additionalProperties: false
+      required: [id, offline_id, provisional_number, status, branch_id, register_id, shift_id, staff, client_sold_at, clock_check,
+                 clock_skew_seconds, collected_total, handed_amount, currency, lines, review_reason, review_details, workspace_id,
+                 order_number, call_number, current_total, resolution, resolution_note, resolved_at, resolved_by, created_at]
+      properties:
+        id:
+          type: string
+        offline_id:
+          type: string
+        provisional_number:
+          type: string
+        status:
+          type: string
+          enum: [completed, needs_review, rejected]
+        branch_id:
+          type: string
+        register_id:
+          type: string
+        shift_id:
+          type: string
+        staff:
+          $ref: '#/components/schemas/OfflineSaleStaff'
+        client_sold_at:
+          type: string
+          format: date-time
+        clock_check:
+          type: boolean
+          description: The counter's clock was more than 10 minutes off the server's.
+        clock_skew_seconds:
+          type: integer
+        collected_total:
+          type: string
+        handed_amount:
+          type: string
+        currency:
+          type: string
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/OfflineSaleLine'
+        review_reason:
+          type: [string, 'null']
+          enum: [price_changed, item_unavailable, item_sold_out, shift_closed, shift_mismatch, sale_refused, null]
+        review_details:
+          type: object
+          additionalProperties: true
+        workspace_id:
+          type: [string, 'null']
+        order_number:
+          type: [string, 'null']
+        call_number:
+          type: [integer, 'null']
+        current_total:
+          type: [string, 'null']
+        resolution:
+          type: [string, 'null']
+          enum: [accept_collected, current_price, edited, rejected, null]
+        resolution_note:
+          type: [string, 'null']
+        resolved_at:
+          type: [string, 'null']
+          format: date-time
+        resolved_by:
+          oneOf:
+            - type: 'null'
+            - $ref: '#/components/schemas/OfflineSaleStaff'
+        created_at:
+          type: string
+          format: date-time
+    OfflineSaleStaff:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+        name:
+          type: [string, 'null']

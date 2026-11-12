@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_12_140000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_12_150000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gist"
   enable_extension "pg_catalog.plpgsql"
@@ -3672,6 +3672,43 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_140000) do
     t.check_constraint "price_delta >= 0::numeric", name: "chk_pos_modifier_options_price"
   end
 
+  create_table "spree_pos_offline_sales", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "branch_id", null: false
+    t.bigint "register_id", null: false
+    t.bigint "shift_id", null: false
+    t.bigint "staff_id", null: false
+    t.uuid "offline_id", null: false
+    t.string "provisional_number", limit: 40, null: false
+    t.datetime "client_sold_at", null: false
+    t.integer "clock_skew_seconds", default: 0, null: false
+    t.boolean "clock_check", default: false, null: false
+    t.jsonb "payload", default: {}, null: false
+    t.decimal "collected_total", precision: 12, scale: 4, null: false
+    t.decimal "handed_amount", precision: 12, scale: 4, null: false
+    t.string "currency", limit: 3, null: false
+    t.string "status", limit: 16, null: false
+    t.bigint "workspace_id"
+    t.string "review_reason", limit: 40
+    t.jsonb "review_details", default: {}, null: false
+    t.bigint "resolved_by_id"
+    t.datetime "resolved_at"
+    t.string "resolution", limit: 32
+    t.string "resolution_note", limit: 200
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["branch_id", "status"], name: "idx_pos_offline_sales_branch_status"
+    t.index ["shift_id"], name: "idx_pos_offline_sales_shift"
+    t.index ["store_id", "offline_id"], name: "idx_pos_offline_sales_offline_id", unique: true
+    t.index ["workspace_id"], name: "idx_pos_offline_sales_workspace", unique: true, where: "(workspace_id IS NOT NULL)"
+    t.check_constraint "(resolved_at IS NULL) = (resolution IS NULL) AND (resolved_at IS NULL) = (resolved_by_id IS NULL)", name: "chk_pos_offline_sales_resolved"
+    t.check_constraint "collected_total >= 0::numeric AND handed_amount >= collected_total", name: "chk_pos_offline_sales_amounts"
+    t.check_constraint "status::text <> 'completed'::text OR workspace_id IS NOT NULL", name: "chk_pos_offline_sales_completed"
+    t.check_constraint "status::text <> 'needs_review'::text OR review_reason IS NOT NULL AND resolved_at IS NULL", name: "chk_pos_offline_sales_review"
+    t.check_constraint "status::text <> 'rejected'::text OR resolved_at IS NOT NULL", name: "chk_pos_offline_sales_rejected"
+    t.check_constraint "status::text = ANY (ARRAY['completed'::character varying, 'needs_review'::character varying, 'rejected'::character varying]::text[])", name: "chk_pos_offline_sales_status"
+  end
+
   create_table "spree_pos_open_bottles", force: :cascade do |t|
     t.bigint "store_id", null: false
     t.bigint "branch_id", null: false
@@ -7129,6 +7166,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_140000) do
   add_foreign_key "spree_pos_modifier_groups", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_modifier_options", "spree_pos_modifier_groups", column: "modifier_group_id", on_delete: :cascade
   add_foreign_key "spree_pos_modifier_options", "spree_variants", column: "variant_id"
+  add_foreign_key "spree_pos_offline_sales", "spree_admin_users", column: "resolved_by_id"
+  add_foreign_key "spree_pos_offline_sales", "spree_admin_users", column: "staff_id"
+  add_foreign_key "spree_pos_offline_sales", "spree_pos_branches", column: "branch_id"
+  add_foreign_key "spree_pos_offline_sales", "spree_pos_registers", column: "register_id"
+  add_foreign_key "spree_pos_offline_sales", "spree_pos_shifts", column: "shift_id"
+  add_foreign_key "spree_pos_offline_sales", "spree_pos_workspaces", column: "workspace_id"
+  add_foreign_key "spree_pos_offline_sales", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_open_bottles", "spree_admin_users", column: "opened_by_id"
   add_foreign_key "spree_pos_open_bottles", "spree_pos_branches", column: "branch_id"
   add_foreign_key "spree_pos_open_bottles", "spree_stores", column: "store_id"

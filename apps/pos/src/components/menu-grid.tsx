@@ -47,6 +47,7 @@ export function MenuGrid({
   addDisabledReason,
   canSetSoldOut,
   drinksFirst = false,
+  menuData,
   onAdd,
 }: {
   branchId: string | null;
@@ -55,17 +56,20 @@ export function MenuGrid({
   canSetSoldOut: boolean;
   // A bar tab: drinks and shots come first.
   drinksFirst?: boolean;
+  // A menu already at hand (the offline snapshot) instead of reading it.
+  menuData?: PosMenu;
   onAdd?: MenuAdd;
 }) {
   const { t } = useTranslation();
-  const menu = useMenu(branchId, true);
+  const menu = useMenu(branchId, !menuData);
   const setSoldOut = useSoldOutToggle(branchId);
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [sheetItem, setSheetItem] = useState<PosMenuItem | null>(null);
   const [notice, setNotice] = useState('');
   const searchRef = useRef<HTMLInputElement>(null);
-  const data = menu.data && drinksFirst ? leadWithDrinks(menu.data) : menu.data;
+  const source = menuData ?? menu.data;
+  const data = source && drinksFirst ? leadWithDrinks(source) : source;
 
   async function pick(item: PosMenuItem) {
     if (!data || !onAdd || addDisabled) return;
@@ -164,8 +168,8 @@ export function MenuGrid({
           />
         </div>
       </div>
-      {menu.isPending ? <p className="muted">{t('menuLoading')}</p> : null}
-      {menu.isError ? (
+      {!menuData && menu.isPending ? <p className="muted">{t('menuLoading')}</p> : null}
+      {!menuData && menu.isError ? (
         <p className="error" role="alert">
           {describeMenuFailure(menu.error, t)}{' '}
           <button type="button" onClick={() => void menu.refetch()}>

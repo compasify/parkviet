@@ -58,6 +58,7 @@ export const REPORT_COLUMNS: Record<PosReportType, string[]> = {
     'item_total',
     'adjustment_total',
     'total',
+    'sold_offline_at',
   ],
   receipts: [
     'received_at',
@@ -187,6 +188,7 @@ export const PERCENT_COLUMNS = new Set(['margin_rate', 'commission_rate'])
 
 export const TIME_COLUMNS = new Set([
   'sold_at',
+  'sold_offline_at',
   'received_at',
   'booked_at',
   'at',

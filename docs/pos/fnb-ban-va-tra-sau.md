@@ -87,7 +87,40 @@ Ghép một điện thoại ở trang **Thiết bị** với mode **Chủ quán*
 **Gửi chủ duyệt.** Khi thu ngân (`apps/pos`) hoặc máy phục vụ bị từ chối vì cần quản lý duyệt — giảm giá, đổi giá, hủy món đã báo bếp, in lại phiếu tạm tính, sửa giờ hoặc tạm dừng lâu, hoàn/giữ cọc, ví suất ăn, chai gửi, sửa hoa hồng xe — màn có nút **Gửi chủ duyệt**. Yêu cầu chờ tối đa 10 phút. Chủ đồng ý thì máy gửi tự làm tiếp với mã duyệt vừa cấp, như mã gõ tay; đơn đổi trước khi chủ bấm thì yêu cầu hết hạn và phải gửi lại. Gõ mã duyệt tay vẫn dùng được như trước.
 
 **Thông báo khi app đóng** chỉ có khi cửa hàng cài dịch vụ chuyển tiếp thông báo ở **Cài đặt → Thông tin server → Thông báo cho app chủ quán** (địa chỉ HTTPS và khóa ký; khóa không hiện lại) và bản app đã cấu hình Firebase/APNs. Thông báo chỉ mang loại sự kiện và mã, không có số tiền hay tên khách. Không có thì app chủ vẫn nhận mọi sự kiện khi đang mở.
-## 10. Dữ liệu thử trên máy phát triển
+## 10. Bán offline khi mất mạng (chỉ tiền mặt)
+
+Quầy thu ngân (`apps/pos`) của chi nhánh bật **Thực đơn** (`fnb.menu`) bán tiếp được đơn tiền mặt khi không tới được server. Điều kiện: quầy loại **Quầy**, chi nhánh có phương thức tiền mặt, và thu ngân đã mở ca trên quầy đó lúc còn mạng. Khi có mạng, màn bán tự lưu một bản dữ liệu bán offline của quầy (thực đơn, giá, món hết, ca, tên quầy, đầu phiếu) mỗi 10 phút và khi ca đổi. Bản này không chứa token, email hay khách hàng, và chỉ dùng được trong 12 giờ. Đăng xuất thì máy xóa bản này.
+
+Mất mạng thì màn bán hiện **Bán offline (chỉ tiền mặt)**. Mở lại trang khi đang mất mạng thì nút này nằm ở màn đăng nhập. Ở màn bán offline:
+
+- Chỉ bán món trong thực đơn đã lưu, có tùy chọn và ghi chú. Mỗi đơn tối đa 20 dòng, 50 món.
+- Thu ngân nhập tiền khách đưa, máy tính tiền thừa. **Thu tiền mặt** lưu đơn trên máy với số tạm `OFF-<mã quầy>-<ngày>-<số>`. **In phiếu tạm** in phiếu ghi "PHIẾU TẠM – CHƯA ĐỒNG BỘ". Đây không phải hóa đơn.
+- Không làm được khi offline:
+  - chuyển khoản, VietQR, thẻ và ví;
+  - ghi nợ, trả sau và cọc;
+  - giảm giá, sửa giá và mọi việc cần duyệt;
+  - trả hàng, đổi hàng và hoàn tiền;
+  - mở hoặc đóng ca, thu chi tiền mặt;
+  - bàn, tab và gửi bếp;
+  - hàng cân, hàng serial/lô, hàng tính giờ và hàng ngoài thực đơn;
+  - hóa đơn điện tử và khách hàng.
+- Máy ngừng nhận đơn offline khi có 200 đơn chưa gửi, hoặc khi có đơn chưa gửi quá 24 giờ. Trình duyệt không lưu được dữ liệu (chế độ ẩn danh, hết dung lượng) thì không bán offline được.
+
+Có mạng lại thì thu ngân về màn bán hàng (đăng nhập lại nếu cần). Máy gửi từng đơn theo thứ tự bán, mỗi đơn một khóa `offline:<mã đơn>`. Mất phản hồi giữa chừng thì lần gửi sau trả lại đúng kết quả cũ, nên không thu hai lần. Với mỗi đơn, server tính lại giá theo thực đơn lúc đồng bộ:
+
+- **Khớp tổng tiền**: server tạo đơn trên ca đã bán, ghi tiền mặt vào ca, hoàn tất đơn và phát hành số đơn, hóa đơn và hóa đơn điện tử. Báo cáo bán hàng có cột **Bán offline lúc** và hai dòng tổng **Đơn bán offline**, **Doanh số bán offline**. Bếp và tem ly không in lại, vì quầy đã giao món.
+- **Không khớp** (giá đổi, món ngừng bán hoặc hết hàng, ca đã đóng, giờ bán lệch ca): đơn chờ ở **Đơn offline cần xem lại** (link trên màn bán). Chỉ thu ngân đã thu tiền hoàn tất được đơn, bằng một trong hai cách:
+  - **Giữ giá đã thu**: cần mã duyệt hoặc **Gửi chủ duyệt**.
+  - **Thu theo giá hiện tại**: nhập tổng tiền mặt đã thu nếu có thu thêm hoặc trả lại.
+
+  Ca đã đóng thì đơn vào ca đang mở của thu ngân. Quản lý có quyền **Duyệt** từ chối được đơn, kèm lý do. Tiền mặt của đơn bị từ chối hiện thành tiền thừa khi đếm két và xử lý ở đối soát tiền muộn.
+- **Server từ chối hẳn** (dữ liệu sai, không còn quyền bán): đơn ở lại trên máy, có nút **Gửi lại**. Máy không tự xóa đơn.
+
+Chống gian lận: server ghi nhật ký mọi đơn offline, cả khi hoàn tất, chờ xem lại hay bị từ chối. Đồng hồ máy lệch quá 10 phút so với server thì đơn bị đánh dấu để kiểm tra giờ bán. Đơn tự viết ra ngoài màn bán offline không vào được ca của người khác, vì server chỉ nhận đơn của chính chủ ca, trên đúng quầy của ca đó.
+
+Bản build (`pnpm --dir apps/pos build`) có service worker `sw.js`, lưu sẵn file của app để mở được khi mất mạng. Service worker không lưu dữ liệu API. Có bản mới thì màn bán hiện **Có bản mới của POS. Tải lại**. Máy chủ web nên trả `sw.js` với `Cache-Control: no-cache`.
+
+## 11. Dữ liệu thử trên máy phát triển
 
 Seed demo tạo một nhà hàng mẫu cho cửa hàng mặc định:
 

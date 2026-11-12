@@ -61,6 +61,10 @@ import 'package:pos_api/src/model/meal_swipe_input.dart';
 import 'package:pos_api/src/model/meal_swipe_result.dart';
 import 'package:pos_api/src/model/meal_wallet_pay_input.dart';
 import 'package:pos_api/src/model/meal_wallet_pay_result.dart';
+import 'package:pos_api/src/model/offline_sale_input.dart';
+import 'package:pos_api/src/model/offline_sale_reject_input.dart';
+import 'package:pos_api/src/model/offline_sale_resolve_input.dart';
+import 'package:pos_api/src/model/offline_sale_result.dart';
 import 'package:pos_api/src/model/owner_alert_list.dart';
 import 'package:pos_api/src/model/owner_branch_list.dart';
 import 'package:pos_api/src/model/owner_open_order_result.dart';
@@ -126,6 +130,8 @@ import 'package:pos_api/src/model/pos_menu_items200_response.dart';
 import 'package:pos_api/src/model/pos_menu_sold_out200_response.dart';
 import 'package:pos_api/src/model/pos_menu_sold_out_request.dart';
 import 'package:pos_api/src/model/pos_modifier_groups200_response.dart';
+import 'package:pos_api/src/model/pos_offline_sales200_response.dart';
+import 'package:pos_api/src/model/pos_offline_snapshot200_response.dart';
 import 'package:pos_api/src/model/pos_print_job_cancel200_response.dart';
 import 'package:pos_api/src/model/pos_print_job_create201_response.dart';
 import 'package:pos_api/src/model/pos_print_job_create_request.dart';
@@ -9159,6 +9165,482 @@ class DefaultApi {
     }
 
     return Response<PosModifierGroups200Response>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// posOfflineSaleIngest
+  /// Replays one cash sale the counter made offline, as the cashier who made it, on its shift. The key must be &#x60;offline:&lt;offline_id&gt;&#x60;: any replay of the same sale answers the same sale and records cash once. The server prices the lines again; a sale that still fits completes now (business date, order number and e-invoice are the server&#39;s), otherwise it waits in &#x60;needs_review&#x60; with &#x60;review_reason&#x60;.
+  ///
+  /// Parameters:
+  /// * [idempotencyKey]
+  /// * [offlineSaleInput]
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [OfflineSaleResult] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<OfflineSaleResult>> posOfflineSaleIngest({
+    required String idempotencyKey,
+    required OfflineSaleInput offlineSaleInput,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v3/admin/pos/offline_sales';
+    final _options = Options(
+      method: r'POST',
+      headers: <String, dynamic>{
+        r'Idempotency-Key': idempotencyKey,
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[],
+        ...?extra,
+      },
+      contentType: 'application/json',
+      validateStatus: validateStatus,
+    );
+
+    dynamic _bodyData;
+
+    try {
+      const _type = FullType(OfflineSaleInput);
+      _bodyData =
+          _serializers.serialize(offlineSaleInput, specifiedType: _type);
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _options.compose(
+          _dio.options,
+          _path,
+        ),
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    final _response = await _dio.request<Object>(
+      _path,
+      data: _bodyData,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    OfflineSaleResult? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(OfflineSaleResult),
+            ) as OfflineSaleResult;
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<OfflineSaleResult>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// posOfflineSaleReject
+  /// A manager (&#x60;pos.approve&#x60;) rejects a sale waiting for review, with a reason. Its parked order is canceled; the cash it took shows as the shift&#39;s overage and is placed through late cash reconciliation.
+  ///
+  /// Parameters:
+  /// * [idempotencyKey]
+  /// * [id]
+  /// * [offlineSaleRejectInput]
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [OfflineSaleResult] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<OfflineSaleResult>> posOfflineSaleReject({
+    required String idempotencyKey,
+    required String id,
+    required OfflineSaleRejectInput offlineSaleRejectInput,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v3/admin/pos/offline_sales/{id}/reject'.replaceAll(
+        '{' r'id' '}',
+        encodeQueryParameter(_serializers, id, const FullType(String))
+            .toString());
+    final _options = Options(
+      method: r'POST',
+      headers: <String, dynamic>{
+        r'Idempotency-Key': idempotencyKey,
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[],
+        ...?extra,
+      },
+      contentType: 'application/json',
+      validateStatus: validateStatus,
+    );
+
+    dynamic _bodyData;
+
+    try {
+      const _type = FullType(OfflineSaleRejectInput);
+      _bodyData =
+          _serializers.serialize(offlineSaleRejectInput, specifiedType: _type);
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _options.compose(
+          _dio.options,
+          _path,
+        ),
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    final _response = await _dio.request<Object>(
+      _path,
+      data: _bodyData,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    OfflineSaleResult? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(OfflineSaleResult),
+            ) as OfflineSaleResult;
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<OfflineSaleResult>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// posOfflineSaleResolve
+  /// The cashier who took the cash finishes a sale waiting for review on their open shift: &#x60;accept_collected&#x60; keeps the collected prices (an approval of &#x60;workspace.override_price&#x60; for the collected total, bound to the parked order&#39;s revision, unless they may override prices), &#x60;current_price&#x60; charges today&#39;s prices, &#x60;edited&#x60; sells other lines.
+  ///
+  /// Parameters:
+  /// * [idempotencyKey]
+  /// * [id]
+  /// * [offlineSaleResolveInput]
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [OfflineSaleResult] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<OfflineSaleResult>> posOfflineSaleResolve({
+    required String idempotencyKey,
+    required String id,
+    required OfflineSaleResolveInput offlineSaleResolveInput,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v3/admin/pos/offline_sales/{id}/resolve'.replaceAll(
+        '{' r'id' '}',
+        encodeQueryParameter(_serializers, id, const FullType(String))
+            .toString());
+    final _options = Options(
+      method: r'POST',
+      headers: <String, dynamic>{
+        r'Idempotency-Key': idempotencyKey,
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[],
+        ...?extra,
+      },
+      contentType: 'application/json',
+      validateStatus: validateStatus,
+    );
+
+    dynamic _bodyData;
+
+    try {
+      const _type = FullType(OfflineSaleResolveInput);
+      _bodyData =
+          _serializers.serialize(offlineSaleResolveInput, specifiedType: _type);
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _options.compose(
+          _dio.options,
+          _path,
+        ),
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    final _response = await _dio.request<Object>(
+      _path,
+      data: _bodyData,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    OfflineSaleResult? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(OfflineSaleResult),
+            ) as OfflineSaleResult;
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<OfflineSaleResult>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// posOfflineSales
+  /// Offline sales of a branch in one status (&#x60;needs_review&#x60; by default), oldest sale first. A manager (&#x60;pos.approve&#x60;) sees everyone&#39;s; a cashier their own.
+  ///
+  /// Parameters:
+  /// * [branchId]
+  /// * [status]
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [PosOfflineSales200Response] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<PosOfflineSales200Response>> posOfflineSales({
+    required String branchId,
+    String? status,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v3/admin/pos/offline_sales';
+    final _options = Options(
+      method: r'GET',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[],
+        ...?extra,
+      },
+      validateStatus: validateStatus,
+    );
+
+    final _queryParameters = <String, dynamic>{
+      r'branch_id':
+          encodeQueryParameter(_serializers, branchId, const FullType(String)),
+      if (status != null)
+        r'status':
+            encodeQueryParameter(_serializers, status, const FullType(String)),
+    };
+
+    final _response = await _dio.request<Object>(
+      _path,
+      options: _options,
+      queryParameters: _queryParameters,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    PosOfflineSales200Response? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(PosOfflineSales200Response),
+            ) as PosOfflineSales200Response;
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<PosOfflineSales200Response>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// posOfflineSnapshot
+  /// What a counter stores to keep selling cash sales while the server is out of reach: the seller, their open shift on the register, the menu with today&#39;s prices and sold-out marks, and the receipt header. &#x60;offline.allowed&#x60; is false (with &#x60;offline.reason&#x60;) when this counter may not sell offline. Answers 304 for a matching &#x60;If-None-Match&#x60;. Needs &#x60;pos.shift.open&#x60; and &#x60;pos.payment&#x60; at the register&#39;s branch.
+  ///
+  /// Parameters:
+  /// * [registerId]
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [PosOfflineSnapshot200Response] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<PosOfflineSnapshot200Response>> posOfflineSnapshot({
+    required String registerId,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v3/admin/pos/offline_snapshot';
+    final _options = Options(
+      method: r'GET',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[],
+        ...?extra,
+      },
+      validateStatus: validateStatus,
+    );
+
+    final _queryParameters = <String, dynamic>{
+      r'register_id': encodeQueryParameter(
+          _serializers, registerId, const FullType(String)),
+    };
+
+    final _response = await _dio.request<Object>(
+      _path,
+      options: _options,
+      queryParameters: _queryParameters,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    PosOfflineSnapshot200Response? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(PosOfflineSnapshot200Response),
+            ) as PosOfflineSnapshot200Response;
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<PosOfflineSnapshot200Response>(
       data: _responseData,
       headers: _response.headers,
       isRedirect: _response.isRedirect,

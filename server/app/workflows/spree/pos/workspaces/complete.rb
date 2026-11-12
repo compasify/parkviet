@@ -94,12 +94,16 @@ module Spree
             # A counter-service order has its call number by the time it is
             # paid: from its first kitchen send, or now.
             OrderNumbers.assign!(workspace)
-            # Paid means sent: the kitchen tickets are written with the sale,
-            # and they print after it commits.
-            Kitchen::Send.on_complete(workspace: workspace, actor: staff)
-            # One label per cup of the order, printed after the sale commits;
-            # labels the kitchen send already printed are not printed again.
-            CupLabels::Issue.after_commit(workspace: workspace, actor: staff, upto: :sold)
+            # A sale replayed after the counter sold it offline was already
+            # handed over: no kitchen tickets or cup labels come late for it.
+            unless OfflineSales.replaying?
+              # Paid means sent: the kitchen tickets are written with the sale,
+              # and they print after it commits.
+              Kitchen::Send.on_complete(workspace: workspace, actor: staff)
+              # One label per cup of the order, printed after the sale commits;
+              # labels the kitchen send already printed are not printed again.
+              CupLabels::Issue.after_commit(workspace: workspace, actor: staff, upto: :sold)
+            end
 
             workspace.update!(revision: workspace.revision + 1, operational_status: 'completed')
             # The bill the table asked for is paid: its request is done.

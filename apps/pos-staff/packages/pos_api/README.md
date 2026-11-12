@@ -167,6 +167,11 @@ Class | Method | HTTP request | Description
 [*DefaultApi*](doc/DefaultApi.md) | [**posMenuItems**](doc/DefaultApi.md#posmenuitems) | **GET** /api/v3/admin/pos/menu_items | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posMenuSoldOut**](doc/DefaultApi.md#posmenusoldout) | **PUT** /api/v3/admin/pos/menu_availabilities | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posModifierGroups**](doc/DefaultApi.md#posmodifiergroups) | **GET** /api/v3/admin/pos/modifier_groups | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posOfflineSaleIngest**](doc/DefaultApi.md#posofflinesaleingest) | **POST** /api/v3/admin/pos/offline_sales | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posOfflineSaleReject**](doc/DefaultApi.md#posofflinesalereject) | **POST** /api/v3/admin/pos/offline_sales/{id}/reject | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posOfflineSaleResolve**](doc/DefaultApi.md#posofflinesaleresolve) | **POST** /api/v3/admin/pos/offline_sales/{id}/resolve | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posOfflineSales**](doc/DefaultApi.md#posofflinesales) | **GET** /api/v3/admin/pos/offline_sales | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posOfflineSnapshot**](doc/DefaultApi.md#posofflinesnapshot) | **GET** /api/v3/admin/pos/offline_snapshot | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posOwnerAlerts**](doc/DefaultApi.md#posowneralerts) | **GET** /api/v3/admin/pos/owner/alerts | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posOwnerBranches**](doc/DefaultApi.md#posownerbranches) | **GET** /api/v3/admin/pos/owner/branches | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posOwnerOpenUnitShow**](doc/DefaultApi.md#posowneropenunitshow) | **GET** /api/v3/admin/pos/owner/open_units/{workspace_id} | 
@@ -464,6 +469,21 @@ Class | Method | HTTP request | Description
  - [ModifierGroupOptionsInner](doc/ModifierGroupOptionsInner.md)
  - [ModifierPick](doc/ModifierPick.md)
  - [ModifierSelection](doc/ModifierSelection.md)
+ - [OfflineSale](doc/OfflineSale.md)
+ - [OfflineSaleInput](doc/OfflineSaleInput.md)
+ - [OfflineSaleLine](doc/OfflineSaleLine.md)
+ - [OfflineSaleLineModifiersInner](doc/OfflineSaleLineModifiersInner.md)
+ - [OfflineSaleRejectInput](doc/OfflineSaleRejectInput.md)
+ - [OfflineSaleResolveInput](doc/OfflineSaleResolveInput.md)
+ - [OfflineSaleResult](doc/OfflineSaleResult.md)
+ - [OfflineSaleStaff](doc/OfflineSaleStaff.md)
+ - [OfflineSnapshot](doc/OfflineSnapshot.md)
+ - [OfflineSnapshotBranch](doc/OfflineSnapshotBranch.md)
+ - [OfflineSnapshotOffline](doc/OfflineSnapshotOffline.md)
+ - [OfflineSnapshotRegister](doc/OfflineSnapshotRegister.md)
+ - [OfflineSnapshotShift](doc/OfflineSnapshotShift.md)
+ - [OfflineSnapshotStaff](doc/OfflineSnapshotStaff.md)
+ - [OfflineSnapshotStore](doc/OfflineSnapshotStore.md)
  - [OwnerAlert](doc/OwnerAlert.md)
  - [OwnerAlertList](doc/OwnerAlertList.md)
  - [OwnerBranch](doc/OwnerBranch.md)
@@ -547,6 +567,8 @@ Class | Method | HTTP request | Description
  - [PosMenuSoldOut200Response](doc/PosMenuSoldOut200Response.md)
  - [PosMenuSoldOutRequest](doc/PosMenuSoldOutRequest.md)
  - [PosModifierGroups200Response](doc/PosModifierGroups200Response.md)
+ - [PosOfflineSales200Response](doc/PosOfflineSales200Response.md)
+ - [PosOfflineSnapshot200Response](doc/PosOfflineSnapshot200Response.md)
  - [PosPrintJobCancel200Response](doc/PosPrintJobCancel200Response.md)
  - [PosPrintJobCreate201Response](doc/PosPrintJobCreate201Response.md)
  - [PosPrintJobCreateRequest](doc/PosPrintJobCreateRequest.md)

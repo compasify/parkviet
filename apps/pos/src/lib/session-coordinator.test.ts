@@ -302,6 +302,19 @@ describe('phiên nhân viên', () => {
     expect(cleared).toHaveBeenCalledOnce();
   });
 
+  it('keeps the cashier signed in when resume gets no answer from the server', async () => {
+    const api = client();
+    sdk.create.mockReturnValue(api);
+    const cleared = vi.fn();
+    const session = createSessionCoordinator({ origin: 'http://localhost', onCleared: cleared });
+    await session.login('staff@example.test', 'password');
+    cleared.mockClear();
+    api.auth.refresh.mockRejectedValue(new TypeError('Failed to fetch'));
+    await session.resume();
+    expect(session.getSnapshot().status).toBe('authenticated');
+    expect(cleared).not.toHaveBeenCalled();
+  });
+
   it('restores a session from the refresh cookie after reload', async () => {
     const api = client();
     sdk.create.mockReturnValue(api);

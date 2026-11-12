@@ -1,9 +1,11 @@
-import { useNavigate } from '@tanstack/react-router';
+import { Link, useNavigate } from '@tanstack/react-router';
 import { type FormEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LoginShowcase } from '../components/login-showcase';
 import { PosIcon } from '../components/pos-icon';
+import { useStoredSnapshot } from '../hooks/use-offline';
 import { session } from '../lib/app-session';
+import { snapshotState } from '../lib/offline-sales';
 import { posDashboardHomeUrl } from '../lib/pos-dashboard-url';
 import '../styles/login.css';
 
@@ -17,6 +19,10 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   // Administration is a separate app with its own sign-in.
   const administrationUrl = posDashboardHomeUrl();
+  // Opened offline (no session to restore): the register may still sell
+  // cash sales from its stored snapshot.
+  const stored = useStoredSnapshot();
+  const offlineReady = stored.loaded && snapshotState(stored.snapshot) === 'ready';
 
   async function login(event: FormEvent) {
     event.preventDefault();
@@ -113,6 +119,11 @@ export function LoginPage() {
               ) : null}
             </div>
           </form>
+          {offlineReady ? (
+            <p className="auth-help">
+              <Link to="/offline">{t('offlineSellLink')}</Link>
+            </p>
+          ) : null}
           <p className="auth-help">{t('loginHelp')}</p>
         </section>
       </div>
