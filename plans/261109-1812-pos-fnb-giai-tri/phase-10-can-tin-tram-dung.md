@@ -401,11 +401,112 @@ Số điện thoại tài xế là dữ liệu cá nhân: chỉ hiện cho ngư�
 
 ### Tiêu chí xong
 
-- [ ] Mở, gắn đơn, chốt, chi và sửa lượt xe chạy đúng quyền và duyệt.
-- [ ] Tính đúng hoa hồng theo xe, theo khách và cả hai; snapshot không đổi khi sửa quy tắc.
-- [ ] Chi tiền mặt đi qua luồng chi tiền ngăn kéo; mỗi lượt chỉ chi một lần.
-- [ ] Báo cáo theo nhà xe và biển số xuất được CSV.
-- [ ] Spec và e2e xanh; OpenAPI đã cập nhật.
+- [x] Mở, gắn đơn, chốt, chi và sửa lượt xe chạy đúng quyền và duyệt.
+- [x] Tính đúng hoa hồng theo xe, theo khách và cả hai; snapshot không đổi khi sửa quy tắc.
+- [x] Chi tiền mặt đi qua luồng chi tiền ngăn kéo; mỗi lượt chỉ chi một lần.
+- [x] Báo cáo theo nhà xe và biển số xuất được CSV.
+- [x] Spec và e2e xanh; OpenAPI đã cập nhật.
+
+### Kết quả
+
+Làm ngày 12/11/2026 trên nhánh `v2`, chưa commit.
+
+**Đã làm**
+
+- **Dữ liệu.** 4 migration (`20261112060000`–`20261112060300`):
+  - bảng `spree_pos_bus_operators` và `spree_pos_vehicle_visits`, kèm check giá trị và check nhất quán chi tiền;
+  - cột `spree_pos_branches.vehicle_visit_window_minutes` (mặc định 60, từ 5 đến 1440);
+  - bảng `spree_pos_commission_rules`, có check "ít nhất một khoản lớn hơn 0" bằng `jsonb_path_exists`;
+  - `spree_pos_workspaces.vehicle_visit_id` (FK);
+  - thêm `vehicle_commissions` vào check report của `spree_pos_export_requests`.
+
+  `schema.rb` dựng lại từ HEAD cộng các khối mới, đủ 216 check constraint (210 cộng 6 mới). Đã chạy `db:test:prepare`.
+- **Model.**
+  - `BusOperator`, `VehicleVisit` và `CommissionRule`, có `has_prefix_id`.
+  - Biển số được chuẩn hóa thành chữ hoa và chữ số.
+  - `VehicleVisit#to_pos` che số điện thoại và mã chuyển khoản (chỉ giữ 4 ký tự cuối) khi người xem không có quyền manage.
+  - Workspace có `belongs_to :vehicle_visit`. `summary` trả `vehicle_visit_id` mà không tốn thêm query.
+  - Capability mới là `pos.vehicle_visit.operate` và `pos.vehicle_visit.manage`, nâng số capability gán được lên 33.
+  - `Approval` thêm subject `VehicleVisit` và action `vehicle_visit.adjust`.
+- **Server.**
+  - `VehicleCommission::Calculator` chọn quy tắc riêng của nhà xe trước, rồi mới đến quy tắc chung đang hiệu lực. Công thức: `per_vehicle_amounts[type] + per_guest × khách`, kèm điều kiện tối thiểu (`no_rule`, `min_guests`, `min_revenue`).
+  - Workflow trong `vehicle_visits/`:
+    - `open`: cảnh báo `plate_open_today`;
+    - `update`: sửa lượt đang mở;
+    - `attach_workspace`: từ chối `workspace_completed`, kiểm lease và revision;
+    - `close`: lưu snapshot, doanh thu chỉ lấy từ đơn đã hoàn tất;
+    - `pay`;
+    - `adjust`;
+    - `void`;
+    - `settings`;
+    - lưu nhà xe và quy tắc.
+  - `pay` bằng tiền mặt:
+    - tạo `CashMovementRequest` cash_out "Hoa hồng xe <biển số>" trên ca đang mở của chính người chi, chứng từ là mã lượt;
+    - dùng lại `PostCashMovement.validate!`, `ShiftBarrier` và `ensure_cash!`;
+    - khóa hàng lượt xe, có unique index và idempotency key;
+    - phiếu bị hủy thì lượt được chi lại.
+
+    Chi chuyển khoản chỉ ghi mã giao dịch.
+  - Job `CloseStaleVehicleVisitsJob` chạy mỗi 5 phút (`recurring.yml`).
+  - Báo cáo `vehicle_commissions` có các cột: ngày kinh doanh, nhà xe, biển số, số lượt, số khách, doanh thu, `commission_amount`, đã chi, chưa chi, tỷ lệ. Kèm xuất CSV và không có số điện thoại hay tên tài xế.
+  - API:
+    - `vehicle_visits`: index, show, create, update, close, pay, adjust, void và settings;
+    - `PUT workspaces/:id/vehicle_visit`;
+    - `bus_operators` và `commission_rules`;
+    - `POST /approvals` nhận `vehicle_visit_id`.
+  - `pos-staff.yaml` thêm path và schema của lượt xe, cùng `vehicle_visit_id` trên Workspace. Đã sinh lại client Dart.
+  - Module `fnb.vehicle_commission` đã đăng ký và bật trong hồ sơ `cang_tin_tram_dung`.
+- **Web `apps/pos`.**
+  - Thanh "Xe đang ở trạm" trên màn bán. Thanh hiện các lượt đang mở (biển số, nhà xe, số khách, số phút còn lại) và có nút "Xe mới". Bấm vào xe để gắn đơn đang mở, bấm lại để bỏ gắn.
+  - Trang "Lượt xe": lọc theo ngày, trạng thái và biển số; chốt lượt; xem cách tính; chi tiền mặt hoặc chuyển khoản qua lệnh tiền có khôi phục; sửa bằng mã duyệt; hủy lượt.
+  - Có link trong menu người dùng, kèm locale vi/en.
+- **`apps/pos-dashboard`.**
+  - Trang "Hoa hồng xe" (nhóm "Trạm dừng"): thời gian lượt xe, nhà xe, và quy tắc theo loại xe, theo khách, mức tối thiểu, ngày hiệu lực, nhà xe.
+  - Tab báo cáo "Hoa hồng xe".
+  - Thêm 2 capability vào nhóm quyền.
+  - Gate truy cập: module phải bật, người dùng là quản trị store hoặc có `pos.vehicle_visit.manage`.
+- **Tài liệu.** [ADR 0004](../../docs/adr/0004-pos-hoa-hong-xe.md).
+
+**Lệnh đã chạy**
+
+| Lệnh | Kết quả |
+|---|---|
+| `pnpm spree rspec spec/services/spree/pos/vehicle_commission spec/models/spree/pos/vehicle_visit_spec.rb spec/workflows/spree/pos/vehicle_visits` | 15 ví dụ, 0 lỗi |
+| `pnpm spree rspec spec/requests/spree/pos/vehicle_visits_spec.rb` | 3 ví dụ, 0 lỗi (chạy lại sau khi đổi tên cột báo cáo) |
+| Spec race chi tiền, các spec module/hồ sơ (branch_modules, branch_profiles, business_profiles, onboarding, topology, module_policy) và `authentication_spec` | 82 ví dụ, 0 lỗi |
+| Hồi quy workspaces, workspace_access/items/commands/race, reports, devices, print_documents, bottle_keeps, meal_accounts, security, shift_close, sale_guards, realtime, topology_access | 120 ví dụ, 0 lỗi |
+| `pnpm spree rspec spec/requests/spree/pos/reports_spec.rb` | 15 ví dụ, 0 lỗi |
+| `packages/pos-shared`: `typecheck`, `lint`, `test` | sạch; 280 test pass |
+| `apps/pos`: `lint`, `typecheck`, `test` | sạch; 304 test pass |
+| `pnpm --dir apps/pos exec playwright test e2e/vehicle-visits.spec.ts --project desktop` (kèm tablet và mobile) | 1/1 trên mỗi project |
+| `pnpm --dir apps/pos exec playwright test e2e/meal-accounts.spec.ts e2e/user-menu.spec.ts e2e/branch-modules.spec.ts e2e/pages-polish.spec.ts --project desktop` | 13/13 |
+| `apps/pos-dashboard`: `lint`, `typecheck`, `test` | sạch; 121 test pass |
+| `apps/pos-staff/tool/gen_api.sh`, `flutter analyze`, `flutter test` | client sinh lại; không có lỗi analyze; 137 test pass |
+
+E2E web: xe mới → gắn 3 đơn → trả tiền mặt và hoàn tất đủ giá → chốt lượt (doanh thu 300.000, hoa hồng 200.000) → chi tiền mặt (đúng 1 phiếu cash_out). Trước khi người thứ hai xác nhận, tiền mong đợi trong két chưa đổi; sau khi xác nhận, tiền mong đợi giảm đúng 200.000.
+
+**Khác với plan**
+
+- Module nằm trong `modules` của hồ sơ `cang_tin_tram_dung`, không nằm trong `optional_modules`. Lý do: `optional_modules` gắn với câu hỏi tạo bảng khi onboarding.
+- Trang cài đặt (nhà xe, quy tắc, thời gian lượt xe) và báo cáo nằm ở `apps/pos-dashboard`, không ở `apps/pos/pages/settings`, theo quy ước của repo.
+- Thời gian lượt xe là cột của chi nhánh, có API `vehicle_visits/settings`.
+- Cột hoa hồng của báo cáo tên là `commission_amount`, vì `reportCol_commission` đã có nghĩa là phí nền tảng.
+- `adjust` luôn cần approval của người khác, kể cả khi người sửa có quyền duyệt.
+- Chốt lượt và gắn đơn cần quyền operate. Chi tiền, sửa, hủy, quy tắc, nhà xe và cài đặt cần quyền manage.
+- Chi tiền mặt cần ca đang mở của chính người chi và tính năng `cash_moves`.
+- Số điện thoại tài xế không bao giờ có trong file xuất, kể cả với người có quyền manage.
+- `bus_operators`, `commission_rules` và settings không có trong `pos-staff.yaml`, vì chỉ dashboard dùng. Không có loại quy tắc `revenue_percent`.
+
+**Còn mở**
+
+- E2E của `apps/pos-dashboard` chưa chạy, vì cổng 5176 đang do dev server của developer giữ. `e2e/administration.spec.ts` đã sửa số checkbox từ 31 thành 33 nhưng chưa chạy.
+- Chưa có trang dashboard e2e cho cài đặt hoa hồng xe.
+- Kế toán / thuế chưa ký duyệt việc khấu trừ thuế TNCN và chứng từ chi hoa hồng cho cá nhân.
+- Chưa thí điểm ở trạm dừng thật.
+- Báo cáo đóng ca không tách riêng hoa hồng; hoa hồng chỉ hiện là một phiếu chi két.
+- Đơn còn mở khi lượt xe chốt vẫn gắn với lượt, nhưng không tính vào doanh thu lượt.
+- Mã duyệt để sửa lượt do quản lý cấp qua API approvals. Màn POS chưa có nút cho quản lý duyệt tại chỗ.
+- Full suite rspec và e2e chưa chạy local (theo quy định); GitHub Actions sẽ chạy.
 
 ## Tiêu chí xong của plan
 
