@@ -44,7 +44,7 @@ test('adds a LAN printer with only the fields its connection uses', async ({ pag
   await page.getByLabel('Tên máy in').fill('Epson quầy');
   await pick(page, 'Kết nối', 'Epson ePOS (mạng LAN)');
   await page.getByLabel('Địa chỉ').fill('192.168.1.20:8008');
-  await page.getByRole('button', { name: 'Lưu' }).last().click();
+  await page.getByRole('form', { name: 'Thông tin máy in' }).getByRole('button', { name: 'Lưu', exact: true }).click();
   await expect(page.getByTestId('printer-row')).toContainText('Epson quầy');
   const write = state.writes.at(-1);
   expect(write?.body).toMatchObject({ branch_id: 'branch_main', connection: 'epson_epos', address: '192.168.1.20:8008', print_station_device_id: null, bluetooth_id: null });
@@ -58,7 +58,7 @@ test('a station printer picks its print station', async ({ page }) => {
   await page.getByLabel('Tên máy in').fill('Sunmi');
   await pick(page, 'Kết nối', 'Máy Sunmi tích hợp');
   await pick(page, 'Trạm in', 'Trạm bếp');
-  await page.getByRole('button', { name: 'Lưu' }).last().click();
+  await page.getByRole('form', { name: 'Thông tin máy in' }).getByRole('button', { name: 'Lưu', exact: true }).click();
   await expect(page.getByTestId('printer-row')).toContainText('Sunmi');
   expect(state.writes.at(-1)?.body).toMatchObject({ connection: 'sunmi_builtin', print_station_device_id: 'posdevice_1', address: null });
 });
@@ -74,7 +74,7 @@ test('a printer with jobs explains why it cannot be deleted', async ({ page }) =
   const state = await install(page); state.printers.push(row('Trạm'));
   await page.goto('/store_1/branches/branch_main/printing');
   await page.getByRole('button', { name: 'Xóa' }).click();
-  await page.getByRole('alertdialog').getByRole('button').last().click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Xóa', exact: true }).click();
   await expect(page.getByText('Máy in đã có lệnh in nên không xóa được. Hãy ngừng dùng máy.')).toBeVisible();
 });
 

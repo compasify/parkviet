@@ -439,10 +439,19 @@
         "business_date": "Ngày kinh doanh",
         "taxes": "Bảng thuế theo thuế suất"
       },
+      "order": {
+        "call_number": "Số gọi món",
+        "guest_name": "Tên khách gọi món"
+      },
       "customer": {
         "name": "Tên khách hàng",
         "phone": "Số điện thoại khách",
         "address": "Địa chỉ giao hàng"
+      },
+      "einvoice": {
+        "lookup_code": "Mã tra cứu hóa đơn điện tử",
+        "lookup_url": "Trang tra cứu hóa đơn điện tử",
+        "buyer_qr": "Link để khách lấy hóa đơn điện tử"
       }
     },
     "preview": {

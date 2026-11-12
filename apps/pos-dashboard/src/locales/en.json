@@ -440,10 +440,19 @@
         "business_date": "Business date",
         "taxes": "Tax table by rate"
       },
+      "order": {
+        "call_number": "Call number",
+        "guest_name": "Guest name on the order"
+      },
       "customer": {
         "name": "Customer name",
         "phone": "Customer phone",
         "address": "Delivery address"
+      },
+      "einvoice": {
+        "lookup_code": "E-invoice lookup code",
+        "lookup_url": "E-invoice lookup page",
+        "buyer_qr": "Link for the buyer to get the e-invoice"
       }
     },
     "preview": {
