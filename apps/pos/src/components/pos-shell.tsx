@@ -33,6 +33,10 @@ import { PosSelectionProvider, usePosSelection } from './pos-selection';
 import { ScannerCalibrationDialog } from './scanner-calibration';
 import { UserMenu } from './user-menu';
 
+// Counter pages other than selling, by their path.
+const COUNTER_PAGES =
+  /\/(returns|shifts|collect|receipts|reservations|bottle-keeps|meal-accounts|tips)(\/|$)/;
+
 export function PosShell() {
   return (
     <PosSelectionProvider>
@@ -62,12 +66,12 @@ function ShellFrame() {
             ? t('reservationsNav')
             : pathname.endsWith('/bottle-keeps')
               ? t('bottleKeepsNav')
-              : pathname.endsWith('/tips')
-                ? t('tipsNav')
-                : t('sellingArea');
-  const isSale = !/\/(returns|shifts|collect|receipts|reservations|bottle-keeps|tips)(\/|$)/.test(
-    pathname,
-  );
+              : pathname.endsWith('/meal-accounts')
+                ? t('mealAccountsNav')
+                : pathname.endsWith('/tips')
+                  ? t('tipsNav')
+                  : t('sellingArea');
+  const isSale = !COUNTER_PAGES.test(pathname);
   // A store not set up yet, seen by someone who may set it up, is pointed at
   // the setup wizard of the POS dashboard instead of the branch picker dialog.
   // Without that permission the picker asks for an administrator

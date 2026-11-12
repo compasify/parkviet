@@ -11,6 +11,7 @@ import { BottleKeepsPage } from './pages/bottle-keeps';
 import { CollectPage } from './pages/collect';
 import { CustomerDisplayPage } from './pages/customer-display';
 import { LoginPage } from './pages/login';
+import { MealAccountsPage } from './pages/meal-accounts';
 import { ReceiptPage } from './pages/receipt';
 import { ReservationsPage } from './pages/reservations';
 import { ReturnExchangePage } from './pages/return-exchange';
@@ -96,6 +97,13 @@ const bottleKeepsRoute = createRoute({
   component: BottleKeepsPage,
 });
 
+// A canteen's meal accounts: balances, wallet history, top-ups and refunds.
+const mealAccountsRoute = createRoute({
+  getParentRoute: () => authedRoute,
+  path: '/meal-accounts',
+  component: MealAccountsPage,
+});
+
 // The tips of a business day and paying them to the staff.
 const tipsRoute = createRoute({
   getParentRoute: () => authedRoute,
@@ -135,6 +143,7 @@ export const router = createRouter({
       collectRoute,
       reservationsRoute,
       bottleKeepsRoute,
+      mealAccountsRoute,
       tipsRoute,
       receiptsRoute,
     ]),

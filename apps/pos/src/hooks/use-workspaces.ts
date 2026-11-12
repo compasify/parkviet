@@ -771,6 +771,43 @@ export function useWorkspaces(
         throw error;
       }
     },
+    // Records a canteen meal on the order: the eater, by the code typed at
+    // the counter or picked from the name search, becomes its customer. A
+    // refusal (duplicate swipe, limit, locked account) is a 409 with a reason.
+    async mealSwipe(
+      workspace: PosWorkspace,
+      input:
+        | { code: string; inputMethod: 'code' }
+        | { mealAccountId: string; inputMethod: 'search' },
+    ) {
+      const body = {
+        expected_revision: workspace.revision,
+        lease_generation: workspace.lease_generation,
+        editor_id: editorId,
+        input_method: input.inputMethod,
+        ...('code' in input ? { code: input.code } : { meal_account_id: input.mealAccountId }),
+      };
+      const key = crypto.randomUUID();
+      try {
+        const result = await commandQueue.enqueue(workspace.id, key, commandDigest(body), () =>
+          session.request<{ data: { result: string; meal: unknown; workspace: PosWorkspace } }>(
+            'POST',
+            `/pos/workspaces/${workspace.id}/meal_swipes`,
+            { body: { ...body, idempotency_key: key }, idempotencyKey: key },
+          ),
+        );
+        await acceptWorkspace(result.data.workspace);
+        channel?.postMessage(workspaceHint(result.data.workspace.id));
+        return result.data;
+      } catch (error) {
+        if (leaseConflict(error)?.reason === 'lease_stale') {
+          release(workspace.id);
+          void refresh();
+        }
+        abandonIfNeeded(error);
+        throw error;
+      }
+    },
     // A buffet ticket per guest: a `cover` line of the tier.
     async addBuffetCover(workspace: PosWorkspace, tierId: string, guests: number) {
       return (

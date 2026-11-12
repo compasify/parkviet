@@ -8,6 +8,7 @@ part of 'serializers.dart';
 
 Serializers _$serializers = (Serializers().toBuilder()
       ..add($KitchenStationInput.serializer)
+      ..add($MealAccount.serializer)
       ..add($MenuItemConfig.serializer)
       ..add($StationRouteInput.serializer)
       ..add(AppendItem.serializer)
@@ -149,6 +150,22 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(LineComponent.serializer)
       ..add(LineKitchenStatus.serializer)
       ..add(LineModifier.serializer)
+      ..add(MealAccountPayModeEnum.serializer)
+      ..add(MealAccountStatusEnum.serializer)
+      ..add(MealResolve.serializer)
+      ..add(MealResolveResult.serializer)
+      ..add(MealSplitPlan.serializer)
+      ..add(MealSponsorRef.serializer)
+      ..add(MealStatus.serializer)
+      ..add(MealSwipe.serializer)
+      ..add(MealSwipeInput.serializer)
+      ..add(MealSwipeInputInputMethodEnum.serializer)
+      ..add(MealSwipeResult.serializer)
+      ..add(MealSwipeResultEnum.serializer)
+      ..add(MealWalletPay.serializer)
+      ..add(MealWalletPayInput.serializer)
+      ..add(MealWalletPayResult.serializer)
+      ..add(MealWindow.serializer)
       ..add(Menu.serializer)
       ..add(MenuAvailability.serializer)
       ..add(MenuCategory.serializer)
@@ -435,6 +452,8 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(WorkspaceLine.serializer)
       ..add(WorkspaceLineCourseStatusEnum.serializer)
       ..add(WorkspaceLineKindEnum.serializer)
+      ..add(WorkspaceMeal.serializer)
+      ..add(WorkspaceMealResult.serializer)
       ..add(WorkspaceMinimumSpend.serializer)
       ..add(WorkspacePageMeta.serializer)
       ..add(WorkspacePrebill.serializer)
@@ -619,6 +638,15 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(LineComponent)]),
           () => ListBuilder<LineComponent>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(MealAccount)]),
+          () => ListBuilder<MealAccount>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(MealWindow)]),
+          () => ListBuilder<MealWindow>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(MealWindow)]),
+          () => ListBuilder<MealWindow>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(MenuCategory)]),
           () => ListBuilder<MenuCategory>())

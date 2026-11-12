@@ -84,7 +84,7 @@ RSpec.describe 'POS onboarding', type: :request, pos_modules: :default, pos_feat
     expect(data['register']).to include('id' => register.prefixed_id)
     expect(data['membership']).to include('id' => membership.prefixed_id)
     expect(data['modules']).to eq('retail.units' => true, 'retail.measured' => false, 'retail.traceability' => true, 'fnb.menu' => false, 'fnb.recipes' => false, 'fnb.kitchen' => false, 'fnb.order_number' => false, 'fnb.cup_label' => false, 'fnb.delivery_platforms' => false, 'resources' => false, 'fnb.tables' => false, 'fnb.postpay' => false, 'fnb.service_charge' => false,
-                                     'fnb.reservations' => false, 'fnb.bottle_keep' => false, 'fnb.pour_tracking' => false)
+                                     'fnb.reservations' => false, 'fnb.bottle_keep' => false, 'fnb.pour_tracking' => false, 'fnb.meal_accounts' => false)
     expect(data['features']).to include('traceability' => true, 'returns' => true, 'credit' => false, 'refunds' => false)
 
     first_body = response.parsed_body

@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { exportFileUrl } from './report-download'
 import {
+  dashboardReportTypes,
   dayText,
   exportFilters,
   knownShifts,
   matchesTerm,
   RETURN_COLUMNS,
   reportColumns,
+  reportFigures,
   reportPagination,
   reportRequest,
   summaryEntries,
@@ -43,6 +45,28 @@ describe('report requests', () => {
       to: '2026-11-10',
       shift_id: 'sh_1',
     })
+  })
+
+  it('sends the meal result and waits for a sponsor on the statement', () => {
+    const day = '2026-11-10'
+    const meals = reportRequest('meals', { result: 'duplicate', sponsorId: 's1' }, day, 's')
+    expect(meals.filters).toEqual({ from: day, to: day, result: 'duplicate' })
+    expect(meals.needsSponsor).toBe(false)
+    const waiting = reportRequest('meal_statement', { result: 'ok' }, day, 's')
+    expect(waiting.needsSponsor).toBe(true)
+    expect(waiting.filters).not.toHaveProperty('result')
+    const statement = reportRequest('meal_statement', { sponsorId: 's1' }, day, 's')
+    expect(statement.needsSponsor).toBe(false)
+    expect(statement.filters).toMatchObject({ meal_sponsor_id: 's1' })
+  })
+
+  it('lists the canteen reports while the branch runs meal accounts', () => {
+    const modules = { 'fnb.meal_accounts': true }
+    expect(dashboardReportTypes(modules, true)).toEqual(
+      expect.arrayContaining(['sales', 'meals', 'meal_statement']),
+    )
+    expect(dashboardReportTypes(modules, false)).not.toContain('meal_statement')
+    expect(dashboardReportTypes({}, true)).not.toContain('meals')
   })
 
   it('refuses a reversed or too long range', () => {
@@ -95,6 +119,16 @@ describe('report presentation', () => {
       ['total', '1.0'],
       ['shift_count', 3],
     ])
+  })
+
+  it('shows each refusal reason of the meals summary as its own figure', () => {
+    const summary = { meals: 12, refused: { duplicate: 2, limit: 1 } }
+    expect(summaryEntries(reportFigures('meals', summary))).toEqual([
+      ['meals', 12],
+      ['refused_duplicate', 2],
+      ['refused_limit', 1],
+    ])
+    expect(reportFigures('sales', summary)).toBe(summary)
   })
 
   it('collects each shift once across cashbook pages', () => {

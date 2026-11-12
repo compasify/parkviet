@@ -8,9 +8,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { fetchCatalogPage, parseMeasurementBarcode } from '../hooks/use-catalog';
 import { useInvoiceNumbers } from '../hooks/use-invoice-numbers';
+import { useWorkspaceMeal } from '../hooks/use-meal-accounts';
 import { useMenu } from '../hooks/use-menu';
 import { DraftReplayRefused, useWorkspaces } from '../hooks/use-workspaces';
 import { commandQueue } from '../lib/command-queue';
+import { MEAL_ACCOUNTS_MODULE } from '../lib/meal-accounts';
 import { resolveScan, type ScanOutcome } from '../lib/measured-label';
 import { soldOutVariantIds } from '../lib/menu-selection';
 import { type PosLineItem, type PosWorkspace, writesLocked } from '../lib/pos-context';
@@ -52,6 +54,7 @@ import { DiscountForm } from './discount-form';
 import { DisplayPinControl } from './display-pin-control';
 import { GuestNameField } from './guest-name-field';
 import { KitchenHistory } from './kitchen-history';
+import { MealBanner } from './meal-banner';
 import { MenuGrid } from './menu-grid';
 import { MinimumSpendLines } from './minimum-spend-lines';
 import { NoteForm } from './note-form';
@@ -64,6 +67,7 @@ import { PosIcon } from './pos-icon';
 import { usePosSelection } from './pos-selection';
 import { PrebillDialog } from './prebill-dialog';
 import { ReservationDepositNote } from './reservation-deposit-note';
+import { ScanInput } from './scan-input';
 import { useScannerCalibration } from './scanner-calibration';
 import { ServiceModeControl } from './service-mode-control';
 import { TabList } from './tab-list';
@@ -216,6 +220,10 @@ export function WorkspaceTabs() {
   const [savedSurface, setSavedSurface] = useState(() => savedTableSurface());
   const tableSurface = tableSurfaceOf(data, savedSurface);
   const postpay = data?.modules?.['fnb.postpay'] === true;
+  // Canteen: the scan field records meals; the eater and the split come back per order.
+  const mealAccounts = data?.modules?.[MEAL_ACCOUNTS_MODULE] === true;
+  const mealQuery = useWorkspaceMeal(active, mealAccounts);
+  const meal = mealAccounts ? (mealQuery.data?.meal ?? null) : null;
   const activeTable = tableOrderOf(active);
   const tablist = useRef<HTMLDivElement>(null);
   const discountDetailsRef = useRef<HTMLDetailsElement>(null);
@@ -1059,6 +1067,27 @@ export function WorkspaceTabs() {
                   </button>
                 </div>
               ) : null}
+              {mealAccounts ? (
+                <ScanInput
+                  key={`meal-scan:${storeId}:${selection.branchId}`}
+                  branchId={selection.branchId}
+                  workspace={active}
+                  disabled={!editable || channelUnavailable}
+                  onSwipe={(input) => {
+                    if (!active) return Promise.reject(new Error('workspace-required'));
+                    return command(active, async (current) => {
+                      const swiped = await workspaces.mealSwipe(current, input);
+                      return swiped.workspace;
+                    });
+                  }}
+                  onBarcode={
+                    editable && !channelUnavailable
+                      ? (code) => enqueueScan.current(code)
+                      : undefined
+                  }
+                  barcodeNotice={menuSurface ? scanNotice : null}
+                />
+              ) : null}
               {menuSurface ? (
                 <MenuGrid
                   key={`${storeId}:${selection.branchId}`}
@@ -1629,8 +1658,25 @@ export function WorkspaceTabs() {
                       }
                     />
                   ) : null}
+                  {meal ? (
+                    <MealBanner
+                      workspace={active}
+                      meal={meal}
+                      staffId={staffId}
+                      storeId={storeId}
+                      canCollect={Boolean(data?.capabilities.includes('pos.payment.collect'))}
+                      drawerOpen={Boolean(
+                        data?.shift &&
+                          data.shift.id === active.shift_id &&
+                          data.shift.owner_id === data.staff.id,
+                      )}
+                      disabled={locked || busy || !isEditor}
+                      command={(action) => command(active, action)}
+                    />
+                  ) : null}
                   <PaymentPanel
                     workspace={active}
+                    mealSponsorAmount={meal?.plan?.sponsor_amount ?? null}
                     staffId={staffId}
                     storeId={storeId}
                     canCollect={Boolean(data?.capabilities.includes('pos.payment.collect'))}

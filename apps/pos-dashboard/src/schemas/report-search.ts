@@ -1,6 +1,7 @@
 import { ORDER_SOURCES } from '@parkviet/pos-shared/order-source'
 import { resourceSearchSchema } from '@spree/dashboard-core'
 import { z } from 'zod'
+import { MEAL_RESULTS } from '../lib/report-table'
 
 const id = z.string().max(64).optional().catch(undefined)
 const day = z
@@ -24,5 +25,7 @@ export const reportSearchSchema = resourceSearchSchema.extend({
   source: z.enum(['sale', 'collection', 'unsolicited']).optional().catch(undefined),
   status: z.enum(['overdue', 'settled', 'all']).optional().catch(undefined),
   shiftPage: z.coerce.number().int().min(1).optional().catch(undefined),
+  result: z.enum(MEAL_RESULTS).optional().catch(undefined),
+  sponsorId: id,
 })
 export type ReportSearch = z.infer<typeof reportSearchSchema>

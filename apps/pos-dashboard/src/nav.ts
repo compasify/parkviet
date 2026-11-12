@@ -2,6 +2,7 @@ import { type NavEntry, nav, settingsNav, usePermissions } from '@spree/dashboar
 import {
   ChartColumn,
   HandCoins,
+  IdCard,
   ListChecks,
   Package,
   ReceiptText,
@@ -62,6 +63,15 @@ const groups: { key: string; labelKey: string; icon: NavEntry['icon']; children:
     labelKey: 'navMenu',
     icon: UtensilsCrossed,
     children: [{ key: 'menu', labelKey: 'menuAdmin.title', path: '/menu' }],
+  },
+  {
+    key: 'canteen',
+    labelKey: 'mealAccounts.nav',
+    icon: IdCard,
+    children: [
+      { key: 'meal-accounts', labelKey: 'mealAccounts.title', path: '/meal-accounts' },
+      { key: 'meal-sponsors', labelKey: 'mealSponsors.title', path: '/meal-sponsors' },
+    ],
   },
   {
     key: 'stock',

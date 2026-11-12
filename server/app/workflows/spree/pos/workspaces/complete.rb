@@ -14,15 +14,22 @@ module Spree
         #
         # `einvoice_buyer` is who the e-invoice is for (Einvoices::Buyer); none
         # means a sale to a consumer. The invoice itself is only queued here.
+        #
+        # With `meal_sponsor` the unpaid remainder is a canteen sponsor's part of
+        # the meal, sold on the sponsor's credit account (MealAccounts::ChargeSponsor).
         def self.call(workspace:, staff:, revision:, lease_generation:, editor_id:, key:, credit_approval_id: nil,
-                      einvoice_buyer: nil)
+                      einvoice_buyer: nil, meal_sponsor: false)
           credit = credit_approval_id.to_s.presence
+          sponsor = ActiveModel::Type::Boolean.new.cast(meal_sponsor) ? true : false
+          raise Conflict, 'Sell on credit or charge the meal sponsor, not both.' if credit && sponsor
+
           buyer = Einvoices::Buyer.normalize!(einvoice_buyer)
           payload = {
             'command' => 'workspace.complete', 'revision' => revision, 'lease_generation' => lease_generation,
             'editor_digest' => Workspace.editor_digest(editor_id)
           }
           payload['credit_approval_id'] = credit if credit
+          payload['meal_sponsor'] = true if sponsor
           payload['einvoice_buyer'] = buyer if buyer.any?
           authorize = lambda do
             Tenders::Guard.authorize_editor!(workspace, staff)
@@ -51,6 +58,7 @@ module Spree
 
             allocated = FundsAllocation.where(workspace: workspace, status: 'active').sum(:amount)
             debt = credit ? credit_debt!(workspace, allocated) : BigDecimal('0')
+            debt, meal_account, payer = MealAccounts::ChargeSponsor.plan!(workspace, allocated) if sponsor
             raise Conflict, 'Received funds do not cover the order total.' if allocated + debt < order.total
             raise Conflict, 'Allocated funds exceed the order total.' if allocated > order.total
 
@@ -64,6 +72,7 @@ module Spree
             end
 
             entry = Credit::Commit.call(workspace: workspace, staff: staff, approval_id: credit, amount: debt) if credit
+            entry = MealAccounts::ChargeSponsor.commit!(workspace, staff, debt, meal_account, payer) if sponsor
             # Core settles payments itself unless told they are pending; the
             # approved debt is the only reason this order may place short.
             # Placement allocates tracked stock too; the reservations become the

@@ -5,10 +5,10 @@ import {
   RANGE_PRESETS,
   rangePreset,
 } from '@parkviet/pos-shared/order-source'
-import type { ReportType } from '@parkviet/pos-shared/reports'
 import { Button, Card, CardContent, Checkbox, Input, Label } from '@spree/dashboard-ui'
 import { type ReactNode, useId } from 'react'
 import { useTranslation } from 'react-i18next'
+import { MEAL_RESULTS, type PosReportType } from '../../lib/report-table'
 import type { ReportSearch } from '../../schemas/report-search'
 import { FilterSelect } from '../filter-select'
 
@@ -28,6 +28,8 @@ export type ReportFilterPatch = Partial<
     | 'kind'
     | 'source'
     | 'status'
+    | 'result'
+    | 'sponsorId'
   >
 >
 
@@ -42,10 +44,11 @@ export function ReportFilters({
   dated,
   registers,
   shifts,
+  sponsors = [],
   onChange,
   children,
 }: {
-  type: ReportType
+  type: PosReportType
   search: ReportSearch
   today: string
   from: string
@@ -53,6 +56,7 @@ export function ReportFilters({
   dated: boolean
   registers: { id: string; name: string }[]
   shifts: { id: string; label: string }[]
+  sponsors?: { id: string; name: string }[]
   onChange: (patch: ReportFilterPatch) => void
   children?: ReactNode
 }) {
@@ -194,6 +198,31 @@ export function ReportFilters({
                 { value: 'all', label: t('reportAll') },
               ]}
               onChange={(value) => onChange({ status: pick(value) })}
+            />
+          )}
+          {type === 'meals' && (
+            <FilterSelect
+              label={t('reportCol_result')}
+              value={search.result ?? ALL}
+              options={[
+                { value: ALL, label: t('reportAll') },
+                ...MEAL_RESULTS.map((value) => ({ value, label: t(`reportMealResult_${value}`) })),
+              ]}
+              onChange={(value) => onChange({ result: pick(value) })}
+            />
+          )}
+          {type === 'meal_statement' && (
+            <FilterSelect
+              label={t('reportCol_sponsor')}
+              value={search.sponsorId ?? ALL}
+              options={[
+                { value: ALL, label: t('reportChooseSponsor') },
+                ...sponsors.map((row) => ({ value: row.id, label: row.name })),
+                ...(search.sponsorId && !sponsors.some((row) => row.id === search.sponsorId)
+                  ? [{ value: search.sponsorId, label: search.sponsorId }]
+                  : []),
+              ]}
+              onChange={(value) => onChange({ sponsorId: pick(value) })}
             />
           )}
           <div className="flex h-9 items-center gap-2">

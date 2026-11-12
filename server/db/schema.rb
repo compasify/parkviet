@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_12_040500) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_12_050200) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gist"
   enable_extension "pg_catalog.plpgsql"
@@ -3012,7 +3012,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_040500) do
     t.index ["requester_id"], name: "index_spree_pos_export_requests_on_requester_id"
     t.index ["status", "expires_at"], name: "idx_pos_export_requests_expiry"
     t.index ["store_id"], name: "index_spree_pos_export_requests_on_store_id"
-    t.check_constraint "report_type::text = ANY (ARRAY['sales'::character varying, 'receipts'::character varying, 'cashbook'::character varying, 'receivables'::character varying, 'closures'::character varying, 'ingredient_usage'::character varying, 'menu_margin'::character varying, 'platforms'::character varying]::text[])", name: "chk_pos_export_requests_report"
+    t.check_constraint "report_type::text = ANY (ARRAY['sales'::character varying, 'receipts'::character varying, 'cashbook'::character varying, 'receivables'::character varying, 'closures'::character varying, 'ingredient_usage'::character varying, 'menu_margin'::character varying, 'platforms'::character varying, 'bar'::character varying, 'meals'::character varying, 'meal_statement'::character varying]::text[])", name: "chk_pos_export_requests_report"
     t.check_constraint "status::text = ANY (ARRAY['queued'::character varying::text, 'processing'::character varying::text, 'ready'::character varying::text, 'failed'::character varying::text, 'expired'::character varying::text])", name: "chk_pos_export_requests_status"
   end
 
@@ -3320,6 +3320,62 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_040500) do
     t.index ["modifier_option_id"], name: "index_spree_pos_line_modifiers_on_modifier_option_id"
     t.index ["sale_line_id"], name: "index_spree_pos_line_modifiers_on_sale_line_id"
     t.check_constraint "quantity > 0 AND price_delta >= 0::numeric", name: "chk_pos_line_modifiers_values"
+  end
+
+  create_table "spree_pos_meal_accounts", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "customer_profile_id", null: false
+    t.bigint "meal_sponsor_id"
+    t.bigint "stored_value_account_id", null: false
+    t.string "employee_code", limit: 32, null: false
+    t.string "group_label", limit: 120
+    t.integer "daily_meal_limit"
+    t.jsonb "meal_windows", default: [], null: false
+    t.string "pay_mode", limit: 16, default: "wallet", null: false
+    t.decimal "low_balance_threshold", precision: 19, scale: 4
+    t.string "status", limit: 16, default: "active", null: false
+    t.integer "revision", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["customer_profile_id"], name: "index_spree_pos_meal_accounts_on_customer_profile_id"
+    t.index ["meal_sponsor_id"], name: "index_spree_pos_meal_accounts_on_meal_sponsor_id"
+    t.index ["store_id", "employee_code"], name: "idx_pos_meal_accounts_code", unique: true
+    t.index ["stored_value_account_id"], name: "index_spree_pos_meal_accounts_on_stored_value_account_id", unique: true
+    t.check_constraint "(pay_mode::text = ANY (ARRAY['wallet'::character varying, 'sponsor'::character varying, 'sponsor_subsidy'::character varying]::text[])) AND (status::text = ANY (ARRAY['active'::character varying, 'locked'::character varying]::text[])) AND (pay_mode::text = 'wallet'::text OR meal_sponsor_id IS NOT NULL) AND (daily_meal_limit IS NULL OR daily_meal_limit >= 0 AND daily_meal_limit <= 20) AND (low_balance_threshold IS NULL OR low_balance_threshold >= 0::numeric)", name: "chk_pos_meal_accounts_values"
+  end
+
+  create_table "spree_pos_meal_sponsors", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "customer_profile_id", null: false
+    t.bigint "credit_account_id"
+    t.string "name", limit: 120, null: false
+    t.integer "statement_day", default: 1, null: false
+    t.string "subsidy_mode", limit: 16, default: "none", null: false
+    t.decimal "subsidy_value", precision: 19, scale: 4, default: "0.0", null: false
+    t.decimal "subsidy_daily_cap", precision: 19, scale: 4
+    t.string "status", limit: 16, default: "active", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["credit_account_id"], name: "index_spree_pos_meal_sponsors_on_credit_account_id"
+    t.index ["store_id", "customer_profile_id"], name: "idx_pos_meal_sponsors_customer", unique: true
+    t.check_constraint "(subsidy_mode::text = ANY (ARRAY['none'::character varying, 'fixed'::character varying, 'percent'::character varying]::text[])) AND (status::text = ANY (ARRAY['active'::character varying, 'suspended'::character varying]::text[])) AND statement_day >= 1 AND statement_day <= 28 AND subsidy_value >= 0::numeric AND (subsidy_mode::text <> 'percent'::text OR subsidy_value <= 100::numeric) AND (subsidy_daily_cap IS NULL OR subsidy_daily_cap >= 0::numeric)", name: "chk_pos_meal_sponsors_values"
+  end
+
+  create_table "spree_pos_meal_swipes", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "meal_account_id"
+    t.bigint "branch_id", null: false
+    t.bigint "workspace_id"
+    t.bigint "actor_id", null: false
+    t.string "input_method", limit: 16, null: false
+    t.date "business_date", null: false
+    t.string "meal_window", limit: 32
+    t.string "result", limit: 16, null: false
+    t.datetime "created_at", null: false
+    t.index ["branch_id", "business_date"], name: "idx_pos_meal_swipes_branch_day"
+    t.index ["meal_account_id", "business_date"], name: "idx_pos_meal_swipes_account_day"
+    t.index ["workspace_id"], name: "index_spree_pos_meal_swipes_on_workspace_id"
+    t.check_constraint "(input_method::text = ANY (ARRAY['code'::character varying, 'search'::character varying]::text[])) AND (result::text = ANY (ARRAY['ok'::character varying, 'duplicate'::character varying, 'limit'::character varying, 'window'::character varying, 'revoked'::character varying, 'unknown'::character varying]::text[])) AND (result::text = 'unknown'::text OR meal_account_id IS NOT NULL)", name: "chk_pos_meal_swipes_values"
   end
 
   create_table "spree_pos_menu_availabilities", force: :cascade do |t|
@@ -4406,6 +4462,39 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_040500) do
     t.index ["store_id"], name: "index_spree_pos_store_profiles_on_store_id", unique: true
     t.check_constraint "einvoice_type::text = ANY (ARRAY['none'::character varying, 'cash_register'::character varying, 'coded'::character varying]::text[])", name: "chk_pos_store_profiles_einvoice_type"
     t.check_constraint "profile_version >= 1", name: "chk_pos_store_profiles_version"
+  end
+
+  create_table "spree_pos_stored_value_accounts", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "customer_profile_id", null: false
+    t.string "kind", limit: 16, null: false
+    t.string "currency", limit: 16, null: false
+    t.string "status", limit: 16, default: "active", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["customer_profile_id"], name: "index_spree_pos_stored_value_accounts_on_customer_profile_id"
+    t.index ["store_id", "kind"], name: "idx_pos_stored_value_accounts_store"
+    t.check_constraint "kind::text = 'meal'::text AND (status::text = ANY (ARRAY['active'::character varying, 'closed'::character varying]::text[]))", name: "chk_pos_stored_value_accounts_values"
+  end
+
+  create_table "spree_pos_stored_value_entries", force: :cascade do |t|
+    t.bigint "stored_value_account_id", null: false
+    t.string "kind", limit: 16, null: false
+    t.decimal "amount", precision: 19, scale: 4, null: false
+    t.integer "minutes"
+    t.bigint "received_funds_id"
+    t.bigint "funds_allocation_id"
+    t.bigint "liability_payout_id"
+    t.bigint "workspace_id"
+    t.bigint "actor_id", null: false
+    t.string "note", limit: 255
+    t.datetime "created_at", null: false
+    t.index ["funds_allocation_id"], name: "index_spree_pos_stored_value_entries_on_funds_allocation_id", unique: true
+    t.index ["liability_payout_id"], name: "index_spree_pos_stored_value_entries_on_liability_payout_id", unique: true
+    t.index ["received_funds_id"], name: "index_spree_pos_stored_value_entries_on_received_funds_id"
+    t.index ["stored_value_account_id", "id"], name: "idx_pos_stored_value_entries_account"
+    t.index ["workspace_id"], name: "index_spree_pos_stored_value_entries_on_workspace_id"
+    t.check_constraint "kind::text = 'top_up'::text AND amount > 0::numeric AND received_funds_id IS NOT NULL OR kind::text = 'spend'::text AND amount < 0::numeric AND funds_allocation_id IS NOT NULL OR kind::text = 'refund'::text AND amount < 0::numeric AND liability_payout_id IS NOT NULL OR kind::text = 'adjust'::text AND amount <> 0::numeric", name: "chk_pos_stored_value_entries_kind"
   end
 
   create_table "spree_pos_tax_rate_schedules", force: :cascade do |t|
@@ -6555,6 +6644,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_040500) do
   add_foreign_key "spree_pos_line_discount_intents", "spree_pos_workspaces", column: "workspace_id"
   add_foreign_key "spree_pos_line_modifiers", "spree_pos_modifier_options", column: "modifier_option_id", on_delete: :nullify
   add_foreign_key "spree_pos_line_modifiers", "spree_pos_sale_lines", column: "sale_line_id", on_delete: :cascade
+  add_foreign_key "spree_pos_meal_accounts", "spree_pos_customers", column: "customer_profile_id"
+  add_foreign_key "spree_pos_meal_accounts", "spree_pos_meal_sponsors", column: "meal_sponsor_id"
+  add_foreign_key "spree_pos_meal_accounts", "spree_pos_stored_value_accounts", column: "stored_value_account_id"
+  add_foreign_key "spree_pos_meal_accounts", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_meal_sponsors", "spree_pos_credit_accounts", column: "credit_account_id"
+  add_foreign_key "spree_pos_meal_sponsors", "spree_pos_customers", column: "customer_profile_id"
+  add_foreign_key "spree_pos_meal_sponsors", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_meal_swipes", "spree_admin_users", column: "actor_id"
+  add_foreign_key "spree_pos_meal_swipes", "spree_pos_branches", column: "branch_id"
+  add_foreign_key "spree_pos_meal_swipes", "spree_pos_meal_accounts", column: "meal_account_id"
+  add_foreign_key "spree_pos_meal_swipes", "spree_pos_workspaces", column: "workspace_id"
+  add_foreign_key "spree_pos_meal_swipes", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_menu_availabilities", "spree_pos_branches", column: "branch_id", on_delete: :cascade
   add_foreign_key "spree_pos_menu_availabilities", "spree_pos_menu_items", column: "menu_item_id", on_delete: :cascade
   add_foreign_key "spree_pos_menu_categories", "spree_stores", column: "store_id"
@@ -6735,6 +6836,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_040500) do
   add_foreign_key "spree_pos_store_profiles", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_store_profiles", "spree_tax_categories", column: "alcohol_tax_category_id"
   add_foreign_key "spree_pos_store_profiles", "spree_tax_categories", column: "food_tax_category_id"
+  add_foreign_key "spree_pos_stored_value_accounts", "spree_pos_customers", column: "customer_profile_id"
+  add_foreign_key "spree_pos_stored_value_accounts", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_stored_value_entries", "spree_admin_users", column: "actor_id"
+  add_foreign_key "spree_pos_stored_value_entries", "spree_pos_funds_allocations", column: "funds_allocation_id"
+  add_foreign_key "spree_pos_stored_value_entries", "spree_pos_liability_payouts", column: "liability_payout_id"
+  add_foreign_key "spree_pos_stored_value_entries", "spree_pos_received_funds", column: "received_funds_id"
+  add_foreign_key "spree_pos_stored_value_entries", "spree_pos_stored_value_accounts", column: "stored_value_account_id"
+  add_foreign_key "spree_pos_stored_value_entries", "spree_pos_workspaces", column: "workspace_id"
   add_foreign_key "spree_pos_tax_rate_schedules", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_tax_rate_schedules", "spree_tax_rates", column: "tax_rate_id"
   add_foreign_key "spree_pos_tender_attempts", "spree_admin_users", column: "actor_id"

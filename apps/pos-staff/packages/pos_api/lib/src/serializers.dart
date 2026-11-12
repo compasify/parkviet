@@ -122,6 +122,19 @@ import 'package:pos_api/src/model/lease_claim_input.dart';
 import 'package:pos_api/src/model/line_component.dart';
 import 'package:pos_api/src/model/line_kitchen_status.dart';
 import 'package:pos_api/src/model/line_modifier.dart';
+import 'package:pos_api/src/model/meal_account.dart';
+import 'package:pos_api/src/model/meal_resolve.dart';
+import 'package:pos_api/src/model/meal_resolve_result.dart';
+import 'package:pos_api/src/model/meal_split_plan.dart';
+import 'package:pos_api/src/model/meal_sponsor_ref.dart';
+import 'package:pos_api/src/model/meal_status.dart';
+import 'package:pos_api/src/model/meal_swipe.dart';
+import 'package:pos_api/src/model/meal_swipe_input.dart';
+import 'package:pos_api/src/model/meal_swipe_result.dart';
+import 'package:pos_api/src/model/meal_wallet_pay.dart';
+import 'package:pos_api/src/model/meal_wallet_pay_input.dart';
+import 'package:pos_api/src/model/meal_wallet_pay_result.dart';
+import 'package:pos_api/src/model/meal_window.dart';
 import 'package:pos_api/src/model/menu.dart';
 import 'package:pos_api/src/model/menu_availability.dart';
 import 'package:pos_api/src/model/menu_category.dart';
@@ -335,6 +348,8 @@ import 'package:pos_api/src/model/workspace.dart';
 import 'package:pos_api/src/model/workspace_create_input.dart';
 import 'package:pos_api/src/model/workspace_drink_credit.dart';
 import 'package:pos_api/src/model/workspace_line.dart';
+import 'package:pos_api/src/model/workspace_meal.dart';
+import 'package:pos_api/src/model/workspace_meal_result.dart';
 import 'package:pos_api/src/model/workspace_minimum_spend.dart';
 import 'package:pos_api/src/model/workspace_page_meta.dart';
 import 'package:pos_api/src/model/workspace_prebill.dart';
@@ -458,6 +473,20 @@ part 'serializers.g.dart';
   LineComponent,
   LineKitchenStatus,
   LineModifier,
+  MealAccount,
+  $MealAccount,
+  MealResolve,
+  MealResolveResult,
+  MealSplitPlan,
+  MealSponsorRef,
+  MealStatus,
+  MealSwipe,
+  MealSwipeInput,
+  MealSwipeResult,
+  MealWalletPay,
+  MealWalletPayInput,
+  MealWalletPayResult,
+  MealWindow,
   Menu,
   MenuAvailability,
   MenuCategory,
@@ -673,6 +702,8 @@ part 'serializers.g.dart';
   WorkspaceCreateInput,
   WorkspaceDrinkCredit,
   WorkspaceLine,
+  WorkspaceMeal,
+  WorkspaceMealResult,
   WorkspaceMinimumSpend,
   WorkspacePageMeta,
   WorkspacePrebill,
@@ -822,6 +853,10 @@ Serializers serializers = (_$serializers.toBuilder()
         () => ListBuilder<WorkspaceTotalsTaxesInner>(),
       )
       ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(MealWindow)]),
+        () => ListBuilder<MealWindow>(),
+      )
+      ..addBuilderFactory(
         const FullType(BuiltList, [FullType(WorkspaceSummary)]),
         () => ListBuilder<WorkspaceSummary>(),
       )
@@ -892,6 +927,10 @@ Serializers serializers = (_$serializers.toBuilder()
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(Area)]),
         () => ListBuilder<Area>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(MealAccount)]),
+        () => ListBuilder<MealAccount>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(MenuMarginRow)]),
@@ -1048,6 +1087,7 @@ Serializers serializers = (_$serializers.toBuilder()
         () => ListBuilder<Reservation>(),
       )
       ..add(KitchenStationInput.serializer)
+      ..add(MealAccount.serializer)
       ..add(MenuItemConfig.serializer)
       ..add(StationRouteInput.serializer)
       ..add(const OneOfSerializer())

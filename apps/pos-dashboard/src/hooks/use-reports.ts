@@ -1,8 +1,8 @@
-import type { ExportRequest, ReportPage, ReportType } from '@parkviet/pos-shared/reports'
+import type { ExportRequest, ReportPage } from '@parkviet/pos-shared/reports'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { posRequest as request } from '../lib/pos-request'
 import { posKey } from '../lib/query-keys'
-import { type ReportFilters, reportView } from '../lib/report-table'
+import { type PosReportType, type ReportFilters, reportView } from '../lib/report-table'
 import { useSession } from './use-session'
 
 export type ReportResult = ReportPage & { view: string }
@@ -13,7 +13,7 @@ export type ReportResult = ReportPage & { view: string }
 // under another report's columns.
 export function reportQuery(
   storeId: string,
-  type: ReportType,
+  type: PosReportType,
   branchId: string,
   filters: ReportFilters,
   page: number,
@@ -31,7 +31,7 @@ export function reportQuery(
 }
 
 export function useReport(
-  type: ReportType,
+  type: PosReportType,
   branchId: string,
   filters: ReportFilters,
   page: number,
@@ -76,7 +76,7 @@ export function useCreateExport() {
   const { storeId } = useSession()
   const client = useQueryClient()
   return useMutation({
-    mutationFn: (input: { branchId: string; type: ReportType; filters: ReportFilters }) =>
+    mutationFn: (input: { branchId: string; type: PosReportType; filters: ReportFilters }) =>
       post<{ data: ExportRequest }>('/pos/exports', {
         branch_id: input.branchId,
         report_type: input.type,

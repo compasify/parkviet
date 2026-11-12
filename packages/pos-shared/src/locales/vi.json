@@ -78,6 +78,7 @@
   "capabilityResourceManage": "Sơ đồ bàn, khu vực",
   "capabilityReservationManage": "Nhận đặt bàn",
   "capabilityExpoOperate": "Điều phối ra món (expo)",
+  "capabilityMealAccountManage": "Quản lý tài khoản suất ăn và đơn vị chi trả",
   "tableState_available": "Trống",
   "tableState_reserved": "Đã đặt",
   "reservationStatus_booked": "Đang chờ",
@@ -298,6 +299,12 @@
       "description": "Công thức rót theo ml từ chai mở; chai rót hết thì kho trừ một chai. Cần Công thức.",
       "off": "Chi nhánh chưa bật chức năng Đo rót theo ml.",
       "disabled": "Chi nhánh chưa bật Đo rót theo ml; bán hàng không trừ ml từ chai mở."
+    },
+    "fnb_meal_accounts": {
+      "label": "Tài khoản suất ăn",
+      "description": "Nhận diện người ăn bằng mã nhân viên, ví trả trước, đơn vị chi trả ghi nợ và trợ giá theo suất.",
+      "off": "Chi nhánh chưa bật chức năng Tài khoản suất ăn.",
+      "disabled": "Chi nhánh chưa bật Tài khoản suất ăn; máy chủ không ghi suất và không trừ ví. Việc bán hàng không bị ảnh hưởng."
     }
   },
   "profiles": {

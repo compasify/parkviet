@@ -1,6 +1,6 @@
 import { formatMoney } from '@parkviet/pos-shared/money'
 import { orderSourceKey, orderSourceRows } from '@parkviet/pos-shared/order-source'
-import type { ReportRow, ReportType } from '@parkviet/pos-shared/reports'
+import type { ReportRow } from '@parkviet/pos-shared/reports'
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@spree/dashboard-ui'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -11,6 +11,8 @@ import {
   isDecimalText,
   MONEY_COLUMNS,
   PERCENT_COLUMNS,
+  type PosReportType,
+  reportFigures,
   type ShiftLine,
   summaryEntries,
   TIME_COLUMNS,
@@ -65,12 +67,12 @@ export function ReportSummary({
   summary,
   currency,
 }: {
-  type: ReportType
+  type: PosReportType
   summary: Record<string, unknown>
   currency: string
 }) {
   const { t } = useTranslation()
-  const entries = summaryEntries(summary)
+  const entries = summaryEntries(reportFigures(type, summary))
   if (entries.length === 0) return null
   return (
     <SummaryCard title={t('reportSummary')}>

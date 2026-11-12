@@ -38,6 +38,11 @@ import 'package:pos_api/src/model/kitchen_ticket_result.dart';
 import 'package:pos_api/src/model/kitchen_void_input.dart';
 import 'package:pos_api/src/model/kitchen_void_result.dart';
 import 'package:pos_api/src/model/lease_claim_input.dart';
+import 'package:pos_api/src/model/meal_resolve_result.dart';
+import 'package:pos_api/src/model/meal_swipe_input.dart';
+import 'package:pos_api/src/model/meal_swipe_result.dart';
+import 'package:pos_api/src/model/meal_wallet_pay_input.dart';
+import 'package:pos_api/src/model/meal_wallet_pay_result.dart';
 import 'package:pos_api/src/model/payment_request_input.dart';
 import 'package:pos_api/src/model/payment_request_resolve_input.dart';
 import 'package:pos_api/src/model/platform_order_cancel_input.dart';
@@ -150,6 +155,7 @@ import 'package:pos_api/src/model/table_settings_result.dart';
 import 'package:pos_api/src/model/table_split_input.dart';
 import 'package:pos_api/src/model/table_split_result.dart';
 import 'package:pos_api/src/model/workspace_create_input.dart';
+import 'package:pos_api/src/model/workspace_meal_result.dart';
 import 'package:pos_api/src/model/workspace_result.dart';
 import 'package:pos_api/src/model/workspace_summary_list.dart';
 
@@ -6025,6 +6031,91 @@ class DefaultApi {
     }
 
     return Response<KitchenVoidResult>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// posMealAccountResolve
+  /// Finds a canteen eater (&#x60;fnb.meal_accounts&#x60;): &#x60;q&#x60; is an exact employee code (any case) or part of a name, which returns at most 8 suggestions. Only accounts of the current store. Rate limited per staff member (429 &#x60;meal_resolve_rate_limited&#x60;). For the branch&#39;s cashiers and meal account managers.
+  ///
+  /// Parameters:
+  /// * [branchId]
+  /// * [q]
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [MealResolveResult] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<MealResolveResult>> posMealAccountResolve({
+    required String branchId,
+    required String q,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v3/admin/pos/meal_accounts/resolve';
+    final _options = Options(
+      method: r'GET',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[],
+        ...?extra,
+      },
+      validateStatus: validateStatus,
+    );
+
+    final _queryParameters = <String, dynamic>{
+      r'branch_id':
+          encodeQueryParameter(_serializers, branchId, const FullType(String)),
+      r'q': encodeQueryParameter(_serializers, q, const FullType(String)),
+    };
+
+    final _response = await _dio.request<Object>(
+      _path,
+      options: _options,
+      queryParameters: _queryParameters,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    MealResolveResult? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(MealResolveResult),
+            ) as MealResolveResult;
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<MealResolveResult>(
       data: _responseData,
       headers: _response.headers,
       isRedirect: _response.isRedirect,
@@ -13136,6 +13227,298 @@ class DefaultApi {
     }
 
     return Response<WorkspaceSummaryList>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// posWorkspaceMeal
+  /// The eater recorded on a canteen order and who pays what.
+  ///
+  /// Parameters:
+  /// * [workspaceId]
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [WorkspaceMealResult] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<WorkspaceMealResult>> posWorkspaceMeal({
+    required String workspaceId,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v3/admin/pos/workspaces/{workspace_id}/meal'
+        .replaceAll(
+            '{' r'workspace_id' '}',
+            encodeQueryParameter(
+                    _serializers, workspaceId, const FullType(String))
+                .toString());
+    final _options = Options(
+      method: r'GET',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[],
+        ...?extra,
+      },
+      validateStatus: validateStatus,
+    );
+
+    final _response = await _dio.request<Object>(
+      _path,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    WorkspaceMealResult? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(WorkspaceMealResult),
+            ) as WorkspaceMealResult;
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<WorkspaceMealResult>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// posWorkspaceMealSwipe
+  /// Records one meal on the order by employee code (or account id) and puts the eater on the order. The server checks the account, a repeat within 60 seconds, the meal times and the daily limit under the account lock; every attempt is recorded. With &#x60;override_limit&#x60; (or an &#x60;approval_id&#x60; of &#x60;meal_account.override_limit&#x60;) a meal-time or limit refusal goes through.
+  ///
+  /// Parameters:
+  /// * [idempotencyKey]
+  /// * [workspaceId]
+  /// * [mealSwipeInput]
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [MealSwipeResult] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<MealSwipeResult>> posWorkspaceMealSwipe({
+    required String idempotencyKey,
+    required String workspaceId,
+    required MealSwipeInput mealSwipeInput,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v3/admin/pos/workspaces/{workspace_id}/meal_swipes'
+        .replaceAll(
+            '{' r'workspace_id' '}',
+            encodeQueryParameter(
+                    _serializers, workspaceId, const FullType(String))
+                .toString());
+    final _options = Options(
+      method: r'POST',
+      headers: <String, dynamic>{
+        r'Idempotency-Key': idempotencyKey,
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[],
+        ...?extra,
+      },
+      contentType: 'application/json',
+      validateStatus: validateStatus,
+    );
+
+    dynamic _bodyData;
+
+    try {
+      const _type = FullType(MealSwipeInput);
+      _bodyData = _serializers.serialize(mealSwipeInput, specifiedType: _type);
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _options.compose(
+          _dio.options,
+          _path,
+        ),
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    final _response = await _dio.request<Object>(
+      _path,
+      data: _bodyData,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    MealSwipeResult? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(MealSwipeResult),
+            ) as MealSwipeResult;
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<MealSwipeResult>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// posWorkspaceMealWalletPay
+  /// Pays the eater&#39;s part of the order from their meal wallet: top-up receipts are allocated oldest first. &#x60;amount&#x60; defaults to the eater&#39;s unpaid part. The sponsor&#39;s part is charged as the order completes (&#x60;meal_sponsor: true&#x60; on complete).
+  ///
+  /// Parameters:
+  /// * [idempotencyKey]
+  /// * [workspaceId]
+  /// * [mealWalletPayInput]
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [MealWalletPayResult] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<MealWalletPayResult>> posWorkspaceMealWalletPay({
+    required String idempotencyKey,
+    required String workspaceId,
+    required MealWalletPayInput mealWalletPayInput,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v3/admin/pos/workspaces/{workspace_id}/meal_wallet'
+        .replaceAll(
+            '{' r'workspace_id' '}',
+            encodeQueryParameter(
+                    _serializers, workspaceId, const FullType(String))
+                .toString());
+    final _options = Options(
+      method: r'POST',
+      headers: <String, dynamic>{
+        r'Idempotency-Key': idempotencyKey,
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[],
+        ...?extra,
+      },
+      contentType: 'application/json',
+      validateStatus: validateStatus,
+    );
+
+    dynamic _bodyData;
+
+    try {
+      const _type = FullType(MealWalletPayInput);
+      _bodyData =
+          _serializers.serialize(mealWalletPayInput, specifiedType: _type);
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _options.compose(
+          _dio.options,
+          _path,
+        ),
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    final _response = await _dio.request<Object>(
+      _path,
+      data: _bodyData,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    MealWalletPayResult? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(MealWalletPayResult),
+            ) as MealWalletPayResult;
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<MealWalletPayResult>(
       data: _responseData,
       headers: _response.headers,
       isRedirect: _response.isRedirect,

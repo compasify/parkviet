@@ -1,4 +1,9 @@
-import { type ReportPage, type ReportType, validReportRange } from '@parkviet/pos-shared/reports'
+import {
+  type ReportPage,
+  type ReportType,
+  reportTypesFor,
+  validReportRange,
+} from '@parkviet/pos-shared/reports'
 import type { PaginationMeta } from '@spree/dashboard-ui'
 
 // Columns, filters and paging of the server reports. The server allowlists and
@@ -8,7 +13,28 @@ export type ReportFilters = Record<string, string>
 
 export const REPORT_LIMIT = 50
 
-export const REPORT_COLUMNS: Record<ReportType, string[]> = {
+// Canteen reports, offered while the branch runs meal accounts: meals by
+// meal time, counter and sponsor with the refused attempts, and a sponsor's
+// statement for a period (which needs a sponsor).
+export const MEAL_REPORT_TYPES = ['meals', 'meal_statement'] as const
+export type PosReportType = ReportType | (typeof MEAL_REPORT_TYPES)[number]
+export const MEAL_RESULTS = ['ok', 'duplicate', 'limit', 'window', 'revoked', 'unknown'] as const
+
+// The report tabs of the selected branch. The statement picks a sponsor, so
+// it is listed only to readers who may see the sponsors.
+export function dashboardReportTypes(
+  modules: Record<string, boolean> | null | undefined,
+  readsSponsors: boolean,
+): PosReportType[] {
+  const meals = modules?.['fnb.meal_accounts'] === true
+  return [
+    ...reportTypesFor(modules),
+    ...(meals ? (['meals'] as const) : []),
+    ...(meals && readsSponsors ? (['meal_statement'] as const) : []),
+  ]
+}
+
+export const REPORT_COLUMNS: Record<PosReportType, string[]> = {
   sales: [
     'order_number',
     'sold_at',
@@ -74,6 +100,17 @@ export const REPORT_COLUMNS: Record<ReportType, string[]> = {
     'commission_estimated',
     'commission_actual',
   ],
+  meals: ['business_date', 'meal_window', 'register', 'sponsor', 'result', 'meals'],
+  meal_statement: [
+    'business_date',
+    'employee_code',
+    'name',
+    'group_label',
+    'order_number',
+    'total',
+    'sponsor_amount',
+    'employee_amount',
+  ],
 }
 
 export const RETURN_COLUMNS = [
@@ -112,6 +149,8 @@ export const MONEY_COLUMNS = new Set([
   'unsettled',
   'commission_estimated',
   'commission_actual',
+  'sponsor_amount',
+  'employee_amount',
 ])
 
 // Percent figures (one decimal) of rows and summaries.
@@ -138,15 +177,17 @@ export const CODE_COLUMNS: Record<string, string> = {
   cost_missing: 'reportYesNo_',
   costed: 'reportYesNo_',
   platform: 'platform_',
+  result: 'reportMealResult_',
 }
 
-export function reportColumns(type: ReportType, section?: string): string[] {
+export function reportColumns(type: PosReportType, section?: string): string[] {
   return type === 'sales' && section === 'returns' ? RETURN_COLUMNS : REPORT_COLUMNS[type]
 }
 
-// Rows kept from a previous query are shown only for the same report view.
-export const reportView = (type: ReportType, filters: ReportFilters) =>
-  `${type}:${filters.section ?? ''}`
+// Rows kept from a previous query are shown only for the same report view
+// (one sponsor's statement is never shown under another's).
+export const reportView = (type: PosReportType, filters: ReportFilters) =>
+  `${type}:${filters.section ?? ''}:${filters.meal_sponsor_id ?? ''}`
 
 export type ReportSearchFilters = {
   from?: string
@@ -160,12 +201,15 @@ export type ReportSearchFilters = {
   source?: string
   status?: string
   shiftPage?: number
+  result?: string
+  sponsorId?: string
 }
 
 // Receivables are a balance as of now; every other report covers a day range,
-// today (in the branch's days) unless another range is chosen.
+// today (in the branch's days) unless another range is chosen. A sponsor's
+// statement waits until a sponsor is chosen (`needsSponsor`).
 export function reportRequest(
-  type: ReportType,
+  type: PosReportType,
   search: ReportSearchFilters,
   today: string,
   staffId: string | undefined,
@@ -179,6 +223,8 @@ export function reportRequest(
     ...(type === 'receipts' && search.kind ? { kind: search.kind } : {}),
     ...(type === 'receipts' && search.source ? { source: search.source } : {}),
     ...(type === 'receivables' && search.status ? { status: search.status } : {}),
+    ...(type === 'meals' && search.result ? { result: search.result } : {}),
+    ...(type === 'meal_statement' && search.sponsorId ? { meal_sponsor_id: search.sponsorId } : {}),
   }
   const filters: ReportFilters = {
     ...(dated ? { from, to } : {}),
@@ -190,7 +236,14 @@ export function reportRequest(
       : {}),
     ...extra,
   }
-  return { dated, from, to, rangeValid: !dated || validReportRange(from, to), filters }
+  return {
+    dated,
+    from,
+    to,
+    rangeValid: !dated || validReportRange(from, to),
+    needsSponsor: type === 'meal_statement' && !search.sponsorId,
+    filters,
+  }
 }
 
 // An export covers the whole filtered report, not the shift summary page on screen.
@@ -228,6 +281,21 @@ export function summaryEntries(summary: Record<string, unknown>): [string, strin
       (typeof entry[1] === 'string' || typeof entry[1] === 'number') &&
       !entry[0].startsWith('shift_page'),
   )
+}
+
+// The meals summary nests the refused attempts by reason; each reason is
+// shown as its own figure beside the meals.
+export function reportFigures(
+  type: PosReportType,
+  summary: Record<string, unknown>,
+): Record<string, unknown> {
+  if (type !== 'meals') return summary
+  const { refused, ...rest } = summary
+  const reasons =
+    typeof refused === 'object' && refused !== null && !Array.isArray(refused)
+      ? Object.entries(refused).map(([reason, count]) => [`refused_${reason}`, count] as const)
+      : []
+  return { ...rest, ...Object.fromEntries(reasons) }
 }
 
 export const isDecimalText = (value: unknown): value is string =>

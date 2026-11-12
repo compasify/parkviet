@@ -3,8 +3,6 @@ import {
   businessDate,
   canExportReports,
   type ReportRow,
-  type ReportType,
-  reportTypesFor,
   todayIn,
 } from '@parkviet/pos-shared/reports'
 import { describeShiftFailure } from '@parkviet/pos-shared/shifts'
@@ -14,6 +12,7 @@ import {
   type PageTab,
   PageTabs,
   ResourceTable,
+  usePermissions,
 } from '@spree/dashboard-core'
 import { Button } from '@spree/dashboard-ui'
 import { DownloadIcon } from '@spree/dashboard-ui/icons'
@@ -30,16 +29,20 @@ import {
   ShiftSummary,
   SourceSummary,
 } from '../components/reports/report-summaries'
+import { useMealSponsors } from '../hooks/use-meal-accounts'
 import { usePosSession } from '../hooks/use-pos-session'
 import { type ReportResult, reportQuery, useCreateExport, useReport } from '../hooks/use-reports'
 import { useSession } from '../hooks/use-session'
 import { branchTimeZone, formatInstant } from '../lib/format-time'
+import { canManageMealAccounts } from '../lib/pos-access'
 import { posKey } from '../lib/query-keys'
 import {
+  dashboardReportTypes,
   exportFilters,
   knownShifts,
   MONEY_COLUMNS,
   matchesTerm,
+  type PosReportType,
   REPORT_LIMIT,
   reportColumns,
   reportPagination,
@@ -51,23 +54,27 @@ import { type ReportSearch, reportSearchSchema } from '../schemas/report-search'
 import { hiddenTimestamps } from '../tables/columns'
 
 type Row = ReportRow & { id: string }
-const BUSINESS_DATED = new Set<ReportType>([
+const BUSINESS_DATED = new Set<PosReportType>([
   'sales',
   'ingredient_usage',
   'menu_margin',
   'platforms',
+  'meals',
+  'meal_statement',
 ])
 type Notice = { text: string; failed: boolean } | null
 
 // "Báo cáo": sales, receipts, drawer cash, receivables and closures of the
-// selected branch, and its recipe usage and menu margin while it runs
-// recipes, each computed by the server in the branch's timezone.
+// selected branch, its recipe usage and menu margin while it runs recipes,
+// and its canteen meals and sponsor statements while it runs meal accounts,
+// each computed by the server in the branch's timezone.
 // Every tab is its own route; the day range, register, shift and "mine"
 // filters travel with the tabs.
-export function ReportsPage({ type }: { type: ReportType }) {
+export function ReportsPage({ type }: { type: PosReportType }) {
   const { t } = useTranslation()
   const { storeId } = useSession()
   const { context } = usePosSession()
+  const { permissionKeys } = usePermissions()
   const search = reportSearchSchema.parse(useSearch({ strict: false }))
   const branchId = context.data?.selection.branch_id ?? null
   const exporting = canExportReports(context.data?.capabilities)
@@ -79,7 +86,8 @@ export function ReportsPage({ type }: { type: ReportType }) {
     shiftId: search.shiftId,
     mine: search.mine,
   }
-  const tabs = reportTypesFor(context.data?.modules).map((value) => ({
+  const readsSponsors = canManageMealAccounts({ permissionKeys, context: context.data })
+  const tabs = dashboardReportTypes(context.data?.modules, readsSponsors).map((value) => ({
     key: value,
     label: t(`reportTab_${value}`),
     to: (value === 'sales' ? base : `${base}/${value}`) as PageTab['to'] & string,
@@ -112,7 +120,7 @@ function Report({
   branchId,
   search,
 }: {
-  type: ReportType
+  type: PosReportType
   branchId: string
   search: ReportSearch
 }) {
@@ -127,15 +135,17 @@ function Report({
   const cutoff = branch?.business_day_cutoff ?? '04:00'
   // Sales and recipe reports follow the business date. Other reports follow the calendar day.
   const today = BUSINESS_DATED.has(type) ? businessDate(branchZone, cutoff) : todayIn(branchZone)
-  const { dated, from, to, rangeValid, filters } = reportRequest(
+  const { dated, from, to, rangeValid, needsSponsor, filters } = reportRequest(
     type,
     search,
     today,
     data?.staff.id,
   )
+  const ready = rangeValid && !needsSponsor
   const page = Math.max(1, search.page ?? 1)
   const limit = search.limit ?? REPORT_LIMIT
-  const report = useReport(type, branchId, filters, page, limit, rangeValid)
+  const report = useReport(type, branchId, filters, page, limit, ready)
+  const sponsors = useMealSponsors(branchId, type === 'meal_statement')
   const meta = report.data?.meta
   const timeZone = meta?.timezone ?? branchZone
   const currency = data?.store.currency ?? 'VND'
@@ -226,13 +236,14 @@ function Report({
         dated={dated}
         registers={registers}
         shifts={shifts}
+        sponsors={sponsors.data?.data ?? []}
         onChange={update}
       >
         {exporting && (
           <Button
             type="button"
             variant="outline"
-            disabled={!rangeValid || createExport.isPending || !exportsOn}
+            disabled={!ready || createExport.isPending || !exportsOn}
             aria-describedby={exportsOn ? undefined : 'exports-off'}
             onClick={requestExport}
           >
@@ -249,6 +260,16 @@ function Report({
       {!rangeValid && (
         <p role="alert" className="text-sm text-destructive">
           {t('reportRangeInvalid')}
+        </p>
+      )}
+      {needsSponsor && (
+        <p role="status" className="text-sm text-muted-foreground">
+          {t('reportSponsorRequired')}
+        </p>
+      )}
+      {sponsors.isError && (
+        <p role="alert" className="text-sm text-destructive">
+          {describeShiftFailure(sponsors.error, t)}
         </p>
       )}
       {notice && (
@@ -285,7 +306,7 @@ function Report({
           onPage={(shiftPage) => update({ shiftPage })}
         />
       )}
-      {rangeValid && (
+      {ready && (
         <ResourceTable<Row>
           key={tableKey}
           tableKey={tableKey}

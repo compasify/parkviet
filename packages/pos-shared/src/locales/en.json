@@ -78,6 +78,7 @@
   "capabilityResourceManage": "Floor plan and areas",
   "capabilityReservationManage": "Take bookings",
   "capabilityExpoOperate": "Run the pass (expo)",
+  "capabilityMealAccountManage": "Manage meal accounts and sponsors",
   "tableState_available": "Free",
   "tableState_reserved": "Reserved",
   "reservationStatus_booked": "Waiting",
@@ -298,6 +299,12 @@
       "description": "Recipes pour ml from open bottles; a bottle poured out leaves stock. Needs Recipes.",
       "off": "Measured pours are off at this branch.",
       "disabled": "Measured pours are off at this branch; sales take no ml from open bottles."
+    },
+    "fnb_meal_accounts": {
+      "label": "Meal accounts",
+      "description": "Find eaters by employee code, prepaid wallets, sponsors that pay on credit and per-meal subsidies.",
+      "off": "Meal accounts are off at this branch.",
+      "disabled": "Meal accounts are off at this branch; the server records no meals and takes nothing from wallets. Selling is not affected."
     }
   },
   "profiles": {

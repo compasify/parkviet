@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router';
 import { type ReactNode, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { dashboardPages } from '../lib/dashboard-pages';
+import { MEAL_ACCOUNTS_MODULE } from '../lib/meal-accounts';
 import type { PosContext } from '../lib/pos-context';
 import { posDashboardUrl } from '../lib/pos-dashboard-url';
 import { canReadReceivables } from '../lib/receivables';
@@ -103,6 +104,12 @@ export function UserMenu({
         {staffed && data.modules?.['fnb.bottle_keep'] === true ? (
           <Link to="/bottle-keeps" {...item}>
             {t('bottleKeepsNav')}
+          </Link>
+        ) : null}
+        {data.modules?.[MEAL_ACCOUNTS_MODULE] === true &&
+        ['pos.meal_account.manage', 'pos.shift.open', 'pos.payment.collect'].some(has) ? (
+          <Link to="/meal-accounts" {...item}>
+            {t('mealAccountsNav')}
           </Link>
         ) : null}
         {data.modules?.['fnb.postpay'] === true && has('pos.payment.resolve') ? (

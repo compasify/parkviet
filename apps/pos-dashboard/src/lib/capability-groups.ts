@@ -37,6 +37,7 @@ const GROUPS: { key: string; capabilities: Capability[] }[] = [
       'pos.device.manage',
       'pos.printer.manage',
       'pos.resource.manage',
+      'pos.meal_account.manage',
     ],
   },
   { key: 'reports', capabilities: ['pos.report.read', 'pos.report.export'] },

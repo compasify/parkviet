@@ -15,7 +15,8 @@ module Spree
       belongs_to :approver, class_name: staff_class_name
       belongs_to :requester, class_name: staff_class_name
 
-      # Set only by Credit::QuickApprove: the cashier's own credit approval.
+      # Set only by Credit::QuickApprove and MealAccounts::ChargeSponsor: the
+      # cashier's own credit approval.
       attr_accessor :self_credit
 
       validates :action, :revision, :expires_at, :subject_type, :subject_id, presence: true
@@ -32,7 +33,8 @@ module Spree
       # Records an approval may be bound to. Each carries its own revision, so
       # a changed subject invalidates the approval.
       SUBJECTS = %w[Spree::Pos::Workspace Spree::Pos::ReturnOperation Spree::Pos::RefundRequest Spree::Pos::Shift
-                    Spree::Pos::InventoryAdjustment Spree::Pos::Reservation Spree::Pos::BottleKeep].freeze
+                    Spree::Pos::InventoryAdjustment Spree::Pos::Reservation Spree::Pos::BottleKeep
+                    Spree::Pos::MealAccount].freeze
       # Who may ask for an approval at the branch: sellers, and return staff
       # for returns and refunds.
       REQUESTER_CAPABILITIES = {
@@ -45,6 +47,8 @@ module Spree
         'Spree::Pos::Reservation' => [Capabilities::RESERVATION_MANAGE, Capabilities::OPEN_SHIFT],
         # Correcting the level of a kept bottle.
         'Spree::Pos::BottleKeep' => [Capabilities::OPEN_SHIFT, Capabilities::TABLE_SERVE],
+        # A wallet refund or correction, or a meal past the account's limits.
+        'Spree::Pos::MealAccount' => [Capabilities::MEAL_ACCOUNT_MANAGE, Capabilities::OPEN_SHIFT],
         # Sellers, and the people serving a table (only table orders are theirs to edit).
         'Spree::Pos::Workspace' => [Capabilities::OPEN_SHIFT, Capabilities::TABLE_SERVE]
       }.freeze
@@ -60,6 +64,15 @@ module Spree
       BOTTLE_KEEP_ADJUST_ACTION = 'bottle_keep.adjust'
       # A VIP table let off its minimum spend.
       MINIMUM_SPEND_WAIVE_ACTION = 'tab.waive_minimum_spend'
+      # A meal account's wallet paid back or corrected, or a meal recorded
+      # past its daily limit or outside its meal times.
+      MEAL_REFUND_ACTION = 'meal_wallet.refund'
+      MEAL_ADJUST_ACTION = 'meal_wallet.adjust'
+      MEAL_OVERRIDE_ACTION = 'meal_account.override_limit'
+      MEAL_ACTIONS = [MEAL_REFUND_ACTION, MEAL_ADJUST_ACTION, MEAL_OVERRIDE_ACTION].freeze
+      # A sponsor's part of a meal sold on its credit account: recorded by
+      # the cashier as the order completes and consumed at once.
+      MEAL_SPONSOR_ACTION = 'meal_sponsor.charge'
 
       def consume!(action:, amount:, currency:, revision:, subject:, requester:)
         raise Conflict, 'Approval subject is required.' unless SUBJECTS.include?(subject.class.name) && subject.persisted?
@@ -148,6 +161,8 @@ module Spree
       def approver_is_distinct
         return unless approver_id.present? && approver_id == requester_id
         return if action == Credit::ACTION && (self_credit || (persisted? && !approver_id_changed? && !requester_id_changed?))
+        # A meal sponsor's part is within the limit approved on its account.
+        return if action == MEAL_SPONSOR_ACTION && (self_credit || persisted?)
 
         errors.add(:approver, :invalid)
       end

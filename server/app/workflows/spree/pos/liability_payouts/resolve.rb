@@ -24,6 +24,8 @@ module Spree
             raise Conflict, 'No-effect resolution needs evidence the payout did not happen.' if outcome.to_s == 'failed_no_effect' && reference.blank?
 
             payout = Guard.payout!(store, payout_id)
+            # A wallet refund that never happened goes back to the wallet.
+            wallet = StoredValue.lock_for(payout: payout) unless outcome.to_s == 'unknown'
             payout.received_funds.with_lock do
               payout.lock!
               raise Conflict, 'Payout cannot be resolved from this state.' unless allowed.include?(payout.status)
@@ -40,6 +42,10 @@ module Spree
               when 'cancel'
                 payout.update!(status: 'canceled', resolved_at: Time.current)
               end
+            end
+            if wallet
+              StoredValue.restore!(account: wallet, amount: payout.amount, actor: staff,
+                                   note: "Hoàn tiền không thành #{payout.prefixed_id}")
             end
             AuditEntry.record!(store: store, actor: staff, action: 'liability_payout.resolve', subject: payout.received_funds,
                                metadata: { payout_id: payout.prefixed_id, outcome: outcome.to_s })

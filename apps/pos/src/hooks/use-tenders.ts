@@ -251,10 +251,13 @@ export function useTenders(staffId: string | null, storeId: string | null) {
     },
     // With an approval id the unpaid remainder is sold on that approved credit.
     // Buyer details, when the customer asked for an e-invoice, go with it.
+    // `mealSponsor`: a canteen order whose unpaid rest is the meal sponsor's
+    // part, charged to the sponsor's credit as the order completes.
     complete(
       workspace: PosWorkspace,
       creditApprovalId?: string,
       einvoiceBuyer?: Record<string, string>,
+      options: { mealSponsor?: boolean } = {},
     ) {
       return runFinancial(
         workspace,
@@ -264,8 +267,31 @@ export function useTenders(staffId: string | null, storeId: string | null) {
           ...workspaceBody(workspace, {}),
           ...(creditApprovalId ? { credit_approval_id: creditApprovalId } : {}),
           ...(einvoiceBuyer ? { einvoice_buyer: einvoiceBuyer } : {}),
+          ...(options.mealSponsor ? { meal_sponsor: true } : {}),
         },
       );
+    },
+    // The eater's wallet pays their part of a canteen order (by default all
+    // of it that is still unpaid). Money already received at top-up moves.
+    async payMealWallet(workspace: PosWorkspace, amount?: string) {
+      try {
+        const result = await runFinancialCommand<{ workspace: PosWorkspace; meal: unknown }>(
+          financialRequest,
+          {
+            staffId,
+            storeId,
+            scopeId: workspace.id,
+            action: 'meal_wallet.pay',
+            path: `/pos/workspaces/${workspace.id}/meal_wallet`,
+            body: { ...workspaceBody(workspace, {}), amount },
+          },
+        );
+        await accept(result.data.workspace);
+        return result.data.workspace;
+      } catch (error) {
+        abandonIfNeeded(error);
+        throw error;
+      }
     },
     handover(workspace: PosWorkspace) {
       return runFinancial(

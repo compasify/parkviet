@@ -5,6 +5,7 @@ import {
   canAdminister,
   canManageBranch,
   canManageEinvoices,
+  canManageMealAccounts,
   canManageMenu,
   canManageResources,
   canSendReminders,
@@ -59,6 +60,21 @@ describe('POS permission gates', () => {
     expect(visibleNav('menu', owner)).toBe(false)
     expect(routeAllowed('menu', owner)).toBe(true)
     expect(canManageMenu(owner)).toBe(true)
+  })
+  it('offers meal accounts and sponsors where the branch runs them, to their managers', () => {
+    const at = (capabilities: string[], meals: boolean, permissionKeys: string[] = []) => ({
+      permissionKeys,
+      context: { capabilities, modules: { 'fnb.meal_accounts': meals } } as unknown as PosContext,
+    })
+    for (const page of ['meal-accounts', 'meal-sponsors'] as const) {
+      expect(visibleNav(page, at(['pos.meal_account.manage'], true))).toBe(true)
+      expect(visibleNav(page, at([], true, ['write_pos_topology']))).toBe(true)
+      expect(routeAllowed(page, at(['pos.meal_account.manage'], true))).toBe(true)
+      expect(visibleNav(page, at(['pos.meal_account.manage'], false))).toBe(false)
+      expect(visibleNav(page, at(['pos.shift.open'], true))).toBe(false)
+      expect(visibleNav(page, at([], true, ['read_pos_topology']))).toBe(false)
+    }
+    expect(canManageMealAccounts(at(['pos.meal_account.manage'], false))).toBe(true)
   })
   it('fails closed before permissions/context arrive', () => {
     expect(visibleNav('features', { permissionKeys: [] })).toBe(false)

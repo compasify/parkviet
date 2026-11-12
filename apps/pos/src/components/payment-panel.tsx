@@ -53,13 +53,17 @@ class RowFailure extends Error {
 
 // The order can be completed right away: confirmed money covers it and no
 // other tender is still waiting or in doubt (same rule as "Complete order").
-function paidInFull(workspace: PosWorkspace) {
+// A canteen sponsor's part (`sponsorDue`) is charged as the order completes,
+// so the order is ready once only that part is left.
+function paidInFull(workspace: PosWorkspace, sponsorDue = 0n) {
   const financial = workspace.financial;
+  const remaining = parseVndAmount(financial?.remaining ?? '');
   return Boolean(
     financial &&
       workspace.operational_status !== 'completed' &&
       (workspace.line_items?.length ?? 0) > 0 &&
-      parseVndAmount(financial.remaining) === '0' &&
+      remaining !== null &&
+      BigInt(remaining) === sponsorDue &&
       !financial.attempts?.some(
         (attempt) => attempt.status === 'prepared' || attempt.status === 'unknown',
       ),
@@ -134,7 +138,11 @@ export function PaymentPanel({
   ticketNames,
   timeZone,
   einvoiceType = 'none',
+  mealSponsorAmount,
 }: {
+  // A canteen order's sponsor part (decimal string): the cashier takes only
+  // the eater's part, and completing charges the rest to the sponsor.
+  mealSponsorAmount?: string | null;
   // The store's e-invoice; anything but `none` offers the buyer's details.
   einvoiceType?: 'none' | 'cash_register' | 'coded';
   // Store, branch, register and cashier printed on the payment invoice.
@@ -220,7 +228,14 @@ export function PaymentPanel({
     if (completed && !wasCompleted.current && autoPrintEnabled()) setAutoPrint(true);
     wasCompleted.current = completed;
   }, [completed]);
-  const remainingIsZero = financial ? parseVndAmount(financial.remaining) === '0' : false;
+  const sponsorDue = BigInt(parseVndAmount(mealSponsorAmount ?? '') ?? '0');
+  const mealSponsor = sponsorDue > 0n;
+  const remainingValue = financial ? parseVndAmount(financial.remaining) : null;
+  // Nothing left for the cashier to take: with a meal sponsor, only its part is left.
+  const remainingIsZero =
+    remainingValue !== null &&
+    (mealSponsor ? BigInt(remainingValue) <= sponsorDue : remainingValue === '0');
+  const completeOptions = mealSponsor ? { mealSponsor: true } : undefined;
   const totalIsZero = parseVndAmount(workspace.totals?.total ?? '') === '0';
   const currency = workspace.totals?.currency ?? 'VND';
   const hasItems = (workspace.line_items?.length ?? 0) > 0;
@@ -240,12 +255,17 @@ export function PaymentPanel({
         Number(financial.change_due) > 0 ||
         Boolean(credit?.approved || credit?.debt)),
   );
-  const defaultAmount =
+  const fullAmount =
     parseVndAmount(
       hasPaymentActivity
         ? (financial?.remaining ?? workspace.totals?.total ?? '')
         : (workspace.totals?.total ?? financial?.remaining ?? ''),
     ) ?? '';
+  // The eater pays only their part of a sponsored meal.
+  const defaultAmount =
+    mealSponsor && fullAmount
+      ? String(BigInt(fullAmount) > sponsorDue ? BigInt(fullAmount) - sponsorDue : 0n)
+      : fullAmount;
   const locked = disabled || busy;
   const trace = paymentBlock(workspace);
   // Payment cannot start while the server says traced stock is not ready.
@@ -384,8 +404,10 @@ export function PaymentPanel({
       // "Finish" in the dialog finishes the sale: once the confirmed money
       // covers the order, complete it here instead of a second click. A
       // refusal (e.g. lost lease) leaves the "Complete order" button as before.
-      if (latest && paidInFull(latest))
-        await command((current) => tenders.complete(current, undefined, buyerDetails));
+      if (latest && paidInFull(latest, sponsorDue))
+        await command((current) =>
+          tenders.complete(current, undefined, buyerDetails, completeOptions),
+        );
     });
   }
 
@@ -647,7 +669,13 @@ export function PaymentPanel({
           </button>
         </form>
       ) : null}
-      {canCollect && canSellCredit && !completed && financial && !remainingIsZero && hasItems ? (
+      {canCollect &&
+      canSellCredit &&
+      !mealSponsor &&
+      !completed &&
+      financial &&
+      !remainingIsZero &&
+      hasItems ? (
         <>
           <button
             type="button"
@@ -755,7 +783,10 @@ export function PaymentPanel({
           aria-describedby={blockedBy}
           onClick={() =>
             void run(
-              () => command((current) => tenders.complete(current, undefined, buyerDetails)),
+              () =>
+                command((current) =>
+                  tenders.complete(current, undefined, buyerDetails, completeOptions),
+                ),
               (failure) =>
                 totalIsZero && posFailureKey(failure) === 'forbidden'
                   ? 'paymentZeroTotalApproval'

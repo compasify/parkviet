@@ -883,7 +883,24 @@ kbd { padding: var(--pos-s1); border: 1px solid var(--pos-border); border-radius
 .course-seat-picker label, .buffet-tier-picker label { display: grid; gap: 2px; min-width: 110px; font-size: var(--pos-small); }
 .course-seat-picker .check-label { display: flex; align-items: center; gap: var(--pos-s1, 4px); }
 .reservation-form, .reservation-deposit-form, .reservation-approval-form { display: flex; flex-wrap: wrap; align-items: end; gap: var(--pos-s2); padding: var(--pos-s3); margin-bottom: var(--pos-s3); background: var(--pos-surface); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); }
-.reservation-form h2 { flex-basis: 100%; margin: 0; }
+.reservation-form h2, .reservation-form h4 { flex-basis: 100%; margin: 0; }
+.meal-scan { display: grid; gap: var(--pos-s2); padding: var(--pos-s2) var(--pos-s3); margin-bottom: var(--pos-s2); background: var(--pos-tint); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); }
+.meal-scan-row { display: flex; align-items: end; gap: var(--pos-s2); }
+.meal-scan-field { display: grid; flex: 1; gap: 2px; font-size: var(--pos-small); }
+.meal-scan-field input { font-size: 1.1rem; }
+.meal-scan-suggestions { display: grid; gap: var(--pos-s1, 4px); margin: 0; padding: 0; list-style: none; }
+.meal-scan-suggestions button { display: flex; justify-content: space-between; gap: var(--pos-s2); width: 100%; text-align: left; }
+.pos-layout .meal-scan-feedback { margin: 0; font-weight: 700; }
+.pos-layout .meal-scan-ok { color: var(--pos-success); }
+.pos-layout .meal-scan-duplicate { color: var(--pos-warning); }
+.meal-banner { display: grid; gap: var(--pos-s2); padding: var(--pos-s2) var(--pos-s3); margin-bottom: var(--pos-s2); border: 1px solid var(--pos-border); border-left: 4px solid var(--pos-success); border-radius: var(--pos-radius); }
+.meal-banner-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--pos-s2); }
+.meal-banner-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: var(--pos-s2); margin: 0; }
+.meal-banner-facts dt { font-size: var(--pos-small); color: var(--pos-muted); }
+.meal-banner-facts dd { margin: 0; font-weight: 700; }
+.meal-account-summary { display: grid; grid-template-columns: max-content 1fr; gap: var(--pos-s1, 4px) var(--pos-s3); }
+.meal-account-summary dd { margin: 0; }
+.meal-account-action { margin-bottom: var(--pos-s2); }
 .reservation-form label, .reservation-deposit-form label, .reservation-approval-form label { display: grid; gap: 2px; min-width: 140px; font-size: var(--pos-small); }
 .reservation-row { display: grid; gap: var(--pos-s2); }
 .reservation-row[data-status='canceled'], .reservation-row[data-status='no_show'] { opacity: 0.7; }

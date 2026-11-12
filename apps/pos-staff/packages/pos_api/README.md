@@ -132,6 +132,7 @@ Class | Method | HTTP request | Description
 [*DefaultApi*](doc/DefaultApi.md) | [**posKitchenStations**](doc/DefaultApi.md#poskitchenstations) | **GET** /api/v3/admin/pos/kitchen_stations | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posKitchenTicketBump**](doc/DefaultApi.md#poskitchenticketbump) | **POST** /api/v3/admin/pos/kitchen/tickets/{id}/bump | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posKitchenVoid**](doc/DefaultApi.md#poskitchenvoid) | **POST** /api/v3/admin/pos/workspaces/{workspace_id}/sale_lines/{sale_line_id}/kitchen_voids | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posMealAccountResolve**](doc/DefaultApi.md#posmealaccountresolve) | **GET** /api/v3/admin/pos/meal_accounts/resolve | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posMenu**](doc/DefaultApi.md#posmenu) | **GET** /api/v3/admin/pos/menu | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posMenuCategories**](doc/DefaultApi.md#posmenucategories) | **GET** /api/v3/admin/pos/menu_categories | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posMenuFavorites**](doc/DefaultApi.md#posmenufavorites) | **PUT** /api/v3/admin/pos/menu_favorites | 
@@ -207,6 +208,9 @@ Class | Method | HTTP request | Description
 [*DefaultApi*](doc/DefaultApi.md) | [**posWorkspaceKitchenTickets**](doc/DefaultApi.md#posworkspacekitchentickets) | **GET** /api/v3/admin/pos/workspaces/{workspace_id}/kitchen_tickets | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posWorkspaceLineModifiers**](doc/DefaultApi.md#posworkspacelinemodifiers) | **PATCH** /api/v3/admin/pos/workspaces/{workspace_id}/items/{id}/modifiers | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posWorkspaceList**](doc/DefaultApi.md#posworkspacelist) | **GET** /api/v3/admin/pos/workspaces | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posWorkspaceMeal**](doc/DefaultApi.md#posworkspacemeal) | **GET** /api/v3/admin/pos/workspaces/{workspace_id}/meal | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posWorkspaceMealSwipe**](doc/DefaultApi.md#posworkspacemealswipe) | **POST** /api/v3/admin/pos/workspaces/{workspace_id}/meal_swipes | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posWorkspaceMealWalletPay**](doc/DefaultApi.md#posworkspacemealwalletpay) | **POST** /api/v3/admin/pos/workspaces/{workspace_id}/meal_wallet | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posWorkspaceRemoveUnsentLine**](doc/DefaultApi.md#posworkspaceremoveunsentline) | **DELETE** /api/v3/admin/pos/workspaces/{workspace_id}/sale_lines/{id} | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posWorkspaceShow**](doc/DefaultApi.md#posworkspaceshow) | **GET** /api/v3/admin/pos/workspaces/{id} | 
 
@@ -321,6 +325,19 @@ Class | Method | HTTP request | Description
  - [LineComponent](doc/LineComponent.md)
  - [LineKitchenStatus](doc/LineKitchenStatus.md)
  - [LineModifier](doc/LineModifier.md)
+ - [MealAccount](doc/MealAccount.md)
+ - [MealResolve](doc/MealResolve.md)
+ - [MealResolveResult](doc/MealResolveResult.md)
+ - [MealSplitPlan](doc/MealSplitPlan.md)
+ - [MealSponsorRef](doc/MealSponsorRef.md)
+ - [MealStatus](doc/MealStatus.md)
+ - [MealSwipe](doc/MealSwipe.md)
+ - [MealSwipeInput](doc/MealSwipeInput.md)
+ - [MealSwipeResult](doc/MealSwipeResult.md)
+ - [MealWalletPay](doc/MealWalletPay.md)
+ - [MealWalletPayInput](doc/MealWalletPayInput.md)
+ - [MealWalletPayResult](doc/MealWalletPayResult.md)
+ - [MealWindow](doc/MealWindow.md)
  - [Menu](doc/Menu.md)
  - [MenuAvailability](doc/MenuAvailability.md)
  - [MenuCategory](doc/MenuCategory.md)
@@ -534,6 +551,8 @@ Class | Method | HTTP request | Description
  - [WorkspaceCreateInput](doc/WorkspaceCreateInput.md)
  - [WorkspaceDrinkCredit](doc/WorkspaceDrinkCredit.md)
  - [WorkspaceLine](doc/WorkspaceLine.md)
+ - [WorkspaceMeal](doc/WorkspaceMeal.md)
+ - [WorkspaceMealResult](doc/WorkspaceMealResult.md)
  - [WorkspaceMinimumSpend](doc/WorkspaceMinimumSpend.md)
  - [WorkspacePageMeta](doc/WorkspacePageMeta.md)
  - [WorkspacePrebill](doc/WorkspacePrebill.md)

@@ -63,11 +63,15 @@ module Spree
       RESERVATION_MANAGE = 'pos.reservation.manage'
       # Working the pass as a person: hand ready dishes out and fire held courses.
       EXPO_OPERATE = 'pos.expo.operate'
+      # A canteen's meal accounts and sponsors: add, import, lock and change
+      # them, and ask for a wallet refund or correction (which still needs an
+      # approval). Topping a wallet up is taking money (pos.payment.collect).
+      MEAL_ACCOUNT_MANAGE = 'pos.meal_account.manage'
       ASSIGNABLE = [MANAGE, OPEN_SHIFT, DISCOUNT, PRICE_OVERRIDE, CUSTOMER, PAYMENT, RESOLVE, RECOVER, APPROVE, TAKEOVER,
                     CREDIT_MANAGE, CREDIT_SELL, RETURN, CASH_MOVE, REPORT_READ, REPORT_EXPORT,
                     INVENTORY_MANAGE, INVENTORY_TRACE, DEVICE_MANAGE, PRINTER_MANAGE, MANAGE_MENU, SET_SOLD_OUT,
                     EINVOICE_MANAGE, OPERATE_KITCHEN, MANAGE_KITCHEN, TABLE_SERVE, RESOURCE_MANAGE, KITCHEN_VOID,
-                    RESERVATION_MANAGE, EXPO_OPERATE].freeze
+                    RESERVATION_MANAGE, EXPO_OPERATE, MEAL_ACCOUNT_MANAGE].freeze
 
       def self.sanitize(values)
         Array(values).map(&:to_s).uniq

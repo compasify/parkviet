@@ -173,7 +173,7 @@ Rails.application.routes.draw do
             get 'shift_closures/open', to: 'shifts/closures#open'
             get 'cash_reconciliations/candidates', to: 'cash_reconciliations#candidates'
             resources :cash_reconciliations, only: [:index, :create]
-            get 'reports/:report', to: 'reports#show', as: :report, constraints: { report: /sales|receipts|cashbook|receivables|closures|ingredient_usage|menu_margin|platforms|bar/ }
+            get 'reports/:report', to: 'reports#show', as: :report, constraints: { report: /sales|receipts|cashbook|receivables|closures|ingredient_usage|menu_margin|platforms|bar|meals|meal_statement/ }
             resources :exports, only: [:index, :show, :create] do
               member do
                 post :download_link
@@ -280,6 +280,19 @@ Rails.application.routes.draw do
             end
             resources :open_bottles, only: [:index] do
               post :finish, on: :member
+            end
+            # A canteen: meal accounts and their wallets, and the sponsors
+            # that pay for meals on credit.
+            resources :meal_sponsors, only: [:index, :show, :create, :update]
+            get 'meal_accounts/resolve', to: 'meal_accounts#resolve'
+            post 'meal_accounts/import', to: 'meal_accounts#import'
+            resources :meal_accounts, only: [:index, :show, :create, :update] do
+              member do
+                get :entries
+                post :top_ups, action: :top_up
+                post :refund
+                post :adjust
+              end
             end
             get 'tips', to: 'tips#index'
             post 'tips/payout', to: 'tips#payout'
@@ -409,6 +422,10 @@ Rails.application.routes.draw do
               # Courses held back from the kitchen, and a booking's deposits at payment.
               post 'courses/:course/fire', to: 'workspaces/courses#fire'
               post 'deposits/apply', to: 'workspaces/deposits#apply'
+              # A canteen order: the eater, the meal recorded and the wallet's part.
+              get 'meal', to: 'workspaces/meals#show'
+              post 'meal_swipes', to: 'workspaces/meals#swipe'
+              post 'meal_wallet', to: 'workspaces/meals#pay'
               member do
                 post 'discount/clear', to: 'workspaces/discounts#clear'
                 post :park

@@ -3871,6 +3871,118 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ChecklistResult'
+  /api/v3/admin/pos/meal_accounts/resolve:
+    get:
+      operationId: posMealAccountResolve
+      description: >
+        Finds a canteen eater (`fnb.meal_accounts`): `q` is an exact employee
+        code (any case) or part of a name, which returns at most 8
+        suggestions. Only accounts of the current store. Rate limited per
+        staff member (429 `meal_resolve_rate_limited`). For the branch's
+        cashiers and meal account managers.
+      parameters:
+        - $ref: '#/components/parameters/ReportBranch'
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            maxLength: 120
+      responses:
+        '200':
+          description: The match, or suggestions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MealResolveResult'
+        '429':
+          description: Too many lookups
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/workspaces/{workspace_id}/meal:
+    get:
+      operationId: posWorkspaceMeal
+      description: The eater recorded on a canteen order and who pays what.
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+      responses:
+        '200':
+          description: The meal
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceMealResult'
+  /api/v3/admin/pos/workspaces/{workspace_id}/meal_swipes:
+    post:
+      operationId: posWorkspaceMealSwipe
+      description: >
+        Records one meal on the order by employee code (or account id) and
+        puts the eater on the order. The server checks the account, a repeat
+        within 60 seconds, the meal times and the daily limit under the
+        account lock; every attempt is recorded. With `override_limit` (or an
+        `approval_id` of `meal_account.override_limit`) a meal-time or limit
+        refusal goes through.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/WorkspaceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MealSwipeInput'
+      responses:
+        '201':
+          description: The meal was recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MealSwipeResult'
+        '409':
+          description: >
+            Refused; `error.details.reason` is `meal_account_locked`,
+            `meal_account_unknown`, `meal_duplicate_swipe`, `meal_daily_limit`,
+            `meal_outside_window`, `approval_required` or `module_disabled`,
+            and `error.details.result` the recorded result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/workspaces/{workspace_id}/meal_wallet:
+    post:
+      operationId: posWorkspaceMealWalletPay
+      description: >
+        Pays the eater's part of the order from their meal wallet: top-up
+        receipts are allocated oldest first. `amount` defaults to the eater's
+        unpaid part. The sponsor's part is charged as the order completes
+        (`meal_sponsor: true` on complete).
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/WorkspaceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MealWalletPayInput'
+      responses:
+        '200':
+          description: The order and the wallet after the payment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MealWalletPayResult'
+        '409':
+          description: >
+            Refused; `error.details.reason` is `stored_value_insufficient`,
+            `meal_account_missing`, `meal_account_locked`,
+            `meal_wallet_nothing_due` or `meal_amount_invalid`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 components:
   parameters:
     Id:
@@ -8421,3 +8533,211 @@ components:
           description: Staff roles that share tips; every role when empty.
           items:
             type: string
+    MealSponsorRef:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+    MealWindow:
+      type: object
+      required: [key, from, to]
+      properties:
+        key:
+          type: string
+        from:
+          type: string
+          description: Local time HH:MM
+        to:
+          type: string
+          description: Local time HH:MM; before `from` when the window crosses midnight
+        limit:
+          type: [integer, 'null']
+    MealAccount:
+      type: object
+      required: [id, employee_code, name, pay_mode, balance, currency, status, revision]
+      properties:
+        id:
+          type: string
+        employee_code:
+          type: string
+        name:
+          type: [string, 'null']
+        phone:
+          type: [string, 'null']
+        customer_id:
+          type: string
+        group_label:
+          type: [string, 'null']
+        sponsor:
+          oneOf:
+            - $ref: '#/components/schemas/MealSponsorRef'
+            - type: 'null'
+        pay_mode:
+          type: string
+          enum: [wallet, sponsor, sponsor_subsidy]
+        daily_meal_limit:
+          type: [integer, 'null']
+        meal_windows:
+          type: array
+          items:
+            $ref: '#/components/schemas/MealWindow'
+        low_balance_threshold:
+          type: [string, 'null']
+        balance:
+          type: string
+        currency:
+          type: string
+        status:
+          type: string
+          enum: [active, locked]
+        revision:
+          type: integer
+        updated_at:
+          type: [string, 'null']
+          format: date-time
+    MealSplitPlan:
+      type: object
+      required: [total, sponsor_amount, employee_amount, sponsor_unavailable]
+      properties:
+        meal_account_id:
+          type: [string, 'null']
+        pay_mode:
+          type: [string, 'null']
+        total:
+          type: string
+        sponsor_id:
+          type: [string, 'null']
+        sponsor_name:
+          type: [string, 'null']
+        sponsor_amount:
+          type: string
+        employee_amount:
+          type: string
+        sponsor_unavailable:
+          type: boolean
+    MealStatus:
+      allOf:
+        - $ref: '#/components/schemas/MealAccount'
+        - type: object
+          required: [meals_today, low_balance, wallet_covers, plan]
+          properties:
+            meals_today:
+              type: integer
+            meals_left:
+              type: [integer, 'null']
+            low_balance:
+              type: boolean
+            wallet_covers:
+              type: boolean
+              description: The wallet holds the eater's part of this order.
+            plan:
+              $ref: '#/components/schemas/MealSplitPlan'
+    MealResolve:
+      type: object
+      required: [suggestions]
+      properties:
+        match:
+          oneOf:
+            - $ref: '#/components/schemas/MealAccount'
+            - type: 'null'
+        suggestions:
+          type: array
+          items:
+            $ref: '#/components/schemas/MealAccount'
+    MealResolveResult:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/MealResolve'
+    WorkspaceMeal:
+      type: object
+      required: [workspace_id, plan]
+      properties:
+        workspace_id:
+          type: string
+        meal:
+          oneOf:
+            - $ref: '#/components/schemas/MealStatus'
+            - type: 'null'
+        plan:
+          $ref: '#/components/schemas/MealSplitPlan'
+    WorkspaceMealResult:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/WorkspaceMeal'
+    MealSwipeInput:
+      type: object
+      required: [expected_revision, lease_generation, editor_id]
+      properties:
+        expected_revision:
+          type: integer
+        lease_generation:
+          type: integer
+        editor_id:
+          type: string
+        code:
+          type: string
+          maxLength: 32
+        meal_account_id:
+          type: string
+        input_method:
+          type: string
+          enum: [code, search]
+        approval_id:
+          type: string
+        override_limit:
+          type: boolean
+          description: Let a meal-time or limit refusal through on an approval.
+    MealSwipe:
+      type: object
+      required: [result, workspace]
+      properties:
+        result:
+          type: string
+          enum: [ok]
+        reason:
+          type: [string, 'null']
+        meal:
+          oneOf:
+            - $ref: '#/components/schemas/MealStatus'
+            - type: 'null'
+        workspace:
+          $ref: '#/components/schemas/Workspace'
+    MealSwipeResult:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/MealSwipe'
+    MealWalletPayInput:
+      type: object
+      required: [expected_revision, lease_generation, editor_id]
+      properties:
+        expected_revision:
+          type: integer
+        lease_generation:
+          type: integer
+        editor_id:
+          type: string
+        amount:
+          type: string
+    MealWalletPay:
+      type: object
+      required: [workspace, meal]
+      properties:
+        workspace:
+          $ref: '#/components/schemas/Workspace'
+        meal:
+          $ref: '#/components/schemas/MealStatus'
+    MealWalletPayResult:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/MealWalletPay'

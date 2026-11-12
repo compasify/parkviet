@@ -50,6 +50,11 @@ Rails.application.config.to_prepare do
     modules.register(key: 'fnb.pour_tracking', group: 'fnb', depends_on: ['fnb.recipes'],
                      entrypoints: ['Spree::Api::V3::Admin::Pos::OpenBottlesController', 'Spree::Pos::Fnb::PourTracker'])
 
+    # A canteen's meal accounts: eaters by employee code, prepaid wallets
+    # and company sponsors that pay on credit.
+    modules.register(key: 'fnb.meal_accounts', group: 'fnb', depends_on: [],
+                     entrypoints: ['Spree::Api::V3::Admin::Pos::MealAccountsController', 'Spree::Pos::MealAccounts::Swipe'])
+
     # Names only, so "coming soon" profiles can refer to them. No code, and
     # no branch can turn them on.
     modules.planned 'timed_billing', group: 'fnb'

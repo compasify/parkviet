@@ -203,10 +203,11 @@ profiles:
     sample_units: []
     kitchen_stations: [prep, bar]
 
+  # Meal accounts by employee code, prepaid wallets and company sponsors.
   cang_tin_tram_dung:
     group: fnb
     order: 18
-    modules: [fnb.menu, fnb.kitchen, fnb.order_number, retail.units]
+    modules: [fnb.menu, fnb.kitchen, fnb.order_number, retail.units, fnb.meal_accounts]
     branch_defaults: { kitchen_send_trigger: on_complete }
     display: { surface: menu_grid }
     recommended_features: [vietqr, customer_display]

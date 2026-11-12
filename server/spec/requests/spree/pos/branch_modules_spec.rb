@@ -42,7 +42,7 @@ RSpec.describe 'POS branch modules', type: :request, pos_modules: :default do
     expect(response).to have_http_status(:ok)
     expect(data).to include('module' => 'retail.measured', 'enabled' => true, 'changed' => true, 'also_enabled' => ['retail.units'])
     expect(data['modules']).to eq('retail.units' => true, 'retail.measured' => true, 'retail.traceability' => false, 'fnb.menu' => false, 'fnb.recipes' => false, 'fnb.kitchen' => false, 'fnb.order_number' => false, 'fnb.cup_label' => false, 'fnb.delivery_platforms' => false, 'resources' => false, 'fnb.tables' => false, 'fnb.postpay' => false, 'fnb.service_charge' => false,
-                                     'fnb.reservations' => false, 'fnb.bottle_keep' => false, 'fnb.pour_tracking' => false)
+                                     'fnb.reservations' => false, 'fnb.bottle_keep' => false, 'fnb.pour_tracking' => false, 'fnb.meal_accounts' => false)
     expect(Spree::Pos::BranchModule.find_by!(branch: branch, module_key: 'retail.units')).
       to have_attributes(enabled: true, reason: 'Bật theo nhu cầu', changed_by_id: manager.id)
     expect(changes).to eq([{ 'module' => 'retail.units', 'from' => false, 'to' => true },
@@ -74,7 +74,7 @@ RSpec.describe 'POS branch modules', type: :request, pos_modules: :default do
     expect(response).to have_http_status(:ok)
     expect(response.parsed_body.dig('data', 'modules')).to eq('retail.units' => false, 'retail.measured' => false, 'retail.traceability' => false,
                                                               'fnb.menu' => false, 'fnb.recipes' => false, 'fnb.kitchen' => false, 'fnb.order_number' => false, 'fnb.cup_label' => false, 'fnb.delivery_platforms' => false, 'resources' => false, 'fnb.tables' => false, 'fnb.postpay' => false, 'fnb.service_charge' => false,
-                                     'fnb.reservations' => false, 'fnb.bottle_keep' => false, 'fnb.pour_tracking' => false)
+                                     'fnb.reservations' => false, 'fnb.bottle_keep' => false, 'fnb.pour_tracking' => false, 'fnb.meal_accounts' => false)
     expect(response.parsed_body.dig('data', 'settings').map { |row| row['module'] }).to eq(%w[retail.measured retail.units])
   end
 

@@ -23,12 +23,18 @@ module Spree
             raise Conflict, 'Allocation is not active.' unless allocation.status == 'active'
             raise Conflict, 'Order is already placed.' if workspace.order.placed? || workspace.order.completed?
 
+            # A wallet that paid this allocation gets the money back.
+            wallet = StoredValue.lock_for(allocation: allocation)
             allocation.received_funds.with_lock do
               allocation.lock!
               raise Conflict, 'Allocation is not active.' unless allocation.status == 'active'
 
               allocation.payment&.void!
               allocation.update!(status: 'reversed', reversed_at: Time.current)
+            end
+            if wallet
+              StoredValue.restore!(account: wallet, amount: allocation.amount, actor: staff, workspace: workspace,
+                                   note: "Hoàn lại khoản trả bị đảo #{allocation.prefixed_id}")
             end
             workspace.update!(revision: workspace.revision + 1)
             AuditEntry.record!(store: workspace.store, actor: staff, action: 'funds.reverse_allocation', subject: workspace,

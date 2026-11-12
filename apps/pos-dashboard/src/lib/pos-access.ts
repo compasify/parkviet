@@ -46,6 +46,8 @@ export type PosPage =
   | 'stock-alerts'
   | 'einvoices'
   | 'einvoice-settings'
+  | 'meal-accounts'
+  | 'meal-sponsors'
   // Server information: store administrators (the default branch below).
   | 'system'
 export function canAdminister(access: PosAccess, write = false) {
@@ -143,7 +145,16 @@ const takesPlatformOrders = (access: PosAccess) =>
   access.context?.modules?.['fnb.delivery_platforms'] === true
 export const canSettlePlatforms = (access: PosAccess) =>
   canAdminister(access, true) || hasCapability(access, 'pos.payment.resolve')
+// A canteen's meal accounts and sponsors belong to the store; store
+// administrators or meal account managers of the selected branch keep them,
+// while that branch runs meal accounts. Wallet money moves at the counter.
+export const runsMealAccounts = (access: PosAccess) =>
+  access.context?.modules?.['fnb.meal_accounts'] === true
+export const canManageMealAccounts = (access: PosAccess) =>
+  canAdminister(access, true) || hasCapability(access, 'pos.meal_account.manage')
 export function visibleNav(page: PosPage, access: PosAccess) {
+  if (page === 'meal-accounts' || page === 'meal-sponsors')
+    return runsMealAccounts(access) && canManageMealAccounts(access)
   if (page === 'einvoices') return issuesEinvoices(access) && canReadEinvoices(access)
   if (page === 'einvoice-settings') return canAdminister(access, true)
   if (page === 'platform-settlement')
