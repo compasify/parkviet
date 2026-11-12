@@ -12,7 +12,7 @@ module Spree
             def index
               return if channel_rejected?
 
-              scope = Spree::Pos::StaffMembership.for_store(current_store).includes(:staff, :branch, :staff_role).order(:id)
+              scope = Spree::Pos::StaffMembership.for_store(current_store).people.includes(:staff, :branch, :staff_role).order(:id)
               scope = scope.where(branch_id: branch!(params[:branch_id]).id) if params[:branch_id].present?
               render_page(scope)
             end
@@ -80,7 +80,7 @@ module Spree
 
             def membership!(prefixed)
               membership = Spree::Pos::StaffMembership.locate(
-                Spree::Pos::StaffMembership.for_store(current_store),
+                Spree::Pos::StaffMembership.for_store(current_store).people,
                 prefixed
               )
               raise ActiveRecord::RecordNotFound if membership.nil?

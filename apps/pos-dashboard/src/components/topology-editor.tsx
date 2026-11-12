@@ -28,6 +28,7 @@ export type TopologyDraft = {
   id?: string
   name?: string
   code?: string
+  kind?: string
   timezone?: string
   business_day_cutoff?: string | null
   staff_session_idle_minutes?: number | null
@@ -77,6 +78,7 @@ export type TopologyEditorProps = {
 type Values = {
   name: string
   code: string
+  kind: 'counter' | 'kiosk'
   timezone: string
   business_day_cutoff: string
   staff_session_idle_minutes: string
@@ -113,6 +115,7 @@ export function TopologyEditor({
     defaultValues: {
       name: record.name ?? '',
       code: record.code ?? '',
+      kind: record.kind === 'kiosk' ? 'kiosk' : 'counter',
       timezone: record.timezone ?? 'Asia/Ho_Chi_Minh',
       business_day_cutoff: (record.business_day_cutoff ?? '04:00').slice(0, 5),
       staff_session_idle_minutes: String(record.staff_session_idle_minutes ?? 30),
@@ -367,6 +370,17 @@ export function TopologyEditor({
                 </TopologyField>
               </>
             )}
+            {kind === 'registers' &&
+              select(
+                'kind',
+                'adminRegisterKind',
+                ['counter', 'kiosk'].map((value) => ({
+                  value,
+                  label: t(`adminRegisterKind_${value}`),
+                })),
+                Boolean(record.id),
+                'adminRegisterKindHint',
+              )}
             {kind === 'registers' && <FieldDescription>{t('adminRegisterNote')}</FieldDescription>}
             {kind === 'memberships' && (
               <>

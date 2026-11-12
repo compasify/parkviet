@@ -18,6 +18,8 @@ module Spree
         guest_order.updated
         guest_request.created
         guest_request.updated
+        kiosk.updated
+        kiosk_order.waiting
       ].freeze
 
       # `refs` may only point at other records, so no caller can slip money,

@@ -63,6 +63,11 @@ Rails.application.config.to_prepare do
     modules.register(key: 'fnb.qr_order', group: 'fnb', depends_on: ['fnb.menu', 'fnb.tables'],
                      entrypoints: ['Spree::Pos::GuestViewsController', 'Spree::Pos::GuestOrders::Submit'])
 
+    # A self-ordering kiosk: guests order and pay by bank QR, or pay at the
+    # counter, and get a call number.
+    modules.register(key: 'fnb.kiosk', group: 'fnb', depends_on: ['fnb.menu', 'fnb.order_number'],
+                     entrypoints: ['Spree::Pos::DeviceApi::KioskController', 'Spree::Pos::Kiosks::Order'])
+
     # Play time on rooms and billiard tables: rate plans by time of day and
     # kind of day, and clocks billed as a timed line of the room's order.
     modules.register(key: 'timed_billing', group: 'fnb', depends_on: ['resources', 'fnb.tables'],

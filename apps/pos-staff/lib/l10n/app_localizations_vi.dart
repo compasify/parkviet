@@ -1288,4 +1288,171 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get waiterGuestArrived => 'Khách vừa gọi món hoặc gọi phục vụ qua QR';
+
+  @override
+  String get kioskWelcomeTitle => 'Xin chào! Chạm để gọi món';
+
+  @override
+  String get kioskWelcomeHint =>
+      'Tự chọn món, trả bằng QR chuyển khoản hoặc trả tại quầy.';
+
+  @override
+  String get kioskStart => 'Bắt đầu gọi món';
+
+  @override
+  String get kioskPausedTitle => 'Kiosk đang tạm dừng';
+
+  @override
+  String get kioskPausedBody => 'Xin mời bạn gọi món tại quầy thu ngân.';
+
+  @override
+  String get kioskReconnecting => 'Đang kết nối lại máy chủ…';
+
+  @override
+  String get kioskSoldOut => 'Hết món';
+
+  @override
+  String get kioskAllItems => 'Tất cả món';
+
+  @override
+  String kioskCartButton(int count, String amount) {
+    return 'Giỏ hàng · $count món · $amount';
+  }
+
+  @override
+  String get kioskCartTitle => 'Giỏ hàng của bạn';
+
+  @override
+  String get kioskBackToMenu => 'Gọi thêm món';
+
+  @override
+  String kioskEstimate(String amount) {
+    return 'Tạm tính $amount';
+  }
+
+  @override
+  String get kioskEstimateHint =>
+      'Số tiền chính xác hiện ngay khi bạn đặt đơn.';
+
+  @override
+  String get kioskChoosePayment => 'Bạn muốn trả thế nào?';
+
+  @override
+  String get kioskPayQr => 'Trả bằng QR chuyển khoản';
+
+  @override
+  String get kioskPayCounter => 'Trả tại quầy';
+
+  @override
+  String kioskLess(String name) {
+    return 'Bớt $name';
+  }
+
+  @override
+  String kioskMore(String name) {
+    return 'Thêm $name';
+  }
+
+  @override
+  String get kioskCartFull => 'Giỏ hàng đã đủ món; hãy đặt đơn này trước.';
+
+  @override
+  String kioskQrTitle(String amount) {
+    return 'Quét mã để trả $amount';
+  }
+
+  @override
+  String get kioskQrImage => 'Mã QR chuyển khoản';
+
+  @override
+  String kioskQrAccount(String bank, String account, String name) {
+    return '$bank · $account · $name';
+  }
+
+  @override
+  String kioskQrNote(String note) {
+    return 'Nội dung chuyển khoản: $note';
+  }
+
+  @override
+  String kioskQrLeft(int seconds) {
+    return 'Mã còn hiệu lực $seconds giây';
+  }
+
+  @override
+  String get kioskQrWaiting => 'Đang chờ ngân hàng báo đã nhận tiền…';
+
+  @override
+  String get kioskQrInstead => 'Trả tại quầy thay vì QR';
+
+  @override
+  String get kioskDoneTitle => 'Cảm ơn bạn!';
+
+  @override
+  String get kioskCallNumberLabel => 'Số gọi món của bạn';
+
+  @override
+  String get kioskDonePaid =>
+      'Đã nhận tiền. Quán đang làm món; nghe gọi số này để nhận.';
+
+  @override
+  String get kioskDoneCounter =>
+      'Mời bạn ra quầy thu ngân và đọc số này để trả tiền.';
+
+  @override
+  String get kioskNextGuest => 'Xong';
+
+  @override
+  String get kioskStillThere => 'Bạn còn đó không?';
+
+  @override
+  String kioskStillThereBody(int seconds) {
+    return 'Đơn sẽ được hủy sau $seconds giây.';
+  }
+
+  @override
+  String get kioskStillHere => 'Tôi vẫn ở đây';
+
+  @override
+  String get kioskStartOver => 'Hủy và làm lại';
+
+  @override
+  String get kioskLanguageSwitch => 'English';
+
+  @override
+  String get kioskNotLocked =>
+      'Màn hình chưa được khóa vào ứng dụng. Quản lý: bật ghim màn hình (Android) hoặc Guided Access (iOS).';
+
+  @override
+  String get kioskLowReach => 'Đưa nút xuống thấp';
+
+  @override
+  String get kioskFailureSoldOut =>
+      'Có món vừa hết. Vui lòng bỏ món đó khỏi giỏ.';
+
+  @override
+  String get kioskFailurePaused =>
+      'Kiosk vừa tạm dừng. Xin mời gọi món tại quầy.';
+
+  @override
+  String get kioskFailureQrUnavailable =>
+      'Hiện chưa trả được bằng QR. Bạn có thể trả tại quầy.';
+
+  @override
+  String get kioskFailureGeneric =>
+      'Chưa đặt được đơn. Vui lòng thử lại hoặc gọi nhân viên.';
+
+  @override
+  String get manageKioskUnlock => 'Mở khóa màn hình kiosk';
+
+  @override
+  String get manageKioskUnlockHint =>
+      'Cho phép thoát ứng dụng để bảo trì. Kiosk tự khóa lại khi mở lại chế độ kiosk.';
+
+  @override
+  String get manageKioskUnlocked => 'Đã mở khóa màn hình kiosk.';
+
+  @override
+  String get manageKioskUnlockFailed =>
+      'Thiết bị không mở khóa được; tắt chế độ ghim màn hình hoặc Guided Access trong cài đặt máy.';
 }

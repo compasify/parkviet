@@ -64,7 +64,17 @@ iOS dừng app khi app chạy nền hoặc khi màn hình tắt. iPhone làm má
 
 Khách quét mã, xem thực đơn và giá, chọn món, tùy chọn, ghi chú rồi gửi đơn; khách cũng gọi được phục vụ hoặc tính tiền. Bàn chưa mở thì khách chỉ xem thực đơn. Đơn chờ duyệt hiện ở khay **Đơn từ QR** trên màn bán (`apps/pos`) và nút **Đơn từ QR** trên máy phục vụ; duyệt thì món vào đơn của bàn và báo bếp, từ chối thì cần lý do và khách đọc được lý do. Người duyệt cần quyền **Duyệt / từ chối món khách gọi qua QR**. Khách không trả tiền qua QR: thu ngân vẫn thu như đơn bàn.
 
-## 8. Dữ liệu thử trên máy phát triển
+## 8. Kiosk tự order
+
+1. Bật module **Kiosk tự order** (`fnb.kiosk`) của chi nhánh. Module cần **Thực đơn** và **Số gọi món**. Muốn khách trả bằng QR thì bật thêm tính năng **VietQR** và cấu hình tài khoản nhận SePay / PayOS (webhook phải về được server, xem [triển khai](../deploy/pos-lan-vps.md)).
+2. Ở tab **Quầy** của chi nhánh, tạo quầy mới và chọn loại **Kiosk tự order**. Loại quầy không đổi được sau khi quầy đã có ca. Thu ngân không mở ca trên quầy kiosk.
+3. Ở trang **Thiết bị**, tạo mã ghép mode **Kiosk** và chọn quầy kiosk đó, rồi ghép máy bằng app ParkViet Nhân viên. Ghép xong, server tạo một tài khoản dịch vụ cho kiosk: không PIN, không hiện trong danh sách nhân viên, chỉ được đặt đơn, mở QR, nhận xác nhận của ngân hàng và chuyển đơn ra quầy. Kiosk không thu tiền mặt, không giảm giá, không sửa giá và không tự xác nhận chuyển khoản bằng tay. Thu hồi thiết bị là tắt tài khoản đó.
+4. Ở tab **Quầy**, phần **Kiosk tự order**, chỉnh thời gian chờ chạm (15–600 giây), thời hạn QR (60–900 giây) và **Gửi bếp trước khi trả tiền**, rồi bấm **Mở ca kiosk**. Kiosk chỉ nhận đơn khi ca đang mở; ca kiosk không giữ tiền mặt, đóng ca là đếm 0.
+
+Khách chạm màn hình, chọn món và tùy chọn, xem giỏ rồi chọn cách trả. Giá do server tính lại theo thực đơn. **Trả bằng QR**: kiosk hiện mã QR và đếm ngược; khi webhook ngân hàng báo nhận tiền, đơn tự hoàn tất, có số gọi món, vào bếp và in hóa đơn ra máy in hóa đơn gắn với quầy kiosk. Hết hạn QR mà chưa nhận tiền thì QR bị hủy và đơn chuyển ra quầy. **Trả tại quầy**: đơn có số gọi món, in phiếu số gọi (nếu có máy in) và chờ ở khay **Đơn từ kiosk** trên màn bán (`apps/pos`). Thu ngân có quyền mở ca và thu tiền bấm **Thu tiền**: đơn chuyển sang ca của thu ngân, thu như đơn thường; bếp chỉ nhận món khi đã thu, trừ khi chi nhánh bật gửi bếp trước. Đơn chờ quá 30 phút được đánh dấu khách có thể đã bỏ đi và thu ngân hủy được.
+
+Không ai chạm trong thời gian chờ thì kiosk hỏi "Bạn còn đó không?" 10 giây rồi hủy đơn chưa trả. Kiosk có nút đổi tiếng Việt / English và nút đưa nút bấm xuống thấp. Trên Android app tự ghim màn hình (lock task; máy được cấu hình device owner thì khóa hẳn), trên iOS cần bật Guided Access hoặc chế độ một ứng dụng của máy quản lý. Muốn thoát, quản lý giữ dòng chào trên màn kiosk, nhập PIN, rồi bấm **Mở khóa màn hình kiosk**.
+## 9. Dữ liệu thử trên máy phát triển
 
 Seed demo tạo một nhà hàng mẫu cho cửa hàng mặc định:
 

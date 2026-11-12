@@ -29,6 +29,8 @@ module Spree
             )
             token = device.rotate_token!(actor: pairing.created_by)
             pairing.update!(device: device)
+            # A kiosk works as its own service account; any other mode has none.
+            Kiosks::Provision.call(device: device, actor: pairing.created_by)
             AuditEntry.record!(store: device.store, actor: pairing.created_by, action: 'device.paired', subject: device,
                                metadata: { pairing_id: pairing.prefixed_id, mode: device.mode, generation: device.generation })
             { device: device.to_pos, token: token }

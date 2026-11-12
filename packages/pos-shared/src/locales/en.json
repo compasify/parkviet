@@ -330,6 +330,12 @@
       "off": "QR ordering is off at this branch.",
       "disabled": "QR ordering is off at this branch; the server takes no orders from guests’ phones. Selling is not affected."
     },
+    "fnb_kiosk": {
+      "label": "Self-ordering kiosk",
+      "description": "Guests order and pay by bank QR on a kiosk screen, or pay at the counter; paid orders get a call number and reach the kitchen.",
+      "off": "Self-ordering kiosks are off at this branch.",
+      "disabled": "Self-ordering kiosks are off at this branch; kiosks show as paused and take no orders. Selling at the counter is not affected."
+    },
     "timed_billing": {
       "label": "Play time",
       "description": "Bill karaoke rooms and billiard tables by the time played, on rate plans by time of day, weekdays, weekends and holidays; the server keeps the time.",

@@ -7,12 +7,16 @@ module Spree
     # today's sold-out marks), restricted to items open to guests, without
     # anything the guest has no business seeing: SKUs, barcodes, list
     # prices, kitchen routing, tax or cost. Door tickets stay at the counter.
+    # A self-ordering kiosk (channel: :kiosk) reads the same menu with
+    # every item the counter sells, not only those open to the table QR.
     module GuestMenu
       module_function
 
-      def call(branch)
+      CHANNELS = %i[qr kiosk].freeze
+
+      def call(branch, channel: :qr)
         menu = Menu::Reader.call(branch: branch)
-        items = orderable(branch, menu[:items]).map { |row| item_row(row) }
+        items = orderable(branch, menu[:items], channel).map { |row| item_row(row) }
         group_ids = items.flat_map { |row| row[:modifier_group_ids] }.to_set
         category_ids = items.filter_map { |row| row[:menu_category_id] }.to_set
         body = {
@@ -25,14 +29,18 @@ module Spree
       end
 
       # Menu rows of items guests may order, by variant id.
-      def variants(branch)
-        orderable(branch, Menu::Reader.call(branch: branch)[:items]).each_with_object({}) do |row, index|
+      def variants(branch, channel: :qr)
+        orderable(branch, Menu::Reader.call(branch: branch)[:items], channel).each_with_object({}) do |row, index|
           row[:variants].each { |variant| index[variant[:id]] = row }
         end
       end
 
-      def orderable(branch, rows)
-        allowed = MenuItem.for_store(branch.store).where(qr_orderable: true, drink_credit: nil).pluck(:id).
+      def orderable(branch, rows, channel = :qr)
+        raise ArgumentError, "Unknown menu channel: #{channel}" unless CHANNELS.include?(channel)
+
+        scope = MenuItem.for_store(branch.store).where(drink_credit: nil)
+        scope = scope.where(qr_orderable: true) if channel == :qr
+        allowed = scope.pluck(:id).
                   to_set { |id| MenuItem.prefixed_for(id) }
         rows.select { |row| allowed.include?(row[:id]) }
       end

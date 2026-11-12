@@ -37,6 +37,10 @@ module Spree
             resolver = PaymentMethodResolver.new(store: workspace.store)
             row, core_method = resolver.resolve!(payment_method_id, branch: workspace.branch)
             raise Conflict, 'Payment method is not available for this store.' if core_method.nil?
+            # A kiosk takes money only as a bank transfer the bank itself confirms.
+            if row.kind != 'vietqr' && Kiosks::Policy.service_account?(staff)
+              raise Conflict.new('A kiosk takes only VietQR.', reason: 'kiosk_tender_forbidden')
+            end
 
             # A platform order is paid on the platform, and nothing else is.
             if row.platform? != Workspace::PLATFORM_SOURCES.include?(workspace.order_source)

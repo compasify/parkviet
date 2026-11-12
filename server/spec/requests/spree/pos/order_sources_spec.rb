@@ -133,7 +133,7 @@ RSpec.describe 'POS order sources API', type: :request do
 
       body = report(reader)
       expect(response).to have_http_status(:ok), response.body
-      expect(body.dig('meta', 'summary', 'by_source').map { |row| row['order_source'] }).to eq(%w[counter facebook zalo other grabfood shopeefood])
+      expect(body.dig('meta', 'summary', 'by_source').map { |row| row['order_source'] }).to eq(%w[counter facebook zalo other grabfood shopeefood kiosk])
       rows = source_rows(body)
       expect(rows['counter']).to include('orders' => 1, 'sales_total' => '100000.0', 'owed' => '0.0')
       expect(rows['facebook']).to include('orders' => 2, 'sales_total' => '100000.0', 'owed' => '30000.0')

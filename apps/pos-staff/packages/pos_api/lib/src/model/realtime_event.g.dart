@@ -31,6 +31,10 @@ const RealtimeEventEventEnum
 const RealtimeEventEventEnum
     _$realtimeEventEventEnum_guestRequestPeriodUpdated =
     const RealtimeEventEventEnum._('guestRequestPeriodUpdated');
+const RealtimeEventEventEnum _$realtimeEventEventEnum_kioskPeriodUpdated =
+    const RealtimeEventEventEnum._('kioskPeriodUpdated');
+const RealtimeEventEventEnum _$realtimeEventEventEnum_kioskOrderPeriodWaiting =
+    const RealtimeEventEventEnum._('kioskOrderPeriodWaiting');
 
 RealtimeEventEventEnum _$realtimeEventEventEnumValueOf(String name) {
   switch (name) {
@@ -56,6 +60,10 @@ RealtimeEventEventEnum _$realtimeEventEventEnumValueOf(String name) {
       return _$realtimeEventEventEnum_guestRequestPeriodCreated;
     case 'guestRequestPeriodUpdated':
       return _$realtimeEventEventEnum_guestRequestPeriodUpdated;
+    case 'kioskPeriodUpdated':
+      return _$realtimeEventEventEnum_kioskPeriodUpdated;
+    case 'kioskOrderPeriodWaiting':
+      return _$realtimeEventEventEnum_kioskOrderPeriodWaiting;
     default:
       throw ArgumentError(name);
   }
@@ -74,6 +82,8 @@ final BuiltSet<RealtimeEventEventEnum> _$realtimeEventEventEnumValues =
   _$realtimeEventEventEnum_guestOrderPeriodUpdated,
   _$realtimeEventEventEnum_guestRequestPeriodCreated,
   _$realtimeEventEventEnum_guestRequestPeriodUpdated,
+  _$realtimeEventEventEnum_kioskPeriodUpdated,
+  _$realtimeEventEventEnum_kioskOrderPeriodWaiting,
 ]);
 
 const RealtimeEventAlertEnum _$realtimeEventAlertEnum_endingSoon =
@@ -122,6 +132,8 @@ class _$RealtimeEventEventEnumSerializer
     'guestOrderPeriodUpdated': 'guest_order.updated',
     'guestRequestPeriodCreated': 'guest_request.created',
     'guestRequestPeriodUpdated': 'guest_request.updated',
+    'kioskPeriodUpdated': 'kiosk.updated',
+    'kioskOrderPeriodWaiting': 'kiosk_order.waiting',
   };
   static const Map<Object, String> _fromWire = const <Object, String>{
     'workspace.updated': 'workspacePeriodUpdated',
@@ -135,6 +147,8 @@ class _$RealtimeEventEventEnumSerializer
     'guest_order.updated': 'guestOrderPeriodUpdated',
     'guest_request.created': 'guestRequestPeriodCreated',
     'guest_request.updated': 'guestRequestPeriodUpdated',
+    'kiosk.updated': 'kioskPeriodUpdated',
+    'kiosk_order.waiting': 'kioskOrderPeriodWaiting',
   };
 
   @override

@@ -1290,4 +1290,172 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get waiterGuestArrived => 'A guest ordered or called staff by QR';
+
+  @override
+  String get kioskWelcomeTitle => 'Hello! Touch to order';
+
+  @override
+  String get kioskWelcomeHint =>
+      'Pick your food and drinks, then pay by bank QR or at the counter.';
+
+  @override
+  String get kioskStart => 'Start ordering';
+
+  @override
+  String get kioskPausedTitle => 'This kiosk is paused';
+
+  @override
+  String get kioskPausedBody => 'Please order at the counter.';
+
+  @override
+  String get kioskReconnecting => 'Reconnecting to the server…';
+
+  @override
+  String get kioskSoldOut => 'Sold out';
+
+  @override
+  String get kioskAllItems => 'All items';
+
+  @override
+  String kioskCartButton(int count, String amount) {
+    return 'Basket · $count items · $amount';
+  }
+
+  @override
+  String get kioskCartTitle => 'Your basket';
+
+  @override
+  String get kioskBackToMenu => 'Add more';
+
+  @override
+  String kioskEstimate(String amount) {
+    return 'Estimate $amount';
+  }
+
+  @override
+  String get kioskEstimateHint =>
+      'The exact amount shows as soon as you place the order.';
+
+  @override
+  String get kioskChoosePayment => 'How would you like to pay?';
+
+  @override
+  String get kioskPayQr => 'Pay by bank QR';
+
+  @override
+  String get kioskPayCounter => 'Pay at the counter';
+
+  @override
+  String kioskLess(String name) {
+    return 'One less $name';
+  }
+
+  @override
+  String kioskMore(String name) {
+    return 'One more $name';
+  }
+
+  @override
+  String get kioskCartFull =>
+      'Your basket is full; please place this order first.';
+
+  @override
+  String kioskQrTitle(String amount) {
+    return 'Scan to pay $amount';
+  }
+
+  @override
+  String get kioskQrImage => 'Bank transfer QR code';
+
+  @override
+  String kioskQrAccount(String bank, String account, String name) {
+    return '$bank · $account · $name';
+  }
+
+  @override
+  String kioskQrNote(String note) {
+    return 'Transfer note: $note';
+  }
+
+  @override
+  String kioskQrLeft(int seconds) {
+    return 'The code is valid for $seconds more seconds';
+  }
+
+  @override
+  String get kioskQrWaiting => 'Waiting for the bank to confirm your payment…';
+
+  @override
+  String get kioskQrInstead => 'Pay at the counter instead';
+
+  @override
+  String get kioskDoneTitle => 'Thank you!';
+
+  @override
+  String get kioskCallNumberLabel => 'Your order number';
+
+  @override
+  String get kioskDonePaid =>
+      'Payment received. We are preparing your order; listen for this number.';
+
+  @override
+  String get kioskDoneCounter =>
+      'Please go to the counter and give this number to pay.';
+
+  @override
+  String get kioskNextGuest => 'Done';
+
+  @override
+  String get kioskStillThere => 'Are you still there?';
+
+  @override
+  String kioskStillThereBody(int seconds) {
+    return 'Your order will be canceled in $seconds seconds.';
+  }
+
+  @override
+  String get kioskStillHere => 'I\'m still here';
+
+  @override
+  String get kioskStartOver => 'Cancel and start over';
+
+  @override
+  String get kioskLanguageSwitch => 'Tiếng Việt';
+
+  @override
+  String get kioskNotLocked =>
+      'The screen is not locked to the app. Manager: turn on screen pinning (Android) or Guided Access (iOS).';
+
+  @override
+  String get kioskLowReach => 'Move buttons lower';
+
+  @override
+  String get kioskFailureSoldOut =>
+      'An item just sold out. Please remove it from your basket.';
+
+  @override
+  String get kioskFailurePaused =>
+      'This kiosk just paused. Please order at the counter.';
+
+  @override
+  String get kioskFailureQrUnavailable =>
+      'Bank QR is not available right now. You can pay at the counter.';
+
+  @override
+  String get kioskFailureGeneric =>
+      'The order could not be placed. Please try again or ask a staff member.';
+
+  @override
+  String get manageKioskUnlock => 'Unlock the kiosk screen';
+
+  @override
+  String get manageKioskUnlockHint =>
+      'Lets you leave the app for maintenance. The kiosk locks again when kiosk mode opens.';
+
+  @override
+  String get manageKioskUnlocked => 'The kiosk screen is unlocked.';
+
+  @override
+  String get manageKioskUnlockFailed =>
+      'The device did not unlock; turn off screen pinning or Guided Access in the device settings.';
 }

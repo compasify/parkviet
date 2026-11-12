@@ -2269,6 +2269,282 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Khách vừa gọi món hoặc gọi phục vụ qua QR'**
   String get waiterGuestArrived;
+
+  /// No description provided for @kioskWelcomeTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xin chào! Chạm để gọi món'**
+  String get kioskWelcomeTitle;
+
+  /// No description provided for @kioskWelcomeHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tự chọn món, trả bằng QR chuyển khoản hoặc trả tại quầy.'**
+  String get kioskWelcomeHint;
+
+  /// No description provided for @kioskStart.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bắt đầu gọi món'**
+  String get kioskStart;
+
+  /// No description provided for @kioskPausedTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Kiosk đang tạm dừng'**
+  String get kioskPausedTitle;
+
+  /// No description provided for @kioskPausedBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xin mời bạn gọi món tại quầy thu ngân.'**
+  String get kioskPausedBody;
+
+  /// No description provided for @kioskReconnecting.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang kết nối lại máy chủ…'**
+  String get kioskReconnecting;
+
+  /// No description provided for @kioskSoldOut.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hết món'**
+  String get kioskSoldOut;
+
+  /// No description provided for @kioskAllItems.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tất cả món'**
+  String get kioskAllItems;
+
+  /// No description provided for @kioskCartButton.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giỏ hàng · {count} món · {amount}'**
+  String kioskCartButton(int count, String amount);
+
+  /// No description provided for @kioskCartTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giỏ hàng của bạn'**
+  String get kioskCartTitle;
+
+  /// No description provided for @kioskBackToMenu.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gọi thêm món'**
+  String get kioskBackToMenu;
+
+  /// No description provided for @kioskEstimate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tạm tính {amount}'**
+  String kioskEstimate(String amount);
+
+  /// No description provided for @kioskEstimateHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số tiền chính xác hiện ngay khi bạn đặt đơn.'**
+  String get kioskEstimateHint;
+
+  /// No description provided for @kioskChoosePayment.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn muốn trả thế nào?'**
+  String get kioskChoosePayment;
+
+  /// No description provided for @kioskPayQr.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trả bằng QR chuyển khoản'**
+  String get kioskPayQr;
+
+  /// No description provided for @kioskPayCounter.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trả tại quầy'**
+  String get kioskPayCounter;
+
+  /// No description provided for @kioskLess.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bớt {name}'**
+  String kioskLess(String name);
+
+  /// No description provided for @kioskMore.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm {name}'**
+  String kioskMore(String name);
+
+  /// No description provided for @kioskCartFull.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giỏ hàng đã đủ món; hãy đặt đơn này trước.'**
+  String get kioskCartFull;
+
+  /// No description provided for @kioskQrTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quét mã để trả {amount}'**
+  String kioskQrTitle(String amount);
+
+  /// No description provided for @kioskQrImage.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mã QR chuyển khoản'**
+  String get kioskQrImage;
+
+  /// No description provided for @kioskQrAccount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{bank} · {account} · {name}'**
+  String kioskQrAccount(String bank, String account, String name);
+
+  /// No description provided for @kioskQrNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nội dung chuyển khoản: {note}'**
+  String kioskQrNote(String note);
+
+  /// No description provided for @kioskQrLeft.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mã còn hiệu lực {seconds} giây'**
+  String kioskQrLeft(int seconds);
+
+  /// No description provided for @kioskQrWaiting.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang chờ ngân hàng báo đã nhận tiền…'**
+  String get kioskQrWaiting;
+
+  /// No description provided for @kioskQrInstead.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trả tại quầy thay vì QR'**
+  String get kioskQrInstead;
+
+  /// No description provided for @kioskDoneTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cảm ơn bạn!'**
+  String get kioskDoneTitle;
+
+  /// No description provided for @kioskCallNumberLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số gọi món của bạn'**
+  String get kioskCallNumberLabel;
+
+  /// No description provided for @kioskDonePaid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã nhận tiền. Quán đang làm món; nghe gọi số này để nhận.'**
+  String get kioskDonePaid;
+
+  /// No description provided for @kioskDoneCounter.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mời bạn ra quầy thu ngân và đọc số này để trả tiền.'**
+  String get kioskDoneCounter;
+
+  /// No description provided for @kioskNextGuest.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xong'**
+  String get kioskNextGuest;
+
+  /// No description provided for @kioskStillThere.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn còn đó không?'**
+  String get kioskStillThere;
+
+  /// No description provided for @kioskStillThereBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đơn sẽ được hủy sau {seconds} giây.'**
+  String kioskStillThereBody(int seconds);
+
+  /// No description provided for @kioskStillHere.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tôi vẫn ở đây'**
+  String get kioskStillHere;
+
+  /// No description provided for @kioskStartOver.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hủy và làm lại'**
+  String get kioskStartOver;
+
+  /// No description provided for @kioskLanguageSwitch.
+  ///
+  /// In vi, this message translates to:
+  /// **'English'**
+  String get kioskLanguageSwitch;
+
+  /// No description provided for @kioskNotLocked.
+  ///
+  /// In vi, this message translates to:
+  /// **'Màn hình chưa được khóa vào ứng dụng. Quản lý: bật ghim màn hình (Android) hoặc Guided Access (iOS).'**
+  String get kioskNotLocked;
+
+  /// No description provided for @kioskLowReach.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đưa nút xuống thấp'**
+  String get kioskLowReach;
+
+  /// No description provided for @kioskFailureSoldOut.
+  ///
+  /// In vi, this message translates to:
+  /// **'Có món vừa hết. Vui lòng bỏ món đó khỏi giỏ.'**
+  String get kioskFailureSoldOut;
+
+  /// No description provided for @kioskFailurePaused.
+  ///
+  /// In vi, this message translates to:
+  /// **'Kiosk vừa tạm dừng. Xin mời gọi món tại quầy.'**
+  String get kioskFailurePaused;
+
+  /// No description provided for @kioskFailureQrUnavailable.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hiện chưa trả được bằng QR. Bạn có thể trả tại quầy.'**
+  String get kioskFailureQrUnavailable;
+
+  /// No description provided for @kioskFailureGeneric.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa đặt được đơn. Vui lòng thử lại hoặc gọi nhân viên.'**
+  String get kioskFailureGeneric;
+
+  /// No description provided for @manageKioskUnlock.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mở khóa màn hình kiosk'**
+  String get manageKioskUnlock;
+
+  /// No description provided for @manageKioskUnlockHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cho phép thoát ứng dụng để bảo trì. Kiosk tự khóa lại khi mở lại chế độ kiosk.'**
+  String get manageKioskUnlockHint;
+
+  /// No description provided for @manageKioskUnlocked.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã mở khóa màn hình kiosk.'**
+  String get manageKioskUnlocked;
+
+  /// No description provided for @manageKioskUnlockFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thiết bị không mở khóa được; tắt chế độ ghim màn hình hoặc Guided Access trong cài đặt máy.'**
+  String get manageKioskUnlockFailed;
 }
 
 class _AppLocalizationsDelegate

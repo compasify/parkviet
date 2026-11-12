@@ -330,6 +330,12 @@
       "off": "Chi nhánh chưa bật chức năng Gọi món qua QR.",
       "disabled": "Chi nhánh chưa bật Gọi món qua QR; máy chủ không nhận đơn từ điện thoại khách. Việc bán hàng không bị ảnh hưởng."
     },
+    "fnb_kiosk": {
+      "label": "Kiosk tự order",
+      "description": "Khách tự gọi món và trả bằng QR chuyển khoản trên màn hình kiosk, hoặc ra quầy trả; đơn đã trả có số gọi món và vào bếp.",
+      "off": "Chi nhánh chưa bật chức năng Kiosk tự order.",
+      "disabled": "Chi nhánh chưa bật Kiosk tự order; kiosk hiện tạm dừng và không nhận đơn. Việc bán hàng tại quầy không bị ảnh hưởng."
+    },
     "timed_billing": {
       "label": "Tính giờ",
       "description": "Tính tiền giờ phòng karaoke, bàn bida theo bảng giá khung giờ, ngày thường, cuối tuần và ngày lễ; giờ do máy chủ tính.",

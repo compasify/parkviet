@@ -138,7 +138,7 @@ RSpec.describe 'POS business profiles', type: :request do
       expect(response).to have_http_status(:ok)
       expect(context['modules']).to eq('retail.units' => true, 'retail.measured' => false, 'retail.traceability' => false,
                                        'fnb.menu' => false, 'fnb.recipes' => false, 'fnb.kitchen' => false, 'fnb.order_number' => false, 'fnb.cup_label' => false, 'fnb.delivery_platforms' => false, 'resources' => false, 'fnb.tables' => false, 'fnb.postpay' => false, 'fnb.service_charge' => false,
-                                     'fnb.reservations' => false, 'fnb.bottle_keep' => false, 'fnb.pour_tracking' => false, 'fnb.meal_accounts' => false, 'fnb.vehicle_commission' => false, 'fnb.qr_order' => false,
+                                     'fnb.reservations' => false, 'fnb.bottle_keep' => false, 'fnb.pour_tracking' => false, 'fnb.meal_accounts' => false, 'fnb.vehicle_commission' => false, 'fnb.qr_order' => false, 'fnb.kiosk' => false,
           'timed_billing' => false)
       expect(context['profile']).to eq('key' => 'khac', 'version' => 1, 'display' => { 'catalog_view' => 'cards' })
       expect(context['branches'].find { |row| row['id'] == branch.prefixed_id }).

@@ -42,15 +42,18 @@ module Spree
         end
       end
 
+      # A kiosk register takes only the shifts a manager opens for its kiosk,
+      # and a kiosk's service account opens no shift itself.
       def can_open_shift?(register)
-        return false if register.disabled? || register.branch.disabled?
+        return false if register.disabled? || register.branch.disabled? || register.kiosk?
 
-        allows?(register.branch, Capabilities::OPEN_SHIFT)
+        membership = membership_for(register.branch)
+        membership.present? && !membership.service_account && membership.allows?(Capabilities::OPEN_SHIFT)
       end
 
       def can_open_branch_shift?(branch)
         branch.present? && branch.store_id == store.id && !branch.disabled? &&
-          allows?(branch, Capabilities::OPEN_SHIFT) &&
+          allows?(branch, Capabilities::OPEN_SHIFT) && !membership_for(branch).service_account &&
           !Register.for_store(store).where(branch_id: branch.id).exists?
       end
 

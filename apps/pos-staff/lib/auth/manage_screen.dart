@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../core/app_mode.dart';
 import '../core/session.dart';
 import '../l10n/app_localizations.dart';
+import '../modes/kiosk/kiosk_device.dart';
 import '../modes/mode_names.dart';
 import 'manager_access.dart';
 import 'staff_session.dart';
@@ -38,6 +39,15 @@ class ManageScreen extends ConsumerWidget {
     }
     ref.read(managerAccessProvider.notifier).close();
     await ref.read(sessionProvider.notifier).unpair();
+  }
+
+  /// Lets a kiosk's lock task (Android) or Guided Access (iOS) go, for the
+  /// manager who entered their PIN.
+  Future<void> _unlockKiosk(BuildContext context) async {
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final unlocked = await const PlatformKioskDevice().unlock();
+    messenger.showSnackBar(SnackBar(content: Text(unlocked ? l10n.manageKioskUnlocked : l10n.manageKioskUnlockFailed)));
   }
 
   void _close(BuildContext context, WidgetRef ref) {
@@ -74,6 +84,19 @@ class ManageScreen extends ConsumerWidget {
             ListTile(title: Text(l10n.manageAppVersion), subtitle: Text(descriptor?.appVersion ?? '')),
             ListTile(title: Text(l10n.manageEditorId), subtitle: SelectableText(editorId)),
             ListTile(title: Text(l10n.manageClockOffset), subtitle: Text(offset.toStringAsFixed(1))),
+            if (AppMode.of(me.device.mode) == AppMode.kiosk) ...[
+              const Divider(),
+              Padding(padding: const EdgeInsets.all(16), child: Text(l10n.manageKioskUnlockHint)),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: OutlinedButton.icon(
+                  key: const Key('manage-kiosk-unlock'),
+                  onPressed: () => _unlockKiosk(context),
+                  icon: const Icon(Icons.lock_open),
+                  label: Text(l10n.manageKioskUnlock),
+                ),
+              ),
+            ],
             const Divider(),
             Padding(
               padding: const EdgeInsets.all(16),

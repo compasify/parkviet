@@ -69,6 +69,9 @@ module Spree
       def execute
         raise Conflict, 'Missing idempotency key.' if key.blank?
 
+        # A kiosk's service account runs only the commands a kiosk needs.
+        Kiosks::Policy.authorize_command!(actor, command_name)
+
         if @replay_authorize
           existing = find_receipt
           if existing&.digest == digest

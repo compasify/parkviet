@@ -47,7 +47,7 @@ module Spree
             # Active staff of the branch who may share the tips under its rule.
             def sharing_staff(branch, rule)
               roles = Array(rule.role_codes)
-              Spree::Pos::StaffMembership.for_store(current_store).where(branch_id: branch.id, status: 'active').
+              Spree::Pos::StaffMembership.for_store(current_store).people.where(branch_id: branch.id, status: 'active').
                 includes(:staff, :staff_role).order(:id).limit(200).filter_map do |membership|
                 next if membership.staff.nil? || (roles.any? && !roles.include?(membership.staff_role&.prefixed_id))
 

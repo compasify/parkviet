@@ -31,6 +31,7 @@ module Spree
                 branch: branch!(params[:branch_id]),
                 name: params[:name],
                 code: params[:code],
+                kind: params[:kind].presence || 'counter',
                 status: 'active'
               )
               audit!('register.create', register)
@@ -66,6 +67,7 @@ module Spree
               attrs = {}
               attrs[:name] = params[:name] if params.key?(:name)
               attrs[:code] = params[:code] if params.key?(:code)
+              attrs[:kind] = params[:kind] if params.key?(:kind)
               attrs[:branch] = branch!(params[:branch_id]) if params.key?(:branch_id)
               attrs
             end

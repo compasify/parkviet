@@ -7,7 +7,7 @@ module Spree
       # cannot read it and cannot set someone else's.
       class SetPin
         def self.call(store:, staff:, key:, membership_id:, pin:)
-          membership = StaffMembership.for_store(store).find_by_prefix_id!(membership_id)
+          membership = StaffMembership.for_store(store).people.find_by_prefix_id!(membership_id)
           raise CanCan::AccessDenied unless membership.staff_id == staff.id
 
           payload = { 'command' => 'staff.pin_set', 'membership_id' => membership.prefixed_id, 'pin_digest' => pin_digest(pin) }

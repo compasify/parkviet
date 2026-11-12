@@ -2912,6 +2912,386 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/pos_device/kiosk/state:
+    get:
+      operationId: posKioskState
+      description: >
+        Whether the kiosk takes orders now and how it behaves. Device mode
+        `kiosk`. Paused (`open` false) until the device is set up, the branch
+        runs kiosks, its register is in use and a manager opened its shift.
+        Rate limited per device.
+      responses:
+        '200':
+          description: The kiosk's state
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/KioskState'
+        '429':
+          description: Too many requests from this kiosk
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/pos_device/kiosk/menu:
+    get:
+      operationId: posKioskMenu
+      description: >
+        The branch menu as the counter sells it now, with what a guest may
+        see: no SKUs, costs, kitchen routing or tax. Needs the `fnb.kiosk`
+        module.
+      responses:
+        '200':
+          description: The menu
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/KioskMenu'
+  /api/v3/pos_device/kiosk/orders:
+    post:
+      operationId: posKioskPlaceOrder
+      description: >
+        Places the guest's basket. Prices come from the server's menu; any
+        price the kiosk sends is ignored. `vietqr` opens a bank QR for the
+        whole order, `counter` gives the order its call number and leaves it
+        for a cashier. Replays the same order for the same Idempotency-Key.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KioskOrderInput'
+      responses:
+        '201':
+          description: The order as the kiosk shows it
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KioskOrderResult'
+        '409':
+          description: >
+            Refused; `error.details.reason` is `kiosk_paused` (with
+            `pause_reason`), `kiosk_payment_invalid`, `item_sold_out`,
+            `item_unavailable` or a reason of adding items
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Too many requests from this kiosk
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/pos_device/kiosk/orders/{id}:
+    get:
+      operationId: posKioskOrder
+      description: >
+        An order this kiosk still holds. Poll it every few seconds while a QR
+        is open: `payment.state` turns `received` once the bank confirmed the
+        transfer.
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: The order as the kiosk shows it
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KioskOrderResult'
+        '404':
+          description: Not an order of this kiosk
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/pos_device/kiosk/orders/{id}/finish:
+    post:
+      operationId: posKioskFinishOrder
+      description: >
+        Completes an order whose transfer the bank's webhook confirmed: the
+        sale is completed, gets its call number, reaches the kitchen and its
+        receipt prints on the kiosk's printer. Only the webhook counts as
+        evidence; nothing else confirms a kiosk payment.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: The paid order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KioskOrderResult'
+        '409':
+          description: Refused; `error.details.reason` is `vietqr_not_received` or `kiosk_no_payment`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/pos_device/kiosk/orders/{id}/pay_at_counter:
+    post:
+      operationId: posKioskPayAtCounter
+      description: >
+        The guest pays at the counter instead (or the QR timed out): an open
+        QR is given back and the order is left for a cashier with its call
+        number.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: The order left for the counter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KioskOrderResult'
+        '409':
+          description: Refused; `error.details.reason` is `kiosk_paid` when the bank already confirmed it
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/pos_device/kiosk/orders/{id}/cancel:
+    post:
+      operationId: posKioskCancelOrder
+      description: >
+        The guest walked away: an unpaid order is canceled and its QR given
+        back. An order the bank already paid is not canceled.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: The canceled order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KioskOrderResult'
+        '409':
+          description: Refused; `error.details.reason` is `kiosk_paid`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/kiosk_settings:
+    get:
+      operationId: posKioskSettings
+      description: A branch's kiosk settings and its kiosks. Needs `pos.device.manage`.
+      parameters:
+        - name: branch_id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The settings
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/KioskSettings'
+    put:
+      operationId: posKioskSettingsUpdate
+      description: Changes how the branch's kiosks behave; audited. Needs `pos.device.manage`.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KioskSettingsInput'
+      responses:
+        '200':
+          description: The settings
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/KioskSettings'
+        '409':
+          description: Refused; `error.details.reason` is `kiosk_settings_invalid` with the `field`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/kiosks/{register_id}/shift:
+    post:
+      operationId: posKioskOpenShift
+      description: >
+        Opens the kiosk's shift so it takes orders. The shift belongs to the
+        kiosk's account and holds no cash; the manager is audited. Needs
+        `pos.device.manage`.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - name: register_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: The kiosk's shift
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/KioskShift'
+        '409':
+          description: >
+            Refused; `error.details.reason` is `register_not_kiosk`,
+            `kiosk_unprovisioned`, `register_disabled`, `shift_open` or
+            `module_disabled`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/kiosks/{register_id}/shift/close:
+    post:
+      operationId: posKioskCloseShift
+      description: >
+        Closes the kiosk's shift on an empty drawer. Orders left for the
+        counter stay for the cashiers; a QR still open blocks the close.
+        Needs `pos.device.manage`.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - name: register_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The shift's closure
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/KioskShiftClosure'
+        '409':
+          description: Refused; `error.details.reason` is `shift_closed` or a reason of closing a shift
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/kiosk_orders:
+    get:
+      operationId: posKioskOrders
+      description: >
+        Kiosk orders left for the counter at a branch, oldest first, with
+        the ones waiting longer than half an hour marked `abandoned`. Needs
+        `pos.shift.open` and `pos.payment`.
+      parameters:
+        - name: branch_id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Orders waiting at the counter
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/KioskHandoffOrder'
+  /api/v3/admin/pos/kiosk_orders/{id}/take:
+    post:
+      operationId: posKioskOrderTake
+      description: >
+        The cashier takes the order to collect it: it moves to their open
+        shift with their lease, and they tender and complete it as usual. A
+        QR the bank already confirmed completes the sale instead; an expired
+        one is given back first.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KioskOrderTakeInput'
+      responses:
+        '200':
+          description: The order, now the cashier's
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Workspace'
+        '409':
+          description: >
+            Refused; `error.details.reason` is `kiosk_order_taken`,
+            `kiosk_qr_open`, `no_open_shift` or `kiosk_paid`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/kiosk_orders/{id}/cancel:
+    post:
+      operationId: posKioskOrderCancel
+      description: Cancels an order a guest never came to pay. A call number already given stays used.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KioskOrderCancelInput'
+      responses:
+        '200':
+          description: The canceled order
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Workspace'
+        '409':
+          description: >
+            Refused; `error.details.reason` is `kiosk_order_taken`,
+            `kiosk_qr_open`, `payments_recorded` or `reason_invalid`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/v3/pos_device/kitchen/stations:
     get:
       operationId: posDeviceKitchenStations
@@ -4802,6 +5182,8 @@ components:
             - guest_order.updated
             - guest_request.created
             - guest_request.updated
+            - kiosk.updated
+            - kiosk_order.waiting
         id:
           type: string
         branch_id:
@@ -6046,6 +6428,480 @@ components:
             level:
               type: string
               enum: [ok, warning, reached]
+    KioskState:
+      type: object
+      additionalProperties: false
+      required: [open, reason, branch, register, currency, idle_seconds, qr_timeout_seconds, kitchen_before_payment, payments]
+      properties:
+        open:
+          type: boolean
+        reason:
+          type: [string, 'null']
+          enum: [kiosk_unprovisioned, module_disabled, register_disabled, shift_closed, null]
+          description: Why the kiosk is paused; null while it is open.
+        branch:
+          $ref: '#/components/schemas/KioskRef'
+        register:
+          oneOf:
+            - $ref: '#/components/schemas/KioskRef'
+            - type: 'null'
+        currency:
+          type: string
+        idle_seconds:
+          type: integer
+          description: Seconds without a touch before the kiosk asks whether the guest is still there.
+        qr_timeout_seconds:
+          type: integer
+          description: Seconds a bank QR stays open before the order goes to the counter.
+        kitchen_before_payment:
+          type: boolean
+        payments:
+          type: object
+          additionalProperties: false
+          required: [vietqr, counter]
+          properties:
+            vietqr:
+              type: boolean
+            counter:
+              type: boolean
+    KioskRef:
+      type: object
+      additionalProperties: false
+      required: [id, name]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+    KioskMenu:
+      type: object
+      additionalProperties: false
+      required: [currency, categories, items, modifier_groups, etag]
+      properties:
+        currency:
+          type: string
+        etag:
+          type: string
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/KioskMenuCategory'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/KioskMenuItem'
+        modifier_groups:
+          type: array
+          items:
+            $ref: '#/components/schemas/KioskModifierGroup'
+    KioskMenuCategory:
+      type: object
+      additionalProperties: false
+      required: [id, name, position, color]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        position:
+          type: integer
+        color:
+          type: [string, 'null']
+    KioskMenuItem:
+      type: object
+      additionalProperties: false
+      required: [id, name, kind, menu_category_id, position, image_url, sold_out, modifier_group_ids, components, variants]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        kind:
+          type: string
+          enum: [single, combo]
+        menu_category_id:
+          type: [string, 'null']
+        position:
+          type: integer
+        image_url:
+          type: [string, 'null']
+        sold_out:
+          type: boolean
+        modifier_group_ids:
+          type: array
+          items:
+            type: string
+        components:
+          type: array
+          items:
+            $ref: '#/components/schemas/KioskMenuComponent'
+        variants:
+          type: array
+          items:
+            $ref: '#/components/schemas/KioskMenuVariant'
+    KioskMenuComponent:
+      type: object
+      additionalProperties: false
+      required: [name, quantity]
+      properties:
+        name:
+          type: string
+        quantity:
+          type: integer
+    KioskMenuVariant:
+      type: object
+      additionalProperties: false
+      required: [id, name, price, price_label]
+      properties:
+        id:
+          type: string
+        name:
+          type: [string, 'null']
+        price:
+          type: string
+        price_label:
+          type: [string, 'null']
+    KioskModifierGroup:
+      type: object
+      additionalProperties: false
+      required: [id, name, min_select, max_select, allow_quantity, required, options]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        min_select:
+          type: integer
+        max_select:
+          type: integer
+        allow_quantity:
+          type: boolean
+        required:
+          type: boolean
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/KioskModifierOption'
+    KioskModifierOption:
+      type: object
+      additionalProperties: false
+      required: [id, name, price_delta, default_selected]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        price_delta:
+          type: string
+        default_selected:
+          type: boolean
+    KioskOrderInput:
+      type: object
+      required: [items, payment]
+      properties:
+        payment:
+          type: string
+          enum: [vietqr, counter]
+        items:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/KioskOrderItemInput'
+    KioskOrderItemInput:
+      type: object
+      required: [variant_id]
+      properties:
+        variant_id:
+          type: string
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 20
+        note:
+          type: [string, 'null']
+          maxLength: 200
+        modifiers:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModifierSelection'
+    KioskOrderResult:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/KioskOrder'
+    KioskOrder:
+      type: object
+      additionalProperties: false
+      required: [id, status, call_number, order_number, currency, total, item_total, lines, payment, device_id]
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          enum: [draft, awaiting_payment, at_counter, paid, canceled]
+        call_number:
+          type: [integer, 'null']
+          description: The number the guest listens for; given once the order is paid or left for the counter.
+        order_number:
+          type: string
+        currency:
+          type: string
+        total:
+          type: string
+        item_total:
+          type: string
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/KioskOrderLine'
+        payment:
+          oneOf:
+            - $ref: '#/components/schemas/KioskPayment'
+            - type: 'null'
+        device_id:
+          type: string
+    KioskOrderLine:
+      type: object
+      additionalProperties: false
+      required: [name, quantity, unit_price, amount, note, modifiers]
+      properties:
+        name:
+          type: string
+        quantity:
+          type: string
+        unit_price:
+          type: string
+        amount:
+          type: string
+        note:
+          type: [string, 'null']
+        modifiers:
+          type: array
+          items:
+            $ref: '#/components/schemas/KioskOrderModifier'
+    KioskOrderModifier:
+      type: object
+      additionalProperties: false
+      required: [name, quantity]
+      properties:
+        name:
+          type: string
+        quantity:
+          type: integer
+    KioskPayment:
+      type: object
+      additionalProperties: false
+      required: [kind, attempt_id, amount, state, expires_at, qr]
+      properties:
+        kind:
+          type: string
+          enum: [vietqr]
+        attempt_id:
+          type: string
+        amount:
+          type: string
+        state:
+          type: string
+          enum: [waiting, received, expired]
+        expires_at:
+          type: string
+          format: date-time
+        qr:
+          oneOf:
+            - $ref: '#/components/schemas/KioskQr'
+            - type: 'null'
+    KioskQr:
+      type: object
+      additionalProperties: false
+      required: [qr_url, bank_name, account_number, account_name, transfer_note]
+      properties:
+        qr_url:
+          type: string
+        bank_name:
+          type: [string, 'null']
+        account_number:
+          type: string
+        account_name:
+          type: [string, 'null']
+        transfer_note:
+          type: string
+    KioskSettings:
+      type: object
+      additionalProperties: false
+      required: [branch_id, kiosk_idle_seconds, kiosk_qr_timeout_seconds, kiosk_kitchen_before_payment, kiosks]
+      properties:
+        branch_id:
+          type: string
+        kiosk_idle_seconds:
+          type: integer
+          minimum: 15
+          maximum: 600
+        kiosk_qr_timeout_seconds:
+          type: integer
+          minimum: 60
+          maximum: 900
+        kiosk_kitchen_before_payment:
+          type: boolean
+        kiosks:
+          type: array
+          items:
+            $ref: '#/components/schemas/KioskRegister'
+    KioskRegister:
+      type: object
+      additionalProperties: false
+      required: [register, device, provisioned, shift, waiting_orders]
+      properties:
+        register:
+          $ref: '#/components/schemas/KioskRegisterRef'
+        device:
+          oneOf:
+            - $ref: '#/components/schemas/KioskDeviceRef'
+            - type: 'null'
+        provisioned:
+          type: boolean
+          description: A device is paired and its service account active.
+        shift:
+          oneOf:
+            - $ref: '#/components/schemas/KioskShiftRef'
+            - type: 'null'
+        waiting_orders:
+          type: integer
+          description: Orders left for the counter on this kiosk.
+    KioskRegisterRef:
+      type: object
+      additionalProperties: false
+      required: [id, branch_id, name, code, kind, status]
+      properties:
+        id:
+          type: string
+        branch_id:
+          type: string
+        name:
+          type: string
+        code:
+          type: string
+        kind:
+          type: string
+          enum: [counter, kiosk]
+        status:
+          type: string
+    KioskDeviceRef:
+      type: object
+      additionalProperties: false
+      required: [id, name]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        platform:
+          type: [string, 'null']
+        app_version:
+          type: [string, 'null']
+        last_seen_at:
+          type: [string, 'null']
+    KioskShiftRef:
+      type: object
+      additionalProperties: false
+      required: [id, opened_at, business_date]
+      properties:
+        id:
+          type: string
+        opened_at:
+          type: [string, 'null']
+        business_date:
+          type: [string, 'null']
+    KioskSettingsInput:
+      type: object
+      required: [branch_id]
+      properties:
+        branch_id:
+          type: string
+        kiosk_idle_seconds:
+          type: integer
+          minimum: 15
+          maximum: 600
+        kiosk_qr_timeout_seconds:
+          type: integer
+          minimum: 60
+          maximum: 900
+        kiosk_kitchen_before_payment:
+          type: boolean
+    KioskShift:
+      type: object
+      additionalProperties: true
+      required: [id, register_id, status, opening_float, owner_id]
+      description: The kiosk's shift; its owner is the kiosk's service account.
+      properties:
+        id:
+          type: string
+        register_id:
+          type: [string, 'null']
+        status:
+          type: string
+        opening_float:
+          type: string
+        owner_id:
+          type: string
+        opened_at:
+          type: [string, 'null']
+        business_date:
+          type: [string, 'null']
+    KioskShiftClosure:
+      type: object
+      additionalProperties: true
+      required: [id]
+      description: The closure of the kiosk's shift on a zero count.
+      properties:
+        id:
+          type: string
+    KioskHandoffOrder:
+      type: object
+      additionalProperties: false
+      required: [id, order_id, order_number, call_number, status, register, total, currency, item_count, opened_at, waiting_since, abandoned]
+      properties:
+        id:
+          type: string
+        order_id:
+          type: string
+        order_number:
+          type: string
+        call_number:
+          type: [integer, 'null']
+        status:
+          type: string
+          enum: [draft, editing, parked]
+        register:
+          oneOf:
+            - $ref: '#/components/schemas/KioskRef'
+            - type: 'null'
+        total:
+          type: string
+        currency:
+          type: string
+        item_count:
+          type: integer
+        opened_at:
+          type: string
+        waiting_since:
+          type: string
+        abandoned:
+          type: boolean
+          description: Waiting longer than half an hour; a cashier may cancel it.
+    KioskOrderTakeInput:
+      type: object
+      required: [editor_id]
+      properties:
+        editor_id:
+          type: string
+    KioskOrderCancelInput:
+      type: object
+      properties:
+        reason:
+          type: [string, 'null']
+          maxLength: 200
     ErrorResponse:
       type: object
       additionalProperties: true

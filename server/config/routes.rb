@@ -261,6 +261,15 @@ Rails.application.routes.draw do
             get 'guest_requests', to: 'guest_requests#index'
             post 'guest_requests/:id/done', to: 'guest_requests#done'
             put 'table_settings', to: 'table_settings#update'
+            # Self-ordering kiosks: a branch's settings and kiosks, a kiosk's shift,
+            # and the kiosk orders left for the counter.
+            get 'kiosk_settings', to: 'kiosk_settings#show'
+            put 'kiosk_settings', to: 'kiosk_settings#update'
+            post 'kiosks/:register_id/shift', to: 'kiosk_settings#open_shift'
+            post 'kiosks/:register_id/shift/close', to: 'kiosk_settings#close_shift'
+            get 'kiosk_orders', to: 'kiosk_orders#index'
+            post 'kiosk_orders/:id/take', to: 'kiosk_orders#take'
+            post 'kiosk_orders/:id/cancel', to: 'kiosk_orders#cancel'
             post 'tables/:resource_id/open', to: 'tables#open_table'
             # Bookings of tables and rooms, free tables for a time, and deposits.
             post 'reservations/deposits/:deposit_id/refund', to: 'reservations#refund_deposit'
@@ -552,6 +561,17 @@ Rails.application.routes.draw do
     post 'all_day/bump', action: :bump_all_day
     post 'orders/:workspace_id/serve', action: :serve_order
     post 'workspaces/:workspace_id/courses/:course/fire', action: :fire_course
+  end
+
+  # A self-ordering kiosk, as its service account (Kiosks::Policy).
+  scope 'api/v3/pos_device/kiosk', controller: 'spree/pos/device_api/kiosk', defaults: { format: 'json' } do
+    get 'state', action: :state
+    get 'menu', action: :menu
+    post 'orders', action: :create
+    get 'orders/:id', action: :show
+    post 'orders/:id/finish', action: :finish
+    post 'orders/:id/pay_at_counter', action: :pay_at_counter
+    post 'orders/:id/cancel', action: :cancel
   end
 
   # The counter app and POS administration built into the production image,

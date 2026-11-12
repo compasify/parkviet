@@ -17,7 +17,7 @@ module Spree
             # everyone's for a device manager.
             def index
               branch = Spree::Pos::Devices::Guard.branch!(current_store, params[:branch_id])
-              rows = Spree::Pos::StaffMembership.for_store(current_store).where(branch: branch).includes(:staff, :branch, :staff_role).order(:id)
+              rows = Spree::Pos::StaffMembership.for_store(current_store).people.where(branch: branch).includes(:staff, :branch, :staff_role).order(:id)
               rows = rows.where(staff_id: current_user.id) unless Spree::Pos::Devices::Guard.manage?(current_store, current_user, branch)
               render json: { data: rows.map(&:to_pos) }
             end

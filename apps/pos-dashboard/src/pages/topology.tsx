@@ -338,6 +338,12 @@ export function TopologyPage({
               default: true,
               render: (row) => nameCell(row, row.name ?? '', row.code),
             },
+            {
+              key: 'kind',
+              label: t('adminRegisterKind'),
+              default: true,
+              render: (row) => t(`adminRegisterKind_${row.kind === 'kiosk' ? 'kiosk' : 'counter'}`),
+            },
             ...(branchId ? [] : [branchColumn]),
             statusColumn,
           ]

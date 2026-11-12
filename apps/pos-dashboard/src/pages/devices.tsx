@@ -224,7 +224,7 @@ function DeviceList({
             <select value={registerId} onChange={(event) => setRegisterId(event.target.value)}>
               <option value="">{t('devices.chooseRegister')}</option>
               {(registers.data?.data ?? [])
-                .filter((row) => row.branch_id === branchId)
+                .filter((row) => row.branch_id === branchId && row.kind === 'kiosk')
                 .map((row) => (
                   <option key={row.id} value={row.id}>
                     {row.name}

@@ -11,7 +11,9 @@ module Spree
       # Delivery platforms are set only by entering a platform order.
       PLATFORM_SOURCES = %w[grabfood shopeefood].freeze
       PICKABLE_SOURCES = %w[counter facebook zalo other].freeze
-      ORDER_SOURCES = (PICKABLE_SOURCES + PLATFORM_SOURCES).freeze
+      # A self-ordering kiosk sets its own; nobody picks it.
+      KIOSK_SOURCE = 'kiosk'
+      ORDER_SOURCES = (PICKABLE_SOURCES + PLATFORM_SOURCES + [KIOSK_SOURCE]).freeze
       # How the sale is served. Retail stays `counter`; F&B modules read the value.
       SERVICE_MODES = %w[counter dine_in takeaway delivery tab timed].freeze
       # The name the counter calls out with the call number.
@@ -73,6 +75,10 @@ module Spree
       # other counters add to it without its lease.
       def shared_service?
         resource_id.present? || service_mode == 'tab'
+      end
+
+      def kiosk?
+        order_source == KIOSK_SOURCE
       end
 
       def lease_current?(staff, editor_id)

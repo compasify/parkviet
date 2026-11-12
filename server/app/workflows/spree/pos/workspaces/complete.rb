@@ -35,6 +35,8 @@ module Spree
             Tenders::Guard.authorize_editor!(workspace, staff)
             Tenders::Guard.authorize_collect!(workspace, staff)
             authorize_credit!(workspace, staff) if credit
+            # A kiosk sells only what was paid in full.
+            raise CanCan::AccessDenied if sponsor && Kiosks::Policy.service_account?(staff)
           end
           CommandExecutor.call(store: workspace.store, actor: staff, key: key, payload: payload, workspace: workspace, authorize: authorize) do
             Tenders::Guard.validate_editor!(workspace, staff, revision, lease_generation, editor_id)

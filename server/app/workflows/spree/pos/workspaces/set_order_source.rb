@@ -16,8 +16,8 @@ module Spree
                                authorize: -> { Deliveries::Assign.authorize!(workspace, staff) }) do
             Deliveries::Assign.validate_editing!(workspace, staff, revision, lease_generation, editor_id)
             value = order_source.to_s
-            # A platform order keeps its platform; no other sale takes one.
-            if !Workspace::PICKABLE_SOURCES.include?(value) || Workspace::PLATFORM_SOURCES.include?(workspace.order_source)
+            # A platform or kiosk order keeps its source; no other sale takes one.
+            if !Workspace::PICKABLE_SOURCES.include?(value) || Workspace::PLATFORM_SOURCES.include?(workspace.order_source) || workspace.kiosk?
               raise Conflict.new('Order source is invalid.', revision: workspace.revision, reason: 'order_source_invalid')
             end
 

@@ -126,6 +126,43 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(HardwareStationKindEnum.serializer)
       ..add(HardwareStatus.serializer)
       ..add(IngredientUsageRow.serializer)
+      ..add(KioskDeviceRef.serializer)
+      ..add(KioskHandoffOrder.serializer)
+      ..add(KioskHandoffOrderStatusEnum.serializer)
+      ..add(KioskMenu.serializer)
+      ..add(KioskMenuCategory.serializer)
+      ..add(KioskMenuComponent.serializer)
+      ..add(KioskMenuItem.serializer)
+      ..add(KioskMenuItemKindEnum.serializer)
+      ..add(KioskMenuVariant.serializer)
+      ..add(KioskModifierGroup.serializer)
+      ..add(KioskModifierOption.serializer)
+      ..add(KioskOrder.serializer)
+      ..add(KioskOrderCancelInput.serializer)
+      ..add(KioskOrderInput.serializer)
+      ..add(KioskOrderInputPaymentEnum.serializer)
+      ..add(KioskOrderItemInput.serializer)
+      ..add(KioskOrderLine.serializer)
+      ..add(KioskOrderModifier.serializer)
+      ..add(KioskOrderResult.serializer)
+      ..add(KioskOrderStatusEnum.serializer)
+      ..add(KioskOrderTakeInput.serializer)
+      ..add(KioskPayment.serializer)
+      ..add(KioskPaymentKindEnum.serializer)
+      ..add(KioskPaymentStateEnum.serializer)
+      ..add(KioskQr.serializer)
+      ..add(KioskRef.serializer)
+      ..add(KioskRegister.serializer)
+      ..add(KioskRegisterRef.serializer)
+      ..add(KioskRegisterRefKindEnum.serializer)
+      ..add(KioskSettings.serializer)
+      ..add(KioskSettingsInput.serializer)
+      ..add(KioskShift.serializer)
+      ..add(KioskShiftClosure.serializer)
+      ..add(KioskShiftRef.serializer)
+      ..add(KioskState.serializer)
+      ..add(KioskStatePayments.serializer)
+      ..add(KioskStateReasonEnum.serializer)
       ..add(KitchenAllDayBumpInput.serializer)
       ..add(KitchenAllDayRow.serializer)
       ..add(KitchenBoard.serializer)
@@ -268,6 +305,12 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(PosEinvoiceSummary200Response.serializer)
       ..add(PosEinvoices200Response.serializer)
       ..add(PosHardwareStatus200Response.serializer)
+      ..add(PosKioskCloseShift200Response.serializer)
+      ..add(PosKioskMenu200Response.serializer)
+      ..add(PosKioskOpenShift201Response.serializer)
+      ..add(PosKioskOrders200Response.serializer)
+      ..add(PosKioskSettings200Response.serializer)
+      ..add(PosKioskState200Response.serializer)
       ..add(PosKitchenOrders200Response.serializer)
       ..add(PosKitchenSettings200Response.serializer)
       ..add(PosKitchenSettingsUpdateRequest.serializer)
@@ -657,6 +700,35 @@ Serializers _$serializers = (Serializers().toBuilder()
           const FullType(BuiltList, const [const FullType(IngredientUsageRow)]),
           () => ListBuilder<IngredientUsageRow>())
       ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(KioskHandoffOrder)]),
+          () => ListBuilder<KioskHandoffOrder>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(KioskMenuCategory)]),
+          () => ListBuilder<KioskMenuCategory>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(KioskMenuItem)]),
+          () => ListBuilder<KioskMenuItem>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(KioskModifierGroup)]),
+          () => ListBuilder<KioskModifierGroup>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(KioskModifierOption)]),
+          () => ListBuilder<KioskModifierOption>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(KioskOrderItemInput)]),
+          () => ListBuilder<KioskOrderItemInput>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(KioskOrderLine)]),
+          () => ListBuilder<KioskOrderLine>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(KioskOrderModifier)]),
+          () => ListBuilder<KioskOrderModifier>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(KioskRegister)]),
+          () => ListBuilder<KioskRegister>())
+      ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(KitchenHeldLine)]),
           () => ListBuilder<KitchenHeldLine>())
       ..addBuilderFactory(
@@ -787,6 +859,9 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(ModifierPick)]),
           () => ListBuilder<ModifierPick>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(ModifierSelection)]),
+          () => ListBuilder<ModifierSelection>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(ModifierSelection)]),
           () => ListBuilder<ModifierSelection>())
@@ -967,6 +1042,15 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
           () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(KioskMenuComponent)]),
+          () => ListBuilder<KioskMenuComponent>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(KioskMenuVariant)]),
+          () => ListBuilder<KioskMenuVariant>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
           () => ListBuilder<String>())

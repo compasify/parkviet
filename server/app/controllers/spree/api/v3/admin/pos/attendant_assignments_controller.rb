@@ -37,7 +37,7 @@ module Spree
 
               branch = branch!(params[:branch_id])
               Spree::Pos::AttendantAssignments::Stop.authorize!(current_store, current_user, branch)
-              rows = Spree::Pos::StaffMembership.for_store(current_store).where(branch_id: branch.id, status: 'active').
+              rows = Spree::Pos::StaffMembership.for_store(current_store).people.where(branch_id: branch.id, status: 'active').
                      includes(:staff).filter_map(&:staff).uniq.
                      map { |staff| { id: staff.prefixed_id, name: Spree::Pos::StaffName.call(staff) } }.
                      sort_by { |row| row[:name].to_s.downcase }

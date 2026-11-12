@@ -17,6 +17,7 @@ describe('order sources', () => {
       'other',
       'grabfood',
       'shopeefood',
+      'kiosk',
     ]);
     // The platforms come only with an entered platform order; the cashier never picks them.
     expect(PICKABLE_ORDER_SOURCES).toEqual(['counter', 'facebook', 'zalo', 'other']);
@@ -40,6 +41,7 @@ describe('order sources', () => {
       'other',
       'grabfood',
       'shopeefood',
+      'kiosk',
     ]);
     expect(rows[0]).toEqual({ order_source: 'counter', orders: 0, sales_total: '0', owed: '0' });
     expect(rows[2]).toEqual({
@@ -48,7 +50,7 @@ describe('order sources', () => {
       sales_total: '60000.0',
       owed: '10000.0',
     });
-    expect(orderSourceRows(undefined)).toHaveLength(6);
+    expect(orderSourceRows(undefined)).toHaveLength(7);
   });
 });
 

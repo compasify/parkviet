@@ -83,6 +83,17 @@ describe('guest order invalidation', () => {
   });
 });
 
+describe('kiosk order invalidation', () => {
+  it('reads the kiosk tray again when a kiosk leaves an order or its shift changes', () => {
+    const tray = ['pos', 'kiosk-orders', 3, 'br_1'];
+    expect(matched(event({ event: 'kiosk_order.waiting', id: 'posws_1' }), tray)).toBe(true);
+    expect(matched(event({ event: 'kiosk.updated', id: 'posreg_1' }), tray)).toBe(true);
+    expect(matched(event({ event: 'guest_order.created', id: 'posguestorder_1' }), tray)).toBe(
+      false,
+    );
+  });
+});
+
 const list = ['pos', 'workspaces', 3, 'store_1', 'br_1', null, 1];
 const selected = (id: string) => ['pos', 'workspaces', 3, 'store_1', 'selected', 'br_1', null, id];
 

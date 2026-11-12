@@ -10,6 +10,8 @@ module Spree
       belongs_to :branch, class_name: 'Spree::Pos::Branch'
       belongs_to :staff, class_name: staff_class_name
       belongs_to :staff_role, class_name: 'Spree::Pos::StaffRole', optional: true, inverse_of: :memberships
+      # A kiosk's service account: the paired self-ordering device acts as it.
+      belongs_to :device, class_name: 'Spree::Pos::Device', optional: true
 
       before_validation { self.capabilities = Capabilities.sanitize(capabilities) }
 
@@ -20,6 +22,8 @@ module Spree
       validate :staff_role_is_assignable
 
       scope :for_store, ->(store) { where(store_id: store.id) }
+      # People, not kiosk service accounts: staff lists and PIN sign-in.
+      scope :people, -> { where(service_account: false) }
 
       def disabled?
         status == 'disabled'
@@ -31,8 +35,11 @@ module Spree
         staff_role ? Array(staff_role.capabilities) : Array(capabilities)
       end
 
+      # A service account never gets more than a kiosk needs, whatever its
+      # list says (Kiosks::Policy).
       def allows?(capability)
         return false unless effective_capabilities.include?(capability)
+        return false if service_account && !Kiosks::Policy::CAPABILITIES.include?(capability)
         return true if capability == Capabilities::RECOVER
 
         status == 'active'

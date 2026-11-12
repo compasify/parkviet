@@ -61,6 +61,8 @@ module Spree
       validates :qr_order_mode, inclusion: { in: QR_ORDER_MODES }
       validates :qr_order_auto_limit, numericality: { greater_than: 0 }, allow_nil: true
       validates :qr_order_auto_max_items, numericality: { only_integer: true, in: 1..50 }
+      validates :kiosk_idle_seconds, numericality: { only_integer: true, in: 15..600 }
+      validates :kiosk_qr_timeout_seconds, numericality: { only_integer: true, in: 60..900 }
       validate :void_reasons_are_codes
       validate :locations_belong_to_store
       validate :table_settings_of_store

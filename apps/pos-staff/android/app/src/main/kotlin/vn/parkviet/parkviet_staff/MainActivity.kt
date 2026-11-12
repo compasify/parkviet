@@ -7,5 +7,6 @@ class MainActivity : FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         BluetoothSppChannel(applicationContext).register(flutterEngine.dartExecutor.binaryMessenger)
+        KioskLockChannel(this).register(flutterEngine.dartExecutor.binaryMessenger)
     }
 }

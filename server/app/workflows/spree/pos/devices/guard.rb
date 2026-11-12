@@ -30,6 +30,7 @@ module Spree
 
           register = Register.find_by_prefix_id!(register_id)
           raise ActiveRecord::RecordNotFound if register.store_id != branch.store_id || register.branch_id != branch.id
+          raise Conflict.new('A kiosk pairs with a kiosk register.', reason: 'register_not_kiosk') unless register.kiosk?
 
           register
         end

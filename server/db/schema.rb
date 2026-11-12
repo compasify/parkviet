@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_12_110400) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_12_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gist"
   enable_extension "pg_catalog.plpgsql"
@@ -2482,6 +2482,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_110400) do
     t.string "qr_order_mode", limit: 24, default: "staff_approval", null: false
     t.decimal "qr_order_auto_limit", precision: 19, scale: 4
     t.integer "qr_order_auto_max_items", default: 10, null: false
+    t.integer "kiosk_idle_seconds", default: 60, null: false
+    t.integer "kiosk_qr_timeout_seconds", default: 180, null: false
+    t.boolean "kiosk_kitchen_before_payment", default: false, null: false
     t.index ["cup_label_printer_id"], name: "index_spree_pos_branches_on_cup_label_printer_id"
     t.index ["service_charge_tax_category_id"], name: "index_spree_pos_branches_on_service_charge_tax_category_id"
     t.index ["stock_location_id"], name: "index_spree_pos_branches_on_stock_location_id"
@@ -2497,6 +2500,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_110400) do
     t.check_constraint "qr_order_mode::text = ANY (ARRAY['staff_approval'::character varying, 'direct_to_kitchen'::character varying]::text[])", name: "chk_pos_branches_qr_order_mode"
     t.check_constraint "jsonb_typeof(operating_windows) = 'array'::text", name: "chk_pos_branches_operating_windows"
     t.check_constraint "jsonb_typeof(weekend_days) = 'array'::text", name: "chk_pos_branches_weekend_days"
+    t.check_constraint "kiosk_idle_seconds >= 15 AND kiosk_idle_seconds <= 600", name: "chk_pos_branches_kiosk_idle"
+    t.check_constraint "kiosk_qr_timeout_seconds >= 60 AND kiosk_qr_timeout_seconds <= 900", name: "chk_pos_branches_kiosk_qr_timeout"
     t.check_constraint "kitchen_send_trigger::text = ANY (ARRAY['on_complete'::character varying, 'manual'::character varying]::text[])", name: "chk_pos_branches_kitchen_send_trigger"
     t.check_constraint "lot_selection::text = ANY (ARRAY['fefo'::character varying::text, 'cashier_pick'::character varying::text])", name: "chk_pos_branches_lot_selection"
     t.check_constraint "profile_version >= 1", name: "chk_pos_branches_profile_version"
@@ -4205,9 +4210,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_110400) do
     t.datetime "disabled_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "kind", limit: 16, default: "counter", null: false
     t.index ["branch_id"], name: "index_spree_pos_registers_on_branch_id"
     t.index ["store_id", "code"], name: "index_spree_pos_registers_on_store_id_and_code", unique: true
     t.index ["store_id"], name: "index_spree_pos_registers_on_store_id"
+    t.check_constraint "kind::text = ANY (ARRAY['counter'::character varying, 'kiosk'::character varying]::text[])", name: "chk_pos_registers_kind"
     t.check_constraint "status::text = ANY (ARRAY['active'::character varying::text, 'disabled'::character varying::text])", name: "chk_spree_pos_registers_status"
   end
 
@@ -4547,11 +4554,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_110400) do
     t.bigint "staff_role_id"
     t.string "pin_digest"
     t.datetime "pin_set_at"
+    t.boolean "service_account", default: false, null: false
+    t.bigint "device_id"
     t.index ["branch_id"], name: "index_spree_pos_staff_memberships_on_branch_id"
+    t.index ["device_id"], name: "idx_pos_memberships_device", unique: true
     t.index ["staff_id"], name: "index_spree_pos_staff_memberships_on_staff_id"
     t.index ["staff_role_id"], name: "index_spree_pos_staff_memberships_on_staff_role_id"
     t.index ["store_id", "branch_id", "staff_id"], name: "idx_spree_pos_memberships_staff_branch", unique: true
     t.index ["store_id"], name: "index_spree_pos_staff_memberships_on_store_id"
+    t.check_constraint "service_account = (device_id IS NOT NULL)", name: "chk_pos_memberships_service_device"
     t.check_constraint "status::text = ANY (ARRAY['active'::character varying::text, 'disabled'::character varying::text])", name: "chk_spree_pos_memberships_status"
   end
 
@@ -5071,7 +5082,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_110400) do
     t.check_constraint "note IS NULL OR char_length(note) <= 1000", name: "chk_pos_workspace_note_length"
     t.check_constraint "operational_status::text = ANY (ARRAY['editing'::character varying::text, 'parked'::character varying::text, 'canceled'::character varying::text, 'completed'::character varying::text])", name: "chk_spree_pos_workspaces_status"
     t.check_constraint "order_number IS NULL OR order_number > 0", name: "chk_pos_workspaces_order_number"
-    t.check_constraint "order_source::text = ANY (ARRAY['counter'::character varying, 'facebook'::character varying, 'zalo'::character varying, 'other'::character varying, 'grabfood'::character varying, 'shopeefood'::character varying]::text[])", name: "chk_pos_workspace_order_source"
+    t.check_constraint "order_source::text = ANY (ARRAY['counter'::character varying, 'facebook'::character varying, 'zalo'::character varying, 'other'::character varying, 'grabfood'::character varying, 'shopeefood'::character varying, 'kiosk'::character varying]::text[])", name: "chk_pos_workspace_order_source"
     t.check_constraint "resource_id IS NULL OR (service_mode::text = ANY (ARRAY['dine_in'::character varying, 'timed'::character varying]::text[]))", name: "chk_pos_workspaces_resource_mode"
     t.check_constraint "service_mode::text = ANY (ARRAY['counter'::character varying::text, 'dine_in'::character varying::text, 'takeaway'::character varying::text, 'delivery'::character varying::text, 'tab'::character varying::text, 'timed'::character varying::text])", name: "chk_pos_workspace_service_mode"
   end

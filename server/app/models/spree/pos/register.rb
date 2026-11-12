@@ -6,6 +6,10 @@ module Spree
       self.table_name = 'spree_pos_registers'
       has_prefix_id :posregister
 
+      # A counter is worked by cashiers; a kiosk only by the self-ordering
+      # device paired to it, on shifts a manager opens for it.
+      KINDS = %w[counter kiosk].freeze
+
       belongs_to :store, class_name: 'Spree::Store'
       belongs_to :branch, class_name: 'Spree::Pos::Branch'
       has_many :shifts, class_name: 'Spree::Pos::Shift', dependent: :restrict_with_error
@@ -13,13 +17,19 @@ module Spree
       validates :name, :code, :status, presence: true
       validates :code, uniqueness: { scope: :store_id }, format: { with: /\A[a-z0-9][a-z0-9_-]{0,31}\z/ }
       validates :status, inclusion: { in: %w[active disabled] }
+      validates :kind, inclusion: { in: KINDS }
       validate :branch_belongs_to_store
       validate :branch_fixed_after_use, on: :update
+      validate :kind_fixed_after_use, on: :update
 
       scope :for_store, ->(store) { where(store_id: store.id) }
 
       def disabled?
         status == 'disabled'
+      end
+
+      def kiosk?
+        kind == 'kiosk'
       end
 
       def to_pos
@@ -28,6 +38,7 @@ module Spree
           branch_id: branch.prefixed_id,
           name: name,
           code: code,
+          kind: kind,
           status: status
         }
       end
@@ -45,6 +56,14 @@ module Spree
         return unless shifts.exists? || Workspace.where(register_id: id).exists?
 
         errors.add(:branch, :invalid)
+      end
+
+      # Sales and shifts were booked as counter or kiosk work; the kind stays.
+      def kind_fixed_after_use
+        return unless will_save_change_to_kind?
+        return unless shifts.exists? || Workspace.where(register_id: id).exists? || Device.where(register_id: id).exists?
+
+        errors.add(:kind, :invalid)
       end
     end
   end

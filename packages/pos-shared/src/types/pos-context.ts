@@ -4,10 +4,15 @@ import type { LotSelection, SaleLineTrace, WorkspaceTrace } from '../traceabilit
 
 // Where a sale came from. A fixed list, kept in step with the server's ORDER_SOURCES:
 // the sources a cashier picks, then the delivery platforms, which only an entered
-// platform order carries.
+// platform order carries, then the self-ordering kiosk, which only a kiosk's order carries.
 export const PICKABLE_ORDER_SOURCES = ['counter', 'facebook', 'zalo', 'other'] as const;
 export const PLATFORM_ORDER_SOURCES = ['grabfood', 'shopeefood'] as const;
-export const ORDER_SOURCES = [...PICKABLE_ORDER_SOURCES, ...PLATFORM_ORDER_SOURCES] as const;
+export const KIOSK_ORDER_SOURCE = 'kiosk' as const;
+export const ORDER_SOURCES = [
+  ...PICKABLE_ORDER_SOURCES,
+  ...PLATFORM_ORDER_SOURCES,
+  KIOSK_ORDER_SOURCE,
+] as const;
 export type OrderSource = (typeof ORDER_SOURCES)[number];
 export type PickableOrderSource = (typeof PICKABLE_ORDER_SOURCES)[number];
 export type PlatformOrderSource = (typeof PLATFORM_ORDER_SOURCES)[number];
@@ -57,6 +62,8 @@ export type PosRegister = {
   name: string;
   code: string;
   status: string;
+  // A counter is worked by cashiers; a kiosk only by its self-ordering device.
+  kind?: 'counter' | 'kiosk';
 };
 
 export type PosShift = {

@@ -720,6 +720,29 @@ export function useWorkspaces(
         throw error;
       }
     },
+    // Takes an order a kiosk left for the counter onto this cashier's open
+    // shift, its lease held by this page, to tender and complete as usual.
+    // A kiosk QR the bank already paid comes back completed instead.
+    async takeKioskOrder(workspaceId: string) {
+      const key = crypto.randomUUID();
+      try {
+        const result = await session.request<{ data: PosWorkspace }>(
+          'POST',
+          `/pos/kiosk_orders/${workspaceId}/take`,
+          { body: { editor_id: editorId, idempotency_key: key }, idempotencyKey: key },
+        );
+        const workspace = result.data;
+        await acceptWorkspace(workspace);
+        if (workspace.operational_status === 'editing')
+          setOwned((current) => ({ ...current, [workspace.id]: workspace.lease_generation }));
+        channel?.postMessage(workspaceHint(workspace.id));
+        void refresh();
+        return workspace;
+      } catch (error) {
+        abandonIfNeeded(error);
+        throw error;
+      }
+    },
     // A clock command that needs no lease (stop, correcting a stretch): the
     // server takes the time and answers the room's order, kept here.
     async clockCommand(

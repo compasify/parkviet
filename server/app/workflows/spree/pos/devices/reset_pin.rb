@@ -7,7 +7,7 @@ module Spree
       # sessions for that person at the branch end.
       class ResetPin
         def self.call(store:, staff:, key:, membership_id:)
-          membership = StaffMembership.for_store(store).find_by_prefix_id!(membership_id)
+          membership = StaffMembership.for_store(store).people.find_by_prefix_id!(membership_id)
           payload = { 'command' => 'staff.pin_reset', 'membership_id' => membership.prefixed_id }
           CommandExecutor.call(store: store, actor: staff, key: key, payload: payload,
                                authorize: -> { Guard.manage!(store, staff, membership.branch) }) do

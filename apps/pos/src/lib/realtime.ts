@@ -126,6 +126,10 @@ export function invalidationsFor(
         { queryKey: ['pos', 'guest-orders', scope.generation] },
         { queryKey: ['pos', 'guest-requests', scope.generation] },
       ];
+    // A kiosk left an order for the counter, or a kiosk's shift opened or closed.
+    case 'kiosk_order.waiting':
+    case 'kiosk.updated':
+      return [{ queryKey: ['pos', 'kiosk-orders', scope.generation] }];
     // Claims, prints and cancels of a job; other resources (tables among
     // them) announce through this event too and concern the floor instead.
     case 'resource.updated':

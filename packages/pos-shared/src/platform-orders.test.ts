@@ -12,6 +12,7 @@ describe('platform orders', () => {
       'other',
       'grabfood',
       'shopeefood',
+      'kiosk',
     ]);
     expect(isPlatformSource('grabfood')).toBe(true);
     expect(isPlatformSource('facebook')).toBe(false);

@@ -123,6 +123,20 @@ Class | Method | HTTP request | Description
 [*DefaultApi*](doc/DefaultApi.md) | [**posGuestRequestDone**](doc/DefaultApi.md#posguestrequestdone) | **POST** /api/v3/admin/pos/guest_requests/{id}/done | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posGuestRequestList**](doc/DefaultApi.md#posguestrequestlist) | **GET** /api/v3/admin/pos/guest_requests | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posHardwareStatus**](doc/DefaultApi.md#poshardwarestatus) | **GET** /api/v3/admin/pos/hardware_status | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posKioskCancelOrder**](doc/DefaultApi.md#poskioskcancelorder) | **POST** /api/v3/pos_device/kiosk/orders/{id}/cancel | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posKioskCloseShift**](doc/DefaultApi.md#poskioskcloseshift) | **POST** /api/v3/admin/pos/kiosks/{register_id}/shift/close | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posKioskFinishOrder**](doc/DefaultApi.md#poskioskfinishorder) | **POST** /api/v3/pos_device/kiosk/orders/{id}/finish | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posKioskMenu**](doc/DefaultApi.md#poskioskmenu) | **GET** /api/v3/pos_device/kiosk/menu | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posKioskOpenShift**](doc/DefaultApi.md#poskioskopenshift) | **POST** /api/v3/admin/pos/kiosks/{register_id}/shift | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posKioskOrder**](doc/DefaultApi.md#poskioskorder) | **GET** /api/v3/pos_device/kiosk/orders/{id} | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posKioskOrderCancel**](doc/DefaultApi.md#poskioskordercancel) | **POST** /api/v3/admin/pos/kiosk_orders/{id}/cancel | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posKioskOrderTake**](doc/DefaultApi.md#poskioskordertake) | **POST** /api/v3/admin/pos/kiosk_orders/{id}/take | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posKioskOrders**](doc/DefaultApi.md#poskioskorders) | **GET** /api/v3/admin/pos/kiosk_orders | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posKioskPayAtCounter**](doc/DefaultApi.md#poskioskpayatcounter) | **POST** /api/v3/pos_device/kiosk/orders/{id}/pay_at_counter | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posKioskPlaceOrder**](doc/DefaultApi.md#poskioskplaceorder) | **POST** /api/v3/pos_device/kiosk/orders | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posKioskSettings**](doc/DefaultApi.md#poskiosksettings) | **GET** /api/v3/admin/pos/kiosk_settings | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posKioskSettingsUpdate**](doc/DefaultApi.md#poskiosksettingsupdate) | **PUT** /api/v3/admin/pos/kiosk_settings | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posKioskState**](doc/DefaultApi.md#poskioskstate) | **GET** /api/v3/pos_device/kiosk/state | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posKitchenAllDayBump**](doc/DefaultApi.md#poskitchenalldaybump) | **POST** /api/v3/admin/pos/kitchen/all_day/bump | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posKitchenBoard**](doc/DefaultApi.md#poskitchenboard) | **GET** /api/v3/admin/pos/kitchen/board | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posKitchenItemReady**](doc/DefaultApi.md#poskitchenitemready) | **POST** /api/v3/admin/pos/kitchen/items/{id}/ready | 
@@ -330,6 +344,35 @@ Class | Method | HTTP request | Description
  - [HardwareStation](doc/HardwareStation.md)
  - [HardwareStatus](doc/HardwareStatus.md)
  - [IngredientUsageRow](doc/IngredientUsageRow.md)
+ - [KioskDeviceRef](doc/KioskDeviceRef.md)
+ - [KioskHandoffOrder](doc/KioskHandoffOrder.md)
+ - [KioskMenu](doc/KioskMenu.md)
+ - [KioskMenuCategory](doc/KioskMenuCategory.md)
+ - [KioskMenuComponent](doc/KioskMenuComponent.md)
+ - [KioskMenuItem](doc/KioskMenuItem.md)
+ - [KioskMenuVariant](doc/KioskMenuVariant.md)
+ - [KioskModifierGroup](doc/KioskModifierGroup.md)
+ - [KioskModifierOption](doc/KioskModifierOption.md)
+ - [KioskOrder](doc/KioskOrder.md)
+ - [KioskOrderCancelInput](doc/KioskOrderCancelInput.md)
+ - [KioskOrderInput](doc/KioskOrderInput.md)
+ - [KioskOrderItemInput](doc/KioskOrderItemInput.md)
+ - [KioskOrderLine](doc/KioskOrderLine.md)
+ - [KioskOrderModifier](doc/KioskOrderModifier.md)
+ - [KioskOrderResult](doc/KioskOrderResult.md)
+ - [KioskOrderTakeInput](doc/KioskOrderTakeInput.md)
+ - [KioskPayment](doc/KioskPayment.md)
+ - [KioskQr](doc/KioskQr.md)
+ - [KioskRef](doc/KioskRef.md)
+ - [KioskRegister](doc/KioskRegister.md)
+ - [KioskRegisterRef](doc/KioskRegisterRef.md)
+ - [KioskSettings](doc/KioskSettings.md)
+ - [KioskSettingsInput](doc/KioskSettingsInput.md)
+ - [KioskShift](doc/KioskShift.md)
+ - [KioskShiftClosure](doc/KioskShiftClosure.md)
+ - [KioskShiftRef](doc/KioskShiftRef.md)
+ - [KioskState](doc/KioskState.md)
+ - [KioskStatePayments](doc/KioskStatePayments.md)
  - [KitchenAllDayBumpInput](doc/KitchenAllDayBumpInput.md)
  - [KitchenAllDayRow](doc/KitchenAllDayRow.md)
  - [KitchenBoard](doc/KitchenBoard.md)
@@ -448,6 +491,12 @@ Class | Method | HTTP request | Description
  - [PosEinvoiceSummary200Response](doc/PosEinvoiceSummary200Response.md)
  - [PosEinvoices200Response](doc/PosEinvoices200Response.md)
  - [PosHardwareStatus200Response](doc/PosHardwareStatus200Response.md)
+ - [PosKioskCloseShift200Response](doc/PosKioskCloseShift200Response.md)
+ - [PosKioskMenu200Response](doc/PosKioskMenu200Response.md)
+ - [PosKioskOpenShift201Response](doc/PosKioskOpenShift201Response.md)
+ - [PosKioskOrders200Response](doc/PosKioskOrders200Response.md)
+ - [PosKioskSettings200Response](doc/PosKioskSettings200Response.md)
+ - [PosKioskState200Response](doc/PosKioskState200Response.md)
  - [PosKitchenOrders200Response](doc/PosKitchenOrders200Response.md)
  - [PosKitchenSettings200Response](doc/PosKitchenSettings200Response.md)
  - [PosKitchenSettingsUpdateRequest](doc/PosKitchenSettingsUpdateRequest.md)

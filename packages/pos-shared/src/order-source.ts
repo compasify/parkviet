@@ -6,6 +6,7 @@ import {
 } from './types/pos-context';
 
 export {
+  KIOSK_ORDER_SOURCE,
   ORDER_SOURCES,
   type OrderSource,
   PICKABLE_ORDER_SOURCES,

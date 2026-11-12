@@ -50,6 +50,10 @@ module Spree
             raise Conflict, 'Amounts must be whole amounts in the order currency.' unless countable?(money, order.currency)
 
             evidence = evidence_for(kind, evidence_kind, reference, receiving_account, terminal_ref)
+            # A kiosk never attests money: only the bank's webhook is its evidence.
+            if (evidence != 'vietqr_webhook' || tip.positive?) && Kiosks::Policy.service_account?(staff)
+              raise Conflict.new('A kiosk confirms only a transfer the bank reported.', reason: 'kiosk_evidence_forbidden')
+            end
             duplicate_ids = bank_duplicates!(kind, workspace, staff, reference: reference, receiving_account: receiving_account,
                                                                      confirm_duplicate: confirm_duplicate, evidence: evidence)
 

@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import {
   isPlatformSource,
+  KIOSK_ORDER_SOURCE,
   type OrderSource,
   orderSourceKey,
   orderSourceOf,
@@ -9,7 +10,8 @@ import {
 
 // One tap tags where the sale came from: Tại quầy (default), Facebook, Zalo
 // or Khác. It moves no money, so it stays open while a payment is taken. A
-// delivery platform's order keeps its platform: it shows, and cannot change.
+// delivery platform's order keeps its platform, and a kiosk's order stays the
+// kiosk's: it shows, and cannot change.
 export function OrderSourcePicker({
   value,
   disabled,
@@ -21,7 +23,7 @@ export function OrderSourcePicker({
 }) {
   const { t } = useTranslation();
   const current = orderSourceOf(value);
-  if (isPlatformSource(current))
+  if (isPlatformSource(current) || current === KIOSK_ORDER_SOURCE)
     return (
       <p className="order-source-picker" data-source={current}>
         {t(orderSourceKey(current))}

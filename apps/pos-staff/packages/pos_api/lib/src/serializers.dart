@@ -100,6 +100,35 @@ import 'package:pos_api/src/model/hardware_server.dart';
 import 'package:pos_api/src/model/hardware_station.dart';
 import 'package:pos_api/src/model/hardware_status.dart';
 import 'package:pos_api/src/model/ingredient_usage_row.dart';
+import 'package:pos_api/src/model/kiosk_device_ref.dart';
+import 'package:pos_api/src/model/kiosk_handoff_order.dart';
+import 'package:pos_api/src/model/kiosk_menu.dart';
+import 'package:pos_api/src/model/kiosk_menu_category.dart';
+import 'package:pos_api/src/model/kiosk_menu_component.dart';
+import 'package:pos_api/src/model/kiosk_menu_item.dart';
+import 'package:pos_api/src/model/kiosk_menu_variant.dart';
+import 'package:pos_api/src/model/kiosk_modifier_group.dart';
+import 'package:pos_api/src/model/kiosk_modifier_option.dart';
+import 'package:pos_api/src/model/kiosk_order.dart';
+import 'package:pos_api/src/model/kiosk_order_cancel_input.dart';
+import 'package:pos_api/src/model/kiosk_order_input.dart';
+import 'package:pos_api/src/model/kiosk_order_item_input.dart';
+import 'package:pos_api/src/model/kiosk_order_line.dart';
+import 'package:pos_api/src/model/kiosk_order_modifier.dart';
+import 'package:pos_api/src/model/kiosk_order_result.dart';
+import 'package:pos_api/src/model/kiosk_order_take_input.dart';
+import 'package:pos_api/src/model/kiosk_payment.dart';
+import 'package:pos_api/src/model/kiosk_qr.dart';
+import 'package:pos_api/src/model/kiosk_ref.dart';
+import 'package:pos_api/src/model/kiosk_register.dart';
+import 'package:pos_api/src/model/kiosk_register_ref.dart';
+import 'package:pos_api/src/model/kiosk_settings.dart';
+import 'package:pos_api/src/model/kiosk_settings_input.dart';
+import 'package:pos_api/src/model/kiosk_shift.dart';
+import 'package:pos_api/src/model/kiosk_shift_closure.dart';
+import 'package:pos_api/src/model/kiosk_shift_ref.dart';
+import 'package:pos_api/src/model/kiosk_state.dart';
+import 'package:pos_api/src/model/kiosk_state_payments.dart';
 import 'package:pos_api/src/model/kitchen_all_day_bump_input.dart';
 import 'package:pos_api/src/model/kitchen_all_day_row.dart';
 import 'package:pos_api/src/model/kitchen_board.dart';
@@ -218,6 +247,12 @@ import 'package:pos_api/src/model/pos_einvoice_settings_save_request.dart';
 import 'package:pos_api/src/model/pos_einvoice_summary200_response.dart';
 import 'package:pos_api/src/model/pos_einvoices200_response.dart';
 import 'package:pos_api/src/model/pos_hardware_status200_response.dart';
+import 'package:pos_api/src/model/pos_kiosk_close_shift200_response.dart';
+import 'package:pos_api/src/model/pos_kiosk_menu200_response.dart';
+import 'package:pos_api/src/model/pos_kiosk_open_shift201_response.dart';
+import 'package:pos_api/src/model/pos_kiosk_orders200_response.dart';
+import 'package:pos_api/src/model/pos_kiosk_settings200_response.dart';
+import 'package:pos_api/src/model/pos_kiosk_state200_response.dart';
 import 'package:pos_api/src/model/pos_kitchen_orders200_response.dart';
 import 'package:pos_api/src/model/pos_kitchen_settings200_response.dart';
 import 'package:pos_api/src/model/pos_kitchen_settings_update_request.dart';
@@ -498,6 +533,35 @@ part 'serializers.g.dart';
   HardwareStation,
   HardwareStatus,
   IngredientUsageRow,
+  KioskDeviceRef,
+  KioskHandoffOrder,
+  KioskMenu,
+  KioskMenuCategory,
+  KioskMenuComponent,
+  KioskMenuItem,
+  KioskMenuVariant,
+  KioskModifierGroup,
+  KioskModifierOption,
+  KioskOrder,
+  KioskOrderCancelInput,
+  KioskOrderInput,
+  KioskOrderItemInput,
+  KioskOrderLine,
+  KioskOrderModifier,
+  KioskOrderResult,
+  KioskOrderTakeInput,
+  KioskPayment,
+  KioskQr,
+  KioskRef,
+  KioskRegister,
+  KioskRegisterRef,
+  KioskSettings,
+  KioskSettingsInput,
+  KioskShift,
+  KioskShiftClosure,
+  KioskShiftRef,
+  KioskState,
+  KioskStatePayments,
   KitchenAllDayBumpInput,
   KitchenAllDayRow,
   KitchenBoard,
@@ -619,6 +683,12 @@ part 'serializers.g.dart';
   PosEinvoiceSummary200Response,
   PosEinvoices200Response,
   PosHardwareStatus200Response,
+  PosKioskCloseShift200Response,
+  PosKioskMenu200Response,
+  PosKioskOpenShift201Response,
+  PosKioskOrders200Response,
+  PosKioskSettings200Response,
+  PosKioskState200Response,
   PosKitchenOrders200Response,
   PosKitchenSettings200Response,
   PosKitchenSettingsUpdateRequest,
@@ -821,6 +891,10 @@ Serializers serializers = (_$serializers.toBuilder()
         () => ListBuilder<KitchenSendSummary>(),
       )
       ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(KioskMenuCategory)]),
+        () => ListBuilder<KioskMenuCategory>(),
+      )
+      ..addBuilderFactory(
         const FullType(
             BuiltList, [FullType(PosPrinterStations200ResponseDataInner)]),
         () => ListBuilder<PosPrinterStations200ResponseDataInner>(),
@@ -933,6 +1007,14 @@ Serializers serializers = (_$serializers.toBuilder()
         () => ListBuilder<MenuItemAllOfVariants>(),
       )
       ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(KioskModifierGroup)]),
+        () => ListBuilder<KioskModifierGroup>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(KioskOrderItemInput)]),
+        () => ListBuilder<KioskOrderItemInput>(),
+      )
+      ..addBuilderFactory(
         const FullType(BuiltList, [FullType(PlatformOrderLineInput)]),
         () => ListBuilder<PlatformOrderLineInput>(),
       )
@@ -947,6 +1029,10 @@ Serializers serializers = (_$serializers.toBuilder()
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(ModifierGroupOptionsInner)]),
         () => ListBuilder<ModifierGroupOptionsInner>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(KioskModifierOption)]),
+        () => ListBuilder<KioskModifierOption>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(MealAccount)]),
@@ -1010,6 +1096,10 @@ Serializers serializers = (_$serializers.toBuilder()
         () => ListBuilder<KitchenExpoItem>(),
       )
       ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(KioskOrderModifier)]),
+        () => ListBuilder<KioskOrderModifier>(),
+      )
+      ..addBuilderFactory(
         const FullType(BuiltList, [FullType(EinvoiceSetting)]),
         () => ListBuilder<EinvoiceSetting>(),
       )
@@ -1053,6 +1143,18 @@ Serializers serializers = (_$serializers.toBuilder()
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(PlatformSettleOrderInput)]),
         () => ListBuilder<PlatformSettleOrderInput>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(KioskHandoffOrder)]),
+        () => ListBuilder<KioskHandoffOrder>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(KioskMenuComponent)]),
+        () => ListBuilder<KioskMenuComponent>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(KioskRegister)]),
+        () => ListBuilder<KioskRegister>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(WorkspaceLine)]),
@@ -1107,6 +1209,10 @@ Serializers serializers = (_$serializers.toBuilder()
         () => ListBuilder<WorkspaceSummary>(),
       )
       ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(KioskMenuItem)]),
+        () => ListBuilder<KioskMenuItem>(),
+      )
+      ..addBuilderFactory(
         const FullType(BuiltList, [FullType(AppendItem)]),
         () => ListBuilder<AppendItem>(),
       )
@@ -1141,6 +1247,10 @@ Serializers serializers = (_$serializers.toBuilder()
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(ResourceBoardArea)]),
         () => ListBuilder<ResourceBoardArea>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(KioskMenuVariant)]),
+        () => ListBuilder<KioskMenuVariant>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(GuestRequest)]),
@@ -1185,6 +1295,10 @@ Serializers serializers = (_$serializers.toBuilder()
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(VehicleVisit)]),
         () => ListBuilder<VehicleVisit>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(KioskOrderLine)]),
+        () => ListBuilder<KioskOrderLine>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(KitchenHeldCourse)]),

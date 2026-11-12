@@ -10,7 +10,7 @@ module Spree
       # from the transaction and raised after it, so the failure row commits.
       class StaffSignIn
         def self.call(device:, membership_id:, pin:)
-          membership = StaffMembership.for_store(device.store).find_by_prefix_id!(membership_id)
+          membership = StaffMembership.for_store(device.store).people.find_by_prefix_id!(membership_id)
           raise ActiveRecord::RecordNotFound if membership.branch_id != device.branch_id || membership.status != 'active'
           raise Conflict.new('Set a PIN on the dashboard before signing in here.', reason: 'pin_not_set') if membership.pin_digest.blank?
 

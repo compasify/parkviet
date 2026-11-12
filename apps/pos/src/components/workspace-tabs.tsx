@@ -12,6 +12,7 @@ import { useWorkspaceMeal } from '../hooks/use-meal-accounts';
 import { useMenu } from '../hooks/use-menu';
 import { DraftReplayRefused, useWorkspaces } from '../hooks/use-workspaces';
 import { commandQueue } from '../lib/command-queue';
+import { canCollectKioskOrders } from '../lib/kiosk-orders';
 import { MEAL_ACCOUNTS_MODULE } from '../lib/meal-accounts';
 import { resolveScan, type ScanOutcome } from '../lib/measured-label';
 import { soldOutVariantIds } from '../lib/menu-selection';
@@ -61,6 +62,7 @@ import { DiscountForm } from './discount-form';
 import { DisplayPinControl } from './display-pin-control';
 import { GuestNameField } from './guest-name-field';
 import { GuestOrderTray } from './guest-order-tray';
+import { KioskOrderTray } from './kiosk-order-tray';
 import { KitchenHistory } from './kitchen-history';
 import { MealBanner } from './meal-banner';
 import { MenuGrid } from './menu-grid';
@@ -235,6 +237,9 @@ export function WorkspaceTabs() {
         ['pos.guest_order.decide', 'pos.table.serve', 'pos.shift.open'].includes(capability),
       ),
     );
+  // Self-ordering kiosks: orders left for the counter wait in a tray for a cashier.
+  const kioskOrders =
+    data?.modules?.['fnb.kiosk'] === true && canCollectKioskOrders(data?.capabilities);
   // Table service: the floor (tiles or plan, chosen per device) beside selling.
   const [savedSurface, setSavedSurface] = useState(() => savedTableSurface());
   const tableSurface = tableSurfaceOf(data, savedSurface);
@@ -1016,6 +1021,17 @@ export function WorkspaceTabs() {
           key={`guest:${storeId}:${selection.branchId}`}
           branchId={selection.branchId}
           canDecide={Boolean(data?.capabilities.includes('pos.guest_order.decide')) && !locked}
+        />
+      ) : null}
+      {kioskOrders && selectionComplete ? (
+        <KioskOrderTray
+          key={`kiosk:${storeId}:${selection.branchId}`}
+          branchId={selection.branchId}
+          canTake={Boolean(data?.shift && data.shift.owner_id === data.staff.id) && !locked}
+          onTake={async (id) => {
+            const taken = await workspaces.takeKioskOrder(id);
+            selectOrder(taken.id);
+          }}
         />
       ) : null}
       {showTabs ? (

@@ -6,7 +6,7 @@ module Spree
       # Names at this branch, then a PIN session. The list has no email and no PIN.
       class StaffSessionsController < BaseController
         def index
-          rows = StaffMembership.for_store(@device.store).where(branch: @device.branch, status: 'active').includes(:staff)
+          rows = StaffMembership.for_store(@device.store).people.where(branch: @device.branch, status: 'active').includes(:staff)
           render json: {
             data: rows.map { |row| { id: row.prefixed_id, name: row.staff.full_name.presence || row.staff.email.split('@').first, pin_set: row.pin_digest.present? } }
           }
