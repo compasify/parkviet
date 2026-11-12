@@ -1,5 +1,5 @@
 name: parkviet_staff
-description: "Parkviet staff app: waiter, kitchen, runner, kiosk, owner, bridge and print station modes on one paired device."
+description: "Parkviet staff app: waiter, kitchen, runner, kiosk, owner and print station modes on one paired device."
 publish_to: 'none'
 
 version: 1.0.0+1

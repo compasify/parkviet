@@ -10,7 +10,7 @@ module Spree
       self.table_name = 'spree_pos_devices'
       has_prefix_id :posdevice
 
-      MODES = %w[waiter kds expo kiosk print_station owner bridge].freeze
+      MODES = %w[waiter kds expo kiosk print_station owner].freeze
       STAFF_MODES = %w[waiter owner].freeze
       MACHINE_MODES = (MODES - STAFF_MODES).freeze
       PLATFORMS = %w[android ios web].freeze

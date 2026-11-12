@@ -506,12 +506,6 @@ abstract class AppLocalizations {
   /// **'Chủ quán'**
   String get modeOwner;
 
-  /// No description provided for @modeBridge.
-  ///
-  /// In vi, this message translates to:
-  /// **'Cầu nối thiết bị'**
-  String get modeBridge;
-
   /// No description provided for @modePlaceholderBody.
   ///
   /// In vi, this message translates to:

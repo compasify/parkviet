@@ -1948,8 +1948,7 @@
       "expo": "Expo",
       "kiosk": "Kiosk",
       "print_station": "Print station",
-      "owner": "Owner",
-      "bridge": "Bridge"
+      "owner": "Owner"
     }
   },
   "branchEditInfo": "Edit details",

@@ -239,9 +239,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get modeOwner => 'Owner';
 
   @override
-  String get modeBridge => 'Device bridge';
-
-  @override
   String modePlaceholderBody(String mode) {
     return 'The $mode mode comes in a later update. This device is paired and connected.';
   }

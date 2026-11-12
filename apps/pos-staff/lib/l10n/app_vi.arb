@@ -82,7 +82,6 @@
   "modeKiosk": "Kiosk",
   "modePrintStation": "Trạm in",
   "modeOwner": "Chủ quán",
-  "modeBridge": "Cầu nối thiết bị",
   "modePlaceholderBody": "Chế độ {mode} sẽ có trong bản cập nhật sau. Máy đã ghép và đang kết nối với server.",
   "@modePlaceholderBody": {"placeholders": {"mode": {"type": "String"}}},
 

@@ -13,7 +13,6 @@ const DeviceModeEnum _$deviceModeEnum_kiosk = const DeviceModeEnum._('kiosk');
 const DeviceModeEnum _$deviceModeEnum_printStation =
     const DeviceModeEnum._('printStation');
 const DeviceModeEnum _$deviceModeEnum_owner = const DeviceModeEnum._('owner');
-const DeviceModeEnum _$deviceModeEnum_bridge = const DeviceModeEnum._('bridge');
 
 DeviceModeEnum _$deviceModeEnumValueOf(String name) {
   switch (name) {
@@ -29,8 +28,6 @@ DeviceModeEnum _$deviceModeEnumValueOf(String name) {
       return _$deviceModeEnum_printStation;
     case 'owner':
       return _$deviceModeEnum_owner;
-    case 'bridge':
-      return _$deviceModeEnum_bridge;
     default:
       throw ArgumentError(name);
   }
@@ -44,7 +41,6 @@ final BuiltSet<DeviceModeEnum> _$deviceModeEnumValues =
   _$deviceModeEnum_kiosk,
   _$deviceModeEnum_printStation,
   _$deviceModeEnum_owner,
-  _$deviceModeEnum_bridge,
 ]);
 
 const DeviceStatusEnum _$deviceStatusEnum_active =
@@ -83,7 +79,6 @@ class _$DeviceModeEnumSerializer
     'kiosk': 'kiosk',
     'printStation': 'print_station',
     'owner': 'owner',
-    'bridge': 'bridge',
   };
   static const Map<Object, String> _fromWire = const <Object, String>{
     'waiter': 'waiter',
@@ -92,7 +87,6 @@ class _$DeviceModeEnumSerializer
     'kiosk': 'kiosk',
     'print_station': 'printStation',
     'owner': 'owner',
-    'bridge': 'bridge',
   };
 
   @override

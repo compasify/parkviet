@@ -2,7 +2,7 @@
 
 The Flutter app for staff devices. One installation is paired with one
 branch and runs in the mode the POS dashboard gives the device: waiter,
-kitchen display, runner (expo), kiosk, owner, bridge or print station. The
+kitchen display, runner (expo), kiosk, owner or print station. The
 print station is complete; the other modes open a placeholder.
 
 Built with Flutter 3.32.5 (Dart 3.8). Package versions are the newest that

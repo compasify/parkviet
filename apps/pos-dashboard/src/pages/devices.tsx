@@ -13,7 +13,7 @@ import { canAdminister, hasCapability } from '../lib/pos-access'
 import { posRequest } from '../lib/pos-request'
 import { posKey } from '../lib/query-keys'
 
-const MODES = ['waiter', 'kds', 'expo', 'kiosk', 'print_station', 'owner', 'bridge'] as const
+const MODES = ['waiter', 'kds', 'expo', 'kiosk', 'print_station', 'owner'] as const
 type DeviceRow = {
   id: string
   name: string

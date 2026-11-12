@@ -5222,7 +5222,7 @@ components:
           type: string
         mode:
           type: string
-          enum: [waiter, kds, expo, kiosk, print_station, owner, bridge]
+          enum: [waiter, kds, expo, kiosk, print_station, owner]
         status:
           type: string
           enum: [active, revoked]

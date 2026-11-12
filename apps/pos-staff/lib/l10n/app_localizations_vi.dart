@@ -238,9 +238,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get modeOwner => 'Chủ quán';
 
   @override
-  String get modeBridge => 'Cầu nối thiết bị';
-
-  @override
   String modePlaceholderBody(String mode) {
     return 'Chế độ $mode sẽ có trong bản cập nhật sau. Máy đã ghép và đang kết nối với server.';
   }

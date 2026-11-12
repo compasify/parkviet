@@ -8,5 +8,4 @@ String modeName(AppLocalizations l10n, AppMode mode) => switch (mode) {
       AppMode.kiosk => l10n.modeKiosk,
       AppMode.printStation => l10n.modePrintStation,
       AppMode.owner => l10n.modeOwner,
-      AppMode.bridge => l10n.modeBridge,
     };

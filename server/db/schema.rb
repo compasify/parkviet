@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_12_090400) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_12_100000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gist"
   enable_extension "pg_catalog.plpgsql"
@@ -2832,7 +2832,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_090400) do
     t.index ["code_digest"], name: "index_spree_pos_device_pairings_on_code_digest", unique: true
     t.index ["device_id"], name: "index_spree_pos_device_pairings_on_device_id"
     t.index ["store_id"], name: "index_spree_pos_device_pairings_on_store_id"
-    t.check_constraint "mode::text = ANY (ARRAY['waiter'::character varying, 'kds'::character varying, 'expo'::character varying, 'kiosk'::character varying, 'print_station'::character varying, 'owner'::character varying, 'bridge'::character varying]::text[])", name: "chk_pos_device_pairings_mode"
+    t.check_constraint "mode::text = ANY (ARRAY['waiter'::character varying, 'kds'::character varying, 'expo'::character varying, 'kiosk'::character varying, 'print_station'::character varying, 'owner'::character varying]::text[])", name: "chk_pos_device_pairings_mode"
   end
 
   create_table "spree_pos_device_pin_failures", force: :cascade do |t|
@@ -2896,7 +2896,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_090400) do
     t.index ["register_id"], name: "index_spree_pos_devices_on_register_id"
     t.index ["store_id"], name: "index_spree_pos_devices_on_store_id"
     t.index ["token_digest"], name: "index_spree_pos_devices_on_token_digest", unique: true
-    t.check_constraint "mode::text = ANY (ARRAY['waiter'::character varying, 'kds'::character varying, 'expo'::character varying, 'kiosk'::character varying, 'print_station'::character varying, 'owner'::character varying, 'bridge'::character varying]::text[])", name: "chk_pos_devices_mode"
+    t.check_constraint "mode::text = ANY (ARRAY['waiter'::character varying, 'kds'::character varying, 'expo'::character varying, 'kiosk'::character varying, 'print_station'::character varying, 'owner'::character varying]::text[])", name: "chk_pos_devices_mode"
     t.check_constraint "platform::text = ANY (ARRAY['android'::character varying, 'ios'::character varying, 'web'::character varying]::text[])", name: "chk_pos_devices_platform"
     t.check_constraint "status::text = ANY (ARRAY['active'::character varying, 'revoked'::character varying]::text[])", name: "chk_pos_devices_status"
   end

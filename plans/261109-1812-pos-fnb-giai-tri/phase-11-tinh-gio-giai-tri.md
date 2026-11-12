@@ -403,7 +403,7 @@ Thẻ nạp tiền và thẻ nạp giờ dùng service `StoredValue` của [ph�
 
 ### Kết quả
 
-11C bỏ theo quyết định của developer: không làm relay đèn / `iot_relay`, và đã gỡ các phần đã chuẩn bị cho nó (module `resources.iot_relay`, kind thiết bị relay cùng spec và client liên quan).
+11C bỏ theo quyết định của developer: không làm relay đèn / `iot_relay`, và đã gỡ các phần đã chuẩn bị cho nó (module `resources.iot_relay`, kind thiết bị relay cùng spec và client liên quan). Mode thiết bị chỉ dùng cho đèn bàn (màn giữ chỗ trong app) cũng đã gỡ khỏi server, contract, app nhân viên và dashboard.
 
 **Đã làm**
 
@@ -508,7 +508,6 @@ Thẻ nạp tiền và thẻ nạp giờ dùng service `StoredValue` của [ph�
 
 - Hóa đơn điện tử cho đoạn tặng chưa có spec riêng. Dòng giờ ghi 135 phút (gồm 15 phút tặng) với tiền 300 000, nên hóa đơn xuất theo số lượng của dòng; chưa kiểm trực tiếp đầu ra của hóa đơn điện tử.
 - Playwright của `apps/pos-dashboard` chưa chạy, vì cổng 5176 do dev server của developer giữ. Fixture hồ sơ version 4 đã qua `tsc`; CI chạy e2e dashboard.
-- Kind thiết bị `bridge` vẫn giữ (không thuộc phần relay đã bỏ).
 - Rubocop còn `Metrics/ParameterLists` ở các workflow mới, giống các workflow sẵn có; rubocop không phải cổng CI.
 - Đầu đọc thẻ / QR thật, chạy thử tại quán và xác nhận thuế cho thẻ nạp tiền chưa làm.
 - Full suite rspec và e2e chưa chạy local, theo quy định; CI chạy.

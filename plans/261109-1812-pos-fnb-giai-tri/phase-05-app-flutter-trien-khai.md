@@ -94,7 +94,7 @@ apps/pos-staff/
     auth/        # chọn nhân viên, PIN, session
     modes/
       print_station/  # vòng lặp in, drivers/, escpos_renderer.dart
-      kds/ waiter/ expo/ kiosk/ owner/ bridge/   # giữ chỗ
+      kds/ waiter/ expo/ kiosk/ owner/   # giữ chỗ
     l10n/        # app_vi.arb, app_en.arb
   packages/pos_api/          # client sinh từ OpenAPI
   tool/gen_api.sh

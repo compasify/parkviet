@@ -9,7 +9,6 @@ import 'auth/staff_picker_screen.dart';
 import 'auth/staff_session.dart';
 import 'core/app_mode.dart';
 import 'core/session.dart';
-import 'modes/bridge/bridge_screen.dart' deferred as bridge;
 import 'modes/expo/expo_screen.dart' deferred as expo;
 import 'modes/kds/kds_screen.dart' deferred as kds;
 import 'modes/kiosk/kiosk_screen.dart' deferred as kiosk;
@@ -106,7 +105,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       _lazy(AppMode.kiosk, kiosk.loadLibrary, () => kiosk.KioskScreen()),
       _lazy(AppMode.printStation, print_station.loadLibrary, () => print_station.PrintStationScreen()),
       _lazy(AppMode.owner, owner.loadLibrary, () => owner.OwnerScreen()),
-      _lazy(AppMode.bridge, bridge.loadLibrary, () => bridge.BridgeScreen()),
     ],
   );
   ref.onDispose(() {

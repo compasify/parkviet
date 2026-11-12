@@ -31,9 +31,9 @@ Mẫu có sẵn để làm theo: `DisplayPairing` (mã 8 ký tự, TTL 10 phút,
    - Token không hết hạn theo thời gian, chỉ mất hiệu lực khi thu hồi hoặc ghép lại.
    - Mỗi request cập nhật `last_seen_at`, tối đa một lần mỗi 60 giây để tránh ghi DB liên tục.
 3. **Mode:**
-   - Dùng `Device::MODES = waiter kds expo kiosk print_station owner bridge`, đúng theo plan.md.
+   - Dùng `Device::MODES = waiter kds expo kiosk print_station owner`, đúng theo plan.md.
    - Mode quyết định endpoint nào thiết bị gọi được **khi chưa có nhân viên đăng nhập**:
-     - `kds`, `expo`, `print_station`, `bridge` và `kiosk` chạy bằng danh tính máy;
+     - `kds`, `expo`, `print_station` và `kiosk` chạy bằng danh tính máy;
      - `waiter` và `owner` bắt buộc có nhân viên.
 4. **PIN nhân viên:**
    - `StaffMembership.pin_digest`, băm bằng `BCrypt`. PIN dài 4–6 chữ số.

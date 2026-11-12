@@ -78,7 +78,6 @@
   "modeKiosk": "Kiosk",
   "modePrintStation": "Print station",
   "modeOwner": "Owner",
-  "modeBridge": "Device bridge",
   "modePlaceholderBody": "The {mode} mode comes in a later update. This device is paired and connected.",
 
   "realtimeConnected": "Online",

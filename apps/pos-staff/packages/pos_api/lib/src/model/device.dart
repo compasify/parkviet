@@ -31,7 +31,7 @@ abstract class Device implements Built<Device, DeviceBuilder> {
 
   @BuiltValueField(wireName: r'mode')
   DeviceModeEnum get mode;
-  // enum modeEnum {  waiter,  kds,  expo,  kiosk,  print_station,  owner,  bridge,  };
+  // enum modeEnum {  waiter,  kds,  expo,  kiosk,  print_station,  owner,  };
 
   @BuiltValueField(wireName: r'status')
   DeviceStatusEnum get status;
@@ -245,8 +245,6 @@ class DeviceModeEnum extends EnumClass {
   static const DeviceModeEnum printStation = _$deviceModeEnum_printStation;
   @BuiltValueEnumConst(wireName: r'owner')
   static const DeviceModeEnum owner = _$deviceModeEnum_owner;
-  @BuiltValueEnumConst(wireName: r'bridge')
-  static const DeviceModeEnum bridge = _$deviceModeEnum_bridge;
 
   static Serializer<DeviceModeEnum> get serializer =>
       _$deviceModeEnumSerializer;

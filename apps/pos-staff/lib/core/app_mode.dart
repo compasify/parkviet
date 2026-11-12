@@ -7,8 +7,7 @@ enum AppMode {
   expo('expo'),
   kiosk('kiosk'),
   printStation('print-station'),
-  owner('owner', staffSignIn: true),
-  bridge('bridge');
+  owner('owner', staffSignIn: true);
 
   const AppMode(this.path, {this.staffSignIn = false});
 
@@ -26,7 +25,6 @@ enum AppMode {
         DeviceModeEnum.kiosk => kiosk,
         DeviceModeEnum.printStation => printStation,
         DeviceModeEnum.owner => owner,
-        DeviceModeEnum.bridge => bridge,
         _ => throw ArgumentError.value(mode, 'mode'),
       };
 
