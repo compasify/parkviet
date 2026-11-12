@@ -476,10 +476,47 @@ Chủ hoặc quản lý mở app Flutter ở chế độ `owner` trên điện t
 
 ### Tiêu chí xong
 
-- [ ] Màn Hôm nay khớp số liệu với báo cáo bán hàng cùng ngày kinh doanh.
-- [ ] Yêu cầu duyệt từ thu ngân / phục vụ đến app chủ realtime, được duyệt / từ chối, máy gửi tự tiếp tục.
+- [x] Màn Hôm nay khớp số liệu với báo cáo bán hàng cùng ngày kinh doanh.
+- [x] Yêu cầu duyệt từ thu ngân / phục vụ đến app chủ realtime, được duyệt / từ chối, máy gửi tự tiếp tục.
 - [ ] Push hoạt động khi có relay và internet; tắt êm khi không có.
-- [ ] Spec approval cũ vẫn xanh sau khi tách service.
+- [x] Spec approval cũ vẫn xanh sau khi tách service.
+
+### Kết quả
+
+**Đã làm**
+
+- Server: tách `Spree::Pos::Approvals::Issue` (`server/app/services/spree/pos/approvals/issue.rb`); `ApprovalsController#create` gọi service, hành vi và thông báo lỗi giữ nguyên. Migration `20261112130000_add_owner_app.rb` tạo `spree_pos_approval_requests`, `spree_pos_push_registrations`, `spree_pos_push_relay_settings`, `spree_pos_owner_alerts` (thêm 6 check constraint, schema.rb chỉ giữ phần mới). Workflow `ApprovalRequests::Submit` / `Grant` / `Decline` / `Cancel`: gửi kiểm như duyệt tại quầy (`Issue.check!`), hỏi lại cùng việc trả về yêu cầu đang chờ, revision mới hủy yêu cầu cũ, quá 10 phút hoặc subject đổi thì `expired`, người gửi không tự duyệt (`approver_is_requester`), grant/decline idempotent, có audit; grant phát `approval.requested` (máy gửi tự dùng mã) và `approval_request.updated`. Endpoint `approval_requests`, `owner/branches|today|open_units|alerts`, `push_registration`, `push_relay_settings` (+ `check`). `owner/today` lấy đúng summary của báo cáo `sales` cộng `by_hour` (thêm vào `Reports::Sales`). Cảnh báo `OwnerAlerts` do job `pos_owner_alerts_scan` chạy mỗi phút, mỗi việc báo một lần (khóa dedupe), phát `owner_alert.created`. Push: `Push.notify` chỉ xếp `PushDeliveryJob` khi store có relay, payload chỉ `platform`, `token`, `event`, `id`, ký HMAC-SHA256, thử lại tối đa 5 lần, ghi `last_error`. Kênh realtime cho thiết bị owner nghe chi nhánh khác nơi người đăng nhập có quyền duyệt hoặc xem báo cáo. Lỗi `approval_required` của đơn, đặt bàn và ví suất ăn giờ có `action`, revision và số tiền cần xin.
+- Flutter `apps/pos-staff` mode owner (`lib/modes/owner/`): chọn chi nhánh (nhớ trên máy), tab Hôm nay / Đang mở / Duyệt (badge, Đồng ý qua `local_auth`, máy không có sinh trắc thì hỏi xác nhận, Từ chối kèm lý do) / Đặt bàn / Cảnh báo, kéo để làm mới, realtime theo chi nhánh đang xem, bảng thông báo nền (bật/tắt, trạng thái relay). Hộp hủy món của máy phục vụ có **Gửi chủ duyệt**, tự hủy món khi được duyệt, báo từ chối / hết hạn, rút yêu cầu khi đóng hộp. Nguồn push token nằm sau interface `PushTokenSource` (mặc định không có).
+- `apps/pos`: `RemoteApprovalButton` + `use-approval-requests` ở hủy món đã báo bếp, giảm giá đơn, giảm giá món, đổi giá, sửa giờ, tạm dừng lâu, in lại tạm tính, hoàn/giữ cọc, ví suất ăn (hoàn, điều chỉnh), chai gửi, sửa hoa hồng xe; realtime làm mới yêu cầu đang chờ.
+- `apps/pos-dashboard`: thẻ **Thông báo cho app chủ quán** ở trang Thông tin server (địa chỉ HTTPS, khóa chỉ ghi, kiểm tra kết nối, lỗi / lần gửi gần nhất, gỡ).
+- Tài liệu: `docs/pos/fnb-ban-va-tra-sau.md` §9, `docs/deploy/pos-lan-vps.md` §7.
+
+**Lệnh và kết quả**
+
+- `pnpm spree rspec spec/requests/spree/pos/approval_requests_spec.rb` — 7 examples, 0 failures; `spec/requests/spree/pos/owner_spec.rb` — 8, 0.
+- Spec các luồng approval cũ (workspace_discounts, sale_guards, security, topology_access, topology, bottle_keeps, meal_accounts, vehicle_visits, print_jobs, realtime, timed_operations, timed_sessions, credit_receivables, prebills, platform_orders, table_kitchen, returns_refunds, integration fnb_wave2_scenario, credit_race, workflows stored_value_cards, fnb/bar_billing, kitchen/, meal_accounts/, platform_orders/, reservations/, timed/, vehicle_visits/) — 307 examples, 0 failures.
+- `pnpm spree rspec spec/workflows/spree/pos/approval_requests/ spec/requests/spree/pos/owner_spec.rb spec/requests/spree/pos/approval_requests_spec.rb spec/requests/spree/pos/devices_spec.rb spec/services/spree/pos/print_documents_spec.rb spec/requests/spree/pos/authentication_spec.rb` — 47, 0.
+- `pnpm spree rspec spec/requests/spree/pos/meal_accounts_spec.rb spec/requests/spree/pos/reservations_spec.rb spec/workflows/spree/pos/meal_accounts/ spec/workflows/spree/pos/reservations/ spec/workflows/spree/pos/approval_requests/ spec/requests/spree/pos/approval_requests_spec.rb` — 42, 0.
+- `apps/pos-staff`: `flutter analyze` — không lỗi; `flutter test` — 174 passed (8 mới trong `test/modes/owner/owner_home_test.dart`).
+- `apps/pos`: `tsc --noEmit`, `biome check .` sạch; `vitest run` — 328 passed; `playwright test e2e/remote-approval.spec.ts --project desktop` — 1 passed; các e2e liên quan (table-kitchen-send, karaoke, meal-accounts, vehicle-visits, reservations, bar-tabs, print-queue, realtime, tables) — 28 passed, 1 skipped (real API).
+- `apps/pos-dashboard`: `pnpm typecheck`, `pnpm lint` sạch; `pnpm test` — 136 passed.
+
+**Lệch so với plan**
+
+- Thêm bảng `spree_pos_owner_alerts` để mỗi cảnh báo báo một lần và app đọc lại được; cảnh báo do job quét mỗi phút, không móc vào lệnh nghiệp vụ.
+- Cấu hình relay là bảng `spree_pos_push_relay_settings` thay cho cột của store; token cột `token` (mã hóa Active Record) thay cho `token_ciphertext`; `push_registrations` có thêm `staff_id` để lọc theo quyền chi nhánh.
+- Sự kiện yêu cầu là `approval_request.created` / `.updated`; `approval.requested` vẫn nghĩa là "đã cấp mã" để máy đang chờ tự tiếp tục.
+- Cài đặt relay nằm ở `apps/pos-dashboard` (trang Thông tin server), không ở `apps/pos`, theo ranh giới các phần trước.
+- Màn bán không có nút "gửi" trước khi bị từ chối ở những chỗ số tiền do server tính (giảm giá, đổi giá, ví suất ăn): thu ngân bấm lệnh, server trả `approval_required` kèm số tiền, rồi mới hiện **Gửi chủ duyệt**.
+- App owner không có màn chạm xem dòng của bàn đang mở và không xác nhận / hủy đặt bàn (tab Đặt bàn giữ hoàn / giữ cọc như trước).
+
+**Còn mở**
+
+- Push thật: cấu hình native Firebase Cloud Messaging / APNs (google-services, entitlement, tài khoản Firebase/Apple) và `PushTokenSource` thật; dịch vụ relay do ParkViet vận hành chưa có. Mở thẳng tab Duyệt từ thông báo mới có hook (`OwnerScreen.initialTab`). Tiêu chí push để trống.
+- Chưa thử trên máy thật (vân tay / Face ID, nhiều chi nhánh qua tunnel) và chưa pilot.
+- E2E `apps/pos-dashboard` (thêm ca relay vào `e2e/system-status.spec.ts`) chưa chạy: cổng 5176 đang dùng cho máy phát triển. `pnpm build` của dashboard không chạy để không ghi đè `dist/` sẵn có.
+- Không có luồng duyệt tiền tip hiện có để nối vào yêu cầu duyệt từ xa.
+- Full suite chạy trên GitHub Actions.
 
 ## Phần 12D: Hàng đợi offline cho thu ngân
 
