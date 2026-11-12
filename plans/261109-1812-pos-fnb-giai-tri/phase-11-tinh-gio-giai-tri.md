@@ -141,7 +141,7 @@ Migration `create_spree_pos_timed_sessions_and_segments`:
 - [x] Phiên nhiều đoạn chia đúng tại ranh giới giá và ngày; chuyển phòng giữ giá đoạn cũ.
 - [x] Sửa giờ cần duyệt, có audit, không chồng đoạn.
 - [x] Bill và hóa đơn ghi giờ chơi theo đơn vị giờ, đúng thuế suất theo cấu hình.
-- [ ] `resource_board` trên web và tab Phòng trên Flutter có đồng hồ và các hành động trên ô. (Web xong; tab Phòng trên Flutter còn mở, xem Kết quả.)
+- [x] `resource_board` trên web và tab Phòng trên Flutter có đồng hồ và các hành động trên ô.
 - [x] Hồ sơ `karaoke_bida` chọn được; kịch bản karaoke xanh.
 
 ### Kết quả
@@ -186,6 +186,24 @@ Migration `create_spree_pos_timed_sessions_and_segments`:
   - Quyền vào tab theo `timed_billing` + `pos.rate_plan.manage`.
   - `capability-groups.ts` có 3 quyền mới; số checkbox trong `e2e/administration.spec.ts` đổi 33 → 36.
 
+**Đã làm thêm (lượt hoàn thiện)**
+
+- `server/openapi/pos-staff.yaml` có đủ endpoint tính giờ: `posTimedSessionStart`, `posTimedSessionShow`, `posTimedSessionQuote`, `posTimedSessionStop`, `posTimedSessionMove`, `posTimedSegmentUpdate`. Schema có tên: `TimedSessionStartInput`, `TimedSessionMoveInput`, `TimedSegmentEditInput`, `TimedSession`, `TimedSegment`, `TimedQuote`, `TimedQuoteLine`, `TimedSessionResult`, `TimedSessionCommand(Result)`. `timed_sessions_spec` kiểm từng câu trả lời với schema. Đã sinh lại client Dart.
+- Tab **Phòng** cho waiter (`apps/pos-staff/lib/modes/waiter/room_board_screen.dart`):
+  - Nút trên thanh tiêu đề màn waiter, chỉ hiện khi chi nhánh bật `timed_billing`.
+  - Lưới phòng / bàn bida (ô không phải `table`). Ô có trạng thái, đồng hồ chạy từ `started_at` của server cộng độ lệch đo từ `server_now`, và tiền giờ tạm.
+  - Đồng hồ tick 1 giây; bảng đọc lại mỗi 60 giây khi có phòng đang chạy, và khi có `resource.updated` / `workspace.updated`.
+  - Hành động: Bắt đầu, Dừng (có hỏi lại), Chuyển phòng sang phòng trống, Mở đơn của phòng (dùng lại `TableOrderScreen` để gọi món và yêu cầu thanh toán). Bắt đầu / Dừng / Chuyển chỉ hiện khi người đăng nhập có `pos.timed.operate`, đọc từ context. Không thu tiền.
+  - Lời báo lỗi riêng cho `timed_session_running`, `rate_plan_missing`, `workspace_required`, `timed_session_stopped`. Nhãn trạng thái `playing` / `ending_soon`. Chuỗi vi/en trong arb, đã sinh lại localizations.
+  - Widget test `test/modes/waiter/room_board_test.dart` (7 test).
+- `apps/pos`, màn đơn của phòng:
+  - Dòng giờ liệt kê từng đoạn (phòng, giờ vào–ra, "đã sửa"). Mỗi đoạn có nút **Sửa giờ** mở `segment-edit-dialog.tsx`. Hộp này có giờ vào, giờ ra (chỉ với đoạn đã đóng), lý do và mã duyệt. Mã duyệt hiện sẵn khi người dùng không có `pos.timed.edit`, hoặc khi server trả `approval_required`. Lệnh gọi `PATCH timed_sessions/:id/segments/:segment_id`, không cần lease.
+  - Dòng giờ đang chạy hiện "Tạm tính đến HH:MM: số tiền" theo `quote.as_of` của server.
+- `apps/pos`, panel phòng: nút **Thanh toán** trên phòng đang chạy. Nút này gọi `stop` trên server, nhận đơn đã tính tiền giờ, rồi mở đơn để thanh toán. Thanh toán không còn chạm guard `timed_session_running`.
+- Phiếu tạm tính: dòng giờ của đồng hồ đang chạy in thêm ghi chú "Tạm tính đến HH:MM: số tiền", lấy từ báo giá server và giờ chi nhánh. Ruby (`TemplateData#prebill_line`) và TS (`prebillData`) làm giống nhau. Nhãn `receiptTimedEstimate` có trong `print_labels.json` và locale `pos-shared`. Golden mới `prebill-timed-running.json` cùng hai golden ESC/POS 58/80mm của `apps/pos-staff`.
+- Spec thuế bida: `karaoke_scenario_spec` có thêm ca bàn bida dùng tax category `vat_food` (8%) và bia `vat_special` (10%) trên cùng đơn. Giờ bida 90 phút được 90 000, thuế 7 200; bia thuế 6 000; tổng 163 200.
+- `apps/pos-dashboard/e2e/support/business-profiles.ts` lên version 3. `karaoke_bida` mở với module và `display.surface: resource_board` như server, `timed_billing` là `available`. Hai test interest (`setup.spec`, `business-model.spec`) dùng `withComingSoon('karaoke_bida')`: hàm này đánh dấu hồ sơ là "sắp có" và đổi module riêng của nó sang `planned`, giống `treat_as_planned` ở spec server.
+
 **Lệnh đã chạy**
 
 | Lệnh | Kết quả |
@@ -202,6 +220,16 @@ Migration `create_spree_pos_timed_sessions_and_segments`:
 | `pnpm --dir apps/pos-dashboard typecheck` / `lint` / `test` | sạch / sạch / 125 test qua |
 | `pnpm --dir packages/pos-shared typecheck` / `lint` / `test` | sạch / sạch / 281 test qua |
 | `apps/pos-staff`: `tool/gen_api.sh`, `flutter analyze`, `flutter test` | sinh lại client / không có lỗi / 137 test qua |
+| Lượt hoàn thiện: `pnpm spree rspec spec/requests/spree/pos/timed_sessions_spec.rb spec/requests/spree/pos/devices_spec.rb` | 6 ví dụ, 0 lỗi |
+| Lượt hoàn thiện: `pnpm spree rspec spec/integration/spree/pos/karaoke_scenario_spec.rb` | 2 ví dụ, 0 lỗi |
+| Lượt hoàn thiện: `pnpm spree rspec spec/services/spree/pos/print_documents_spec.rb` | 17 ví dụ, 0 lỗi (lần đầu ghi golden mới) |
+| Lượt hoàn thiện: prebills, print_jobs, resource_board, print_documents, timed_sessions, devices, `spec/workflows/spree/pos/timed/`, karaoke, timed_race, fnb_wave2 | 125 ví dụ, 0 lỗi |
+| Lượt hoàn thiện: `apps/pos-staff` `tool/gen_api.sh`, `flutter gen-l10n`, `flutter analyze`, `flutter test` | sinh lại / sinh lại / không có lỗi / 146 test qua |
+| Lượt hoàn thiện: `pnpm --dir apps/pos typecheck` / `lint` / `test` | sạch / sạch / 312 test qua |
+| Lượt hoàn thiện: `pnpm --dir apps/pos exec playwright test e2e/karaoke.spec.ts --project desktop` | 3 qua (thêm Thanh toán dừng giờ trước, Sửa giờ có duyệt) |
+| Lượt hoàn thiện: `pnpm --dir apps/pos exec playwright test e2e/tables.spec.ts e2e/table-kitchen-send.spec.ts --project desktop` | 3 qua |
+| Lượt hoàn thiện: `pnpm --dir packages/pos-shared typecheck` / `lint` / `test` | sạch / sạch / 283 test qua |
+| Lượt hoàn thiện: `pnpm --dir apps/pos-dashboard typecheck` / `lint` / `test`, `tsc` riêng cho ba file e2e đã sửa | sạch / sạch / 125 test qua / sạch |
 
 **Lệch so với plan**
 
@@ -210,16 +238,14 @@ Migration `create_spree_pos_timed_sessions_and_segments`:
 - `resource_board` dùng lại `TableFloor` / `TableTile` cùng `timed-panel.tsx`, không tạo `resource-board` / `resource-tile` / `timed-line` / `segment-edit-dialog`. Các hành động nằm ở panel khi chọn ô, không đặt ngay trên ô. Bộ lọc Đang chơi / Sắp hết giờ đi theo bộ lọc trạng thái sẵn có.
 - `receipt_template_variables.json` không đổi: phòng, giờ vào / ra và khung giá in thành dòng ghi chú của dòng giờ.
 - Bộ spec bảng của `Quote` có 20 ca bảng cùng các ví dụ riêng, tổng 36 ví dụ. Plan yêu cầu ít nhất 25 ca bảng; các ca thêm phủ phần còn lại (qua 0h, lễ, chuyển phòng, block 1 phút, tối thiểu).
-- Spec dịch vụ hồ sơ và module dùng `treat_as_planned('timed_billing')` cho các ca "sắp có" / interest, vì giờ không còn hồ sơ nào sắp có. `resources.iot_relay` là module `planned` thay chỗ.
+- Spec dịch vụ hồ sơ và module dùng `treat_as_planned('timed_billing')` cho các ca "sắp có" / interest, vì giờ không còn hồ sơ nào sắp có. `resources.iot_relay` là module `planned` thay chỗ.- Tab Phòng nằm ở `apps/pos-staff/lib/modes/waiter/room_board_screen.dart` và test ở `test/modes/waiter/room_board_test.dart`, theo cấu trúc sẵn có của chế độ waiter, không ở `lib/features/waiter/rooms/**`. Tab là màn mở từ nút trên thanh tiêu đề, giống Tab đang mở và Rót rượu gửi.
+- Phiếu tạm tính không cộng tiền giờ tạm vào tổng. Tổng vẫn là số của đơn trên server; tiền giờ tạm chỉ in ở ghi chú "Tạm tính đến HH:MM" của dòng giờ, vì dòng giờ chỉ được ghi tiền khi dừng (Q3).
+- Không có hộp "Sửa giờ" riêng trên Flutter: plan chỉ đặt Sửa giờ trên màn đơn của `apps/pos`.
 
 **Còn mở**
 
-- Tab **Phòng** cho waiter trong `apps/pos-staff` (Flutter) chưa làm. Mới có contract `resource_board` cùng client Dart đã sinh lại. Các endpoint `timed_sessions` chưa có trong `pos-staff.yaml`.
-- Nút "Sửa giờ" theo từng đoạn trên màn đơn của `apps/pos` chưa làm; mới có API cùng spec duyệt và audit.
-- Nút "Thanh toán" trên ô phòng tự dừng phiên rồi mở thanh toán chưa làm. Hiện guard chặn thanh toán và màn báo cần dừng giờ trước.
-- Nhãn "Tạm tính đến HH:MM" trên phiếu tạm tính khi phiên còn chạy chưa làm.
-- Playwright của `apps/pos-dashboard` không chạy, vì cổng 5176 do dev server của developer giữ. Đã đổi số checkbox 33 → 36 nhưng chưa chạy. Fixture `e2e/support/business-profiles.ts` vẫn ở version 2 với karaoke "sắp có"; các test interest của `setup.spec` / `business-model.spec` dựa vào nó, nên cần đổi cùng lúc khi chạy được e2e dashboard.
-- Thuế bida 8% chưa có spec riêng. Kịch bản karaoke kiểm 10% cho giờ hát và bia.
+- Playwright của `apps/pos-dashboard` chưa chạy, vì cổng 5176 do dev server của developer giữ. Chưa chạy hai thay đổi: số checkbox 33 → 36 trong `administration.spec`, và fixture hồ sơ version 3 cùng `withComingSoon` trong `setup.spec` / `business-model.spec`. Ba file e2e đã sửa qua `tsc`; CI chạy e2e dashboard.
+- Các nút trên panel phòng của `apps/pos` (Bắt đầu, Dừng, Chuyển, Thanh toán) nằm ở panel khi chọn ô, chưa đặt ngay trên ô (như mục Lệch so với plan).
 - Full suite rspec và e2e chưa chạy local, theo quy định; CI chạy.
 
 ## Phần 11B: Karaoke / bida nâng cao
