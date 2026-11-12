@@ -3,6 +3,7 @@ import { type FormEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PageState, PosPage } from '../components/pos-page';
 import { usePosSelection } from '../components/pos-selection';
+import { RemoteApprovalButton } from '../components/remote-approval-button';
 import { useVehicleVisitCommands, useVehicleVisits } from '../hooks/use-vehicle-visits';
 import { writesLocked } from '../lib/pos-context';
 import { conflictReason, describeFailure } from '../lib/request-failure';
@@ -375,6 +376,9 @@ function PayForm({
   );
 }
 
+// A closed visit corrected with a manager's approval.
+const VEHICLE_ADJUST_ACTION = 'vehicle_visit.adjust';
+
 function AdjustForm({
   visit,
   disabled,
@@ -385,6 +389,7 @@ function AdjustForm({
   commands: Commands;
 }) {
   const { t } = useTranslation();
+  const { selection } = usePosSelection();
   const form = useCommandForm();
   const [guests, setGuests] = useState(String(visit.guest_count));
   const [amountText, setAmountText] = useState('');
@@ -400,17 +405,21 @@ function AdjustForm({
     (amountText.trim() === '' || amount !== null) &&
     note.trim() !== '' &&
     approvalId.trim() !== '';
-  async function submit(event: FormEvent) {
-    event.preventDefault();
-    await form.submit(async () => {
+  const correct = (approval: string) =>
+    form.submit(async () => {
       await commands.adjust(visit, {
         ...(guestCount !== visit.guest_count ? { guestCount } : {}),
         ...(amount !== null ? { commissionAmount: amount } : {}),
         note: note.trim(),
-        approvalId: approvalId.trim(),
+        approvalId: approval,
       });
     });
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    await correct(approvalId.trim());
   }
+  // Ready but for the code: the manager's phone may be asked instead.
+  const askable = ready || (approvalId.trim() === '' && changed && note.trim() !== '');
   return (
     <form className="meal-account-action" onSubmit={submit} aria-label={t('vehicleAdjust')}>
       <h3>{t('vehicleAdjust')}</h3>
@@ -450,6 +459,19 @@ function AdjustForm({
           onChange={(event) => setApprovalId(event.target.value)}
         />
       </label>
+      {selection.branchId && askable && !approvalId.trim() ? (
+        <RemoteApprovalButton
+          branchId={selection.branchId}
+          subject={{ vehicle_visit_id: visit.id }}
+          ask={{ action: VEHICLE_ADJUST_ACTION, revision: String(visit.revision) }}
+          reason={note}
+          disabled={off}
+          onGranted={(id) => {
+            setApprovalId(id);
+            void correct(id);
+          }}
+        />
+      ) : null}
       <button type="submit" disabled={off || !ready}>
         {t('vehicleAdjust')}
       </button>

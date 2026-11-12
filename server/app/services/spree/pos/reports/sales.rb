@@ -62,6 +62,16 @@ module Spree
           end
         end
 
+        # The same sales by the hour they completed, in the branch timezone:
+        # [{ hour: 0..23, orders:, sales_total: }], only hours with sales.
+        def by_hour
+          zone = ActiveRecord::Base.connection.quote(ActiveSupport::TimeZone[branch.timezone]&.tzinfo&.name || 'UTC')
+          hour = Arel.sql("EXTRACT(HOUR FROM spree_orders.completed_at AT TIME ZONE 'UTC' AT TIME ZONE #{zone})")
+          sales.group(hour).order(hour).pluck(hour, Arel.sql('COUNT(*)'), Arel.sql('SUM(spree_orders.total)')).map do |at, orders, total|
+            { hour: at.to_i, orders: orders.to_i, sales_total: money(total) }
+          end
+        end
+
         private
 
         def sales

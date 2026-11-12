@@ -1458,4 +1458,270 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get manageKioskUnlockFailed =>
       'The device did not unlock; turn off screen pinning or Guided Access in the device settings.';
+
+  @override
+  String get waiterAskOwner => 'Ask the owner';
+
+  @override
+  String get waiterAskedOwner => 'Sent to the owner; waiting for an answer.';
+
+  @override
+  String get waiterOwnerDeclined => 'The owner declined.';
+
+  @override
+  String waiterOwnerDeclinedReason(String reason) {
+    return 'The owner declined: $reason';
+  }
+
+  @override
+  String get waiterOwnerExpired =>
+      'The request lapsed or the order changed; ask again if needed.';
+
+  @override
+  String get ownerTabToday => 'Today';
+
+  @override
+  String get ownerTabOpen => 'Open';
+
+  @override
+  String get ownerTabApprovals => 'Approvals';
+
+  @override
+  String get ownerTabReservations => 'Bookings';
+
+  @override
+  String get ownerTabAlerts => 'Alerts';
+
+  @override
+  String get ownerNoBranches => 'You have no branch to watch or approve for.';
+
+  @override
+  String get ownerNoReports => 'You may not read reports at this branch.';
+
+  @override
+  String get ownerNoApprove => 'You may not approve at this branch.';
+
+  @override
+  String get ownerNoPending => 'Nothing is waiting for you.';
+
+  @override
+  String get ownerNoAlerts => 'No alerts in the last 24 hours.';
+
+  @override
+  String get ownerNoOpen => 'No open orders.';
+
+  @override
+  String get ownerSales => 'Sales';
+
+  @override
+  String get ownerNetSales => 'Net sales';
+
+  @override
+  String get ownerOrders => 'Orders';
+
+  @override
+  String get ownerOpenOrders => 'Open orders';
+
+  @override
+  String get ownerOpenShifts => 'Open shifts';
+
+  @override
+  String get ownerCanceled => 'Canceled';
+
+  @override
+  String ownerVoided(int count) {
+    return '$count voided';
+  }
+
+  @override
+  String get ownerBySource => 'By source';
+
+  @override
+  String ownerSourceOrders(int count) {
+    return '$count orders';
+  }
+
+  @override
+  String get ownerByHour => 'By hour';
+
+  @override
+  String get ownerSourceCounter => 'Counter';
+
+  @override
+  String get ownerSourceKiosk => 'Kiosk';
+
+  @override
+  String get ownerSourceOther => 'Other';
+
+  @override
+  String get ownerTakeaway => 'Takeaway';
+
+  @override
+  String ownerMinutesOpen(int minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String ownerKitchenLate(int count) {
+    return '$count late in the kitchen';
+  }
+
+  @override
+  String ownerKitchenWaiting(int count) {
+    return '$count waiting for the kitchen';
+  }
+
+  @override
+  String ownerRequestedBy(String name) {
+    return 'Asked by $name';
+  }
+
+  @override
+  String ownerRequestReason(String reason) {
+    return 'Reason: $reason';
+  }
+
+  @override
+  String ownerRequestExpires(String time) {
+    return 'Expires at $time';
+  }
+
+  @override
+  String get ownerGrant => 'Approve';
+
+  @override
+  String get ownerDecline => 'Decline';
+
+  @override
+  String get ownerGrantBiometricReason => 'Confirm to approve the request';
+
+  @override
+  String get ownerGrantNotConfirmed =>
+      'The fingerprint or face was not confirmed.';
+
+  @override
+  String ownerGrantConfirm(String action) {
+    return 'Approve: $action?';
+  }
+
+  @override
+  String get ownerDeclineTitle => 'Decline the request';
+
+  @override
+  String get ownerDeclineReason => 'Reason (optional)';
+
+  @override
+  String get ownerGranted => 'Approved; the asking device carries on.';
+
+  @override
+  String get ownerDeclined => 'Declined.';
+
+  @override
+  String get ownerRequestExpired => 'The request lapsed or the order changed.';
+
+  @override
+  String get ownerRequestCanceled => 'The request was withdrawn.';
+
+  @override
+  String get ownerSelfApproval => 'You cannot approve your own request.';
+
+  @override
+  String get ownerAlreadyDecided => 'This request was already answered.';
+
+  @override
+  String get ownerActionDiscount => 'Order discount';
+
+  @override
+  String get ownerActionLineDiscount => 'Item discount';
+
+  @override
+  String get ownerActionOverridePrice => 'Price change';
+
+  @override
+  String get ownerActionPrebill => 'Reprint or cancel the pre-bill';
+
+  @override
+  String get ownerActionVoid => 'Void a sent dish';
+
+  @override
+  String get ownerActionPlatformCancel => 'Cancel a delivery app order';
+
+  @override
+  String get ownerActionBuffet => 'Buffet round change';
+
+  @override
+  String get ownerActionMinimumSpend => 'Waive the minimum spend';
+
+  @override
+  String get ownerActionTimedEdit => 'Edit billed time';
+
+  @override
+  String get ownerActionLongPause => 'Long pause';
+
+  @override
+  String get ownerActionDepositRefund => 'Refund a booking deposit';
+
+  @override
+  String get ownerActionDepositForfeit => 'Keep a booking deposit';
+
+  @override
+  String get ownerActionBottleKeep => 'Adjust a kept bottle';
+
+  @override
+  String get ownerActionMealWallet => 'Meal wallet';
+
+  @override
+  String get ownerActionCommission => 'Adjust a driver commission';
+
+  @override
+  String get ownerActionStoredValue => 'Stored-value card';
+
+  @override
+  String ownerAlertKitchenLate(String minutes) {
+    return 'A dish waited $minutes min in the kitchen';
+  }
+
+  @override
+  String ownerAlertShiftVariance(String amount) {
+    return 'Drawer variance at shift close: $amount';
+  }
+
+  @override
+  String ownerAlertVoidBurst(String count) {
+    return '$count dishes voided within an hour';
+  }
+
+  @override
+  String ownerAlertRevenue(String percent) {
+    return 'Yearly sales reached $percent% of the 1 billion threshold';
+  }
+
+  @override
+  String get ownerAlertPrintFailed => 'A print job failed';
+
+  @override
+  String get ownerAlertEinvoiceFailed => 'An e-invoice failed';
+
+  @override
+  String get ownerPushTitle => 'Background notifications';
+
+  @override
+  String get ownerPushToggle => 'Notify me when the app is closed';
+
+  @override
+  String get ownerPushNoToken =>
+      'This build has no background notifications; you hear events only while the app is open.';
+
+  @override
+  String get ownerPushNoRelay =>
+      'The store has no push relay; you hear events only while the app is open.';
+
+  @override
+  String get ownerPushReady =>
+      'Notifications carry only the kind of event, never amounts or names.';
+
+  @override
+  String ownerPushLastError(String error) {
+    return 'Last error: $error';
+  }
 }

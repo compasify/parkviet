@@ -13,9 +13,11 @@ import {
   useTimedCommands,
   useTimedQuote,
 } from '../hooks/use-timed';
+import { type ApprovalAsk, askFromFailure } from '../lib/approval-requests';
 import { conflictReason } from '../lib/request-failure';
 import { moveTargets } from '../lib/tables';
 import { formatElapsed, isRunning, timedFailureKey } from '../lib/timed-clock';
+import { RemoteApprovalButton } from './remote-approval-button';
 
 // What a clock may start with: a prepaid package of the room's plan, and a
 // minutes card read at the counter that pays the time when it stops.
@@ -184,13 +186,25 @@ export function TimedPanel({
   const targets = moveTargets(tables, table.id);
   const amount = quote.data?.quote?.amount ?? timed?.quote_amount ?? null;
   const approval = approvalId.trim() || undefined;
+  // A long pause refused for want of an approval, and the attempt to make
+  // again once the manager's phone grants it.
+  const [remote, setRemote] = useState<{
+    ask: ApprovalAsk;
+    retry: (approvalId: string) => Promise<unknown>;
+  } | null>(null);
 
-  async function act(action: () => Promise<unknown>) {
+  async function act(
+    action: () => Promise<unknown>,
+    retry?: (approvalId: string) => Promise<unknown>,
+  ) {
     if (busy) return;
     setBusy(true);
     try {
       await action();
+      setRemote(null);
     } catch (failure) {
+      const ask = retry ? askFromFailure(failure) : null;
+      setRemote(ask && retry ? { ask, retry } : null);
       onFailure(failure, timedFailureKey(conflictReason(failure)));
     } finally {
       setBusy(false);
@@ -316,6 +330,18 @@ export function TimedPanel({
               onChange={(event) => setApprovalId(event.target.value)}
             />
           </label>
+          {remote && branchId && timed.workspace_id ? (
+            <RemoteApprovalButton
+              branchId={branchId}
+              subject={{ workspace_id: timed.workspace_id }}
+              ask={remote.ask}
+              disabled={locked}
+              onGranted={(id) => {
+                setApprovalId(id);
+                void act(() => remote.retry(id), remote.retry);
+              }}
+            />
+          ) : null}
         </div>
       ) : null}
       <div className="row">
@@ -325,10 +351,16 @@ export function TimedPanel({
             className="primary-button"
             disabled={busy || locked}
             onClick={() =>
-              void act(async () => {
-                await commands.resume(timed.id, approval);
-                setApprovalId('');
-              })
+              void act(
+                async () => {
+                  await commands.resume(timed.id, approval);
+                  setApprovalId('');
+                },
+                async (granted) => {
+                  await commands.resume(timed.id, granted);
+                  setApprovalId('');
+                },
+              )
             }
           >
             {t('timedResume')}
@@ -346,7 +378,12 @@ export function TimedPanel({
           type="button"
           className={paused ? undefined : 'primary-button'}
           disabled={busy || locked}
-          onClick={() => void act(() => commands.stop(timed.id, approval))}
+          onClick={() =>
+            void act(
+              () => commands.stop(timed.id, approval),
+              (granted) => commands.stop(timed.id, granted),
+            )
+          }
         >
           {t('timedStop')}
         </button>
@@ -355,7 +392,12 @@ export function TimedPanel({
             type="button"
             title={t('timedCheckoutHint')}
             disabled={busy || locked}
-            onClick={() => void act(() => onCheckout(timed.id, approval))}
+            onClick={() =>
+              void act(
+                () => onCheckout(timed.id, approval),
+                (granted) => onCheckout(timed.id, granted),
+              )
+            }
           >
             {t('timedCheckout')}
           </button>

@@ -92,3 +92,36 @@ test('stays closed to staff without store administration', async ({ page }) => {
   await expect(page.getByText('Bạn không có quyền xem trang này.')).toBeVisible();
   expect(calls).toEqual([]);
 });
+
+test('keeps the owner push relay key write-only and checks the relay', async ({ page }) => {
+  const writes: Array<{ method: string; path: string; body: unknown }> = [];
+  let relay: Record<string, unknown> | null = null;
+  await install(page, healthy);
+  await page.route('**/api/v3/admin/pos/push_relay_settings**', async (route) => {
+    const request = route.request();
+    const path = new URL(request.url()).pathname.replace('/api/v3/admin', '');
+    if (request.method() !== 'GET') writes.push({ method: request.method(), path, body: request.postDataJSON() });
+    if (request.method() === 'PUT')
+      relay = { url: 'https://relay.example.test/push', key_set: true, last_error: null, last_error_at: null, last_delivered_at: null, updated_at: '2026-11-11T10:00:00Z' };
+    if (path.endsWith('/check') && relay) relay = { ...relay, last_delivered_at: '2026-11-11T10:01:00Z' };
+    return route.fulfill({ json: { data: relay } });
+  });
+  await page.goto('/store_1/settings/system');
+
+  const card = page.getByTestId('push-relay-card');
+  await expect(card.getByTestId('push-relay-status')).toContainText('chỉ nhận sự kiện khi đang mở');
+  await card.getByLabel('Địa chỉ dịch vụ chuyển tiếp (HTTPS)').fill('https://relay.example.test/push');
+  await expect(card.getByTestId('push-relay-save')).toBeDisabled();
+  await card.getByLabel('Khóa ký').fill('k'.repeat(40));
+  await card.getByTestId('push-relay-save').click();
+  await expect(card.getByTestId('push-relay-status')).toContainText('chưa kiểm tra');
+  await expect(card.getByLabel('Khóa ký')).toHaveValue('');
+
+  await card.getByTestId('push-relay-check').click();
+  await expect(card.getByTestId('push-relay-status')).toContainText('Gửi thành công lần cuối');
+  expect(writes.map(({ method, path }) => `${method} ${path}`)).toEqual([
+    'PUT /pos/push_relay_settings',
+    'POST /pos/push_relay_settings/check',
+  ]);
+  expect(writes[0].body).toEqual({ url: 'https://relay.example.test/push', key: 'k'.repeat(40) });
+});

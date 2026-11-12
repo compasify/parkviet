@@ -16,6 +16,13 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(AppendItemsMeta.serializer)
       ..add(AppendItemsResult.serializer)
       ..add(Approval.serializer)
+      ..add(ApprovalRequest.serializer)
+      ..add(ApprovalRequestDeclineInput.serializer)
+      ..add(ApprovalRequestInput.serializer)
+      ..add(ApprovalRequestList.serializer)
+      ..add(ApprovalRequestResult.serializer)
+      ..add(ApprovalRequestStatusEnum.serializer)
+      ..add(ApprovalRequestSubjectTypeEnum.serializer)
       ..add(ApprovalRevision.serializer)
       ..add(Area.serializer)
       ..add(AreaInput.serializer)
@@ -239,6 +246,18 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(ModifierGroupOptionsInner.serializer)
       ..add(ModifierPick.serializer)
       ..add(ModifierSelection.serializer)
+      ..add(OwnerAlert.serializer)
+      ..add(OwnerAlertKindEnum.serializer)
+      ..add(OwnerAlertList.serializer)
+      ..add(OwnerBranch.serializer)
+      ..add(OwnerBranchList.serializer)
+      ..add(OwnerHourRow.serializer)
+      ..add(OwnerOpenUnit.serializer)
+      ..add(OwnerOpenUnitList.serializer)
+      ..add(OwnerOpenUnitStatusEnum.serializer)
+      ..add(OwnerSourceRow.serializer)
+      ..add(OwnerToday.serializer)
+      ..add(OwnerTodayResult.serializer)
       ..add(PaymentRequest.serializer)
       ..add(PaymentRequestInput.serializer)
       ..add(PaymentRequestResolveInput.serializer)
@@ -419,6 +438,15 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(PrinterPaperEnum.serializer)
       ..add(PrinterRolesEnum.serializer)
       ..add(PrinterStatusEnum.serializer)
+      ..add(PushRegistration.serializer)
+      ..add(PushRegistrationInput.serializer)
+      ..add(PushRegistrationInputPlatformEnum.serializer)
+      ..add(PushRegistrationPlatformEnum.serializer)
+      ..add(PushRegistrationResult.serializer)
+      ..add(PushRegistrationState.serializer)
+      ..add(PushRelaySettings.serializer)
+      ..add(PushRelaySettingsInput.serializer)
+      ..add(PushRelaySettingsResult.serializer)
       ..add(ReadyFeed.serializer)
       ..add(ReadyFeedItem.serializer)
       ..add(ReadyFeedItemStatusEnum.serializer)
@@ -579,6 +607,15 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(AppendItem)]),
           () => ListBuilder<AppendItem>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(ApprovalRequest)]),
+          () => ListBuilder<ApprovalRequest>())
+      ..addBuilderFactory(
+          const FullType(BuiltMap, const [
+            const FullType(String),
+            const FullType.nullable(JsonObject)
+          ]),
+          () => MapBuilder<String, JsonObject?>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(Area)]),
           () => ListBuilder<Area>())
@@ -869,6 +906,21 @@ Serializers _$serializers = (Serializers().toBuilder()
           const FullType(BuiltList, const [const FullType(ModifierSelection)]),
           () => ListBuilder<ModifierSelection>())
       ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(OwnerAlert)]),
+          () => ListBuilder<OwnerAlert>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(OwnerBranch)]),
+          () => ListBuilder<OwnerBranch>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(OwnerOpenUnit)]),
+          () => ListBuilder<OwnerOpenUnit>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(OwnerSourceRow)]),
+          () => ListBuilder<OwnerSourceRow>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(OwnerHourRow)]),
+          () => ListBuilder<OwnerHourRow>())
+      ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(PlatformOrder)]),
           () => ListBuilder<PlatformOrder>())
       ..addBuilderFactory(
@@ -1138,6 +1190,12 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
           () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltMap, const [
+            const FullType(String),
+            const FullType.nullable(JsonObject)
+          ]),
+          () => MapBuilder<String, JsonObject?>())
       ..addBuilderFactory(
           const FullType(BuiltMap, const [
             const FullType(String),

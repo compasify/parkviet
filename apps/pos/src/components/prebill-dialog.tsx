@@ -15,6 +15,7 @@ import { approvalAction, describeTableFailure } from '../lib/tables';
 import { PosIcon } from './pos-icon';
 import { usePosSelection } from './pos-selection';
 import { ReceiptPrintPortal, ReceiptSheet } from './receipt-sheet';
+import { RemoteApprovalButton } from './remote-approval-button';
 import { TemplatePicker } from './template-picker';
 
 const adapter = createBrowserPrintAdapter();
@@ -149,7 +150,11 @@ export function PrebillDialog({
     }
   };
 
-  const doPrint = async (route: PrintRoute = printRoute.route, approve = false) => {
+  const doPrint = async (
+    route: PrintRoute = printRoute.route,
+    approve = false,
+    granted?: string,
+  ) => {
     if (busy) return;
     setError('');
     setNotice('');
@@ -157,7 +162,7 @@ export function PrebillDialog({
     setBusy(true);
     try {
       if (record) {
-        let approvalId: string | undefined;
+        let approvalId = granted;
         if (approve && staffId)
           approvalId = await commands.approve(workspace, staffId, PREBILL_REPRINT_ACTION);
         if (!(await recordPrebill(route, approvalId))) return;
@@ -239,7 +244,16 @@ export function PrebillDialog({
                 {t('prebillApproveReprint')}
               </button>
             ) : (
-              <p className="muted">{t('prebillAskManager')}</p>
+              <>
+                <p className="muted">{t('prebillAskManager')}</p>
+                <RemoteApprovalButton
+                  branchId={workspace.branch_id}
+                  subject={{ workspace_id: workspace.id }}
+                  ask={{ action: PREBILL_REPRINT_ACTION, revision: String(workspace.revision) }}
+                  disabled={busy || printRoute.loading}
+                  onGranted={(id) => void doPrint(printRoute.route, false, id)}
+                />
+              </>
             )}
           </div>
         ) : null}

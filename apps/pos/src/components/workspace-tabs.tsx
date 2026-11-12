@@ -1469,6 +1469,7 @@ export function WorkspaceTabs() {
                   {voiding?.sale_line_id ? (
                     <VoidItemDialog
                       key={voiding.id}
+                      workspace={active}
                       line={voiding}
                       reasons={voidReasons(
                         data?.branches.find((row) => row.id === active.branch_id),
@@ -1485,6 +1486,7 @@ export function WorkspaceTabs() {
                   {editingSegment ? (
                     <SegmentEditDialog
                       key={editingSegment.segment.id}
+                      workspace={active}
                       segment={editingSegment.segment}
                       canEdit={Boolean(data?.capabilities.includes('pos.timed.edit'))}
                       onSave={(input) =>

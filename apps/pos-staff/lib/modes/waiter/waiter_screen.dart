@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/app_mode.dart';
+import '../../core/approval_requests.dart';
 import '../../core/errors.dart';
 import '../../core/realtime_provider.dart';
 import '../../core/session.dart';
@@ -88,6 +89,7 @@ class _WaiterScreenState extends ConsumerState<WaiterScreen> {
       editorId: ref.read(waiterEditorIdProvider),
       baseUrl: session.serverUrl,
       events: realtime?.events ?? const Stream.empty(),
+      approvals: ref.read(approvalRequestsApiProvider),
     );
     unawaited(_context!.menu.load());
     unawaited(_context!.loadVoidReasons());

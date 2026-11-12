@@ -1,11 +1,16 @@
 import { parseVndAmount, parseVndInput } from '@parkviet/pos-shared/money';
 import { useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { type ApprovalAsk, askFromFailure } from '../lib/approval-requests';
 import type { PosLineItem, PosWorkspace } from '../lib/pos-context';
 import { describeFailure } from '../lib/request-failure';
 import { PosIcon } from './pos-icon';
+import { RemoteApprovalButton } from './remote-approval-button';
+
+type Attempt = (approvalId?: string) => Promise<PosWorkspace>;
 
 export function LinePriceEditor({
+  workspace,
   line,
   currency,
   disabled,
@@ -13,6 +18,8 @@ export function LinePriceEditor({
   canApplyDiscount,
   onApply,
 }: {
+  // The order, for asking the manager's phone instead of typing a code.
+  workspace?: PosWorkspace;
   line: PosLineItem;
   currency: string;
   disabled: boolean;
@@ -34,18 +41,23 @@ export function LinePriceEditor({
   const [reason, setReason] = useState(t('linePriceDefaultReason'));
   const [approvalId, setApprovalId] = useState('');
   const [error, setError] = useState('');
+  // A refusal for want of an approval, and the attempt to make again once granted.
+  const [remote, setRemote] = useState<{ ask: ApprovalAsk; retry: Attempt } | null>(null);
   const reasonId = useId();
   const reasonRef = useRef<HTMLInputElement>(null);
   const details = useRef<HTMLDetailsElement>(null);
   const value = parseVndInput(price);
   const valid = currency === 'VND' && value !== null && BigInt(value) >= 0n;
 
-  async function run(action: () => Promise<PosWorkspace>) {
+  async function run(action: Attempt, granted?: string) {
     setError('');
     try {
-      await action();
+      await action(granted ?? (approvalId.trim() || undefined));
+      setRemote(null);
       if (details.current) details.current.open = false;
     } catch (failure) {
+      const ask = canApplyDiscount ? null : askFromFailure(failure);
+      setRemote(ask ? { ask, retry: action } : null);
       setError(describeFailure(failure, t));
     }
   }
@@ -65,11 +77,11 @@ export function LinePriceEditor({
           onSubmit={(event) => {
             event.preventDefault();
             if (!valid || disabled || !reason.trim()) return;
-            void run(() =>
+            void run((approval) =>
               onApply({
                 value,
                 reason: reason.trim(),
-                approvalId: approvalId.trim() || undefined,
+                approvalId: approval,
               }),
             );
           }}
@@ -127,6 +139,19 @@ export function LinePriceEditor({
               />
             </label>
           ) : null}
+          {workspace && remote ? (
+            <RemoteApprovalButton
+              branchId={workspace.branch_id}
+              subject={{ workspace_id: workspace.id }}
+              ask={remote.ask}
+              reason={reason}
+              disabled={disabled}
+              onGranted={(id) => {
+                setApprovalId(id);
+                void run(remote.retry, id);
+              }}
+            />
+          ) : null}
           <div className="row">
             <button
               type="submit"
@@ -140,11 +165,11 @@ export function LinePriceEditor({
                 type="button"
                 disabled={disabled}
                 onClick={() =>
-                  void run(() =>
+                  void run((approval) =>
                     onApply({
                       value: listPrice,
                       reason: reason.trim() || t('linePriceDefaultReason'),
-                      approvalId: approvalId.trim() || undefined,
+                      approvalId: approval,
                     }),
                   )
                 }

@@ -6,6 +6,8 @@
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
 	<string>ParkViet Staff</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Xác nhận trước khi chủ quán duyệt một yêu cầu. / Confirms it is you before you grant an approval.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Quét mã QR để ghép máy với cửa hàng. / Scans the QR code that pairs this device with the store.</string>
 	<key>NSBluetoothAlwaysUsageDescription</key>

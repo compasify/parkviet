@@ -2515,6 +2515,24 @@
     "sample": "Issue a test invoice",
     "sampleDone": "Test invoice issued; nothing was saved."
   },
+  "pushRelay": {
+    "title": "Owner app notifications",
+    "intro": "Owners' phones are told of approval requests and alerts in the background through a relay service. A notification carries only the kind of event and an id, never amounts or customer names. Without a relay the owner app hears events only while it is open.",
+    "off": "No relay: the owner app hears events only while it is open.",
+    "notChecked": "Saved; not checked yet.",
+    "lastDelivered": "Last delivered {{at}}.",
+    "lastError": "Last error {{at}}: {{error}}",
+    "url": "Relay address (HTTPS)",
+    "key": "Signing key",
+    "keyHint": "Shared with the relay; {{min}} to {{max}} characters. It is stored encrypted and never shown again.",
+    "keyKept": "A key is stored. Leave this empty to keep it, or enter a new one to replace it.",
+    "check": "Check the relay",
+    "checked": "The relay answered.",
+    "unreachable": "The relay did not answer; check its address and key.",
+    "remove": "Remove the relay",
+    "removeConfirm": "Remove the relay? Owners' phones stop getting notifications while the app is closed.",
+    "removed": "The relay is removed."
+  },
   "kiosk": {
     "title": "Self-ordering kiosks",
     "intro": "Guests order at a kiosk and pay by bank QR or at the counter. Pair a kiosk on the Devices page (kiosk mode, with a kiosk register), then open its shift here. A kiosk shift holds no cash.",

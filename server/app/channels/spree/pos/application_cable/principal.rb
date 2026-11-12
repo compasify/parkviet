@@ -15,6 +15,9 @@ module Spree
       class Principal
         STAFF_CAPABILITIES = [Capabilities::OPEN_SHIFT, Capabilities::TAKEOVER, Capabilities::APPROVE,
                               Capabilities::GUEST_ORDER_DECIDE].freeze
+        # An owner's phone also follows the branches its person only reads
+        # reports of: their day and alerts.
+        OWNER_CAPABILITIES = (STAFF_CAPABILITIES + [Capabilities::REPORT_READ]).freeze
 
         attr_reader :kind, :device, :staff
 
@@ -33,8 +36,12 @@ module Spree
           @session = session
         end
 
+        # An owner's phone follows its person: any branch of its store that
+        # person works at, not only the branch it was paired at.
         def may_read?(branch)
-          device ? own_branch?(device, branch) : staff_works_at?(branch)
+          return staff_works_at?(branch) unless device
+
+          own_branch?(device, branch) || roaming?(device, branch)
         end
 
         # A socket outlives its credentials, so this re-reads what they stood
@@ -43,7 +50,7 @@ module Spree
           return staff_works_at?(branch) unless device
 
           current = Device.active.find_by(id: device.id, generation: device.generation)
-          return false if current.nil? || !own_branch?(current, branch)
+          return false if current.nil? || !(own_branch?(current, branch) || roaming?(current, branch))
 
           @session.nil? || @session.reload.usable?
         rescue ActiveRecord::RecordNotFound
@@ -56,11 +63,15 @@ module Spree
           owner.branch_id == branch.id && owner.store_id == branch.store_id
         end
 
-        def staff_works_at?(branch)
+        def roaming?(owner, branch)
+          owner.mode == 'owner' && staff.present? && owner.store_id == branch.store_id && staff_works_at?(branch, OWNER_CAPABILITIES)
+        end
+
+        def staff_works_at?(branch, capabilities = STAFF_CAPABILITIES)
           return false unless staff.spree_roles.for_resource(branch.store).exists?
 
           membership = AccessPolicy.new(store: branch.store, staff: staff).membership_for(branch)
-          membership.present? && STAFF_CAPABILITIES.any? { |capability| membership.allows?(capability) }
+          membership.present? && capabilities.any? { |capability| membership.allows?(capability) }
         end
       end
     end

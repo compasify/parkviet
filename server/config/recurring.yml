@@ -95,6 +95,11 @@ production:
   pos_timed_session_alerts:
     class: Spree::Pos::TimedSessions::AlertJob
     schedule: every minute
+  # POS owner app: late kitchen items, shift variances, bursts of voids,
+  # failed prints and e-invoices, the yearly revenue threshold (alerts only).
+  pos_owner_alerts_scan:
+    class: Spree::Pos::OwnerAlertsScanJob
+    schedule: every minute
   # POS print queue: return jobs whose print station lease ran out.
   pos_release_print_claims:
     class: Spree::Pos::ReleasePrintClaimsJob

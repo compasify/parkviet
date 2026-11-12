@@ -4,6 +4,7 @@ import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from '@spree/
 import type { TFunction } from 'i18next'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
+import { PushRelayCard } from '../components/push-relay-card'
 import { type SystemStatus, useSystemStatus } from '../hooks/use-system-status'
 
 // A nightly backup older than this needs a look (one missed night plus slack).
@@ -15,7 +16,8 @@ type Row = { key: string; ok: boolean; value: ReactNode }
 
 // The server this store runs on: the address devices pair with, its TLS
 // mode, and whether the database, jobs, realtime, printing, outbound work
-// and backups are healthy. Store administrators only.
+// and backups are healthy, and the relay for owners' background notifications.
+// Store administrators only.
 export function SystemStatusPage() {
   const { t } = useTranslation()
   const status = useSystemStatus(true)
@@ -48,6 +50,7 @@ export function SystemStatusPage() {
           <HealthCard data={data} />
         </>
       ) : null}
+      <PushRelayCard />
     </div>
   )
 }

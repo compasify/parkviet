@@ -110,6 +110,7 @@ Lưu ý: ở chế độ này trình duyệt chặn lời gọi HTTP từ trang 
   4. Đặt webhook của SePay / PayOS là `https://pay.<tên-miền>/webhooks/payments/sepay` (hoặc `payos`), thử một giao dịch nhỏ; trang **Thông tin server** hiện thời điểm nhận thông báo gần nhất.
 - **Không có tunnel:** chưa có đối soát bằng polling (chưa có client tra giao dịch của SePay / PayOS trong repo). Thu ngân **xác nhận chuyển khoản bằng tay**, luôn dùng được.
 - **Hóa đơn điện tử, đơn nền tảng** là việc gửi ra ngoài, đi qua hàng đợi (outbox). Mất internet thì đơn vẫn complete; trang **Thông tin server** hiện số việc đang chờ, có mạng lại thì tự gửi.
+- **Thông báo cho app chủ quán** (tùy chọn): server gửi một yêu cầu HTTPS có ký HMAC-SHA256 (header `X-Parkviet-Timestamp`, `X-Parkviet-Signature` trên `<timestamp>.<body>`) tới dịch vụ chuyển tiếp đặt ở **Thông tin server**; body chỉ có nền tảng, token máy, loại sự kiện và mã. Việc gửi chạy nền, thử lại tối đa 5 lần; lỗi gần nhất hiện trên thẻ đó. Server LAN chỉ cần đi ra được internet, không cần mở cổng vào. Không cài thì không có gì được gửi ra ngoài.
 
 ## 8. Mất internet
 

@@ -7,15 +7,21 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/api_client.dart';
 import '../../core/app_mode.dart';
+import '../../core/approval_requests.dart';
 import '../../core/errors.dart';
 import '../../core/menu/modifier_sheet.dart';
+import '../../core/realtime.dart';
+import '../../core/realtime_provider.dart';
 import '../../core/session.dart';
 import '../../l10n/app_localizations.dart';
 import '../mode_scaffold.dart';
 import '../waiter/waiter_messages.dart';
+import 'owner_device.dart';
+import 'owner_home.dart';
+import 'owner_watch_api.dart';
 
-/// What the owner's phone asks of the server, as the person signed in with
-/// their PIN: the day's bookings, and a deposit refunded or kept. The owner
+/// What the owner's phone asks of the server about bookings, as the person
+/// signed in with their PIN: the day's bookings, and a deposit refunded or kept. The owner
 /// may grant approvals, so neither asks for a code; anyone else is refused
 /// with `approval_required`.
 abstract interface class OwnerApi {
@@ -69,7 +75,10 @@ bool forfeitable(Reservation reservation, ReservationDeposit deposit) =>
     deposit.status == ReservationDepositStatusEnum.held;
 
 class OwnerScreen extends ConsumerWidget {
-  const OwnerScreen({super.key});
+  const OwnerScreen({super.key, this.initialTab = OwnerTab.today});
+
+  /// The tab a notification opens.
+  final OwnerTab initialTab;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -77,9 +86,35 @@ class OwnerScreen extends ConsumerWidget {
     return ModeScaffold(
       mode: AppMode.owner,
       body: session is Paired
-          ? OwnerReservations(api: ref.read(ownerApiProvider), branchId: session.me.branch.id)
+          ? OwnerHome(
+              watch: ref.read(ownerWatchApiProvider),
+              approvals: ref.read(approvalRequestsApiProvider),
+              reservations: ref.read(ownerApiProvider),
+              confirmation: ref.read(approverConfirmationProvider),
+              pushTokens: ref.read(pushTokenSourceProvider),
+              initialTab: initialTab,
+              eventsFor: (branchId) => _eventsFor(ref, session, branchId),
+            )
           : const Center(child: CircularProgressIndicator()),
     );
+  }
+
+  // The paired branch shares the device's stream; another branch the owner
+  // watches gets its own, which the server allows an owner device.
+  static BranchEvents _eventsFor(WidgetRef ref, Paired session, String branchId) {
+    final shared = ref.read(realtimeProvider);
+    if (branchId == session.me.branch.id) return BranchEvents(shared?.events ?? const Stream.empty());
+    final credentials = ref.read(credentialsProvider);
+    final client = ActionCableClient(
+      uri: cableUri(session.serverUrl),
+      protocols: () => deviceProtocols(
+        credentials.deviceToken ?? '',
+        staffSessionToken: credentials.staffSessionToken,
+      ),
+      identifier: {'channel': 'Spree::Pos::BranchChannel', 'branch_id': branchId},
+    );
+    client.start();
+    return BranchEvents(client.events, client.dispose);
   }
 }
 

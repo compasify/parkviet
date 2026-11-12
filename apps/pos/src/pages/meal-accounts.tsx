@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { PageState, PosPage } from '../components/pos-page';
 import { usePosSelection } from '../components/pos-selection';
 import { ReceiptPrintPortal } from '../components/receipt-sheet';
+import { RemoteApprovalButton } from '../components/remote-approval-button';
 import {
   useMealAccount,
   useMealAccountCommands,
@@ -12,6 +13,7 @@ import {
   useMealEntries,
 } from '../hooks/use-meal-accounts';
 import { usePrintRoute } from '../hooks/use-print-jobs';
+import { type ApprovalAsk, askFromFailure } from '../lib/approval-requests';
 import {
   MEAL_ACCOUNTS_MODULE,
   type MealAccount,
@@ -280,6 +282,7 @@ function MealAccountDetail({
         <>
           <RefundForm
             account={account}
+            branchId={branchId}
             disabled={locked}
             canApprove={canApprove}
             onRefund={async (input) => {
@@ -288,6 +291,8 @@ function MealAccountDetail({
             }}
           />
           <AdjustForm
+            account={account}
+            branchId={branchId}
             disabled={locked}
             canApprove={canApprove}
             onAdjust={async (input) => {
@@ -504,13 +509,31 @@ function ApprovalField({
   );
 }
 
+// The approval a meal command was refused for, and the manager's phone to ask.
+function useRemoteApproval() {
+  const [ask, setAsk] = useState<ApprovalAsk | null>(null);
+  // Runs the command; a refusal for want of an approval offers the phone.
+  async function attempt(action: () => Promise<void>) {
+    try {
+      await action();
+      setAsk(null);
+    } catch (failure) {
+      setAsk(askFromFailure(failure));
+      throw failure;
+    }
+  }
+  return { ask, attempt };
+}
+
 function RefundForm({
   account,
+  branchId,
   disabled,
   canApprove,
   onRefund,
 }: {
   account: MealAccount;
+  branchId: string;
   disabled: boolean;
   canApprove: boolean;
   onRefund: (input: {
@@ -526,25 +549,33 @@ function RefundForm({
   const [beneficiary, setBeneficiary] = useState('');
   const [reason, setReason] = useState('');
   const [approvalId, setApprovalId] = useState('');
+  const remote = useRemoteApproval();
   const amount = amountInput.trim() ? parseVndInput(amountInput) : undefined;
   const off = disabled || form.busy;
-  const ready = amount !== null && amount !== '0' && (canApprove || approvalId.trim() !== '');
+  // Without a code the request may still go: its refusal offers the manager's phone.
+  const ready = amount !== null && amount !== '0';
 
-  async function submit(event: FormEvent) {
-    event.preventDefault();
+  async function refund(approval?: string) {
     if (!ready || off) return;
     const ok = await form.submit(() =>
-      onRefund({
-        amount: amount ?? undefined,
-        beneficiaryName: beneficiary.trim() || undefined,
-        reason: reason.trim() || undefined,
-        approvalId: approvalId.trim() || undefined,
-      }),
+      remote.attempt(() =>
+        onRefund({
+          amount: amount ?? undefined,
+          beneficiaryName: beneficiary.trim() || undefined,
+          reason: reason.trim() || undefined,
+          approvalId: approval ?? (approvalId.trim() || undefined),
+        }),
+      ),
     );
     if (ok) {
       setAmountInput('');
       setApprovalId('');
     }
+  }
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    await refund();
   }
 
   return (
@@ -591,6 +622,19 @@ function RefundForm({
         {!canApprove ? (
           <ApprovalField value={approvalId} disabled={off} onChange={setApprovalId} />
         ) : null}
+        {!canApprove ? (
+          <RemoteApprovalButton
+            branchId={branchId}
+            subject={{ meal_account_id: account.id }}
+            ask={remote.ask}
+            reason={reason}
+            disabled={off}
+            onGranted={(id) => {
+              setApprovalId(id);
+              void refund(id);
+            }}
+          />
+        ) : null}
         <button type="submit" disabled={off || !ready}>
           {form.busy ? t('waiting') : t('mealRefundSubmit')}
         </button>
@@ -601,10 +645,14 @@ function RefundForm({
 }
 
 function AdjustForm({
+  account,
+  branchId,
   disabled,
   canApprove,
   onAdjust,
 }: {
+  account: MealAccount;
+  branchId: string;
   disabled: boolean;
   canApprove: boolean;
   onAdjust: (input: { amount: string; note: string; approvalId?: string }) => Promise<void>;
@@ -614,21 +662,33 @@ function AdjustForm({
   const [amountInput, setAmountInput] = useState('');
   const [note, setNote] = useState('');
   const [approvalId, setApprovalId] = useState('');
+  const remote = useRemoteApproval();
   const amount = parseSignedVnd(amountInput, parseVndInput);
   const off = disabled || form.busy;
-  const ready = amount !== null && note.trim() !== '' && (canApprove || approvalId.trim() !== '');
+  // Without a code the request may still go: its refusal offers the manager's phone.
+  const ready = amount !== null && note.trim() !== '';
 
-  async function submit(event: FormEvent) {
-    event.preventDefault();
+  async function adjust(approval?: string) {
     if (!ready || amount === null || off) return;
     const ok = await form.submit(() =>
-      onAdjust({ amount, note: note.trim(), approvalId: approvalId.trim() || undefined }),
+      remote.attempt(() =>
+        onAdjust({
+          amount,
+          note: note.trim(),
+          approvalId: approval ?? (approvalId.trim() || undefined),
+        }),
+      ),
     );
     if (ok) {
       setAmountInput('');
       setNote('');
       setApprovalId('');
     }
+  }
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    await adjust();
   }
 
   return (
@@ -661,6 +721,19 @@ function AdjustForm({
         </label>
         {!canApprove ? (
           <ApprovalField value={approvalId} disabled={off} onChange={setApprovalId} />
+        ) : null}
+        {!canApprove ? (
+          <RemoteApprovalButton
+            branchId={branchId}
+            subject={{ meal_account_id: account.id }}
+            ask={remote.ask}
+            reason={note}
+            disabled={off}
+            onGranted={(id) => {
+              setApprovalId(id);
+              void adjust(id);
+            }}
+          />
         ) : null}
         <button type="submit" disabled={off || !ready}>
           {form.busy ? t('waiting') : t('mealAdjustSubmit')}

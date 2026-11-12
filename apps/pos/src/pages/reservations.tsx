@@ -12,6 +12,7 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PageState, PosPage } from '../components/pos-page';
 import { usePosSelection } from '../components/pos-selection';
+import { RemoteApprovalButton } from '../components/remote-approval-button';
 import {
   useAvailability,
   useReservationCommands,
@@ -19,6 +20,7 @@ import {
 } from '../hooks/use-reservations';
 import { useResourceBoard } from '../hooks/use-resource-board';
 import { workspaceEditorId } from '../hooks/use-workspaces';
+import { type ApprovalAsk, askFromFailure } from '../lib/approval-requests';
 import { writesLocked } from '../lib/pos-context';
 import { conflictReason, posFailureKey } from '../lib/request-failure';
 
@@ -339,9 +341,11 @@ function ReservationRow({
   const [reference, setReference] = useState('');
   const [account, setAccount] = useState('');
   // A refund or forfeit refused for want of an approval waits for its code.
-  const [pending, setPending] = useState<{ kind: 'refund' | 'forfeit'; depositId: string } | null>(
-    null,
-  );
+  const [pending, setPending] = useState<{
+    kind: 'refund' | 'forfeit';
+    depositId: string;
+    ask: ApprovalAsk | null;
+  } | null>(null);
   const [approvalId, setApprovalId] = useState('');
   const currency = reservation.deposits[0]?.currency || 'VND';
   const act = (work: () => Promise<unknown>) => {
@@ -361,7 +365,11 @@ function ReservationRow({
         setApprovalId('');
       } catch (error) {
         if (conflictReason(error) === 'approval_required') {
-          setPending({ kind: which, depositId });
+          setPending({
+            kind: which,
+            depositId,
+            ask: askFromFailure(error, { revision: String(reservation.revision) }),
+          });
           setMessage(t('reservationsApprovalNeeded'));
           return;
         }
@@ -529,6 +537,16 @@ function ReservationRow({
           <button type="submit" disabled={locked || !approvalId.trim()}>
             {pending.kind === 'refund' ? t('reservationsRefund') : t('reservationsForfeit')}
           </button>
+          <RemoteApprovalButton
+            branchId={reservation.branch_id}
+            subject={{ reservation_id: reservation.id }}
+            ask={pending.ask}
+            disabled={locked}
+            onGranted={(id) => {
+              setApprovalId(id);
+              resolve(pending.kind, pending.depositId, id);
+            }}
+          />
         </form>
       ) : null}
       {message ? (

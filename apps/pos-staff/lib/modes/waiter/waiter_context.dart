@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:pos_api/pos_api.dart';
 
+import '../../core/approval_requests.dart';
 import '../../core/errors.dart';
 import 'void_reasons.dart';
 import 'waiter_api.dart';
@@ -17,6 +18,7 @@ class WaiterContext {
     required this.editorId,
     required this.baseUrl,
     this.events = const Stream.empty(),
+    this.approvals,
   }) : menu = MenuCache(api: api, branchId: branchId, events: events);
 
   final WaiterApi api;
@@ -31,6 +33,10 @@ class WaiterContext {
   final String baseUrl;
   final Stream<Map<String, Object?>> events;
   final MenuCache menu;
+
+  /// Asking a manager on their own phone instead of typing a code. Null
+  /// where the screen does not offer it.
+  final ApprovalRequestsApi? approvals;
 
   /// Why a sent dish may be voided here: the defaults until the branch's
   /// own are read, and still the defaults when they cannot be.

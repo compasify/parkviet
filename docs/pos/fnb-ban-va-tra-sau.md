@@ -74,7 +74,20 @@ Khách quét mã, xem thực đơn và giá, chọn món, tùy chọn, ghi chú 
 Khách chạm màn hình, chọn món và tùy chọn, xem giỏ rồi chọn cách trả. Giá do server tính lại theo thực đơn. **Trả bằng QR**: kiosk hiện mã QR và đếm ngược; khi webhook ngân hàng báo nhận tiền, đơn tự hoàn tất, có số gọi món, vào bếp và in hóa đơn ra máy in hóa đơn gắn với quầy kiosk. Hết hạn QR mà chưa nhận tiền thì QR bị hủy và đơn chuyển ra quầy. **Trả tại quầy**: đơn có số gọi món, in phiếu số gọi (nếu có máy in) và chờ ở khay **Đơn từ kiosk** trên màn bán (`apps/pos`). Thu ngân có quyền mở ca và thu tiền bấm **Thu tiền**: đơn chuyển sang ca của thu ngân, thu như đơn thường; bếp chỉ nhận món khi đã thu, trừ khi chi nhánh bật gửi bếp trước. Đơn chờ quá 30 phút được đánh dấu khách có thể đã bỏ đi và thu ngân hủy được.
 
 Không ai chạm trong thời gian chờ thì kiosk hỏi "Bạn còn đó không?" 10 giây rồi hủy đơn chưa trả. Kiosk có nút đổi tiếng Việt / English và nút đưa nút bấm xuống thấp. Trên Android app tự ghim màn hình (lock task; máy được cấu hình device owner thì khóa hẳn), trên iOS cần bật Guided Access hoặc chế độ một ứng dụng của máy quản lý. Muốn thoát, quản lý giữ dòng chào trên màn kiosk, nhập PIN, rồi bấm **Mở khóa màn hình kiosk**.
-## 9. Dữ liệu thử trên máy phát triển
+## 9. App chủ quán: duyệt từ xa, số liệu hôm nay, cảnh báo
+
+Ghép một điện thoại ở trang **Thiết bị** với mode **Chủ quán**, đăng nhập bằng PIN của người có quyền **Duyệt** (`pos.approval.grant`) và/hoặc **Xem báo cáo** (`pos.report.read`). App hiện từng chi nhánh người đó được giao (chọn ở đầu màn, máy nhớ lựa chọn), gồm năm tab:
+
+- **Hôm nay**: doanh thu, doanh thu thuần, số đơn và theo kênh lấy đúng từ báo cáo bán hàng của ngày kinh doanh, kèm doanh thu theo giờ, đơn đang mở, ca đang mở, đơn hủy và món hủy.
+- **Đang mở**: bàn/đơn đang mở, mở bao lâu, đang bao nhiêu tiền, món chờ bếp; ô đỏ là có món trễ quá ngưỡng của khu bếp.
+- **Duyệt**: yêu cầu đang chờ (ai xin, việc gì, bàn/đơn nào, bao nhiêu, lý do, hết hạn lúc nào). **Đồng ý** cần vân tay hoặc khuôn mặt; máy không có thì hỏi xác nhận. **Từ chối** có thể kèm lý do. Người xin không tự duyệt được yêu cầu của mình.
+- **Đặt bàn**: lượt đặt hôm nay, hoàn hoặc giữ cọc.
+- **Cảnh báo**: món chờ bếp quá lâu, chênh lệch két khi đóng ca, nhiều món bị hủy trong một giờ, lệnh in hoặc hóa đơn điện tử lỗi, doanh thu năm chạm 90% và 100% ngưỡng 1 tỷ. Server quét mỗi phút và chỉ báo mỗi việc một lần.
+
+**Gửi chủ duyệt.** Khi thu ngân (`apps/pos`) hoặc máy phục vụ bị từ chối vì cần quản lý duyệt — giảm giá, đổi giá, hủy món đã báo bếp, in lại phiếu tạm tính, sửa giờ hoặc tạm dừng lâu, hoàn/giữ cọc, ví suất ăn, chai gửi, sửa hoa hồng xe — màn có nút **Gửi chủ duyệt**. Yêu cầu chờ tối đa 10 phút. Chủ đồng ý thì máy gửi tự làm tiếp với mã duyệt vừa cấp, như mã gõ tay; đơn đổi trước khi chủ bấm thì yêu cầu hết hạn và phải gửi lại. Gõ mã duyệt tay vẫn dùng được như trước.
+
+**Thông báo khi app đóng** chỉ có khi cửa hàng cài dịch vụ chuyển tiếp thông báo ở **Cài đặt → Thông tin server → Thông báo cho app chủ quán** (địa chỉ HTTPS và khóa ký; khóa không hiện lại) và bản app đã cấu hình Firebase/APNs. Thông báo chỉ mang loại sự kiện và mã, không có số tiền hay tên khách. Không có thì app chủ vẫn nhận mọi sự kiện khi đang mở.
+## 10. Dữ liệu thử trên máy phát triển
 
 Seed demo tạo một nhà hàng mẫu cho cửa hàng mặc định:
 

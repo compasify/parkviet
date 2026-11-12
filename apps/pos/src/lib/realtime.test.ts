@@ -185,6 +185,17 @@ describe('invalidationsFor', () => {
     expect(matched(event({ event: 'approval.requested' }), list)).toBe(false);
   });
 
+  it('reloads the approval request the counter waits on when a manager answers it', () => {
+    const waiting = ['pos', 'approval-requests', 3, 'posapprovalreq_1'];
+    for (const name of [
+      'approval_request.created',
+      'approval_request.updated',
+      'approval.requested',
+    ])
+      expect(matched(event({ event: name }), waiting)).toBe(true);
+    expect(matched(event({ event: 'approval_request.updated' }), list)).toBe(false);
+  });
+
   it('reloads the floor when a table, an order or a bill request changes', () => {
     const board = ['pos', 'resource-board', 3, 'br_1'];
     expect(matched(event(), board)).toBe(true);

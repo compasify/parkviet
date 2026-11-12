@@ -1455,4 +1455,272 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get manageKioskUnlockFailed =>
       'Thiết bị không mở khóa được; tắt chế độ ghim màn hình hoặc Guided Access trong cài đặt máy.';
+
+  @override
+  String get waiterAskOwner => 'Gửi chủ duyệt';
+
+  @override
+  String get waiterAskedOwner => 'Đã gửi chủ duyệt, đang chờ trả lời.';
+
+  @override
+  String get waiterOwnerDeclined => 'Chủ quán đã từ chối.';
+
+  @override
+  String waiterOwnerDeclinedReason(String reason) {
+    return 'Chủ quán đã từ chối: $reason';
+  }
+
+  @override
+  String get waiterOwnerExpired =>
+      'Yêu cầu đã hết hạn hoặc đơn đã đổi; gửi lại nếu cần.';
+
+  @override
+  String get ownerTabToday => 'Hôm nay';
+
+  @override
+  String get ownerTabOpen => 'Đang mở';
+
+  @override
+  String get ownerTabApprovals => 'Duyệt';
+
+  @override
+  String get ownerTabReservations => 'Đặt bàn';
+
+  @override
+  String get ownerTabAlerts => 'Cảnh báo';
+
+  @override
+  String get ownerNoBranches =>
+      'Bạn chưa được giao chi nhánh nào để xem hoặc duyệt.';
+
+  @override
+  String get ownerNoReports =>
+      'Bạn không có quyền xem báo cáo ở chi nhánh này.';
+
+  @override
+  String get ownerNoApprove => 'Bạn không có quyền duyệt ở chi nhánh này.';
+
+  @override
+  String get ownerNoPending => 'Không có yêu cầu nào đang chờ.';
+
+  @override
+  String get ownerNoAlerts => 'Chưa có cảnh báo trong 24 giờ qua.';
+
+  @override
+  String get ownerNoOpen => 'Không có đơn nào đang mở.';
+
+  @override
+  String get ownerSales => 'Doanh thu';
+
+  @override
+  String get ownerNetSales => 'Doanh thu thuần';
+
+  @override
+  String get ownerOrders => 'Số đơn';
+
+  @override
+  String get ownerOpenOrders => 'Đơn đang mở';
+
+  @override
+  String get ownerOpenShifts => 'Ca đang mở';
+
+  @override
+  String get ownerCanceled => 'Đơn hủy';
+
+  @override
+  String ownerVoided(int count) {
+    return '$count món hủy';
+  }
+
+  @override
+  String get ownerBySource => 'Theo kênh';
+
+  @override
+  String ownerSourceOrders(int count) {
+    return '$count đơn';
+  }
+
+  @override
+  String get ownerByHour => 'Theo giờ';
+
+  @override
+  String get ownerSourceCounter => 'Tại quầy';
+
+  @override
+  String get ownerSourceKiosk => 'Kiosk';
+
+  @override
+  String get ownerSourceOther => 'Khác';
+
+  @override
+  String get ownerTakeaway => 'Mang đi';
+
+  @override
+  String ownerMinutesOpen(int minutes) {
+    return '$minutes phút';
+  }
+
+  @override
+  String ownerKitchenLate(int count) {
+    return '$count món trễ bếp';
+  }
+
+  @override
+  String ownerKitchenWaiting(int count) {
+    return '$count món chờ bếp';
+  }
+
+  @override
+  String ownerRequestedBy(String name) {
+    return '$name xin duyệt';
+  }
+
+  @override
+  String ownerRequestReason(String reason) {
+    return 'Lý do: $reason';
+  }
+
+  @override
+  String ownerRequestExpires(String time) {
+    return 'Hết hạn lúc $time';
+  }
+
+  @override
+  String get ownerGrant => 'Đồng ý';
+
+  @override
+  String get ownerDecline => 'Từ chối';
+
+  @override
+  String get ownerGrantBiometricReason => 'Xác nhận để duyệt yêu cầu';
+
+  @override
+  String get ownerGrantNotConfirmed =>
+      'Chưa xác nhận được vân tay hoặc khuôn mặt.';
+
+  @override
+  String ownerGrantConfirm(String action) {
+    return 'Duyệt: $action?';
+  }
+
+  @override
+  String get ownerDeclineTitle => 'Từ chối yêu cầu';
+
+  @override
+  String get ownerDeclineReason => 'Lý do (không bắt buộc)';
+
+  @override
+  String get ownerGranted => 'Đã duyệt; máy gửi sẽ tự tiếp tục.';
+
+  @override
+  String get ownerDeclined => 'Đã từ chối.';
+
+  @override
+  String get ownerRequestExpired => 'Yêu cầu đã hết hạn hoặc đơn đã đổi.';
+
+  @override
+  String get ownerRequestCanceled => 'Người gửi đã hủy yêu cầu.';
+
+  @override
+  String get ownerSelfApproval => 'Bạn không thể tự duyệt yêu cầu của mình.';
+
+  @override
+  String get ownerAlreadyDecided => 'Yêu cầu này đã được trả lời.';
+
+  @override
+  String get ownerActionDiscount => 'Giảm giá đơn';
+
+  @override
+  String get ownerActionLineDiscount => 'Giảm giá món';
+
+  @override
+  String get ownerActionOverridePrice => 'Đổi giá món';
+
+  @override
+  String get ownerActionPrebill => 'In lại hoặc hủy phiếu tạm tính';
+
+  @override
+  String get ownerActionVoid => 'Hủy món đã gửi bếp';
+
+  @override
+  String get ownerActionPlatformCancel => 'Hủy đơn app giao hàng';
+
+  @override
+  String get ownerActionBuffet => 'Đổi lượt buffet';
+
+  @override
+  String get ownerActionMinimumSpend => 'Miễn chi tiêu tối thiểu';
+
+  @override
+  String get ownerActionTimedEdit => 'Sửa giờ tính tiền';
+
+  @override
+  String get ownerActionLongPause => 'Tạm dừng giờ lâu';
+
+  @override
+  String get ownerActionDepositRefund => 'Hoàn cọc đặt bàn';
+
+  @override
+  String get ownerActionDepositForfeit => 'Giữ cọc đặt bàn';
+
+  @override
+  String get ownerActionBottleKeep => 'Điều chỉnh chai gửi';
+
+  @override
+  String get ownerActionMealWallet => 'Ví suất ăn';
+
+  @override
+  String get ownerActionCommission => 'Điều chỉnh hoa hồng xe';
+
+  @override
+  String get ownerActionStoredValue => 'Thẻ trả trước';
+
+  @override
+  String ownerAlertKitchenLate(String minutes) {
+    return 'Món chờ bếp $minutes phút';
+  }
+
+  @override
+  String ownerAlertShiftVariance(String amount) {
+    return 'Chênh lệch két khi đóng ca: $amount';
+  }
+
+  @override
+  String ownerAlertVoidBurst(String count) {
+    return '$count món bị hủy trong một giờ';
+  }
+
+  @override
+  String ownerAlertRevenue(String percent) {
+    return 'Doanh thu năm đạt $percent% ngưỡng 1 tỷ';
+  }
+
+  @override
+  String get ownerAlertPrintFailed => 'Một lệnh in bị lỗi';
+
+  @override
+  String get ownerAlertEinvoiceFailed => 'Một hóa đơn điện tử bị lỗi';
+
+  @override
+  String get ownerPushTitle => 'Thông báo nền';
+
+  @override
+  String get ownerPushToggle => 'Nhận thông báo khi app đóng';
+
+  @override
+  String get ownerPushNoToken =>
+      'Bản cài này chưa có thông báo nền; bạn chỉ nhận sự kiện khi app đang mở.';
+
+  @override
+  String get ownerPushNoRelay =>
+      'Cửa hàng chưa cài dịch vụ chuyển tiếp thông báo; bạn chỉ nhận sự kiện khi app đang mở.';
+
+  @override
+  String get ownerPushReady =>
+      'Thông báo chỉ mang loại sự kiện, không kèm số tiền hay tên khách.';
+
+  @override
+  String ownerPushLastError(String error) {
+    return 'Lỗi gần nhất: $error';
+  }
 }

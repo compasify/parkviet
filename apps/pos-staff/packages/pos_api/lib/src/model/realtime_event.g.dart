@@ -35,6 +35,14 @@ const RealtimeEventEventEnum _$realtimeEventEventEnum_kioskPeriodUpdated =
     const RealtimeEventEventEnum._('kioskPeriodUpdated');
 const RealtimeEventEventEnum _$realtimeEventEventEnum_kioskOrderPeriodWaiting =
     const RealtimeEventEventEnum._('kioskOrderPeriodWaiting');
+const RealtimeEventEventEnum
+    _$realtimeEventEventEnum_approvalRequestPeriodCreated =
+    const RealtimeEventEventEnum._('approvalRequestPeriodCreated');
+const RealtimeEventEventEnum
+    _$realtimeEventEventEnum_approvalRequestPeriodUpdated =
+    const RealtimeEventEventEnum._('approvalRequestPeriodUpdated');
+const RealtimeEventEventEnum _$realtimeEventEventEnum_ownerAlertPeriodCreated =
+    const RealtimeEventEventEnum._('ownerAlertPeriodCreated');
 
 RealtimeEventEventEnum _$realtimeEventEventEnumValueOf(String name) {
   switch (name) {
@@ -64,6 +72,12 @@ RealtimeEventEventEnum _$realtimeEventEventEnumValueOf(String name) {
       return _$realtimeEventEventEnum_kioskPeriodUpdated;
     case 'kioskOrderPeriodWaiting':
       return _$realtimeEventEventEnum_kioskOrderPeriodWaiting;
+    case 'approvalRequestPeriodCreated':
+      return _$realtimeEventEventEnum_approvalRequestPeriodCreated;
+    case 'approvalRequestPeriodUpdated':
+      return _$realtimeEventEventEnum_approvalRequestPeriodUpdated;
+    case 'ownerAlertPeriodCreated':
+      return _$realtimeEventEventEnum_ownerAlertPeriodCreated;
     default:
       throw ArgumentError(name);
   }
@@ -84,6 +98,9 @@ final BuiltSet<RealtimeEventEventEnum> _$realtimeEventEventEnumValues =
   _$realtimeEventEventEnum_guestRequestPeriodUpdated,
   _$realtimeEventEventEnum_kioskPeriodUpdated,
   _$realtimeEventEventEnum_kioskOrderPeriodWaiting,
+  _$realtimeEventEventEnum_approvalRequestPeriodCreated,
+  _$realtimeEventEventEnum_approvalRequestPeriodUpdated,
+  _$realtimeEventEventEnum_ownerAlertPeriodCreated,
 ]);
 
 const RealtimeEventAlertEnum _$realtimeEventAlertEnum_endingSoon =
@@ -134,6 +151,9 @@ class _$RealtimeEventEventEnumSerializer
     'guestRequestPeriodUpdated': 'guest_request.updated',
     'kioskPeriodUpdated': 'kiosk.updated',
     'kioskOrderPeriodWaiting': 'kiosk_order.waiting',
+    'approvalRequestPeriodCreated': 'approval_request.created',
+    'approvalRequestPeriodUpdated': 'approval_request.updated',
+    'ownerAlertPeriodCreated': 'owner_alert.created',
   };
   static const Map<Object, String> _fromWire = const <Object, String>{
     'workspace.updated': 'workspacePeriodUpdated',
@@ -149,6 +169,9 @@ class _$RealtimeEventEventEnumSerializer
     'guest_request.updated': 'guestRequestPeriodUpdated',
     'kiosk.updated': 'kioskPeriodUpdated',
     'kiosk_order.waiting': 'kioskOrderPeriodWaiting',
+    'approval_request.created': 'approvalRequestPeriodCreated',
+    'approval_request.updated': 'approvalRequestPeriodUpdated',
+    'owner_alert.created': 'ownerAlertPeriodCreated',
   };
 
   @override

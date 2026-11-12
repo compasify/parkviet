@@ -20,6 +20,9 @@ module Spree
         guest_request.updated
         kiosk.updated
         kiosk_order.waiting
+        approval_request.created
+        approval_request.updated
+        owner_alert.created
       ].freeze
 
       # `refs` may only point at other records, so no caller can slip money,

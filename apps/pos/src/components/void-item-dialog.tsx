@@ -1,24 +1,33 @@
 import { useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { KitchenVoidInput } from '../hooks/use-workspaces';
+import { type ApprovalAsk, askFromFailure } from '../lib/approval-requests';
 import { useModalFocus } from '../lib/dialog-focus';
 import { kitchenSent } from '../lib/kitchen';
-import type { PosLineItem } from '../lib/pos-context';
+import type { PosLineItem, PosWorkspace } from '../lib/pos-context';
 import { conflictReason, describeFailure } from '../lib/request-failure';
 import { VOID_NOTE_MAX, VOID_OTHER } from '../lib/table-kitchen';
 import { approvalAction } from '../lib/tables';
+
+const KITCHEN_VOID_ACTION = 'kitchen.void_sent';
+
 import { PosIcon } from './pos-icon';
+import { RemoteApprovalButton } from './remote-approval-button';
 
 // Takes back items the kitchen was told about: how many, why (the branch's
 // list, or "other" with a note) and, for someone who may not void, the code
-// of a manager's approval. The station prints a void ticket.
+// of a manager's approval, typed in or granted from the manager's phone. The
+// station prints a void ticket.
 export function VoidItemDialog({
+  workspace,
   line,
   reasons,
   canVoid,
   onVoid,
   onClose,
 }: {
+  // The order, for asking the manager's phone.
+  workspace?: PosWorkspace;
   line: PosLineItem;
   reasons: string[];
   // The person may void without an approval.
@@ -38,6 +47,7 @@ export function VoidItemDialog({
   const [needsApproval, setNeedsApproval] = useState(!canVoid);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [ask, setAsk] = useState<ApprovalAsk | null>(null);
   const noteRequired = reason === VOID_OTHER;
   const valid =
     Number.isInteger(quantity) &&
@@ -46,8 +56,9 @@ export function VoidItemDialog({
     (!noteRequired || note.trim().length > 0) &&
     (!needsApproval || approvalId.trim().length > 0);
 
-  async function submit() {
-    if (!valid || busy) return;
+  async function submit(granted?: string) {
+    const approval = granted ?? approvalId.trim();
+    if (!(valid || (granted && quantity >= 1 && quantity <= sent)) || busy) return;
     setBusy(true);
     setError('');
     try {
@@ -55,12 +66,15 @@ export function VoidItemDialog({
         quantity,
         reason_code: reason,
         note: note.trim() || undefined,
-        approval_id: approvalId.trim() || undefined,
+        approval_id: approval || undefined,
       });
       onClose();
     } catch (failure) {
       if (approvalAction(failure)) {
         setNeedsApproval(true);
+        setAsk(
+          askFromFailure(failure, { revision: workspace ? String(workspace.revision) : undefined }),
+        );
         setError(t('kitchenVoidNeedsApproval'));
       } else {
         const reasonKey = conflictReason(failure);
@@ -74,6 +88,16 @@ export function VoidItemDialog({
       setBusy(false);
     }
   }
+
+  // Granted on the manager's phone: the code goes in and the void goes through.
+  function granted(id: string) {
+    setApprovalId(id);
+    void submit(id);
+  }
+  // Asked before trying, by someone who may not void, the order as it stands.
+  const remoteAsk =
+    ask ??
+    (workspace ? { action: KITCHEN_VOID_ACTION, revision: String(workspace.revision) } : null);
 
   return (
     <div className="pos-popup-backdrop">
@@ -150,6 +174,15 @@ export function VoidItemDialog({
                 onChange={(event) => setApprovalId(event.target.value)}
               />
             </label>
+          ) : null}
+          {needsApproval && workspace ? (
+            <RemoteApprovalButton
+              branchId={workspace.branch_id}
+              subject={{ workspace_id: workspace.id }}
+              ask={remoteAsk}
+              reason={note.trim() || t(`kitchenVoidReason_${reason}`, { defaultValue: reason })}
+              onGranted={granted}
+            />
           ) : null}
           {error ? (
             <p className="error" role="alert">

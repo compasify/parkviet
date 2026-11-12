@@ -94,7 +94,8 @@ RSpec.describe 'POS reservation deposits' do
 
     expect { refund.call }.to raise_error(Spree::Pos::Conflict) { |error|
       expect(error.reason).to eq('approval_required')
-      expect(error.details[:action]).to eq('reservation.refund_deposit')
+      # What a manager's phone is asked for: the booking as it is now and the amount.
+      expect(error.details).to eq(action: 'reservation.refund_deposit', revision: reservation.reload.revision, amount: '200000.0')
     }
     expect(Spree::Pos::LiabilityPayout.where(received_funds_id: deposit.received_funds_id)).to be_empty
 

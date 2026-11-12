@@ -19,6 +19,11 @@ import 'package:pos_api/src/model/append_items_input.dart';
 import 'package:pos_api/src/model/append_items_meta.dart';
 import 'package:pos_api/src/model/append_items_result.dart';
 import 'package:pos_api/src/model/approval.dart';
+import 'package:pos_api/src/model/approval_request.dart';
+import 'package:pos_api/src/model/approval_request_decline_input.dart';
+import 'package:pos_api/src/model/approval_request_input.dart';
+import 'package:pos_api/src/model/approval_request_list.dart';
+import 'package:pos_api/src/model/approval_request_result.dart';
 import 'package:pos_api/src/model/approval_revision.dart';
 import 'package:pos_api/src/model/area.dart';
 import 'package:pos_api/src/model/area_input.dart';
@@ -196,6 +201,16 @@ import 'package:pos_api/src/model/modifier_group.dart';
 import 'package:pos_api/src/model/modifier_group_options_inner.dart';
 import 'package:pos_api/src/model/modifier_pick.dart';
 import 'package:pos_api/src/model/modifier_selection.dart';
+import 'package:pos_api/src/model/owner_alert.dart';
+import 'package:pos_api/src/model/owner_alert_list.dart';
+import 'package:pos_api/src/model/owner_branch.dart';
+import 'package:pos_api/src/model/owner_branch_list.dart';
+import 'package:pos_api/src/model/owner_hour_row.dart';
+import 'package:pos_api/src/model/owner_open_unit.dart';
+import 'package:pos_api/src/model/owner_open_unit_list.dart';
+import 'package:pos_api/src/model/owner_source_row.dart';
+import 'package:pos_api/src/model/owner_today.dart';
+import 'package:pos_api/src/model/owner_today_result.dart';
 import 'package:pos_api/src/model/payment_request.dart';
 import 'package:pos_api/src/model/payment_request_input.dart';
 import 'package:pos_api/src/model/payment_request_resolve_input.dart';
@@ -332,6 +347,13 @@ import 'package:pos_api/src/model/print_page_label.dart';
 import 'package:pos_api/src/model/print_pay_qr.dart';
 import 'package:pos_api/src/model/print_row.dart';
 import 'package:pos_api/src/model/printer.dart';
+import 'package:pos_api/src/model/push_registration.dart';
+import 'package:pos_api/src/model/push_registration_input.dart';
+import 'package:pos_api/src/model/push_registration_result.dart';
+import 'package:pos_api/src/model/push_registration_state.dart';
+import 'package:pos_api/src/model/push_relay_settings.dart';
+import 'package:pos_api/src/model/push_relay_settings_input.dart';
+import 'package:pos_api/src/model/push_relay_settings_result.dart';
 import 'package:pos_api/src/model/ready_feed.dart';
 import 'package:pos_api/src/model/ready_feed_item.dart';
 import 'package:pos_api/src/model/ready_feed_result.dart';
@@ -452,6 +474,11 @@ part 'serializers.g.dart';
   AppendItemsMeta,
   AppendItemsResult,
   Approval,
+  ApprovalRequest,
+  ApprovalRequestDeclineInput,
+  ApprovalRequestInput,
+  ApprovalRequestList,
+  ApprovalRequestResult,
   ApprovalRevision,
   Area,
   AreaInput,
@@ -632,6 +659,16 @@ part 'serializers.g.dart';
   ModifierGroupOptionsInner,
   ModifierPick,
   ModifierSelection,
+  OwnerAlert,
+  OwnerAlertList,
+  OwnerBranch,
+  OwnerBranchList,
+  OwnerHourRow,
+  OwnerOpenUnit,
+  OwnerOpenUnitList,
+  OwnerSourceRow,
+  OwnerToday,
+  OwnerTodayResult,
   PaymentRequest,
   PaymentRequestInput,
   PaymentRequestResolveInput,
@@ -768,6 +805,13 @@ part 'serializers.g.dart';
   PrintPayQr,
   PrintRow,
   Printer,
+  PushRegistration,
+  PushRegistrationInput,
+  PushRegistrationResult,
+  PushRegistrationState,
+  PushRelaySettings,
+  PushRelaySettingsInput,
+  PushRelaySettingsResult,
   ReadyFeed,
   ReadyFeedItem,
   ReadyFeedResult,
@@ -938,8 +982,16 @@ Serializers serializers = (_$serializers.toBuilder()
         () => ListBuilder<RecipeIngredientsInner>(),
       )
       ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(OwnerHourRow)]),
+        () => ListBuilder<OwnerHourRow>(),
+      )
+      ..addBuilderFactory(
         const FullType(BuiltList, [FullType(PrintBlockOneOf4PartiesInner)]),
         () => ListBuilder<PrintBlockOneOf4PartiesInner>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(OwnerBranch)]),
+        () => ListBuilder<OwnerBranch>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(MenuItemConfigComponentsInner)]),
@@ -1027,6 +1079,10 @@ Serializers serializers = (_$serializers.toBuilder()
         () => ListBuilder<BottleKeep>(),
       )
       ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(OwnerSourceRow)]),
+        () => ListBuilder<OwnerSourceRow>(),
+      )
+      ..addBuilderFactory(
         const FullType(BuiltList, [FullType(ModifierGroupOptionsInner)]),
         () => ListBuilder<ModifierGroupOptionsInner>(),
       )
@@ -1065,6 +1121,10 @@ Serializers serializers = (_$serializers.toBuilder()
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(LineModifier)]),
         () => ListBuilder<LineModifier>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(ApprovalRequest)]),
+        () => ListBuilder<ApprovalRequest>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(ResourceRef)]),
@@ -1221,6 +1281,10 @@ Serializers serializers = (_$serializers.toBuilder()
         () => ListBuilder<Resource>(),
       )
       ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(OwnerOpenUnit)]),
+        () => ListBuilder<OwnerOpenUnit>(),
+      )
+      ..addBuilderFactory(
         const FullType(BuiltList, [FullType(StockAlert)]),
         () => ListBuilder<StockAlert>(),
       )
@@ -1331,6 +1395,10 @@ Serializers serializers = (_$serializers.toBuilder()
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(Reservation)]),
         () => ListBuilder<Reservation>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(OwnerAlert)]),
+        () => ListBuilder<OwnerAlert>(),
       )
       ..add(KitchenStationInput.serializer)
       ..add(MealAccount.serializer)

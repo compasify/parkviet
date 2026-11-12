@@ -407,6 +407,7 @@ export function OrderLines({
                       {line.sale_line_id && !timedLine && (canApplyDiscount || canOverridePrice) ? (
                         <LinePriceEditor
                           key={`${line.id}:${line.unit_price ?? line.price}:${line.list_price ?? ''}`}
+                          workspace={workspace}
                           line={line}
                           currency={currency}
                           disabled={disabled}
@@ -426,6 +427,7 @@ export function OrderLines({
                   <td className="basket-item-discount">
                     <ItemDiscountEditor
                       key={`${line.id}:${line.item_discount?.value_type}:${line.item_discount?.value}:${line.item_discount?.source}:${line.line_discount?.id}`}
+                      workspace={workspace}
                       line={line}
                       currency={currency}
                       disabled={disabled}

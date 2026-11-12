@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { PageState, PosPage } from '../components/pos-page';
 import { usePosSelection } from '../components/pos-selection';
 import { ReceiptPrintPortal } from '../components/receipt-sheet';
+import { RemoteApprovalButton } from '../components/remote-approval-button';
 import {
   BOTTLE_KEEP_MODULE,
   type BottleKeep,
@@ -17,6 +18,9 @@ import { writesLocked } from '../lib/pos-context';
 import { createBrowserPrintAdapter } from '../lib/print-adapter';
 import { deliverDirect } from '../lib/print-adapters';
 import { conflictReason, describeFailure } from '../lib/request-failure';
+
+// A kept bottle's level corrected with a manager's approval.
+const BOTTLE_ADJUST_ACTION = 'bottle_keep.adjust';
 
 const printer = createBrowserPrintAdapter();
 const LABEL_PAPER = '80mm';
@@ -502,6 +506,20 @@ function BottleDetail({
                 onChange={(event) => setApprovalId(event.target.value)}
               />
             </label>
+          ) : null}
+          {!canApprove && !approvalId.trim() && nextLevel !== null && note.trim() ? (
+            <RemoteApprovalButton
+              branchId={branchId}
+              subject={{ bottle_keep_id: bottle.id }}
+              ask={{ action: BOTTLE_ADJUST_ACTION, revision: String(bottle.revision) }}
+              reason={note}
+              disabled={disabled || busy}
+              onGranted={(id) =>
+                void run(() =>
+                  commands.adjust(bottle, { levelPercent: nextLevel, note, approvalId: id }),
+                )
+              }
+            />
           ) : null}
           <div className="row">
             <button

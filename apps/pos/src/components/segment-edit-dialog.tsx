@@ -1,11 +1,15 @@
 import { useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { type ApprovalAsk, askFromFailure } from '../lib/approval-requests';
 import { useModalFocus } from '../lib/dialog-focus';
-import type { PosTimedSegment } from '../lib/pos-context';
+import type { PosTimedSegment, PosWorkspace } from '../lib/pos-context';
 import { conflictReason, describeFailure } from '../lib/request-failure';
 import { approvalAction } from '../lib/tables';
 import { fromLocalInput, timedFailureKey, toLocalInput } from '../lib/timed-clock';
 import { PosIcon } from './pos-icon';
+import { RemoteApprovalButton } from './remote-approval-button';
+
+const TIMED_EDIT_ACTION = 'timed.edit_segment';
 
 export type SegmentEditInput = {
   started_at?: string;
@@ -19,11 +23,14 @@ export type SegmentEditInput = {
 // not correct times, the code of a manager's approval. A running stretch only
 // moves its start; the server refuses times later than its own clock.
 export function SegmentEditDialog({
+  workspace,
   segment,
   canEdit,
   onSave,
   onClose,
 }: {
+  // The order of the clock, for asking the manager's phone.
+  workspace?: PosWorkspace;
   segment: PosTimedSegment;
   // The person may correct times without an approval.
   canEdit: boolean;
@@ -42,17 +49,19 @@ export function SegmentEditDialog({
   const [needsApproval, setNeedsApproval] = useState(!canEdit);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [ask, setAsk] = useState<ApprovalAsk | null>(null);
   const startChanged = start !== toLocalInput(segment.started_at);
   const endChanged = !running && end !== toLocalInput(segment.ended_at);
-  const valid =
+  const changed =
     (startChanged || endChanged) &&
     (!startChanged || fromLocalInput(start) !== null) &&
     (!endChanged || fromLocalInput(end) !== null) &&
-    reason.trim().length > 0 &&
-    (!needsApproval || approvalId.trim().length > 0);
+    reason.trim().length > 0;
+  const valid = changed && (!needsApproval || approvalId.trim().length > 0);
 
-  async function submit() {
-    if (!valid || busy) return;
+  async function submit(granted?: string) {
+    const approval = granted ?? approvalId.trim();
+    if (!(granted ? changed : valid) || busy) return;
     setBusy(true);
     setError('');
     try {
@@ -60,12 +69,13 @@ export function SegmentEditDialog({
         ...(startChanged ? { started_at: fromLocalInput(start) as string } : {}),
         ...(endChanged ? { ended_at: fromLocalInput(end) as string } : {}),
         reason: reason.trim(),
-        ...(approvalId.trim() ? { approval_id: approvalId.trim() } : {}),
+        ...(approval ? { approval_id: approval } : {}),
       });
       onClose();
     } catch (failure) {
       if (approvalAction(failure)) {
         setNeedsApproval(true);
+        setAsk(askFromFailure(failure));
         setError(t('timedEditNeedsApproval'));
       } else {
         const key = timedFailureKey(conflictReason(failure));
@@ -145,6 +155,23 @@ export function SegmentEditDialog({
                 onChange={(event) => setApprovalId(event.target.value)}
               />
             </label>
+          ) : null}
+          {needsApproval && workspace ? (
+            <RemoteApprovalButton
+              branchId={workspace.branch_id}
+              subject={{ workspace_id: workspace.id }}
+              ask={
+                ask ??
+                (changed
+                  ? { action: TIMED_EDIT_ACTION, revision: String(workspace.revision) }
+                  : null)
+              }
+              reason={reason}
+              onGranted={(id) => {
+                setApprovalId(id);
+                void submit(id);
+              }}
+            />
           ) : null}
           {error ? (
             <p className="error" role="alert">

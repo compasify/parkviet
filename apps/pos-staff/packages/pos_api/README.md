@@ -66,6 +66,12 @@ All URIs are relative to *http://localhost*
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
 [*DefaultApi*](doc/DefaultApi.md) | [**posApprovalCreate**](doc/DefaultApi.md#posapprovalcreate) | **POST** /api/v3/admin/pos/approvals | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posApprovalRequestCancel**](doc/DefaultApi.md#posapprovalrequestcancel) | **POST** /api/v3/admin/pos/approval_requests/{id}/cancel | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posApprovalRequestCreate**](doc/DefaultApi.md#posapprovalrequestcreate) | **POST** /api/v3/admin/pos/approval_requests | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posApprovalRequestDecline**](doc/DefaultApi.md#posapprovalrequestdecline) | **POST** /api/v3/admin/pos/approval_requests/{id}/decline | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posApprovalRequestGrant**](doc/DefaultApi.md#posapprovalrequestgrant) | **POST** /api/v3/admin/pos/approval_requests/{id}/grant | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posApprovalRequestList**](doc/DefaultApi.md#posapprovalrequestlist) | **GET** /api/v3/admin/pos/approval_requests | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posApprovalRequestShow**](doc/DefaultApi.md#posapprovalrequestshow) | **GET** /api/v3/admin/pos/approval_requests/{id} | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posAreaArchive**](doc/DefaultApi.md#posareaarchive) | **POST** /api/v3/admin/pos/areas/{id}/archive | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posAreaCreate**](doc/DefaultApi.md#posareacreate) | **POST** /api/v3/admin/pos/areas | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posAreaUpdate**](doc/DefaultApi.md#posareaupdate) | **PATCH** /api/v3/admin/pos/areas/{id} | 
@@ -161,6 +167,10 @@ Class | Method | HTTP request | Description
 [*DefaultApi*](doc/DefaultApi.md) | [**posMenuItems**](doc/DefaultApi.md#posmenuitems) | **GET** /api/v3/admin/pos/menu_items | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posMenuSoldOut**](doc/DefaultApi.md#posmenusoldout) | **PUT** /api/v3/admin/pos/menu_availabilities | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posModifierGroups**](doc/DefaultApi.md#posmodifiergroups) | **GET** /api/v3/admin/pos/modifier_groups | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posOwnerAlerts**](doc/DefaultApi.md#posowneralerts) | **GET** /api/v3/admin/pos/owner/alerts | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posOwnerBranches**](doc/DefaultApi.md#posownerbranches) | **GET** /api/v3/admin/pos/owner/branches | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posOwnerOpenUnits**](doc/DefaultApi.md#posowneropenunits) | **GET** /api/v3/admin/pos/owner/open_units | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posOwnerToday**](doc/DefaultApi.md#posownertoday) | **GET** /api/v3/admin/pos/owner/today | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posPaymentRequest**](doc/DefaultApi.md#pospaymentrequest) | **POST** /api/v3/admin/pos/workspaces/{workspace_id}/payment_request | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posPaymentRequestResolve**](doc/DefaultApi.md#pospaymentrequestresolve) | **POST** /api/v3/admin/pos/workspaces/{workspace_id}/payment_request/resolve | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posPlatformOrderCancel**](doc/DefaultApi.md#posplatformordercancel) | **POST** /api/v3/admin/pos/platform_orders/{id}/cancel | 
@@ -184,6 +194,13 @@ Class | Method | HTTP request | Description
 [*DefaultApi*](doc/DefaultApi.md) | [**posPrinterTest**](doc/DefaultApi.md#posprintertest) | **POST** /api/v3/admin/pos/printers/{id}/test | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posPrinterUpdate**](doc/DefaultApi.md#posprinterupdate) | **PATCH** /api/v3/admin/pos/printers/{id} | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posPrinters**](doc/DefaultApi.md#posprinters) | **GET** /api/v3/admin/pos/printers | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posPushRegistrationDelete**](doc/DefaultApi.md#pospushregistrationdelete) | **DELETE** /api/v3/admin/pos/push_registration | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posPushRegistrationShow**](doc/DefaultApi.md#pospushregistrationshow) | **GET** /api/v3/admin/pos/push_registration | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posPushRegistrationUpdate**](doc/DefaultApi.md#pospushregistrationupdate) | **PUT** /api/v3/admin/pos/push_registration | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posPushRelaySettingsCheck**](doc/DefaultApi.md#pospushrelaysettingscheck) | **POST** /api/v3/admin/pos/push_relay_settings/check | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posPushRelaySettingsDelete**](doc/DefaultApi.md#pospushrelaysettingsdelete) | **DELETE** /api/v3/admin/pos/push_relay_settings | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posPushRelaySettingsShow**](doc/DefaultApi.md#pospushrelaysettingsshow) | **GET** /api/v3/admin/pos/push_relay_settings | 
+[*DefaultApi*](doc/DefaultApi.md) | [**posPushRelaySettingsUpdate**](doc/DefaultApi.md#pospushrelaysettingsupdate) | **PUT** /api/v3/admin/pos/push_relay_settings | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posReceiptPrintVoid**](doc/DefaultApi.md#posreceiptprintvoid) | **POST** /api/v3/admin/pos/receipts/{id}/prints/{print_id}/void | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posRecipe**](doc/DefaultApi.md#posrecipe) | **GET** /api/v3/admin/pos/recipes | 
 [*DefaultApi*](doc/DefaultApi.md) | [**posRecipeSave**](doc/DefaultApi.md#posrecipesave) | **PUT** /api/v3/admin/pos/recipes | 
@@ -263,6 +280,11 @@ Class | Method | HTTP request | Description
  - [AppendItemsMeta](doc/AppendItemsMeta.md)
  - [AppendItemsResult](doc/AppendItemsResult.md)
  - [Approval](doc/Approval.md)
+ - [ApprovalRequest](doc/ApprovalRequest.md)
+ - [ApprovalRequestDeclineInput](doc/ApprovalRequestDeclineInput.md)
+ - [ApprovalRequestInput](doc/ApprovalRequestInput.md)
+ - [ApprovalRequestList](doc/ApprovalRequestList.md)
+ - [ApprovalRequestResult](doc/ApprovalRequestResult.md)
  - [ApprovalRevision](doc/ApprovalRevision.md)
  - [Area](doc/Area.md)
  - [AreaInput](doc/AreaInput.md)
@@ -440,6 +462,16 @@ Class | Method | HTTP request | Description
  - [ModifierGroupOptionsInner](doc/ModifierGroupOptionsInner.md)
  - [ModifierPick](doc/ModifierPick.md)
  - [ModifierSelection](doc/ModifierSelection.md)
+ - [OwnerAlert](doc/OwnerAlert.md)
+ - [OwnerAlertList](doc/OwnerAlertList.md)
+ - [OwnerBranch](doc/OwnerBranch.md)
+ - [OwnerBranchList](doc/OwnerBranchList.md)
+ - [OwnerHourRow](doc/OwnerHourRow.md)
+ - [OwnerOpenUnit](doc/OwnerOpenUnit.md)
+ - [OwnerOpenUnitList](doc/OwnerOpenUnitList.md)
+ - [OwnerSourceRow](doc/OwnerSourceRow.md)
+ - [OwnerToday](doc/OwnerToday.md)
+ - [OwnerTodayResult](doc/OwnerTodayResult.md)
  - [PaymentRequest](doc/PaymentRequest.md)
  - [PaymentRequestInput](doc/PaymentRequestInput.md)
  - [PaymentRequestResolveInput](doc/PaymentRequestResolveInput.md)
@@ -576,6 +608,13 @@ Class | Method | HTTP request | Description
  - [PrintPayQr](doc/PrintPayQr.md)
  - [PrintRow](doc/PrintRow.md)
  - [Printer](doc/Printer.md)
+ - [PushRegistration](doc/PushRegistration.md)
+ - [PushRegistrationInput](doc/PushRegistrationInput.md)
+ - [PushRegistrationResult](doc/PushRegistrationResult.md)
+ - [PushRegistrationState](doc/PushRegistrationState.md)
+ - [PushRelaySettings](doc/PushRelaySettings.md)
+ - [PushRelaySettingsInput](doc/PushRelaySettingsInput.md)
+ - [PushRelaySettingsResult](doc/PushRelaySettingsResult.md)
  - [ReadyFeed](doc/ReadyFeed.md)
  - [ReadyFeedItem](doc/ReadyFeedItem.md)
  - [ReadyFeedResult](doc/ReadyFeedResult.md)

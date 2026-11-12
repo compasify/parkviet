@@ -115,10 +115,12 @@ module Spree
           return nil if policy.allows?(reservation.branch, Capabilities::APPROVE)
 
           message = 'Deposit approval is required.'
-          raise Conflict.new(message, reason: 'approval_required', details: { action: action }) if approval_id.blank?
+          # What to ask a manager for: the action, the booking as it is now and the amount.
+          details = { action: action, revision: reservation.revision, amount: amount.to_s('F') }
+          raise Conflict.new(message, reason: 'approval_required', details: details) if approval_id.blank?
 
           approval = Approval.locate(Approval.for_store(reservation.store).where(branch_id: reservation.branch_id), approval_id)
-          raise Conflict.new(message, reason: 'approval_required', details: { action: action }) if approval.nil?
+          raise Conflict.new(message, reason: 'approval_required', details: details) if approval.nil?
 
           approval.consume!(action: action, amount: amount, currency: reservation.store.default_currency,
                             revision: reservation.revision, subject: reservation, requester: staff)

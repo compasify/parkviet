@@ -6,9 +6,11 @@ import {
 } from '@parkviet/pos-shared/money';
 import { useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { type ApprovalAsk, askFromFailure } from '../lib/approval-requests';
 import type { PosWorkspace } from '../lib/pos-context';
 import { describeFailure } from '../lib/request-failure';
 import { PosIcon } from './pos-icon';
+import { RemoteApprovalButton } from './remote-approval-button';
 
 // A flat discount arrives canonical ("20000.0"); the cashier edits whole VND.
 function serverValue(discount: PosWorkspace['discount']): string | undefined {
@@ -54,6 +56,8 @@ export function DiscountForm({
   const [reason, setReason] = useState(workspace.discount?.reason || t('discountTitle'));
   const [approvalId, setApprovalId] = useState('');
   const [error, setError] = useState('');
+  // The refusal to ask the manager's phone about, and what it was for.
+  const [remote, setRemote] = useState<{ ask: ApprovalAsk; clear: boolean } | null>(null);
   const couponId = useId();
   const couponRef = useRef<HTMLInputElement>(null);
   const reasonId = useId();
@@ -84,8 +88,13 @@ export function DiscountForm({
     }
   }
 
-  async function submit(event: React.FormEvent) {
-    event.preventDefault();
+  function refused(failure: unknown, clearing: boolean) {
+    const ask = askFromFailure(failure);
+    setRemote(ask ? { ask, clear: clearing } : null);
+    setError(describeFailure(failure, t, 'discountFailed'));
+  }
+
+  async function apply(granted?: string) {
     if (disabled || parsed === null || !reason.trim()) return;
     setError('');
     try {
@@ -93,23 +102,28 @@ export function DiscountForm({
         valueType,
         value: parsed,
         reason: reason.trim(),
-        approvalId: approvalId.trim() || undefined,
+        approvalId: granted ?? (approvalId.trim() || undefined),
       });
       onClose?.();
     } catch (failure) {
-      setError(describeFailure(failure, t, 'discountFailed'));
+      refused(failure, false);
     }
   }
 
-  async function clear() {
+  async function submit(event: React.FormEvent) {
+    event.preventDefault();
+    await apply();
+  }
+
+  async function clear(granted?: string) {
     if (disabled) return;
     setError('');
     try {
-      await onClear(approvalId.trim() || undefined);
+      await onClear(granted ?? (approvalId.trim() || undefined));
       setReason(t('discountTitle'));
       onClose?.();
     } catch (failure) {
-      setError(describeFailure(failure, t, 'discountFailed'));
+      refused(failure, true);
     }
   }
 
@@ -269,9 +283,21 @@ export function DiscountForm({
             onChange={(event) => setApprovalId(event.target.value)}
             disabled={disabled}
             title={disabledReason}
-            required={!workspace.discount}
           />
         </label>
+      ) : null}
+      {!canApply && remote ? (
+        <RemoteApprovalButton
+          branchId={workspace.branch_id}
+          subject={{ workspace_id: workspace.id }}
+          ask={remote.ask}
+          reason={reason}
+          disabled={disabled}
+          onGranted={(id) => {
+            setApprovalId(id);
+            void (remote.clear ? clear(id) : apply(id));
+          }}
+        />
       ) : null}
       <div className="row">
         <button

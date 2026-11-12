@@ -6,11 +6,16 @@ import {
 } from '@parkviet/pos-shared/money';
 import { useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { type ApprovalAsk, askFromFailure } from '../lib/approval-requests';
 import type { PosLineItem, PosWorkspace } from '../lib/pos-context';
 import { describeFailure } from '../lib/request-failure';
 import { PosIcon } from './pos-icon';
+import { RemoteApprovalButton } from './remote-approval-button';
+
+type Attempt = (approvalId?: string) => Promise<PosWorkspace>;
 
 export function ItemDiscountEditor({
+  workspace,
   line,
   currency,
   disabled,
@@ -19,6 +24,8 @@ export function ItemDiscountEditor({
   onApply,
   onClear,
 }: {
+  // The order, for asking the manager's phone instead of typing a code.
+  workspace?: PosWorkspace;
   line: PosLineItem;
   currency: string;
   disabled: boolean;
@@ -45,6 +52,8 @@ export function ItemDiscountEditor({
   const [reason, setReason] = useState(t('itemDiscountReason'));
   const [approvalId, setApprovalId] = useState('');
   const [error, setError] = useState('');
+  // A refusal for want of an approval, and the attempt to make again once granted.
+  const [remote, setRemote] = useState<{ ask: ApprovalAsk; retry: Attempt } | null>(null);
   const reasonId = useId();
   const reasonRef = useRef<HTMLInputElement>(null);
   const details = useRef<HTMLDetailsElement>(null);
@@ -58,12 +67,19 @@ export function ItemDiscountEditor({
     current?.amount && current.amount !== '0.0' && current.amount !== '0',
   );
 
-  async function run(action: () => Promise<PosWorkspace>) {
+  // Without a code the person may still try where the manager's phone can be
+  // asked: the refusal names what to ask for.
+  const needsCode = !canApplyDiscount && !approvalId.trim() && !workspace;
+
+  async function run(action: Attempt, granted?: string) {
     setError('');
     try {
-      await action();
+      await action(granted ?? (approvalId.trim() || undefined));
+      setRemote(null);
       if (details.current) details.current.open = false;
     } catch (failure) {
+      const ask = canApplyDiscount ? null : askFromFailure(failure);
+      setRemote(ask ? { ask, retry: action } : null);
       setError(describeFailure(failure, t));
     }
   }
@@ -89,20 +105,13 @@ export function ItemDiscountEditor({
             className="item-discount-editor pos-popup-card"
             onSubmit={(event) => {
               event.preventDefault();
-              if (
-                locked ||
-                parsed === null ||
-                !dirty ||
-                !reason.trim() ||
-                (!canApplyDiscount && !approvalId.trim())
-              )
-                return;
-              void run(() =>
+              if (locked || parsed === null || !dirty || !reason.trim() || needsCode) return;
+              void run((approval) =>
                 onApply({
                   valueType: type === 'percent' ? 'item_percent' : 'item_flat',
                   value: parsed,
                   reason: reason.trim(),
-                  approvalId: approvalId.trim() || undefined,
+                  approvalId: approval,
                 }),
               );
             }}
@@ -178,17 +187,24 @@ export function ItemDiscountEditor({
                 />
               </label>
             ) : null}
+            {workspace && remote ? (
+              <RemoteApprovalButton
+                branchId={workspace.branch_id}
+                subject={{ workspace_id: workspace.id }}
+                ask={remote.ask}
+                reason={reason}
+                disabled={locked}
+                onGranted={(id) => {
+                  setApprovalId(id);
+                  void run(remote.retry, id);
+                }}
+              />
+            ) : null}
             <div className="row">
               <button
                 type="submit"
                 className="primary-button"
-                disabled={
-                  locked ||
-                  !dirty ||
-                  parsed === null ||
-                  !reason.trim() ||
-                  (!canApplyDiscount && !approvalId.trim())
-                }
+                disabled={locked || !dirty || parsed === null || !reason.trim() || needsCode}
               >
                 {t('save')}
               </button>
@@ -196,8 +212,8 @@ export function ItemDiscountEditor({
                 <button
                   type="button"
                   className="item-discount-reset"
-                  disabled={locked || (!canApplyDiscount && !approvalId.trim())}
-                  onClick={() => void run(() => onClear(approvalId.trim() || undefined))}
+                  disabled={locked || needsCode}
+                  onClick={() => void run((approval) => onClear(approval))}
                 >
                   {t('itemDiscountAutomatic')}
                 </button>
@@ -225,16 +241,16 @@ export function ItemDiscountEditor({
           className="cell-edit-button cell-clear-button"
           title={disabledReason ?? t('discountClear')}
           aria-label={`${t('discountClear')} ${line.name}`}
-          disabled={locked || (!canApplyDiscount && !approvalId.trim())}
+          disabled={locked || needsCode}
           onClick={() =>
-            void run(() =>
+            void run((approval) =>
               line.line_discount
-                ? onClear(approvalId.trim() || undefined)
+                ? onClear(approval)
                 : onApply({
                     valueType: 'item_flat',
                     value: '0',
                     reason: reason.trim() || t('itemDiscountReason'),
-                    approvalId: approvalId.trim() || undefined,
+                    approvalId: approval,
                   }),
             )
           }

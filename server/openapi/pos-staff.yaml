@@ -5072,6 +5072,316 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TableCodeIssueResult'
+  /api/v3/admin/pos/approval_requests:
+    get:
+      operationId: posApprovalRequestList
+      description: >
+        Approval requests the reader may decide (branches where they hold
+        `pos.approval.grant`), newest first, or with `mine=true` the reader's
+        own. Pending requests past their time are answered as expired.
+      parameters:
+        - name: branch_id
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          description: One status, or `all`; `pending` by default.
+          schema:
+            type: string
+            enum: [pending, granted, declined, expired, canceled, all]
+        - name: mine
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: The requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApprovalRequestList'
+    post:
+      operationId: posApprovalRequestCreate
+      description: >
+        Asks a manager on another device for the approval a command answered
+        `approval_required` for: its action, the subject (`workspace_id` or
+        one of `reservation_id`, `bottle_keep_id`, `meal_account_id`,
+        `vehicle_visit_id`, `stored_value_account_id`), the revision and the
+        amount the command named. Checked like an approval at the counter.
+        Asking again for the same thing answers the pending request; a newer
+        revision cancels the older one. Announced with
+        `approval_request.created` and, when the store has a push relay,
+        pushed to approvers' owner devices.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApprovalRequestInput'
+      responses:
+        '201':
+          description: The pending request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApprovalRequestResult'
+        '409':
+          description: >
+            Refused; `error.details.reason` is `approval_action_invalid`,
+            `reason_invalid` or `amount_invalid`, or the revision is stale
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/approval_requests/{id}:
+    get:
+      operationId: posApprovalRequestShow
+      description: One request, for its requester or a manager who may decide it.
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: The request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApprovalRequestResult'
+  /api/v3/admin/pos/approval_requests/{id}/grant:
+    post:
+      operationId: posApprovalRequestGrant
+      description: >
+        Grants the request: issues the approval (`approval_id`) with the
+        caller as approver, valid for 10 minutes and bound to the request's
+        revision, and announces `approval.requested` and
+        `approval_request.updated`. A request that waited too long or whose
+        subject changed answers `expired` instead. Needs
+        `pos.approval.grant` at the branch; the requester never grants their own.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: The request after the decision
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApprovalRequestResult'
+        '409':
+          description: Refused; `error.details.reason` is `approver_is_requester` or `approval_request_decided`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/admin/pos/approval_requests/{id}/decline:
+    post:
+      operationId: posApprovalRequestDecline
+      description: Turns the request down, optionally with a reason. Same access as granting.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApprovalRequestDeclineInput'
+      responses:
+        '200':
+          description: The request after the decision
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApprovalRequestResult'
+  /api/v3/admin/pos/approval_requests/{id}/cancel:
+    post:
+      operationId: posApprovalRequestCancel
+      description: The requester stops waiting. A request already answered is answered as it is.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: The request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApprovalRequestResult'
+  /api/v3/admin/pos/owner/branches:
+    get:
+      operationId: posOwnerBranches
+      description: The active branches where the reader reads reports or grants approvals.
+      responses:
+        '200':
+          description: The branches
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OwnerBranchList'
+  /api/v3/admin/pos/owner/today:
+    get:
+      operationId: posOwnerToday
+      description: >
+        A branch's current business date: the sales report's own summary
+        (orders, sales, by source) and its sales by hour, plus open orders,
+        open shifts, canceled orders, voided items and pending approval
+        requests. Needs `pos.report.read` at the branch.
+      parameters:
+        - $ref: '#/components/parameters/ReportBranch'
+      responses:
+        '200':
+          description: The day
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OwnerTodayResult'
+  /api/v3/admin/pos/owner/open_units:
+    get:
+      operationId: posOwnerOpenUnits
+      description: >
+        The branch's open orders, oldest first: how long each has been open,
+        its running total and its kitchen items still waiting (late past the
+        station's threshold). Needs `pos.report.read`.
+      parameters:
+        - $ref: '#/components/parameters/ReportBranch'
+      responses:
+        '200':
+          description: The open orders
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OwnerOpenUnitList'
+  /api/v3/admin/pos/owner/alerts:
+    get:
+      operationId: posOwnerAlerts
+      description: The branch's alerts of the last day, newest first. Needs `pos.report.read`.
+      parameters:
+        - $ref: '#/components/parameters/ReportBranch'
+      responses:
+        '200':
+          description: The alerts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OwnerAlertList'
+  /api/v3/admin/pos/push_registration:
+    get:
+      operationId: posPushRegistrationShow
+      description: >
+        The calling owner device's push registration, and whether the store
+        has a push relay (without one the app hears events only while open).
+      responses:
+        '200':
+          description: The registration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushRegistrationResult'
+        '409':
+          description: Refused; `error.details.reason` is `owner_device_required`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      operationId: posPushRegistrationUpdate
+      description: Stores the device's push token (write-only) or turns push on or off.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PushRegistrationInput'
+      responses:
+        '200':
+          description: The registration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushRegistrationResult'
+    delete:
+      operationId: posPushRegistrationDelete
+      description: Forgets the device's push token.
+      parameters:
+        - $ref: '#/components/parameters/KitchenIdempotencyKey'
+      responses:
+        '200':
+          description: No registration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushRegistrationResult'
+  /api/v3/admin/pos/push_relay_settings:
+    get:
+      operationId: posPushRelaySettingsShow
+      description: The store's push relay, or null. The key is never returned. Needs `write_pos_topology`.
+      responses:
+        '200':
+          description: The settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushRelaySettingsResult'
+    put:
+      operationId: posPushRelaySettingsUpdate
+      description: Sets the relay's HTTPS address and signing key; without `key` the stored key is kept.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PushRelaySettingsInput'
+      responses:
+        '200':
+          description: The settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushRelaySettingsResult'
+    delete:
+      operationId: posPushRelaySettingsDelete
+      description: Removes the relay; push stops.
+      responses:
+        '200':
+          description: No settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushRelaySettingsResult'
+  /api/v3/admin/pos/push_relay_settings/check:
+    post:
+      operationId: posPushRelaySettingsCheck
+      description: Sends the relay a signed `relay.check` and keeps the outcome.
+      responses:
+        '200':
+          description: The relay answered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushRelaySettingsResult'
+        '409':
+          description: Refused; `error.details.reason` is `push_relay_missing` or `push_relay_unreachable`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 components:
   parameters:
     Id:
@@ -5184,6 +5494,9 @@ components:
             - guest_request.updated
             - kiosk.updated
             - kiosk_order.waiting
+            - approval_request.created
+            - approval_request.updated
+            - owner_alert.created
         id:
           type: string
         branch_id:
@@ -11208,3 +11521,363 @@ components:
           $ref: '#/components/schemas/TableCode'
         meta:
           $ref: '#/components/schemas/TableCodeIssueMeta'
+    ApprovalRequest:
+      type: object
+      additionalProperties: false
+      required: [id, branch_id, branch_name, requester_id, requester_name, action, subject_type, subject_id, subject_label, revision,
+                 amount, currency, reason, status, approval_id, decided_by_name, decided_at, expires_at, created_at]
+      properties:
+        id:
+          type: string
+        branch_id:
+          type: string
+        branch_name:
+          type: string
+        requester_id:
+          type: string
+        requester_name:
+          type: [string, 'null']
+        action:
+          type: string
+        subject_type:
+          type: string
+          enum: [workspace, reservation, bottle_keep, meal_account, vehicle_visit, stored_value_account]
+        subject_id:
+          type: [string, 'null']
+        subject_label:
+          type: [string, 'null']
+          description: The table, order number, booking time, plate or code; never a customer's name.
+        revision:
+          type: string
+        amount:
+          type: [string, 'null']
+        currency:
+          type: [string, 'null']
+        reason:
+          type: [string, 'null']
+        status:
+          type: string
+          enum: [pending, granted, declined, expired, canceled]
+        approval_id:
+          type: [string, 'null']
+        decided_by_name:
+          type: [string, 'null']
+        decided_at:
+          type: [string, 'null']
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+    ApprovalRequestList:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ApprovalRequest'
+        meta:
+          type: object
+          additionalProperties: true
+    ApprovalRequestResult:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/ApprovalRequest'
+    ApprovalRequestInput:
+      type: object
+      required: [branch_id, action_name, revision]
+      properties:
+        branch_id:
+          type: string
+        action_name:
+          type: string
+        revision:
+          type: string
+        amount:
+          type: string
+        reason:
+          type: string
+          maxLength: 200
+        workspace_id:
+          type: string
+        reservation_id:
+          type: string
+        bottle_keep_id:
+          type: string
+        meal_account_id:
+          type: string
+        vehicle_visit_id:
+          type: string
+        stored_value_account_id:
+          type: string
+    ApprovalRequestDeclineInput:
+      type: object
+      properties:
+        reason:
+          type: string
+          maxLength: 200
+    OwnerBranch:
+      type: object
+      additionalProperties: false
+      required: [id, name, code, timezone, can_read_reports, can_approve]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        code:
+          type: string
+        timezone:
+          type: string
+        can_read_reports:
+          type: boolean
+        can_approve:
+          type: boolean
+    OwnerBranchList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/OwnerBranch'
+    OwnerSourceRow:
+      type: object
+      additionalProperties: false
+      required: [order_source, orders, sales_total, owed]
+      properties:
+        order_source:
+          type: string
+        orders:
+          type: integer
+        sales_total:
+          type: string
+        owed:
+          type: string
+    OwnerHourRow:
+      type: object
+      additionalProperties: false
+      required: [hour, orders, sales_total]
+      properties:
+        hour:
+          type: integer
+          minimum: 0
+          maximum: 23
+        orders:
+          type: integer
+        sales_total:
+          type: string
+    OwnerToday:
+      type: object
+      additionalProperties: false
+      required: [branch_id, business_date, timezone, currency, orders, sales_total, returns_total, net_sales, by_source, by_hour,
+                 open_units, open_orders, open_total, open_shifts, canceled_orders, voided_items, pending_approvals]
+      properties:
+        branch_id:
+          type: string
+        business_date:
+          type: string
+          format: date
+        timezone:
+          type: string
+        currency:
+          type: string
+        orders:
+          type: integer
+        sales_total:
+          type: string
+        returns_total:
+          type: string
+        net_sales:
+          type: string
+        by_source:
+          type: array
+          items:
+            $ref: '#/components/schemas/OwnerSourceRow'
+        by_hour:
+          type: array
+          items:
+            $ref: '#/components/schemas/OwnerHourRow'
+        open_units:
+          type: integer
+          description: Open orders on a table or room.
+        open_orders:
+          type: integer
+        open_total:
+          type: string
+        open_shifts:
+          type: integer
+        canceled_orders:
+          type: integer
+        voided_items:
+          type: integer
+        pending_approvals:
+          type: integer
+    OwnerTodayResult:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/OwnerToday'
+    OwnerOpenUnit:
+      type: object
+      additionalProperties: false
+      required: [workspace_id, resource_id, label, service_mode, status, guest_count, opened_at, minutes_open, total, kitchen_waiting,
+                 kitchen_late]
+      properties:
+        workspace_id:
+          type: string
+        resource_id:
+          type: [string, 'null']
+        label:
+          type: [string, 'null']
+        service_mode:
+          type: [string, 'null']
+        status:
+          type: string
+          enum: [editing, parked]
+        guest_count:
+          type: [integer, 'null']
+        opened_at:
+          type: string
+          format: date-time
+        minutes_open:
+          type: integer
+        total:
+          type: string
+        kitchen_waiting:
+          type: integer
+        kitchen_late:
+          type: boolean
+    OwnerOpenUnitList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/OwnerOpenUnit'
+    OwnerAlert:
+      type: object
+      additionalProperties: false
+      required: [id, branch_id, kind, subject_id, details, occurred_at]
+      properties:
+        id:
+          type: string
+        branch_id:
+          type: string
+        kind:
+          type: string
+          enum: [kitchen_late, shift_variance, void_burst, revenue_milestone, print_failed, einvoice_failed]
+        subject_id:
+          type: [string, 'null']
+        details:
+          type: object
+          additionalProperties: true
+          description: Minutes, counts and amounts; never a customer's name.
+        occurred_at:
+          type: string
+          format: date-time
+    OwnerAlertList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/OwnerAlert'
+    PushRegistration:
+      type: object
+      additionalProperties: false
+      required: [id, device_id, platform, enabled, last_error, last_error_at, last_delivered_at]
+      properties:
+        id:
+          type: string
+        device_id:
+          type: string
+        platform:
+          type: string
+          enum: [fcm, apns]
+        enabled:
+          type: boolean
+        last_error:
+          type: [string, 'null']
+        last_error_at:
+          type: [string, 'null']
+          format: date-time
+        last_delivered_at:
+          type: [string, 'null']
+          format: date-time
+    PushRegistrationState:
+      type: object
+      additionalProperties: false
+      required: [registration, relay]
+      properties:
+        registration:
+          oneOf:
+            - $ref: '#/components/schemas/PushRegistration'
+            - type: 'null'
+        relay:
+          type: boolean
+          description: The store has a push relay.
+    PushRegistrationResult:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/PushRegistrationState'
+    PushRegistrationInput:
+      type: object
+      properties:
+        platform:
+          type: string
+          enum: [fcm, apns]
+        token:
+          type: string
+          maxLength: 4096
+        enabled:
+          type: boolean
+    PushRelaySettings:
+      type: object
+      additionalProperties: false
+      required: [url, key_set, last_error, last_error_at, last_delivered_at, updated_at]
+      properties:
+        url:
+          type: string
+        key_set:
+          type: boolean
+        last_error:
+          type: [string, 'null']
+        last_error_at:
+          type: [string, 'null']
+          format: date-time
+        last_delivered_at:
+          type: [string, 'null']
+          format: date-time
+        updated_at:
+          type: [string, 'null']
+          format: date-time
+    PushRelaySettingsResult:
+      type: object
+      required: [data]
+      properties:
+        data:
+          oneOf:
+            - $ref: '#/components/schemas/PushRelaySettings'
+            - type: 'null'
+    PushRelaySettingsInput:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+          maxLength: 300
+        key:
+          type: string
+          minLength: 32
+          maxLength: 512

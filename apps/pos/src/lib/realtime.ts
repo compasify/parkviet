@@ -104,7 +104,12 @@ export function invalidationsFor(
       return [
         { queryKey: ['pos', 'approvals', scope.generation] },
         { queryKey: ['pos', 'print-jobs', scope.generation] },
+        { queryKey: ['pos', 'approval-requests', scope.generation] },
       ];
+    // A manager's phone was asked, or answered: the counter waiting on it.
+    case 'approval_request.created':
+    case 'approval_request.updated':
+      return [{ queryKey: ['pos', 'approval-requests', scope.generation] }];
     case 'print_job.created':
       return [{ queryKey: ['pos', 'print-jobs', scope.generation] }];
     // The menu of the branch: sold-out marks show on the tiles at once.

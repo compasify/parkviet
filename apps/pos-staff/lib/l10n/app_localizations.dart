@@ -2545,6 +2545,468 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Thiết bị không mở khóa được; tắt chế độ ghim màn hình hoặc Guided Access trong cài đặt máy.'**
   String get manageKioskUnlockFailed;
+
+  /// No description provided for @waiterAskOwner.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi chủ duyệt'**
+  String get waiterAskOwner;
+
+  /// No description provided for @waiterAskedOwner.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã gửi chủ duyệt, đang chờ trả lời.'**
+  String get waiterAskedOwner;
+
+  /// No description provided for @waiterOwnerDeclined.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chủ quán đã từ chối.'**
+  String get waiterOwnerDeclined;
+
+  /// No description provided for @waiterOwnerDeclinedReason.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chủ quán đã từ chối: {reason}'**
+  String waiterOwnerDeclinedReason(String reason);
+
+  /// No description provided for @waiterOwnerExpired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Yêu cầu đã hết hạn hoặc đơn đã đổi; gửi lại nếu cần.'**
+  String get waiterOwnerExpired;
+
+  /// No description provided for @ownerTabToday.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hôm nay'**
+  String get ownerTabToday;
+
+  /// No description provided for @ownerTabOpen.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang mở'**
+  String get ownerTabOpen;
+
+  /// No description provided for @ownerTabApprovals.
+  ///
+  /// In vi, this message translates to:
+  /// **'Duyệt'**
+  String get ownerTabApprovals;
+
+  /// No description provided for @ownerTabReservations.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đặt bàn'**
+  String get ownerTabReservations;
+
+  /// No description provided for @ownerTabAlerts.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cảnh báo'**
+  String get ownerTabAlerts;
+
+  /// No description provided for @ownerNoBranches.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn chưa được giao chi nhánh nào để xem hoặc duyệt.'**
+  String get ownerNoBranches;
+
+  /// No description provided for @ownerNoReports.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn không có quyền xem báo cáo ở chi nhánh này.'**
+  String get ownerNoReports;
+
+  /// No description provided for @ownerNoApprove.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn không có quyền duyệt ở chi nhánh này.'**
+  String get ownerNoApprove;
+
+  /// No description provided for @ownerNoPending.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không có yêu cầu nào đang chờ.'**
+  String get ownerNoPending;
+
+  /// No description provided for @ownerNoAlerts.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có cảnh báo trong 24 giờ qua.'**
+  String get ownerNoAlerts;
+
+  /// No description provided for @ownerNoOpen.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không có đơn nào đang mở.'**
+  String get ownerNoOpen;
+
+  /// No description provided for @ownerSales.
+  ///
+  /// In vi, this message translates to:
+  /// **'Doanh thu'**
+  String get ownerSales;
+
+  /// No description provided for @ownerNetSales.
+  ///
+  /// In vi, this message translates to:
+  /// **'Doanh thu thuần'**
+  String get ownerNetSales;
+
+  /// No description provided for @ownerOrders.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số đơn'**
+  String get ownerOrders;
+
+  /// No description provided for @ownerOpenOrders.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đơn đang mở'**
+  String get ownerOpenOrders;
+
+  /// No description provided for @ownerOpenShifts.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ca đang mở'**
+  String get ownerOpenShifts;
+
+  /// No description provided for @ownerCanceled.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đơn hủy'**
+  String get ownerCanceled;
+
+  /// No description provided for @ownerVoided.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} món hủy'**
+  String ownerVoided(int count);
+
+  /// No description provided for @ownerBySource.
+  ///
+  /// In vi, this message translates to:
+  /// **'Theo kênh'**
+  String get ownerBySource;
+
+  /// No description provided for @ownerSourceOrders.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} đơn'**
+  String ownerSourceOrders(int count);
+
+  /// No description provided for @ownerByHour.
+  ///
+  /// In vi, this message translates to:
+  /// **'Theo giờ'**
+  String get ownerByHour;
+
+  /// No description provided for @ownerSourceCounter.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tại quầy'**
+  String get ownerSourceCounter;
+
+  /// No description provided for @ownerSourceKiosk.
+  ///
+  /// In vi, this message translates to:
+  /// **'Kiosk'**
+  String get ownerSourceKiosk;
+
+  /// No description provided for @ownerSourceOther.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khác'**
+  String get ownerSourceOther;
+
+  /// No description provided for @ownerTakeaway.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mang đi'**
+  String get ownerTakeaway;
+
+  /// No description provided for @ownerMinutesOpen.
+  ///
+  /// In vi, this message translates to:
+  /// **'{minutes} phút'**
+  String ownerMinutesOpen(int minutes);
+
+  /// No description provided for @ownerKitchenLate.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} món trễ bếp'**
+  String ownerKitchenLate(int count);
+
+  /// No description provided for @ownerKitchenWaiting.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} món chờ bếp'**
+  String ownerKitchenWaiting(int count);
+
+  /// No description provided for @ownerRequestedBy.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} xin duyệt'**
+  String ownerRequestedBy(String name);
+
+  /// No description provided for @ownerRequestReason.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lý do: {reason}'**
+  String ownerRequestReason(String reason);
+
+  /// No description provided for @ownerRequestExpires.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hết hạn lúc {time}'**
+  String ownerRequestExpires(String time);
+
+  /// No description provided for @ownerGrant.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đồng ý'**
+  String get ownerGrant;
+
+  /// No description provided for @ownerDecline.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ chối'**
+  String get ownerDecline;
+
+  /// No description provided for @ownerGrantBiometricReason.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác nhận để duyệt yêu cầu'**
+  String get ownerGrantBiometricReason;
+
+  /// No description provided for @ownerGrantNotConfirmed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa xác nhận được vân tay hoặc khuôn mặt.'**
+  String get ownerGrantNotConfirmed;
+
+  /// No description provided for @ownerGrantConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Duyệt: {action}?'**
+  String ownerGrantConfirm(String action);
+
+  /// No description provided for @ownerDeclineTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ chối yêu cầu'**
+  String get ownerDeclineTitle;
+
+  /// No description provided for @ownerDeclineReason.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lý do (không bắt buộc)'**
+  String get ownerDeclineReason;
+
+  /// No description provided for @ownerGranted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã duyệt; máy gửi sẽ tự tiếp tục.'**
+  String get ownerGranted;
+
+  /// No description provided for @ownerDeclined.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã từ chối.'**
+  String get ownerDeclined;
+
+  /// No description provided for @ownerRequestExpired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Yêu cầu đã hết hạn hoặc đơn đã đổi.'**
+  String get ownerRequestExpired;
+
+  /// No description provided for @ownerRequestCanceled.
+  ///
+  /// In vi, this message translates to:
+  /// **'Người gửi đã hủy yêu cầu.'**
+  String get ownerRequestCanceled;
+
+  /// No description provided for @ownerSelfApproval.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn không thể tự duyệt yêu cầu của mình.'**
+  String get ownerSelfApproval;
+
+  /// No description provided for @ownerAlreadyDecided.
+  ///
+  /// In vi, this message translates to:
+  /// **'Yêu cầu này đã được trả lời.'**
+  String get ownerAlreadyDecided;
+
+  /// No description provided for @ownerActionDiscount.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giảm giá đơn'**
+  String get ownerActionDiscount;
+
+  /// No description provided for @ownerActionLineDiscount.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giảm giá món'**
+  String get ownerActionLineDiscount;
+
+  /// No description provided for @ownerActionOverridePrice.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đổi giá món'**
+  String get ownerActionOverridePrice;
+
+  /// No description provided for @ownerActionPrebill.
+  ///
+  /// In vi, this message translates to:
+  /// **'In lại hoặc hủy phiếu tạm tính'**
+  String get ownerActionPrebill;
+
+  /// No description provided for @ownerActionVoid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hủy món đã gửi bếp'**
+  String get ownerActionVoid;
+
+  /// No description provided for @ownerActionPlatformCancel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hủy đơn app giao hàng'**
+  String get ownerActionPlatformCancel;
+
+  /// No description provided for @ownerActionBuffet.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đổi lượt buffet'**
+  String get ownerActionBuffet;
+
+  /// No description provided for @ownerActionMinimumSpend.
+  ///
+  /// In vi, this message translates to:
+  /// **'Miễn chi tiêu tối thiểu'**
+  String get ownerActionMinimumSpend;
+
+  /// No description provided for @ownerActionTimedEdit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sửa giờ tính tiền'**
+  String get ownerActionTimedEdit;
+
+  /// No description provided for @ownerActionLongPause.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tạm dừng giờ lâu'**
+  String get ownerActionLongPause;
+
+  /// No description provided for @ownerActionDepositRefund.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn cọc đặt bàn'**
+  String get ownerActionDepositRefund;
+
+  /// No description provided for @ownerActionDepositForfeit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giữ cọc đặt bàn'**
+  String get ownerActionDepositForfeit;
+
+  /// No description provided for @ownerActionBottleKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điều chỉnh chai gửi'**
+  String get ownerActionBottleKeep;
+
+  /// No description provided for @ownerActionMealWallet.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ví suất ăn'**
+  String get ownerActionMealWallet;
+
+  /// No description provided for @ownerActionCommission.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điều chỉnh hoa hồng xe'**
+  String get ownerActionCommission;
+
+  /// No description provided for @ownerActionStoredValue.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thẻ trả trước'**
+  String get ownerActionStoredValue;
+
+  /// No description provided for @ownerAlertKitchenLate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Món chờ bếp {minutes} phút'**
+  String ownerAlertKitchenLate(String minutes);
+
+  /// No description provided for @ownerAlertShiftVariance.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chênh lệch két khi đóng ca: {amount}'**
+  String ownerAlertShiftVariance(String amount);
+
+  /// No description provided for @ownerAlertVoidBurst.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} món bị hủy trong một giờ'**
+  String ownerAlertVoidBurst(String count);
+
+  /// No description provided for @ownerAlertRevenue.
+  ///
+  /// In vi, this message translates to:
+  /// **'Doanh thu năm đạt {percent}% ngưỡng 1 tỷ'**
+  String ownerAlertRevenue(String percent);
+
+  /// No description provided for @ownerAlertPrintFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Một lệnh in bị lỗi'**
+  String get ownerAlertPrintFailed;
+
+  /// No description provided for @ownerAlertEinvoiceFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Một hóa đơn điện tử bị lỗi'**
+  String get ownerAlertEinvoiceFailed;
+
+  /// No description provided for @ownerPushTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thông báo nền'**
+  String get ownerPushTitle;
+
+  /// No description provided for @ownerPushToggle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhận thông báo khi app đóng'**
+  String get ownerPushToggle;
+
+  /// No description provided for @ownerPushNoToken.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bản cài này chưa có thông báo nền; bạn chỉ nhận sự kiện khi app đang mở.'**
+  String get ownerPushNoToken;
+
+  /// No description provided for @ownerPushNoRelay.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cửa hàng chưa cài dịch vụ chuyển tiếp thông báo; bạn chỉ nhận sự kiện khi app đang mở.'**
+  String get ownerPushNoRelay;
+
+  /// No description provided for @ownerPushReady.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thông báo chỉ mang loại sự kiện, không kèm số tiền hay tên khách.'**
+  String get ownerPushReady;
+
+  /// No description provided for @ownerPushLastError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lỗi gần nhất: {error}'**
+  String ownerPushLastError(String error);
 }
 
 class _AppLocalizationsDelegate

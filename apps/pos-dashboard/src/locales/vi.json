@@ -2501,6 +2501,24 @@
     "sample": "Phát hành thử",
     "sampleDone": "Đã phát hành thử; không có hóa đơn nào được lưu."
   },
+  "pushRelay": {
+    "title": "Thông báo cho app chủ quán",
+    "intro": "Điện thoại chủ quán được báo yêu cầu duyệt và cảnh báo khi app đóng qua một dịch vụ chuyển tiếp. Thông báo chỉ mang loại sự kiện và mã, không kèm số tiền hay tên khách. Không có dịch vụ chuyển tiếp thì app chủ chỉ nhận sự kiện khi đang mở.",
+    "off": "Chưa cài dịch vụ chuyển tiếp: app chủ chỉ nhận sự kiện khi đang mở.",
+    "notChecked": "Đã lưu; chưa kiểm tra.",
+    "lastDelivered": "Gửi thành công lần cuối {{at}}.",
+    "lastError": "Lỗi gần nhất {{at}}: {{error}}",
+    "url": "Địa chỉ dịch vụ chuyển tiếp (HTTPS)",
+    "key": "Khóa ký",
+    "keyHint": "Dùng chung với dịch vụ chuyển tiếp; từ {{min}} đến {{max}} ký tự. Khóa được mã hóa khi lưu và không hiện lại.",
+    "keyKept": "Đã có khóa. Để trống để giữ khóa cũ, hoặc nhập khóa mới để thay.",
+    "check": "Kiểm tra kết nối",
+    "checked": "Dịch vụ chuyển tiếp đã trả lời.",
+    "unreachable": "Dịch vụ chuyển tiếp không trả lời; kiểm tra địa chỉ và khóa.",
+    "remove": "Gỡ dịch vụ chuyển tiếp",
+    "removeConfirm": "Gỡ dịch vụ chuyển tiếp? Điện thoại chủ quán sẽ không nhận thông báo khi app đóng.",
+    "removed": "Đã gỡ dịch vụ chuyển tiếp."
+  },
   "kiosk": {
     "title": "Kiosk tự order",
     "intro": "Khách tự gọi món trên kiosk và trả bằng QR chuyển khoản hoặc ra quầy trả. Ghép kiosk ở trang Thiết bị (chế độ kiosk, chọn quầy loại kiosk), rồi mở ca cho kiosk ở đây. Ca kiosk không giữ tiền mặt.",

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_12_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_12_130000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gist"
   enable_extension "pg_catalog.plpgsql"
@@ -2261,6 +2261,33 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_120000) do
     t.index ["spree_policy_id"], name: "index_spree_policy_translations_on_spree_policy_id"
   end
 
+  create_table "spree_pos_approval_requests", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "branch_id", null: false
+    t.bigint "requester_id", null: false
+    t.string "action", limit: 64, null: false
+    t.string "subject_type", limit: 64, null: false
+    t.bigint "subject_id", null: false
+    t.string "revision", limit: 64, null: false
+    t.decimal "amount", precision: 12, scale: 4
+    t.string "currency", limit: 3
+    t.string "reason", limit: 200
+    t.string "status", limit: 16, default: "pending", null: false
+    t.bigint "approval_id"
+    t.bigint "decided_by_id"
+    t.datetime "decided_at"
+    t.datetime "expires_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["approval_id"], name: "idx_pos_approval_requests_approval", unique: true, where: "(approval_id IS NOT NULL)"
+    t.index ["branch_id", "status"], name: "idx_pos_approval_requests_branch_status"
+    t.index ["requester_id", "status"], name: "idx_pos_approval_requests_requester"
+    t.check_constraint "(amount IS NULL) = (currency IS NULL)", name: "chk_pos_approval_requests_currency"
+    t.check_constraint "(status::text = 'granted'::text) = (approval_id IS NOT NULL)", name: "chk_pos_approval_requests_granted"
+    t.check_constraint "(status::text = 'pending'::text) = (decided_at IS NULL)", name: "chk_pos_approval_requests_decided"
+    t.check_constraint "status::text = ANY (ARRAY['pending'::character varying, 'granted'::character varying, 'declined'::character varying, 'expired'::character varying, 'canceled'::character varying]::text[])", name: "chk_pos_approval_requests_status"
+  end
+
   create_table "spree_pos_approvals", force: :cascade do |t|
     t.bigint "store_id", null: false
     t.bigint "branch_id", null: false
@@ -3692,6 +3719,21 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_120000) do
     t.check_constraint "status::text = ANY (ARRAY['pending'::character varying::text, 'processing'::character varying::text, 'processed'::character varying::text, 'failed'::character varying::text])", name: "chk_pos_outbox_status"
   end
 
+  create_table "spree_pos_owner_alerts", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "branch_id", null: false
+    t.string "kind", limit: 32, null: false
+    t.string "dedupe_key", limit: 120, null: false
+    t.string "subject_ref", limit: 64
+    t.jsonb "details", default: {}, null: false
+    t.datetime "occurred_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["branch_id", "dedupe_key"], name: "idx_pos_owner_alerts_dedupe", unique: true
+    t.index ["branch_id", "occurred_at"], name: "idx_pos_owner_alerts_branch_time"
+    t.check_constraint "kind::text = ANY (ARRAY['kitchen_late'::character varying, 'shift_variance'::character varying, 'void_burst'::character varying, 'revenue_milestone'::character varying, 'print_failed'::character varying, 'einvoice_failed'::character varying]::text[])", name: "chk_pos_owner_alerts_kind"
+  end
+
   create_table "spree_pos_payment_methods", force: :cascade do |t|
     t.bigint "store_id", null: false
     t.string "code", limit: 32, null: false
@@ -3895,6 +3937,35 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_120000) do
     t.check_constraint "connection::text = ANY (ARRAY['escpos_lan'::character varying, 'escpos_bluetooth'::character varying, 'sunmi_builtin'::character varying, 'epson_epos'::character varying, 'star_webprnt'::character varying, 'browser'::character varying]::text[])", name: "chk_pos_printers_connection"
     t.check_constraint "paper::text = ANY (ARRAY['58mm'::character varying, '80mm'::character varying]::text[])", name: "chk_pos_printers_paper"
     t.check_constraint "status::text = ANY (ARRAY['active'::character varying, 'disabled'::character varying]::text[])", name: "chk_pos_printers_status"
+  end
+
+  create_table "spree_pos_push_registrations", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "device_id", null: false
+    t.bigint "staff_id", null: false
+    t.string "platform", limit: 8, null: false
+    t.text "token", null: false
+    t.boolean "enabled", default: true, null: false
+    t.string "last_error", limit: 200
+    t.datetime "last_error_at"
+    t.datetime "last_delivered_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["device_id"], name: "idx_pos_push_registrations_device", unique: true
+    t.check_constraint "platform::text = ANY (ARRAY['fcm'::character varying, 'apns'::character varying]::text[])", name: "chk_pos_push_registrations_platform"
+  end
+
+  create_table "spree_pos_push_relay_settings", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.string "url", limit: 300, null: false
+    t.text "relay_key", null: false
+    t.bigint "changed_by_id"
+    t.string "last_error", limit: 200
+    t.datetime "last_error_at"
+    t.datetime "last_delivered_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["store_id"], name: "idx_pos_push_relay_settings_store", unique: true
   end
 
   create_table "spree_pos_rate_plans", force: :cascade do |t|
@@ -6816,6 +6887,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_120000) do
   add_foreign_key "spree_option_type_translations", "spree_option_types"
   add_foreign_key "spree_option_value_translations", "spree_option_values"
   add_foreign_key "spree_payment_sources", "spree_payment_methods", column: "payment_method_id"
+  add_foreign_key "spree_pos_approval_requests", "spree_admin_users", column: "decided_by_id"
+  add_foreign_key "spree_pos_approval_requests", "spree_admin_users", column: "requester_id"
+  add_foreign_key "spree_pos_approval_requests", "spree_pos_approvals", column: "approval_id"
+  add_foreign_key "spree_pos_approval_requests", "spree_pos_branches", column: "branch_id"
+  add_foreign_key "spree_pos_approval_requests", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_approvals", "spree_admin_users", column: "approver_id"
   add_foreign_key "spree_pos_approvals", "spree_admin_users", column: "requester_id"
   add_foreign_key "spree_pos_approvals", "spree_pos_branches", column: "branch_id"
@@ -7058,6 +7134,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_120000) do
   add_foreign_key "spree_pos_open_bottles", "spree_variants", column: "variant_id"
   add_foreign_key "spree_pos_order_number_counters", "spree_pos_branches", column: "branch_id"
   add_foreign_key "spree_pos_outbox_entries", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_owner_alerts", "spree_pos_branches", column: "branch_id"
+  add_foreign_key "spree_pos_owner_alerts", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_payment_methods", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_payment_requests", "spree_admin_users", column: "requested_by_id"
   add_foreign_key "spree_pos_payment_requests", "spree_admin_users", column: "resolved_by_id"
@@ -7093,6 +7171,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_120000) do
   add_foreign_key "spree_pos_printers", "spree_pos_devices", column: "print_station_device_id"
   add_foreign_key "spree_pos_printers", "spree_pos_registers", column: "register_id"
   add_foreign_key "spree_pos_printers", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_push_registrations", "spree_admin_users", column: "staff_id"
+  add_foreign_key "spree_pos_push_registrations", "spree_pos_devices", column: "device_id"
+  add_foreign_key "spree_pos_push_registrations", "spree_stores", column: "store_id"
+  add_foreign_key "spree_pos_push_relay_settings", "spree_admin_users", column: "changed_by_id"
+  add_foreign_key "spree_pos_push_relay_settings", "spree_stores", column: "store_id"
   add_foreign_key "spree_pos_rate_plans", "spree_pos_branches", column: "branch_id"
   add_foreign_key "spree_pos_rate_plans", "spree_pos_rate_plans", column: "previous_id"
   add_foreign_key "spree_pos_rate_plans", "spree_stores", column: "store_id"

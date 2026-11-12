@@ -75,10 +75,12 @@ module Spree
           return nil if policy.allows?(branch, Capabilities::APPROVE)
 
           message = 'This needs an approval.'
-          raise Conflict.new(message, reason: 'approval_required', details: { action: action }) if approval_id.blank?
+          # What to ask a manager for: the action, the account as it is now and the amount.
+          details = { action: action, revision: account.revision, amount: amount&.to_s('F') }.compact
+          raise Conflict.new(message, reason: 'approval_required', details: details) if approval_id.blank?
 
           approval = Approval.locate(Approval.for_store(account.store).where(branch_id: branch.id), approval_id)
-          raise Conflict.new(message, reason: 'approval_required', details: { action: action }) if approval.nil?
+          raise Conflict.new(message, reason: 'approval_required', details: details) if approval.nil?
 
           approval.consume!(action: action, amount: amount, currency: amount && account.store.default_currency,
                             revision: account.revision, subject: account, requester: staff)

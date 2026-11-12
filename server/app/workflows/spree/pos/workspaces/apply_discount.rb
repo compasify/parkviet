@@ -98,10 +98,13 @@ module Spree
           policy = AccessPolicy.new(store: workspace.store, staff: staff)
           return nil if policy.allows?(workspace.branch, capability)
 
-          raise Conflict, message if approval_id.blank?
+          # What a manager's approval must name, so the device can ask for it
+          # (on the spot or from the owner's phone).
+          needed = { action: action, amount: amount&.to_s('F') }.compact
+          raise Conflict.new(message, revision: revision, reason: 'approval_required', details: needed) if approval_id.blank?
 
           approval = Approval.locate(Approval.for_store(workspace.store).where(branch_id: workspace.branch_id), approval_id)
-          raise Conflict, message if approval.nil?
+          raise Conflict.new(message, revision: revision, reason: 'approval_required', details: needed) if approval.nil?
 
           approval.consume!(action: action, amount: amount, currency: workspace.order.currency, revision: revision, subject: workspace, requester: staff)
           AuditEntry.record!(store: workspace.store, actor: staff, action: 'approval.consume', subject: approval,
