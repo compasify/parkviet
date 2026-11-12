@@ -490,6 +490,10 @@ Chủ hoặc quản lý mở app Flutter ở chế độ `owner` trên điện t
 - `apps/pos`: `RemoteApprovalButton` + `use-approval-requests` ở hủy món đã báo bếp, giảm giá đơn, giảm giá món, đổi giá, sửa giờ, tạm dừng lâu, in lại tạm tính, hoàn/giữ cọc, ví suất ăn (hoàn, điều chỉnh), chai gửi, sửa hoa hồng xe; realtime làm mới yêu cầu đang chờ.
 - `apps/pos-dashboard`: thẻ **Thông báo cho app chủ quán** ở trang Thông tin server (địa chỉ HTTPS, khóa chỉ ghi, kiểm tra kết nối, lỗi / lần gửi gần nhất, gỡ).
 - Tài liệu: `docs/pos/fnb-ban-va-tra-sau.md` §9, `docs/deploy/pos-lan-vps.md` §7.
+- Bổ sung sau lần đầu:
+  - **Đang mở → chạm xem dòng**: `GET api/v3/admin/pos/owner/open_units/:workspace_id?branch_id=` (`OwnerDashboard.open_unit`), cần `pos.report.read` ở chi nhánh, chỉ đơn đang mở của đúng chi nhánh (khác thì 404). Trả nhãn bàn, nguồn, số khách, phút mở, tổng và từng dòng: tên, số lượng, đơn vị, tiền sau giảm giá, trạng thái bếp (`none` / `unsent` / `waiting` / `ready` / `served`); không có thông tin khách. App: chạm ô mở bảng dòng (chỉ đọc), đơn đã đóng thì báo "Đơn này không còn mở."
+  - **Đặt bàn → xác nhận / hủy**: phần 9A không có trạng thái "đã xác nhận", nên thêm cột `confirmed_at` (migration `20261112140000_add_reservation_confirmation.rb`) và workflow `Reservations::Confirm` (`POST reservations/:id/confirm`): chỉ lượt `booked`, quyền như `Cancel` (`Guard.manage!`: `pos.reservation.manage` hoặc quản trị store), không đổi revision nên approval cọc đang xin vẫn đúng, xác nhận lại không ghi gì thêm, có audit `reservation.confirm`. Hủy dùng lại `Reservations::Cancel` (`canceled`); hai lệnh này không cần approval nên app không xin. `OwnerBranch.can_manage_reservations` quyết định app có hiện nút **Xác nhận** / **Hủy đặt bàn** (hủy hỏi lại trước); lượt đã xác nhận ghi "Đã xác nhận với khách".
+  - OpenAPI: `posOwnerOpenUnitShow` (`OwnerOpenOrder`, `OwnerOpenOrderLine`, `OwnerOpenOrderResult`), `posReservationConfirm`, `Reservation.confirmed_at`, `OwnerBranch.can_manage_reservations`; client Dart sinh lại.
 
 **Lệnh và kết quả**
 
@@ -500,6 +504,7 @@ Chủ hoặc quản lý mở app Flutter ở chế độ `owner` trên điện t
 - `apps/pos-staff`: `flutter analyze` — không lỗi; `flutter test` — 174 passed (8 mới trong `test/modes/owner/owner_home_test.dart`).
 - `apps/pos`: `tsc --noEmit`, `biome check .` sạch; `vitest run` — 328 passed; `playwright test e2e/remote-approval.spec.ts --project desktop` — 1 passed; các e2e liên quan (table-kitchen-send, karaoke, meal-accounts, vehicle-visits, reservations, bar-tabs, print-queue, realtime, tables) — 28 passed, 1 skipped (real API).
 - `apps/pos-dashboard`: `pnpm typecheck`, `pnpm lint` sạch; `pnpm test` — 136 passed.
+- Phần bổ sung: `pnpm spree rspec spec/requests/spree/pos/owner_spec.rb spec/requests/spree/pos/reservations_spec.rb spec/workflows/spree/pos/reservations/ spec/requests/spree/pos/devices_spec.rb spec/services/spree/pos/print_documents_spec.rb` — 40 examples, 0 failures; rubocop các file server đã sửa sạch; `apps/pos-staff`: `flutter analyze` không lỗi, `flutter test` — 177 passed (mới: xem dòng đơn đang mở trong `owner_home_test.dart`, xác nhận / hủy đặt bàn trong `table_service_test.dart`).
 
 **Lệch so với plan**
 
@@ -508,7 +513,7 @@ Chủ hoặc quản lý mở app Flutter ở chế độ `owner` trên điện t
 - Sự kiện yêu cầu là `approval_request.created` / `.updated`; `approval.requested` vẫn nghĩa là "đã cấp mã" để máy đang chờ tự tiếp tục.
 - Cài đặt relay nằm ở `apps/pos-dashboard` (trang Thông tin server), không ở `apps/pos`, theo ranh giới các phần trước.
 - Màn bán không có nút "gửi" trước khi bị từ chối ở những chỗ số tiền do server tính (giảm giá, đổi giá, ví suất ăn): thu ngân bấm lệnh, server trả `approval_required` kèm số tiền, rồi mới hiện **Gửi chủ duyệt**.
-- App owner không có màn chạm xem dòng của bàn đang mở và không xác nhận / hủy đặt bàn (tab Đặt bàn giữ hoàn / giữ cọc như trước).
+- "Xác nhận đặt bàn" là dấu thời gian `confirmed_at` trên lượt `booked`, không phải trạng thái mới; `apps/pos` chưa hiện hay bấm xác nhận (chỉ app chủ).
 
 **Còn mở**
 
