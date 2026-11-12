@@ -137,12 +137,90 @@ Migration `create_spree_pos_timed_sessions_and_segments`:
 
 ### Tiêu chí xong
 
-- [ ] Bảng giá theo khung giờ × loại ngày × loại phòng, có block, ân hạn, tối thiểu, ngày lễ và phụ thu.
-- [ ] Phiên nhiều đoạn chia đúng tại ranh giới giá và ngày; chuyển phòng giữ giá đoạn cũ.
-- [ ] Sửa giờ cần duyệt, có audit, không chồng đoạn.
-- [ ] Bill và hóa đơn ghi giờ chơi theo đơn vị giờ, đúng thuế suất theo cấu hình.
-- [ ] `resource_board` trên web và tab Phòng trên Flutter có đồng hồ và các hành động trên ô.
-- [ ] Hồ sơ `karaoke_bida` chọn được; kịch bản karaoke xanh.
+- [x] Bảng giá theo khung giờ × loại ngày × loại phòng, có block, ân hạn, tối thiểu, ngày lễ và phụ thu.
+- [x] Phiên nhiều đoạn chia đúng tại ranh giới giá và ngày; chuyển phòng giữ giá đoạn cũ.
+- [x] Sửa giờ cần duyệt, có audit, không chồng đoạn.
+- [x] Bill và hóa đơn ghi giờ chơi theo đơn vị giờ, đúng thuế suất theo cấu hình.
+- [ ] `resource_board` trên web và tab Phòng trên Flutter có đồng hồ và các hành động trên ô. (Web xong; tab Phòng trên Flutter còn mở, xem Kết quả.)
+- [x] Hồ sơ `karaoke_bida` chọn được; kịch bản karaoke xanh.
+
+### Kết quả
+
+**Đã làm**
+
+- Dữ liệu: ba migration `20261112070000_add_time_dimension_to_pos_unit_definitions`, `20261112070100_create_spree_pos_rate_plans_and_rules` và `20261112070200_create_spree_pos_timed_sessions_and_segments`. Dimension `time` có đơn vị `phut` / `gio`. Thêm bảng giá, rule, ngày lễ, `branches.weekend_days`, phiên, đoạn và dòng báo giá. Partial unique index chặn hai đồng hồ trên một phòng. `schema.rb` từ 216 lên 223 check constraint.
+- Model `RatePlan` (có version: plan đã dùng để tính tiền thì lưu thành bản mới, bản cũ chuyển `archived`), `RateRule` (phủ kín 24 giờ, cho qua 0h), `SpecialDay`, `TimedSession`, `TimedSegment`, `TimedQuoteLine`.
+- `Timed::Quote` là hàm thuần, kèm `RateBook` đọc plan và ngày lễ với số query cố định. Quote chia đoạn tại ranh giới khung giá và ngày theo `Branch.timezone`. Làm tròn áp trên tổng phút của phiên; phần làm tròn tính theo giá đoạn cuối. Có tối thiểu, ngày lễ dùng rule `holiday` hoặc giá cuối tuần cộng phụ thu.
+- Workflow `timed/{start,stop,move_resource,edit_segment,save_rate_plan,save_special_day,guard}`. Ghi chú:
+  - Start mở đơn `service_mode: 'timed'` qua `Tables::Open` khi phòng chưa có đơn.
+  - Dòng `timed` đếm phút, bán theo giờ.
+  - Khi đang chạy, dòng giữ 1 phút giá 0 nên tổng đơn không chứa báo giá tạm. Stop ghi số phút tính tiền, giá một phút và `sale_quantity` theo giờ.
+  - Move và Stop không cần lease.
+  - EditSegment cần lý do và `Approval` `timed.edit_segment`, hoặc capability `pos.timed.edit`. Audit ghi giá trị trước / sau. Lệnh chặn sửa vượt `now` và chặn chồng đoạn. Nếu phiên đã dừng thì tính tiền lại.
+- Guard:
+  - `Tenders::Guard.tracked_guard!` từ chối khi còn phiên chạy (`timed_session_running`). Guard này chạy trên mọi đường thanh toán.
+  - Dòng `timed` không sửa số lượng, không xoá, không đổi giá tay. Giảm giá dòng vẫn được, nhưng cần duyệt.
+  - Huỷ đơn thì dừng các đồng hồ của đơn.
+  - `Tables::Move` / `Split` mang phiên theo đơn.
+- `ResourceState` thêm `timed` và trạng thái `playing` / `ending_soon`; query budget của `resource_board_spec` vẫn giữ. `Workspace#to_pos` gắn `timed_session` vào dòng giờ.
+- In: `ReceiptBuilder` và `TemplateData` in phòng, giờ vào / ra và từng khung giá. Hóa đơn điện tử xuất dòng giờ theo đơn vị "giờ".
+- Capability `pos.timed.operate`, `pos.timed.edit`, `pos.rate_plan.manage`.
+- Module và hồ sơ:
+  - Module `timed_billing` đã đăng ký.
+  - `business_profiles.yml` lên version 3. `karaoke_bida` mở, có `display.surface: resource_board`, module `resources, fnb.tables, timed_billing, fnb.menu, fnb.kitchen, fnb.postpay, fnb.bottle_keep`, `kitchen_send_trigger: manual`.
+- Endpoint và route:
+  - `resources/:id/timed_sessions`
+  - `timed_sessions/:id` (show), `quote`, `stop`, `move`, `segments/:segment_id`
+  - `rate_plans` (index / create / update / preview)
+  - `rate_plans/special_days` (CRUD), `rate_plans/weekend_days`
+- `server/openapi/pos-staff.yaml`: thêm schema `ResourceBoardTimed`, trường `timed` của ô và hai trạng thái mới. Đã sinh lại client Dart (`tool/gen_api.sh`).
+- `packages/pos-shared`: capability, module `timed_billing`, surface `resource_board`, trạng thái ô, `BoardTimed`, kiểu `PosLineTimedSession`, nhãn vi/en.
+- `apps/pos` (màn thu ngân):
+  - Surface `resource_board` dùng lại `TableFloor` / `TableTile`. Ô có đồng hồ chạy và tiền giờ tạm.
+  - Panel phòng (`timed-panel.tsx`) có Bắt đầu, đồng hồ, báo giá server refetch 60 giây, Dừng giờ, Chuyển phòng và lời báo lỗi riêng.
+  - Đồng hồ tick 1 giây từ `started_at` của server cộng độ lệch đo từ `server_now`; không gọi API mỗi giây.
+  - Dòng giờ trong giỏ bị khoá sửa và hiện số phút chơi cùng các khung giá sau khi dừng.
+  - Thêm `lib/timed-clock.ts`, test và `hooks/use-timed.ts`.
+- `apps/pos-dashboard`:
+  - Tab "Giá giờ" `/branches/$branchId/rate-plans`. Tab có danh sách và phiên bản bảng giá, form khung giờ × loại ngày, kiểm tra phủ 24 giờ ngay trên form, ngày cuối tuần, ngày lễ kèm phụ thu và ô tính thử.
+  - Quyền vào tab theo `timed_billing` + `pos.rate_plan.manage`.
+  - `capability-groups.ts` có 3 quyền mới; số checkbox trong `e2e/administration.spec.ts` đổi 33 → 36.
+
+**Lệnh đã chạy**
+
+| Lệnh | Kết quả |
+|---|---|
+| `pnpm spree rspec spec/services/spree/pos/timed/quote_spec.rb` | 36 ví dụ, 0 lỗi (20 ca bảng + ca thêm) |
+| `pnpm spree rspec spec/workflows/spree/pos/timed/` | 15 ví dụ, 0 lỗi |
+| `pnpm spree rspec spec/integration/spree/pos/timed_race_spec.rb spec/integration/spree/pos/karaoke_scenario_spec.rb` | 3 ví dụ, 0 lỗi |
+| `pnpm spree rspec spec/requests/spree/pos/timed_sessions_spec.rb spec/requests/spree/pos/rate_plans_spec.rb` | 7 ví dụ, 0 lỗi |
+| `pnpm spree rspec spec/requests/spree/pos/resource_board_spec.rb spec/requests/spree/pos/devices_spec.rb spec/services/spree/pos/print_documents_spec.rb spec/requests/spree/pos/timed_sessions_spec.rb` | 26 ví dụ, 0 lỗi |
+| Lô liên quan (spec `timed` + bàn + workspaces + sale lines/guards + unit normalization + authentication + in/hóa đơn + credit + ví + bar + module/profile/onboarding/topology, 30 đường dẫn) | 329 ví dụ, 0 lỗi |
+| `pnpm --dir apps/pos typecheck` / `lint` / `test` | sạch / sạch / 310 test qua |
+| `pnpm --dir apps/pos exec playwright test e2e/karaoke.spec.ts e2e/tables.spec.ts --project desktop` | 3 qua |
+| `pnpm --dir apps/pos exec playwright test e2e/reservations.spec.ts e2e/bar-tabs.spec.ts e2e/table-kitchen-send.spec.ts e2e/fnb-wave2.spec.ts e2e/branch-modules.spec.ts --project desktop` | 14 qua. Lần chạy đầu `reservations` hỏng một lần vì timing `toHaveURL`, chạy riêng và chạy lại cả lô đều qua. |
+| `pnpm --dir apps/pos-dashboard typecheck` / `lint` / `test` | sạch / sạch / 125 test qua |
+| `pnpm --dir packages/pos-shared typecheck` / `lint` / `test` | sạch / sạch / 281 test qua |
+| `apps/pos-staff`: `tool/gen_api.sh`, `flutter analyze`, `flutter test` | sinh lại client / không có lỗi / 137 test qua |
+
+**Lệch so với plan**
+
+- Trang bảng giá đặt ở `apps/pos-dashboard` (`/branches/$branchId/rate-plans`), không ở `apps/pos/src/pages/settings`. Lý do: quy tắc của repo là cài đặt nằm ở dashboard.
+- `special_days` là route con của `rate_plans_controller`, không có controller riêng.
+- `resource_board` dùng lại `TableFloor` / `TableTile` cùng `timed-panel.tsx`, không tạo `resource-board` / `resource-tile` / `timed-line` / `segment-edit-dialog`. Các hành động nằm ở panel khi chọn ô, không đặt ngay trên ô. Bộ lọc Đang chơi / Sắp hết giờ đi theo bộ lọc trạng thái sẵn có.
+- `receipt_template_variables.json` không đổi: phòng, giờ vào / ra và khung giá in thành dòng ghi chú của dòng giờ.
+- Bộ spec bảng của `Quote` có 20 ca bảng cùng các ví dụ riêng, tổng 36 ví dụ. Plan yêu cầu ít nhất 25 ca bảng; các ca thêm phủ phần còn lại (qua 0h, lễ, chuyển phòng, block 1 phút, tối thiểu).
+- Spec dịch vụ hồ sơ và module dùng `treat_as_planned('timed_billing')` cho các ca "sắp có" / interest, vì giờ không còn hồ sơ nào sắp có. `resources.iot_relay` là module `planned` thay chỗ.
+
+**Còn mở**
+
+- Tab **Phòng** cho waiter trong `apps/pos-staff` (Flutter) chưa làm. Mới có contract `resource_board` cùng client Dart đã sinh lại. Các endpoint `timed_sessions` chưa có trong `pos-staff.yaml`.
+- Nút "Sửa giờ" theo từng đoạn trên màn đơn của `apps/pos` chưa làm; mới có API cùng spec duyệt và audit.
+- Nút "Thanh toán" trên ô phòng tự dừng phiên rồi mở thanh toán chưa làm. Hiện guard chặn thanh toán và màn báo cần dừng giờ trước.
+- Nhãn "Tạm tính đến HH:MM" trên phiếu tạm tính khi phiên còn chạy chưa làm.
+- Playwright của `apps/pos-dashboard` không chạy, vì cổng 5176 do dev server của developer giữ. Đã đổi số checkbox 33 → 36 nhưng chưa chạy. Fixture `e2e/support/business-profiles.ts` vẫn ở version 2 với karaoke "sắp có"; các test interest của `setup.spec` / `business-model.spec` dựa vào nó, nên cần đổi cùng lúc khi chạy được e2e dashboard.
+- Thuế bida 8% chưa có spec riêng. Kịch bản karaoke kiểm 10% cho giờ hát và bia.
+- Full suite rspec và e2e chưa chạy local, theo quy định; CI chạy.
 
 ## Phần 11B: Karaoke / bida nâng cao
 
