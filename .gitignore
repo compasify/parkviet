@@ -1,4 +1,6 @@
 node_modules/
+# Upstream source checkouts kept for reference only
+external/
 .env
 .env.local
 .DS_Store

@@ -6728,6 +6728,35 @@
       "copy_command": "Sao chép lệnh",
       "cli_then_sign_in": "Nó sẽ mở trình duyệt của bạn để đăng nhập và phê duyệt những gì đại lý có thể làm."
     },
+    "multi_store": {
+      "nav": "Cửa hàng",
+      "nav_description": "Mở thêm cửa hàng, ví dụ nhà hàng bên cạnh cửa hàng bán lẻ, với sản phẩm, đơn hàng và cấu hình riêng",
+      "title": "Cửa hàng",
+      "subtitle": "Mỗi cửa hàng có danh mục sản phẩm, đơn hàng, phương thức thanh toán và cấu hình riêng. Chuyển giữa các cửa hàng bằng menu cửa hàng ở đầu thanh bên.",
+      "add": "Mở cửa hàng mới",
+      "sheet_description": "Cửa hàng mới được tạo sẵn kênh bán hàng, thị trường, kho và thuế riêng. Bạn sẽ là quản trị viên của cửa hàng này.",
+      "create": "Tạo cửa hàng",
+      "creating": "Đang tạo…",
+      "current": "Đang dùng",
+      "switch": "Chuyển sang",
+      "fields": {
+        "name": "Tên",
+        "code": "Mã",
+        "country_code": "Quốc gia",
+        "mail_from_address": "Email gửi đi",
+        "customer_support_email": "Email hỗ trợ"
+      },
+      "help": {
+        "country": "Quyết định tiền tệ, ngôn ngữ, vùng giao hàng và kho của cửa hàng.",
+        "copied_from_current": "Để trống để dùng email của cửa hàng hiện tại."
+      },
+      "validation": {
+        "required": "Bắt buộc"
+      },
+      "messages": {
+        "created": "Đã tạo cửa hàng"
+      }
+    },
     "vietqr": {
       "nav": "VietQR",
       "nav_description": "Tài khoản ngân hàng nhận chuyển khoản VietQR và thông báo giao dịch từ ngân hàng.",

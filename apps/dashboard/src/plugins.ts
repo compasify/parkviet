@@ -26,9 +26,10 @@
 // Docs: https://spreecommerce.org/docs/developer/dashboard/customization/quickstart
 
 import { defineDashboardPlugin, i18n, Subject } from '@spree/dashboard'
-import { BanknoteIcon } from '@spree/dashboard-ui/icons'
+import { BanknoteIcon, Building2Icon } from '@spree/dashboard-ui/icons'
 import en from './locales/en.json'
 import vi from './locales/vi.json'
+import { StoresPage } from './pages/stores'
 import { VietqrSettingsPage } from './pages/vietqr-settings'
 import { VietqrPaymentMethodGuide } from './slots/vietqr-payment-method-guide'
 
@@ -36,6 +37,33 @@ import { VietqrPaymentMethodGuide } from './slots/vietqr-payment-method-guide'
 // its own. Add a bundle per locale you ship.
 i18n.addResourceBundle('en', 'translation', en, true, true)
 i18n.addResourceBundle('vi', 'translation', vi, true, true)
+
+// Several stores in one dashboard: listing them and opening a new one. The
+// API only lets an admin of the current store create one.
+defineDashboardPlugin({
+  settingsNav: [
+    {
+      key: 'settings.stores',
+      labelKey: 'admin.multi_store.nav',
+      descriptionKey: 'admin.multi_store.nav_description',
+      keywords: ['stores', 'multi store', 'cửa hàng', 'nhà hàng', 'chi nhánh'],
+      path: '/stores',
+      icon: Building2Icon,
+      group: 'store',
+      position: 50,
+      subject: Subject.Store,
+      action: 'update',
+    },
+  ],
+  routes: [
+    {
+      key: 'settings.stores',
+      path: '/settings/stores',
+      component: StoresPage,
+      subject: Subject.Store,
+    },
+  ],
+})
 
 // VietQR (spree_vietqr): receiving accounts and bank webhooks live in
 // Settings; the payment method editor links there.

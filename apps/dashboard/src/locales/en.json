@@ -1,5 +1,34 @@
 {
   "admin": {
+    "multi_store": {
+      "nav": "Stores",
+      "nav_description": "Open another store, like a restaurant beside your shop, with its own products, orders and settings",
+      "title": "Stores",
+      "subtitle": "Each store keeps its own catalog, orders, payment methods and settings. Switch between them from the store menu at the top of the sidebar.",
+      "add": "Open a new store",
+      "sheet_description": "The new store starts with its own sales channel, market, warehouse and taxes. You become its admin.",
+      "create": "Create store",
+      "creating": "Creating…",
+      "current": "Current",
+      "switch": "Switch",
+      "fields": {
+        "name": "Name",
+        "code": "Code",
+        "country_code": "Country",
+        "mail_from_address": "Sender email",
+        "customer_support_email": "Support email"
+      },
+      "help": {
+        "country": "Sets the store's currency, language, delivery zones and warehouse.",
+        "copied_from_current": "Leave blank to use the current store's."
+      },
+      "validation": {
+        "required": "Required"
+      },
+      "messages": {
+        "created": "Store created"
+      }
+    },
     "vietqr": {
       "nav": "VietQR",
       "nav_description": "Bank accounts that receive VietQR transfers, and the bank notifications they sent.",

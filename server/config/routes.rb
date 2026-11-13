@@ -7,6 +7,8 @@ Rails.application.routes.draw do
         namespace :store do
         end
         namespace :admin do
+          resources :stores, only: [:create]
+
           namespace :pos do
             get 'configuration/staff', to: 'configuration_options#staff'
             get 'configuration/locations', to: 'configuration_options#locations'
