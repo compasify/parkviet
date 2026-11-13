@@ -22,6 +22,7 @@ import {
   Badge,
   Button,
   Dialog,
+  DialogBody,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -595,23 +596,25 @@ function ReasonDialog({
           <DialogTitle>{reasoned.title}</DialogTitle>
         </DialogHeader>
         <form
-          className="space-y-4"
+          className="flex min-h-0 flex-col"
           onSubmit={(event) => {
             event.preventDefault()
             if (text.trim()) reasoned.submit(text.trim())
           }}
         >
-          <div className="grid gap-1">
-            <Label htmlFor={id}>{reasoned.label}</Label>
-            <Textarea
-              id={id}
-              value={text}
-              maxLength={200}
-              required
-              disabled={busy}
-              onChange={(event) => setText(event.target.value)}
-            />
-          </div>
+          <DialogBody className="space-y-4">
+            <div className="grid gap-1">
+              <Label htmlFor={id}>{reasoned.label}</Label>
+              <Textarea
+                id={id}
+                value={text}
+                maxLength={200}
+                required
+                disabled={busy}
+                onChange={(event) => setText(event.target.value)}
+              />
+            </div>
+          </DialogBody>
           <DialogFooter>
             <Button type="button" variant="outline" disabled={busy} onClick={onClose}>
               {t('adminCancel')}

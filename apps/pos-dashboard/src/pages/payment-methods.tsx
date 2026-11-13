@@ -9,6 +9,7 @@ import {
   ActiveBadge,
   Badge,
   Button,
+  DialogBody,
   DialogFooter,
   ResourceNameCell,
   RowActions,
@@ -338,32 +339,38 @@ function PaymentMethodDialog({
       onClose={onClose}
     >
       {(close) => (
-        <form onSubmit={form.handleSubmit(submit)} aria-busy={busy} className="space-y-5">
-          <fieldset disabled={busy} className="space-y-4">
-            <TopologyField label={t('paymentMethods.kind')} hint={t('paymentMethods.kindHint')}>
-              {(id, describedBy) => (
-                <TopologySelect
-                  id={id}
-                  describedBy={describedBy}
-                  value={draft.kind}
-                  disabled={Boolean(method)}
-                  options={PAYMENT_METHOD_KINDS.map((value) => ({
-                    value,
-                    label: t(`paymentMethods.kind_${value}`),
-                  }))}
-                  onChange={(value) => set('kind', value as PaymentMethodKind)}
-                />
-              )}
-            </TopologyField>
-            {text('name', 'adminName')}
-            {!method && text('code', 'code', 'paymentMethods.codeHint')}
-            {text('position', 'paymentMethods.position', 'paymentMethods.positionHint')}
-          </fieldset>
-          {error && (
-            <p role="alert" className="text-sm text-destructive">
-              {error}
-            </p>
-          )}
+        <form
+          onSubmit={form.handleSubmit(submit)}
+          aria-busy={busy}
+          className="flex min-h-0 flex-col"
+        >
+          <DialogBody className="space-y-5">
+            <fieldset disabled={busy} className="space-y-4">
+              <TopologyField label={t('paymentMethods.kind')} hint={t('paymentMethods.kindHint')}>
+                {(id, describedBy) => (
+                  <TopologySelect
+                    id={id}
+                    describedBy={describedBy}
+                    value={draft.kind}
+                    disabled={Boolean(method)}
+                    options={PAYMENT_METHOD_KINDS.map((value) => ({
+                      value,
+                      label: t(`paymentMethods.kind_${value}`),
+                    }))}
+                    onChange={(value) => set('kind', value as PaymentMethodKind)}
+                  />
+                )}
+              </TopologyField>
+              {text('name', 'adminName')}
+              {!method && text('code', 'code', 'paymentMethods.codeHint')}
+              {text('position', 'paymentMethods.position', 'paymentMethods.positionHint')}
+            </fieldset>
+            {error && (
+              <p role="alert" className="text-sm text-destructive">
+                {error}
+              </p>
+            )}
+          </DialogBody>
           <DialogFooter>
             <Button type="button" variant="outline" disabled={busy} onClick={close}>
               {t('adminCancel')}

@@ -15,6 +15,7 @@ import {
   Badge,
   Button,
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -456,162 +457,164 @@ function SponsorDialog({
           </DialogTitle>
         </DialogHeader>
         <form
-          className="space-y-4"
+          className="flex min-h-0 flex-col"
           onSubmit={(event) => {
             event.preventDefault()
             void submit()
           }}
         >
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="grid gap-1">
-              <Label htmlFor={`${ids}-name`}>{t('mealSponsors.name')}</Label>
-              <Input
-                id={`${ids}-name`}
-                value={form.name}
-                maxLength={120}
-                autoComplete="off"
-                required
-                aria-invalid={invalid('name', false)}
-                disabled={busy}
-                onChange={(event) => set({ name: event.target.value })}
-              />
-            </div>
-            <div className="grid gap-1">
-              <Label htmlFor={`${ids}-phone`}>{t('mealSponsors.phone')}</Label>
-              <Input
-                id={`${ids}-phone`}
-                type="tel"
-                value={form.phone}
-                autoComplete="off"
-                aria-invalid={invalid('phone', false)}
-                disabled={busy}
-                onChange={(event) => set({ phone: event.target.value })}
-              />
-            </div>
-            {!sponsor && (
+          <DialogBody className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="grid gap-1">
-                <Label htmlFor={`${ids}-email`}>{t('mealSponsors.email')}</Label>
+                <Label htmlFor={`${ids}-name`}>{t('mealSponsors.name')}</Label>
                 <Input
-                  id={`${ids}-email`}
-                  type="email"
-                  value={form.email}
-                  autoComplete="off"
-                  aria-invalid={invalid('email', false)}
-                  disabled={busy}
-                  onChange={(event) => set({ email: event.target.value })}
-                />
-              </div>
-            )}
-            <div className="grid gap-1">
-              <Label htmlFor={`${ids}-day`}>{t('mealSponsors.statementDay')}</Label>
-              <Input
-                id={`${ids}-day`}
-                inputMode="numeric"
-                value={form.statementDay}
-                autoComplete="off"
-                required
-                aria-invalid={invalid('statement_day', problems.statementDay)}
-                aria-describedby={`${ids}-day-hint`}
-                disabled={busy}
-                onChange={(event) => set({ statementDay: event.target.value })}
-              />
-              <p id={`${ids}-day-hint`} className="text-sm text-muted-foreground">
-                {t('mealSponsors.statementDayHint')}
-              </p>
-            </div>
-            <ModelSelect
-              label={t('mealSponsors.subsidyMode')}
-              value={form.subsidyMode}
-              disabled={busy}
-              invalid={invalid('subsidy_mode', false)}
-              hint={t(`mealSponsors.subsidyHint_${form.subsidyMode}`)}
-              options={SUBSIDY_MODES.map((mode) => ({
-                value: mode,
-                label: t(`mealSponsors.subsidy_${mode}`),
-              }))}
-              onChange={(mode) => set({ subsidyMode: mode as SubsidyMode })}
-            />
-            {form.subsidyMode !== 'none' && (
-              <div className="grid gap-1">
-                <Label htmlFor={`${ids}-value`}>
-                  {t(
-                    form.subsidyMode === 'percent'
-                      ? 'mealSponsors.subsidyPercent'
-                      : 'mealSponsors.subsidyAmount',
-                  )}
-                </Label>
-                <Input
-                  id={`${ids}-value`}
-                  inputMode="numeric"
-                  value={form.subsidyValue}
+                  id={`${ids}-name`}
+                  value={form.name}
+                  maxLength={120}
                   autoComplete="off"
                   required
-                  aria-invalid={invalid('subsidy_value', subsidyRefused)}
+                  aria-invalid={invalid('name', false)}
                   disabled={busy}
-                  onChange={(event) => set({ subsidyValue: event.target.value })}
+                  onChange={(event) => set({ name: event.target.value })}
                 />
               </div>
-            )}
-            {form.subsidyMode !== 'none' && (
               <div className="grid gap-1">
-                <Label htmlFor={`${ids}-cap`}>{t('mealSponsors.dailyCap')}</Label>
+                <Label htmlFor={`${ids}-phone`}>{t('mealSponsors.phone')}</Label>
                 <Input
-                  id={`${ids}-cap`}
-                  inputMode="numeric"
-                  value={form.dailyCap}
+                  id={`${ids}-phone`}
+                  type="tel"
+                  value={form.phone}
                   autoComplete="off"
-                  aria-invalid={invalid('subsidy_daily_cap', problems.cap)}
-                  aria-describedby={`${ids}-cap-hint`}
+                  aria-invalid={invalid('phone', false)}
                   disabled={busy}
-                  onChange={(event) => set({ dailyCap: event.target.value })}
+                  onChange={(event) => set({ phone: event.target.value })}
                 />
-                <p id={`${ids}-cap-hint`} className="text-sm text-muted-foreground">
-                  {t('mealSponsors.dailyCapHint')}
+              </div>
+              {!sponsor && (
+                <div className="grid gap-1">
+                  <Label htmlFor={`${ids}-email`}>{t('mealSponsors.email')}</Label>
+                  <Input
+                    id={`${ids}-email`}
+                    type="email"
+                    value={form.email}
+                    autoComplete="off"
+                    aria-invalid={invalid('email', false)}
+                    disabled={busy}
+                    onChange={(event) => set({ email: event.target.value })}
+                  />
+                </div>
+              )}
+              <div className="grid gap-1">
+                <Label htmlFor={`${ids}-day`}>{t('mealSponsors.statementDay')}</Label>
+                <Input
+                  id={`${ids}-day`}
+                  inputMode="numeric"
+                  value={form.statementDay}
+                  autoComplete="off"
+                  required
+                  aria-invalid={invalid('statement_day', problems.statementDay)}
+                  aria-describedby={`${ids}-day-hint`}
+                  disabled={busy}
+                  onChange={(event) => set({ statementDay: event.target.value })}
+                />
+                <p id={`${ids}-day-hint`} className="text-sm text-muted-foreground">
+                  {t('mealSponsors.statementDayHint')}
                 </p>
               </div>
+              <ModelSelect
+                label={t('mealSponsors.subsidyMode')}
+                value={form.subsidyMode}
+                disabled={busy}
+                invalid={invalid('subsidy_mode', false)}
+                hint={t(`mealSponsors.subsidyHint_${form.subsidyMode}`)}
+                options={SUBSIDY_MODES.map((mode) => ({
+                  value: mode,
+                  label: t(`mealSponsors.subsidy_${mode}`),
+                }))}
+                onChange={(mode) => set({ subsidyMode: mode as SubsidyMode })}
+              />
+              {form.subsidyMode !== 'none' && (
+                <div className="grid gap-1">
+                  <Label htmlFor={`${ids}-value`}>
+                    {t(
+                      form.subsidyMode === 'percent'
+                        ? 'mealSponsors.subsidyPercent'
+                        : 'mealSponsors.subsidyAmount',
+                    )}
+                  </Label>
+                  <Input
+                    id={`${ids}-value`}
+                    inputMode="numeric"
+                    value={form.subsidyValue}
+                    autoComplete="off"
+                    required
+                    aria-invalid={invalid('subsidy_value', subsidyRefused)}
+                    disabled={busy}
+                    onChange={(event) => set({ subsidyValue: event.target.value })}
+                  />
+                </div>
+              )}
+              {form.subsidyMode !== 'none' && (
+                <div className="grid gap-1">
+                  <Label htmlFor={`${ids}-cap`}>{t('mealSponsors.dailyCap')}</Label>
+                  <Input
+                    id={`${ids}-cap`}
+                    inputMode="numeric"
+                    value={form.dailyCap}
+                    autoComplete="off"
+                    aria-invalid={invalid('subsidy_daily_cap', problems.cap)}
+                    aria-describedby={`${ids}-cap-hint`}
+                    disabled={busy}
+                    onChange={(event) => set({ dailyCap: event.target.value })}
+                  />
+                  <p id={`${ids}-cap-hint`} className="text-sm text-muted-foreground">
+                    {t('mealSponsors.dailyCapHint')}
+                  </p>
+                </div>
+              )}
+            </div>
+            {setsCredit ? (
+              <fieldset className="grid gap-4 sm:grid-cols-2">
+                <legend className="mb-2 text-sm font-medium sm:col-span-2">
+                  {t('mealSponsors.creditTerms')}
+                </legend>
+                <div className="grid gap-1">
+                  <Label htmlFor={`${ids}-limit`}>{t('creditLimit')}</Label>
+                  <Input
+                    id={`${ids}-limit`}
+                    inputMode="numeric"
+                    value={form.creditLimit}
+                    autoComplete="off"
+                    aria-invalid={limit === undefined}
+                    disabled={busy}
+                    onChange={(event) => set({ creditLimit: event.target.value })}
+                  />
+                </div>
+                <div className="grid gap-1">
+                  <Label htmlFor={`${ids}-due`}>{t('creditDueDays')}</Label>
+                  <Input
+                    id={`${ids}-due`}
+                    inputMode="numeric"
+                    value={form.dueDays}
+                    autoComplete="off"
+                    aria-invalid={form.dueDays.trim() !== '' && dueDays === null}
+                    disabled={busy}
+                    onChange={(event) => set({ dueDays: event.target.value })}
+                  />
+                </div>
+                <p className="text-sm text-muted-foreground sm:col-span-2">
+                  {t('mealSponsors.creditHint')}
+                </p>
+              </fieldset>
+            ) : (
+              <p className="text-sm text-muted-foreground">{t('mealSponsors.creditLocked')}</p>
             )}
-          </div>
-          {setsCredit ? (
-            <fieldset className="grid gap-4 sm:grid-cols-2">
-              <legend className="mb-2 text-sm font-medium sm:col-span-2">
-                {t('mealSponsors.creditTerms')}
-              </legend>
-              <div className="grid gap-1">
-                <Label htmlFor={`${ids}-limit`}>{t('creditLimit')}</Label>
-                <Input
-                  id={`${ids}-limit`}
-                  inputMode="numeric"
-                  value={form.creditLimit}
-                  autoComplete="off"
-                  aria-invalid={limit === undefined}
-                  disabled={busy}
-                  onChange={(event) => set({ creditLimit: event.target.value })}
-                />
-              </div>
-              <div className="grid gap-1">
-                <Label htmlFor={`${ids}-due`}>{t('creditDueDays')}</Label>
-                <Input
-                  id={`${ids}-due`}
-                  inputMode="numeric"
-                  value={form.dueDays}
-                  autoComplete="off"
-                  aria-invalid={form.dueDays.trim() !== '' && dueDays === null}
-                  disabled={busy}
-                  onChange={(event) => set({ dueDays: event.target.value })}
-                />
-              </div>
-              <p className="text-sm text-muted-foreground sm:col-span-2">
-                {t('mealSponsors.creditHint')}
+            {error && (
+              <p role="alert" className="text-sm text-destructive">
+                {error.text}
               </p>
-            </fieldset>
-          ) : (
-            <p className="text-sm text-muted-foreground">{t('mealSponsors.creditLocked')}</p>
-          )}
-          {error && (
-            <p role="alert" className="text-sm text-destructive">
-              {error.text}
-            </p>
-          )}
+            )}
+          </DialogBody>
           <DialogFooter>
             <Button type="button" variant="outline" disabled={busy} onClick={onClose}>
               {t('adminCancel')}
@@ -682,54 +685,56 @@ function StatementDialog({
           </DialogDescription>
         </DialogHeader>
         <form
-          className="space-y-4"
+          className="flex min-h-0 flex-col"
           onSubmit={(event) => {
             event.preventDefault()
             submit()
           }}
         >
-          <div className="flex flex-wrap gap-4">
-            <div className="grid gap-1">
-              <Label htmlFor={`${ids}-from`}>{t('reportFrom')}</Label>
-              <Input
-                id={`${ids}-from`}
-                type="date"
-                className="w-40"
-                value={period.from}
-                max={period.to}
-                disabled={busy}
-                onChange={(event) => setPeriod({ ...period, from: event.target.value })}
-              />
+          <DialogBody className="space-y-4">
+            <div className="flex flex-wrap gap-4">
+              <div className="grid gap-1">
+                <Label htmlFor={`${ids}-from`}>{t('reportFrom')}</Label>
+                <Input
+                  id={`${ids}-from`}
+                  type="date"
+                  className="w-40"
+                  value={period.from}
+                  max={period.to}
+                  disabled={busy}
+                  onChange={(event) => setPeriod({ ...period, from: event.target.value })}
+                />
+              </div>
+              <div className="grid gap-1">
+                <Label htmlFor={`${ids}-to`}>{t('reportTo')}</Label>
+                <Input
+                  id={`${ids}-to`}
+                  type="date"
+                  className="w-40"
+                  value={period.to}
+                  min={period.from}
+                  aria-invalid={!valid}
+                  disabled={busy}
+                  onChange={(event) => setPeriod({ ...period, to: event.target.value })}
+                />
+              </div>
             </div>
-            <div className="grid gap-1">
-              <Label htmlFor={`${ids}-to`}>{t('reportTo')}</Label>
-              <Input
-                id={`${ids}-to`}
-                type="date"
-                className="w-40"
-                value={period.to}
-                min={period.from}
-                aria-invalid={!valid}
-                disabled={busy}
-                onChange={(event) => setPeriod({ ...period, to: event.target.value })}
-              />
-            </div>
-          </div>
-          {!valid && (
-            <p role="alert" className="text-sm text-destructive">
-              {t('reportRangeInvalid')}
-            </p>
-          )}
-          {!exportsOn && (
-            <p role="note" className="text-sm text-muted-foreground">
-              {t('featureOff_exports')}
-            </p>
-          )}
-          {error && (
-            <p role="alert" className="text-sm text-destructive">
-              {error}
-            </p>
-          )}
+            {!valid && (
+              <p role="alert" className="text-sm text-destructive">
+                {t('reportRangeInvalid')}
+              </p>
+            )}
+            {!exportsOn && (
+              <p role="note" className="text-sm text-muted-foreground">
+                {t('featureOff_exports')}
+              </p>
+            )}
+            {error && (
+              <p role="alert" className="text-sm text-destructive">
+                {error}
+              </p>
+            )}
+          </DialogBody>
           <DialogFooter>
             <Button type="button" variant="outline" disabled={busy} onClick={onClose}>
               {t('adminCancel')}

@@ -4,7 +4,7 @@ import { describeFailure, posFailureKey } from '@parkviet/pos-shared/request-fai
 import { describeTraceFailure } from '@parkviet/pos-shared/traceability'
 import type { PosVariantUnit } from '@parkviet/pos-shared/types/pos-context'
 import { mapSpreeErrorsToForm, useResourceMutation } from '@spree/dashboard-core'
-import { Button, DialogFooter, FieldDescription } from '@spree/dashboard-ui'
+import { Button, DialogBody, DialogFooter, FieldDescription } from '@spree/dashboard-ui'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -216,147 +216,158 @@ export function VariantUnitEditor({
       onClose={onClose}
     >
       {(close) => (
-        <form onSubmit={form.handleSubmit(submit)} aria-busy={busy} className="space-y-5">
-          <fieldset disabled={busy} className="space-y-4">
-            {variants.isPending && <p role="status">{t('waiting')}</p>}
-            {variants.isSuccess && variantRows.length === 0 && (
+        <form
+          onSubmit={form.handleSubmit(submit)}
+          aria-busy={busy}
+          className="flex min-h-0 flex-col"
+        >
+          <DialogBody className="space-y-5">
+            <fieldset disabled={busy} className="space-y-4">
+              {variants.isPending && <p role="status">{t('waiting')}</p>}
+              {variants.isSuccess && variantRows.length === 0 && (
+                <p role="alert" className="text-destructive">
+                  {t('variantUnitNoVariants')}
+                </p>
+              )}
+              {variantRows.length > 0 && (
+                <TopologyField
+                  label={t('variantUnitVariant')}
+                  hint={dirty && variantRows.length > 1 ? t('variantUnitSwitchHint') : undefined}
+                >
+                  {(id, describedBy) => (
+                    <TopologySelect
+                      id={id}
+                      describedBy={describedBy}
+                      value={selectedId}
+                      disabled={variantRows.length < 2 || dirty}
+                      options={variantRows.map((variant) => ({
+                        value: variant.id,
+                        label: `${variant.sku || variant.name}${variant.barcode ? ` · ${variant.barcode}` : ''}`,
+                      }))}
+                      onChange={(value) => {
+                        setVariantId(value)
+                        setDraftVariant('')
+                        setSaved('')
+                        setError('')
+                      }}
+                    />
+                  )}
+                </TopologyField>
+              )}
+              {loadError && (
+                <div role="alert">
+                  <p>
+                    {t('variantUnitLoadFailed', {
+                      reason:
+                        posFailureKey(loadError) === 'missing'
+                          ? t('variantUnitNotSold')
+                          : describeFailure(loadError, t),
+                    })}
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() =>
+                      void Promise.all([variants.refetch(), unit.refetch(), units.refetch()])
+                    }
+                  >
+                    {t('retry')}
+                  </Button>
+                </div>
+              )}
+              {selectedId && !loadedDraft && !loadError && <p role="status">{t('waiting')}</p>}
+              {loadedDraft && (
+                <>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {showUnits && (
+                      <>
+                        {select(
+                          'sale_unit',
+                          'variantUnitSale',
+                          definitions.map((item) => ({
+                            value: item.code,
+                            label: `${item.name} (${item.code})`,
+                          })),
+                        )}
+                        <TopologyField label={t('variantUnitBase')} hint={t('variantUnitBaseHint')}>
+                          {(id, describedBy) => (
+                            <Input
+                              id={id}
+                              aria-describedby={describedBy}
+                              value={baseUnit}
+                              readOnly
+                            />
+                          )}
+                        </TopologyField>
+                        {select(
+                          'price_unit',
+                          'variantUnitPrice',
+                          priceOptions.map((item) => ({
+                            value: item.code,
+                            label: `${item.name} (${item.code})`,
+                          })),
+                        )}
+                      </>
+                    )}
+                    {showTracking &&
+                      select(
+                        'tracked_mode',
+                        'variantUnitTracked',
+                        trackedModes.map((mode) => ({
+                          value: mode,
+                          label: t(`variantUnitTracked_${mode}`),
+                          disabled: trackingOff && mode !== 'none' && mode !== loaded?.tracked_mode,
+                        })),
+                        trackingOff ? 'variantUnitTrackingOff' : undefined,
+                      )}
+                    {showUnits && (
+                      <>
+                        {input('ratio_numerator', 'variantUnitRatioNumerator', numerator === null)}
+                        {input(
+                          'ratio_denominator',
+                          'variantUnitRatioDenominator',
+                          denominator === null,
+                        )}
+                      </>
+                    )}
+                  </div>
+                  {(numerator === null || denominator === null) && (
+                    <p role="alert" className="text-destructive">
+                      {t('variantUnitRatioInvalid')}
+                    </p>
+                  )}
+                  {showLabelCode &&
+                    input(
+                      'label_code',
+                      'variantUnitLabelCode',
+                      !labelCodeValid,
+                      'variantUnitLabelCodeHint',
+                    )}
+                  {!labelCodeValid && (
+                    <p role="alert" className="text-destructive">
+                      {t('variantUnitLabelCodeInvalid')}
+                    </p>
+                  )}
+                  <FieldDescription>{t('variantUnitLockNote')}</FieldDescription>
+                  {offModules.map((module) => (
+                    <p role="note" key={module.key}>
+                      {t(
+                        moduleTextKey(module.key)
+                          ? `posModules.${moduleTextKey(module.key)}.off`
+                          : 'moduleOff',
+                      )}
+                    </p>
+                  ))}
+                </>
+              )}
+            </fieldset>
+            {error && (
               <p role="alert" className="text-destructive">
-                {t('variantUnitNoVariants')}
+                {error}
               </p>
             )}
-            {variantRows.length > 0 && (
-              <TopologyField
-                label={t('variantUnitVariant')}
-                hint={dirty && variantRows.length > 1 ? t('variantUnitSwitchHint') : undefined}
-              >
-                {(id, describedBy) => (
-                  <TopologySelect
-                    id={id}
-                    describedBy={describedBy}
-                    value={selectedId}
-                    disabled={variantRows.length < 2 || dirty}
-                    options={variantRows.map((variant) => ({
-                      value: variant.id,
-                      label: `${variant.sku || variant.name}${variant.barcode ? ` · ${variant.barcode}` : ''}`,
-                    }))}
-                    onChange={(value) => {
-                      setVariantId(value)
-                      setDraftVariant('')
-                      setSaved('')
-                      setError('')
-                    }}
-                  />
-                )}
-              </TopologyField>
-            )}
-            {loadError && (
-              <div role="alert">
-                <p>
-                  {t('variantUnitLoadFailed', {
-                    reason:
-                      posFailureKey(loadError) === 'missing'
-                        ? t('variantUnitNotSold')
-                        : describeFailure(loadError, t),
-                  })}
-                </p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() =>
-                    void Promise.all([variants.refetch(), unit.refetch(), units.refetch()])
-                  }
-                >
-                  {t('retry')}
-                </Button>
-              </div>
-            )}
-            {selectedId && !loadedDraft && !loadError && <p role="status">{t('waiting')}</p>}
-            {loadedDraft && (
-              <>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {showUnits && (
-                    <>
-                      {select(
-                        'sale_unit',
-                        'variantUnitSale',
-                        definitions.map((item) => ({
-                          value: item.code,
-                          label: `${item.name} (${item.code})`,
-                        })),
-                      )}
-                      <TopologyField label={t('variantUnitBase')} hint={t('variantUnitBaseHint')}>
-                        {(id, describedBy) => (
-                          <Input id={id} aria-describedby={describedBy} value={baseUnit} readOnly />
-                        )}
-                      </TopologyField>
-                      {select(
-                        'price_unit',
-                        'variantUnitPrice',
-                        priceOptions.map((item) => ({
-                          value: item.code,
-                          label: `${item.name} (${item.code})`,
-                        })),
-                      )}
-                    </>
-                  )}
-                  {showTracking &&
-                    select(
-                      'tracked_mode',
-                      'variantUnitTracked',
-                      trackedModes.map((mode) => ({
-                        value: mode,
-                        label: t(`variantUnitTracked_${mode}`),
-                        disabled: trackingOff && mode !== 'none' && mode !== loaded?.tracked_mode,
-                      })),
-                      trackingOff ? 'variantUnitTrackingOff' : undefined,
-                    )}
-                  {showUnits && (
-                    <>
-                      {input('ratio_numerator', 'variantUnitRatioNumerator', numerator === null)}
-                      {input(
-                        'ratio_denominator',
-                        'variantUnitRatioDenominator',
-                        denominator === null,
-                      )}
-                    </>
-                  )}
-                </div>
-                {(numerator === null || denominator === null) && (
-                  <p role="alert" className="text-destructive">
-                    {t('variantUnitRatioInvalid')}
-                  </p>
-                )}
-                {showLabelCode &&
-                  input(
-                    'label_code',
-                    'variantUnitLabelCode',
-                    !labelCodeValid,
-                    'variantUnitLabelCodeHint',
-                  )}
-                {!labelCodeValid && (
-                  <p role="alert" className="text-destructive">
-                    {t('variantUnitLabelCodeInvalid')}
-                  </p>
-                )}
-                <FieldDescription>{t('variantUnitLockNote')}</FieldDescription>
-                {offModules.map((module) => (
-                  <p role="note" key={module.key}>
-                    {t(
-                      moduleTextKey(module.key)
-                        ? `posModules.${moduleTextKey(module.key)}.off`
-                        : 'moduleOff',
-                    )}
-                  </p>
-                ))}
-              </>
-            )}
-          </fieldset>
-          {error && (
-            <p role="alert" className="text-destructive">
-              {error}
-            </p>
-          )}
-          {saved && <p role="status">{saved}</p>}
+            {saved && <p role="status">{saved}</p>}
+          </DialogBody>
           <DialogFooter>
             <Button type="button" variant="outline" disabled={busy} onClick={close}>
               {t(canWrite ? 'adminCancel' : 'adminClose')}

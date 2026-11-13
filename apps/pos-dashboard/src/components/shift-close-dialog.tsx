@@ -13,6 +13,7 @@ import {
   Badge,
   Button,
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -244,6 +245,40 @@ export function ShiftCloseDialog({
     </ol>
   )
 
+  const status = (
+    <>
+      {uncertain && (
+        <div role="status" className="flex flex-wrap items-center gap-2">
+          <Badge variant="warning">{t('shiftCommandChecking')}</Badge>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={busy}
+            onClick={() => {
+              setError('')
+              uncertain()
+            }}
+          >
+            {t('shiftCommandRecheck')}
+          </Button>
+        </div>
+      )}
+      {error && (
+        <p role="alert" className="text-sm text-destructive">
+          {error}
+        </p>
+      )}
+      {notice && (
+        <p role="status" className="text-sm text-muted-foreground">
+          {notice}
+        </p>
+      )}
+      {state.isLoading && <p role="status">{t('waiting')}</p>}
+      {state.isError && <p role="alert">{describeShiftFailure(state.error, t)}</p>}
+    </>
+  )
+
   return (
     <Dialog
       open
@@ -256,46 +291,25 @@ export function ShiftCloseDialog({
           <DialogTitle>{t('shiftCloseFor', { name: ownerName })}</DialogTitle>
           <DialogDescription>{t('shiftOthersHint')}</DialogDescription>
         </DialogHeader>
-        <div className="space-y-4">
-          {uncertain && (
-            <div role="status" className="flex flex-wrap items-center gap-2">
-              <Badge variant="warning">{t('shiftCommandChecking')}</Badge>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={busy}
-                onClick={() => {
-                  setError('')
-                  uncertain()
-                }}
-              >
-                {t('shiftCommandRecheck')}
-              </Button>
-            </div>
-          )}
-          {error && (
-            <p role="alert" className="text-sm text-destructive">
-              {error}
-            </p>
-          )}
-          {notice && (
-            <p role="status" className="text-sm text-muted-foreground">
-              {notice}
-            </p>
-          )}
-          {state.isLoading && <p role="status">{t('waiting')}</p>}
-          {state.isError && <p role="alert">{describeShiftFailure(state.error, t)}</p>}
-          {data?.closure ? (
-            <>
+        {data?.closure ? (
+          <>
+            <DialogBody className="space-y-4">
+              {status}
               <ClosureSnapshot closure={data.closure} timeZone={timeZone} />
-              <DialogFooter>
-                <Button onClick={onClose}>{t('shiftCloseDone')}</Button>
-              </DialogFooter>
-            </>
-          ) : data && !data.can_close ? (
+            </DialogBody>
+            <DialogFooter>
+              <Button onClick={onClose}>{t('shiftCloseDone')}</Button>
+            </DialogFooter>
+          </>
+        ) : data && !data.can_close ? (
+          <DialogBody className="space-y-4">
+            {status}
             <p>{t('shiftCloseNotAllowed')}</p>
-          ) : data && reviewing && count ? (
-            <div className="space-y-4">
+          </DialogBody>
+        ) : data && reviewing && count ? (
+          <>
+            <DialogBody className="space-y-4">
+              {status}
               {steps(2)}
               <Summary
                 rows={[
@@ -343,50 +357,53 @@ export function ShiftCloseDialog({
                   onChange={setReason}
                 />
               ) : null}
-              <DialogFooter>
+            </DialogBody>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                disabled={busy}
+                onClick={() => {
+                  setCounted('')
+                  setReason('')
+                  setNotice('')
+                  setRecounting(true)
+                  setStep('count')
+                }}
+              >
+                {t('shiftRecount')}
+              </Button>
+              {count.requires_approval && !count.approval && !count.reason ? (
+                <Button
+                  disabled={busy || !reason.trim()}
+                  onClick={() => submitCount(reason.trim())}
+                >
+                  {t('shiftSendForApproval')}
+                </Button>
+              ) : count.requires_approval && !count.approval ? (
                 <Button
                   variant="outline"
-                  disabled={busy}
-                  onClick={() => {
-                    setCounted('')
-                    setReason('')
-                    setNotice('')
-                    setRecounting(true)
-                    setStep('count')
-                  }}
+                  disabled={busy || state.isFetching}
+                  onClick={() => void state.refetch()}
                 >
-                  {t('shiftRecount')}
+                  {t('shiftCheckApproval')}
                 </Button>
-                {count.requires_approval && !count.approval && !count.reason ? (
-                  <Button
-                    disabled={busy || !reason.trim()}
-                    onClick={() => submitCount(reason.trim())}
-                  >
-                    {t('shiftSendForApproval')}
-                  </Button>
-                ) : count.requires_approval && !count.approval ? (
-                  <Button
-                    variant="outline"
-                    disabled={busy || state.isFetching}
-                    onClick={() => void state.refetch()}
-                  >
-                    {t('shiftCheckApproval')}
-                  </Button>
-                ) : (
-                  <Button disabled={busy} onClick={() => close()}>
-                    {busy ? t('waiting') : t('shiftCloseConfirm')}
-                  </Button>
-                )}
-              </DialogFooter>
-            </div>
-          ) : data && step === 'count' ? (
-            <form
-              className="space-y-4"
-              onSubmit={(event) => {
-                event.preventDefault()
-                if (!busy) submitCount()
-              }}
-            >
+              ) : (
+                <Button disabled={busy} onClick={() => close()}>
+                  {busy ? t('waiting') : t('shiftCloseConfirm')}
+                </Button>
+              )}
+            </DialogFooter>
+          </>
+        ) : data && step === 'count' ? (
+          <form
+            className="flex min-h-0 flex-col"
+            onSubmit={(event) => {
+              event.preventDefault()
+              if (!busy) submitCount()
+            }}
+          >
+            <DialogBody className="space-y-4">
+              {status}
               {steps(1)}
               <p className="text-sm">{t('shiftBlindCountHint')}</p>
               {count?.stale && <Badge variant="warning">{t('shiftCountStale')}</Badge>}
@@ -401,22 +418,25 @@ export function ShiftCloseDialog({
                   onChange={(event) => setCounted(event.target.value)}
                 />
               </div>
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={busy}
-                  onClick={() => setStep('checklist')}
-                >
-                  {t('back')}
-                </Button>
-                <Button type="submit" disabled={busy || !counted.trim()}>
-                  {busy ? t('waiting') : t('shiftRecordCount')}
-                </Button>
-              </DialogFooter>
-            </form>
-          ) : data && checklist ? (
-            <div className="space-y-4">
+            </DialogBody>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={busy}
+                onClick={() => setStep('checklist')}
+              >
+                {t('back')}
+              </Button>
+              <Button type="submit" disabled={busy || !counted.trim()}>
+                {busy ? t('waiting') : t('shiftRecordCount')}
+              </Button>
+            </DialogFooter>
+          </form>
+        ) : data && checklist ? (
+          <>
+            <DialogBody className="space-y-4">
+              {status}
               {steps(0)}
               {checklist.blocking.length === 0 ? (
                 <p role="status">{t('shiftChecklistClear')}</p>
@@ -442,30 +462,32 @@ export function ShiftCloseDialog({
                   />
                 </>
               )}
-              <DialogFooter>
-                <Button
-                  variant="outline"
-                  disabled={state.isFetching}
-                  onClick={() => {
-                    setBlocked(null)
-                    void state.refetch()
-                  }}
-                >
-                  {t('shiftChecklistRefresh')}
-                </Button>
-                <Button
-                  disabled={checklist.blocking.length > 0}
-                  onClick={() => {
-                    setError('')
-                    setStep('count')
-                  }}
-                >
-                  {t('shiftStartCount')}
-                </Button>
-              </DialogFooter>
-            </div>
-          ) : null}
-        </div>
+            </DialogBody>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                disabled={state.isFetching}
+                onClick={() => {
+                  setBlocked(null)
+                  void state.refetch()
+                }}
+              >
+                {t('shiftChecklistRefresh')}
+              </Button>
+              <Button
+                disabled={checklist.blocking.length > 0}
+                onClick={() => {
+                  setError('')
+                  setStep('count')
+                }}
+              >
+                {t('shiftStartCount')}
+              </Button>
+            </DialogFooter>
+          </>
+        ) : (
+          <DialogBody className="space-y-4">{status}</DialogBody>
+        )}
       </DialogContent>
     </Dialog>
   )

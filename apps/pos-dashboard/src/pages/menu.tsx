@@ -7,6 +7,7 @@ import {
   Badge,
   Button,
   Checkbox,
+  DialogBody,
   DialogFooter,
   Field,
   FieldLabel,
@@ -536,34 +537,34 @@ function useDialogSubmit(onClose: () => void) {
   return { busy, error, submit }
 }
 
+function DialogError({ error }: { error: string }) {
+  if (!error) return null
+  return (
+    <p role="alert" className="text-sm text-destructive">
+      {error}
+    </p>
+  )
+}
+
 function DialogActions({
   busy,
-  error,
   close,
   disabled,
 }: {
   busy: boolean
-  error: string
   close: () => void
   disabled?: boolean
 }) {
   const { t } = useTranslation()
   return (
-    <>
-      {error && (
-        <p role="alert" className="text-sm text-destructive">
-          {error}
-        </p>
-      )}
-      <DialogFooter>
-        <Button type="button" variant="outline" disabled={busy} onClick={close}>
-          {t('adminCancel')}
-        </Button>
-        <Button type="submit" disabled={busy || disabled}>
-          {t(busy ? 'waiting' : 'save')}
-        </Button>
-      </DialogFooter>
-    </>
+    <DialogFooter>
+      <Button type="button" variant="outline" disabled={busy} onClick={close}>
+        {t('adminCancel')}
+      </Button>
+      <Button type="submit" disabled={busy || disabled}>
+        {t(busy ? 'waiting' : 'save')}
+      </Button>
+    </DialogFooter>
   )
 }
 
@@ -644,7 +645,7 @@ function CategoryDialog({
     >
       {(close) => (
         <form
-          className="space-y-4"
+          className="flex min-h-0 flex-col"
           onSubmit={(event) => {
             event.preventDefault()
             void submit(() =>
@@ -661,24 +662,27 @@ function CategoryDialog({
             )
           }}
         >
-          <TextField label={t('adminName')} value={name} onChange={setName} maxLength={80} />
-          <div className="grid gap-4 sm:grid-cols-2">
-            <TextField
-              label={t('menuAdmin.position')}
-              value={position}
-              onChange={setPosition}
-              inputMode="numeric"
-            />
-            <TextField
-              label={t('menuAdmin.color')}
-              value={color}
-              onChange={setColor}
-              hint="#7b4a2e"
-              maxLength={7}
-            />
-          </div>
-          <CheckField label={t('statusActive')} checked={active} onChange={setActive} />
-          <DialogActions busy={busy} error={error} close={close} disabled={!name.trim()} />
+          <DialogBody className="space-y-4">
+            <TextField label={t('adminName')} value={name} onChange={setName} maxLength={80} />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <TextField
+                label={t('menuAdmin.position')}
+                value={position}
+                onChange={setPosition}
+                inputMode="numeric"
+              />
+              <TextField
+                label={t('menuAdmin.color')}
+                value={color}
+                onChange={setColor}
+                hint="#7b4a2e"
+                maxLength={7}
+              />
+            </div>
+            <CheckField label={t('statusActive')} checked={active} onChange={setActive} />
+            <DialogError error={error} />
+          </DialogBody>
+          <DialogActions busy={busy} close={close} disabled={!name.trim()} />
         </form>
       )}
     </TopologyDialog>
@@ -737,7 +741,7 @@ function ItemDialog({
     >
       {(close) => (
         <form
-          className="space-y-4"
+          className="flex min-h-0 flex-col"
           onSubmit={(event) => {
             event.preventDefault()
             void submit(() =>
@@ -770,146 +774,149 @@ function ItemDialog({
             )
           }}
         >
-          {!item && (
-            <>
-              <ProductSearch
-                branchId={branchId}
-                label={t('menuAdmin.product')}
-                onPick={setProduct}
+          <DialogBody className="space-y-4">
+            {!item && (
+              <>
+                <ProductSearch
+                  branchId={branchId}
+                  label={t('menuAdmin.product')}
+                  onPick={setProduct}
+                />
+                {product && (
+                  <p className="text-sm">{t('menuAdmin.productPicked', { name: product.name })}</p>
+                )}
+                <p className="text-sm text-muted-foreground">{t('menuAdmin.productHint')}</p>
+              </>
+            )}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <TopologyField label={t('menuAdmin.kind')}>
+                {(id) => (
+                  <TopologySelect
+                    id={id}
+                    value={kind}
+                    options={[
+                      { value: 'single', label: t('menuAdmin.single') },
+                      { value: 'combo', label: t('menuAdmin.combo') },
+                    ]}
+                    onChange={(value) => setKind(value === 'combo' ? 'combo' : 'single')}
+                  />
+                )}
+              </TopologyField>
+              <TopologyField label={t('menuAdmin.category')}>
+                {(id) => (
+                  <TopologySelect
+                    id={id}
+                    value={categoryId}
+                    options={[
+                      { value: '', label: t('menuAdmin.noCategory') },
+                      ...categories.map((row) => ({ value: row.id, label: row.name })),
+                    ]}
+                    onChange={setCategoryId}
+                  />
+                )}
+              </TopologyField>
+              <TextField
+                label={t('menuAdmin.kitchen')}
+                hint={t('menuAdmin.kitchenHint')}
+                value={kitchen}
+                onChange={setKitchen}
+                maxLength={40}
               />
-              {product && (
-                <p className="text-sm">{t('menuAdmin.productPicked', { name: product.name })}</p>
-              )}
-              <p className="text-sm text-muted-foreground">{t('menuAdmin.productHint')}</p>
-            </>
-          )}
-          <div className="grid gap-4 sm:grid-cols-2">
-            <TopologyField label={t('menuAdmin.kind')}>
-              {(id) => (
-                <TopologySelect
-                  id={id}
-                  value={kind}
-                  options={[
-                    { value: 'single', label: t('menuAdmin.single') },
-                    { value: 'combo', label: t('menuAdmin.combo') },
-                  ]}
-                  onChange={(value) => setKind(value === 'combo' ? 'combo' : 'single')}
-                />
-              )}
-            </TopologyField>
-            <TopologyField label={t('menuAdmin.category')}>
-              {(id) => (
-                <TopologySelect
-                  id={id}
-                  value={categoryId}
-                  options={[
-                    { value: '', label: t('menuAdmin.noCategory') },
-                    ...categories.map((row) => ({ value: row.id, label: row.name })),
-                  ]}
-                  onChange={setCategoryId}
-                />
-              )}
-            </TopologyField>
-            <TextField
-              label={t('menuAdmin.kitchen')}
-              hint={t('menuAdmin.kitchenHint')}
-              value={kitchen}
-              onChange={setKitchen}
-              maxLength={40}
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <TextField
+                label={t('menuAdmin.drinkCredit')}
+                hint={t(creditValid ? 'menuAdmin.drinkCreditHint' : 'menuAdmin.drinkCreditInvalid')}
+                value={drinkCredit}
+                onChange={setDrinkCredit}
+                maxLength={12}
+              />
+              <TextField
+                label={t('menuAdmin.drinkCreditCategories')}
+                hint={t('menuAdmin.drinkCreditCategoriesHint')}
+                value={creditCategories}
+                onChange={setCreditCategories}
+                maxLength={200}
+              />
+            </div>
+            {taxOptions.length > 1 ? (
+              <TopologyField label={t('menuAdmin.tax')}>
+                {(id) => (
+                  <TopologySelect id={id} value={tax} options={taxOptions} onChange={setTax} />
+                )}
+              </TopologyField>
+            ) : null}
+            <CheckField label={t('menuAdmin.cupLabel')} checked={cupLabel} onChange={setCupLabel} />
+            <CheckField
+              label={t('menuAdmin.qrOrderable')}
+              checked={qrOrderable}
+              onChange={setQrOrderable}
             />
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <TextField
-              label={t('menuAdmin.drinkCredit')}
-              hint={t(creditValid ? 'menuAdmin.drinkCreditHint' : 'menuAdmin.drinkCreditInvalid')}
-              value={drinkCredit}
-              onChange={setDrinkCredit}
-              maxLength={12}
-            />
-            <TextField
-              label={t('menuAdmin.drinkCreditCategories')}
-              hint={t('menuAdmin.drinkCreditCategoriesHint')}
-              value={creditCategories}
-              onChange={setCreditCategories}
-              maxLength={200}
-            />
-          </div>
-          {taxOptions.length > 1 ? (
-            <TopologyField label={t('menuAdmin.tax')}>
-              {(id) => (
-                <TopologySelect id={id} value={tax} options={taxOptions} onChange={setTax} />
-              )}
-            </TopologyField>
-          ) : null}
-          <CheckField label={t('menuAdmin.cupLabel')} checked={cupLabel} onChange={setCupLabel} />
-          <CheckField
-            label={t('menuAdmin.qrOrderable')}
-            checked={qrOrderable}
-            onChange={setQrOrderable}
-          />
-          {kind === 'single' ? (
-            <fieldset className="space-y-2">
-              <legend className="text-sm font-medium">{t('menuAdmin.groups')}</legend>
-              {groups.length === 0 && (
-                <p className="text-sm text-muted-foreground">{t('menuAdmin.none')}</p>
-              )}
-              {groups.map((group) => (
-                <CheckField
-                  key={group.id}
-                  label={group.name}
-                  checked={groupIds.includes(group.id)}
-                  onChange={(checked) =>
-                    setGroupIds((current) =>
-                      checked ? [...current, group.id] : current.filter((id) => id !== group.id),
-                    )
-                  }
-                />
-              ))}
-            </fieldset>
-          ) : (
-            <fieldset className="space-y-2">
-              <legend className="text-sm font-medium">{t('menuAdmin.components')}</legend>
-              {components.map((row, index) => (
-                <div key={row.variantId} className="flex items-end gap-2">
-                  <span className="flex-1 pb-2">{row.name}</span>
-                  <TextField
-                    label={t('menuAdmin.quantity')}
-                    value={row.quantity}
-                    inputMode="numeric"
-                    onChange={(value) =>
-                      setComponents((current) =>
-                        current.map((entry, at) =>
-                          at === index ? { ...entry, quantity: value } : entry,
-                        ),
+            {kind === 'single' ? (
+              <fieldset className="space-y-2">
+                <legend className="text-sm font-medium">{t('menuAdmin.groups')}</legend>
+                {groups.length === 0 && (
+                  <p className="text-sm text-muted-foreground">{t('menuAdmin.none')}</p>
+                )}
+                {groups.map((group) => (
+                  <CheckField
+                    key={group.id}
+                    label={group.name}
+                    checked={groupIds.includes(group.id)}
+                    onChange={(checked) =>
+                      setGroupIds((current) =>
+                        checked ? [...current, group.id] : current.filter((id) => id !== group.id),
                       )
                     }
                   />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() =>
-                      setComponents((current) => current.filter((_, at) => at !== index))
-                    }
-                  >
-                    {t('menuAdmin.delete')}
-                  </Button>
-                </div>
-              ))}
-              <ProductSearch
-                branchId={branchId}
-                label={t('menuAdmin.addComponent')}
-                onPick={(hit) =>
-                  setComponents((current) =>
-                    current.some((row) => row.variantId === hit.variantId)
-                      ? current
-                      : [...current, { variantId: hit.variantId, name: hit.name, quantity: '1' }],
-                  )
-                }
-              />
-            </fieldset>
-          )}
-          <CheckField label={t('statusActive')} checked={active} onChange={setActive} />
-          <DialogActions busy={busy} error={error} close={close} disabled={!ready} />
+                ))}
+              </fieldset>
+            ) : (
+              <fieldset className="space-y-2">
+                <legend className="text-sm font-medium">{t('menuAdmin.components')}</legend>
+                {components.map((row, index) => (
+                  <div key={row.variantId} className="flex items-end gap-2">
+                    <span className="flex-1 pb-2">{row.name}</span>
+                    <TextField
+                      label={t('menuAdmin.quantity')}
+                      value={row.quantity}
+                      inputMode="numeric"
+                      onChange={(value) =>
+                        setComponents((current) =>
+                          current.map((entry, at) =>
+                            at === index ? { ...entry, quantity: value } : entry,
+                          ),
+                        )
+                      }
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() =>
+                        setComponents((current) => current.filter((_, at) => at !== index))
+                      }
+                    >
+                      {t('menuAdmin.delete')}
+                    </Button>
+                  </div>
+                ))}
+                <ProductSearch
+                  branchId={branchId}
+                  label={t('menuAdmin.addComponent')}
+                  onPick={(hit) =>
+                    setComponents((current) =>
+                      current.some((row) => row.variantId === hit.variantId)
+                        ? current
+                        : [...current, { variantId: hit.variantId, name: hit.name, quantity: '1' }],
+                    )
+                  }
+                />
+              </fieldset>
+            )}
+            <CheckField label={t('statusActive')} checked={active} onChange={setActive} />
+            <DialogError error={error} />
+          </DialogBody>
+          <DialogActions busy={busy} close={close} disabled={!ready} />
         </form>
       )}
     </TopologyDialog>
@@ -966,7 +973,7 @@ function GroupDialog({
     >
       {(close) => (
         <form
-          className="space-y-4"
+          className="flex min-h-0 flex-col"
           onSubmit={(event) => {
             event.preventDefault()
             void submit(() =>
@@ -984,73 +991,76 @@ function GroupDialog({
             )
           }}
         >
-          <TextField label={t('adminName')} value={name} onChange={setName} maxLength={80} />
-          <div className="grid gap-4 sm:grid-cols-2">
-            <TextField
-              label={t('menuAdmin.min')}
-              hint={t('menuAdmin.minHint')}
-              value={min}
-              onChange={setMin}
-              inputMode="numeric"
+          <DialogBody className="space-y-4">
+            <TextField label={t('adminName')} value={name} onChange={setName} maxLength={80} />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <TextField
+                label={t('menuAdmin.min')}
+                hint={t('menuAdmin.minHint')}
+                value={min}
+                onChange={setMin}
+                inputMode="numeric"
+              />
+              <TextField
+                label={t('menuAdmin.max')}
+                value={max}
+                onChange={setMax}
+                inputMode="numeric"
+              />
+            </div>
+            <CheckField
+              label={t('menuAdmin.allowQuantity')}
+              checked={allowQuantity}
+              onChange={setAllowQuantity}
             />
-            <TextField
-              label={t('menuAdmin.max')}
-              value={max}
-              onChange={setMax}
-              inputMode="numeric"
-            />
-          </div>
-          <CheckField
-            label={t('menuAdmin.allowQuantity')}
-            checked={allowQuantity}
-            onChange={setAllowQuantity}
-          />
-          <fieldset className="space-y-2">
-            <legend className="text-sm font-medium">{t('menuAdmin.options')}</legend>
-            {options.map((option, index) => (
-              <div key={option.id ?? `new-${index}`} className="flex flex-wrap items-end gap-2">
-                <div className="flex-1">
+            <fieldset className="space-y-2">
+              <legend className="text-sm font-medium">{t('menuAdmin.options')}</legend>
+              {options.map((option, index) => (
+                <div key={option.id ?? `new-${index}`} className="flex flex-wrap items-end gap-2">
+                  <div className="flex-1">
+                    <TextField
+                      label={t('adminName')}
+                      value={option.name}
+                      maxLength={80}
+                      onChange={(value) => update(index, { name: value })}
+                    />
+                  </div>
                   <TextField
-                    label={t('adminName')}
-                    value={option.name}
-                    maxLength={80}
-                    onChange={(value) => update(index, { name: value })}
+                    label={t('menuAdmin.priceDelta')}
+                    value={option.price_delta}
+                    inputMode="numeric"
+                    onChange={(value) => update(index, { price_delta: value })}
                   />
+                  <CheckField
+                    label={t('menuAdmin.default')}
+                    checked={option.default_selected}
+                    onChange={(checked) => update(index, { default_selected: checked })}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setOptions((current) => current.filter((_, at) => at !== index))}
+                  >
+                    {t('menuAdmin.delete')}
+                  </Button>
                 </div>
-                <TextField
-                  label={t('menuAdmin.priceDelta')}
-                  value={option.price_delta}
-                  inputMode="numeric"
-                  onChange={(value) => update(index, { price_delta: value })}
-                />
-                <CheckField
-                  label={t('menuAdmin.default')}
-                  checked={option.default_selected}
-                  onChange={(checked) => update(index, { default_selected: checked })}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setOptions((current) => current.filter((_, at) => at !== index))}
-                >
-                  {t('menuAdmin.delete')}
-                </Button>
-              </div>
-            ))}
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() =>
-                setOptions((current) => [
-                  ...current,
-                  { name: '', price_delta: '0', default_selected: false },
-                ])
-              }
-            >
-              {t('menuAdmin.addOption')}
-            </Button>
-          </fieldset>
-          <DialogActions busy={busy} error={error} close={close} disabled={!valid} />
+              ))}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() =>
+                  setOptions((current) => [
+                    ...current,
+                    { name: '', price_delta: '0', default_selected: false },
+                  ])
+                }
+              >
+                {t('menuAdmin.addOption')}
+              </Button>
+            </fieldset>
+            <DialogError error={error} />
+          </DialogBody>
+          <DialogActions busy={busy} close={close} disabled={!valid} />
         </form>
       )}
     </TopologyDialog>
@@ -1102,7 +1112,7 @@ function ScheduleDialog({
     >
       {(close) => (
         <form
-          className="space-y-4"
+          className="flex min-h-0 flex-col"
           onSubmit={(event) => {
             event.preventDefault()
             void submit(() =>
@@ -1126,110 +1136,113 @@ function ScheduleDialog({
             )
           }}
         >
-          <TextField label={t('adminName')} value={name} onChange={setName} maxLength={80} />
-          <TextField
-            label={t('menuAdmin.scheduleLabel')}
-            hint={t('menuAdmin.scheduleLabelHint')}
-            value={label}
-            onChange={setLabel}
-            maxLength={40}
-          />
-          <div className="grid gap-4 sm:grid-cols-2">
+          <DialogBody className="space-y-4">
+            <TextField label={t('adminName')} value={name} onChange={setName} maxLength={80} />
             <TextField
-              label={t('menuAdmin.startsAt')}
-              value={startsAt}
-              onChange={setStartsAt}
-              type="time"
+              label={t('menuAdmin.scheduleLabel')}
+              hint={t('menuAdmin.scheduleLabelHint')}
+              value={label}
+              onChange={setLabel}
+              maxLength={40}
             />
-            <TextField
-              label={t('menuAdmin.endsAt')}
-              hint={t('menuAdmin.endsAtHint')}
-              value={endsAt}
-              onChange={setEndsAt}
-              type="time"
-            />
-          </div>
-          <fieldset className="flex flex-wrap gap-3">
-            <legend className="mb-1 text-sm font-medium">{t('menuAdmin.days')}</legend>
-            {DAYS.map((day) => (
-              <CheckField
-                key={day}
-                label={t(`menuAdmin.day_${day}`)}
-                checked={days.includes(day)}
-                onChange={(checked) =>
-                  setDays((current) =>
-                    checked ? [...current, day] : current.filter((value) => value !== day),
-                  )
-                }
+            <div className="grid gap-4 sm:grid-cols-2">
+              <TextField
+                label={t('menuAdmin.startsAt')}
+                value={startsAt}
+                onChange={setStartsAt}
+                type="time"
               />
-            ))}
-          </fieldset>
-          <p className="text-sm text-muted-foreground">{t('menuAdmin.daysHint')}</p>
-          <fieldset className="space-y-2">
-            <legend className="text-sm font-medium">{t('menuAdmin.scheduleItemsTitle')}</legend>
-            {rows.map((row, index) => (
-              <div key={row.menuItemId} className="flex flex-wrap items-end gap-2">
-                <span className="flex-1 pb-2">
-                  {items.find((item) => item.id === row.menuItemId)?.name ?? row.menuItemId}
-                </span>
-                {!row.hidden && (
-                  <TextField
-                    label={t('menuAdmin.price')}
-                    value={row.price}
-                    inputMode="numeric"
-                    onChange={(value) =>
+              <TextField
+                label={t('menuAdmin.endsAt')}
+                hint={t('menuAdmin.endsAtHint')}
+                value={endsAt}
+                onChange={setEndsAt}
+                type="time"
+              />
+            </div>
+            <fieldset className="flex flex-wrap gap-3">
+              <legend className="mb-1 text-sm font-medium">{t('menuAdmin.days')}</legend>
+              {DAYS.map((day) => (
+                <CheckField
+                  key={day}
+                  label={t(`menuAdmin.day_${day}`)}
+                  checked={days.includes(day)}
+                  onChange={(checked) =>
+                    setDays((current) =>
+                      checked ? [...current, day] : current.filter((value) => value !== day),
+                    )
+                  }
+                />
+              ))}
+            </fieldset>
+            <p className="text-sm text-muted-foreground">{t('menuAdmin.daysHint')}</p>
+            <fieldset className="space-y-2">
+              <legend className="text-sm font-medium">{t('menuAdmin.scheduleItemsTitle')}</legend>
+              {rows.map((row, index) => (
+                <div key={row.menuItemId} className="flex flex-wrap items-end gap-2">
+                  <span className="flex-1 pb-2">
+                    {items.find((item) => item.id === row.menuItemId)?.name ?? row.menuItemId}
+                  </span>
+                  {!row.hidden && (
+                    <TextField
+                      label={t('menuAdmin.price')}
+                      value={row.price}
+                      inputMode="numeric"
+                      onChange={(value) =>
+                        setRows((current) =>
+                          current.map((entry, at) =>
+                            at === index ? { ...entry, price: value } : entry,
+                          ),
+                        )
+                      }
+                    />
+                  )}
+                  <CheckField
+                    label={t('menuAdmin.hidden')}
+                    checked={row.hidden}
+                    onChange={(checked) =>
                       setRows((current) =>
                         current.map((entry, at) =>
-                          at === index ? { ...entry, price: value } : entry,
+                          at === index ? { ...entry, hidden: checked } : entry,
                         ),
                       )
                     }
                   />
-                )}
-                <CheckField
-                  label={t('menuAdmin.hidden')}
-                  checked={row.hidden}
-                  onChange={(checked) =>
-                    setRows((current) =>
-                      current.map((entry, at) =>
-                        at === index ? { ...entry, hidden: checked } : entry,
-                      ),
-                    )
-                  }
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setRows((current) => current.filter((_, at) => at !== index))}
-                >
-                  {t('menuAdmin.delete')}
-                </Button>
-              </div>
-            ))}
-            {unused.length > 0 && (
-              <TopologyField label={t('menuAdmin.addScheduleItem')}>
-                {(id) => (
-                  <TopologySelect
-                    id={id}
-                    value=""
-                    options={[
-                      { value: '', label: '—' },
-                      ...unused.map((item) => ({ value: item.id, label: item.name })),
-                    ]}
-                    onChange={(value) => {
-                      if (value)
-                        setRows((current) => [
-                          ...current,
-                          { menuItemId: value, price: '', hidden: false },
-                        ])
-                    }}
-                  />
-                )}
-              </TopologyField>
-            )}
-          </fieldset>
-          <CheckField label={t('statusActive')} checked={active} onChange={setActive} />
-          <DialogActions busy={busy} error={error} close={close} disabled={!valid} />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setRows((current) => current.filter((_, at) => at !== index))}
+                  >
+                    {t('menuAdmin.delete')}
+                  </Button>
+                </div>
+              ))}
+              {unused.length > 0 && (
+                <TopologyField label={t('menuAdmin.addScheduleItem')}>
+                  {(id) => (
+                    <TopologySelect
+                      id={id}
+                      value=""
+                      options={[
+                        { value: '', label: '—' },
+                        ...unused.map((item) => ({ value: item.id, label: item.name })),
+                      ]}
+                      onChange={(value) => {
+                        if (value)
+                          setRows((current) => [
+                            ...current,
+                            { menuItemId: value, price: '', hidden: false },
+                          ])
+                      }}
+                    />
+                  )}
+                </TopologyField>
+              )}
+            </fieldset>
+            <CheckField label={t('statusActive')} checked={active} onChange={setActive} />
+            <DialogError error={error} />
+          </DialogBody>
+          <DialogActions busy={busy} close={close} disabled={!valid} />
         </form>
       )}
     </TopologyDialog>

@@ -19,6 +19,7 @@ import {
   Badge,
   Button,
   Dialog,
+  DialogBody,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -296,22 +297,24 @@ function DeclineDialog({
           </DialogTitle>
         </DialogHeader>
         <form
-          className="space-y-4"
+          className="flex min-h-0 flex-col"
           onSubmit={(event) => {
             event.preventDefault()
             if (note.trim()) onDecline(note.trim())
           }}
         >
-          <div className="grid gap-1">
-            <Label htmlFor="cash-request-note">{t('cashRequestCancelNote')}</Label>
-            <Textarea
-              id="cash-request-note"
-              value={note}
-              maxLength={200}
-              required
-              onChange={(event) => setNote(event.target.value)}
-            />
-          </div>
+          <DialogBody className="space-y-4">
+            <div className="grid gap-1">
+              <Label htmlFor="cash-request-note">{t('cashRequestCancelNote')}</Label>
+              <Textarea
+                id="cash-request-note"
+                value={note}
+                maxLength={200}
+                required
+                onChange={(event) => setNote(event.target.value)}
+              />
+            </div>
+          </DialogBody>
           <DialogFooter>
             <Button type="button" variant="outline" disabled={busy} onClick={onClose}>
               {t('adminCancel')}

@@ -1,7 +1,7 @@
 import { formatMoney } from '@parkviet/pos-shared/money'
 import { conflictReason, describeFailure } from '@parkviet/pos-shared/request-failure'
 import type { PosMenuModifierGroup } from '@parkviet/pos-shared/types/pos-context'
-import { Badge, Button, DialogFooter, useConfirm } from '@spree/dashboard-ui'
+import { Badge, Button, DialogBody, DialogFooter, useConfirm } from '@spree/dashboard-ui'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -86,18 +86,20 @@ export function RecipeEditor({
       onClose={onClose}
     >
       {(close) => (
-        <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">{t('recipes.intro')}</p>
-          <TopologyField label={t('recipes.owner')}>
-            {(id) => (
-              <TopologySelect
-                id={id}
-                value={ownerKey}
-                onChange={setOwnerKey}
-                options={owners.map((row) => ({ value: row.key, label: row.label }))}
-              />
-            )}
-          </TopologyField>
+        <div className="flex min-h-0 flex-col">
+          <DialogBody className="flex-none space-y-4 pb-0">
+            <p className="text-sm text-muted-foreground">{t('recipes.intro')}</p>
+            <TopologyField label={t('recipes.owner')}>
+              {(id) => (
+                <TopologySelect
+                  id={id}
+                  value={ownerKey}
+                  onChange={setOwnerKey}
+                  options={owners.map((row) => ({ value: row.key, label: row.label }))}
+                />
+              )}
+            </TopologyField>
+          </DialogBody>
           {owner && (
             <OwnerRecipe
               key={owner.key}
@@ -186,117 +188,128 @@ function OwnerRecipe({
     }
   }
 
-  if (recipe.isPending) return <PageSkeleton />
+  if (recipe.isPending)
+    return (
+      <DialogBody>
+        <PageSkeleton />
+      </DialogBody>
+    )
   if (recipe.isError)
     return (
-      <p role="alert" className="text-destructive">
-        {recipeFailure(recipe.error, t)}
-      </p>
+      <DialogBody>
+        <p role="alert" className="text-destructive">
+          {recipeFailure(recipe.error, t)}
+        </p>
+      </DialogBody>
     )
   const active = recipe.data.active
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2 text-sm">
-        {active ? (
-          <Badge variant="outline">{t('recipes.version', { version: active.version })}</Badge>
+    <div className="flex min-h-0 flex-col">
+      <DialogBody className="space-y-4">
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          {active ? (
+            <Badge variant="outline">{t('recipes.version', { version: active.version })}</Badge>
+          ) : (
+            <span className="text-muted-foreground">{t('recipes.none')}</span>
+          )}
+          {active && (
+            <span className="text-muted-foreground">
+              {active.estimated_cost == null
+                ? t('recipes.costUnknown')
+                : t('recipes.estimatedCost', { cost: formatMoney(active.estimated_cost) })}
+            </span>
+          )}
+          {recipe.data.track_inventory === false && (
+            <span className="text-muted-foreground">{t('recipes.madeToOrder')}</span>
+          )}
+        </div>
+        {current.length === 0 ? (
+          <p className="text-muted-foreground">{t('recipes.empty')}</p>
         ) : (
-          <span className="text-muted-foreground">{t('recipes.none')}</span>
-        )}
-        {active && (
-          <span className="text-muted-foreground">
-            {active.estimated_cost == null
-              ? t('recipes.costUnknown')
-              : t('recipes.estimatedCost', { cost: formatMoney(active.estimated_cost) })}
-          </span>
-        )}
-        {recipe.data.track_inventory === false && (
-          <span className="text-muted-foreground">{t('recipes.madeToOrder')}</span>
-        )}
-      </div>
-      {current.length === 0 ? (
-        <p className="text-muted-foreground">{t('recipes.empty')}</p>
-      ) : (
-        <ul className="divide-y" aria-label={t('recipes.ingredients')}>
-          {current.map((row, index) => {
-            const saved = rows
-              ? undefined
-              : active?.ingredients.find((line) => line.variant_id === row.variantId)
-            return (
-              <li key={row.variantId} className="flex flex-wrap items-end gap-3 py-2">
-                <span className="min-w-40 flex-1 font-medium">
-                  {row.name}
-                  {saved && (
-                    <span className="block text-xs font-normal text-muted-foreground">
-                      {t('recipes.inStockUnit', {
-                        quantity: saved.base_quantity,
-                        unit: saved.base_unit,
-                      })}
-                      {saved.cost != null && ` · ${formatMoney(saved.cost)}`}
-                    </span>
+          <ul className="divide-y" aria-label={t('recipes.ingredients')}>
+            {current.map((row, index) => {
+              const saved = rows
+                ? undefined
+                : active?.ingredients.find((line) => line.variant_id === row.variantId)
+              return (
+                <li key={row.variantId} className="flex flex-wrap items-end gap-3 py-2">
+                  <span className="min-w-40 flex-1 font-medium">
+                    {row.name}
+                    {saved && (
+                      <span className="block text-xs font-normal text-muted-foreground">
+                        {t('recipes.inStockUnit', {
+                          quantity: saved.base_quantity,
+                          unit: saved.base_unit,
+                        })}
+                        {saved.cost != null && ` · ${formatMoney(saved.cost)}`}
+                      </span>
+                    )}
+                  </span>
+                  <div className="w-28">
+                    <TopologyField label={t('recipes.quantity')}>
+                      {(id) => (
+                        <Input
+                          id={id}
+                          inputMode="decimal"
+                          value={row.quantity}
+                          disabled={!canEdit}
+                          onChange={(event) =>
+                            update(index, { quantity: event.target.value.trim() })
+                          }
+                        />
+                      )}
+                    </TopologyField>
+                  </div>
+                  <div className="w-44">
+                    <TopologyField label={t('recipes.unit')}>
+                      {(id) => (
+                        <TopologySelect
+                          id={id}
+                          value={row.unitCode}
+                          disabled={!canEdit}
+                          onChange={(value) => update(index, { unitCode: value })}
+                          options={unitOptions}
+                        />
+                      )}
+                    </TopologyField>
+                  </div>
+                  {canEdit && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setRows(current.filter((_, at) => at !== index))}
+                    >
+                      {t('recipes.remove')}
+                    </Button>
                   )}
-                </span>
-                <div className="w-28">
-                  <TopologyField label={t('recipes.quantity')}>
-                    {(id) => (
-                      <Input
-                        id={id}
-                        inputMode="decimal"
-                        value={row.quantity}
-                        disabled={!canEdit}
-                        onChange={(event) => update(index, { quantity: event.target.value.trim() })}
-                      />
-                    )}
-                  </TopologyField>
-                </div>
-                <div className="w-44">
-                  <TopologyField label={t('recipes.unit')}>
-                    {(id) => (
-                      <TopologySelect
-                        id={id}
-                        value={row.unitCode}
-                        disabled={!canEdit}
-                        onChange={(value) => update(index, { unitCode: value })}
-                        options={unitOptions}
-                      />
-                    )}
-                  </TopologyField>
-                </div>
-                {canEdit && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setRows(current.filter((_, at) => at !== index))}
-                  >
-                    {t('recipes.remove')}
-                  </Button>
-                )}
-              </li>
-            )
-          })}
-        </ul>
-      )}
-      {canEdit && (
-        <ProductSearch
-          branchId={branchId}
-          label={t('recipes.addIngredient')}
-          onPick={(hit) => {
-            if (current.some((row) => row.variantId === hit.variantId)) return
-            setRows([
-              ...current,
-              { variantId: hit.variantId, name: hit.name, quantity: '', unitCode: '' },
-            ])
-          }}
-        />
-      )}
-      {notice && (
-        <p
-          role={notice.failed ? 'alert' : 'status'}
-          className={notice.failed ? 'text-sm text-destructive' : 'text-sm text-muted-foreground'}
-        >
-          {notice.text}
-        </p>
-      )}
+                </li>
+              )
+            })}
+          </ul>
+        )}
+        {canEdit && (
+          <ProductSearch
+            branchId={branchId}
+            label={t('recipes.addIngredient')}
+            onPick={(hit) => {
+              if (current.some((row) => row.variantId === hit.variantId)) return
+              setRows([
+                ...current,
+                { variantId: hit.variantId, name: hit.name, quantity: '', unitCode: '' },
+              ])
+            }}
+          />
+        )}
+        {notice && (
+          <p
+            role={notice.failed ? 'alert' : 'status'}
+            className={notice.failed ? 'text-sm text-destructive' : 'text-sm text-muted-foreground'}
+          >
+            {notice.text}
+          </p>
+        )}
+      </DialogBody>
       <DialogFooter>
         <Button type="button" variant="outline" onClick={close}>
           {t('adminClose')}

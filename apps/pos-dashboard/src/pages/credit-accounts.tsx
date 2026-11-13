@@ -8,6 +8,7 @@ import {
   Badge,
   Button,
   Dialog,
+  DialogBody,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -258,7 +259,7 @@ function TermsDialog({
           </DialogTitle>
         </DialogHeader>
         <form
-          className="space-y-4"
+          className="flex min-h-0 flex-col"
           onSubmit={(event) => {
             event.preventDefault()
             if (parsedLimit === null || parsedDays === null) return
@@ -272,82 +273,84 @@ function TermsDialog({
               })
           }}
         >
-          {!account &&
-            (customer ? (
-              <p>
-                {t('creditCustomer')}: <strong>{customer.name}</strong> {customer.phone ?? ''}{' '}
-                <Button
-                  type="button"
-                  variant="link"
-                  disabled={busy}
-                  onClick={() => setCustomer(null)}
-                >
-                  {t('creditChangeCustomer')}
-                </Button>
+          <DialogBody className="space-y-4">
+            {!account &&
+              (customer ? (
+                <p>
+                  {t('creditCustomer')}: <strong>{customer.name}</strong> {customer.phone ?? ''}{' '}
+                  <Button
+                    type="button"
+                    variant="link"
+                    disabled={busy}
+                    onClick={() => setCustomer(null)}
+                  >
+                    {t('creditChangeCustomer')}
+                  </Button>
+                </p>
+              ) : (
+                <div className="grid gap-1">
+                  <Label htmlFor={`${ids}-search`}>{t('creditCustomerSearch')}</Label>
+                  <Input
+                    id={`${ids}-search`}
+                    type="search"
+                    value={query}
+                    autoComplete="off"
+                    disabled={busy}
+                    onChange={(event) => setQuery(event.target.value)}
+                  />
+                  {results.isError && (
+                    <p role="alert" className="text-sm text-destructive">
+                      {describeFailure(results.error, t)}
+                    </p>
+                  )}
+                  <ul className="grid gap-1" aria-label={t('creditCustomerResults')}>
+                    {(results.data?.data ?? []).map((profile) => (
+                      <li key={profile.id}>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="w-full justify-start"
+                          disabled={busy}
+                          onClick={() => setCustomer(profile)}
+                        >
+                          {profile.name} {profile.phone ?? ''}
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            <div className="grid gap-1">
+              <Label htmlFor={`${ids}-limit`}>{t('creditLimit')}</Label>
+              <Input
+                id={`${ids}-limit`}
+                inputMode="numeric"
+                autoComplete="off"
+                value={limit}
+                required
+                aria-invalid={limit.trim() !== '' && parsedLimit === null}
+                disabled={busy}
+                onChange={(event) => setLimit(event.target.value)}
+              />
+            </div>
+            <div className="grid gap-1">
+              <Label htmlFor={`${ids}-days`}>{t('creditDueDays')}</Label>
+              <Input
+                id={`${ids}-days`}
+                inputMode="numeric"
+                autoComplete="off"
+                value={days}
+                required
+                aria-invalid={days.trim() !== '' && parsedDays === null}
+                aria-describedby={`${ids}-days-hint`}
+                disabled={busy}
+                onChange={(event) => setDays(event.target.value)}
+              />
+              <p id={`${ids}-days-hint`} className="text-sm text-muted-foreground">
+                {t('creditDueDaysHint')}
               </p>
-            ) : (
-              <div className="grid gap-1">
-                <Label htmlFor={`${ids}-search`}>{t('creditCustomerSearch')}</Label>
-                <Input
-                  id={`${ids}-search`}
-                  type="search"
-                  value={query}
-                  autoComplete="off"
-                  disabled={busy}
-                  onChange={(event) => setQuery(event.target.value)}
-                />
-                {results.isError && (
-                  <p role="alert" className="text-sm text-destructive">
-                    {describeFailure(results.error, t)}
-                  </p>
-                )}
-                <ul className="grid gap-1" aria-label={t('creditCustomerResults')}>
-                  {(results.data?.data ?? []).map((profile) => (
-                    <li key={profile.id}>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        className="w-full justify-start"
-                        disabled={busy}
-                        onClick={() => setCustomer(profile)}
-                      >
-                        {profile.name} {profile.phone ?? ''}
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          <div className="grid gap-1">
-            <Label htmlFor={`${ids}-limit`}>{t('creditLimit')}</Label>
-            <Input
-              id={`${ids}-limit`}
-              inputMode="numeric"
-              autoComplete="off"
-              value={limit}
-              required
-              aria-invalid={limit.trim() !== '' && parsedLimit === null}
-              disabled={busy}
-              onChange={(event) => setLimit(event.target.value)}
-            />
-          </div>
-          <div className="grid gap-1">
-            <Label htmlFor={`${ids}-days`}>{t('creditDueDays')}</Label>
-            <Input
-              id={`${ids}-days`}
-              inputMode="numeric"
-              autoComplete="off"
-              value={days}
-              required
-              aria-invalid={days.trim() !== '' && parsedDays === null}
-              aria-describedby={`${ids}-days-hint`}
-              disabled={busy}
-              onChange={(event) => setDays(event.target.value)}
-            />
-            <p id={`${ids}-days-hint`} className="text-sm text-muted-foreground">
-              {t('creditDueDaysHint')}
-            </p>
-          </div>
+            </div>
+          </DialogBody>
           <DialogFooter>
             <Button type="button" variant="outline" disabled={busy} onClick={onClose}>
               {t('adminCancel')}

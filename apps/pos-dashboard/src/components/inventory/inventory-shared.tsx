@@ -12,6 +12,7 @@ import {
   Badge,
   Button,
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -478,7 +479,7 @@ export function ReasonDialog({
           {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
         <form
-          className="space-y-4"
+          className="flex min-h-0 flex-col"
           aria-busy={busy}
           onSubmit={(event) => {
             event.preventDefault()
@@ -491,20 +492,22 @@ export function ReasonDialog({
             onSubmit(reason.trim())
           }}
         >
-          <div className="grid gap-1">
-            <Label htmlFor={id}>{t('inventoryReason')}</Label>
-            <Input
-              id={id}
-              value={reason}
-              maxLength={200}
-              required
-              disabled={locked}
-              onChange={(event) => setReason(event.target.value)}
-            />
-          </div>
-          {missing && <FormError text={t('inventoryReasonRequired')} />}
-          <FormError text={error} />
-          <CommandCheck command={command} />
+          <DialogBody className="space-y-4">
+            <div className="grid gap-1">
+              <Label htmlFor={id}>{t('inventoryReason')}</Label>
+              <Input
+                id={id}
+                value={reason}
+                maxLength={200}
+                required
+                disabled={locked}
+                onChange={(event) => setReason(event.target.value)}
+              />
+            </div>
+            {missing && <FormError text={t('inventoryReasonRequired')} />}
+            <FormError text={error} />
+            <CommandCheck command={command} />
+          </DialogBody>
           <DialogFooter>
             <Button type="button" variant="outline" disabled={busy} onClick={onClose}>
               {t('adminCancel')}

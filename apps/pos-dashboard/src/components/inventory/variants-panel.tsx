@@ -8,6 +8,7 @@ import {
   Badge,
   Button,
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -232,7 +233,7 @@ function OpeningDialog({
           </DialogDescription>
         </DialogHeader>
         <form
-          className="space-y-4"
+          className="flex min-h-0 flex-col"
           aria-busy={busy}
           onSubmit={(event) => {
             event.preventDefault()
@@ -261,14 +262,16 @@ function OpeningDialog({
             )
           }}
         >
-          <StockEntryFields
-            mode={variant.tracked_mode}
-            baseUnit={variant.base_unit}
-            entry={entry}
-            disabled={locked}
-          />
-          <FormError text={error} />
-          <CommandCheck command={command} />
+          <DialogBody className="space-y-4">
+            <StockEntryFields
+              mode={variant.tracked_mode}
+              baseUnit={variant.base_unit}
+              entry={entry}
+              disabled={locked}
+            />
+            <FormError text={error} />
+            <CommandCheck command={command} />
+          </DialogBody>
           <DialogFooter>
             <Button type="button" variant="outline" disabled={busy} onClick={onClose}>
               {t('adminCancel')}

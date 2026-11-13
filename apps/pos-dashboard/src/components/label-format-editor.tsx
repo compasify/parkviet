@@ -10,7 +10,7 @@ import {
 } from '@parkviet/pos-shared/label-format'
 import { describeFailure } from '@parkviet/pos-shared/request-failure'
 import { mapSpreeErrorsToForm, useResourceMutation } from '@spree/dashboard-core'
-import { Button, DialogFooter, FieldDescription } from '@spree/dashboard-ui'
+import { Button, DialogBody, DialogFooter, FieldDescription } from '@spree/dashboard-ui'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
@@ -106,86 +106,88 @@ export function LabelFormatEditor({
           noValidate
           onSubmit={form.handleSubmit(submit)}
           aria-busy={busy}
-          className="space-y-5"
+          className="flex min-h-0 flex-col"
         >
-          <fieldset disabled={busy} className="space-y-4">
-            {text('name', 'labelFormatName', 'name', LABEL_NAME_MAX)}
-            <TopologyField label={t('labelFormatKind')}>
-              {(id) => (
-                <TopologySelect
-                  id={id}
-                  value={draft.kind}
-                  options={['weight', 'price'].map((value) => ({
-                    value,
-                    label: t(`labelFormatKind_${value}`),
-                  }))}
-                  onChange={(value) => {
-                    const kind = value === 'price' ? 'price' : 'weight'
-                    set('kind', kind)
-                    set('value_unit_code', kind === 'price' ? '' : draft.value_unit_code || 'g')
-                  }}
-                />
-              )}
-            </TopologyField>
-            <fieldset aria-label={t('labelFormatLayout')} className="grid gap-4 sm:grid-cols-2">
-              {text('prefix', 'labelFormatPrefix', 'prefix', 4)}
-              {text('item_code_length', 'labelFormatItemCodeLength', 'itemCodeLength', 2)}
-              {text('value_length', 'labelFormatValueLength', 'valueLength', 2)}
-              {text('value_decimals', 'labelFormatDecimals', 'decimals', 1)}
-            </fieldset>
-            <p
-              aria-live="polite"
-              className={layoutProblem ? 'text-destructive' : 'text-muted-foreground'}
-            >
-              {used === null
-                ? t('labelFormatLayoutUnknown', { total: LABEL_BODY_LENGTH })
-                : t(layoutProblem ? 'labelFormatLayoutInvalid' : 'labelFormatLayoutValid', {
-                    used,
-                    total: LABEL_BODY_LENGTH,
-                  })}
-            </p>
-            {draft.kind === 'weight' ? (
-              <TopologyField
-                label={t('labelFormatUnit')}
-                error={form.formState.errors.value_unit_code?.message}
-              >
+          <DialogBody className="space-y-5">
+            <fieldset disabled={busy} className="space-y-4">
+              {text('name', 'labelFormatName', 'name', LABEL_NAME_MAX)}
+              <TopologyField label={t('labelFormatKind')}>
                 {(id) => (
                   <TopologySelect
                     id={id}
-                    value={draft.value_unit_code}
-                    onChange={(value) => set('value_unit_code', value)}
-                    options={[
-                      { value: '', label: t('labelFormatChooseUnit') },
-                      ...LABEL_WEIGHT_UNITS.map((value) => ({ value, label: value })),
-                    ]}
+                    value={draft.kind}
+                    options={['weight', 'price'].map((value) => ({
+                      value,
+                      label: t(`labelFormatKind_${value}`),
+                    }))}
+                    onChange={(value) => {
+                      const kind = value === 'price' ? 'price' : 'weight'
+                      set('kind', kind)
+                      set('value_unit_code', kind === 'price' ? '' : draft.value_unit_code || 'g')
+                    }}
                   />
                 )}
               </TopologyField>
-            ) : (
-              text(
-                'price_tolerance',
-                'labelFormatTolerance',
-                'tolerance',
-                undefined,
-                'labelFormatToleranceHint',
-              )
+              <fieldset aria-label={t('labelFormatLayout')} className="grid gap-4 sm:grid-cols-2">
+                {text('prefix', 'labelFormatPrefix', 'prefix', 4)}
+                {text('item_code_length', 'labelFormatItemCodeLength', 'itemCodeLength', 2)}
+                {text('value_length', 'labelFormatValueLength', 'valueLength', 2)}
+                {text('value_decimals', 'labelFormatDecimals', 'decimals', 1)}
+              </fieldset>
+              <p
+                aria-live="polite"
+                className={layoutProblem ? 'text-destructive' : 'text-muted-foreground'}
+              >
+                {used === null
+                  ? t('labelFormatLayoutUnknown', { total: LABEL_BODY_LENGTH })
+                  : t(layoutProblem ? 'labelFormatLayoutInvalid' : 'labelFormatLayoutValid', {
+                      used,
+                      total: LABEL_BODY_LENGTH,
+                    })}
+              </p>
+              {draft.kind === 'weight' ? (
+                <TopologyField
+                  label={t('labelFormatUnit')}
+                  error={form.formState.errors.value_unit_code?.message}
+                >
+                  {(id) => (
+                    <TopologySelect
+                      id={id}
+                      value={draft.value_unit_code}
+                      onChange={(value) => set('value_unit_code', value)}
+                      options={[
+                        { value: '', label: t('labelFormatChooseUnit') },
+                        ...LABEL_WEIGHT_UNITS.map((value) => ({ value, label: value })),
+                      ]}
+                    />
+                  )}
+                </TopologyField>
+              ) : (
+                text(
+                  'price_tolerance',
+                  'labelFormatTolerance',
+                  'tolerance',
+                  undefined,
+                  'labelFormatToleranceHint',
+                )
+              )}
+              {format && <FieldDescription>{t('labelFormatVersionNote')}</FieldDescription>}
+            </fieldset>
+            {dirty && problems.length > 0 && (
+              <div aria-live="polite" className="text-sm text-destructive">
+                {problems.map((problem) => (
+                  <p key={problem}>
+                    {t(`labelFormatProblem_${problem}`, { total: LABEL_BODY_LENGTH })}
+                  </p>
+                ))}
+              </div>
             )}
-            {format && <FieldDescription>{t('labelFormatVersionNote')}</FieldDescription>}
-          </fieldset>
-          {dirty && problems.length > 0 && (
-            <div aria-live="polite" className="text-sm text-destructive">
-              {problems.map((problem) => (
-                <p key={problem}>
-                  {t(`labelFormatProblem_${problem}`, { total: LABEL_BODY_LENGTH })}
-                </p>
-              ))}
-            </div>
-          )}
-          {error && (
-            <p role="alert" className="text-sm text-destructive">
-              {error}
-            </p>
-          )}
+            {error && (
+              <p role="alert" className="text-sm text-destructive">
+                {error}
+              </p>
+            )}
+          </DialogBody>
           <DialogFooter>
             <Button type="button" variant="outline" disabled={busy} onClick={close}>
               {t('adminCancel')}

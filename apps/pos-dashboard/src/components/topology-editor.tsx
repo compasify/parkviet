@@ -5,6 +5,7 @@ import { mapSpreeErrorsToForm, TimezoneCombobox } from '@spree/dashboard-core'
 import {
   Button,
   Checkbox,
+  DialogBody,
   DialogFooter,
   Field,
   FieldDescription,
@@ -262,226 +263,234 @@ export function TopologyEditor({
       onClose={onClose}
     >
       {(close) => (
-        <form onSubmit={form.handleSubmit(submit)} aria-busy={busy} className="space-y-5">
-          <fieldset disabled={busy} className="space-y-4">
-            {kind !== 'memberships' && (
-              <div className="grid gap-4 sm:grid-cols-2">
-                {text('name', 'adminName', undefined, 100)}
-                {text('code', 'code', 'adminCodeHint', 32)}
-              </div>
-            )}
-            {kind !== 'branches' &&
-              select(
-                'branch_id',
-                'branch',
-                [
-                  { value: '', label: t('chooseBranch') },
-                  ...branches
-                    .filter((b) => b.status === 'active' || b.id === draft.branch_id)
-                    .map((b) => ({
-                      value: b.id,
-                      label: `${b.name}${b.status === 'disabled' ? ` · ${t('statusDisabled')}` : ''}`,
-                    })),
-                ],
-                Boolean(record.id) || lockBranch,
+        <form
+          onSubmit={form.handleSubmit(submit)}
+          aria-busy={busy}
+          className="flex min-h-0 flex-col"
+        >
+          <DialogBody className="space-y-5">
+            <fieldset disabled={busy} className="space-y-4">
+              {kind !== 'memberships' && (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {text('name', 'adminName', undefined, 100)}
+                  {text('code', 'code', 'adminCodeHint', 32)}
+                </div>
               )}
-            {kind === 'branches' && (
-              <>
-                {offersProfile && (
-                  <TopologyField
-                    label={t('businessModel.branchProfile')}
-                    hint={t('businessModel.branchProfileHint')}
-                  >
-                    {(id) => (
-                      <TopologySelect
-                        id={id}
-                        value={draft.profile_key}
-                        options={[
-                          { value: '', label: t('businessModel.chooseProfile') },
-                          ...profiles.map((p) => ({
-                            value: p.key,
-                            label: t(profileLabelKey(p.key), { defaultValue: p.key }),
-                          })),
-                        ]}
-                        onChange={(key) => {
-                          const profile = profiles.find((p) => p.key === key)
-                          if (!profile) return
-                          set('profile_key', key)
-                          const defaults = defaultsFromProfile(profile)
-                          set('return_window_days', defaults.return_window_days)
-                          set('variance_threshold', defaults.variance_threshold)
-                          set('lot_selection', defaults.lot_selection)
-                          set(
-                            'adjustment_approval_threshold',
-                            defaults.adjustment_approval_threshold,
-                          )
-                        }}
-                      />
-                    )}
-                  </TopologyField>
-                )}
-                {select('stock_location_id', 'stockLocation', [
-                  { value: '', label: t('adminChooseWarehouse') },
-                  ...warehouses,
-                ])}
-                {select('receiving_stock_location_id', 'adminReceivingWarehouse', [
-                  { value: '', label: t('adminDefaultWarehouse') },
-                  ...warehouses,
-                ])}
-                <TopologyField
-                  label={t('timezone')}
-                  hint={t('timezoneHint')}
-                  error={form.formState.errors.timezone?.message}
-                >
-                  {(id) => (
-                    <TimezoneCombobox
-                      id={id}
-                      value={draft.timezone}
-                      invalid={Boolean(form.formState.errors.timezone)}
-                      onValueChange={(value) => set('timezone', value)}
-                    />
-                  )}
-                </TopologyField>
-                {text('business_day_cutoff', 'businessDayCutoff', 'businessDayCutoffHint', 5)}
-                {text('staff_session_idle_minutes', 'devices.idle', 'devices.idleHint', 3)}
-                {text('return_window_days', 'adminReturnWindow', 'adminReturnWindowHint', 4)}
-                {!hideLotSelection &&
-                  select(
-                    'lot_selection',
-                    'adminLotSelection',
-                    ['fefo', 'cashier_pick'].map((value) => ({
-                      value,
-                      label: t(`adminLotSelection_${value}`),
-                    })),
-                    false,
-                    'adminLotSelectionHint',
-                  )}
-                {text(
-                  'adjustment_approval_threshold',
-                  'adminAdjustmentThreshold',
-                  'adminAdjustmentThresholdHint',
-                  9,
-                )}
-                {text(
-                  'variance_threshold',
-                  'adminVarianceThreshold',
-                  'adminVarianceThresholdHint',
-                  20,
-                )}
-                <TopologyField
-                  label={t('adminReceivingNote')}
-                  error={form.formState.errors.receiving_note?.message}
-                >
-                  {(id) => (
-                    <Textarea
-                      id={id}
-                      maxLength={200}
-                      value={draft.receiving_note}
-                      onChange={(e) => set('receiving_note', e.target.value)}
-                    />
-                  )}
-                </TopologyField>
-              </>
-            )}
-            {kind === 'registers' &&
-              select(
-                'kind',
-                'adminRegisterKind',
-                ['counter', 'kiosk'].map((value) => ({
-                  value,
-                  label: t(`adminRegisterKind_${value}`),
-                })),
-                Boolean(record.id),
-                'adminRegisterKindHint',
-              )}
-            {kind === 'registers' && <FieldDescription>{t('adminRegisterNote')}</FieldDescription>}
-            {kind === 'memberships' && (
-              <>
-                {!record.id && (
-                  <TopologyField label={t('adminFindStaff')}>
-                    {(id) => (
-                      <Input
-                        type="search"
-                        id={id}
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                      />
-                    )}
-                  </TopologyField>
-                )}
-                {select(
-                  'staff_id',
-                  'adminStaff',
+              {kind !== 'branches' &&
+                select(
+                  'branch_id',
+                  'branch',
                   [
-                    { value: '', label: t('adminChooseStaff') },
-                    ...staff
-                      .filter(
-                        (user) =>
-                          Boolean(record.id) ||
-                          !memberships.some(
-                            (m) => m.branch_id === draft.branch_id && m.staff_id === user.id,
-                          ),
-                      )
-                      .filter(
-                        (user) =>
-                          user.id === draft.staff_id ||
-                          `${user.full_name ?? ''} ${user.email}`
-                            .toLocaleLowerCase()
-                            .includes(search.toLocaleLowerCase()),
-                      )
-                      .map((user) => ({
-                        value: user.id,
-                        label: `${user.full_name ? `${user.full_name} · ` : ''}${user.email}`,
+                    { value: '', label: t('chooseBranch') },
+                    ...branches
+                      .filter((b) => b.status === 'active' || b.id === draft.branch_id)
+                      .map((b) => ({
+                        value: b.id,
+                        label: `${b.name}${b.status === 'disabled' ? ` · ${t('statusDisabled')}` : ''}`,
                       })),
                   ],
-                  Boolean(record.id),
-                  !record.id ? 'adminExistingMembershipHint' : undefined,
+                  Boolean(record.id) || lockBranch,
                 )}
-                <FieldDescription>{t('adminPermissionBoundary')}</FieldDescription>
-                {select(
-                  'staff_role_id',
-                  'staffRoles.field',
-                  roleOptions,
-                  false,
-                  'staffRoles.fieldHint',
-                )}
-                <fieldset aria-label={t('membership')}>
-                  {draft.staff_role_id ? (
-                    <>
-                      <FieldDescription className="mb-4">
-                        {t('staffRoles.fromRole', {
-                          name: roleOptions.find((o) => o.value === draft.staff_role_id)?.label,
-                        })}
-                      </FieldDescription>
-                      <CapabilityChecklist value={effective} disabled />
-                    </>
-                  ) : (
-                    <CapabilityChecklist
-                      value={draft.capabilities}
-                      onChange={(next) => set('capabilities', next)}
-                    />
+              {kind === 'branches' && (
+                <>
+                  {offersProfile && (
+                    <TopologyField
+                      label={t('businessModel.branchProfile')}
+                      hint={t('businessModel.branchProfileHint')}
+                    >
+                      {(id) => (
+                        <TopologySelect
+                          id={id}
+                          value={draft.profile_key}
+                          options={[
+                            { value: '', label: t('businessModel.chooseProfile') },
+                            ...profiles.map((p) => ({
+                              value: p.key,
+                              label: t(profileLabelKey(p.key), { defaultValue: p.key }),
+                            })),
+                          ]}
+                          onChange={(key) => {
+                            const profile = profiles.find((p) => p.key === key)
+                            if (!profile) return
+                            set('profile_key', key)
+                            const defaults = defaultsFromProfile(profile)
+                            set('return_window_days', defaults.return_window_days)
+                            set('variance_threshold', defaults.variance_threshold)
+                            set('lot_selection', defaults.lot_selection)
+                            set(
+                              'adjustment_approval_threshold',
+                              defaults.adjustment_approval_threshold,
+                            )
+                          }}
+                        />
+                      )}
+                    </TopologyField>
                   )}
-                </fieldset>
-                {sensitive && (
-                  <Field orientation="horizontal">
-                    <Checkbox
-                      id="confirm-permissions"
-                      checked={confirmed}
-                      onCheckedChange={(checked) => setConfirmed(checked === true)}
-                    />
-                    <FieldLabel htmlFor="confirm-permissions">
-                      {t('adminConfirmPermissions')}
-                    </FieldLabel>
-                  </Field>
+                  {select('stock_location_id', 'stockLocation', [
+                    { value: '', label: t('adminChooseWarehouse') },
+                    ...warehouses,
+                  ])}
+                  {select('receiving_stock_location_id', 'adminReceivingWarehouse', [
+                    { value: '', label: t('adminDefaultWarehouse') },
+                    ...warehouses,
+                  ])}
+                  <TopologyField
+                    label={t('timezone')}
+                    hint={t('timezoneHint')}
+                    error={form.formState.errors.timezone?.message}
+                  >
+                    {(id) => (
+                      <TimezoneCombobox
+                        id={id}
+                        value={draft.timezone}
+                        invalid={Boolean(form.formState.errors.timezone)}
+                        onValueChange={(value) => set('timezone', value)}
+                      />
+                    )}
+                  </TopologyField>
+                  {text('business_day_cutoff', 'businessDayCutoff', 'businessDayCutoffHint', 5)}
+                  {text('staff_session_idle_minutes', 'devices.idle', 'devices.idleHint', 3)}
+                  {text('return_window_days', 'adminReturnWindow', 'adminReturnWindowHint', 4)}
+                  {!hideLotSelection &&
+                    select(
+                      'lot_selection',
+                      'adminLotSelection',
+                      ['fefo', 'cashier_pick'].map((value) => ({
+                        value,
+                        label: t(`adminLotSelection_${value}`),
+                      })),
+                      false,
+                      'adminLotSelectionHint',
+                    )}
+                  {text(
+                    'adjustment_approval_threshold',
+                    'adminAdjustmentThreshold',
+                    'adminAdjustmentThresholdHint',
+                    9,
+                  )}
+                  {text(
+                    'variance_threshold',
+                    'adminVarianceThreshold',
+                    'adminVarianceThresholdHint',
+                    20,
+                  )}
+                  <TopologyField
+                    label={t('adminReceivingNote')}
+                    error={form.formState.errors.receiving_note?.message}
+                  >
+                    {(id) => (
+                      <Textarea
+                        id={id}
+                        maxLength={200}
+                        value={draft.receiving_note}
+                        onChange={(e) => set('receiving_note', e.target.value)}
+                      />
+                    )}
+                  </TopologyField>
+                </>
+              )}
+              {kind === 'registers' &&
+                select(
+                  'kind',
+                  'adminRegisterKind',
+                  ['counter', 'kiosk'].map((value) => ({
+                    value,
+                    label: t(`adminRegisterKind_${value}`),
+                  })),
+                  Boolean(record.id),
+                  'adminRegisterKindHint',
                 )}
-              </>
+              {kind === 'registers' && (
+                <FieldDescription>{t('adminRegisterNote')}</FieldDescription>
+              )}
+              {kind === 'memberships' && (
+                <>
+                  {!record.id && (
+                    <TopologyField label={t('adminFindStaff')}>
+                      {(id) => (
+                        <Input
+                          type="search"
+                          id={id}
+                          value={search}
+                          onChange={(e) => setSearch(e.target.value)}
+                        />
+                      )}
+                    </TopologyField>
+                  )}
+                  {select(
+                    'staff_id',
+                    'adminStaff',
+                    [
+                      { value: '', label: t('adminChooseStaff') },
+                      ...staff
+                        .filter(
+                          (user) =>
+                            Boolean(record.id) ||
+                            !memberships.some(
+                              (m) => m.branch_id === draft.branch_id && m.staff_id === user.id,
+                            ),
+                        )
+                        .filter(
+                          (user) =>
+                            user.id === draft.staff_id ||
+                            `${user.full_name ?? ''} ${user.email}`
+                              .toLocaleLowerCase()
+                              .includes(search.toLocaleLowerCase()),
+                        )
+                        .map((user) => ({
+                          value: user.id,
+                          label: `${user.full_name ? `${user.full_name} · ` : ''}${user.email}`,
+                        })),
+                    ],
+                    Boolean(record.id),
+                    !record.id ? 'adminExistingMembershipHint' : undefined,
+                  )}
+                  <FieldDescription>{t('adminPermissionBoundary')}</FieldDescription>
+                  {select(
+                    'staff_role_id',
+                    'staffRoles.field',
+                    roleOptions,
+                    false,
+                    'staffRoles.fieldHint',
+                  )}
+                  <fieldset aria-label={t('membership')}>
+                    {draft.staff_role_id ? (
+                      <>
+                        <FieldDescription className="mb-4">
+                          {t('staffRoles.fromRole', {
+                            name: roleOptions.find((o) => o.value === draft.staff_role_id)?.label,
+                          })}
+                        </FieldDescription>
+                        <CapabilityChecklist value={effective} disabled />
+                      </>
+                    ) : (
+                      <CapabilityChecklist
+                        value={draft.capabilities}
+                        onChange={(next) => set('capabilities', next)}
+                      />
+                    )}
+                  </fieldset>
+                  {sensitive && (
+                    <Field orientation="horizontal">
+                      <Checkbox
+                        id="confirm-permissions"
+                        checked={confirmed}
+                        onCheckedChange={(checked) => setConfirmed(checked === true)}
+                      />
+                      <FieldLabel htmlFor="confirm-permissions">
+                        {t('adminConfirmPermissions')}
+                      </FieldLabel>
+                    </Field>
+                  )}
+                </>
+              )}
+            </fieldset>
+            {error && (
+              <p role="alert" className="text-sm text-destructive">
+                {error}
+              </p>
             )}
-          </fieldset>
-          {error && (
-            <p role="alert" className="text-sm text-destructive">
-              {error}
-            </p>
-          )}
+          </DialogBody>
           <DialogFooter>
             <Button type="button" variant="outline" disabled={busy} onClick={close}>
               {t('adminCancel')}

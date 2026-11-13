@@ -9,6 +9,7 @@ import {
   ActiveBadge,
   Badge,
   Button,
+  DialogBody,
   DialogFooter,
   ResourceNameCell,
   RowActions,
@@ -342,71 +343,77 @@ function UnitDialog({
       onClose={onClose}
     >
       {(close) => (
-        <form onSubmit={form.handleSubmit(submit)} aria-busy={busy} className="space-y-5">
-          <fieldset disabled={busy} className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              {text('name', 'adminName')}
-              {text('code', 'code', 'units.codeHint')}
-            </div>
-            <TopologyField label={t('units.dimension')}>
-              {(id) => (
-                <TopologySelect
-                  id={id}
-                  value={draft.dimension}
-                  disabled={fixed}
-                  options={UNIT_DIMENSIONS.map((value) => ({
-                    value,
-                    label: t(`units.dimension_${value}`),
-                  }))}
-                  onChange={(value) => {
-                    set('dimension', value as UnitDimension)
-                    set('base_code', '')
-                    set('factor_to_base', '1')
-                  }}
-                />
-              )}
-            </TopologyField>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <TopologyField label={t('units.base')} hint={t('units.baseHint')}>
-                {(id, describedBy) => (
+        <form
+          onSubmit={form.handleSubmit(submit)}
+          aria-busy={busy}
+          className="flex min-h-0 flex-col"
+        >
+          <DialogBody className="space-y-5">
+            <fieldset disabled={busy} className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                {text('name', 'adminName')}
+                {text('code', 'code', 'units.codeHint')}
+              </div>
+              <TopologyField label={t('units.dimension')}>
+                {(id) => (
                   <TopologySelect
                     id={id}
-                    describedBy={describedBy}
-                    value={draft.base_code}
+                    value={draft.dimension}
                     disabled={fixed}
-                    options={[
-                      { value: '', label: t('units.canonical') },
-                      ...bases.map((row) => ({
-                        value: row.code,
-                        label: `${row.name} (${row.code})`,
-                      })),
-                    ]}
+                    options={UNIT_DIMENSIONS.map((value) => ({
+                      value,
+                      label: t(`units.dimension_${value}`),
+                    }))}
                     onChange={(value) => {
-                      set('base_code', value)
-                      if (!value) set('factor_to_base', '1')
+                      set('dimension', value as UnitDimension)
+                      set('base_code', '')
+                      set('factor_to_base', '1')
                     }}
                   />
                 )}
               </TopologyField>
-              {draft.base_code && text('factor_to_base', 'units.factor', 'units.factorHint')}
-            </div>
-            <TopologyField label={t('units.precision')} hint={t('units.precisionHint')}>
-              {(id, describedBy) => (
-                <TopologySelect
-                  id={id}
-                  describedBy={describedBy}
-                  value={draft.sale_precision}
-                  options={PRECISIONS.map((value) => ({ value, label: value }))}
-                  onChange={(value) => set('sale_precision', value as Values['sale_precision'])}
-                />
-              )}
-            </TopologyField>
-          </fieldset>
-          {error && (
-            <p role="alert" className="text-sm text-destructive">
-              {error}
-            </p>
-          )}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <TopologyField label={t('units.base')} hint={t('units.baseHint')}>
+                  {(id, describedBy) => (
+                    <TopologySelect
+                      id={id}
+                      describedBy={describedBy}
+                      value={draft.base_code}
+                      disabled={fixed}
+                      options={[
+                        { value: '', label: t('units.canonical') },
+                        ...bases.map((row) => ({
+                          value: row.code,
+                          label: `${row.name} (${row.code})`,
+                        })),
+                      ]}
+                      onChange={(value) => {
+                        set('base_code', value)
+                        if (!value) set('factor_to_base', '1')
+                      }}
+                    />
+                  )}
+                </TopologyField>
+                {draft.base_code && text('factor_to_base', 'units.factor', 'units.factorHint')}
+              </div>
+              <TopologyField label={t('units.precision')} hint={t('units.precisionHint')}>
+                {(id, describedBy) => (
+                  <TopologySelect
+                    id={id}
+                    describedBy={describedBy}
+                    value={draft.sale_precision}
+                    options={PRECISIONS.map((value) => ({ value, label: value }))}
+                    onChange={(value) => set('sale_precision', value as Values['sale_precision'])}
+                  />
+                )}
+              </TopologyField>
+            </fieldset>
+            {error && (
+              <p role="alert" className="text-sm text-destructive">
+                {error}
+              </p>
+            )}
+          </DialogBody>
           <DialogFooter>
             <Button type="button" variant="outline" disabled={busy} onClick={close}>
               {t('adminCancel')}

@@ -10,6 +10,7 @@ import {
   Badge,
   Button,
   Checkbox,
+  DialogBody,
   DialogFooter,
   Field,
   FieldLabel,
@@ -324,48 +325,54 @@ function StaffRoleDialog({
       onClose={onClose}
     >
       {(close) => (
-        <form onSubmit={form.handleSubmit(submit)} aria-busy={busy} className="space-y-5">
-          <fieldset disabled={busy} className="space-y-4">
-            <TopologyField label={t('adminName')} error={form.formState.errors.name?.message}>
-              {(id) => (
-                <Input
-                  id={id}
-                  maxLength={80}
-                  aria-invalid={Boolean(form.formState.errors.name)}
-                  value={draft.name}
-                  onChange={(event) =>
-                    form.setValue('name', event.target.value, { shouldDirty: true })
-                  }
+        <form
+          onSubmit={form.handleSubmit(submit)}
+          aria-busy={busy}
+          className="flex min-h-0 flex-col"
+        >
+          <DialogBody className="space-y-5">
+            <fieldset disabled={busy} className="space-y-4">
+              <TopologyField label={t('adminName')} error={form.formState.errors.name?.message}>
+                {(id) => (
+                  <Input
+                    id={id}
+                    maxLength={80}
+                    aria-invalid={Boolean(form.formState.errors.name)}
+                    value={draft.name}
+                    onChange={(event) =>
+                      form.setValue('name', event.target.value, { shouldDirty: true })
+                    }
+                  />
+                )}
+              </TopologyField>
+              <fieldset aria-label={t('membership')}>
+                <CapabilityChecklist
+                  value={draft.capabilities}
+                  onChange={(next) => {
+                    form.setValue('capabilities', next, { shouldDirty: true })
+                    setConfirmed(false)
+                  }}
                 />
+              </fieldset>
+              {sensitive && (
+                <Field orientation="horizontal">
+                  <Checkbox
+                    id="confirm-role-permissions"
+                    checked={confirmed}
+                    onCheckedChange={(checked) => setConfirmed(checked === true)}
+                  />
+                  <FieldLabel htmlFor="confirm-role-permissions">
+                    {t('adminConfirmPermissions')}
+                  </FieldLabel>
+                </Field>
               )}
-            </TopologyField>
-            <fieldset aria-label={t('membership')}>
-              <CapabilityChecklist
-                value={draft.capabilities}
-                onChange={(next) => {
-                  form.setValue('capabilities', next, { shouldDirty: true })
-                  setConfirmed(false)
-                }}
-              />
             </fieldset>
-            {sensitive && (
-              <Field orientation="horizontal">
-                <Checkbox
-                  id="confirm-role-permissions"
-                  checked={confirmed}
-                  onCheckedChange={(checked) => setConfirmed(checked === true)}
-                />
-                <FieldLabel htmlFor="confirm-role-permissions">
-                  {t('adminConfirmPermissions')}
-                </FieldLabel>
-              </Field>
+            {error && (
+              <p role="alert" className="text-sm text-destructive">
+                {error}
+              </p>
             )}
-          </fieldset>
-          {error && (
-            <p role="alert" className="text-sm text-destructive">
-              {error}
-            </p>
-          )}
+          </DialogBody>
           <DialogFooter>
             <Button type="button" variant="outline" disabled={busy} onClick={close}>
               {t('adminCancel')}

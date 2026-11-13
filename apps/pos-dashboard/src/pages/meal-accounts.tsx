@@ -6,6 +6,7 @@ import {
   Badge,
   Button,
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -472,155 +473,157 @@ function AccountDialog({
           </DialogTitle>
         </DialogHeader>
         <form
-          className="space-y-4"
+          className="flex min-h-0 flex-col"
           onSubmit={(event) => {
             event.preventDefault()
             void submit()
           }}
         >
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="grid gap-1">
-              <Label htmlFor={`${ids}-code`}>{t('mealAccounts.code')}</Label>
-              <Input
-                id={`${ids}-code`}
-                value={form.code}
-                maxLength={32}
-                autoComplete="off"
-                required
-                aria-invalid={invalid('employee_code', form.code !== '' && problems.code)}
-                aria-describedby={`${ids}-code-hint`}
-                disabled={busy}
-                onChange={(event) => set({ code: event.target.value })}
-              />
-              <p id={`${ids}-code-hint`} className="text-sm text-muted-foreground">
-                {t('mealAccounts.codeHint')}
-              </p>
-            </div>
-            <div className="grid gap-1">
-              <Label htmlFor={`${ids}-name`}>{t('mealAccounts.name')}</Label>
-              <Input
-                id={`${ids}-name`}
-                value={form.name}
-                maxLength={120}
-                autoComplete="off"
-                required
-                aria-invalid={invalid('name', false)}
-                disabled={busy}
-                onChange={(event) => set({ name: event.target.value })}
-              />
-            </div>
-            <div className="grid gap-1">
-              <Label htmlFor={`${ids}-phone`}>{t('mealAccounts.phone')}</Label>
-              <Input
-                id={`${ids}-phone`}
-                type="tel"
-                value={form.phone}
-                autoComplete="off"
-                aria-invalid={invalid('phone', false)}
-                aria-describedby={account ? undefined : `${ids}-contact`}
-                disabled={busy}
-                onChange={(event) => set({ phone: event.target.value })}
-              />
-            </div>
-            {!account && (
+          <DialogBody className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="grid gap-1">
-                <Label htmlFor={`${ids}-email`}>{t('mealAccounts.email')}</Label>
+                <Label htmlFor={`${ids}-code`}>{t('mealAccounts.code')}</Label>
                 <Input
-                  id={`${ids}-email`}
-                  type="email"
-                  value={form.email}
+                  id={`${ids}-code`}
+                  value={form.code}
+                  maxLength={32}
                   autoComplete="off"
-                  aria-invalid={invalid('email', false)}
-                  aria-describedby={`${ids}-contact`}
+                  required
+                  aria-invalid={invalid('employee_code', form.code !== '' && problems.code)}
+                  aria-describedby={`${ids}-code-hint`}
                   disabled={busy}
-                  onChange={(event) => set({ email: event.target.value })}
+                  onChange={(event) => set({ code: event.target.value })}
+                />
+                <p id={`${ids}-code-hint`} className="text-sm text-muted-foreground">
+                  {t('mealAccounts.codeHint')}
+                </p>
+              </div>
+              <div className="grid gap-1">
+                <Label htmlFor={`${ids}-name`}>{t('mealAccounts.name')}</Label>
+                <Input
+                  id={`${ids}-name`}
+                  value={form.name}
+                  maxLength={120}
+                  autoComplete="off"
+                  required
+                  aria-invalid={invalid('name', false)}
+                  disabled={busy}
+                  onChange={(event) => set({ name: event.target.value })}
                 />
               </div>
-            )}
-            {!account && (
-              <p id={`${ids}-contact`} className="text-sm text-muted-foreground sm:col-span-2">
-                {t('mealAccounts.contactHint')}
-              </p>
-            )}
-            <div className="grid gap-1">
-              <Label htmlFor={`${ids}-group`}>{t('mealAccounts.group')}</Label>
-              <Input
-                id={`${ids}-group`}
-                value={form.group}
-                maxLength={120}
-                autoComplete="off"
-                aria-invalid={invalid('group_label', false)}
+              <div className="grid gap-1">
+                <Label htmlFor={`${ids}-phone`}>{t('mealAccounts.phone')}</Label>
+                <Input
+                  id={`${ids}-phone`}
+                  type="tel"
+                  value={form.phone}
+                  autoComplete="off"
+                  aria-invalid={invalid('phone', false)}
+                  aria-describedby={account ? undefined : `${ids}-contact`}
+                  disabled={busy}
+                  onChange={(event) => set({ phone: event.target.value })}
+                />
+              </div>
+              {!account && (
+                <div className="grid gap-1">
+                  <Label htmlFor={`${ids}-email`}>{t('mealAccounts.email')}</Label>
+                  <Input
+                    id={`${ids}-email`}
+                    type="email"
+                    value={form.email}
+                    autoComplete="off"
+                    aria-invalid={invalid('email', false)}
+                    aria-describedby={`${ids}-contact`}
+                    disabled={busy}
+                    onChange={(event) => set({ email: event.target.value })}
+                  />
+                </div>
+              )}
+              {!account && (
+                <p id={`${ids}-contact`} className="text-sm text-muted-foreground sm:col-span-2">
+                  {t('mealAccounts.contactHint')}
+                </p>
+              )}
+              <div className="grid gap-1">
+                <Label htmlFor={`${ids}-group`}>{t('mealAccounts.group')}</Label>
+                <Input
+                  id={`${ids}-group`}
+                  value={form.group}
+                  maxLength={120}
+                  autoComplete="off"
+                  aria-invalid={invalid('group_label', false)}
+                  disabled={busy}
+                  onChange={(event) => set({ group: event.target.value })}
+                />
+              </div>
+              <ModelSelect
+                label={t('mealAccounts.payMode')}
+                value={form.payMode}
                 disabled={busy}
-                onChange={(event) => set({ group: event.target.value })}
+                invalid={invalid('pay_mode', false)}
+                options={MEAL_PAY_MODES.map((value) => ({
+                  value,
+                  label: t(`mealAccounts.payMode_${value}`),
+                }))}
+                onChange={(value) => set({ payMode: value as MealPayMode })}
               />
+              <ModelSelect
+                label={t('mealAccounts.sponsor')}
+                value={form.sponsorId}
+                disabled={busy}
+                invalid={
+                  invalid('meal_sponsor', problems.sponsor) ||
+                  invalid('meal_sponsor_id', problems.sponsor)
+                }
+                hint={needsSponsor ? t('mealAccounts.sponsorHint') : undefined}
+                options={sponsorOptions}
+                onChange={(value) => set({ sponsorId: value })}
+              />
+              <div className="grid gap-1">
+                <Label htmlFor={`${ids}-limit`}>{t('mealAccounts.dailyLimit')}</Label>
+                <Input
+                  id={`${ids}-limit`}
+                  inputMode="numeric"
+                  value={form.dailyLimit}
+                  autoComplete="off"
+                  aria-invalid={invalid('daily_meal_limit', problems.dailyLimit)}
+                  aria-describedby={`${ids}-limit-hint`}
+                  disabled={busy}
+                  onChange={(event) => set({ dailyLimit: event.target.value })}
+                />
+                <p id={`${ids}-limit-hint`} className="text-sm text-muted-foreground">
+                  {t('mealAccounts.dailyLimitHint', { max: MAX_DAILY_MEALS })}
+                </p>
+              </div>
+              <div className="grid gap-1">
+                <Label htmlFor={`${ids}-threshold`}>{t('mealAccounts.threshold')}</Label>
+                <Input
+                  id={`${ids}-threshold`}
+                  inputMode="numeric"
+                  value={form.threshold}
+                  autoComplete="off"
+                  aria-invalid={invalid('low_balance_threshold', problems.threshold)}
+                  aria-describedby={`${ids}-threshold-hint`}
+                  disabled={busy}
+                  onChange={(event) => set({ threshold: event.target.value })}
+                />
+                <p id={`${ids}-threshold-hint`} className="text-sm text-muted-foreground">
+                  {t('mealAccounts.thresholdHint')}
+                </p>
+              </div>
             </div>
-            <ModelSelect
-              label={t('mealAccounts.payMode')}
-              value={form.payMode}
-              disabled={busy}
-              invalid={invalid('pay_mode', false)}
-              options={MEAL_PAY_MODES.map((value) => ({
-                value,
-                label: t(`mealAccounts.payMode_${value}`),
-              }))}
-              onChange={(value) => set({ payMode: value as MealPayMode })}
+            <WindowsEditor
+              windows={form.windows}
+              busy={busy}
+              refused={error?.field === 'meal_windows'}
+              onChange={(next) => set({ windows: next })}
             />
-            <ModelSelect
-              label={t('mealAccounts.sponsor')}
-              value={form.sponsorId}
-              disabled={busy}
-              invalid={
-                invalid('meal_sponsor', problems.sponsor) ||
-                invalid('meal_sponsor_id', problems.sponsor)
-              }
-              hint={needsSponsor ? t('mealAccounts.sponsorHint') : undefined}
-              options={sponsorOptions}
-              onChange={(value) => set({ sponsorId: value })}
-            />
-            <div className="grid gap-1">
-              <Label htmlFor={`${ids}-limit`}>{t('mealAccounts.dailyLimit')}</Label>
-              <Input
-                id={`${ids}-limit`}
-                inputMode="numeric"
-                value={form.dailyLimit}
-                autoComplete="off"
-                aria-invalid={invalid('daily_meal_limit', problems.dailyLimit)}
-                aria-describedby={`${ids}-limit-hint`}
-                disabled={busy}
-                onChange={(event) => set({ dailyLimit: event.target.value })}
-              />
-              <p id={`${ids}-limit-hint`} className="text-sm text-muted-foreground">
-                {t('mealAccounts.dailyLimitHint', { max: MAX_DAILY_MEALS })}
+            {error && (
+              <p role="alert" className="text-sm text-destructive">
+                {error.text}
               </p>
-            </div>
-            <div className="grid gap-1">
-              <Label htmlFor={`${ids}-threshold`}>{t('mealAccounts.threshold')}</Label>
-              <Input
-                id={`${ids}-threshold`}
-                inputMode="numeric"
-                value={form.threshold}
-                autoComplete="off"
-                aria-invalid={invalid('low_balance_threshold', problems.threshold)}
-                aria-describedby={`${ids}-threshold-hint`}
-                disabled={busy}
-                onChange={(event) => set({ threshold: event.target.value })}
-              />
-              <p id={`${ids}-threshold-hint`} className="text-sm text-muted-foreground">
-                {t('mealAccounts.thresholdHint')}
-              </p>
-            </div>
-          </div>
-          <WindowsEditor
-            windows={form.windows}
-            busy={busy}
-            refused={error?.field === 'meal_windows'}
-            onChange={(next) => set({ windows: next })}
-          />
-          {error && (
-            <p role="alert" className="text-sm text-destructive">
-              {error.text}
-            </p>
-          )}
+            )}
+          </DialogBody>
           <DialogFooter>
             <Button type="button" variant="outline" disabled={busy} onClick={onClose}>
               {t('adminCancel')}
@@ -796,79 +799,81 @@ function ImportDialog({
           <DialogDescription>{t('mealAccounts.importIntro')}</DialogDescription>
         </DialogHeader>
         <form
-          className="space-y-4"
+          className="flex min-h-0 flex-col"
           onSubmit={(event) => {
             event.preventDefault()
             void submit()
           }}
         >
-          <div className="space-y-1 text-sm">
-            <p>{t('mealAccounts.importHeader')}</p>
-            <code className="block overflow-x-auto rounded-md bg-muted p-2 text-xs">
-              {MEAL_IMPORT_HEADER}
-            </code>
-            <p className="text-muted-foreground">{t('mealAccounts.importRules')}</p>
-          </div>
-          <div className="grid gap-1">
-            <Label htmlFor={`${ids}-file`}>{t('mealAccounts.importFile')}</Label>
-            <Input
-              id={`${ids}-file`}
-              type="file"
-              accept=".csv,text/csv"
-              aria-invalid={tooLarge}
-              disabled={busy}
-              onChange={(event) => {
-                setFile(event.target.files?.[0] ?? null)
-                setError('')
-                setProblems([])
-              }}
-            />
-            {tooLarge && (
+          <DialogBody className="space-y-4">
+            <div className="space-y-1 text-sm">
+              <p>{t('mealAccounts.importHeader')}</p>
+              <code className="block overflow-x-auto rounded-md bg-muted p-2 text-xs">
+                {MEAL_IMPORT_HEADER}
+              </code>
+              <p className="text-muted-foreground">{t('mealAccounts.importRules')}</p>
+            </div>
+            <div className="grid gap-1">
+              <Label htmlFor={`${ids}-file`}>{t('mealAccounts.importFile')}</Label>
+              <Input
+                id={`${ids}-file`}
+                type="file"
+                accept=".csv,text/csv"
+                aria-invalid={tooLarge}
+                disabled={busy}
+                onChange={(event) => {
+                  setFile(event.target.files?.[0] ?? null)
+                  setError('')
+                  setProblems([])
+                }}
+              />
+              {tooLarge && (
+                <p role="alert" className="text-sm text-destructive">
+                  {t('mealAccounts.importTooLarge')}
+                </p>
+              )}
+            </div>
+            {error && (
               <p role="alert" className="text-sm text-destructive">
-                {t('mealAccounts.importTooLarge')}
+                {error}
               </p>
             )}
-          </div>
-          {error && (
-            <p role="alert" className="text-sm text-destructive">
-              {error}
-            </p>
-          )}
-          {problems.length > 0 && (
-            <div className="max-h-64 overflow-y-auto rounded-lg border">
-              <table className="w-full text-sm" aria-label={t('mealAccounts.importProblems')}>
-                <thead className="border-b">
-                  <tr>
-                    <th scope="col" className="px-3 py-2 text-left font-medium">
-                      {t('mealAccounts.importLine')}
-                    </th>
-                    <th scope="col" className="px-3 py-2 text-left font-medium">
-                      {t('mealAccounts.importField')}
-                    </th>
-                    <th scope="col" className="px-3 py-2 text-left font-medium">
-                      {t('mealAccounts.importMessage')}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {problems.map((problem, index) => (
-                    // biome-ignore lint/suspicious/noArrayIndexKey: one line may have several problems
-                    <tr key={index}>
-                      <td className="px-3 py-2 tabular-nums">{problem.line ?? '—'}</td>
-                      <td className="px-3 py-2">
-                        {problem.field
-                          ? t(`mealAccounts.field_${problem.field}`, {
-                              defaultValue: problem.field,
-                            })
-                          : '—'}
-                      </td>
-                      <td className="px-3 py-2">{problem.message}</td>
+            {problems.length > 0 && (
+              <div className="max-h-64 overflow-y-auto rounded-lg border">
+                <table className="w-full text-sm" aria-label={t('mealAccounts.importProblems')}>
+                  <thead className="border-b">
+                    <tr>
+                      <th scope="col" className="px-3 py-2 text-left font-medium">
+                        {t('mealAccounts.importLine')}
+                      </th>
+                      <th scope="col" className="px-3 py-2 text-left font-medium">
+                        {t('mealAccounts.importField')}
+                      </th>
+                      <th scope="col" className="px-3 py-2 text-left font-medium">
+                        {t('mealAccounts.importMessage')}
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                  </thead>
+                  <tbody className="divide-y">
+                    {problems.map((problem, index) => (
+                      // biome-ignore lint/suspicious/noArrayIndexKey: one line may have several problems
+                      <tr key={index}>
+                        <td className="px-3 py-2 tabular-nums">{problem.line ?? '—'}</td>
+                        <td className="px-3 py-2">
+                          {problem.field
+                            ? t(`mealAccounts.field_${problem.field}`, {
+                                defaultValue: problem.field,
+                              })
+                            : '—'}
+                        </td>
+                        <td className="px-3 py-2">{problem.message}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </DialogBody>
           <DialogFooter>
             <Button type="button" variant="outline" disabled={busy} onClick={onClose}>
               {t('adminCancel')}
