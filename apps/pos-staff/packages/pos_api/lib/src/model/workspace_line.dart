@@ -35,6 +35,7 @@ part 'workspace_line.g.dart';
 /// * [rowVersion] - Moves on every change of the line; unsent-line edits send it back.
 /// * [addedBy] - Who added the line.
 /// * [kitchenStatus] - Table orders only, how far the kitchen got with what was sent of the line.
+/// * [kitchenSendSequence] - Table orders only, the `sequence` of the first kitchen send that carried the line; null until it is sent. A voided item keeps it.
 /// * [course] - The course of a table dish (1 starter, 2 main, 3 dessert…; names in table settings).
 /// * [courseStatus] - `held` keeps the dish off the kitchen until its course is fired; `fired` once it was. A held line sends nothing.
 /// * [seat] - The seat that ordered it; a bill can be split by seat.
@@ -103,6 +104,10 @@ abstract class WorkspaceLine
   /// Table orders only, how far the kitchen got with what was sent of the line.
   @BuiltValueField(wireName: r'kitchen_status')
   LineKitchenStatus? get kitchenStatus;
+
+  /// Table orders only, the `sequence` of the first kitchen send that carried the line; null until it is sent. A voided item keeps it.
+  @BuiltValueField(wireName: r'kitchen_send_sequence')
+  int? get kitchenSendSequence;
 
   /// The course of a table dish (1 starter, 2 main, 3 dessert…; names in table settings).
   @BuiltValueField(wireName: r'course')
@@ -262,6 +267,13 @@ class _$WorkspaceLineSerializer implements PrimitiveSerializer<WorkspaceLine> {
       yield serializers.serialize(
         object.kitchenStatus,
         specifiedType: const FullType(LineKitchenStatus),
+      );
+    }
+    if (object.kitchenSendSequence != null) {
+      yield r'kitchen_send_sequence';
+      yield serializers.serialize(
+        object.kitchenSendSequence,
+        specifiedType: const FullType.nullable(int),
       );
     }
     if (object.course != null) {
@@ -463,6 +475,14 @@ class _$WorkspaceLineSerializer implements PrimitiveSerializer<WorkspaceLine> {
           ) as LineKitchenStatus?;
           if (valueDes == null) continue;
           result.kitchenStatus.replace(valueDes);
+          break;
+        case r'kitchen_send_sequence':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(int),
+          ) as int?;
+          if (valueDes == null) continue;
+          result.kitchenSendSequence = valueDes;
           break;
         case r'course':
           final valueDes = serializers.deserialize(

@@ -22,7 +22,8 @@ part 'resource_board_order.g.dart';
 /// * [paymentRequested]
 /// * [prebilled] - Its current pre-bill matches the order.
 /// * [editedAfterPrebill]
-/// * [pendingKitchenItems]
+/// * [pendingKitchenItems] - Items sent to the kitchen and not ready yet.
+/// * [unsentKitchenItems] - Menu units on the order the kitchen has not been told about yet; a held course waits for its fire and is not counted.
 @BuiltValue()
 abstract class ResourceBoardOrder
     implements Built<ResourceBoardOrder, ResourceBoardOrderBuilder> {
@@ -59,8 +60,13 @@ abstract class ResourceBoardOrder
   @BuiltValueField(wireName: r'edited_after_prebill')
   bool get editedAfterPrebill;
 
+  /// Items sent to the kitchen and not ready yet.
   @BuiltValueField(wireName: r'pending_kitchen_items')
   int get pendingKitchenItems;
+
+  /// Menu units on the order the kitchen has not been told about yet; a held course waits for its fire and is not counted.
+  @BuiltValueField(wireName: r'unsent_kitchen_items')
+  int get unsentKitchenItems;
 
   ResourceBoardOrder._();
 
@@ -147,6 +153,11 @@ class _$ResourceBoardOrderSerializer
     yield r'pending_kitchen_items';
     yield serializers.serialize(
       object.pendingKitchenItems,
+      specifiedType: const FullType(int),
+    );
+    yield r'unsent_kitchen_items';
+    yield serializers.serialize(
+      object.unsentKitchenItems,
       specifiedType: const FullType(int),
     );
   }
@@ -254,6 +265,13 @@ class _$ResourceBoardOrderSerializer
             specifiedType: const FullType(int),
           ) as int;
           result.pendingKitchenItems = valueDes;
+          break;
+        case r'unsent_kitchen_items':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(int),
+          ) as int;
+          result.unsentKitchenItems = valueDes;
           break;
         default:
           unhandled.add(key);
