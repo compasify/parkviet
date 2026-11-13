@@ -1,6 +1,7 @@
-import { formatMoney } from '@parkviet/pos-shared/money';
+import { formatMoney, parseVndAmount } from '@parkviet/pos-shared/money';
 import { rateLabel } from '@parkviet/pos-shared/receipt-template/data';
-import { ticketLineAmount } from '@parkviet/pos-shared/ticket-groups';
+import { pendingKitchenUnits, ticketLineAmount } from '@parkviet/pos-shared/ticket-groups';
+import { useSearch } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useResourceBoard } from '../../hooks/use-resource-board';
@@ -25,11 +26,21 @@ import {
 
 type PayDialog = 'lines' | 'seat' | 'delivery';
 
+// A completed order whose change is still to be given back.
+type Done = {
+  workspaceId: string;
+  print: boolean;
+  failure?: string;
+  change: string;
+  currency: string;
+};
+
 // Payment of a table order over the whole screen: the bill on the left, the
 // counter's own payment on the right (what is due, the QR shown at once, the
 // cash keypad, the other methods) and the bill's tools in the foot. "← Đơn"
 // goes back to the order; a completed order is handed over at the table and
-// the screen returns to the board.
+// the screen returns to the board, once the cashier saw the change to give
+// back. Dishes not sent to the kitchen yet are called out with their send.
 export function PaymentScreen({
   selling,
   onOrder,
@@ -43,18 +54,47 @@ export function PaymentScreen({
   onCompleted: (workspaceId: string, options: { print: boolean; failure?: string }) => void;
 }) {
   const { t } = useTranslation();
-  const { active, data, staffId, storeId, command } = selling;
+  const { active, data, staffId, storeId, command, run, workspaces, kitchenOn, locked, busy } =
+    selling;
   const tenders = useTenders(staffId, storeId);
+  const search = useSearch({ from: '/authed/' });
+  const [done, setDone] = useState<Done | null>(null);
+  const [sending, setSending] = useState(false);
+  const unsent = kitchenOn && active ? pendingKitchenUnits(active) : 0;
 
   async function completed(workspace: PosWorkspace, print: boolean) {
     let failure: string | undefined;
-    // The dishes are already at the table: the order is handed over as it is paid.
-    try {
-      await command(workspace, (current) => tenders.handover(current));
-    } catch (error) {
-      failure = t('payHandoverFailed', { reason: describeFailure(error, t) });
+    let latest = workspace;
+    // The dishes are already at the table: the order is handed over as it is
+    // paid. Dishes the kitchen was never told about are not at the table.
+    if (!(kitchenOn && pendingKitchenUnits(workspace) > 0))
+      try {
+        latest = await command(workspace, (current) => tenders.handover(current));
+      } catch (error) {
+        failure = t('payHandoverFailed', { reason: describeFailure(error, t) });
+      }
+    const change = parseVndAmount(latest.financial?.change_due ?? '') ?? '0';
+    if (change === '0') {
+      onCompleted(workspace.id, { print, failure });
+      return;
     }
-    onCompleted(workspace.id, { print, failure });
+    setDone({
+      workspaceId: workspace.id,
+      print,
+      failure,
+      change,
+      currency: latest.totals?.currency ?? 'VND',
+    });
+  }
+
+  async function sendToKitchen() {
+    if (!active || sending) return;
+    setSending(true);
+    try {
+      await run(() => command(active, (current) => workspaces.sendToKitchen(current)));
+    } finally {
+      setSending(false);
+    }
   }
 
   if (!active)
@@ -68,8 +108,8 @@ export function PaymentScreen({
           <button type="button" className="ticket-back" onClick={onBoard}>
             <PosIcon name="back" /> {t('boardOpen')}
           </button>
-          <p className="ticket-empty">
-            {selling.workspaces.query.isLoading ? t('workspaceLoading') : t('ticketNoOrder')}
+          <p className="ticket-empty" role="status">
+            {selling.activeLoading ? t('contextWaiting') : t('ticketNoOrder')}
           </p>
         </div>
       </section>
@@ -78,11 +118,41 @@ export function PaymentScreen({
   return (
     <section className="draft-workspace table-service table-service-pay" aria-label={t('payTitle')}>
       <SellingNotices selling={selling} />
+      {done?.workspaceId === active.id ? (
+        <div className="attention-box pay-change-due" role="alert">
+          <strong>
+            {t('payChange')}: {formatMoney(done.change, done.currency)}
+          </strong>
+          <button
+            type="button"
+            className="primary-button"
+            onClick={() => {
+              setDone(null);
+              onCompleted(done.workspaceId, { print: done.print, failure: done.failure });
+            }}
+          >
+            <PosIcon name="back" /> {t('boardOpen')}
+          </button>
+        </div>
+      ) : unsent > 0 && active.operational_status !== 'completed' ? (
+        <div className="attention-box pay-unsent" role="alert">
+          <span>{t('boardLegend_unsent')}</span>
+          <button
+            type="button"
+            disabled={sending || locked || busy}
+            onClick={() => void sendToKitchen()}
+          >
+            {t('ticketSend', { count: unsent })}
+          </button>
+        </div>
+      ) : null}
       <PaymentPanel
         key={active.id}
         {...activePaymentProps(selling, active)}
         layout="fullscreen"
         defaultTender="vietqr"
+        // The QR prepares itself only for the order the URL names.
+        autoPrepare={!search.order || search.order === active.order_id}
         cashTip={data?.modules?.['fnb.postpay'] === true}
         bill={(controls) => (
           <PayBill selling={selling} active={active} controls={controls} onOrder={onOrder} />

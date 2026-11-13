@@ -1,7 +1,7 @@
 import { formatMoney } from '@parkviet/pos-shared/money';
 import { contextFeature } from '@parkviet/pos-shared/pos-features';
 import { rateLabel } from '@parkviet/pos-shared/receipt-template/data';
-import { type ReactNode, useRef } from 'react';
+import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSellingWorkspace } from '../hooks/use-selling-workspace';
 import { commandQueue } from '../lib/command-queue';
@@ -108,21 +108,8 @@ export function OrderTrays({
   );
 }
 
-// The counter layout over selling state owned by the caller. A layout that
-// sells from its own menu passes it as `catalog` and names itself in `className`.
-// A layout with its own table board passes `onBoard`: the toolbar then goes
-// back to that board instead of showing the floor here.
-export function WorkspaceTabsView({
-  selling,
-  catalog,
-  className,
-  onBoard,
-}: {
-  selling: SellingWorkspace;
-  catalog?: ReactNode;
-  className?: string;
-  onBoard?: () => void;
-}) {
+// The counter layout over selling state owned by the caller.
+export function WorkspaceTabsView({ selling }: { selling: SellingWorkspace }) {
   const { t } = useTranslation();
   const {
     data,
@@ -198,14 +185,10 @@ export function WorkspaceTabsView({
   const discountDetailsRef = useRef<HTMLDetailsElement>(null);
   const noteDetailsRef = useRef<HTMLDetailsElement>(null);
   const deliveryDetailsRef = useRef<HTMLDetailsElement>(null);
-  // With a board of its own the layout never draws the floor in here.
-  const showFloor = selling.showFloor && !onBoard;
+  const showFloor = selling.showFloor;
 
   return (
-    <section
-      className={className ? `draft-workspace ${className}` : 'draft-workspace'}
-      aria-label={t('draftList')}
-    >
+    <section className="draft-workspace" aria-label={t('draftList')}>
       <div className="draft-toolbar">
         {tabSurface ? (
           <button
@@ -221,11 +204,7 @@ export function WorkspaceTabsView({
             {showTabs ? t('tableBackToSale') : t('tabListTitle')}
           </button>
         ) : null}
-        {onBoard ? (
-          <button type="button" className="floor-toggle" onClick={onBoard}>
-            <PosIcon name="grid" /> {t('boardOpen')}
-          </button>
-        ) : tableSurface ? (
+        {tableSurface ? (
           <button type="button" className="floor-toggle" onClick={() => setFloorChoice(!showFloor)}>
             <PosIcon name={showFloor ? 'back' : 'grid'} />{' '}
             {showFloor ? t('tableBackToSale') : t('tableFloorOpen')}
@@ -522,11 +501,7 @@ export function WorkspaceTabsView({
                   }}
                 />
               ) : null}
-              {catalog ? (
-                catalog
-              ) : (
-                <SellingCatalog key={`${storeId}:${selection.branchId}`} selling={selling} />
-              )}
+              <SellingCatalog key={`${storeId}:${selection.branchId}`} selling={selling} />
             </section>
             <section
               className="selling-panel basket-panel"

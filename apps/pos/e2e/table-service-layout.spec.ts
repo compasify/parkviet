@@ -145,7 +145,9 @@ test('a table goes from the board to the kitchen and back, then pays by VietQR s
   const qr = pay.getByRole('region', { name: 'VietQR' });
   await expect(qr.getByRole('img', { name: 'Mã VietQR để quét bằng ứng dụng ngân hàng' })).toBeVisible();
   await expect(qr.locator('.pay-qr-amount')).toHaveText('15.000 ₫');
-  await expect(qr.getByRole('status')).toContainText('Chờ chuyển khoản, tự khớp khi tiền về');
+  await expect(qr.locator('.pay-qr-status')).toContainText('Chờ chuyển khoản, tự khớp khi tiền về');
+  // The countdown is not announced; the bank's report is.
+  await expect(qr.getByRole('status')).toHaveText('');
   expect(prepares(world).map((write) => [write.body.payment_method_id, write.body.amount])).toEqual([
     ['posmethod-vietqr', '15000'],
   ]);
@@ -407,4 +409,207 @@ test('the board opens a free table with its guests; dishes go to the kitchen by 
   await expect(page).toHaveURL(/view=board/);
   await expect.poll(() => world.sheets.get('ws_posres_1')?.kitchenSends?.length).toBe(3);
   await expect(tileOf('Bàn 1')).toHaveAttribute('data-tone', 'serving');
+});
+
+// A link or the browser's history changes the URL inside the app.
+async function followUrl(page: Page, url: string) {
+  await page.evaluate((target) => {
+    window.history.pushState(window.history.state, '', target);
+    window.dispatchEvent(new PopStateEvent('popstate', { state: window.history.state }));
+  }, url);
+}
+
+const TABLE_ONE = { id: 'posres_1', name: 'Bàn 1', label: null, guests: 2 };
+
+test('an order the URL names on another register opens by itself, never another order in its place', async ({
+  context,
+}) => {
+  const world = tableWorld();
+  // A takeaway draft of this register, first in its list.
+  const draft = addSheet(world, 'ws_d1');
+  addLine(world, draft, 'v_flan', 1);
+  const sheet = addSheet(world, 'ws_t1', { table: TABLE_ONE });
+  addLine(world, sheet, 'v_flan', 2);
+  await installRetailApi(context, world);
+  await routeBoard(context);
+  await routeReceipt(context);
+  // The branch books its table orders on its table register, not this one:
+  // this register's list leaves them out; the branch's open orders have them.
+  const lookups: string[] = [];
+  await context.route('**/api/v3/admin/pos/workspaces?*', (route) => {
+    const url = new URL(route.request().url());
+    if (route.request().method() !== 'GET' || url.searchParams.has('service_mode')) return route.fallback();
+    if (!url.searchParams.get('register_id')) {
+      // The lookup reads one page of the branch's open orders.
+      if (url.searchParams.get('limit') === '100')
+        lookups.push(`${url.searchParams.get('branch_id')}:${url.searchParams.get('status')}`);
+      return route.fallback();
+    }
+    const rows = [...world.sheets.values()].filter((row) => !row.table).map((row) => serialize(world, row));
+    return route.fulfill({ json: { data: rows, meta: { page: 1, pages: 1, count: rows.length } } });
+  });
+  const page = await context.newPage();
+  await login(page);
+
+  // The payment of table 1 (R101) opened from a bookmark shows table 1.
+  await page.goto('/?order=R101&view=pay');
+  await holdLease(page);
+  const pay = payScreen(page);
+  await expect(pay.getByRole('complementary', { name: 'Hóa đơn' })).toContainText('Bàn 1');
+  await expect(pay.getByRole('region', { name: 'VietQR' }).locator('.pay-qr-amount')).toHaveText('30.000 ₫');
+  expect(lookups).toEqual(['br_1:editing,parked']);
+  await expect
+    .poll(() => prepares(world).map((write) => write.path))
+    .toEqual([expect.stringContaining('/ws_t1/')]);
+  await expect(pay.getByRole('img', { name: 'Mã VietQR để quét bằng ứng dụng ngân hàng' })).toBeVisible();
+  // The register's draft was never touched: no QR, no lease, no dish.
+  expect(world.writes.filter((write) => String(write.path).includes('ws_d1'))).toEqual([]);
+  await expect(page).toHaveURL(/order=R101/);
+});
+
+test('leaving the payment by another route lets the waiting QR go, never one the bank paid', async ({
+  context,
+}) => {
+  const world = tableWorld();
+  const sheet = addSheet(world, 'ws_t1', { table: TABLE_ONE });
+  addLine(world, sheet, 'v_flan', 2);
+  await installRetailApi(context, world);
+  await routeBoard(context);
+  await routeReceipt(context);
+  const page = await context.newPage();
+  await login(page);
+  await tile(page).click();
+  await ticket(page).getByRole('button', { name: /^Thanh toán/ }).click();
+  await holdLease(page);
+  const qr = payScreen(page).getByRole('region', { name: 'VietQR' });
+  await expect(qr.locator('.pay-qr-amount')).toHaveText('30.000 ₫');
+  await expect.poll(() => attempts(world, 'vietqr', 'prepared').length).toBe(1);
+
+  // The URL goes to the board (a link, the history): the waiting QR goes with the screen.
+  await followUrl(page, '/?view=board');
+  await expect(page.getByRole('region', { name: 'Bảng bàn' })).toBeVisible();
+  await expect.poll(() => attempts(world, 'vietqr', 'canceled').length).toBe(1);
+  expect(attempts(world, 'vietqr', 'prepared')).toHaveLength(0);
+
+  // The next QR is paid by the bank: leaving keeps it for the order.
+  await tile(page).click();
+  await ticket(page).getByRole('button', { name: /^Thanh toán/ }).click();
+  await expect.poll(() => attempts(world, 'vietqr', 'prepared').length).toBe(1);
+  world.vietqrReceived?.add(attempts(world, 'vietqr', 'prepared')[0].id);
+  await expect(qr.getByRole('status')).toContainText('Ngân hàng đã báo nhận tiền', { timeout: 10_000 });
+  await followUrl(page, '/?view=board');
+  await expect(page.getByRole('region', { name: 'Bảng bàn' })).toBeVisible();
+  // A release would have been sent as the screen went; give it the time to land.
+  await page.waitForTimeout(500);
+  expect(attempts(world, 'vietqr', 'prepared')).toHaveLength(1);
+  expect(attempts(world, 'vietqr', 'canceled')).toHaveLength(1);
+});
+
+test('a paid QR and cash together give back the right change, shown before the board', async ({ context }) => {
+  const world = tableWorld();
+  const sheet = addSheet(world, 'ws_t1', { table: TABLE_ONE });
+  addLine(world, sheet, 'v_flan', 2);
+  await installRetailApi(context, world);
+  await routeBoard(context);
+  await routeReceipt(context);
+  const page = await context.newPage();
+  await login(page);
+  await tile(page).click();
+  await ticket(page).getByRole('button', { name: /^Thanh toán/ }).click();
+  await holdLease(page);
+  const pay = payScreen(page);
+  const qr = pay.getByRole('region', { name: 'VietQR' });
+  await expect(qr.locator('.pay-qr-amount')).toHaveText('30.000 ₫');
+
+  // Two guests: the first pays half by the QR.
+  await pay.locator('.pay-split-even > summary').click();
+  await pay.getByRole('button', { name: 'Chia 2 phần', exact: true }).click();
+  await expect(qr.locator('.pay-qr-amount')).toHaveText('15.000 ₫');
+  await expect
+    .poll(() => attempts(world, 'vietqr', 'prepared').map((item) => Number.parseInt(item.amount, 10)))
+    .toEqual([15000]);
+  world.vietqrReceived?.add(attempts(world, 'vietqr', 'prepared')[0].id);
+  await expect(qr.getByRole('status')).toContainText('Ngân hàng đã báo nhận tiền', { timeout: 10_000 });
+
+  // The second hands 20.000 for the rest: 5.000 goes back to them.
+  await pay.locator('.pay-split-even > summary').click();
+  await pay.getByRole('button', { name: 'Không chia', exact: true }).click();
+  const cash = pay.getByRole('region', { name: 'Tiền mặt' });
+  await expect(cash.getByRole('button', { name: 'Đúng 15.000' })).toBeVisible();
+  await cash.getByRole('button', { name: '20.000', exact: true }).click();
+  await expect(pay.locator('.pay-due-left dd')).toHaveText('0 ₫');
+  await expect(pay.locator('.pay-due-change dd')).toHaveText('5.000 ₫');
+  await pay.getByRole('button', { name: 'Hoàn tất · in hóa đơn' }).click();
+  await expect.poll(() => world.sheets.get('ws_t1')?.status).toBe('completed');
+  expect(world.sheets.get('ws_t1')?.changeDue).toBe(5000);
+
+  // The change stays on screen until the cashier goes back to the board.
+  const change = page.locator('.pay-change-due');
+  await expect(change).toContainText('Tiền thừa: 5.000 ₫');
+  await expect(pay.locator('.pay-due-change dd')).toHaveText('5.000 ₫');
+  await expect(page).toHaveURL(/view=pay/);
+  await change.getByRole('button', { name: 'Bảng bàn' }).click();
+  await expect(page).toHaveURL(/view=board/);
+  await expect(page.getByRole('dialog')).toContainText('HD-0001');
+});
+
+test('dishes not sent yet are called out on the payment and keep the paid order from being handed over', async ({
+  context,
+}) => {
+  const world = tableWorld();
+  addSheet(world, 'ws_t1', { table: TABLE_ONE });
+  await installRetailApi(context, world);
+  await routeBoard(context);
+  await routeReceipt(context);
+  const page = await context.newPage();
+  await login(page);
+  const grid = page.getByRole('list', { name: 'Thực đơn' });
+  await tile(page).click();
+  await grid.getByRole('button', { name: 'Bánh flan', exact: true }).click();
+  await expect(ticket(page).locator('.ticket-line')).toHaveCount(1);
+
+  // Paying with a dish the kitchen never got: the screen says so and sends it.
+  await ticket(page).getByRole('button', { name: /^Thanh toán/ }).click();
+  await holdLease(page);
+  const pay = payScreen(page);
+  const unsent = page.locator('.pay-unsent');
+  await expect(unsent).toContainText('Có món chưa gửi bếp');
+  await unsent.getByRole('button', { name: 'Gửi bếp (1)', exact: true }).click();
+  await expect.poll(() => world.sheets.get('ws_t1')?.kitchenSends?.length).toBe(1);
+  await expect(unsent).toHaveCount(0);
+
+  // One more dish, paid without sending it: the order is not handed over.
+  await pay.getByRole('button', { name: 'Về đơn để gọi thêm món' }).click();
+  await grid.getByRole('button', { name: 'Bánh flan', exact: true }).click();
+  await expect(ticket(page).getByRole('button', { name: 'Gửi bếp (1)', exact: true })).toBeEnabled();
+  await ticket(page).getByRole('button', { name: /^Thanh toán/ }).click();
+  await expect(unsent.getByRole('button', { name: 'Gửi bếp (1)', exact: true })).toBeVisible();
+  await expect.poll(() => attempts(world, 'vietqr', 'prepared').length).toBe(1);
+  world.vietqrReceived?.add(attempts(world, 'vietqr', 'prepared')[0].id);
+  const finish = pay.getByRole('button', { name: 'Hoàn tất · in hóa đơn' });
+  await expect(finish).toBeEnabled({ timeout: 10_000 });
+  await finish.click();
+  await expect.poll(() => world.sheets.get('ws_t1')?.status).toBe('completed');
+  await expect(page).toHaveURL(/view=board/);
+  expect(world.writes.filter((write) => write.family === 'handover')).toEqual([]);
+  expect(world.sheets.get('ws_t1')?.handedOver).toBe(false);
+});
+
+test('closing a paid order at a table branch goes back to the board without a new draft', async ({
+  context,
+}) => {
+  const world = tableWorld();
+  addSheet(world, 'ws_t1', { status: 'completed', table: TABLE_ONE });
+  await installRetailApi(context, world);
+  await routeBoard(context);
+  const page = await context.newPage();
+  await login(page);
+  await page.goto('/?order=R100&view=order');
+  await expect(ticket(page).locator('.ticket-header')).toContainText('Bàn 1');
+  await page.getByRole('button', { name: 'Đóng tab', exact: true }).click();
+  await expect(page).toHaveURL(/view=board/);
+  await expect(page.getByRole('region', { name: 'Bảng bàn' })).toBeVisible();
+  // A draft would have been asked for as the tab closed; give it the time to land.
+  await page.waitForTimeout(500);
+  expect(world.writes.filter((write) => write.family === 'workspace.create')).toEqual([]);
 });

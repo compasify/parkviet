@@ -146,7 +146,7 @@ test('book, take a deposit, seat the guest and pay with the deposit taken off', 
   await expect(list.getByText(/Tiền cọc: 50\.000/)).toBeVisible();
 
   await list.getByRole('button', { name: 'Khách đã đến' }).click();
-  await expect(page).toHaveURL(/order=ws_r1/);
+  await expect(page).toHaveURL(/order=R100/);
   // The seated table opens on its ticket; the deposit is taken off on the payment screen.
   await page.getByRole('complementary', { name: 'Phiếu bàn' }).getByRole('button', { name: /^Thanh toán/ }).click();
   const pay = page.locator('.pay-screen');

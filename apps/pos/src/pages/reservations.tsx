@@ -412,7 +412,11 @@ function ReservationRow({
             onClick={() =>
               act(async () => {
                 const seated = await commands.seat(reservation.id);
-                await navigate({ to: '/', search: { order: seated.workspaceId } });
+                // The sale opens the order the URL names by its order id.
+                await navigate({
+                  to: '/',
+                  search: seated.orderId ? { order: seated.orderId } : {},
+                });
               })
             }
           >

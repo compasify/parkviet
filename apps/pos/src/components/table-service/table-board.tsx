@@ -73,6 +73,7 @@ export function TableBoard({
   const [error, setError] = useState('');
   const [delivering, setDelivering] = useState<PosWorkspace | null>(null);
   const branch = data?.branches.find((row) => row.id === selection.branchId);
+  const timeZone = branch?.timezone ?? data?.store.timezone ?? 'Asia/Ho_Chi_Minh';
   const options: BoardOptions = {
     alertMinutes: branch?.seated_alert_minutes ?? null,
     kitchen: kitchenOn,
@@ -144,7 +145,9 @@ export function TableBoard({
       const served = await run(() =>
         command(created, (current) => workspaces.setServiceMode(current, mode)),
       );
-      if (mode === 'delivery' && served) setDelivering(served);
+      // A refused mode leaves the draft as it was; the board shows why.
+      if (!served) return;
+      if (mode === 'delivery') setDelivering(served);
       else onOpenOrder(created.id);
     } finally {
       setBusy(false);
@@ -157,6 +160,7 @@ export function TableBoard({
       tone={tileTone(table, options)}
       alert={tileAlert(table, options)}
       expanded={popover?.tableId === table.id}
+      timeZone={timeZone}
       style={style}
       onSelect={pick}
     />
@@ -443,14 +447,14 @@ function DeliveryDialog({
 }) {
   const { t } = useTranslation();
   const ref = useRef<HTMLDivElement>(null);
-  const { command, workspaces } = selling;
+  const { command, workspaces, locked, channelUnavailable, pendingCounts } = selling;
   useModalFocus(ref, onDone);
   return (
     <div className="pos-popup-backdrop">
       <div ref={ref} role="dialog" aria-modal="true" aria-label={t('deliveryTitle')} tabIndex={-1}>
         <DeliveryForm
           workspace={workspace}
-          disabled={false}
+          disabled={locked || channelUnavailable || Boolean(pendingCounts[workspace.id])}
           onSave={(input) =>
             command(workspace, (current) => workspaces.setDelivery(current, input))
           }

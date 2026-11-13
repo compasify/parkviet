@@ -15,7 +15,7 @@ import {
   useTenders,
   useVietqrTender,
 } from '../hooks/use-tenders';
-import { cashSuggestions, evenShare, groupVndDigits } from '../lib/cash-suggestions';
+import { cashSuggestions, evenShare, groupVndDigits, payPreview } from '../lib/cash-suggestions';
 import { type RowAmounts, rebalanceRows, splitRowValues } from '../lib/payment-split';
 import type { PosFinancialAttempt, PosPaymentMethod, PosWorkspace } from '../lib/pos-context';
 import { autoPrintEnabled } from '../lib/receipt-preferences';
@@ -176,6 +176,7 @@ export function PaymentPanel({
   storedValueCards = false,
   layout = 'panel',
   defaultTender = 'cash',
+  autoPrepare = true,
   cashTip = false,
   bill,
   tools,
@@ -188,6 +189,9 @@ export function PaymentPanel({
   layout?: PaymentLayout;
   // The method picked first; on the full screen, VietQR shows its QR at once.
   defaultTender?: MethodKind;
+  // Full screen: the QR may be prepared by itself (the workspace is the
+  // order the screen is for).
+  autoPrepare?: boolean;
   // Full screen: the cash takes a guest's tip (table service settled later).
   cashTip?: boolean;
   // Full screen: the bill on the left and the screen's own tools in the foot,
@@ -566,7 +570,6 @@ export function PaymentPanel({
   const tipValue = BigInt(tip ?? '0');
   // What the cash pays of the order; the rest of what was handed is tip and change.
   const cashOver = handedValue - tipValue;
-  const cashPays = smaller(cashOver, target);
   const qrAmount = qrAttempt ? BigInt(parseVndAmount(qrAttempt.amount) ?? '0') : 0n;
   const finishKind: 'cash' | 'qr' | 'complete' | null =
     handedValue > 0n
@@ -576,17 +579,22 @@ export function PaymentPanel({
         : financial && remainingIsZero && hasItems
           ? 'complete'
           : null;
-  const paysNow =
-    finishKind === 'cash'
-      ? (cashPays > 0n ? cashPays : 0n) + (qrIn ? qrAmount : 0n)
-      : finishKind === 'qr'
-        ? qrAmount
-        : 0n;
+  const changeDue = BigInt(parseVndAmount(financial?.change_due ?? '') ?? '0');
+  // A received QR is confirmed before the cash, so the cash pays only what
+  // the QR leaves; the server's change is what was handed over that.
+  const preview = payPreview({
+    due: dueValue,
+    share: shareValue,
+    cash: finishKind === 'cash' ? cashOver : null,
+    qr: qrIn ? qrAmount : 0n,
+  });
+  const cashTarget = preview.cashTarget;
+  const cashPays = preview.cashPays;
+  const paysNow = finishKind === 'qr' ? qrAmount : preview.paysNow;
   // This press pays everything still due, so the order completes with it.
   const finishes = finishKind === 'complete' || (finishKind !== null && paysNow >= dueValue);
   const leftPreview = dueValue > paysNow ? dueValue - paysNow : 0n;
-  const changeDue = BigInt(parseVndAmount(financial?.change_due ?? '') ?? '0');
-  const changePreview = finishKind === 'cash' && cashOver > target ? cashOver - target : changeDue;
+  const changePreview = finishKind === 'cash' && preview.change > 0n ? preview.change : changeDue;
   const cashLocked = locked || !cashMethod || heldAttempts.length > 0;
   const finishDisabled =
     locked ||
@@ -600,6 +608,7 @@ export function PaymentPanel({
     (finishKind === 'cash' && (!cashMethod || cashPays <= 0n));
   const autoQr =
     fullscreen &&
+    autoPrepare &&
     defaultTender === 'vietqr' &&
     vietqrMethod &&
     canCollect &&
@@ -754,6 +763,41 @@ export function PaymentPanel({
     triedQr.current = autoQr;
     void prepareQr();
   }, [autoQr]);
+
+  // Full screen: a QR still waiting for its transfer goes when the screen
+  // does (another frame, page, branch or order), so the order is not left
+  // frozen under a tender nobody shows. Only a QR this screen could act on
+  // (it held the order) is let go, and only while it still waits; the
+  // server refuses to cancel one the bank already reported.
+  const releasable = useRef(new Set<string>());
+  if (fullscreen && waitingQr && !disabled) releasable.current.add(waitingQr.id);
+  const leaving = useRef<() => void>(() => undefined);
+  leaving.current = () => {
+    const ids = waitingQr && releasable.current.has(waitingQr.id) ? [waitingQr.id] : [];
+    if (ids.length === 0) return;
+    void command(async (current) => {
+      let latest = current;
+      for (const attempt of current.financial?.attempts ?? [])
+        if (ids.includes(attempt.id) && attempt.status === 'prepared')
+          latest = await tenders.cancel(latest, { attemptId: attempt.id });
+      return latest;
+    }).catch(() => {
+      // Best effort: the QR stays until someone lets it go from the screen.
+    });
+  };
+  const mounted = useRef(false);
+  useEffect(() => {
+    if (!fullscreen) return;
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      // React's development double mount comes straight back: only a real
+      // unmount lets the QR go.
+      window.setTimeout(() => {
+        if (!mounted.current) leaving.current();
+      }, 0);
+    };
+  }, [fullscreen]);
 
   if (!fullscreen && !canCollect && !financial) return null;
 
@@ -1154,7 +1198,7 @@ export function PaymentPanel({
           <dl className="pay-due">
             <div>
               <dt>{t('payDue')}</dt>
-              <dd>{formatMoney(workspace.totals?.total ?? '0', currency)}</dd>
+              <dd>{formatMoney(String(dueValue), currency)}</dd>
               {shareValue !== null && share ? (
                 <small>
                   {t('paySplitEvenOn', {
@@ -1177,7 +1221,6 @@ export function PaymentPanel({
             <div className="pay-done">
               <p role="status">{t('payCompleted')}</p>
               {receiptPrint}
-              {handover}
             </div>
           ) : !canCollect ? (
             <p className="muted">{t('payNoRight')}</p>
@@ -1212,12 +1255,12 @@ export function PaymentPanel({
                         <button
                           type="button"
                           className="pay-cash-exact"
-                          disabled={cashLocked || target <= 0n}
-                          onClick={() => setCashRaw(plain(target + tipValue))}
+                          disabled={cashLocked || cashTarget <= 0n}
+                          onClick={() => setCashRaw(plain(cashTarget + tipValue))}
                         >
-                          {t('payCashExact', { amount: plain(target + tipValue) })}
+                          {t('payCashExact', { amount: plain(cashTarget + tipValue) })}
                         </button>
-                        {cashSuggestions(target + tipValue).map((value) => (
+                        {cashSuggestions(cashTarget + tipValue).map((value) => (
                           <button
                             key={String(value)}
                             type="button"
@@ -1579,7 +1622,16 @@ function VietqrCard({
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, [attempt, received]);
-  const timeLeft = vietqrTimeLeft(summary?.expires_at, now);
+  const timeLeft = received ? null : vietqrTimeLeft(summary?.expires_at, now);
+  const status = loading
+    ? t('waiting')
+    : failed
+      ? t('vietqrStatusUnknown')
+      : received
+        ? t('vietqrReceived')
+        : timeLeft
+          ? t('payVietqrWaiting', { time: timeLeft })
+          : t('vietqrExpired');
   return (
     <section className="pay-card pay-card-active pay-vietqr" aria-label={t('vietqr')}>
       <h3>
@@ -1607,17 +1659,12 @@ function VietqrCard({
                 : ''}
             </small>
           ) : null}
-          <p className={received ? 'pay-qr-status received' : 'pay-qr-status'} role="status">
-            {loading
-              ? t('waiting')
-              : failed
-                ? t('vietqrStatusUnknown')
-                : received
-                  ? t('vietqrReceived')
-                  : timeLeft
-                    ? t('payVietqrWaiting', { time: timeLeft })
-                    : t('vietqrExpired')}
-          </p>
+          <p className={received ? 'pay-qr-status received' : 'pay-qr-status'}>{status}</p>
+          {/* The countdown ticks every second, so the shown line is not a live
+          region: only a change to received, expired or unknown is announced. */}
+          <span className="visually-hidden" role="status">
+            {loading || (!failed && timeLeft) ? '' : status}
+          </span>
           {!received ? (
             <button type="button" className="pay-qr-manual" disabled={disabled} onClick={onManual}>
               {t('vietqrManualConfirm')}

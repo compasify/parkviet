@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cashSuggestions, evenShare, groupVndDigits } from './cash-suggestions';
+import { cashSuggestions, evenShare, groupVndDigits, payPreview } from './cash-suggestions';
 
 describe('cashSuggestions', () => {
   it('rounds up to the notes a guest hands over, without repeats', () => {
@@ -37,5 +37,60 @@ describe('evenShare', () => {
     expect(evenShare(50_000n, 1)).toBe(50_000n);
     expect(evenShare(50_000n, 0)).toBe(50_000n);
     expect(evenShare(0n, 4)).toBe(0n);
+  });
+});
+
+describe('payPreview', () => {
+  it('pays what is due in cash and gives the rest back as change', () => {
+    expect(payPreview({ due: 300_000n, share: null, cash: 500_000n, qr: 0n })).toEqual({
+      cashTarget: 300_000n,
+      cashPays: 300_000n,
+      change: 200_000n,
+      paysNow: 300_000n,
+    });
+  });
+
+  it('takes a received QR off before the cash, as the server confirms it first', () => {
+    expect(payPreview({ due: 300_000n, share: null, cash: 200_000n, qr: 150_000n })).toEqual({
+      cashTarget: 150_000n,
+      cashPays: 150_000n,
+      change: 50_000n,
+      paysNow: 300_000n,
+    });
+  });
+
+  it('keeps the cash to an even part, after the QR as well', () => {
+    expect(payPreview({ due: 300_000n, share: 100_000n, cash: 200_000n, qr: 0n })).toMatchObject({
+      cashTarget: 100_000n,
+      cashPays: 100_000n,
+      change: 100_000n,
+    });
+    expect(
+      payPreview({ due: 300_000n, share: 200_000n, cash: 200_000n, qr: 150_000n }),
+    ).toMatchObject({
+      cashTarget: 150_000n,
+      cashPays: 150_000n,
+      change: 50_000n,
+      paysNow: 300_000n,
+    });
+  });
+
+  it('pays part of what is due with too little cash, without change', () => {
+    expect(payPreview({ due: 300_000n, share: null, cash: 100_000n, qr: 0n })).toEqual({
+      cashTarget: 300_000n,
+      cashPays: 100_000n,
+      change: 0n,
+      paysNow: 100_000n,
+    });
+  });
+
+  it('takes no cash when the QR covers everything', () => {
+    expect(payPreview({ due: 150_000n, share: null, cash: 50_000n, qr: 150_000n })).toEqual({
+      cashTarget: 0n,
+      cashPays: 0n,
+      change: 0n,
+      paysNow: 150_000n,
+    });
+    expect(payPreview({ due: 150_000n, share: null, cash: null, qr: 0n }).paysNow).toBe(0n);
   });
 });

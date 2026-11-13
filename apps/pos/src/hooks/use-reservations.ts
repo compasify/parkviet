@@ -150,13 +150,17 @@ export function useReservationCommands(branchId: string | null, editorId: string
         }),
       );
     },
-    // Opens the order at the booked table; answers its workspace id.
+    // Opens the order at the booked table; answers its workspace and order ids.
     async seat(id: string) {
-      const result = await run<{ reservation: unknown; workspace: { id: string } }>(
-        `/pos/reservations/${id}/seat`,
-        { editor_id: editorId },
-      );
-      return { reservation: reservation(result.reservation), workspaceId: result.workspace.id };
+      const result = await run<{
+        reservation: unknown;
+        workspace: { id: string; order_id?: string | null };
+      }>(`/pos/reservations/${id}/seat`, { editor_id: editorId });
+      return {
+        reservation: reservation(result.reservation),
+        workspaceId: result.workspace.id,
+        orderId: result.workspace.order_id ?? null,
+      };
     },
     async cancel(id: string, status: 'canceled' | 'no_show') {
       return reservation(await run(`/pos/reservations/${id}/cancel`, { status }));

@@ -90,7 +90,9 @@ export function Ticket({
             </button>
           </div>
         </div>
-        <p className="ticket-empty">{t('ticketNoOrder')}</p>
+        <p className="ticket-empty" role="status">
+          {selling.activeLoading ? t('contextWaiting') : t('ticketNoOrder')}
+        </p>
       </aside>
     );
 

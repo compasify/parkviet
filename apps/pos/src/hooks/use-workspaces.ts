@@ -30,6 +30,9 @@ const editorId = workspaceEditorId;
 
 type Page = { data: PosWorkspace[]; meta: { page: number; pages: number; count: number } };
 
+// The server's page size limit: a branch's open orders fit in one page.
+const ORDER_LOOKUP_LIMIT = 100;
+
 export type KitchenVoidInput = {
   quantity: number;
   reason_code: string;
@@ -259,6 +262,26 @@ export function useWorkspaces(
         return (
           await session.request<{ data: PosWorkspace }>('GET', `/pos/workspaces/${workspaceId}`)
         ).data;
+      } catch (error) {
+        abandonIfNeeded(error);
+        throw error;
+      }
+    },
+    // The open order of this branch with this order id, on any register
+    // (a table order is booked on the branch's table register). The list
+    // has no order filter, so one page of the newest open orders is read.
+    async findOrder(orderId: string): Promise<PosWorkspace | null> {
+      if (!branchId) return null;
+      try {
+        const found = await session.request<Page>('GET', '/pos/workspaces', {
+          params: {
+            limit: String(ORDER_LOOKUP_LIMIT),
+            branch_id: branchId,
+            status: 'editing,parked',
+            platform: 'exclude',
+          },
+        });
+        return found.data.find((workspace) => workspace.order_id === orderId) ?? null;
       } catch (error) {
         abandonIfNeeded(error);
         throw error;

@@ -102,7 +102,8 @@ test('an eatery that does not serve tables sells from the menu, with no floor', 
 test('the table whose waiter asked for the bill says so on the board and needs attention', async ({ page }) => {
   const world = newWorld({ capabilities: [...FULL_CASHIER, 'pos.table.serve'], modules: TABLE_MODULES, profile: profile('nha_hang', { surface: 'floor_plan' }), menu: teaMenu() });
   await open(page, world);
-  await expect(tile(page, 'Bàn 5')).toHaveAttribute('aria-label', 'Bàn 5 · Gọi thanh toán');
+  // The label says all the tile shows: minutes seated, guests and total too.
+  await expect(tile(page, 'Bàn 5')).toHaveAttribute('aria-label', 'Bàn 5 · Gọi thanh toán · 20 phút · 4 khách · 140.000 ₫');
   await expect(tile(page, 'Bàn 5')).toHaveAttribute('data-tone', 'payment');
   await board(page).getByRole('button', { name: 'Cần xử lý 1', exact: true }).click();
   await expect(board(page).locator('.board-tile[data-table-id]')).toHaveCount(1);

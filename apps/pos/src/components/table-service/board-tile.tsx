@@ -14,6 +14,7 @@ export function BoardTile({
   tone,
   alert,
   expanded,
+  timeZone,
   style,
   onSelect,
 }: {
@@ -21,6 +22,8 @@ export function BoardTile({
   tone: BoardTone;
   alert: boolean;
   expanded: boolean;
+  // The branch's time zone, which booking times are said in.
+  timeZone: string;
   style?: CSSProperties;
   onSelect: (table: BoardTable, tile: HTMLButtonElement) => void;
 }) {
@@ -33,13 +36,21 @@ export function BoardTile({
     ? new Date(booking.starts_at).toLocaleTimeString(i18n.language, {
         hour: '2-digit',
         minute: '2-digit',
+        timeZone,
       })
     : null;
   const total = Number(table.subtotal ?? 0) > 0 ? table.subtotal : null;
+  // The label replaces the tile's text for a screen reader: it says all of it.
   const label = [
     `${table.name} · ${status}`,
     waitingLong ? t('tableState_waiting_long') : null,
     alert && !waitingLong ? t('boardSeatedLong') : null,
+    seated && table.seated_minutes != null
+      ? t('tableSeatedMinutes', { count: table.seated_minutes })
+      : null,
+    seated && table.guest_count != null ? t('tableGuests', { count: table.guest_count }) : null,
+    seated && total ? formatMoney(total, table.currency ?? 'VND') : null,
+    booking && bookingTime ? `${t('boardReserved')} ${bookingTime}` : null,
   ]
     .filter(Boolean)
     .join(' · ');

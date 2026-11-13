@@ -58,6 +58,10 @@ export type SellingView = 'board' | 'order' | 'pay';
 
 export function useSellingWorkspace(options: { view?: SellingView } = {}) {
   const view = options.view;
+  // The counter always shows some open invoice: the first tab stands in for
+  // a selection that is missing. A layout with frames shows the order it is
+  // for or none: another order in its place would take its payment or dishes.
+  const fallback = view === undefined;
   const { t } = useTranslation();
   const { selection, context, selectionComplete } = usePosSelection();
   const data = context.data;
@@ -157,7 +161,8 @@ export function useSellingWorkspace(options: { view?: SellingView } = {}) {
     visible[7] = selectedMatch;
   }
   const overflow = rows.length - visible.length;
-  const activeSummary = rows.find((workspace) => workspace.id === activeId) ?? visible[0] ?? null;
+  const activeSummary =
+    rows.find((workspace) => workspace.id === activeId) ?? (fallback ? visible[0] : null) ?? null;
   const active = pinned && activeSummary && pinned.id === activeSummary.id ? pinned : activeSummary;
   const isEditor = active ? workspaces.owns(active) : false;
   const activePhase = active ? workspacePhase(active) : 'editing';
@@ -272,6 +277,43 @@ export function useSellingWorkspace(options: { view?: SellingView } = {}) {
   // A tab selected for the URL whose render has not happened yet.
   const selecting = useRef<string | null>(null);
   const listLoaded = workspaces.query.isSuccess;
+  // Frames only: an order the URL asks for that is not in this register's
+  // list (a table order booked on the branch's table register) is looked up
+  // among the branch's open orders instead of being dropped.
+  const [lookingUp, setLookingUp] = useState<string | null>(null);
+  // The order being looked up.
+  const lookedUp = useRef<string | null>(null);
+  // Once the register is settled (its context says whether a shift is open).
+  // Without a shift there is no list; a table order still opens by itself.
+  const listSettled = selectionComplete && (listLoaded || !data?.shift);
+  function lookUp(wanted: string) {
+    lookedUp.current = wanted;
+    setLookingUp(wanted);
+    const started = scopeRef.current;
+    void workspaces
+      .findOrder(wanted)
+      .then((found) => {
+        if (requestedOrder.current !== wanted || started !== scopeRef.current) return;
+        requestedOrder.current = null;
+        if (
+          found &&
+          inSelection(found, selection) &&
+          (data?.shift || isTableOrder(found)) &&
+          found.id !== activeIdRef.current
+        ) {
+          selecting.current = found.id;
+          selectOrder(found.id);
+        }
+      })
+      .catch(() => {
+        // Not found or not reachable: the frame goes back to the board.
+        if (requestedOrder.current === wanted) requestedOrder.current = null;
+      })
+      .finally(() => {
+        if (lookedUp.current === wanted) lookedUp.current = null;
+        setLookingUp((current) => (current === wanted ? null : current));
+      });
+  }
   useEffect(() => {
     const order = search.order ?? null;
     if (order !== lastSearchOrder.current) {
@@ -291,13 +333,27 @@ export function useSellingWorkspace(options: { view?: SellingView } = {}) {
         setActiveId(match.id);
         workspaces.rememberView(match.id, workspaces.page);
       }
+    } else if (!fallback && listSettled) {
+      // Once per request: the lookup clears it whatever it finds.
+      if (lookedUp.current !== wanted) lookUp(wanted);
     } else if (listLoaded) {
       requestedOrder.current = null;
     }
   });
+  // Frames: the selected order is on its way (the URL's order being looked
+  // up, or the details of an order outside the list); nothing stands in.
+  const activeLoading =
+    !fallback &&
+    !active &&
+    (Boolean(requestedOrder.current) ||
+      lookingUp !== null ||
+      (activeId !== null &&
+        !workspaces.query.isError &&
+        !workspaces.selectedQuery.isError &&
+        workspaces.selectedQuery.isPending));
   const activeOrder = active?.order_id ?? null;
   useEffect(() => {
-    if (requestedOrder.current) return;
+    if (requestedOrder.current || activeLoading) return;
     if (selecting.current) {
       if (active?.id !== selecting.current) return;
       selecting.current = null;
@@ -499,7 +555,9 @@ export function useSellingWorkspace(options: { view?: SellingView } = {}) {
     setCloseRequest((current) => (current?.workspace.id === workspaceId ? null : current));
     // The counter always keeps one invoice open: closing the last tab starts a
     // fresh draft. Read the latest rows; an async close may finish late.
-    if (canCreate && !rowsRef.current.some((row) => !next.includes(row.id))) createDraft();
+    // A layout with frames goes back to its board instead.
+    if (fallback && canCreate && !rowsRef.current.some((row) => !next.includes(row.id)))
+      createDraft();
   }
 
   // An order picked on the floor (or just seated) opens for selling, even one
@@ -515,6 +573,15 @@ export function useSellingWorkspace(options: { view?: SellingView } = {}) {
     setActiveId(workspaceId);
     workspaces.rememberView(workspaceId, workspaces.page);
     setFloorChoice(false);
+  }
+
+  // Frames: no order is selected any more (it could not be shown).
+  function leaveOrder() {
+    requestedOrder.current = null;
+    selecting.current = null;
+    activeIdRef.current = null;
+    setActiveId(null);
+    workspaces.rememberView(null, workspaces.page);
   }
 
   const canCreate = Boolean(
@@ -741,6 +808,7 @@ export function useSellingWorkspace(options: { view?: SellingView } = {}) {
     visible,
     overflow,
     active,
+    activeLoading,
     setActiveId,
     isEditor,
     activePhase,
@@ -779,6 +847,7 @@ export function useSellingWorkspace(options: { view?: SellingView } = {}) {
     run,
     hideWorkspace,
     selectOrder,
+    leaveOrder,
     canCreate,
     createDraft,
     cancellable,

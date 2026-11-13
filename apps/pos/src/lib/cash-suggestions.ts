@@ -24,3 +24,24 @@ export function evenShare(due: bigint, parts: number): bigint {
   const count = BigInt(parts);
   return (due + count - 1n) / count;
 }
+
+// What one press of the payment screen's finish button pays. A QR whose
+// money arrived (`qr`) is confirmed first, so the cash pays only what is due
+// after it, never more than an even part (`share`). Like the server, the
+// change is what was handed (`cash`, the tip already taken off) over the
+// amount the cash pays.
+export function payPreview(input: {
+  due: bigint;
+  share: bigint | null;
+  cash: bigint | null;
+  qr: bigint;
+}): { cashTarget: bigint; cashPays: bigint; change: bigint; paysNow: bigint } {
+  const afterQr = input.due > input.qr ? input.due - input.qr : 0n;
+  const cashTarget = input.share !== null && input.share < afterQr ? input.share : afterQr;
+  const cash = input.cash !== null && input.cash > 0n ? input.cash : 0n;
+  // biome-ignore lint/complexity/useMathMinMax: Math.min does not take bigint
+  const cashPays = cash < cashTarget ? cash : cashTarget;
+  // Nothing left for the cash: none is taken, so none is given back.
+  const change = cashTarget > 0n && cash > cashTarget ? cash - cashTarget : 0n;
+  return { cashTarget, cashPays, change, paysNow: cashPays + input.qr };
+}

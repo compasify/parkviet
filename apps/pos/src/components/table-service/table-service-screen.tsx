@@ -40,7 +40,15 @@ export function TableServiceScreen() {
     if (search.view) setView(search.view);
   }, [search.view]);
   const selling = useSellingWorkspace({ view });
-  const { menuSurface, menu, selectOrder } = selling;
+  const { menuSurface, menu, selectOrder, active, activeLoading, leaveOrder } = selling;
+  // An order or payment frame without its order (closed, gone, not found)
+  // goes back to the board; it never shows another order instead.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: leaveOrder is recreated every render
+  useEffect(() => {
+    if (view === 'board' || active || activeLoading) return;
+    leaveOrder();
+    setView('board');
+  }, [view, active, activeLoading]);
   const [notice, setNotice] = useState<{ text: string; seq: number } | null>(null);
   useEffect(() => {
     if (!notice) return;
