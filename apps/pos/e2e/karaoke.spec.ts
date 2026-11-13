@@ -2,12 +2,21 @@ import { expect, type Page, test } from '@playwright/test';
 import { teaMenu } from './support/menu-api';
 import { addSheet, FULL_CASHIER, installRetailApi, login, newWorld, serialize, type World } from './support/retail-api';
 
-// A karaoke room at the counter: the room board shows each room's clock,
-// starting it opens the room's order on the server's time (the page sends
-// no time), the clock counts from the server start, and stopping it shows the
-// billed time charge. Presentation fixtures only: no real account privileges.
+// A karaoke opens on its room board: each room's clock is the largest text,
+// counted from the server's start on the server's clock (the page sends no
+// time), amber in the last ten minutes of a package and grey while paused.
+// Start, pause and resume, order and pay sit on the tile; the room's order
+// pins its clock on the ticket; paying while the clock counts always asks
+// "Dừng giờ và thanh toán P1?" and stops it first. Presentation fixtures
+// only: no real account privileges.
 
-const MODULES = { 'fnb.menu': true, resources: true, 'fnb.tables': true, timed_billing: true };
+const MODULES = {
+  'fnb.menu': true,
+  'fnb.kitchen': true,
+  resources: true,
+  'fnb.tables': true,
+  timed_billing: true,
+};
 const ROOMS = [
   { id: 'posres_1', name: 'P1', x: 0, y: 0 },
   { id: 'posres_2', name: 'VIP 1', x: 3, y: 0 },
@@ -22,8 +31,9 @@ type Clock = {
   amount: string;
   // The prepaid package the clock was sold with.
   packageCode?: string;
-  // A start corrected by hand.
+  // A start (and end) corrected by hand.
   startedAt?: string;
+  endedAt?: string;
 };
 type Recorded = {
   starts: Array<Record<string, unknown>>;
@@ -62,6 +72,7 @@ function board(world: World, clocks: Clock[]) {
               ending_soon: Boolean(clock.packageCode), paused_at: clock.status === 'paused' ? SERVER_NOW : null,
               prepaid_minutes: clock.packageCode ? PACKAGE.minutes : null, played_seconds: clock.status === 'stopped' ? null : 2400,
               package_ended: false, pause_too_long: false,
+              rate_per_hour: clock.status === 'running' && !clock.packageCode ? '100000.0' : null,
             }
           : null,
         orders: orders.map((sheet) => ({
@@ -82,7 +93,7 @@ function session(clock: Clock) {
     segments: [
       {
         id: `${clock.id}_seg`, kind: 'play', resource_id: clock.resourceId, resource_name: 'P1',
-        started_at: clock.startedAt ?? '2026-11-12T14:00:00Z', ended_at: clock.status === 'stopped' ? SERVER_NOW : null,
+        started_at: clock.startedAt ?? '2026-11-12T14:00:00Z', ended_at: clock.status === 'stopped' ? (clock.endedAt ?? SERVER_NOW) : null,
         rate_plan_id: null, rate_plan_name: null, rate_plan_version: null, edited: Boolean(clock.startedAt),
       },
     ],
@@ -103,28 +114,25 @@ function session(clock: Clock) {
 }
 
 // The room's order as the server sends it: its time line carries the clock.
-function orderView(world: World, clocks: Clock[], workspaceId: string) {
+function orderView(world: World, workspaceId: string) {
   const sheet = world.sheets.get(workspaceId);
-  if (!sheet) return null;
-  const view = serialize(world, sheet);
-  const clock = clocks.find((row) => row.workspaceId === workspaceId);
-  if (!clock) return view;
-  const line = {
-    id: `li_${clock.id}`, sale_line_id: `possl_${clock.id}`, variant_id: 'v_time', product_id: 'p_time', name: 'Giờ hát',
-    sku: '', quantity: 1, price: '0.0', unit_price: '0.0', list_price: '0.0', amount: '0.0', discounts: [], kind: 'timed',
-    timed_session: session(clock),
-  };
-  return { ...view, line_items: [...view.line_items, line] };
+  return sheet ? serialize(world, sheet) : null;
 }
 
 async function installClocks(page: Page, world: World): Promise<Recorded> {
   const recorded: Recorded = { starts: [], stops: [], edits: [], pauses: [], resumes: [] };
   const clocks: Clock[] = [];
-  await page.route('**/api/v3/admin/pos/workspaces/*', (route) => {
-    const id = /\/pos\/workspaces\/([^/]+)$/.exec(new URL(route.request().url()).pathname)?.[1];
-    const view = route.request().method() === 'GET' && id ? orderView(world, clocks, id) : null;
-    return view ? route.fulfill({ json: { data: view } }) : route.fallback();
-  });
+  // Every answer carrying a room's order carries its time line.
+  world.decorate = (view) => {
+    const clock = clocks.find((row) => row.workspaceId === view.id);
+    if (!clock) return view;
+    const line = {
+      id: `li_${clock.id}`, sale_line_id: `possl_${clock.id}`, variant_id: 'v_time', product_id: 'p_time', name: 'Giờ hát',
+      sku: '', quantity: 1, price: '0.0', unit_price: '0.0', list_price: '0.0', amount: '0.0', discounts: [], kind: 'timed',
+      timed_session: session(clock),
+    };
+    return { ...view, line_items: [...view.line_items, line] };
+  };
   await page.route('**/api/v3/admin/pos/timed_sessions/*/segments/*', (route) => {
     const parts = new URL(route.request().url()).pathname.split('/');
     const clock = clocks.find((row) => row.id === parts.at(-3));
@@ -137,7 +145,8 @@ async function installClocks(page: Page, world: World): Promise<Recorded> {
         json: { error: { code: 'conflict', message: 'approval', details: { reason: 'approval_required', action: 'timed.edit_segment' } } },
       });
     clock.startedAt = String(body.started_at);
-    return route.fulfill({ json: { data: { workspace: orderView(world, clocks, clock.workspaceId), timed_session: session(clock) } } });
+    if (body.ended_at) clock.endedAt = String(body.ended_at);
+    return route.fulfill({ json: { data: { workspace: orderView(world, clock.workspaceId), timed_session: session(clock) } } });
   });
   await page.route('**/api/v3/admin/pos/resource_board**', (route) =>
     route.fulfill({ json: { data: board(world, clocks) } }),
@@ -158,7 +167,7 @@ async function installClocks(page: Page, world: World): Promise<Recorded> {
       packageCode: typeof body.package_code === 'string' ? body.package_code : undefined,
     };
     clocks.push(clock);
-    return route.fulfill({ status: 201, json: { data: { workspace: orderView(world, clocks, sheet.id), timed_session: session(clock) } } });
+    return route.fulfill({ status: 201, json: { data: { workspace: orderView(world, sheet.id), timed_session: session(clock) } } });
   });
   await page.route('**/api/v3/admin/pos/timed_sessions/*/quote', (route) => {
     const id = new URL(route.request().url()).pathname.split('/').at(-2);
@@ -175,7 +184,7 @@ async function installClocks(page: Page, world: World): Promise<Recorded> {
     clock.status = 'stopped';
     clock.amount = '100000.0';
     return route.fulfill({
-      json: { data: { workspace: orderView(world, clocks, clock.workspaceId), timed_session: session(clock) } },
+      json: { data: { workspace: orderView(world, clock.workspaceId), timed_session: session(clock) } },
     });
   });
   for (const verb of ['pause', 'resume'] as const)
@@ -186,7 +195,7 @@ async function installClocks(page: Page, world: World): Promise<Recorded> {
       (verb === 'pause' ? recorded.pauses : recorded.resumes).push(id);
       clock.status = verb === 'pause' ? 'paused' : 'running';
       return route.fulfill({
-        json: { data: { workspace: orderView(world, clocks, clock.workspaceId), timed_session: session(clock), warnings: [] } },
+        json: { data: { workspace: orderView(world, clock.workspaceId), timed_session: session(clock), warnings: [] } },
       });
     });
   await page.route('**/api/v3/admin/pos/rate_plans?**', (route) =>
@@ -201,87 +210,154 @@ async function installClocks(page: Page, world: World): Promise<Recorded> {
   return recorded;
 }
 
-const floor = (page: Page) => page.locator('.table-floor');
-const tile = (page: Page, name: string) => floor(page).locator('.table-tile', { hasText: name });
+const rooms = (page: Page) => page.getByRole('region', { name: 'Bảng phòng' });
+const room = (page: Page, name: string) => rooms(page).getByRole('article', { name, exact: true });
+const ticket = (page: Page) => page.getByRole('complementary', { name: 'Phiếu bàn' });
+const stopAndPay = (page: Page) => page.getByRole('dialog', { name: 'Dừng giờ và thanh toán P1?' });
 
-test('a room clock starts and stops on the server time', async ({ page }) => {
-  const world = newWorld({
+function karaokeWorld(version = 3): World {
+  return newWorld({
     capabilities: [...FULL_CASHIER, 'pos.table.serve', 'pos.timed.operate'],
     modules: MODULES,
-    profile: { key: 'karaoke_bida', version: 3, display: { surface: 'resource_board' } },
+    profile: { key: 'karaoke_bida', version, display: { surface: 'resource_board' } },
     menu: teaMenu(),
   });
+}
+
+// Starts P1's clock from its tile, through the room's panel.
+async function startClock(page: Page, recorded: Recorded, packageCode?: string) {
+  await room(page, 'P1').getByRole('button', { name: 'Bắt đầu', exact: true }).click();
+  const panel = page.getByRole('dialog', { name: 'P1' });
+  if (packageCode) await panel.getByLabel('Gói giờ').selectOption(packageCode);
+  await panel.getByRole('button', { name: 'Bắt đầu tính giờ' }).click();
+  await expect.poll(() => recorded.starts.length).toBe(1);
+  await expect(panel).toHaveCount(0);
+}
+
+test('the room board starts a clock on the server time and stops it from the room', async ({ page }) => {
+  const world = karaokeWorld();
   await installRetailApi(page, world);
   const recorded = await installClocks(page, world);
   await login(page);
 
-  await expect(floor(page)).toBeVisible();
-  await expect(floor(page).getByRole('button', { name: 'Phòng', exact: true })).toHaveAttribute('aria-pressed', 'true');
-  await tile(page, 'P1').click();
-  const panel = page.getByRole('complementary', { name: 'P1' });
-  await panel.getByRole('button', { name: 'Bắt đầu tính giờ' }).click();
+  // The rooms are the first screen, each with its tone said in words.
+  await expect(rooms(page)).toBeVisible();
+  await expect(rooms(page).getByRole('button', { name: 'Phòng', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  const p1 = room(page, 'P1');
+  await expect(p1).toHaveAttribute('data-tone', 'free');
+  await expect(p1.locator('.room-tile-clock')).toHaveText('Trống');
+  await expect(p1.getByRole('button', { name: 'Thanh toán', exact: true })).toBeDisabled();
 
+  await startClock(page, recorded);
   // The page names the room and branch only: no start time.
-  await expect.poll(() => recorded.starts.length).toBe(1);
   expect(recorded.starts[0]).toEqual(expect.objectContaining({ branch_id: 'br_1' }));
   expect(typeof recorded.starts[0].editor_id).toBe('string');
   expect(Object.keys(recorded.starts[0])).not.toContain('started_at');
 
-  // Back on the floor the room is playing, its clock counted from the
-  // server's start with the server clock: 40 minutes in.
-  await page.getByRole('button', { name: 'Sơ đồ bàn', exact: true }).click();
-  await expect(tile(page, 'P1')).toHaveAttribute('aria-label', 'P1 · Đang tính giờ');
-  await expect(tile(page, 'P1').locator('.timed-clock')).toHaveText(/^4\d:\d\d$/);
-  await tile(page, 'P1').click();
-  await expect(panel).toContainText('75.000');
+  // The clock counts from the server's start on the server clock: 40 minutes in.
+  await expect(p1).toHaveAttribute('data-tone', 'running');
+  await expect(p1.locator('.room-tile-clock')).toHaveText(/^4\d:\d\d$/);
+  // The tile says the hourly price the clock runs at now.
+  await expect(p1.locator('.room-tile-status')).toHaveText('Đang chạy · Đếm lên · 100.000 ₫/giờ');
+  await expect(p1.locator('.room-tile-money')).toContainText('75.000');
+  await expect(p1.getByRole('button', { name: 'Tạm dừng', exact: true })).toBeVisible();
 
+  // Stopping without paying stays in the room's panel.
+  await p1.getByRole('button', { name: /^P1 · Đang chạy/ }).click();
+  const panel = page.getByRole('dialog', { name: 'P1' });
+  await expect(panel).toContainText('75.000');
   await panel.getByRole('button', { name: 'Dừng giờ' }).click();
   await expect.poll(() => recorded.stops).toEqual(['postimed_1']);
   await expect(panel).toContainText('100.000');
   await expect(panel).toContainText('Đã dừng lúc');
+  await page.keyboard.press('Escape');
+  await expect(p1).toHaveAttribute('data-tone', 'idle');
+  await expect(p1.locator('.room-tile-status')).toContainText('Đã dừng lúc');
+  await expect(p1.locator('.room-tile-status')).not.toContainText('/giờ');
+  // Stopped and waiting for its payment: no new clock on top of it, only pay.
+  await expect(p1.getByRole('button', { name: 'Bắt đầu', exact: true })).toHaveCount(0);
+  await expect(p1.getByRole('button', { name: 'Thanh toán', exact: true })).toBeEnabled();
 });
 
-test('checkout on a running room stops its clock first, then opens the payment', async ({ page }) => {
-  const world = newWorld({
-    capabilities: [...FULL_CASHIER, 'pos.table.serve', 'pos.timed.operate'],
-    modules: MODULES,
-    profile: { key: 'karaoke_bida', version: 3, display: { surface: 'resource_board' } },
-    menu: teaMenu(),
-  });
+test('a room orders, sends to the kitchen and pays only once its clock is stopped', async ({ page }) => {
+  const world = karaokeWorld();
   await installRetailApi(page, world);
   const recorded = await installClocks(page, world);
   await login(page);
+  await startClock(page, recorded);
 
-  await tile(page, 'P1').click();
-  const panel = page.getByRole('complementary', { name: 'P1' });
-  await panel.getByRole('button', { name: 'Bắt đầu tính giờ' }).click();
-  await expect.poll(() => recorded.starts.length).toBe(1);
-  await page.getByRole('button', { name: 'Sơ đồ bàn', exact: true }).click();
-  await tile(page, 'P1').click();
+  // "Gọi món" opens the room's order with its clock pinned on the ticket.
+  await room(page, 'P1').getByRole('button', { name: 'Gọi món', exact: true }).click();
+  await expect(page).toHaveURL(/view=order/);
+  const clock = ticket(page).getByRole('region', { name: 'Giờ chơi' });
+  await expect(clock.locator('.timed-clock')).toHaveText(/^4\d:\d\d$/);
+  await expect(clock).toContainText('Đang chạy');
+  await expect(clock).toContainText('75.000');
+  await expect(ticket(page).getByRole('button', { name: 'Về bảng bàn' })).toContainText('Phòng');
+  await page.getByRole('list', { name: 'Thực đơn' }).getByRole('button', { name: 'Bánh flan', exact: true }).click();
+  await expect(ticket(page).locator('.ticket-line')).toHaveCount(1);
+  // The total says it holds the time so far, as an estimate.
+  await expect(ticket(page).getByRole('button', { name: /^Thanh toán · tạm tính/ })).toContainText('90.000');
+  await ticket(page).getByRole('button', { name: 'Gửi bếp (1)', exact: true }).click();
+  await expect(page).toHaveURL(/view=board/);
+  const sheetId = [...world.sheets.keys()].at(-1) ?? '';
+  await expect.poll(() => world.sheets.get(sheetId)?.kitchenSends?.length).toBe(1);
 
-  // No payment is tried while the clock runs: the server stops it first.
-  await panel.getByRole('button', { name: 'Thanh toán', exact: true }).click();
-  await expect.poll(() => recorded.stops).toEqual(['postimed_1']);
-  await expect(page.locator('#pos-checkout')).toBeVisible();
+  // Paying from the tile asks first; "Huỷ" leaves the clock counting.
+  await room(page, 'P1').getByRole('button', { name: 'Thanh toán', exact: true }).click();
+  await expect(stopAndPay(page)).toContainText('75.000');
+  await stopAndPay(page).getByRole('button', { name: 'Huỷ' }).click();
+  await expect(stopAndPay(page)).toHaveCount(0);
+  expect(recorded.stops).toEqual([]);
+  await expect(page).toHaveURL(/view=board/);
+
+  // From the ticket the same question; yes stops the clock once, then pays.
+  await room(page, 'P1').getByRole('button', { name: 'Gọi món', exact: true }).click();
+  await ticket(page).getByRole('button', { name: /^Thanh toán/ }).click();
+  await expect(stopAndPay(page)).toContainText('75.000');
+  await stopAndPay(page).getByRole('button', { name: 'Dừng giờ và thanh toán' }).dblclick();
+  await expect(page).toHaveURL(/view=pay/);
+  expect(recorded.stops).toEqual(['postimed_1']);
+  const pay = page.locator('.pay-screen');
+  await expect(pay).toBeVisible();
+
+  // Paid in cash, the room board comes back.
+  await pay.getByRole('region', { name: 'Tiền mặt' }).getByRole('button', { name: 'Đúng 15.000' }).click();
+  await pay.getByRole('button', { name: 'Hoàn tất · in hóa đơn' }).click();
+  await expect.poll(() => world.sheets.get(sheetId)?.status).toBe('completed');
+  await expect(page).toHaveURL(/view=board/);
+  await expect(rooms(page)).toBeVisible();
 });
+
+test('a payment frame reached while the clock counts goes back and asks to stop it', async ({ page }) => {
+  const world = karaokeWorld();
+  await installRetailApi(page, world);
+  const recorded = await installClocks(page, world);
+  await login(page);
+  await startClock(page, recorded);
+  await room(page, 'P1').getByRole('button', { name: 'Gọi món', exact: true }).click();
+  await expect(page).toHaveURL(/view=order/);
+
+  // A link or history entry straight to the payment never shows it.
+  const url = new URL(page.url());
+  url.searchParams.set('view', 'pay');
+  await page.goto(url.toString());
+  await expect(stopAndPay(page)).toBeVisible();
+  await expect(page).toHaveURL(/view=order/);
+  await expect(page.locator('.pay-screen')).toHaveCount(0);
+  expect(recorded.stops).toEqual([]);
+});
+
 test("a stretch of a running clock is corrected with a manager's approval", async ({ page }) => {
-  const world = newWorld({
-    capabilities: [...FULL_CASHIER, 'pos.table.serve', 'pos.timed.operate'],
-    modules: MODULES,
-    profile: { key: 'karaoke_bida', version: 3, display: { surface: 'resource_board' } },
-    menu: teaMenu(),
-  });
+  const world = karaokeWorld();
   await installRetailApi(page, world);
   const recorded = await installClocks(page, world);
   await login(page);
+  await startClock(page, recorded);
+  await room(page, 'P1').getByRole('button', { name: 'Gọi món', exact: true }).click();
 
-  await tile(page, 'P1').click();
-  await page.getByRole('complementary', { name: 'P1' }).getByRole('button', { name: 'Bắt đầu tính giờ' }).click();
-  await expect.poll(() => recorded.starts.length).toBe(1);
-
-  // The time line shows its running quote and when the server read it.
-  await expect(page.getByText(/Tạm tính đến \d\d:\d\d: 75\.000/)).toBeVisible();
-  await page.getByRole('button', { name: /^Sửa giờ P1/ }).click();
+  // The pinned clock corrects its running stretch.
+  await ticket(page).getByRole('button', { name: /^Sửa giờ P1/ }).click();
   const dialog = page.getByRole('dialog', { name: 'Sửa giờ P1' });
   // A running stretch only moves its start.
   await expect(dialog.getByLabel('Giờ ra')).toHaveCount(0);
@@ -296,46 +372,79 @@ test("a stretch of a running clock is corrected with a manager's approval", asyn
     expect.objectContaining({ reason: 'Bật giờ trễ', approval_id: 'posapproval_1', started_at: expect.any(String) }),
   );
   expect(Object.keys(recorded.edits[0])).not.toContain('ended_at');
-  await expect(page.getByText('đã sửa')).toBeVisible();
 });
-test('a room sold with a package counts it down, pauses and resumes, and bills the free minutes', async ({ page }) => {
-  const world = newWorld({
-    capabilities: [...FULL_CASHIER, 'pos.table.serve', 'pos.timed.operate'],
-    modules: MODULES,
-    profile: { key: 'karaoke_bida', version: 4, display: { surface: 'resource_board' } },
-    menu: teaMenu(),
-  });
+
+test('a room sold with a package counts down in amber, pauses grey and bills the free minutes', async ({ page }) => {
+  const world = karaokeWorld(4);
   await installRetailApi(page, world);
   const recorded = await installClocks(page, world);
   await login(page);
-
-  await tile(page, 'P1').click();
-  const panel = page.getByRole('complementary', { name: 'P1' });
-  await panel.getByLabel('Gói giờ').selectOption('goi2h');
-  await panel.getByRole('button', { name: 'Bắt đầu tính giờ' }).click();
-  await expect.poll(() => recorded.starts.length).toBe(1);
+  await startClock(page, recorded, 'goi2h');
   expect(recorded.starts[0]).toEqual(expect.objectContaining({ package_code: 'goi2h' }));
   expect(Object.keys(recorded.starts[0])).not.toContain('started_at');
 
-  // The room is flagged by the server as ending soon, and its package counts down.
-  await page.getByRole('button', { name: 'Sơ đồ bàn', exact: true }).click();
-  await expect(floor(page).getByRole('button', { name: 'Sắp hết giờ 1' })).toBeVisible();
-  await expect(tile(page, 'P1')).toHaveAttribute('aria-label', 'P1 · Sắp hết giờ');
-  await tile(page, 'P1').click();
-  await expect(panel).toContainText('Sắp hết giờ đặt');
-  await expect(panel).toContainText(/Gói còn \d\d:\d\d/);
+  // Eight minutes to the package's end: amber, counting down, and in "Cần xử lý".
+  const p1 = room(page, 'P1');
+  await expect(p1).toHaveAttribute('data-tone', 'ending');
+  await expect(p1.locator('.room-tile-clock')).toHaveText(/^0[78]:\d\d$/);
+  await expect(p1.locator('.room-tile-status')).toHaveText('Sắp hết giờ · Gói giờ · còn lại');
+  await expect(rooms(page).getByRole('button', { name: 'Cần xử lý 1' })).toBeVisible();
 
-  await panel.getByRole('button', { name: 'Tạm dừng' }).click();
+  // Pause and resume take one tap on the tile.
+  await p1.getByRole('button', { name: 'Tạm dừng', exact: true }).click();
   await expect.poll(() => recorded.pauses).toEqual(['postimed_1']);
-  await expect(panel).toContainText('Đang tạm dừng');
-  await panel.getByRole('button', { name: 'Tính giờ tiếp' }).click();
+  await expect(p1).toHaveAttribute('data-tone', 'paused');
+  await expect(p1.locator('.room-tile-status')).toContainText('Tạm dừng');
+  await p1.getByRole('button', { name: 'Tiếp tục', exact: true }).click();
   await expect.poll(() => recorded.resumes).toEqual(['postimed_1']);
+  await expect(p1).toHaveAttribute('data-tone', 'ending');
 
-  // Stopped, the bill shows the package and the free minutes at no charge.
-  await panel.getByRole('button', { name: 'Dừng giờ' }).click();
+  // Stopped, the room's ticket shows the package and the free minutes at no charge.
+  await p1.getByRole('button', { name: /^P1 · Sắp hết giờ/ }).click();
+  await page.getByRole('dialog', { name: 'P1' }).getByRole('button', { name: 'Dừng giờ' }).click();
   await expect.poll(() => recorded.stops).toEqual(['postimed_1']);
-  await panel.getByRole('button', { name: /^Vào đơn/ }).click();
-  await expect(page.locator('.basket-line-band-bonus')).toContainText('Tặng · 15');
-  await expect(page.locator('.basket-line-band-bonus')).not.toContainText('₫');
-  await expect(page.locator('.basket-line-band-package')).toContainText('250.000');
+  await page.keyboard.press('Escape');
+  await p1.getByRole('button', { name: 'Gọi món', exact: true }).click();
+  const clock = ticket(page).getByRole('region', { name: 'Giờ chơi' });
+  await expect(clock.locator('.timed-band-bonus')).toContainText('Tặng · 15');
+  await expect(clock.locator('.timed-band-bonus')).not.toContainText('₫');
+  // The package and its price once, by its name.
+  await expect(clock.locator('.timed-band-package')).toHaveCount(1);
+  await expect(clock.locator('.timed-band-package')).toContainText('Gói 2 giờ');
+  await expect(clock.locator('.timed-band-package')).toContainText('250.000');
+  await expect(clock).not.toContainText('Gói giờ · Gói 2 giờ · 250.000');
+});
+
+test('a stopped stretch is still corrected after stop and pay, until the order is paid', async ({ page }) => {
+  const world = karaokeWorld();
+  await installRetailApi(page, world);
+  const recorded = await installClocks(page, world);
+  await login(page);
+  await startClock(page, recorded);
+
+  // Stop and pay from the tile, then back from the payment to the order.
+  await room(page, 'P1').getByRole('button', { name: 'Thanh toán', exact: true }).click();
+  await stopAndPay(page).getByRole('button', { name: 'Dừng giờ và thanh toán' }).click();
+  await expect(page).toHaveURL(/view=pay/);
+  expect(recorded.stops).toEqual(['postimed_1']);
+  await page.getByRole('button', { name: 'Về đơn để gọi thêm món' }).click();
+  await expect(page).toHaveURL(/view=order/);
+
+  // The stopped stretch shows on the pinned clock and corrects its start.
+  const clock = ticket(page).getByRole('region', { name: 'Giờ chơi' });
+  await expect(clock).toContainText('Đã dừng lúc');
+  await clock.getByRole('button', { name: /^Sửa giờ P1/ }).click();
+  const dialog = page.getByRole('dialog', { name: 'Sửa giờ P1' });
+  await expect(dialog.getByLabel('Giờ ra')).toBeVisible();
+  await dialog.getByLabel('Giờ vào').fill('2026-11-12T20:45');
+  await dialog.getByLabel('Lý do').fill('Bật giờ trễ');
+  await dialog.getByLabel('Mã duyệt của quản lý').fill('posapproval_1');
+  await dialog.getByRole('button', { name: 'Lưu giờ' }).click();
+
+  await expect(dialog).toHaveCount(0);
+  expect(recorded.edits).toHaveLength(1);
+  expect(recorded.edits[0]).toEqual(
+    expect.objectContaining({ reason: 'Bật giờ trễ', approval_id: 'posapproval_1', started_at: expect.any(String) }),
+  );
+  await expect(clock).toContainText('đã sửa');
 });

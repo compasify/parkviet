@@ -211,6 +211,8 @@ const VIETQR_IMAGE =
 export type Write = { family: Family; key: string; path: string; body: Record<string, unknown> };
 
 export type World = {
+  // Adds what a test's own routes keep to every order the API answers.
+  decorate?: <T extends { id: string; line_items: unknown[] }>(view: T) => T;
   capabilities: string[];
   // Absent: the server predates branch flags and the context has no `features`.
   features?: Record<string, boolean>;
@@ -225,7 +227,7 @@ export type World = {
   profile?: {
     key: string;
     version: number;
-    display: { catalog_view?: 'cards' | 'list'; surface?: 'catalog' | 'menu_grid' | 'table_grid' | 'floor_plan' | 'tab_list' };
+    display: { catalog_view?: 'cards' | 'list'; surface?: 'catalog' | 'menu_grid' | 'table_grid' | 'floor_plan' | 'tab_list' | 'resource_board' };
   };
   administration?: { read: boolean; write: boolean };
   // The store's e-invoice (`einvoice_type` in the context); absent on older servers.
@@ -464,7 +466,14 @@ function lineTrace(world: World, sheet: Sheet, line: Line) {
   return null;
 }
 
+// Every answer carrying an order goes through here, so a test's own
+// additions to it (a room's time line) show in all of them.
 export function serialize(world: World, sheet: Sheet) {
+  const view = serializeSheet(world, sheet);
+  return world.decorate ? world.decorate(view) : view;
+}
+
+function serializeSheet(world: World, sheet: Sheet) {
   const total = sheetTotal(world, sheet);
   const remaining = Math.max(total - sheet.allocated - sheet.debt, 0);
   return {

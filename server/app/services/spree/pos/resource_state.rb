@@ -106,10 +106,21 @@ module Spree
             played_seconds: session.active? ? session.played_seconds(now).floor : nil,
             played_minutes: quote ? quote.played_minutes : session.played_minutes,
             quote_amount: (quote ? quote.amount : session.amount || BigDecimal('0')).to_s('F'),
+            rate_per_hour: current_rate(quote)&.to_s('F'),
             ending_soon: due && !package_ended && session.planned_end_at <= now + ENDING_SOON,
             package_ended: package_ended,
             pause_too_long: session.status == 'paused' && Timed::Guard.long_pause?(session, now) }
         end
+      end
+
+      # The hourly price the clock runs at now: the band of the quote's latest
+      # line, its day surcharge included; nil once stopped, or while a
+      # package, card or bonus covers the time now.
+      def current_rate(quote)
+        line = quote&.lines&.max_by(&:ends_at)
+        return nil unless line&.kind == 'rate'
+
+        BigDecimal((line.price_per_hour * (1 + (line.surcharge_percent / 100))).round)
       end
 
       # Per order: whether anything went to the kitchen, and whether a sent

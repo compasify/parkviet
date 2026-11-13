@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import type { PosWorkspace } from '../../lib/pos-context';
 import { tableOrderName } from '../../lib/tables';
+import { TIMED_MODULE } from '../../lib/timed-clock';
 import { PosIcon } from '../pos-icon';
 import { serviceModeOf } from '../service-mode-control';
 import type { SellingWorkspace } from '../workspace-tabs';
@@ -40,6 +41,9 @@ export function TicketHeader({
   const minutes = opened === null ? null : Math.max(0, Math.floor((now - opened) / 60_000));
   const server = serverOf(active);
   const mode = serviceModeOf(active.service_mode);
+  // The board behind the order shows rooms with their clocks.
+  const roomBoard =
+    selling.tableSurface === 'resource_board' && selling.data?.modules?.[TIMED_MODULE] === true;
   return (
     <div className="ticket-header">
       <div className="ticket-header-row">
@@ -49,7 +53,8 @@ export function TicketHeader({
           aria-label={t('ticketBackLabel')}
           onClick={onBoard}
         >
-          <PosIcon name="back" /> {order.table ? t('ticketBack') : t('boardOpen')}
+          <PosIcon name="back" />{' '}
+          {!order.table ? t('boardOpen') : roomBoard ? t('ticketBackRoom') : t('ticketBack')}
         </button>
         {order.table ? (
           <button

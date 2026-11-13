@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { commandQueue } from '../../lib/command-queue';
 import { PosIcon } from '../pos-icon';
+import { SegmentEditDialog } from '../segment-edit-dialog';
 import {
   ActivePrebillDialog,
   ActiveVoidDialog,
@@ -18,6 +19,7 @@ import { TicketFooter } from './ticket-footer';
 import { TicketHeader } from './ticket-header';
 import { TicketLines } from './ticket-lines';
 import { TicketMoreMenu, type TicketMorePanel } from './ticket-more-menu';
+import { type OrderRoom, TimedTicketLine } from './timed-ticket-line';
 
 // The grouping picked on this device.
 const GROUP_KEY = 'parkviet-pos:ticket-group';
@@ -54,15 +56,19 @@ function useNow(intervalMs = 30_000): number {
 // The table ticket beside the menu: who sits there and since when, the
 // dishes grouped by send, course or seat with the unsent ones on top, and
 // the kitchen send and payment at the foot. A send returns to the board;
-// "Gửi & ở lại" stays on the order.
+// "Gửi & ở lại" stays on the order. A room's clock is pinned on top.
 export function Ticket({
   selling,
   onBoard,
+  room,
   onPay,
   onNotice,
 }: {
   selling: SellingWorkspace;
   onBoard: () => void;
+  // The order's room and its clock.
+  room: OrderRoom;
+  // Pays the order; the screen asks to stop a room's clock first.
   onPay: () => void;
   // A short confirmation the screen shows, on the board too.
   onNotice: (text: string) => void;
@@ -100,7 +106,15 @@ export function Ticket({
   // Takeaway and delivery orders have no seats.
   const modes = TICKET_GROUP_MODES.filter((value) => table || value !== 'seat');
   const shown: TicketGroupMode = modes.includes(mode) ? mode : 'round';
-  const groups = groupTicketLines(active, shown);
+  // The pinned clock stands for its time line.
+  const pinned = room.line;
+  const editing = selling.editingSegment;
+  const groups = groupTicketLines(
+    pinned
+      ? { ...active, line_items: (active.line_items ?? []).filter((line) => line !== pinned) }
+      : active,
+    shown,
+  );
   const pending = pendingKitchenUnits(active);
   const timeZone = orderTimeZone(selling, active);
   const clock = {
@@ -135,6 +149,13 @@ export function Ticket({
         now={now}
         onBoard={onBoard}
         onMore={setMore}
+      />
+      <TimedTicketLine
+        key={`${active.id}:clock`}
+        selling={selling}
+        active={active}
+        room={room}
+        clockTime={clock.time}
       />
       {kitchenOn ? (
         <fieldset className="ticket-view">
@@ -178,6 +199,7 @@ export function Ticket({
         active={active}
         pending={pending}
         sending={sending}
+        clockAmount={room.running ? room.amount : null}
         onSend={(stay) => void send(stay)}
         onPay={onPay}
       />
@@ -196,6 +218,22 @@ export function Ticket({
       ) : null}
       {selling.prebillOpen && active.operational_status === 'editing' ? (
         <ActivePrebillDialog selling={selling} active={active} />
+      ) : null}
+      {editing ? (
+        <SegmentEditDialog
+          key={editing.segment.id}
+          workspace={active}
+          segment={editing.segment}
+          canEdit={Boolean(selling.data?.capabilities.includes('pos.timed.edit'))}
+          onSave={(input) =>
+            workspaces.clockCommand(
+              'PATCH',
+              `/pos/timed_sessions/${editing.sessionId}/segments/${editing.segment.id}`,
+              input,
+            )
+          }
+          onClose={() => selling.setEditingSegment(null)}
+        />
       ) : null}
       {selling.voiding?.sale_line_id ? (
         <ActiveVoidDialog

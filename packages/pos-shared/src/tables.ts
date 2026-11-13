@@ -89,6 +89,9 @@ export type BoardTimed = {
   package_ended: boolean;
   // Paused longer than the branch allows: resuming needs an approval.
   pause_too_long: boolean;
+  // The hourly price the clock runs at now, its day surcharge included; null
+  // once stopped, while a package covers the time, or from an older server.
+  rate_per_hour: string | null;
 };
 
 export type Placement = { x: number; y: number; w: number; h: number; rotation: number };
@@ -254,22 +257,24 @@ function boardTimed(value: unknown): BoardTimed | null {
     played_seconds: nullableInt(source.played_seconds),
     package_ended: source.package_ended === true,
     pause_too_long: source.pause_too_long === true,
+    rate_per_hour: text(source.rate_per_hour),
   };
 }
 
 // Seconds a clock has played at `now` (milliseconds on the server's clock,
 // as the screen estimates it), pauses not counted: the board's count at
-// `readAt` plus the time since while it runs. Without the board's count
-// (a stopped clock, an older server), from its start to its stop or now.
+// `readAt` plus the time since while it runs. A stopped clock is what the
+// server counted as played. Without the board's count (an older server),
+// from its start to now.
 export function clockPlayedSeconds(timed: BoardTimed, readAt: string | null, now: number): number {
+  if (timed.status === 'stopped') return Math.max(0, timed.played_minutes) * 60;
   const read = readAt ? Date.parse(readAt) : Number.NaN;
   if (timed.played_seconds !== null && !Number.isNaN(read)) {
     const since = timed.status === 'running' ? Math.max(0, now - read) / 1000 : 0;
     return Math.max(0, Math.floor(timed.played_seconds + since));
   }
   const start = Date.parse(timed.started_at);
-  const end = timed.stopped_at ? Date.parse(timed.stopped_at) : now;
-  return Number.isNaN(start) ? 0 : Math.max(0, Math.floor((end - start) / 1000));
+  return Number.isNaN(start) ? 0 : Math.max(0, Math.floor((now - start) / 1000));
 }
 
 // Seconds until a running clock's planned end (its package's end when it
@@ -445,6 +450,9 @@ export type BoardOptions = {
   // The branch sends dishes to a kitchen (`fnb.kitchen`); without one no
   // dish is ever "unsent".
   kitchen?: boolean;
+  // Now on the server's clock (milliseconds), to count a room's clock down;
+  // without it only the server's own flags say a room ends soon.
+  now?: number;
 };
 
 // Dishes on the table's orders wait to be sent to the kitchen, after a first
@@ -486,11 +494,25 @@ export function tileAlert(table: BoardTable, options: BoardOptions = {}): boolea
   );
 }
 
-// Someone should go to the table now: the bill was asked for, the kitchen is
-// late, the guests stayed long, or dishes wait to be sent.
-export function needsAttention(table: BoardTable, options: BoardOptions = {}): boolean {
+// Why someone should go to the table now: the bill was asked for, dishes
+// wait to be sent, the guests stayed long or the kitchen is late, or its
+// clock (a room, or a billiard table in a restaurant) is about to end, has
+// ended or was paused too long. Each reason is said in words on a room tile.
+export const ATTENTION_REASONS = ['payment', 'unsent', 'long', 'clock'] as const;
+export type AttentionReason = (typeof ATTENTION_REASONS)[number];
+
+export function attentionReasons(table: BoardTable, options: BoardOptions = {}): AttentionReason[] {
   const tone = tileTone(table, options);
-  return tone === 'payment' || tone === 'unsent' || tileAlert(table, options);
+  const reasons: AttentionReason[] = [];
+  if (tone === 'payment') reasons.push('payment');
+  if (tone === 'unsent') reasons.push('unsent');
+  if (tileAlert(table, options)) reasons.push('long');
+  if (clockAttention(table, options.now)) reasons.push('clock');
+  return reasons;
+}
+
+export function needsAttention(table: BoardTable, options: BoardOptions = {}): boolean {
+  return attentionReasons(table, options).length > 0;
 }
 
 // Whether a table shows under a filter chip. Free is ready for guests: no
@@ -523,4 +545,52 @@ export function boardCounts(
   for (const row of tables)
     for (const chip of BOARD_CHIPS) if (inBoardChip(row, chip, options)) counts[chip] += 1;
   return counts;
+}
+
+// --- Timed rooms (`timed_billing`) on the board ------------------------------
+
+// The backgrounds of a timed room: free, its clock counting, its end in the
+// last ten minutes (amber), past its end (red, blinking), paused (grey),
+// guests on its order with no clock counting (stopped and not paid yet, or
+// never started), or empty and not ready for guests: being cleaned or out of
+// service. Each is also said in words on the tile.
+export const ROOM_TONES = [
+  'free',
+  'running',
+  'ending',
+  'over',
+  'paused',
+  'idle',
+  'cleaning',
+  'out_of_service',
+] as const;
+export type RoomTone = (typeof ROOM_TONES)[number];
+
+// A room's clock turns amber this many seconds before its end, as the
+// server flags it (`ending_soon`).
+export const ROOM_ENDING_SECONDS = 10 * 60;
+
+// The tone of a room's clock at `now` (server clock, milliseconds). The
+// server's flags count as well as the countdown, so a board read without a
+// clock of its own still shows a room ending soon or past its package.
+export function roomTone(table: BoardTable, now?: number): RoomTone {
+  const timed = table.timed;
+  if (timed?.status === 'paused') return 'paused';
+  if (timed?.status === 'running') {
+    const left = now === undefined ? null : clockSecondsLeft(timed, now);
+    if (timed.package_ended || (left !== null && left <= 0)) return 'over';
+    if (timed.ending_soon || (left !== null && left <= ROOM_ENDING_SECONDS)) return 'ending';
+    return 'running';
+  }
+  if (table.orders.length > 0) return 'idle';
+  if (table.state === 'cleaning' || table.state === 'out_of_service') return table.state;
+  return 'free';
+}
+
+// A room's clock needs someone now: it ends within ten minutes, has ended,
+// or was paused longer than the branch allows.
+export function clockAttention(table: BoardTable, now?: number): boolean {
+  if (table.timed?.status === 'paused' && table.timed.pause_too_long) return true;
+  const tone = roomTone(table, now);
+  return tone === 'ending' || tone === 'over';
 }

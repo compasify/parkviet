@@ -17,6 +17,7 @@ export function TicketFooter({
   active,
   pending,
   sending,
+  clockAmount = null,
   onSend,
   onPay,
 }: {
@@ -25,6 +26,9 @@ export function TicketFooter({
   // Units the next kitchen send takes.
   pending: number;
   sending: boolean;
+  // A room clock still counting: the server's quote of its time so far,
+  // not on the order until the clock stops.
+  clockAmount?: string | null;
   onSend: (stay: boolean) => void;
   onPay: () => void;
 }) {
@@ -67,6 +71,15 @@ export function TicketFooter({
       : []),
     ...(active.totals?.taxes ?? []).map((tax) => `${tax.label} ${rateLabel(tax.rate)}`),
   ];
+  // While the clock counts the total adds its quote, said as an estimate; with
+  // a service charge or tax on top it also says those are not on the time yet.
+  const clock = clockAmount !== null && Number.isFinite(Number(clockAmount)) ? clockAmount : null;
+  const chargedOnTop =
+    Boolean(charge?.applies && !charge.waived && charge.rate) ||
+    (active.totals?.taxes ?? []).length > 0;
+  const payTotal = clock
+    ? String(Number(active.totals?.total ?? 0) + Number(clock))
+    : (active.totals?.total ?? '0');
   const placed = [
     placement.seat ? t('ticketSeat', { seat: placement.seat }) : null,
     placement.course ? courseName(placement.course) : null,
@@ -77,7 +90,14 @@ export function TicketFooter({
     <footer className="ticket-footer">
       <p className="ticket-summary">
         <span>{summary.join(' · ')}</span>
-        {active.totals ? (
+        {clock && active.totals ? (
+          <span>
+            {t('ticketClockSubtotal', {
+              time: formatMoney(clock, currency),
+              items: formatMoney(active.totals.item_total, currency),
+            })}
+          </span>
+        ) : active.totals ? (
           <span>
             {t('ticketSubtotal', { amount: formatMoney(active.totals.item_total, currency) })}
           </span>
@@ -134,8 +154,12 @@ export function TicketFooter({
           </button>
         ) : null}
         <button type="button" className="ticket-pay" onClick={onPay}>
-          <small>{t('ticketPay')}</small>{' '}
-          <b>{formatMoney(active.totals?.total ?? '0', currency)}</b>
+          <small>
+            {clock
+              ? t(chargedOnTop ? 'ticketPayEstimateBeforeCharges' : 'ticketPayEstimate')
+              : t('ticketPay')}
+          </small>{' '}
+          <b>{formatMoney(payTotal, currency)}</b>
         </button>
       </div>
     </footer>

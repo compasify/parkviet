@@ -1123,6 +1123,86 @@ kbd { padding: var(--pos-s1); border: 1px solid var(--pos-border); border-radius
 .pos-layout .board-popover-orders button { width: 100%; justify-content: space-between; }
 .pos-layout .board-popover-dismiss { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 0; padding: 0; border: 0; border-radius: 0; background: transparent; cursor: default; }
 .pos-layout .board-popover-dismiss:not(:disabled):hover, .pos-layout .board-popover-dismiss:not(:disabled):active { background: transparent; }
+/* Room board (timed rooms and billiard tables): the clock is the largest
+   text; six tones, each also said in words; past its end the tile blinks
+   unless the device asks for less motion. */
+.room-tile-free { --tile-fill: var(--pos-surface); --tile-border: #c9d6e0; --tile-clock: var(--pos-muted); }
+.room-tile-running { --tile-fill: var(--pos-selected); --tile-border: var(--pos-blue); --tile-clock: var(--pos-ink); }
+.room-tile-ending { --tile-fill: #fff4d9; --tile-border: #b86e00; --tile-clock: var(--pos-warning); }
+.room-tile-over { --tile-fill: #fde8e5; --tile-border: var(--pos-danger); --tile-clock: var(--pos-danger); }
+.room-tile-paused { --tile-fill: #eef1f4; --tile-border: #8a99a6; --tile-clock: #5f6f7c; }
+.room-tile-idle { --tile-fill: var(--pos-surface); --tile-border: var(--pos-blue); --tile-clock: var(--pos-ink); }
+.room-tile-cleaning { --tile-fill: #eaf6f6; --tile-border: #4f8f8f; --tile-clock: #2f6b6b; }
+.room-tile-out_of_service { --tile-fill: #f1f1f1; --tile-border: #9a9a9a; --tile-clock: #5c5c5c; }
+.room-tile-out_of_service, .board-swatch.room-tile-out_of_service { border-style: dotted; }
+.board-swatch.room-tile-idle { border-style: dashed; }
+.room-board-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+.room-board-grid > li { contain-intrinsic-size: auto 210px; }
+.room-tile { display: flex; flex-direction: column; min-width: 0; border: 2px solid var(--tile-border); border-radius: 10px; background: var(--tile-fill); overflow: hidden; }
+.room-tile-idle { border-style: dashed; }
+.pos-layout .room-tile-head { display: flex; flex-direction: column; align-items: stretch; gap: 2px; width: 100%; min-height: 0; padding: 10px 12px 6px; border: 0; border-radius: 0; background: transparent; text-align: left; font-weight: 400; }
+.pos-layout .room-tile-head:not(:disabled):hover, .pos-layout .room-tile-head:not(:disabled):active { background: transparent; filter: brightness(.97); }
+.pos-layout .room-tile-head[aria-expanded="true"] { outline: 3px solid var(--pos-blue); outline-offset: -4px; }
+.room-tile-title { display: flex; align-items: baseline; gap: var(--pos-s2); min-width: 0; }
+.room-tile-title strong { font-size: 1.0625rem; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.room-tile-title small { font-size: var(--pos-small); color: var(--pos-muted); white-space: nowrap; }
+.room-tile-badge { margin-left: auto; display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 12px; border: 1px solid var(--pos-border); background: var(--pos-surface); color: var(--tile-clock); }
+.room-tile-badge .pos-icon { width: 13px; height: 13px; }
+.room-tile-clock { font-size: 2rem; font-weight: 800; line-height: 1.1; color: var(--tile-clock); font-variant-numeric: tabular-nums; }
+.room-tile-clock-empty { font-size: 1.25rem; }
+.room-tile-status { font-size: var(--pos-small); color: var(--pos-muted); }
+.room-tile-status b { color: var(--tile-clock); }
+.room-tile-flags { display: flex; flex-wrap: wrap; gap: var(--pos-s1); margin-top: 2px; }
+.room-tile-flag { padding: 1px 8px; border-radius: 10px; border: 1px solid var(--pos-danger); background: var(--pos-surface); color: var(--pos-danger); font-size: var(--pos-small); font-weight: 700; }
+.room-tile-money { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--pos-s2); margin: 0; padding: 4px 12px 10px; }
+.room-tile-money div { min-width: 0; }
+.room-tile-money dt { font-size: var(--pos-small); color: var(--pos-muted); }
+.room-tile-money dd { margin: 0; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.room-tile-actions { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; margin-top: auto; border-top: 1px solid var(--pos-border); background: var(--pos-surface); }
+.pos-layout .room-tile-actions button { min-height: 48px; padding: 0 6px; border: 0; border-radius: 0; border-right: 1px solid var(--pos-border); font-size: .875rem; gap: var(--pos-s1); }
+.pos-layout .room-tile-actions button:last-child { border-right: 0; }
+.room-tile-actions .pos-icon { width: 14px; height: 14px; }
+.pos-layout .room-tile-actions .room-tile-start, .pos-layout .room-tile-actions .room-tile-resume { color: var(--pos-success); }
+.pos-layout .room-tile-actions .room-tile-pay:not(:disabled) { background: var(--pos-success); color: var(--pos-surface); }
+.pos-layout .room-tile-actions .room-tile-pay:not(:disabled):hover { background: #1f5d3f; }
+.room-popover .timed-panel { margin: 0; padding: 0; border: 0; }
+.board-tile-clock { display: flex; align-items: center; gap: var(--pos-s1); margin-top: 2px; font-size: var(--pos-small); font-weight: 700; font-variant-numeric: tabular-nums; }
+.board-tile-clock .pos-icon { width: 13px; height: 13px; }
+.room-clock-ending { color: var(--pos-warning); }
+.room-clock-over { color: var(--pos-danger); }
+.room-clock-paused { color: #5f6f7c; }
+@media (prefers-reduced-motion: no-preference) {
+  .room-tile.room-tile-over { animation: room-over 1.2s steps(2, jump-none) infinite; }
+}
+@keyframes room-over { 50% { border-color: #f2b8b0; box-shadow: 0 0 0 4px #a12d2033; } }
+/* The clock pinned on top of a room's ticket. */
+.timed-ticket-line { margin: var(--pos-s2) var(--pos-s3) 0; padding: 10px var(--pos-s3); border: 2px solid var(--pos-blue); border-radius: 10px; background: var(--pos-selected); display: grid; gap: 6px; }
+.timed-ticket-line-paused { border-color: #8a99a6; background: #eef1f4; }
+.timed-ticket-line-top { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--pos-s2); }
+.pos-layout .timed-ticket-line p { margin: 0; }
+.timed-ticket-line-heading { display: flex; align-items: center; gap: var(--pos-s1); font-size: var(--pos-small); color: var(--pos-muted); }
+.timed-ticket-line-heading .pos-icon { width: 14px; height: 14px; }
+.timed-ticket-line-amount { display: grid; text-align: right; }
+.timed-ticket-line-amount small { font-size: var(--pos-small); color: var(--pos-muted); }
+.timed-ticket-line-amount strong { font-size: 1.125rem; font-variant-numeric: tabular-nums; }
+.timed-ticket-line-clock { display: flex; align-items: baseline; gap: var(--pos-s2); font-size: var(--pos-small); font-weight: 700; }
+.timed-ticket-line-clock .timed-clock { font-size: 1.75rem; font-weight: 800; color: var(--pos-blue); font-variant-numeric: tabular-nums; }
+.timed-ticket-line-clock.room-clock-ending .timed-clock { color: var(--pos-warning); }
+.timed-ticket-line-clock.room-clock-over .timed-clock { color: var(--pos-danger); }
+.timed-ticket-line-clock.room-clock-paused .timed-clock { color: #5f6f7c; }
+.timed-ticket-line-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.pos-layout .timed-ticket-line-actions button { min-height: 40px; border-radius: 999px; font-size: var(--pos-small); }
+.timed-ticket-line-actions .pos-icon { width: 13px; height: 13px; }
+.timed-ticket-line-bands { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; font-size: var(--pos-small); color: var(--pos-muted); }
+.timed-ticket-line-move, .timed-ticket-line-approval { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--pos-s2); }
+.pos-layout .stop-pay-dialog { width: min(420px, calc(100vw - var(--pos-s6))); display: grid; gap: var(--pos-s3); }
+.pos-layout .stop-pay-dialog h4 { margin: 0; font-size: var(--pos-heading); }
+.pos-layout .stop-pay-dialog p { margin: 0; }
+.stop-pay-amount { display: flex; justify-content: space-between; align-items: baseline; gap: var(--pos-s2); }
+.stop-pay-amount strong { font-size: 1.375rem; font-variant-numeric: tabular-nums; }
+.stop-pay-approval { display: grid; gap: var(--pos-s2); }
+.stop-pay-actions { justify-content: flex-end; }
+.ticket-more-link { display: flex; align-items: center; min-height: 48px; padding: 0 var(--pos-s3); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); color: var(--pos-ink); font-weight: 600; text-decoration: none; }
 /* Table service: the order frame is the menu beside the table ticket (fixed
    on the right, 410px). Unsent dishes sit on a light yellow; sent ones carry
    a lock and what the kitchen does with them. */

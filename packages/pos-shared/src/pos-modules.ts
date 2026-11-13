@@ -190,8 +190,8 @@ export function tableSurfaceOf(
 }
 
 // The selling screen of a branch: table service (the floor first, then the
-// order beside its ticket) when it runs `fnb.tables`, unless its profile
-// starts on a bar's open tabs or a board of timed rooms, which keep the
+// order beside its ticket) when it runs `fnb.tables`, a board of timed rooms
+// included, unless its profile starts on a bar's open tabs, which keep the
 // counter layout. A branch selling from its menu tiles without tables sells
 // at the quick counter (the menu beside one ticket paid on the spot), a
 // canteen's meal codes and a rest stop's coaches included, except a branch
@@ -211,7 +211,7 @@ export function sellingLayoutOf(
       ? 'counter'
       : 'quick_counter';
   }
-  return keepsCounter ? 'counter' : 'table_service';
+  return surface === 'tab_list' ? 'counter' : 'table_service';
 }
 
 // i18n key fragment of a module: dots would read as nesting in i18next.

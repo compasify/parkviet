@@ -9548,8 +9548,14 @@ components:
       type: object
       additionalProperties: false
       required: [id, workspace_id, status, started_at, stopped_at, planned_end_at, paused_at, prepaid_minutes, played_seconds, played_minutes,
-                 quote_amount, ending_soon, package_ended, pause_too_long]
+                 quote_amount, rate_per_hour, ending_soon, package_ended, pause_too_long]
       properties:
+        rate_per_hour:
+          type: [string, 'null']
+          description: >
+            The hourly price the clock runs at now (the rate band of the time
+            now, its day surcharge included); null once stopped, or while a
+            package, minutes card or bonus covers the time now.
         paused_at:
           type: [string, 'null']
           format: date-time

@@ -247,7 +247,7 @@ describe('business profile catalogue', () => {
     expect(profile('kiosk')?.display).toEqual({});
   });
 
-  it('serves tables on their own screen unless the profile starts on tabs or rooms', () => {
+  it('serves tables and timed rooms on their own screen unless the profile starts on tabs', () => {
     const profile = (surface?: string) => normalizeProfile({ key: 'p', display: { surface } });
     const tables = { 'fnb.tables': true, 'fnb.menu': true };
     // No table module: the counter, whatever the profile suggests.
@@ -267,11 +267,18 @@ describe('business profile catalogue', () => {
       'table_service',
     );
     expect(sellingLayoutOf({ modules: tables, profile: null })).toBe('table_service');
-    // A bar's open tabs and a board of timed rooms keep the counter layout.
-    expect(sellingLayoutOf({ modules: tables, profile: profile('tab_list') })).toBe('counter');
+    // A board of timed rooms is a frame of table service, a karaoke's
+    // postpaid clocks included; a bar's open tabs keep the counter layout.
     expect(sellingLayoutOf({ modules: tables, profile: profile('resource_board') })).toBe(
-      'counter',
+      'table_service',
     );
+    expect(
+      sellingLayoutOf({
+        modules: { ...tables, timed_billing: true, 'fnb.postpay': true },
+        profile: profile('resource_board'),
+      }),
+    ).toBe('table_service');
+    expect(sellingLayoutOf({ modules: tables, profile: profile('tab_list') })).toBe('counter');
   });
 
   it('sells at the quick counter where the menu runs without tables', () => {
@@ -321,9 +328,12 @@ describe('business profile catalogue', () => {
       }),
     ).toBe('counter');
     expect(
-      sellingLayoutOf({ modules: { ...canteen, 'fnb.postpay': true }, profile: profile('menu_grid') }),
+      sellingLayoutOf({
+        modules: { ...canteen, 'fnb.postpay': true },
+        profile: profile('menu_grid'),
+      }),
     ).toBe('counter');
-    // Open tabs and timed rooms stay open across guests: the counter, tables or not.
+    // Open tabs and timed rooms stay open across guests: without tables, the counter.
     expect(sellingLayoutOf({ modules: { 'fnb.menu': true }, profile: profile('tab_list') })).toBe(
       'counter',
     );

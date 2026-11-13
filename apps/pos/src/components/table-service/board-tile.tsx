@@ -1,6 +1,6 @@
 import { formatMoney } from '@parkviet/pos-shared/money';
 import { type BoardTable, type BoardTone, tableStateKey } from '@parkviet/pos-shared/tables';
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PosIcon } from '../pos-icon';
 
@@ -16,6 +16,8 @@ export function BoardTile({
   expanded,
   timeZone,
   style,
+  clock = null,
+  clockLabel = null,
   onSelect,
 }: {
   table: BoardTable;
@@ -25,6 +27,10 @@ export function BoardTile({
   // The branch's time zone, which booking times are said in.
   timeZone: string;
   style?: CSSProperties;
+  // The table's play-time clock (a billiard table in a restaurant).
+  clock?: ReactNode;
+  // The clock in words for a screen reader, which reads the label only.
+  clockLabel?: string | null;
   onSelect: (table: BoardTable, tile: HTMLButtonElement) => void;
 }) {
   const { t, i18n } = useTranslation();
@@ -51,6 +57,7 @@ export function BoardTile({
     seated && table.guest_count != null ? t('tableGuests', { count: table.guest_count }) : null,
     seated && total ? formatMoney(total, table.currency ?? 'VND') : null,
     booking && bookingTime ? `${t('boardReserved')} ${bookingTime}` : null,
+    clockLabel,
   ]
     .filter(Boolean)
     .join(' · ');
@@ -118,6 +125,7 @@ export function BoardTile({
           ) : (
             <span className="board-tile-status">{status}</span>
           )}
+          {clock}
           <span className="board-tile-foot">
             <span
               className="board-tile-guests"

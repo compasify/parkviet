@@ -14,8 +14,10 @@ import { CategoryRail } from './category-rail';
 import { MenuItemGrid } from './menu-item-grid';
 import { ModifierPanel } from './modifier-panel';
 import { PaymentScreen } from './payment-screen';
+import { runningClockOf, type StopAndPay, StopAndPayDialog } from './stop-and-pay-dialog';
 import { TableBoard } from './table-board';
 import { Ticket } from './ticket';
+import { useOrderRoom } from './timed-ticket-line';
 
 // How long the screen shows a short confirmation ("Đã gửi 3 món").
 const NOTICE_MS = 4_000;
@@ -24,7 +26,8 @@ const NOTICE_MS = 4_000;
 // (`?view=`): the table board first, then the order of a table with the menu
 // (categories, text tiles, or one dish's options) beside its ticket, then
 // its payment over the whole screen. A page opened without a frame shows
-// the order it names, else the board.
+// the order it names, else the board. A room's clock still counting is
+// stopped (once the cashier says yes) before its payment ever opens.
 export function TableServiceScreen() {
   const { t } = useTranslation();
   const search = useSearch({ from: '/authed/' });
@@ -58,10 +61,37 @@ export function TableServiceScreen() {
   // The order paid last, whose invoice prints over the board.
   const [printing, setPrinting] = useState<string | null>(null);
   const notify = (text: string) => setNotice((current) => ({ text, seq: (current?.seq ?? 0) + 1 }));
+  // The room clock the cashier is asked to stop before paying.
+  const [stopping, setStopping] = useState<StopAndPay | null>(null);
+  const room = useOrderRoom(selling, active, view === 'order');
+  const activeClock = runningClockOf(active, {
+    name: selling.activeTable.table?.name,
+    timed: room.timed,
+    currency: room.table?.currency,
+  });
+  // No payment while a clock counts: a payment frame reached any other way
+  // (a link, history, a clock started elsewhere) goes back to the order and
+  // asks first. Decided while rendering, so the payment never mounts with
+  // the clock counting, not even for one frame.
+  if (view === 'pay' && activeClock) {
+    setView('order');
+    setStopping(activeClock);
+  }
 
   function openOrder(workspaceId: string) {
     selectOrder(workspaceId);
     setView('order');
+  }
+
+  function openPay(workspaceId: string) {
+    selectOrder(workspaceId);
+    setView('pay');
+  }
+
+  // The ticket's "Thanh toán".
+  function payActive() {
+    if (activeClock) setStopping(activeClock);
+    else setView('pay');
   }
 
   const toast = notice ? (
@@ -71,6 +101,18 @@ export function TableServiceScreen() {
   ) : null;
   const printDialog = printing ? (
     <ReceiptPrintDialog sourceId={printing} autoPrint onClose={() => setPrinting(null)} />
+  ) : null;
+  const stopDialog = stopping ? (
+    <StopAndPayDialog
+      key={stopping.sessionId}
+      request={stopping}
+      selling={selling}
+      onStopped={(workspaceId) => {
+        setStopping(null);
+        openPay(workspaceId);
+      }}
+      onClose={() => setStopping(null)}
+    />
   ) : null;
   const catalog =
     menuSurface && menu.data ? (
@@ -86,10 +128,16 @@ export function TableServiceScreen() {
       <section className="draft-workspace table-service" aria-label={t('draftList')}>
         {toast}
         {printDialog}
-        <TableBoard selling={selling} onOpenOrder={openOrder} />
+        {stopDialog}
+        <TableBoard
+          selling={selling}
+          onOpenOrder={openOrder}
+          onPay={openPay}
+          onStopAndPay={setStopping}
+        />
       </section>
     );
-  if (view === 'pay')
+  if (view === 'pay' && !activeClock)
     return (
       <PaymentScreen
         selling={selling}
@@ -108,6 +156,7 @@ export function TableServiceScreen() {
       aria-label={t('draftList')}
     >
       {toast}
+      {stopDialog}
       <SellingNotices selling={selling} />
       <div className="order-frame">
         <section className="order-frame-menu" aria-label={t('catalogTitle')}>
@@ -121,7 +170,8 @@ export function TableServiceScreen() {
         <Ticket
           selling={selling}
           onBoard={() => setView('board')}
-          onPay={() => setView('pay')}
+          room={room}
+          onPay={payActive}
           onNotice={notify}
         />
       </div>

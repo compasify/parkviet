@@ -3,10 +3,13 @@ import en from './locales/en.json';
 import vi from './locales/vi.json';
 import { normalizeProfile, tableSurfaceOf } from './pos-modules';
 import {
+  ATTENTION_REASONS,
+  attentionReasons,
   boardCounts,
   buffetMinutesLeft,
   buffetTiming,
   clampPlacement,
+  clockAttention,
   clockPlayedSeconds,
   clockSecondsLeft,
   countStates,
@@ -16,6 +19,8 @@ import {
   needsAttention,
   normalizeResource,
   normalizeResourceBoard,
+  ROOM_TONES,
+  roomTone,
   TABLE_STATES,
   tableStateKey,
   tileAlert,
@@ -160,6 +165,49 @@ describe('resource board', () => {
     expect(clockSecondsLeft(paused, later)).toBeNull();
     // Without the board's count: from the start.
     expect(clockPlayedSeconds({ ...running, played_seconds: null }, null, later)).toBe(65 * 60);
+  });
+
+  it('shows a stopped clock as played, its pauses left out', () => {
+    // An hour played with a half-hour pause, then stopped: 1:00, not 1:30.
+    const [stopped] = normalizeResourceBoard({
+      server_now: '2026-11-12T21:00:00Z',
+      resources: [
+        {
+          id: 'posres_1',
+          timed: {
+            id: 't1',
+            status: 'stopped',
+            started_at: '2026-11-12T19:00:00Z',
+            stopped_at: '2026-11-12T20:30:00Z',
+            played_minutes: 60,
+            played_seconds: null,
+            rate_per_hour: null,
+          },
+        },
+      ],
+    }).resources.flatMap((row) => (row.timed ? [row.timed] : []));
+    expect(
+      clockPlayedSeconds(stopped, '2026-11-12T21:00:00Z', Date.parse('2026-11-12T22:00:00Z')),
+    ).toBe(60 * 60);
+    expect(clockPlayedSeconds(stopped, null, Date.parse('2026-11-12T22:00:00Z'))).toBe(60 * 60);
+    expect(stopped.rate_per_hour).toBeNull();
+  });
+
+  it('reads the hourly price a clock runs at', () => {
+    const [timed] = normalizeResourceBoard({
+      resources: [
+        {
+          id: 'posres_1',
+          timed: {
+            id: 't1',
+            status: 'running',
+            started_at: '2026-11-12T19:00:00Z',
+            rate_per_hour: '150000.0',
+          },
+        },
+      ],
+    }).resources.flatMap((row) => (row.timed ? [row.timed] : []));
+    expect(timed.rate_per_hour).toBe('150000.0');
   });
 
   it('labels every state in both languages', () => {
@@ -382,5 +430,113 @@ describe('table board', () => {
     expect(names('in_use')).toEqual(['ordered', 'occupied', 'payment_requested']);
     expect(names('free')).toEqual(['available', 'reserved']);
     expect(names('attention')).toEqual(['occupied', 'payment_requested']);
+  });
+});
+
+describe('timed room tones', () => {
+  const START = '2026-11-12T14:00:00Z';
+  const at = (time: string) => Date.parse(time);
+  // A room (or a restaurant's billiard table) with an open order and its clock.
+  const room = (timed: Record<string, unknown> | null, extra: Record<string, unknown> = {}) =>
+    normalizeResourceBoard({
+      resources: [
+        {
+          id: 'posres_room',
+          name: 'P101',
+          kind: 'room',
+          state: timed ? 'playing' : 'occupied',
+          orders: [{ id: 'ws_1', total: '0.0' }],
+          timed: timed
+            ? { id: 'postimed_1', started_at: START, status: 'running', ...timed }
+            : null,
+          ...extra,
+        },
+      ],
+    }).resources[0];
+
+  it('is free without guests and idle with guests but no clock counting', () => {
+    const free = normalizeResourceBoard({ resources: [{ id: 'posres_free', kind: 'room' }] })
+      .resources[0];
+    expect(roomTone(free)).toBe('free');
+    expect(roomTone(free, at('2026-11-12T14:30:00Z'))).toBe('free');
+    expect(roomTone(room(null))).toBe('idle');
+    // Stopped and waiting for its payment.
+    expect(roomTone(room({ status: 'stopped', stopped_at: '2026-11-12T14:40:00Z' }))).toBe('idle');
+  });
+
+  it('counts up, turns amber in the last ten minutes and red once past its end', () => {
+    const open = room({});
+    expect(roomTone(open, at('2026-11-12T18:00:00Z'))).toBe('running');
+    const plan = room({ planned_end_at: '2026-11-12T15:00:00Z', prepaid_minutes: 60 });
+    expect(roomTone(plan, at('2026-11-12T14:49:59Z'))).toBe('running');
+    expect(roomTone(plan, at('2026-11-12T14:50:00Z'))).toBe('ending');
+    expect(roomTone(plan, at('2026-11-12T14:59:59Z'))).toBe('ending');
+    expect(roomTone(plan, at('2026-11-12T15:00:00Z'))).toBe('over');
+    expect(roomTone(plan, at('2026-11-12T15:30:00Z'))).toBe('over');
+    // Without a clock of its own the screen trusts the server's flags.
+    expect(roomTone(plan)).toBe('running');
+    expect(roomTone(room({ ending_soon: true }))).toBe('ending');
+    expect(roomTone(room({ package_ended: true, ending_soon: true }))).toBe('over');
+  });
+
+  it('says a room is being cleaned or out of service, not free', () => {
+    const empty = (state: string) =>
+      normalizeResourceBoard({ resources: [{ id: 'posres_x', kind: 'room', state }] }).resources[0];
+    expect(roomTone(empty('cleaning'))).toBe('cleaning');
+    expect(roomTone(empty('out_of_service'))).toBe('out_of_service');
+    expect(roomTone(empty('available'))).toBe('free');
+    expect(roomTone(empty('reserved'))).toBe('free');
+    expect(ROOM_TONES).toContain('cleaning');
+  });
+
+  it('is grey while paused, its countdown stopped with it', () => {
+    const paused = room({
+      status: 'paused',
+      paused_at: '2026-11-12T14:40:00Z',
+      planned_end_at: '2026-11-12T14:45:00Z',
+    });
+    expect(roomTone(paused, at('2026-11-12T16:00:00Z'))).toBe('paused');
+    expect(clockAttention(paused, at('2026-11-12T16:00:00Z'))).toBe(false);
+    expect(clockAttention(room({ status: 'paused', pause_too_long: true }))).toBe(true);
+  });
+
+  it('needs attention when the clock is about to end or has ended', () => {
+    const plan = room({ planned_end_at: '2026-11-12T15:00:00Z' });
+    expect(needsAttention(plan, { kitchen: false, now: at('2026-11-12T14:30:00Z') })).toBe(false);
+    expect(needsAttention(plan, { kitchen: false, now: at('2026-11-12T14:55:00Z') })).toBe(true);
+    expect(needsAttention(plan, { kitchen: false, now: at('2026-11-12T15:05:00Z') })).toBe(true);
+    expect(needsAttention(room({ ending_soon: true }), { kitchen: false })).toBe(true);
+    expect(attentionReasons(room({ ending_soon: true }), { kitchen: false })).toEqual(['clock']);
+    expect(
+      boardCounts([plan, room(null)], { kitchen: false, now: at('2026-11-12T14:55:00Z') })
+        .attention,
+    ).toBe(1);
+  });
+
+  it('names every reason a room needs attention', () => {
+    const asked = room(null, {
+      payment_requested: true,
+      seated_minutes: 200,
+      orders: [{ id: 'ws_1', unsent_kitchen_items: 0 }],
+    });
+    expect(attentionReasons(asked, { alertMinutes: 120 })).toEqual(['payment', 'long']);
+    const unsentDishes = room(null, { orders: [{ id: 'ws_1', unsent_kitchen_items: 2 }] });
+    expect(attentionReasons(unsentDishes)).toEqual(['unsent']);
+    expect(attentionReasons(unsentDishes, { kitchen: false })).toEqual([]);
+    expect(needsAttention(unsentDishes, { kitchen: false })).toBe(false);
+    expect(ATTENTION_REASONS).toEqual(['payment', 'unsent', 'long', 'clock']);
+  });
+
+  it('paints a timed billiard table in a restaurant board with both tones', () => {
+    const billiard = room(
+      { planned_end_at: '2026-11-12T15:00:00Z' },
+      { kind: 'billiard', state: 'ordered', orders: [{ id: 'ws_2', unsent_kitchen_items: 0 }] },
+    );
+    const now = at('2026-11-12T14:52:00Z');
+    // The table keeps its service tone; the clock adds its own.
+    expect(tileTone(billiard)).toBe('serving');
+    expect(roomTone(billiard, now)).toBe('ending');
+    expect(inBoardChip(billiard, 'attention', { now })).toBe(true);
+    expect(inBoardChip(billiard, 'attention', { now: at('2026-11-12T14:00:00Z') })).toBe(false);
   });
 });

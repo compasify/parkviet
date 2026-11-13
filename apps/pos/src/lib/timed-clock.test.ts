@@ -55,6 +55,7 @@ describe('room clock', () => {
       played_seconds: null,
       package_ended: false,
       pause_too_long: false,
+      rate_per_hour: null,
     };
     expect(isRunning({ ...base, status: 'running' })).toBe(true);
     expect(isRunning({ ...base, status: 'paused' })).toBe(true);

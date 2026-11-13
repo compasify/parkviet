@@ -64,6 +64,11 @@ RSpec.describe 'POS timed sessions API', type: :request do
     tile = board['data']['resources'].find { |row| row['id'] == room.prefixed_id }
     expect(tile).to include('state' => 'playing')
     expect(tile['timed']).to include('id' => id, 'status' => 'running', 'workspace_id' => body.dig('data', 'workspace', 'id'))
+    # The hourly price the clock runs at now, for the tile: one of the plan's
+    # bands (the board prices on the database clock, so which band depends
+    # on when the example runs).
+    expect(%w[100000.0 150000.0 200000.0]).to include(tile['timed']['rate_per_hour'])
+    expect_pos_schema!(response, 'ResourceBoard')
 
     moved = call(operator, :post, "timed_sessions/#{id}/move", resource_id: vip.prefixed_id)
     expect(response).to have_http_status(:ok), response.body
@@ -77,6 +82,11 @@ RSpec.describe 'POS timed sessions API', type: :request do
     expect(stopped.dig('data', 'timed_session')).to include('status' => 'stopped', 'billed_minutes' => 60, 'amount' => '133334.0')
     expect(stopped.dig('data', 'timed_session', 'quote', 'lines').map { |line| line['minutes'] }).to eq([40, 20])
     expect_pos_schema!(response, 'TimedSessionCommand')
+    # Stopped, the clock no longer runs at a price.
+    board = call(operator, :get, "resource_board?branch_id=#{branch.prefixed_id}")
+    tile = board['data']['resources'].find { |row| row['id'] == vip.prefixed_id }
+    expect(tile['timed']).to include('status' => 'stopped', 'rate_per_hour' => nil)
+    expect_pos_schema!(response, 'ResourceBoard')
     get "/api/v3/admin/pos/timed_sessions/#{id}", headers: bearer(operator)
     expect_pos_schema!(response, 'TimedSession')
   end

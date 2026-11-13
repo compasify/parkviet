@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router';
 import { useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useModalFocus } from '../../lib/dialog-focus';
@@ -99,6 +100,9 @@ function MoreDialog({ selling, active, panel, onPanel, onClose, onCanceled }: Pr
   const tableKitchen = table && kitchenOn && !active.payments;
   const tiers = useBuffetTiers(selling.selection.branchId, tableKitchen);
   const buffet = (tiers.data?.length ?? 0) > 0 || coverLines(active).length > 0;
+  // The bottle-keeping book of a bar or karaoke, for guests of this order.
+  const bottleKeep =
+    selling.data?.modules?.['fnb.bottle_keep'] === true && selling.data.capabilities.length > 0;
   const canCancel =
     !busy && !locked && isEditor && active.operational_status !== 'canceled' && !active.payments;
 
@@ -160,6 +164,19 @@ function MoreDialog({ selling, active, panel, onPanel, onClose, onCanceled }: Pr
                   {t(PANEL_TITLES[entry.panel])}
                 </button>
               ))}
+            {bottleKeep ? (
+              // A new browser tab, like the account menu: leaving the sale
+              // page would give up the order's editing lease.
+              <Link
+                to="/bottle-keeps"
+                target="_blank"
+                rel="noopener"
+                className="ticket-more-link"
+                onClick={onClose}
+              >
+                {t('bottleKeepsNav')}
+              </Link>
+            ) : null}
             <button
               type="button"
               className="ticket-danger"
