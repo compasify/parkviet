@@ -7,9 +7,16 @@ import {
   installRetailApi,
   login,
   newWorld,
+  serialize,
   type World,
 } from './support/retail-api';
 
+// The board is the first screen: "Cần xử lý" keeps the tables someone should
+// go to, a free table opens with its guests, a plain dish adds in one tap and
+// a dish with options only once its required group is chosen. "Gửi & ở lại"
+// stays on the order, a course held back is called out from the course view,
+// a reload stays on the order and "Gửi bếp (n)" goes back to the board.
+//
 // A table served from the board to its payment: the table opens on its
 // order, a dish goes to the kitchen and the screen returns to the board;
 // "Thanh toán" opens the payment over the whole screen with the VietQR for
@@ -236,4 +243,168 @@ test('part in cash asks the next QR for the rest; "← Đơn" lets the QR go; a 
   expect(world.sheets.get('ws_t1')?.allocated).toBe(30000);
   await expect(page).toHaveURL(/view=board/);
   await expect(page.getByRole('dialog')).toContainText('HD-0001');
+});
+
+const FLOOR = [
+  { id: 'posres_1', name: 'Bàn 1' },
+  { id: 'posres_2', name: 'Bàn 2' },
+  { id: 'posres_3', name: 'Bàn 3' },
+];
+
+// A board drawn from the orders of the fixture, one table asking for its
+// bill, and the command that seats guests at a free table.
+async function routeFloor(context: BrowserContext, world: World, askingForBill: string) {
+  const opens: Array<Record<string, unknown>> = [];
+  const answers = new Map<string, unknown>();
+  await context.route('**/api/v3/admin/pos/resource_board**', (route) =>
+    route.fulfill({
+      json: {
+        data: {
+          branch_id: 'br_1',
+          server_now: '2026-11-11T05:00:00Z',
+          areas: [],
+          resources: FLOOR.map((table) => {
+            const orders = [...world.sheets.values()]
+              .filter((sheet) => sheet.table?.id === table.id && sheet.status === 'editing')
+              .map((sheet) => serialize(world, sheet));
+            const asked = table.id === askingForBill && orders.length > 0;
+            const subtotal = orders.reduce((sum, order) => sum + Number(order.totals.total), 0);
+            return {
+              ...table,
+              state: orders.length === 0 ? 'available' : asked ? 'payment_requested' : 'occupied',
+              guest_count: orders[0]?.guest_count ?? null,
+              seated_minutes: orders.length ? 12 : null,
+              subtotal: orders.length ? `${subtotal}.0` : null,
+              currency: orders.length ? 'VND' : null,
+              payment_requested: asked,
+              orders: orders.map((order) => ({
+                id: order.id,
+                total: order.totals.total,
+                guest_count: order.guest_count,
+                payment_requested: asked,
+                unsent_kitchen_items: order.line_items.reduce(
+                  (sum, line) => sum + Number(line.pending_kitchen_quantity ?? 0),
+                  0,
+                ),
+              })),
+            };
+          }),
+        },
+      },
+    }),
+  );
+  await context.route('**/api/v3/admin/pos/tables/*/open', (route) => {
+    const request = route.request();
+    const key = request.headers()['idempotency-key'] ?? '';
+    if (!answers.has(key)) {
+      const body = request.postDataJSON() as Record<string, unknown>;
+      opens.push(body);
+      const table = FLOOR.find((row) => request.url().includes(`/tables/${row.id}/open`));
+      if (!table)
+        return route.fulfill({ status: 404, json: { error: { code: 'missing', message: 'missing' } } });
+      const sheet = addSheet(world, `ws_${table.id}`, {
+        editor: String(body.editor_id),
+        table: { ...table, label: null, guests: typeof body.guest_count === 'number' ? body.guest_count : null },
+      });
+      answers.set(key, { data: serialize(world, sheet) });
+    }
+    return route.fulfill({ status: 201, json: answers.get(key) });
+  });
+  return opens;
+}
+
+test('the board opens a free table with its guests; dishes go to the kitchen by send, stay and course', async ({
+  context,
+}) => {
+  const menu = teaMenu();
+  // No sugar is picked for the guest: the required group must be chosen.
+  menu.groups[0].options[1].default = false;
+  const world = newWorld({
+    capabilities: [...FULL_CASHIER, 'pos.table.serve'],
+    modules: MODULES,
+    profile: { key: 'nha_hang', version: 1, display: { surface: 'menu_grid' } },
+    menu,
+  });
+  const asking = addSheet(world, 'ws_t2', { table: { id: 'posres_2', name: 'Bàn 2', label: null, guests: 4 } });
+  addLine(world, asking, 'v_flan', 1);
+  const serving = addSheet(world, 'ws_t3', { table: { id: 'posres_3', name: 'Bàn 3', label: null, guests: 2 } });
+  addLine(world, serving, 'v_peach', 1);
+  await installRetailApi(context, world);
+  const opens = await routeFloor(context, world, 'posres_2');
+  const page = await context.newPage();
+  await login(page);
+
+  // The sale opens on the board; each tile has its tone.
+  const board = page.getByRole('region', { name: 'Bảng bàn' });
+  await expect(board).toBeVisible();
+  await expect(page).toHaveURL(/view=board/);
+  const tileOf = (name: string) => board.locator('.board-tile', { hasText: name });
+  await expect(tileOf('Bàn 1')).toHaveAttribute('data-tone', 'free');
+  await expect(tileOf('Bàn 2')).toHaveAttribute('data-tone', 'payment');
+  await expect(tileOf('Bàn 3')).toHaveAttribute('data-tone', 'serving');
+
+  // "Cần xử lý" keeps only the table asking for its bill.
+  await board.getByRole('button', { name: 'Cần xử lý 1', exact: true }).click();
+  await expect(board.locator('.board-tile[data-table-id]')).toHaveCount(1);
+  await expect(tileOf('Bàn 2')).toBeVisible();
+  await board.getByRole('button', { name: 'Tất cả 3', exact: true }).click();
+  await expect(board.locator('.board-tile[data-table-id]')).toHaveCount(3);
+
+  // A free table opens with its guests on its order.
+  await tileOf('Bàn 1').click();
+  const seat = page.getByRole('dialog', { name: 'Bàn 1' });
+  await seat.getByRole('button', { name: '3', exact: true }).click();
+  await seat.getByRole('button', { name: 'Mở bàn · 3 khách' }).click();
+  await expect(page).toHaveURL(/view=order/);
+  expect(opens).toEqual([expect.objectContaining({ guest_count: 3 })]);
+  const order = ticket(page);
+  await expect(order.locator('.ticket-header')).toContainText('Bàn 1');
+  await expect(order.locator('.ticket-header')).toContainText('3 khách');
+
+  // A plain dish adds in one tap; one with options waits for its required group.
+  const grid = page.getByRole('list', { name: 'Thực đơn' });
+  await grid.getByRole('button', { name: 'Bánh flan', exact: true }).click();
+  await expect(order.locator('.ticket-line')).toHaveCount(1);
+  await grid.getByRole('button', { name: 'Trà sữa', exact: true }).click();
+  const panel = page.getByRole('region', { name: 'Trà sữa' });
+  await expect(grid).toHaveCount(0);
+  await expect(panel.getByRole('button', { name: 'Chọn Đường để thêm' })).toBeDisabled();
+  await panel.getByRole('radio', { name: '50% đường' }).click();
+  await panel.getByRole('button', { name: 'Thêm vào đơn' }).click();
+  await expect(panel).toHaveCount(0);
+  await expect(order.locator('.ticket-line')).toHaveCount(2);
+
+  // "Gửi & ở lại" sends both and stays on the order.
+  await order.getByRole('button', { name: 'Gửi & ở lại', exact: true }).click();
+  await expect.poll(() => world.sheets.get('ws_posres_1')?.kitchenSends?.length).toBe(1);
+  await expect(page).toHaveURL(/view=order/);
+  await expect(grid).toBeVisible();
+
+  // By course: a dish held for the main course waits until it is called out.
+  await order.getByRole('button', { name: 'Course', exact: true }).click();
+  await expect(order.getByRole('region', { name: 'Không theo course' })).toBeVisible();
+  const hold = order.getByRole('button', { name: 'Giữ món', exact: true });
+  await hold.click();
+  await grid.getByRole('button', { name: 'Trà đào', exact: true }).click();
+  const main = order.getByRole('region', { name: 'Món chính · đang giữ' });
+  await expect(main.locator('.ticket-line')).toHaveCount(1);
+  await expect(order.getByRole('button', { name: /^Gửi bếp/ })).toHaveText('Gửi bếp (0)');
+  await main.getByRole('button', { name: 'Gọi món ra', exact: true }).click();
+  await expect(order.getByRole('region', { name: /^Món chính · đã gọi / })).toBeVisible();
+  expect(world.sheets.get('ws_posres_1')?.kitchenSends?.map((send) => send.items)).toEqual([2, 1]);
+  await hold.click();
+  await expect(hold).toHaveAttribute('aria-pressed', 'false');
+
+  // A reload stays on the order of the table.
+  await page.reload();
+  await expect(page).toHaveURL(/view=order/);
+  await expect(order.locator('.ticket-header')).toContainText('Bàn 1');
+  await expect(order.locator('.ticket-line')).toHaveCount(3);
+
+  // One more dish: "Gửi bếp (1)" sends it and goes back to the board.
+  await grid.getByRole('button', { name: 'Bánh flan', exact: true }).click();
+  await order.getByRole('button', { name: 'Gửi bếp (1)', exact: true }).click();
+  await expect(page).toHaveURL(/view=board/);
+  await expect.poll(() => world.sheets.get('ws_posres_1')?.kitchenSends?.length).toBe(3);
+  await expect(tileOf('Bàn 1')).toHaveAttribute('data-tone', 'serving');
 });

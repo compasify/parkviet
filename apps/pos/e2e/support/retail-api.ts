@@ -37,6 +37,7 @@ export type Family =
   | 'sale_line.edit'
   | 'sale_line.remove'
   | 'kitchen.send'
+  | 'course.fire'
   | 'item.modifiers'
   | 'trace'
   | 'park'
@@ -1242,6 +1243,7 @@ async function handle(world: World, route: Route) {
     if (/\/items\/append$/.test(path)) return 'items.append';
     if (/\/sale_lines\/[^/]+$/.test(path)) return method === 'DELETE' ? 'sale_line.remove' : 'sale_line.edit';
     if (/\/kitchen_sends$/.test(path)) return 'kitchen.send';
+    if (/\/courses\/\d+\/fire$/.test(path)) return 'course.fire';
     if (/\/items\/[^/]+\/modifiers$/.test(path)) return 'item.modifiers';
     if (/\/trace_allocations$/.test(path)) return 'trace';
     if (/\/(park|reopen)$/.test(path)) return 'park';
@@ -1537,6 +1539,27 @@ function run(world: World, family: Family, path: string, body: Record<string, un
       sheet.kitchenSends ??= [];
       const sequence = sheet.kitchenSends.length + 1;
       for (const line of pending) {
+        line.sent = line.quantity;
+        line.sequence ??= sequence;
+        line.version = (line.version ?? 0) + 1;
+      }
+      sheet.kitchenSends.push({ id: `posksend_${sequence}`, sequence, sent_at: '2026-11-11T05:00:00Z', items });
+      sheet.revision += 1;
+      return { status: 201, json: { data: serialize(world, sheet), meta: { tickets: [{ id: `poskticket_${sequence}` }], ticket_count: 1 } } };
+    }
+    // A held course is called out: its dishes are fired and go to the
+    // kitchen as one more send, as the server does; nothing held is refused.
+    case 'course.fire': {
+      if (!sheet?.table) break;
+      const course = Number(segments[5]);
+      const held = sheet.lines.filter((line) => line.course === course && line.courseStatus === 'held');
+      if (held.length === 0) return conflict('Nothing of this course is waiting.', 'course_not_held');
+      sheet.kitchenSends ??= [];
+      const sequence = sheet.kitchenSends.length + 1;
+      let items = 0;
+      for (const line of held) {
+        items += line.quantity - (line.sent ?? 0);
+        line.courseStatus = 'fired';
         line.sent = line.quantity;
         line.sequence ??= sequence;
         line.version = (line.version ?? 0) + 1;

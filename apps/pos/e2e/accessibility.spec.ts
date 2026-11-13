@@ -1,5 +1,15 @@
 import { expect, type Page, test } from '@playwright/test';
-import { addLine, addSheet, FEATURES, installRetailApi, login, newWorld, openTab } from './support/retail-api';
+import { teaMenu } from './support/menu-api';
+import {
+  addLine,
+  addSheet,
+  FEATURES,
+  FULL_CASHIER,
+  installRetailApi,
+  login,
+  newWorld,
+  openTab,
+} from './support/retail-api';
 
 // Targeted checks in place of an automated audit library (none is installed):
 // names for every control, keyboard-only use, focus kept inside dialogs, and
@@ -67,6 +77,52 @@ test('every control on the sale screen and the payment dialog has a name', async
   await expect(page.getByRole('dialog')).toBeVisible();
   expect(await unnamedControls(page, '[role="dialog"]')).toEqual([]);
   await page.keyboard.press('Escape');
+});
+
+test('every control on the table board, the order and the full-screen payment has a name', async ({ page }) => {
+  await page.setViewportSize({ width: 1366, height: 768 });
+  const world = newWorld({
+    capabilities: [...FULL_CASHIER, 'pos.table.serve'],
+    modules: { 'fnb.menu': true, resources: true, 'fnb.tables': true, 'fnb.kitchen': true },
+    profile: { key: 'nha_hang', version: 1, display: { surface: 'menu_grid' } },
+    menu: teaMenu(),
+    vietqr: true,
+  });
+  addLine(world, addSheet(world, 'ws_t1', { table: { id: 'posres_1', name: 'Bàn 1', label: null, guests: 2 } }), 'v_flan', 1);
+  await installRetailApi(page, world);
+  await page.route('**/api/v3/admin/pos/resource_board**', (route) =>
+    route.fulfill({
+      json: {
+        data: {
+          branch_id: 'br_1',
+          server_now: '2026-11-11T05:00:00Z',
+          areas: [],
+          resources: [
+            { id: 'posres_1', name: 'Bàn 1', state: 'occupied', guest_count: 2, seated_minutes: 3, subtotal: '15000.0',
+              currency: 'VND', orders: [{ id: 'ws_t1', total: '15000.0', guest_count: 2 }] },
+            { id: 'posres_2', name: 'Bàn 2', state: 'available', orders: [] },
+          ],
+        },
+      },
+    }),
+  );
+  await login(page);
+  const board = page.getByRole('region', { name: 'Bảng bàn' });
+  await expect(board.locator('.board-tile', { hasText: 'Bàn 1' })).toBeVisible();
+  expect(await unnamedControls(page)).toEqual([]);
+
+  await board.locator('.board-tile', { hasText: 'Bàn 1' }).click();
+  await expect(page.getByRole('list', { name: 'Thực đơn' })).toBeVisible();
+  expect(await unnamedControls(page)).toEqual([]);
+  await page.getByRole('list', { name: 'Thực đơn' }).getByRole('button', { name: 'Trà sữa', exact: true }).click();
+  await expect(page.getByRole('region', { name: 'Trà sữa' })).toBeVisible();
+  expect(await unnamedControls(page)).toEqual([]);
+  await page.getByRole('region', { name: 'Trà sữa' }).getByRole('button', { name: 'Thêm vào đơn' }).click();
+
+  await page.getByRole('complementary', { name: 'Phiếu bàn' }).getByRole('button', { name: /^Thanh toán/ }).click();
+  await page.getByRole('button', { name: 'Nhận quyền sửa', exact: true }).click();
+  await expect(page.locator('.pay-screen').getByRole('img', { name: 'Mã VietQR để quét bằng ứng dụng ngân hàng' })).toBeVisible();
+  expect(await unnamedControls(page, '.pay-screen')).toEqual([]);
 });
 
 test('keyboard only: skip link to the search, payment dialog keeps focus inside and returns it', async ({ page }) => {
