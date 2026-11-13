@@ -23,7 +23,7 @@ const FAVORITE_KEYS = 9;
 // How long a favourite key waits for a following key that would make it part of a scan.
 const SCAN_GAP_MS = 150;
 
-function typingTarget(target: EventTarget | null) {
+export function typingTarget(target: EventTarget | null) {
   return (
     target instanceof HTMLElement &&
     (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
@@ -32,7 +32,7 @@ function typingTarget(target: EventTarget | null) {
 
 // Line editors keep their popup inside a closed <details>, so only a popup
 // outside a closed <details> counts as open.
-function popupOpen() {
+export function popupOpen() {
   return Array.from(document.querySelectorAll('.pos-popup-backdrop')).some(
     (node) => !node.closest('details:not([open])'),
   );

@@ -1,7 +1,7 @@
 ---
 phase: 2
 title: "Server: lượt gửi bếp trên dòng món, ngưỡng ngồi lâu"
-status: pending
+status: completed
 effort: "1,5 ngày"
 dependsOn: []
 ---

@@ -1,7 +1,7 @@
 import { formatMoney } from '@parkviet/pos-shared/money';
 import { contextFeature } from '@parkviet/pos-shared/pos-features';
 import { rateLabel } from '@parkviet/pos-shared/receipt-template/data';
-import { useRef } from 'react';
+import { type ReactNode, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSellingWorkspace } from '../hooks/use-selling-workspace';
 import { commandQueue } from '../lib/command-queue';
@@ -43,7 +43,23 @@ import { TableFloor } from './table-floor';
 import { VehicleVisitBar } from './vehicle-visit-bar';
 import { VoidItemDialog } from './void-item-dialog';
 
+export type SellingWorkspace = ReturnType<typeof useSellingWorkspace>;
+
 export function WorkspaceTabs() {
+  return <WorkspaceTabsView selling={useSellingWorkspace()} />;
+}
+
+// The counter layout over selling state owned by the caller. A layout that
+// sells from its own menu passes it as `catalog` and names itself in `className`.
+export function WorkspaceTabsView({
+  selling,
+  catalog,
+  className,
+}: {
+  selling: SellingWorkspace;
+  catalog?: ReactNode;
+  className?: string;
+}) {
   const { t } = useTranslation();
   const {
     data,
@@ -130,13 +146,16 @@ export function WorkspaceTabs() {
     setPlacement,
     tableAddExtra,
     enqueueScan,
-  } = useSellingWorkspace();
+  } = selling;
   const discountDetailsRef = useRef<HTMLDetailsElement>(null);
   const noteDetailsRef = useRef<HTMLDetailsElement>(null);
   const deliveryDetailsRef = useRef<HTMLDetailsElement>(null);
 
   return (
-    <section className="draft-workspace" aria-label={t('draftList')}>
+    <section
+      className={className ? `draft-workspace ${className}` : 'draft-workspace'}
+      aria-label={t('draftList')}
+    >
       <div className="draft-toolbar">
         {tabSurface ? (
           <button
@@ -561,7 +580,9 @@ export function WorkspaceTabs() {
                   }}
                 />
               ) : null}
-              {menuSurface ? (
+              {catalog ? (
+                catalog
+              ) : menuSurface ? (
                 <MenuGrid
                   key={`${storeId}:${selection.branchId}`}
                   branchId={selection.branchId}

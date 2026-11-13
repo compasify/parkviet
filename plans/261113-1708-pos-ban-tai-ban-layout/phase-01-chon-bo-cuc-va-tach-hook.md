@@ -1,7 +1,7 @@
 ---
 phase: 1
 title: "Chọn bố cục và tách hook bán hàng"
-status: pending
+status: completed
 effort: "2,5 ngày"
 dependsOn: []
 ---

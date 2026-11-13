@@ -1,7 +1,7 @@
 ---
 phase: 4
 title: "Màn gọi món: rail, lưới món, panel tùy chọn"
-status: pending
+status: completed
 effort: "2 ngày"
 dependsOn: [1]
 ---

@@ -956,3 +956,59 @@ kbd { padding: var(--pos-s1); border: 1px solid var(--pos-border); border-radius
 .offline-review-card h3 small { color: var(--pos-muted); font-weight: 400; }
 .offline-review-actions, .offline-review-reject { display: flex; flex-wrap: wrap; gap: var(--pos-s3); align-items: end; }
 @media (max-width: 767px) { .offline-sale-body { grid-template-columns: 1fr; } }.offline-sale-heading { margin: 0; font-size: var(--pos-page-title); }
+/* Table service: the order frame puts the menu (category rail, text tiles or
+   one dish's options) beside a fixed order column. */
+@media (min-width: 701px) {
+  .pos-sale .table-service .sale-layout { grid-template-columns: minmax(0,1fr) clamp(320px,32vw,410px); grid-template-rows: minmax(0,1.1fr) minmax(0,.9fr); grid-template-areas: 'catalog basket' 'catalog checkout'; }
+}
+.pos-sale .table-service .catalog-panel { display: flex; flex-direction: column; overflow: hidden; }
+.table-service .order-menu { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.table-service .order-menu-notice { margin: var(--pos-s2); }
+.table-service .order-menu-body { flex: 1; min-height: 0; display: flex; }
+.table-service .category-rail { width: 116px; flex: none; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: var(--pos-s1); padding: var(--pos-s2) 6px; border-right: 1px solid var(--pos-border); background: var(--pos-surface); }
+.pos-layout .table-service .category-rail button { display: block; flex: none; width: 100%; min-height: 56px; text-align: left; padding: 6px var(--pos-s2); border: 0; border-left: 5px solid var(--pos-border); border-radius: var(--pos-radius); background: var(--pos-tint); font-size: .8125rem; line-height: 1.2; font-weight: 700; }
+.pos-layout .table-service .category-rail button small { display: block; font-weight: 500; font-size: .6875rem; }
+.pos-layout .table-service .category-rail button[aria-pressed="true"] { background: var(--pos-ink); color: var(--pos-surface); }
+.pos-layout .table-service .category-rail button[aria-pressed="true"] small { color: var(--pos-border); }
+.table-service .category-rail-name { overflow-wrap: anywhere; }
+.table-service .menu-item-area { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--pos-bg); }
+.table-service .menu-item-area > p { margin: var(--pos-s2) var(--pos-s3) 0; }
+.table-service .menu-item-top { display: flex; align-items: center; gap: var(--pos-s2); padding: 10px var(--pos-s3); background: var(--pos-surface); border-bottom: 1px solid var(--pos-border); }
+.pos-layout .table-service .menu-item-search input { min-height: var(--pos-target); height: var(--pos-target); border-radius: 999px; background: var(--pos-tint); padding-right: 40px; }
+.table-service .menu-item-search kbd { position: absolute; right: var(--pos-s3); top: 50%; transform: translateY(-50%); padding: 0 5px; background: var(--pos-surface); pointer-events: none; }
+.pos-layout .table-service .menu-density { display: flex; flex: none; margin: 0; padding: 0; border: 1px solid var(--pos-border); border-radius: 999px; overflow: hidden; background: var(--pos-surface); }
+.pos-layout .table-service .menu-density button { border: 0; border-radius: 0; padding: 0 var(--pos-s3); font-size: var(--pos-small); font-weight: 500; }
+.pos-layout .table-service .menu-density button[aria-pressed="true"] { background: var(--pos-selected); color: var(--pos-blue); font-weight: 700; }
+.table-service .menu-items { --tile-w: 138px; --tile-h: 92px; flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; list-style: none; margin: 0; padding: 14px var(--pos-s3); display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--tile-w), 1fr)); gap: 10px; align-content: start; }
+.table-service .menu-items[data-density="airy"] { --tile-w: 170px; --tile-h: 110px; }
+.table-service .menu-items[data-density="dense"] { --tile-w: 120px; --tile-h: 80px; }
+.table-service .menu-item { position: relative; display: flex; flex-direction: column; min-width: 0; background: var(--pos-surface); border: 1px solid var(--pos-border); border-top: 5px solid var(--pos-border); border-radius: 10px; }
+.pos-layout .table-service .menu-item-pick { position: relative; display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 0; width: 100%; height: var(--tile-h); min-height: 80px; padding: 9px 10px; border: 0; border-radius: 0 0 9px 9px; background: transparent; text-align: left; }
+.table-service .menu-item-name { font-size: .9375rem; font-weight: 700; line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.table-service .menu-items[data-density="dense"] .menu-item-name { font-size: .8125rem; }
+.table-service .menu-item-price { margin-top: auto; font-weight: 800; color: var(--pos-blue); font-variant-numeric: tabular-nums; }
+.pos-layout .table-service .menu-item-options { position: absolute; right: var(--pos-s2); bottom: var(--pos-s2); font-size: .6875rem; }
+.table-service .menu-item-quantity { position: absolute; top: -8px; right: -6px; z-index: 1; min-width: 26px; height: 26px; padding: 0 6px; display: flex; align-items: center; justify-content: center; border-radius: 13px; border: 2px solid var(--pos-surface); background: var(--pos-blue); color: var(--pos-surface); font-weight: 800; font-size: .8125rem; pointer-events: none; }
+.table-service .menu-item[data-sold-out="true"] .menu-item-pick { opacity: .45; background: repeating-linear-gradient(-45deg, var(--pos-surface) 0 8px, var(--pos-bg) 8px 16px); }
+.table-service .menu-item[data-sold-out="true"] .menu-item-price { color: var(--pos-danger); }
+.pos-layout .table-service .menu-item-sold-out-toggle { border: 0; border-top: 1px solid var(--pos-border); border-radius: 0 0 9px 9px; font-size: var(--pos-small); font-weight: 500; }
+.table-service .modifier-panel { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--pos-surface); }
+.table-service .modifier-panel-header { display: flex; align-items: center; gap: var(--pos-s3); padding: var(--pos-s3) var(--pos-s4); border-bottom: 1px solid var(--pos-border); }
+.pos-layout .table-service .modifier-panel-header h3 { margin: 0; font-size: 1.25rem; }
+.pos-layout .table-service .modifier-panel-back { width: var(--pos-target); padding: 0; flex: none; }
+.pos-layout .table-service .modifier-form-panel { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 0; margin: 0; }
+.table-service .modifier-form-fields { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: grid; gap: var(--pos-s2); align-content: start; padding: var(--pos-s1) var(--pos-s4) var(--pos-s3); }
+.table-service .modifier-panel .modifier-group { border: 0; border-bottom: 1px solid var(--pos-bg); border-radius: 0; padding: 10px 0; }
+.table-service .modifier-panel .modifier-group legend { float: left; width: 100%; margin-bottom: var(--pos-s2); font-weight: 800; align-items: center; }
+.table-service .modifier-panel .modifier-group legend + * { clear: both; }
+.table-service .modifier-panel .modifier-required { border-radius: 999px; padding: 1px var(--pos-s2); font-weight: 700; background: #fff0ee; }
+.table-service .modifier-panel .modifier-required[data-met="true"] { color: var(--pos-success); background: color-mix(in srgb, var(--pos-success) 12%, var(--pos-surface)); }
+.table-service .modifier-panel label.modifier-option, .pos-layout .table-service .modifier-panel button.modifier-option { position: relative; min-width: 96px; min-height: 48px; flex-direction: column; justify-content: center; gap: 0; padding: 0 var(--pos-s3); border: 2px solid var(--pos-border); border-radius: 10px; font-weight: 700; line-height: 1.15; text-align: center; }
+.table-service .modifier-panel label.modifier-option input { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 0; margin: 0; opacity: 0; cursor: pointer; }
+.table-service .modifier-panel label.modifier-option:has(input:focus-visible) { outline: 3px solid #e6a427; outline-offset: 2px; }
+.table-service .modifier-panel .modifier-option[data-picked="true"] { border-color: var(--pos-blue); background: var(--pos-selected); color: var(--pos-blue); }
+.table-service .modifier-panel .modifier-option small { font-weight: 500; }
+.table-service .modifier-panel .modifier-sheet-footer { position: static; flex-wrap: wrap; gap: var(--pos-s3); padding: var(--pos-s3) var(--pos-s4); border-top: 1px solid var(--pos-border); background: var(--pos-tint); }
+.table-service .modifier-placement { margin-right: auto; min-width: 0; }
+.pos-layout .table-service .modifier-panel .modifier-sheet-footer button[type="submit"] { min-height: 56px; min-width: 220px; font-size: 1rem; background: var(--pos-blue); color: var(--pos-surface); border-color: var(--pos-blue); }
+.pos-layout .table-service .modifier-panel .modifier-sheet-footer button[type="submit"]:not(:disabled):hover { background: var(--pos-blue-hover); color: var(--pos-surface); }
