@@ -29,16 +29,47 @@ function isUnanswered(error: unknown) {
 
 export type SessionStatus = 'anonymous' | 'authenticated';
 
+export type StoreChoice = { id: string; name: string; code: string; default?: boolean };
+
 export type SessionSnapshot = {
   status: SessionStatus;
   generation: number;
   email: string;
   name: string;
+  // Stores the cashier holds a role in. storeId is the one this tab sells
+  // for; null while the cashier still has to pick among several.
+  stores: StoreChoice[];
+  storeId: string | null;
 };
 
 export type SessionMessage = { type: typeof SESSION_MESSAGE; event: 'cleared' | 'refreshed' };
 
-type StaffIdentity = { user: { email: string; full_name?: string | null } };
+type StaffIdentity = {
+  user: { email: string; full_name?: string | null; stores?: StoreChoice[] | null };
+};
+
+type StoreMemory = {
+  read: () => string | null;
+  write: (storeId: string) => void;
+};
+
+// The remembered store wins while the cashier still works there; a single
+// store needs no choice; otherwise the default store, which is listed only
+// when the cashier holds a role in it. Without any store the API keeps its
+// default store and its own role check.
+export function chooseStore(stores: StoreChoice[], remembered: string | null) {
+  if (remembered && stores.some((store) => store.id === remembered)) return remembered;
+  if (stores.length === 1) return stores[0]?.id ?? null;
+  return stores.find((store) => store.default)?.id ?? null;
+}
+
+export function needsStoreChoice(snapshot: SessionSnapshot) {
+  return snapshot.status === 'authenticated' && !snapshot.storeId && snapshot.stores.length > 1;
+}
+
+function anonymous(generation: number): SessionSnapshot {
+  return { status: 'anonymous', generation, email: '', name: '', stores: [], storeId: null };
+}
 
 type PosApi = {
   auth: {
@@ -47,6 +78,7 @@ type PosApi = {
     refresh: () => Promise<{ token: string }>;
   };
   setToken: (token: string) => void;
+  setStore: (storeId: string) => void;
   me: { get: () => Promise<StaffIdentity> };
   request: <T>(
     method: string,
@@ -79,13 +111,14 @@ export function createSessionCoordinator(options: {
   createClient?: () => PosApi;
   channel?: SessionChannel | null;
   lock?: RefreshLock;
+  storeMemory?: StoreMemory | null;
   onCleared?: (explicitLogout: boolean) => void;
 }) {
   const createClient =
     options.createClient ?? (() => createAdminClient({ baseUrl: options.origin }) as PosApi);
   let generation = 0;
   let client = createClient();
-  let snapshot: SessionSnapshot = { status: 'anonymous', generation: 0, email: '', name: '' };
+  let snapshot: SessionSnapshot = anonymous(0);
   let refreshFlight: Promise<string> | null = null;
   let accessToken: { value: string; usableUntil: number } | null = null;
   const listeners = new Set<() => void>();
@@ -118,8 +151,24 @@ export function createSessionCoordinator(options: {
     generation = nextGeneration;
     replaceClient();
     refreshFlight = null;
-    publish({ status: 'anonymous', generation, email: '', name: '' });
+    publish(anonymous(generation));
     options.onCleared?.(explicitLogout);
+  }
+
+  // Runs before anything else talks to the POS API, so no request of this
+  // session reaches the API's default store by mistake.
+  function signedIn(active: PosApi, identity: StaffIdentity, started: number) {
+    const stores = identity.user.stores ?? [];
+    const storeId = chooseStore(stores, options.storeMemory?.read() ?? null);
+    if (storeId) active.setStore(storeId);
+    publish({
+      status: 'authenticated',
+      generation: started,
+      email: identity.user.email,
+      name: identity.user.full_name || identity.user.email,
+      stores,
+      storeId,
+    });
   }
 
   async function withRefreshLock<T>(run: () => Promise<T>) {
@@ -210,8 +259,7 @@ export function createSessionCoordinator(options: {
         bindUnauthorized(active, started);
         const identity = await active.me.get();
         if (started !== generation) throw new SessionSuperseded();
-        const name = identity.user.full_name || identity.user.email;
-        publish({ status: 'authenticated', generation: started, email: identity.user.email, name });
+        signedIn(active, identity, started);
         return identity;
       } catch (error) {
         if (started === generation) replaceClient();
@@ -238,22 +286,32 @@ export function createSessionCoordinator(options: {
         bindUnauthorized(active, started);
         const identity = await active.me.get();
         if (started !== generation) throw new SessionSuperseded();
-        publish({
-          status: 'authenticated',
-          generation: started,
-          email: identity.user.email,
-          name: identity.user.full_name || identity.user.email,
-        });
+        signedIn(active, identity, started);
       } catch (error) {
         if (started === generation) {
           // Preserve scoped unsent intentions when startup cannot reach the server.
           generation += 1;
           replaceClient();
           refreshFlight = null;
-          publish({ status: 'anonymous', generation, email: '', name: '' });
+          publish(anonymous(generation));
         }
         if (error instanceof SessionSuperseded) throw error;
       }
+    },
+    // A new generation and client: answers still on their way for the
+    // previous store are dropped instead of landing in this one.
+    selectStore(storeId: string) {
+      if (snapshot.status !== 'authenticated' || !snapshot.stores.some((s) => s.id === storeId))
+        throw new Error('unknown-store');
+      options.storeMemory?.write(storeId);
+      if (storeId === snapshot.storeId) return;
+      const token = accessToken?.value ?? null;
+      generation += 1;
+      replaceClient();
+      if (token) applyToken(client, token);
+      client.setStore(storeId);
+      bindUnauthorized(client, generation);
+      publish({ ...snapshot, generation, storeId });
     },
     async resume() {
       if (snapshot.status !== 'authenticated') return;

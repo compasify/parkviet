@@ -58,6 +58,26 @@ RSpec.describe 'Opening another store', type: :request do
     expect(response).to have_http_status(:forbidden)
   end
 
+  it 'marks the default store among the stores the user works in' do
+    restaurant = create(:store, name: 'Nhà hàng', default: false)
+    restaurant.add_user(owner)
+
+    get '/api/v3/admin/me', headers: headers_for(owner, restaurant), as: :json
+
+    expect(response).to have_http_status(:ok)
+    flags = response.parsed_body.dig('user', 'stores').to_h { |entry| [entry['id'], entry['default']] }
+    expect(flags).to eq(store.prefixed_id => true, restaurant.prefixed_id => false)
+  end
+
+  it 'offers no default store to a user without a role in it' do
+    restaurant = create(:store, name: 'Nhà hàng', default: false)
+    cook = create(:admin_user, :without_admin_role, password: password).tap { |user| restaurant.add_user(user) }
+
+    get '/api/v3/admin/me', headers: headers_for(cook, restaurant), as: :json
+
+    expect(response.parsed_body.dig('user', 'stores')).to contain_exactly(include('id' => restaurant.prefixed_id, 'default' => false))
+  end
+
   it 'reports an unknown country on its field' do
     post '/api/v3/admin/stores', headers: headers_for(owner), params: { name: 'Nhà hàng', country_code: 'XX' }, as: :json
 

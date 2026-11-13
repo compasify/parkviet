@@ -207,6 +207,20 @@ function ShellFrame() {
     }
   }
 
+  // Pending work keeps its store-scoped recovery keys and is checked again
+  // when the cashier comes back to that store.
+  function changeStore() {
+    if (
+      (commandQueue.hasPending() ||
+        hasPendingIntents() ||
+        hasUncertainIntents() ||
+        financialUncertain) &&
+      !window.confirm(t('storeSwitchUnsent'))
+    )
+      return;
+    void navigate({ to: '/store' });
+  }
+
   async function checkIntents(staffId: string, storeId: string) {
     setCheckingIntents(true);
     setRecoveryCheck(null);
@@ -326,6 +340,11 @@ function ShellFrame() {
               <p>
                 {t('storeLine', { name: store.name || store.id, currency: store.currency || '—' })}
               </p>
+            ) : null}
+            {snapshot.stores.length > 1 ? (
+              <button type="button" className="button-link" disabled={busy} onClick={changeStore}>
+                {t('changeStore')}
+              </button>
             ) : null}
           </div>
         </details>

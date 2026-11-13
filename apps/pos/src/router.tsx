@@ -7,6 +7,7 @@ import {
 } from '@tanstack/react-router';
 import { PosShell } from './components/pos-shell';
 import { session } from './lib/app-session';
+import { needsStoreChoice } from './lib/session-coordinator';
 import { BottleKeepsPage } from './pages/bottle-keeps';
 import { CollectPage } from './pages/collect';
 import { CustomerDisplayPage } from './pages/customer-display';
@@ -19,6 +20,7 @@ import { ReservationsPage } from './pages/reservations';
 import { ReturnExchangePage } from './pages/return-exchange';
 import { SalePage } from './pages/sale';
 import { ShiftsPage } from './pages/shifts';
+import { StorePickerPage } from './pages/store-picker';
 import { StoredValuePage } from './pages/stored-value';
 import { TipsPage } from './pages/tips';
 import { VehicleVisitsPage } from './pages/vehicle-visits';
@@ -42,8 +44,20 @@ const authedRoute = createRoute({
   beforeLoad: async () => {
     if (session.getSnapshot().status !== 'authenticated') await session.restore();
     if (session.getSnapshot().status !== 'authenticated') throw redirect({ to: '/login' });
+    if (needsStoreChoice(session.getSnapshot())) throw redirect({ to: '/store' });
   },
   component: PosShell,
+});
+
+// A cashier working in several stores picks the one this tab sells for.
+const storeRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/store',
+  beforeLoad: async () => {
+    if (session.getSnapshot().status !== 'authenticated') await session.restore();
+    if (session.getSnapshot().status !== 'authenticated') throw redirect({ to: '/login' });
+  },
+  component: StorePickerPage,
 });
 
 const saleRoute = createRoute({
@@ -170,6 +184,7 @@ const customerDisplayRoute = createRoute({
 export const router = createRouter({
   routeTree: rootRoute.addChildren([
     loginRoute,
+    storeRoute,
     customerDisplayRoute,
     offlineSaleRoute,
     authedRoute.addChildren([

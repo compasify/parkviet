@@ -26,6 +26,19 @@
 .login-split .checkout-submit { box-shadow: 0 8px 20px #07569a33; }
 .login-split .auth-help { max-width: none; margin-top: var(--pos-s6); padding-top: var(--pos-s5); border-top: 1px solid var(--pos-border); text-align: left; }
 
+/* Store picker: the sign-in column alone, one button per store */
+.login-split.store-picker { grid-template-columns: minmax(0, 1fr); }
+.store-choices { display: grid; gap: var(--pos-s2); margin: var(--pos-s5) 0 0; padding: 0; list-style: none; }
+.login-split .store-choice {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--pos-s3); width: 100%;
+  min-height: var(--pos-target); padding: var(--pos-s3) var(--pos-s4); border: 1px solid var(--pos-border);
+  border-radius: 10px; background: var(--pos-surface); color: var(--pos-ink); font-weight: 600; text-align: left;
+}
+.login-split .store-choice svg { transform: rotate(-90deg); }
+.login-split .store-choice:hover, .login-split .store-choice:focus-visible { border-color: var(--pos-blue); }
+.login-split .store-choice[aria-current] { border-color: var(--pos-blue); background: var(--pos-selected); }
+.login-split .store-choice small { color: var(--pos-blue); }
+
 /* Showcase column */
 .login-showcase { min-width: 0; min-height: 0; overflow-y: auto; scroll-behavior: smooth; background: var(--pos-tint); container-type: inline-size; }
 .login-hero {

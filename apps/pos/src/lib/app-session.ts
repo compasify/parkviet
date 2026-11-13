@@ -10,9 +10,27 @@ import {
 import { clearIntents } from './uncertain-intents';
 import { clearLayout } from './workspace-storage';
 
+const STORE_KEY = 'parkviet-pos-store';
+
 export const session = createSessionCoordinator({
   origin: window.location.origin,
   channel: browserSessionChannel(),
+  storeMemory: {
+    read: () => {
+      try {
+        return window.localStorage.getItem(STORE_KEY);
+      } catch {
+        return null;
+      }
+    },
+    write: (storeId) => {
+      try {
+        window.localStorage.setItem(STORE_KEY, storeId);
+      } catch {
+        // Private mode: the cashier picks again next time.
+      }
+    },
+  },
   onCleared: (explicitLogout) => {
     queryClient.clear();
     clearLayout();

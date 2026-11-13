@@ -1,8 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  chooseStore,
   createSessionCoordinator,
+  needsStoreChoice,
   type SessionMessage,
   SessionSuperseded,
+  type StoreChoice,
 } from './session-coordinator';
 
 const sdk = vi.hoisted(() => ({ create: vi.fn() }));
@@ -16,6 +19,7 @@ function client() {
       refresh: vi.fn().mockResolvedValue({ token: 'rotated' }),
     },
     setToken: vi.fn(),
+    setStore: vi.fn(),
     me: {
       get: vi.fn().mockResolvedValue({ user: { email: 'staff@example.test', full_name: 'Lan' } }),
     },
@@ -326,5 +330,123 @@ describe('phiên nhân viên', () => {
       status: 'authenticated',
       email: 'staff@example.test',
     });
+  });
+});
+
+describe('cửa hàng của phiên', () => {
+  const retail = { id: 'st_retail', name: 'Bán lẻ', code: 'retail' };
+  const restaurant = { id: 'st_food', name: 'Nhà hàng', code: 'food' };
+
+  function staffOf(api: ReturnType<typeof client>, stores: StoreChoice[]) {
+    api.me.get.mockResolvedValue({
+      user: { email: 'staff@example.test', full_name: 'Lan', stores },
+    });
+    return api;
+  }
+
+  function remembering(initial: string | null) {
+    let value = initial;
+    return {
+      read: () => value,
+      write: vi.fn((storeId: string) => {
+        value = storeId;
+      }),
+    };
+  }
+
+  it('sells for the only store without asking', async () => {
+    const api = staffOf(client(), [restaurant]);
+    sdk.create.mockReturnValue(api);
+    const session = createSessionCoordinator({ origin: 'http://localhost' });
+    await session.login('staff@example.test', 'password');
+    expect(api.setStore).toHaveBeenCalledWith('st_food');
+    expect(session.getSnapshot().storeId).toBe('st_food');
+    expect(needsStoreChoice(session.getSnapshot())).toBe(false);
+  });
+
+  it('asks a cashier of several stores which one to sell for', async () => {
+    const api = staffOf(client(), [retail, restaurant]);
+    sdk.create.mockReturnValue(api);
+    const session = createSessionCoordinator({ origin: 'http://localhost' });
+    await session.login('staff@example.test', 'password');
+    expect(api.setStore).not.toHaveBeenCalled();
+    expect(needsStoreChoice(session.getSnapshot())).toBe(true);
+  });
+
+  it('reopens the remembered store after a reload', async () => {
+    const api = staffOf(client(), [retail, restaurant]);
+    sdk.create.mockReturnValue(api);
+    const session = createSessionCoordinator({
+      origin: 'http://localhost',
+      storeMemory: remembering('st_food'),
+    });
+    await session.restore();
+    expect(api.setStore).toHaveBeenCalledWith('st_food');
+    expect(session.getSnapshot().storeId).toBe('st_food');
+  });
+
+  it('ignores a remembered store the cashier no longer works in', () => {
+    expect(chooseStore([retail, restaurant], 'st_gone')).toBeNull();
+    expect(chooseStore([], 'st_gone')).toBeNull();
+  });
+
+  it('falls back to the default store only when the cashier works there', () => {
+    const main = { ...retail, default: true };
+    expect(chooseStore([main, restaurant], null)).toBe('st_retail');
+    expect(chooseStore([main, restaurant], 'st_food')).toBe('st_food');
+    expect(
+      chooseStore(
+        [
+          { ...restaurant, default: false },
+          { ...retail, id: 'st_bar' },
+        ],
+        null,
+      ),
+    ).toBeNull();
+  });
+
+  it('opens the default store without asking a cashier of several stores', async () => {
+    const api = staffOf(client(), [{ ...retail, default: true }, restaurant]);
+    sdk.create.mockReturnValue(api);
+    const session = createSessionCoordinator({ origin: 'http://localhost' });
+    await session.login('staff@example.test', 'password');
+    expect(api.setStore).toHaveBeenCalledWith('st_retail');
+    expect(needsStoreChoice(session.getSnapshot())).toBe(false);
+  });
+
+  it('switches store on a fresh client and drops answers for the previous one', async () => {
+    const first = staffOf(client(), [retail, restaurant]);
+    const next = staffOf(client(), [retail, restaurant]);
+    sdk.create.mockReturnValueOnce(first).mockReturnValue(next);
+    const memory = remembering(null);
+    const session = createSessionCoordinator({ origin: 'http://localhost', storeMemory: memory });
+    await session.login('staff@example.test', 'password');
+    let answer: (value: unknown) => void = () => undefined;
+    first.request.mockReturnValue(
+      new Promise((resolve) => {
+        answer = resolve;
+      }),
+    );
+    const late = session.request('GET', '/pos/context');
+    const before = session.getSnapshot().generation;
+
+    session.selectStore('st_food');
+    answer({});
+
+    await expect(late).rejects.toBeInstanceOf(SessionSuperseded);
+    expect(next.setToken).toHaveBeenCalledWith('access');
+    expect(next.setStore).toHaveBeenCalledWith('st_food');
+    expect(next.onUnauthorized).toHaveBeenCalledOnce();
+    expect(memory.write).toHaveBeenCalledWith('st_food');
+    expect(session.getSnapshot()).toMatchObject({ storeId: 'st_food', status: 'authenticated' });
+    expect(session.getSnapshot().generation).toBeGreaterThan(before);
+  });
+
+  it('refuses a store the cashier has no role in', async () => {
+    const api = staffOf(client(), [retail, restaurant]);
+    sdk.create.mockReturnValue(api);
+    const session = createSessionCoordinator({ origin: 'http://localhost' });
+    await session.login('staff@example.test', 'password');
+    expect(() => session.selectStore('st_other')).toThrow('unknown-store');
   });
 });
