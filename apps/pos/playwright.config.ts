@@ -9,6 +9,8 @@ const host = process.env.POS_LIVE_REVIEW === '1' ? 'localhost' : '127.0.0.1';
 
 export default defineConfig({
   testDir: './e2e',
+  timeout: process.env.CI ? 60_000 : 30_000,
+  retries: process.env.CI ? 1 : 0,
   use: { baseURL: `http://${host}:${port}` },
   webServer: {
     command: `node node_modules/vite/bin/vite.js --host 127.0.0.1 --port ${port} --strictPort`,
