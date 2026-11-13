@@ -72,7 +72,7 @@ Hiện có **19 ngành** chia làm hai nhóm.
 | Karaoke, Bida | Tính tiền theo giờ, tạm dừng giờ, thẻ phút, khuyến mãi theo khung giờ, gửi chai |
 | Căng tin & Trạm dừng nghỉ | Số gọi, suất ăn và ví cho nhân viên hoặc đơn vị bao ăn, hoa hồng cho tài xế xe khách |
 
-Mọi ngành ăn uống đều dùng chung thực đơn có tùy chọn (đường, đá, topping…), giá theo khung giờ, màn bếp hoặc máy in bếp theo từng khu, gọi món bằng QR tại bàn, kiosk tự gọi món, app chủ quán và hàng đợi bán tiền mặt khi mất mạng. Xem thêm [Bán tại bàn và trả tiền sau](docs/pos/fnb-ban-va-tra-sau.md).
+Mọi ngành ăn uống đều dùng chung thực đơn có tùy chọn (đường, đá, topping…), giá theo khung giờ, màn bếp hoặc máy in bếp theo từng khu, gọi món bằng QR tại bàn, kiosk tự gọi món, app chủ quán và hàng đợi bán tiền mặt khi mất mạng. Xem thêm [Quầy nhanh cho cafe và trà sữa](docs/pos/fnb-quay-nhanh.md) và [Bán tại bàn và trả tiền sau](docs/pos/fnb-ban-va-tra-sau.md).
 
 ## POS làm được gì?
 

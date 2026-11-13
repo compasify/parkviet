@@ -1,9 +1,9 @@
 ---
 title: "Màn bán riêng cho phục vụ tại bàn"
 description: "Tách màn bán của chi nhánh có bàn khỏi màn bán lẻ: bảng bàn làm màn đầu, màn gọi món hai vùng có phiếu bên phải, tùy chọn món thay chỗ lưới món, thanh toán toàn màn."
-status: completed
+status: in-progress
 priority: P1
-effort: "~13 ngày công"
+effort: "~16,5 ngày công"
 branch: "v2"
 tags: [feature, frontend, backend, fnb, pos]
 blockedBy: []
@@ -70,8 +70,15 @@ Thu ngân ở chi nhánh có bàn mở POS là thấy bảng bàn toàn màn. Ch
 | 5 | [Phiếu bàn](./phase-05-phieu-ban.md) | 2,5 ngày | 2, 4 | xong |
 | 6 | [Thanh toán toàn màn](./phase-06-thanh-toan-toan-man.md) | 1,5 ngày | 5 | xong |
 | 7 | [E2E, tài liệu và rà soát](./phase-07-e2e-tai-lieu-ra-soat.md) | 1 ngày | 3–6 | xong |
+| 8 | [Server tự hủy mã VietQR quá hạn](./phase-08-het-han-ma-vietqr.md) | 1 ngày | 6 | chưa làm |
+| 9 | [Đơn mang về và giao đi trên bảng bàn](./phase-09-don-mang-ve-giao-di.md) | 1 ngày | 3 | chưa làm |
+| 10 | [Sửa số khách của bàn đang mở](./phase-10-sua-so-khach.md) | 0,5 ngày | 5 | chưa làm |
+| 11 | [Biểu tượng lỗi in bếp trên ô bàn](./phase-11-loi-in-bep-tren-o-ban.md) | 0,5 ngày | 3 | chưa làm |
+| 12 | [Ghi chú nhanh do chi nhánh đặt](./phase-12-ghi-chu-nhanh-theo-chi-nhanh.md) | 0,5 ngày | 4 | chưa làm |
 
 Phase 1 và 2 độc lập, chạy song song được. Phase 3 và 4 độc lập sau phase 1 (phase 3 cần thêm trường của phase 2).
+
+Phase 8–12 là việc còn lại sau khi bố cục chạy cho quán ăn, độc lập với nhau. Phase 9, 10, 11 cùng sửa `table-service-layout.spec.ts` và locale POS nên làm lần lượt; phase 8 và 12 chạm server khác chỗ. Thứ tự đề xuất: 8 (lỗi khóa đơn), 9 (không quay lại được đơn mang về), 10, 11, 12.
 
 ## Tiêu chí nghiệm thu
 
@@ -102,7 +109,6 @@ Trả lời của chủ quán (13/11/2026): (1) đúng, quán ăn có bàn mở 
 
 ## Việc còn lại sau plan
 
-- Server chưa có hạn cho mã VietQR đang chờ: tắt tab hoặc mất mạng khi đang ở màn thanh toán để lại mã treo, khóa thêm món tới khi có người bấm "← Đơn".
-- Ô "Mang về" / "Giao đi" tạo đơn nháp mới mỗi lần chạm, kể cả khi còn đơn trống.
-- Ghi chú nhanh cố định trong locale; chip số khách chỉ xem (chưa có API sửa); chưa có biểu tượng lỗi in bếp và bàn gộp trên ô bàn.
+Năm việc ghi lại khi đóng plan lần đầu đã thành phase 8–12, trừ biểu tượng **bàn gộp**: gộp bàn hủy đơn nguồn và trả bàn nguồn về trống, không có trạng thái bàn ghép để vẽ (xem phase 11).
+
 - Rà soát mã: [code-reviewer-261113-1901-table-service-layout-review.md](../reports/code-reviewer-261113-1901-table-service-layout-review.md).
