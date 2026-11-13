@@ -857,7 +857,16 @@ export function PaymentPanel({
   const held =
     heldAttempts.length > 0 && !evidenceOpen ? (
       <div className="payment-held" role="status">
-        <p>{t('paymentHeldHint')}</p>
+        <p>
+          {t('paymentHeldHint', {
+            items: heldAttempts
+              .map(
+                (attempt) =>
+                  `${methodLabel(attempt)} ${formatMoney(attempt.amount, attempt.currency)}`,
+              )
+              .join(', '),
+          })}
+        </p>
         <button
           ref={resumeButton}
           type="button"

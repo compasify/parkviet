@@ -516,7 +516,7 @@
   "paymentRowFailed": "{{row}} failed: {{reason}} ({{done}}/{{total}} earlier tenders were processed).",
   "paymentZeroTotalApproval": "A 0 ₫ order needs approval rights to complete. Ask a manager to complete it.",
   "paymentHandedOver": "Handed over at the counter.",
-  "paymentHeldHint": "This order has tenders waiting for confirmation.",
+  "paymentHeldHint": "Waiting for confirmation: {{items}}. Press Continue payment to confirm the money arrived or cancel it.",
   "paymentResume": "Continue payment",
   "paymentHold": "Hold",
   "paymentHoldAction": "Dismiss",

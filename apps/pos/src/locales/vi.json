@@ -516,7 +516,7 @@
   "paymentRowFailed": "Khoản {{row}} không thành công: {{reason}} ({{done}}/{{total}} khoản trước đó đã được xử lý).",
   "paymentZeroTotalApproval": "Đơn 0 ₫ cần quyền duyệt để hoàn tất. Nhờ quản lý hoàn tất đơn này.",
   "paymentHandedOver": "Đã giao hàng tại quầy.",
-  "paymentHeldHint": "Đơn này có khoản thu đang chờ xác nhận.",
+  "paymentHeldHint": "Đang chờ xác nhận: {{items}}. Bấm Tiếp tục thanh toán để xác nhận đã nhận tiền hoặc hủy khoản này.",
   "paymentResume": "Tiếp tục thanh toán",
   "paymentHold": "Để chờ",
   "paymentHoldAction": "Hủy bỏ",
