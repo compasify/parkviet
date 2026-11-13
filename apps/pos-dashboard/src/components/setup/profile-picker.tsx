@@ -9,7 +9,7 @@ import {
   type SetupAction,
   type SetupState,
 } from '@parkviet/pos-shared/setup-wizard'
-import { Badge, Button, Label, RadioGroup, RadioGroupItem } from '@spree/dashboard-ui'
+import { Badge, Button, RadioGroup, RadioGroupItem } from '@spree/dashboard-ui'
 import type { Dispatch } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -58,9 +58,10 @@ export function ProfilePicker({
                   const soon = !isAvailable(profile)
                   const id = `setup-profile-${profile.key}`
                   return (
-                    <div
+                    <label
                       key={profile.key}
-                      className={`flex items-start gap-3 rounded-lg border p-4 ${state.choice === profile.key ? 'border-primary bg-muted' : ''}`}
+                      htmlFor={id}
+                      className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 ${state.choice === profile.key ? 'border-primary bg-muted' : 'hover:bg-muted/50'}`}
                       data-selected={state.choice === profile.key}
                       data-soon={soon}
                     >
@@ -71,9 +72,9 @@ export function ProfilePicker({
                         aria-describedby={`${id}-description${soon ? ` ${id}-soon` : ''}`}
                       />
                       <div className="min-w-0 space-y-2">
-                        <Label htmlFor={id} id={`${id}-name`}>
+                        <span id={`${id}-name`} className="text-base font-medium">
                           {label(profile.key)}
-                        </Label>
+                        </span>
                         {soon ? (
                           <Badge variant="outline" id={`${id}-soon`}>
                             {t('setup.comingSoon')}
@@ -83,7 +84,7 @@ export function ProfilePicker({
                           {t(profileDescriptionKey(profile.key), { defaultValue: '' })}
                         </p>
                       </div>
-                    </div>
+                    </label>
                   )
                 })}
               </div>
