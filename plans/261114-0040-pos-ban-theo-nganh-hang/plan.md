@@ -61,7 +61,7 @@ Quán ăn không bật bàn cũng là `fnb.menu` không có `fnb.tables`, nên c
 |---|---|---|---|---|
 | 1 | [Quầy nhanh cho cafe và trà sữa](./phase-01-quay-nhanh-cafe.md) | 2,5 ngày | – | xong |
 | 2 | [Căng tin và trạm dừng trên quầy nhanh](./phase-02-cang-tin-tram-dung.md) | 1,5 ngày | 1 | xong |
-| 3 | [Bảng phòng tính giờ cho karaoke và bida](./phase-03-karaoke-bida.md) | 3 ngày | – | chưa làm |
+| 3 | [Bảng phòng tính giờ cho karaoke và bida](./phase-03-karaoke-bida.md) | 3 ngày | – | xong |
 | 4 | [Tab quầy bar cho bar, pub và club](./phase-04-bar-pub-club.md) | 2 ngày | – | chưa làm |
 
 Phase 1, 3, 4 độc lập về bố cục nhưng cùng sửa `sellingLayoutOf`, `table-service-screen.tsx` và locale POS, nên làm lần lượt 1 → 2 → 3 → 4. Mỗi phase tự cập nhật e2e và tài liệu ngành của mình.

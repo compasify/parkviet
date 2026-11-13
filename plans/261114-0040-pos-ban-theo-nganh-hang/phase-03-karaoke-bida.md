@@ -1,7 +1,7 @@
 ---
 phase: 3
 title: "Bảng phòng tính giờ cho karaoke và bida"
-status: pending
+status: done
 effort: "3 ngày"
 dependsOn: []
 ---
