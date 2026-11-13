@@ -71,7 +71,7 @@ module Spree
           end
 
           core_method = Funds::Allocate.core_method_for(funds)
-          raise Conflict, 'Payment method is not available for this store.' if core_method.nil?
+          raise Conflict.new('Payment method is not available for this store.', reason: 'payment_method_unavailable') if core_method.nil?
 
           allocation = funds.with_lock do
             payment = order.payments.create!(payment_method: core_method, amount: amount)

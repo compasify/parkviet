@@ -292,7 +292,7 @@ module Spree
         raise Conflict, 'Funds currency does not match the order.' if funds.currency != order.currency
 
         core_method = Funds::Allocate.core_method_for(funds)
-        raise Conflict, 'Payment method is not available for this store.' if core_method.nil?
+        raise Conflict.new('Payment method is not available for this store.', reason: 'payment_method_unavailable') if core_method.nil?
 
         payment = order.payments.create!(payment_method: core_method, amount: share)
         payment.complete!

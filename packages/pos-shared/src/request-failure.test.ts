@@ -95,6 +95,7 @@ describe('POS channel setup failures', () => {
     'pos_channel_inactive',
     'pos_channel_mismatch',
     'pos_product_unavailable',
+    'payment_method_unavailable',
   ])('translates %s rather than exposing the English server message', (reason) => {
     expect(
       describeFailure(

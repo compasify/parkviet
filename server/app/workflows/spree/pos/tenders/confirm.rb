@@ -90,7 +90,7 @@ module Spree
                 payment = settled&.dig(:payment)
                 if payment.nil?
                   core_method = PaymentMethodResolver.new(store: workspace.store).core_for(attempt.pos_payment_method)
-                  raise Conflict, 'Payment method is not available for this store.' if core_method.nil?
+                  raise Conflict.new('Payment method is not available for this store.', reason: 'payment_method_unavailable') if core_method.nil?
 
                   payment = order.payments.create!(payment_method: core_method, amount: money[:applied])
                   payment.complete!

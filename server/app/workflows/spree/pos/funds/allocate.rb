@@ -44,7 +44,7 @@ module Spree
               raise Conflict, 'Amount exceeds the remaining balance.' if parsed > order.total - allocated
 
               core_method = core_method_for(funds)
-              raise Conflict, 'Payment method is not available for this store.' if core_method.nil?
+              raise Conflict.new('Payment method is not available for this store.', reason: 'payment_method_unavailable') if core_method.nil?
 
               payment = order.payments.create!(payment_method: core_method, amount: parsed)
               payment.complete!

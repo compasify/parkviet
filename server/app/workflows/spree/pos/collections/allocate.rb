@@ -37,7 +37,7 @@ module Spree
           raise Conflict, 'Allocations exceed the money available on this receipt.' if parsed.sum(&:last) > FundsBalance.new(funds).available
 
           core_method = Funds::Allocate.core_method_for(funds)
-          raise Conflict, 'Payment method is not available for this store.' if core_method.nil?
+          raise Conflict.new('Payment method is not available for this store.', reason: 'payment_method_unavailable') if core_method.nil?
 
           parsed.sort_by { |(order, _)| order.id }.map do |(order, amount)|
             order.lock!

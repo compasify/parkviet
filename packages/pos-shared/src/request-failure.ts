@@ -146,6 +146,7 @@ export function describeFailure(
       'pos_channel_inactive',
       'pos_channel_mismatch',
       'pos_product_unavailable',
+      'payment_method_unavailable',
     ].includes(channelReason)
   )
     return translate(channelReason);
