@@ -17,3 +17,12 @@ Màn bán `apps/pos` dùng chung bố cục ba cột cho bán lẻ và F&B, nên
 - Dùng lại `PaymentPanel`, `TableOrderBar`, `VoidItemDialog`, `PrebillDialog`; chỉ bố cục là mới.
 
 Plan: [261113-1708-pos-ban-tai-ban-layout](../261113-1708-pos-ban-tai-ban-layout/plan.md).
+
+## Thực hiện (13/11/2026, cùng ngày)
+
+Bảy phase làm liền qua subagent, mỗi phase một commit (79e2ae5 → ee9467d), cộng một commit sửa sau rà soát (c5dee3f).
+
+- Hook bán hàng chỉ được chạy một lần mỗi màn (lease, heartbeat, máy quét, URL), nên màn bàn dựng ba khung `board`/`order`/`pay` quanh một lần gọi `useSellingWorkspace` thay vì lồng `WorkspaceTabs`.
+- Bảng bàn không phân biệt được món chưa gửi sau lượt gửi đầu; thêm `unsent_kitchen_items` vào board order ở server.
+- Rà soát tìm ra lỗi đáng kể nhất: màn bàn rơi về đơn đầu tiên của quầy khi đơn trên URL thuộc quầy khác (quầy bàn khác quầy thu ngân), rồi tạo VietQR trên đơn sai. Màn bàn giờ tra đơn trên cả chi nhánh và không thao tác gì tới khi tải xong.
+- Mã VietQR tạo sẵn khi mở thanh toán được hủy mỗi khi rời khung `pay`; tắt tab vẫn để lại mã vì server chưa có hạn cho mã.

@@ -1,7 +1,7 @@
 ---
 title: "Màn bán riêng cho phục vụ tại bàn"
 description: "Tách màn bán của chi nhánh có bàn khỏi màn bán lẻ: bảng bàn làm màn đầu, màn gọi món hai vùng có phiếu bên phải, tùy chọn món thay chỗ lưới món, thanh toán toàn màn."
-status: in-progress
+status: completed
 priority: P1
 effort: "~13 ngày công"
 branch: "v2"
@@ -69,21 +69,21 @@ Thu ngân ở chi nhánh có bàn mở POS là thấy bảng bàn toàn màn. Ch
 | 4 | [Màn gọi món: rail, lưới món, panel tùy chọn](./phase-04-man-goi-mon-thuc-don.md) | 2 ngày | 1 | xong |
 | 5 | [Phiếu bàn](./phase-05-phieu-ban.md) | 2,5 ngày | 2, 4 | xong |
 | 6 | [Thanh toán toàn màn](./phase-06-thanh-toan-toan-man.md) | 1,5 ngày | 5 | xong |
-| 7 | [E2E, tài liệu và rà soát](./phase-07-e2e-tai-lieu-ra-soat.md) | 1 ngày | 3–6 | pending |
+| 7 | [E2E, tài liệu và rà soát](./phase-07-e2e-tai-lieu-ra-soat.md) | 1 ngày | 3–6 | xong |
 
 Phase 1 và 2 độc lập, chạy song song được. Phase 3 và 4 độc lập sau phase 1 (phase 3 cần thêm trường của phase 2).
 
 ## Tiêu chí nghiệm thu
 
-- [ ] Chi nhánh nhà hàng mở POS thấy bảng bàn toàn màn, không có thanh tab hóa đơn, cột giỏ hay cột thanh toán.
-- [ ] Ô bàn hiện tên, thời gian ngồi (to nhất), trạng thái bằng chữ, số khách, tạm tính; đúng 5 màu nền; ngồi quá ngưỡng chi nhánh thì có dải đỏ.
-- [ ] Chạm bàn trống hỏi số khách tại chỗ rồi mở màn gọi món; chạm bàn có khách vào thẳng màn gọi món.
-- [ ] Màn gọi món có rail danh mục, lưới món chữ có huy hiệu số lượng, món hết làm mờ; phiếu bên phải nhóm theo lượt gửi, món mới ở trên.
-- [ ] "Gửi bếp (n)" bị khóa khi n = 0, gửi xong về bảng bàn; "Gửi & ở lại" ở lại.
-- [ ] Món có tùy chọn mở panel thay chỗ lưới món, phiếu vẫn hiện; nút thêm khóa khi thiếu nhóm bắt buộc.
-- [ ] "Thanh toán · tổng" mở màn thanh toán toàn màn có VietQR hiện sẵn; hoàn tất về bảng bàn; tải lại trang giữ đúng khung.
-- [ ] Chi nhánh bán lẻ, bar `tab_list` và karaoke `resource_board` không đổi: e2e `full-retail`, `bar-tabs`, `karaoke` vẫn qua.
-- [ ] `pnpm typecheck`, `pnpm lint`, unit test và e2e của file đã đổi trong `apps/pos` đều qua; rspec của file server đã đổi qua.
+- [x] Chi nhánh nhà hàng mở POS thấy bảng bàn toàn màn, không có thanh tab hóa đơn, cột giỏ hay cột thanh toán.
+- [x] Ô bàn hiện tên, thời gian ngồi (to nhất), trạng thái bằng chữ, số khách, tạm tính; đúng 5 màu nền; ngồi quá ngưỡng chi nhánh thì có dải đỏ.
+- [x] Chạm bàn trống hỏi số khách tại chỗ rồi mở màn gọi món; chạm bàn có khách vào thẳng màn gọi món.
+- [x] Màn gọi món có rail danh mục, lưới món chữ có huy hiệu số lượng, món hết làm mờ; phiếu bên phải nhóm theo lượt gửi, món mới ở trên.
+- [x] "Gửi bếp (n)" bị khóa khi n = 0, gửi xong về bảng bàn; "Gửi & ở lại" ở lại.
+- [x] Món có tùy chọn mở panel thay chỗ lưới món, phiếu vẫn hiện; nút thêm khóa khi thiếu nhóm bắt buộc.
+- [x] "Thanh toán · tổng" mở màn thanh toán toàn màn có VietQR hiện sẵn; hoàn tất về bảng bàn; tải lại trang giữ đúng khung.
+- [x] Chi nhánh bán lẻ, bar `tab_list` và karaoke `resource_board` không đổi: e2e `full-retail`, `bar-tabs`, `karaoke` vẫn qua.
+- [x] `pnpm typecheck`, `pnpm lint`, unit test và e2e của file đã đổi trong `apps/pos` đều qua; rspec của file server đã đổi qua.
 
 ## Rủi ro
 
@@ -97,3 +97,12 @@ Phase 1 và 2 độc lập, chạy song song được. Phase 3 và 4 độc lậ
 1. Quán ăn có bàn có chuyển sang mở bảng bàn như nhà hàng không (L1), hay giữ mở thẳng thực đơn?
 2. Ngưỡng "ngồi lâu" mặc định 60 phút, cấu hình theo chi nhánh trong pos-dashboard (phase 2): giữ vậy hay cấu hình theo khu / loại bàn?
 3. Có cần hỏi nhanh 2–3 thu ngân để xác nhận phiếu đặt bên phải trước khi làm phase 5 không?
+
+Các câu trên được làm theo mặc định của plan (quán ăn có bàn mở bảng bàn, ngưỡng theo chi nhánh, phiếu bên phải); chờ chủ quán xác nhận.
+
+## Việc còn lại sau plan
+
+- Server chưa có hạn cho mã VietQR đang chờ: tắt tab hoặc mất mạng khi đang ở màn thanh toán để lại mã treo, khóa thêm món tới khi có người bấm "← Đơn".
+- Ô "Mang về" / "Giao đi" tạo đơn nháp mới mỗi lần chạm, kể cả khi còn đơn trống.
+- Ghi chú nhanh cố định trong locale; chip số khách chỉ xem (chưa có API sửa); chưa có biểu tượng lỗi in bếp và bàn gộp trên ô bàn.
+- Rà soát mã: [code-reviewer-261113-1901-table-service-layout-review.md](../reports/code-reviewer-261113-1901-table-service-layout-review.md).

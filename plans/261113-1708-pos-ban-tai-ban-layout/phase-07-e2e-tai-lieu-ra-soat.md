@@ -1,7 +1,7 @@
 ---
 phase: 7
 title: "E2E, tài liệu và rà soát"
-status: pending
+status: completed
 effort: "1 ngày"
 dependsOn: [3, 4, 5, 6]
 ---
