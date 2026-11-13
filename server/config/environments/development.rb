@@ -1,4 +1,5 @@
 require "active_support/core_ext/integer/time"
+require_relative "../../lib/parkviet/background_file_update_checker"
 
 Rails.application.configure do
   # When SMTP_HOST is set deliver via SMTP.
@@ -42,6 +43,9 @@ Rails.application.configure do
 
   # Make code changes take effect immediately without server restart.
   config.enable_reloading = true
+  # Check for changed code off the request path: the default checker stats
+  # every source file before each request, slow on a Docker bind mount.
+  config.file_watcher = Parkviet::BackgroundFileUpdateChecker
 
   # Do not eager load code on boot.
   config.eager_load = false
