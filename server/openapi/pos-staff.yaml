@@ -5968,6 +5968,11 @@ components:
         kitchen_status:
           description: Table orders only, how far the kitchen got with what was sent of the line.
           $ref: '#/components/schemas/LineKitchenStatus'
+        kitchen_send_sequence:
+          type: [integer, 'null']
+          description: >
+            Table orders only, the `sequence` of the first kitchen send that
+            carried the line; null until it is sent. A voided item keeps it.
         course:
           type: [integer, 'null']
           description: The course of a table dish (1 starter, 2 main, 3 dessert…; names in table settings).
@@ -9656,6 +9661,11 @@ components:
         qr_order_auto_max_items:
           type: integer
           description: The most items a guest order may have to go straight to the kitchen.
+        seated_alert_minutes:
+          type: [integer, 'null']
+          minimum: 10
+          maximum: 600
+          description: How long a table may stay seated before the floor flags it; null turns the alert off.
         tip_split:
           $ref: '#/components/schemas/TipSplitRule'
         branch_id:
@@ -9718,6 +9728,11 @@ components:
           type: integer
           minimum: 1
           maximum: 50
+        seated_alert_minutes:
+          type: [integer, 'null']
+          minimum: 10
+          maximum: 600
+          description: Minutes before the floor flags a long-seated table; null turns the alert off.
         reservation_grace_minutes:
           type: integer
           minimum: 1

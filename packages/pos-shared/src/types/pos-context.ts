@@ -54,6 +54,8 @@ export type PosBranch = {
   kitchen_send_trigger?: 'on_complete' | 'manual';
   // Reasons a sent item may be voided for; `khac` (other) always needs a note.
   void_reasons?: string[];
+  // Minutes a table may stay seated before the floor flags it; null turns the alert off.
+  seated_alert_minutes?: number | null;
 };
 
 export type PosRegister = {
@@ -374,6 +376,8 @@ export type PosLineItem = {
   pending_kitchen_quantity?: string;
   // A table line's units in the kitchen by state, as the waiter's phone shows them.
   kitchen_status?: Partial<Record<KitchenLineState, string>>;
+  // The table order's first kitchen send that carried the line; null until it is sent.
+  kitchen_send_sequence?: number | null;
   // Bumped on every change; an unsent table line is edited by its version.
   row_version?: number;
   // A table dish's course (1 starter, 2 main…) and whether it waits for its fire.

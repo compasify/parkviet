@@ -9,6 +9,7 @@ import {
   readKeepDays,
   readQrLimit,
   readQrMaxItems,
+  readSeatedAlertMinutes,
   readServiceChargeRate,
   readTableDraft,
   rectanglePlacement,
@@ -182,5 +183,15 @@ describe('QR order limits', () => {
     expect(readQrMaxItems('0')).toBeUndefined()
     expect(readQrMaxItems('51')).toBeUndefined()
     expect(readQrMaxItems('')).toBeUndefined()
+  })
+
+  it('takes 10 to 600 seated minutes, blank turning the alert off', () => {
+    expect(readSeatedAlertMinutes('')).toBeNull()
+    expect(readSeatedAlertMinutes(' 60 ')).toBe(60)
+    expect(readSeatedAlertMinutes('10')).toBe(10)
+    expect(readSeatedAlertMinutes('600')).toBe(600)
+    expect(readSeatedAlertMinutes('9')).toBeUndefined()
+    expect(readSeatedAlertMinutes('601')).toBeUndefined()
+    expect(readSeatedAlertMinutes('1.5')).toBeUndefined()
   })
 })

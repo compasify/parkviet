@@ -31,6 +31,8 @@ export type TableSettings = {
   qr_order_mode: QrOrderMode
   qr_order_auto_limit: string | null
   qr_order_auto_max_items: number
+  // Minutes a table may stay seated before the floor flags it; null: no alert.
+  seated_alert_minutes: number | null
 }
 
 export const QR_ORDER_MODES = ['staff_approval', 'direct_to_kitchen'] as const
@@ -108,6 +110,9 @@ export const useTableSettings = (branchId: string) =>
       qr_order_auto_max_items: Number.isInteger(source.qr_order_auto_max_items)
         ? (source.qr_order_auto_max_items as number)
         : 10,
+      seated_alert_minutes: Number.isInteger(source.seated_alert_minutes)
+        ? (source.seated_alert_minutes as number)
+        : null,
       tax_categories: rows(source.tax_categories).flatMap((row) => {
         const item = row as { id?: unknown; name?: unknown }
         return typeof item.id === 'string' && typeof item.name === 'string'

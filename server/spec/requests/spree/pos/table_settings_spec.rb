@@ -44,4 +44,32 @@ RSpec.describe 'POS table settings API', type: :request do
     audit = Spree::Pos::AuditEntry.find_by!(action: 'table_settings.update')
     expect(audit.metadata['after']).not_to have_key('tax_categories')
   end
+
+  it 'sets how long a table may stay seated before the floor flags it, or turns the alert off' do
+    expect(branch.seated_alert_minutes).to eq(60)
+    update = lambda do |value|
+      put '/api/v3/admin/pos/table_settings', headers: bearer(manager).merge('Idempotency-Key' => SecureRandom.uuid),
+                                              params: { branch_id: branch.prefixed_id, seated_alert_minutes: value }, as: :json
+    end
+
+    update.call(90)
+    expect(response).to have_http_status(:ok), response.body
+    expect_pos_schema!(response, 'TableSettings')
+    expect(response.parsed_body.dig('data', 'seated_alert_minutes')).to eq(90)
+    get '/api/v3/admin/pos/context', headers: bearer(manager), params: { branch_id: branch.prefixed_id }
+    expect(response).to have_http_status(:ok), response.body
+    expect(response.parsed_body['branches'].find { |row| row['id'] == branch.prefixed_id }).to include('seated_alert_minutes' => 90)
+
+    [5, 601, 'abc'].each do |value|
+      update.call(value)
+      expect(response).to have_http_status(:conflict)
+      expect(response.parsed_body.dig('error', 'details', 'reason')).to eq('seated_alert_minutes_invalid')
+    end
+    expect(branch.reload.seated_alert_minutes).to eq(90)
+
+    update.call(nil)
+    expect(response).to have_http_status(:ok), response.body
+    expect(response.parsed_body.dig('data', 'seated_alert_minutes')).to be_nil
+    expect(branch.reload.seated_alert_minutes).to be_nil
+  end
 end

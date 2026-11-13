@@ -238,6 +238,19 @@ export function readKeepDays(value: string): number | null | undefined {
   return days >= 1 && days <= BOTTLE_KEEP_DAYS_MAX ? days : undefined
 }
 
+// How long a table may stay seated before the floor flags it, as typed: 10
+// to 600 minutes. Null when blank (the alert is off); undefined when it is not
+// a number of minutes in range.
+export const SEATED_ALERT_MIN = 10
+export const SEATED_ALERT_MAX = 600
+export function readSeatedAlertMinutes(value: string): number | null | undefined {
+  const text = value.trim()
+  if (!text) return null
+  if (!/^\d{1,3}$/.test(text)) return undefined
+  const minutes = Number(text)
+  return minutes >= SEATED_ALERT_MIN && minutes <= SEATED_ALERT_MAX ? minutes : undefined
+}
+
 // The amount up to which a guest's QR order goes straight to the kitchen, as
 // typed in đồng ("500.000" or "500000"). Null when blank; undefined when it
 // is not a whole positive amount.

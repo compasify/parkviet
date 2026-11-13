@@ -154,6 +154,7 @@ module Spree
         memo = {}
         # How far the kitchen got with each line of a table order, one query.
         kitchen = shared_service? ? kitchen_status_by_line : {}
+        sends = shared_service? ? kitchen_send_by_line : {}
         # The clock of each timed line; no query for an order without one.
         timed = Timed::Sessions.for_workspace(self, sale_lines.values.select { |sale| sale.kind == Timed::Lines::KIND }.map(&:id), now: now)
         traces = sale_lines.values.to_h do |sale|
@@ -193,7 +194,7 @@ module Spree
             if sale
               row = core.merge(sale.to_pos(line)).merge(trace: traces[sale.prefixed_id])
               row[:timed_session] = timed[sale.id] if sale.kind == Timed::Lines::KIND
-              shared_service? ? row.merge(kitchen_status: kitchen.fetch(sale.id, {})) : row
+              shared_service? ? row.merge(kitchen_status: kitchen.fetch(sale.id, {}), kitchen_send_sequence: sends[sale.id]) : row
             else
               core.merge(sale_line_id: nil, trace: nil)
             end
@@ -240,6 +241,16 @@ module Spree
           group(:sale_line_id, :status).sum(:quantity).each_with_object({}) do |((line_id, status), quantity), rows|
             (rows[line_id] ||= {})[status] = quantity.to_s('F')
           end
+      end
+
+      # The first kitchen send whose fire tickets carried each sale line, so a
+      # table ticket can group its dishes by send. A voided item keeps it.
+      def kitchen_send_by_line
+        KitchenTicketItem.joins(:kitchen_ticket).
+          joins('INNER JOIN spree_pos_kitchen_sends ON spree_pos_kitchen_sends.workspace_id = spree_pos_kitchen_tickets.workspace_id ' \
+                'AND spree_pos_kitchen_sends.send_key = spree_pos_kitchen_tickets.send_key').
+          where(spree_pos_kitchen_tickets: { workspace_id: id, kind: 'fire' }).where.not(sale_line_id: nil).
+          group(:sale_line_id).minimum('spree_pos_kitchen_sends.sequence')
       end
 
       # The latest pre-bill; `stale` once the order changed after it was printed.

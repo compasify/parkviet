@@ -26,7 +26,7 @@ module Spree
               attributes = params.permit(:table_register_id, :service_charge_rate, :service_charge_tax_category_id,
                                          :reservation_grace_minutes, :reservation_duration_minutes, :reservation_fee_product_id,
                                          :bottle_keep_days, :tips_as_revenue, :qr_order_mode, :qr_order_auto_limit,
-                                         :qr_order_auto_max_items, tip_split: [:mode, { role_codes: [] }],
+                                         :qr_order_auto_max_items, :seated_alert_minutes, tip_split: [:mode, { role_codes: [] }],
                                          service_charge_applies_to: [], course_labels: [:name]).to_h
               result = Spree::Pos::Tables::Settings.update(store: current_store, staff: current_user, key: key, branch: branch, attributes: attributes)
               render json: { data: result }

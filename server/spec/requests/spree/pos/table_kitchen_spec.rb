@@ -81,6 +81,24 @@ RSpec.describe 'POS table kitchen API', type: :request do
     expect(errors).to eq([])
   end
 
+  it 'tells each line the kitchen send that first carried it, and keeps it after a void' do
+    first = append(waiter, 2).dig('meta', 'sale_line_ids').first
+    call(waiter, :post, "workspaces/#{id}/kitchen_sends")
+    second = append(other_waiter).dig('meta', 'sale_line_ids').first
+    call(cashier, :post, "workspaces/#{id}/kitchen_sends")
+    unsent = append(waiter).dig('meta', 'sale_line_ids').first
+
+    voider = credit_staff(store, branch, PosTableHelpers::WAITER + [Spree::Pos::Capabilities::KITCHEN_VOID])
+    call(voider, :post, "workspaces/#{id}/sale_lines/#{first}/kitchen_voids", quantity: 1, reason_code: 'het_mon')
+    expect(response).to have_http_status(:created), response.body
+
+    body = call(cashier, :get, "workspaces/#{id}")
+    expect(response).to have_http_status(:ok), response.body
+    expect_pos_schema!(response, 'Workspace')
+    sequences = body.dig('data', 'line_items').to_h { |line| [line['sale_line_id'], line['kitchen_send_sequence']] }
+    expect(sequences).to eq(first => 1, second => 2, unsent => nil)
+  end
+
   it 'refuses a counter order with not_table_order' do
     sale = menu_sale(store, branch)
     call(sale.cashier, :post, "workspaces/#{sale.workspace.prefixed_id}/items/append", items: [{ variant_id: dish.prefixed_id }])

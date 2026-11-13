@@ -23,10 +23,22 @@ module Spree
             bottle_keep_days: branch.bottle_keep_days, tips_as_revenue: branch.tips_as_revenue,
             tip_split: TipSplitRule.for(branch).to_pos.except(:branch_id),
             qr_order_mode: branch.qr_order_mode, qr_order_auto_limit: branch.qr_order_auto_limit&.to_s('F'),
-            qr_order_auto_max_items: branch.qr_order_auto_max_items,
+            qr_order_auto_max_items: branch.qr_order_auto_max_items, seated_alert_minutes: branch.seated_alert_minutes,
             tax_categories: Spree::TaxCategory.where(store_id: branch.store_id).order(:name, :id).limit(100).map do |category|
               { id: category.prefixed_id, name: category.name, tax_code: category.tax_code.presence, is_default: category.is_default == true }
             end }
+        end
+
+        # How long a table may stay seated before the floor flags it; empty
+        # turns the alert off.
+        def seated_alert!(branch, values)
+          raw = values['seated_alert_minutes'].to_s.strip
+          return branch.seated_alert_minutes = nil if raw.empty?
+
+          minutes = Integer(raw, 10, exception: false)
+          raise Conflict.new('The minutes are invalid.', reason: 'seated_alert_minutes_invalid') unless minutes&.between?(10, 600)
+
+          branch.seated_alert_minutes = minutes
         end
 
         # How long a booking holds a table, how late it may be, and the
@@ -118,7 +130,8 @@ module Spree
                                                          'service_charge_tax_category_id', 'reservation_grace_minutes',
                                                          'reservation_duration_minutes', 'reservation_fee_product_id', 'course_labels',
                                                          'bottle_keep_days', 'tips_as_revenue', 'tip_split', 'qr_order_mode',
-                                                         'qr_order_auto_limit', 'qr_order_auto_max_items')
+                                                         'qr_order_auto_limit', 'qr_order_auto_max_items',
+                                                         'seated_alert_minutes')
           payload = { 'command' => 'table_settings.update', 'branch_id' => branch.prefixed_id, 'attributes' => values }
           CommandExecutor.call(store: store, actor: staff, key: key, payload: payload, authorize: -> { manage!(store, staff, branch) }) do
             branch.lock!
@@ -139,6 +152,7 @@ module Spree
 
               branch.service_charge_tax_category = category
             end
+            seated_alert!(branch, values) if values.key?('seated_alert_minutes')
             reservations!(store, branch, values)
             bar!(branch, values)
             qr_order!(branch, values)

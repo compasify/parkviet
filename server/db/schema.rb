@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_12_150000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_13_103148) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gist"
   enable_extension "pg_catalog.plpgsql"
@@ -2512,6 +2512,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_150000) do
     t.integer "kiosk_idle_seconds", default: 60, null: false
     t.integer "kiosk_qr_timeout_seconds", default: 180, null: false
     t.boolean "kiosk_kitchen_before_payment", default: false, null: false
+    t.integer "seated_alert_minutes", default: 60
     t.index ["cup_label_printer_id"], name: "index_spree_pos_branches_on_cup_label_printer_id"
     t.index ["service_charge_tax_category_id"], name: "index_spree_pos_branches_on_service_charge_tax_category_id"
     t.index ["stock_location_id"], name: "index_spree_pos_branches_on_stock_location_id"
@@ -2533,6 +2534,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_150000) do
     t.check_constraint "qr_order_auto_max_items >= 1 AND qr_order_auto_max_items <= 50", name: "chk_pos_branches_qr_order_max_items"
     t.check_constraint "qr_order_mode::text = ANY (ARRAY['staff_approval'::character varying, 'direct_to_kitchen'::character varying]::text[])", name: "chk_pos_branches_qr_order_mode"
     t.check_constraint "return_window_days IS NULL OR return_window_days >= 0 AND return_window_days <= 3650", name: "chk_pos_branches_return_window"
+    t.check_constraint "seated_alert_minutes IS NULL OR seated_alert_minutes >= 10 AND seated_alert_minutes <= 600", name: "chk_pos_branches_seated_alert_minutes"
     t.check_constraint "service_charge_rate IS NULL OR service_charge_rate > 0::numeric AND service_charge_rate <= 50::numeric", name: "chk_pos_branches_service_charge_rate"
     t.check_constraint "status::text = ANY (ARRAY['active'::character varying, 'disabled'::character varying]::text[])", name: "chk_spree_pos_branches_status"
     t.check_constraint "variance_threshold IS NULL OR variance_threshold >= 0::numeric", name: "chk_pos_branches_variance_threshold"

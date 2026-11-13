@@ -55,6 +55,8 @@ module Spree
       validates :kitchen_send_trigger, inclusion: { in: %w[on_complete manual] }
       # Percent of the items after discounts; nil means no service charge.
       validates :service_charge_rate, numericality: { greater_than: 0, less_than_or_equal_to: 50 }, allow_nil: true
+      # How long a table may stay seated before the floor flags it; nil turns it off.
+      validates :seated_alert_minutes, numericality: { only_integer: true, in: 10..600 }, allow_nil: true
       # How guests' orders from the table QR are taken: each approved by staff,
       # or within the limits added and sent to the kitchen by themselves.
       QR_ORDER_MODES = %w[staff_approval direct_to_kitchen].freeze
@@ -97,6 +99,7 @@ module Spree
           business_day_cutoff: cutoff_label,
           staff_session_idle_minutes: staff_session_idle_minutes,
           kitchen_send_trigger: kitchen_send_trigger,
+          seated_alert_minutes: seated_alert_minutes,
           void_reasons: void_reasons
         }
       end

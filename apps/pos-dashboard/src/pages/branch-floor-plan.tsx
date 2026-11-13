@@ -67,8 +67,11 @@ import {
   readKeepDays,
   readQrLimit,
   readQrMaxItems,
+  readSeatedAlertMinutes,
   readServiceChargeRate,
   readTableDraft,
+  SEATED_ALERT_MAX,
+  SEATED_ALERT_MIN,
   SERVICE_CHARGE_MAX,
   TABLE_SIZE_MAX,
   type TableDraft,
@@ -84,6 +87,7 @@ const REFUSALS = [
   'table_archived',
   'manual_status_invalid',
   'service_charge_rate_invalid',
+  'seated_alert_minutes_invalid',
   'bottle_keep_days_invalid',
   'tip_split_invalid',
   'minimum_spend_invalid',
@@ -859,12 +863,14 @@ type SettingsDraft = {
   qrMode: QrOrderMode
   qrLimit: string
   qrMaxItems: string
+  seatedAlert: string
 }
 
 const settingsDraftOf = (settings: TableSettings): SettingsDraft => ({
   qrMode: settings.qr_order_mode,
   qrLimit: settings.qr_order_auto_limit?.replace(/\.0+$/, '') ?? '',
   qrMaxItems: String(settings.qr_order_auto_max_items),
+  seatedAlert: settings.seated_alert_minutes === null ? '' : String(settings.seated_alert_minutes),
   register: settings.table_register_id ?? '',
   rate: settings.service_charge_rate ?? '',
   modes: settings.service_charge_applies_to,
@@ -1061,6 +1067,7 @@ function TableSettingsCard({ write }: { write: boolean }) {
   const loaded = settings.data
   const current = draft ?? (loaded ? settingsDraftOf(loaded) : null)
   const rate = current ? readServiceChargeRate(current.rate) : null
+  const seatedAlert = current ? readSeatedAlertMinutes(current.seatedAlert) : null
   const keepDays = current ? readKeepDays(current.keepDays) : null
   const qrLimit = current ? readQrLimit(current.qrLimit) : null
   const qrMaxItems = current ? readQrMaxItems(current.qrMaxItems) : undefined
@@ -1077,6 +1084,7 @@ function TableSettingsCard({ write }: { write: boolean }) {
   const save = (event: FormEvent) => {
     event.preventDefault()
     if (!current || !draft || mutation.isPending || (serviceCharge && rate === undefined)) return
+    if (seatedAlert === undefined) return
     if ((bottleKeep && keepDays === undefined) || qrInvalid) return
     void attempt(async () => {
       await mutation.mutateAsync({
@@ -1085,6 +1093,7 @@ function TableSettingsCard({ write }: { write: boolean }) {
         body: {
           branch_id: branch.id,
           table_register_id: current.register || null,
+          seated_alert_minutes: seatedAlert,
           ...(serviceCharge
             ? {
                 service_charge_rate: rate ?? null,
@@ -1152,6 +1161,32 @@ function TableSettingsCard({ write }: { write: boolean }) {
             options={registerOptions}
             onChange={(register) => edit({ register })}
           />
+          <div className="flex flex-col gap-2 sm:max-w-xs">
+            <Label htmlFor="seated-alert-minutes">{t('floorPlan.seatedAlert')}</Label>
+            <Input
+              id="seated-alert-minutes"
+              inputMode="numeric"
+              value={current.seatedAlert}
+              disabled={!write}
+              aria-invalid={seatedAlert === undefined}
+              aria-describedby="seated-alert-minutes-hint"
+              onChange={(event) => edit({ seatedAlert: event.target.value })}
+            />
+            <small
+              id="seated-alert-minutes-hint"
+              className={seatedAlert === undefined ? 'text-destructive' : 'text-muted-foreground'}
+            >
+              {t(
+                seatedAlert === undefined
+                  ? 'floorPlan.seatedAlertInvalid'
+                  : 'floorPlan.seatedAlertHint',
+                {
+                  min: SEATED_ALERT_MIN,
+                  max: SEATED_ALERT_MAX,
+                },
+              )}
+            </small>
+          </div>
           {serviceCharge ? (
             <fieldset className="space-y-4">
               <legend className="text-sm font-medium">{t('floorPlan.serviceCharge')}</legend>
@@ -1238,6 +1273,7 @@ function TableSettingsCard({ write }: { write: boolean }) {
                 mutation.isPending ||
                 !draft ||
                 (serviceCharge && rate === undefined) ||
+                seatedAlert === undefined ||
                 (bottleKeep && keepDays === undefined) ||
                 qrInvalid
               }
