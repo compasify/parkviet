@@ -592,17 +592,20 @@ export function useSellingWorkspace(options: { view?: SellingView } = {}) {
       data.shift.owner_id === data.staff.id,
   );
 
-  function createDraft() {
-    if (!canCreate || creating) return;
+  // The new draft, or null when none was created (not allowed, one already
+  // on its way, or refused: the refusal is in the page's message).
+  function createDraft(): Promise<PosWorkspace | null> {
+    if (!canCreate || creating) return Promise.resolve(null);
     const started = scopeRef.current;
     const selectedAtStart = activeIdRef.current;
     setCreating(true);
-    void run(() => workspaces.create(selection.registerId)).then((created) => {
+    return run(() => workspaces.create(selection.registerId)).then((created) => {
       setCreating(false);
       if (created && started === scopeRef.current && selectedAtStart === activeIdRef.current) {
         setActiveId(created.id);
         workspaces.rememberView(created.id, workspaces.page);
       }
+      return created ?? null;
     });
   }
 

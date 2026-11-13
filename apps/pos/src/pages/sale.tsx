@@ -2,6 +2,7 @@ import { sellingLayoutOf } from '@parkviet/pos-shared/pos-modules';
 import { useRef } from 'react';
 import { usePosSelection } from '../components/pos-selection';
 import { PrintQueueAlert } from '../components/print-queue-panel';
+import { QuickCounterScreen } from '../components/quick-counter/quick-counter-screen';
 import { TableServiceScreen } from '../components/table-service/table-service-screen';
 import { WorkspaceTabs } from '../components/workspace-tabs';
 
@@ -17,6 +18,8 @@ export function SalePage() {
     <>
       {layout === 'table_service' ? (
         <TableServiceScreen />
+      ) : layout === 'quick_counter' ? (
+        <QuickCounterScreen />
       ) : layout === 'counter' ? (
         <WorkspaceTabs />
       ) : null}

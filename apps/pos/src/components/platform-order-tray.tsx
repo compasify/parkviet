@@ -1,6 +1,7 @@
 import { formatMoney } from '@parkviet/pos-shared/money';
 import {
   activePlatforms,
+  type Platform,
   type PlatformOrder,
   platformKey,
 } from '@parkviet/pos-shared/platform-orders';
@@ -19,11 +20,17 @@ export function PlatformOrderTray({
   registerId,
   canEnter,
   canCollect,
+  enterWith = null,
+  onEnterClosed,
 }: {
   branchId: string | null;
   registerId: string | null;
   canEnter: boolean;
   canCollect: boolean;
+  // Entry asked for from outside the tray (the quick counter's platform
+  // chips), with that platform picked first; closed through `onEnterClosed`.
+  enterWith?: Platform | null;
+  onEnterClosed?: () => void;
 }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -50,6 +57,7 @@ export function PlatformOrderTray({
   };
 
   if (platforms.length === 0) return null;
+  const asked = enterWith && canEnter && platforms.includes(enterWith) ? enterWith : null;
 
   return (
     <section className="platform-order-tray" aria-label={t('platformTrayTitle')}>
@@ -133,15 +141,21 @@ export function PlatformOrderTray({
           {message}
         </p>
       ) : null}
-      {entering ? (
+      {entering || asked ? (
         <PlatformOrderForm
+          key={asked ?? 'tray'}
           branchId={branchId}
-          platforms={platforms}
+          platforms={
+            asked ? [asked, ...platforms.filter((platform) => platform !== asked)] : platforms
+          }
           onSubmit={async (entry) => {
             await enter.mutateAsync(entry);
             setOpen(true);
           }}
-          onClose={() => setEntering(false)}
+          onClose={() => {
+            setEntering(false);
+            onEnterClosed?.();
+          }}
         />
       ) : null}
     </section>

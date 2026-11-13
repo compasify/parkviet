@@ -5,7 +5,9 @@ import {
   MENU_DENSITIES,
   type MenuDensity,
   savedMenuDensity,
+  savedMenuImages,
   saveMenuDensity,
+  saveMenuImages,
 } from '../../lib/menu-density';
 import { addsInOneTap, visibleItems } from '../../lib/menu-selection';
 import type { PosMenu, PosMenuItem } from '../../lib/pos-context';
@@ -18,9 +20,10 @@ const DENSITY_LABELS: Record<MenuDensity, string> = {
   dense: 'menuDensityDense',
 };
 
-// The dishes of the order screen as text tiles: the search box (`/` jumps
-// to it), the density of this device, and per dish its category stripe, its
-// price, how many the open order already has, and a dimmed "sold out".
+// The dishes of the order screen as tiles: the search box (`/` jumps to
+// it), the density of this device and whether it shows the dishes'
+// pictures, and per dish its category stripe, its picture when it has one,
+// its price, how many the open order already has, and a dimmed "sold out".
 export function MenuItemGrid({
   menu,
   categoryId,
@@ -28,6 +31,7 @@ export function MenuItemGrid({
   disabled,
   disabledReason,
   canSetSoldOut,
+  imagesByDefault = false,
   onPick,
   onToggleSoldOut,
 }: {
@@ -39,12 +43,15 @@ export function MenuItemGrid({
   disabled: boolean;
   disabledReason?: string;
   canSetSoldOut: boolean;
+  // Pictures until this device says otherwise (the quick counter shows them).
+  imagesByDefault?: boolean;
   onPick: (item: PosMenuItem) => void;
   onToggleSoldOut: (item: PosMenuItem) => void;
 }) {
   const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [density, setDensity] = useState<MenuDensity>(savedMenuDensity);
+  const [images, setImages] = useState(() => savedMenuImages(imagesByDefault));
   const searchRef = useRef<HTMLInputElement>(null);
   const items = visibleItems(menu, query.trim() ? null : categoryId, query);
   const colors = new Map(menu.categories.map((category) => [category.id, category.color]));
@@ -103,6 +110,17 @@ export function MenuItemGrid({
             </button>
           ))}
         </fieldset>
+        <button
+          type="button"
+          className="menu-images-toggle"
+          aria-pressed={images}
+          onClick={() => {
+            setImages(!images);
+            saveMenuImages(!images);
+          }}
+        >
+          {t('menuImages')}
+        </button>
       </div>
       {disabled && disabledReason ? (
         <p className="muted" role="status">
@@ -110,9 +128,18 @@ export function MenuItemGrid({
         </p>
       ) : null}
       {items.length === 0 ? <p className="muted menu-item-empty">{t('menuEmpty')}</p> : null}
-      <ul className="menu-items" data-density={density} aria-label={t('menuTitle')}>
+      <ul
+        className="menu-items"
+        data-density={density}
+        data-images={images}
+        aria-label={t('menuTitle')}
+      >
         {items.map((item) => {
           const price = item.variants.map((variant) => variant.price).find((row) => row !== null);
+          // A time-of-day menu prices this dish now.
+          const scheduled = item.variants.find(
+            (variant) => variant.schedule_id && variant.price !== variant.list_price,
+          );
           const quantity = quantities.get(item.id) ?? 0;
           const color = item.menu_category_id ? colors.get(item.menu_category_id) : null;
           return (
@@ -131,11 +158,19 @@ export function MenuItemGrid({
                 aria-description={quantity > 0 ? t('menuInOrder', { count: quantity }) : undefined}
                 onClick={() => onPick(item)}
               >
+                {images && item.image_url ? (
+                  <img className="menu-item-image" src={item.image_url} alt="" loading="lazy" />
+                ) : null}
                 <strong className="menu-item-name">{item.name}</strong>
                 <span className="menu-item-price">
                   {item.sold_out
                     ? t('menuSoldOutTile')
                     : `${price ? formatMoney(price, menu.currency) : '—'}${item.variants.length > 1 ? '+' : ''}`}
+                  {scheduled && !item.sold_out ? (
+                    <small className="menu-item-schedule">
+                      {scheduled.price_label || t('menuScheduledPrice')}
+                    </small>
+                  ) : null}
                 </span>
                 {!item.sold_out && !addsInOneTap(menu, item) ? (
                   <small className="menu-item-options">{t('menuHasOptions')}</small>

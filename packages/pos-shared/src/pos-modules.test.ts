@@ -253,9 +253,6 @@ describe('business profile catalogue', () => {
     // No table module: the counter, whatever the profile suggests.
     expect(sellingLayoutOf(undefined)).toBe('counter');
     expect(sellingLayoutOf({ modules: null, profile: profile('floor_plan') })).toBe('counter');
-    expect(sellingLayoutOf({ modules: { 'fnb.menu': true }, profile: profile('floor_plan') })).toBe(
-      'counter',
-    );
     expect(sellingLayoutOf({ modules: { 'fnb.tables': false }, profile: profile() })).toBe(
       'counter',
     );
@@ -275,6 +272,54 @@ describe('business profile catalogue', () => {
     expect(sellingLayoutOf({ modules: tables, profile: profile('resource_board') })).toBe(
       'counter',
     );
+  });
+
+  it('sells at the quick counter where the menu runs without tables', () => {
+    const profile = (surface?: string) => normalizeProfile({ key: 'p', display: { surface } });
+    const cafe = {
+      'fnb.menu': true,
+      'fnb.kitchen': true,
+      'fnb.order_number': true,
+      'fnb.cup_label': true,
+      'fnb.delivery_platforms': true,
+    };
+    // A cafe, and an eatery that does not serve tables, whatever the profile hints.
+    expect(sellingLayoutOf({ modules: cafe, profile: profile('menu_grid') })).toBe('quick_counter');
+    expect(sellingLayoutOf({ modules: { 'fnb.menu': true }, profile: profile('floor_plan') })).toBe(
+      'quick_counter',
+    );
+    expect(sellingLayoutOf({ modules: { 'fnb.menu': true, 'fnb.tables': false } })).toBe(
+      'quick_counter',
+    );
+    // A canteen or a rest stop keeps the counter for its meal codes and coach visits.
+    expect(sellingLayoutOf({ modules: { 'fnb.menu': true, 'fnb.meal_accounts': true } })).toBe(
+      'counter',
+    );
+    expect(
+      sellingLayoutOf({
+        modules: { 'fnb.menu': true, 'fnb.vehicle_commission': true },
+        profile: profile('menu_grid'),
+      }),
+    ).toBe('counter');
+    // Open tabs and timed rooms stay open across guests: the counter, tables or not.
+    expect(sellingLayoutOf({ modules: { 'fnb.menu': true }, profile: profile('tab_list') })).toBe(
+      'counter',
+    );
+    expect(
+      sellingLayoutOf({ modules: { 'fnb.menu': true }, profile: profile('resource_board') }),
+    ).toBe('counter');
+    expect(sellingLayoutOf({ modules: { 'fnb.menu': true, timed_billing: true } })).toBe('counter');
+    expect(sellingLayoutOf({ modules: { 'fnb.menu': true, 'fnb.postpay': true } })).toBe('counter');
+    // A profile that keeps the catalogue sells from search on the counter.
+    expect(sellingLayoutOf({ modules: cafe, profile: profile('catalog') })).toBe('counter');
+    // Retail, with the menu off or absent, keeps the counter.
+    expect(
+      sellingLayoutOf({ modules: { 'retail.units': true }, profile: profile('catalog') }),
+    ).toBe('counter');
+    expect(sellingLayoutOf({ modules: { 'fnb.menu': false }, profile: profile('menu_grid') })).toBe(
+      'counter',
+    );
+    expect(sellingLayoutOf({ modules: {} })).toBe('counter');
   });
 
   it('reads an empty catalogue from anything else', () => {

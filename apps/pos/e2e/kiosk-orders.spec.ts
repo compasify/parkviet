@@ -8,13 +8,12 @@ import {
   login,
   newWorld,
   serialize,
-  tab,
   type World,
 } from './support/retail-api';
 
 // Orders self-ordering kiosks left for the counter, in the cashier's tray: a
 // badge counts them, "Thu tiền" takes one onto the cashier's shift and opens
-// it for selling, and an abandoned one can be canceled. Presentation
+// it on the quick counter's ticket, and an abandoned one can be canceled. Presentation
 // fixtures only: no real account privileges.
 
 const MODULES = { 'fnb.menu': true, 'fnb.order_number': true, 'fnb.kiosk': true };
@@ -80,7 +79,10 @@ test('takes a kiosk order to the cashier and cancels an abandoned one', async ({
   await expect(abandoned).toHaveCount(0);
 
   await page.getByTestId('kiosk-take-posws_kiosk1').click();
-  await expect(tab(page, 'posws_kiosk1')).toHaveAttribute('aria-selected', 'true');
+  // Taken, it is the order on the counter's ticket.
+  const ticket = page.getByRole('complementary', { name: 'Phiếu quầy' });
+  await expect(ticket.getByTestId('call-number')).toHaveText('Số gọi 4');
+  await expect(ticket.locator('.ticket-line')).toHaveCount(1);
   await expect(page.getByText('Không có đơn kiosk nào chờ thu tiền.')).toBeVisible();
 
   expect(kiosk.calls.map((call) => call.action)).toEqual(['cancel', 'take']);

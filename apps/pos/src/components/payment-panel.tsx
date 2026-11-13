@@ -81,7 +81,7 @@ class RowFailure extends Error {
 // other tender is still waiting or in doubt (same rule as "Complete order").
 // A canteen sponsor's part (`sponsorDue`) is charged as the order completes,
 // so the order is ready once only that part is left.
-function paidInFull(workspace: PosWorkspace, sponsorDue = 0n) {
+export function paidInFull(workspace: PosWorkspace, sponsorDue = 0n) {
   const financial = workspace.financial;
   const remaining = parseVndAmount(financial?.remaining ?? '');
   return Boolean(

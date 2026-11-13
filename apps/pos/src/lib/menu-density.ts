@@ -29,3 +29,25 @@ export function saveMenuDensity(density: MenuDensity) {
     // Not remembered on this device; the choice still applies until reload.
   }
 }
+
+// Whether the menu tiles show the dishes' pictures: a choice of this device,
+// beside the density. Unset, the layout decides (the quick counter shows
+// them, the table order screen does not).
+export const MENU_IMAGES_KEY = 'parkviet-pos:menu-images';
+
+export function savedMenuImages(fallback: boolean): boolean {
+  try {
+    const saved = window.localStorage.getItem(MENU_IMAGES_KEY);
+    return saved === 'on' ? true : saved === 'off' ? false : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+export function saveMenuImages(shown: boolean) {
+  try {
+    window.localStorage.setItem(MENU_IMAGES_KEY, shown ? 'on' : 'off');
+  } catch {
+    // Not remembered on this device; the choice still applies until reload.
+  }
+}

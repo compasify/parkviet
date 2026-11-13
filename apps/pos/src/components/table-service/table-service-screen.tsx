@@ -144,7 +144,19 @@ function dishQuantities(menu: PosMenu, workspace: PosWorkspace | null): Map<stri
   return quantities;
 }
 
-function OrderMenu({ menu, selling }: { menu: PosMenu; selling: SellingWorkspace }) {
+// The menu of an order: the categories, the dish tiles, or one dish's
+// options with what it takes on the order. Table service and the quick
+// counter pick from it alike.
+export function OrderMenu({
+  menu,
+  selling,
+  imagesByDefault = false,
+}: {
+  menu: PosMenu;
+  selling: SellingWorkspace;
+  // The dishes' pictures until this device says otherwise.
+  imagesByDefault?: boolean;
+}) {
   const { t } = useTranslation();
   const {
     data,
@@ -248,6 +260,7 @@ function OrderMenu({ menu, selling }: { menu: PosMenu; selling: SellingWorkspace
               quantities={quantities}
               disabled={addDisabled}
               disabledReason={lockReason}
+              imagesByDefault={imagesByDefault}
               canSetSoldOut={Boolean(
                 data?.capabilities.includes('pos.menu.sold_out') ||
                   data?.capabilities.includes('pos.menu.manage'),

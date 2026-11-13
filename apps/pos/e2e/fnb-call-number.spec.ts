@@ -1,10 +1,12 @@
 import { expect, type Page, type Route, test } from '@playwright/test';
 import { teaMenu } from './support/menu-api';
-import { addSheet, installRetailApi, login, newWorld, openTab, serialize, type World } from './support/retail-api';
+import { addSheet, installRetailApi, login, newWorld, serialize, type World } from './support/retail-api';
 
-// Counter service: two orders sold with call numbers, the guest's name on the
-// first, the counter's pickup queue and the customer display's call board as
-// the kitchen works: preparing, ready (bumped), handed over.
+// Counter service: two orders sold with call numbers wait in the quick
+// counter's strip, the first opens on the ticket with its number and takes
+// the guest's name, and the customer display's call board follows the
+// kitchen: preparing, ready (bumped), handed over. The cashier's screen has
+// no pickup queue; the call board is where guests watch their number.
 // Presentation fixtures only: no real account privileges.
 
 const COUNTER = { 'fnb.menu': true, 'fnb.kitchen': true, 'fnb.order_number': true };
@@ -80,18 +82,18 @@ async function installDisplay(page: Page, kitchen: Kitchen) {
   });
 }
 
-test('call numbers move from preparing to ready to handed over at the counter and on the call board', async ({
+test('call numbers show on the ticket and move from preparing to ready to handed over on the call board', async ({
   page,
   context,
 }) => {
   const world = newWorld({ modules: COUNTER, menu: teaMenu() });
   // Both orders were sold and sent; the kitchen is making them.
-  addSheet(world, 'ws_1', { orderNumber: 1 });
-  addSheet(world, 'ws_2', { orderNumber: 2 });
+  addSheet(world, 'ws_c1', { orderNumber: 1 });
+  addSheet(world, 'ws_c2', { orderNumber: 2 });
   const kitchen: Kitchen = {
     orders: [
-      { number: 1, workspaceId: 'ws_1', guest: null, status: 'preparing' },
-      { number: 2, workspaceId: 'ws_2', guest: null, status: 'preparing' },
+      { number: 1, workspaceId: 'ws_c1', guest: null, status: 'preparing' },
+      { number: 2, workspaceId: 'ws_c2', guest: null, status: 'preparing' },
     ],
     serves: [],
     guestNames: [],
@@ -99,14 +101,18 @@ test('call numbers move from preparing to ready to handed over at the counter an
   await installRetailApi(page, world);
   await installCounterApi(page, world, kitchen);
   await login(page);
-  await openTab(page, 'ws_1');
 
-  // The call number on the tab and above the basket; the guest gives a name.
-  await expect(page.locator('[data-workspace-id="ws_1"] [data-testid="tab-call-number"]')).toHaveText('Số 1');
-  await expect(page.getByTestId('call-number')).toContainText('Số gọi 1');
+  // Both orders wait in the strip by their numbers; the first opens on the ticket.
+  const strip = page.getByRole('list', { name: 'Đơn đang giữ' });
+  await expect(strip.locator('[data-workspace-id="ws_c1"]')).toContainText('Số 1');
+  await expect(strip.locator('[data-workspace-id="ws_c2"]')).toContainText('Số 2');
+  await strip.locator('[data-workspace-id="ws_c1"]').click();
+  await expect(page.getByTestId('call-number')).toHaveText('Số gọi 1');
+  await expect(strip.locator('[data-workspace-id="ws_c1"]')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Nhận quyền sửa', exact: true }).click();
   await page.getByTestId('guest-name').fill('  Lan ');
   await page.getByTestId('guest-name').press('Enter');
-  await expect.poll(() => kitchen.guestNames.at(-1)).toEqual({ workspaceId: 'ws_1', name: 'Lan' });
+  await expect.poll(() => kitchen.guestNames.at(-1)).toEqual({ workspaceId: 'ws_c1', name: 'Lan' });
   await expect(page.getByTestId('call-number')).toContainText('Lan');
 
   // The customer display, paired to the call board.
@@ -118,10 +124,8 @@ test('call numbers move from preparing to ready to handed over at the counter an
   await expect(screen.getByTestId('call-board-preparing')).toHaveText(/1\s*2/);
   await expect(screen.getByTestId('call-board-ready').locator('li')).toHaveCount(0);
 
-  // The pickup queue: both numbers are being made.
-  const toggle = page.getByTestId('pickup-toggle');
-  await toggle.click();
-  await expect(page.getByTestId('pickup-preparing').locator('li')).toHaveText(['1', '2']);
+  // The cashier's screen keeps to selling: no pickup queue beside the ticket.
+  await expect(page.getByTestId('pickup-toggle')).toHaveCount(0);
 
   // The kitchen bumps order 1: ready, with the guest's name, flashing on the board.
   kitchen.orders[0].status = 'ready';
@@ -131,14 +135,8 @@ test('call numbers move from preparing to ready to handed over at the counter an
   await expect(screen.getByTestId('call-board-ready').locator('li').first()).toHaveClass(/call-board-new/);
   await expect(screen.getByTestId('call-board-preparing').locator('li')).toHaveText(['2']);
 
-  // The queue reads again when reopened; "Đã giao" hands order 1 over.
-  await toggle.click();
-  await toggle.click();
-  await expect(page.getByTestId('pickup-ready').locator('li')).toHaveCount(1);
-  await expect(page.getByTestId('pickup-ready')).toContainText('Lan');
-  await page.getByRole('button', { name: 'Đã giao số 1' }).click();
-  await expect.poll(() => kitchen.serves).toEqual(['ws_1']);
-  await expect(page.getByTestId('pickup-ready')).toHaveCount(0);
+  // The kitchen hands order 1 over: it leaves the board.
+  kitchen.orders[0].status = 'served';
   await expect(screen.getByTestId('call-board-ready').locator('li')).toHaveCount(0, { timeout: 5_000 });
   await expect(screen.getByTestId('call-board-preparing').locator('li')).toHaveText(['2']);
 });

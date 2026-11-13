@@ -517,7 +517,7 @@ function menuItemOf(menu: PosMenu | null, line: PosLineItem): PosMenuItem | null
 
 // The options of a line to send again for one more of the same. A line whose
 // option was deleted since cannot be repeated exactly, so it offers nothing.
-function sameSelections(line: PosLineItem): PosModifierSelection[] | null {
+export function sameSelections(line: PosLineItem): PosModifierSelection[] | null {
   const rows = line.modifiers ?? [];
   if (rows.some((row) => row.option_id === null)) return null;
   return toSelections(linePicks(line));

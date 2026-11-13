@@ -192,13 +192,29 @@ export function tableSurfaceOf(
 // The selling screen of a branch: table service (the floor first, then the
 // order beside its ticket) when it runs `fnb.tables`, unless its profile
 // starts on a bar's open tabs or a board of timed rooms, which keep the
-// counter layout. Only the module and the surface decide, never the industry.
+// counter layout. A branch selling from its menu tiles without tables sells
+// at the quick counter (the menu beside one ticket paid on the spot), except
+// a canteen or rest stop, whose meal codes and coach visits still live on
+// the counter layout, and so does a branch paying later or by the clock
+// (open tabs, timed rooms), whose orders stay open across guests. Without the
+// menu, or with a profile that keeps the catalogue, it is the counter. Only
+// the modules and the surface decide, never the industry.
 export function sellingLayoutOf(
   context: { modules?: PosModules | null; profile?: PosBranchProfile | null } | undefined,
-): 'table_service' | 'counter' {
-  if (context?.modules?.['fnb.tables'] !== true) return 'counter';
-  const surface = context.profile?.display.surface;
-  return surface === 'tab_list' || surface === 'resource_board' ? 'counter' : 'table_service';
+): 'table_service' | 'quick_counter' | 'counter' {
+  const modules = context?.modules;
+  const surface = context?.profile?.display.surface;
+  const keepsCounter = surface === 'tab_list' || surface === 'resource_board';
+  if (modules?.['fnb.tables'] !== true) {
+    if (sellingSurfaceOf(context) !== 'menu_grid' || keepsCounter) return 'counter';
+    return modules?.['fnb.meal_accounts'] === true ||
+      modules?.['fnb.vehicle_commission'] === true ||
+      modules?.timed_billing === true ||
+      modules?.['fnb.postpay'] === true
+      ? 'counter'
+      : 'quick_counter';
+  }
+  return keepsCounter ? 'counter' : 'table_service';
 }
 
 // i18n key fragment of a module: dots would read as nesting in i18next.

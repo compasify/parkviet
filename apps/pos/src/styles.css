@@ -1293,3 +1293,55 @@ kbd { padding: var(--pos-s1); border: 1px solid var(--pos-border); border-radius
   .pay-foot { flex-wrap: wrap; }
   .pos-layout .pay-finish { min-width: 0; flex: 1 1 100%; }
 }
+/* Quick counter: the menu beside one ticket paid on the spot. Orders put
+   aside wait in a strip above the menu; the ticket's head carries the call
+   number large, its foot the total and the payment buttons. */
+.quick-strip { display: flex; flex-wrap: wrap; align-items: center; gap: var(--pos-s2); padding: var(--pos-s2) var(--pos-s3); border-bottom: 1px solid var(--pos-border); background: var(--pos-surface); }
+.quick-strip:not(:has(> *)) { display: none; }
+.quick-strip > section { margin: 0; }
+.quick-held { display: flex; gap: var(--pos-s2); margin: 0; padding: 0; list-style: none; overflow-x: auto; max-width: 100%; }
+.pos-layout .quick-held-order { display: inline-flex; align-items: center; gap: var(--pos-s2); min-height: var(--pos-target); padding: 0 var(--pos-s3); border: 2px dashed var(--pos-border); border-radius: 999px; background: var(--pos-tint); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.quick-held-order span { font-weight: 500; }
+.quick-ticket-header .ticket-header-row { align-items: flex-start; }
+.quick-call { flex: 1; min-width: 0; display: grid; gap: 2px; margin: 0; }
+.quick-call-number { font-size: 2rem; font-weight: 800; line-height: 1.1; color: var(--pos-success); font-variant-numeric: tabular-nums; }
+.quick-call small, .quick-call-order { font-size: var(--pos-small); font-weight: 600; color: var(--pos-muted); }
+.quick-call-done { padding: var(--pos-s1) var(--pos-s2); border-radius: var(--pos-radius); background: #e2f4ea; }
+.quick-call-done small { color: var(--pos-success); }
+.pos-layout .quick-print { flex: none; min-height: 36px; }
+.pos-layout .quick-modes { display: flex; flex-wrap: wrap; gap: 6px; margin: var(--pos-s2) 0 0; padding: 0; border: 0; }
+.pos-layout .quick-modes button { min-height: 40px; padding: 0 var(--pos-s3); border-radius: 999px; background: var(--pos-tint); font-weight: 700; }
+.pos-layout .quick-modes button[aria-pressed="true"] { background: var(--pos-ink); border-color: var(--pos-ink); color: var(--pos-surface); }
+.quick-platforms { display: flex; flex-wrap: wrap; gap: 6px; margin-top: var(--pos-s2); padding-top: var(--pos-s2); border-top: 1px dashed var(--pos-border); }
+.pos-layout .quick-platforms .quick-mode-platform { min-height: 36px; padding: 0 var(--pos-s3); border-radius: 999px; border-style: dashed; font-size: var(--pos-small); font-weight: 700; }
+.quick-menu-state { padding: var(--pos-s4); }
+.quick-ticket-header .guest-name { margin-top: var(--pos-s2); }
+.quick-ticket-header .guest-name label { display: grid; gap: 2px; font-size: var(--pos-small); }
+.quick-pay-total { display: flex; justify-content: space-between; align-items: baseline; gap: var(--pos-s2); margin: 0; padding: var(--pos-s2) var(--pos-s3) var(--pos-s1); }
+.quick-pay-total span { font-size: var(--pos-small); color: var(--pos-muted); }
+.quick-pay-total strong { font-size: 1.75rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.pos-layout .quick-pay-notes { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 6px; margin: 0; padding: 0 var(--pos-s3) var(--pos-s2); border: 0; }
+.pos-layout .quick-pay-notes button { min-height: 44px; border-radius: 10px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.quick-pay-methods { display: grid; grid-template-columns: 1.4fr 1fr auto; gap: var(--pos-s2); padding: 0 var(--pos-s3) var(--pos-s2); }
+.quick-pay-methods:not(:has(.quick-pay-qr)) { grid-template-columns: 1fr auto; }
+.pos-layout .quick-pay-methods button { min-height: 60px; border-radius: 10px; font-size: 1.0625rem; font-weight: 800; gap: var(--pos-s2); }
+.pos-layout .quick-pay-methods .quick-pay-cash { background: #1f7a4d; border-color: #1f7a4d; color: var(--pos-surface); }
+.pos-layout .quick-pay-methods .quick-pay-cash:not(:disabled):hover { background: #186340; border-color: #186340; }
+.pos-layout .quick-pay-methods .quick-pay-qr { background: var(--pos-blue); border-color: var(--pos-blue); color: var(--pos-surface); }
+.pos-layout .quick-pay-methods .quick-pay-qr:not(:disabled):hover { background: var(--pos-blue-hover); border-color: var(--pos-blue-hover); }
+.pos-layout .quick-pay-methods .quick-pay-other { min-width: 72px; }
+.quick-pay-methods kbd { padding: 0 4px; border-radius: 4px; font-size: .6875rem; font-weight: 600; background: color-mix(in srgb, currentColor 15%, transparent); color: inherit; }
+.quick-display { position: relative; flex: 1; }
+.quick-display > summary { display: flex; align-items: center; justify-content: center; min-height: 38px; padding: 0 var(--pos-s2); border: 1px solid var(--pos-border); border-radius: 999px; font-size: .8125rem; cursor: pointer; }
+.quick-display[open] > :not(summary) { position: absolute; right: 0; bottom: calc(100% + 6px); z-index: var(--pos-overlay); width: min(360px, 80vw); padding: var(--pos-s3); background: var(--pos-surface); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); box-shadow: var(--pos-shadow); }
+.table-service .menu-items[data-images="true"] { --tile-h: 150px; }
+.table-service .menu-items[data-images="true"][data-density="airy"] { --tile-h: 180px; }
+.table-service .menu-items[data-images="true"][data-density="dense"] { --tile-h: 124px; }
+.table-service .menu-item-image { display: block; flex: none; width: calc(100% + 20px); height: 52%; margin: -9px -10px 6px; object-fit: cover; background: var(--pos-tint); }
+.pos-layout .table-service .menu-images-toggle { flex: none; min-height: var(--pos-target); padding: 0 var(--pos-s3); border-radius: 999px; font-size: var(--pos-small); font-weight: 500; }
+.pos-layout .table-service .menu-images-toggle[aria-pressed="true"] { background: var(--pos-selected); color: var(--pos-blue); font-weight: 700; }
+@media (max-width: 700px) {
+  .quick-call-number { font-size: 1.5rem; }
+  .pos-layout .quick-pay-methods button { min-height: 52px; }
+}
+.table-service .menu-item-schedule { display: block; font-size: .6875rem; font-weight: 700; color: var(--pos-warning); }

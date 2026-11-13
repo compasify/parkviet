@@ -46,6 +46,7 @@ export type Family =
   | 'tender.cancel'
   | 'complete'
   | 'handover'
+  | 'service_mode'
   | 'credit.request'
   | 'collection'
   | 'return.prepare'
@@ -141,6 +142,8 @@ export type Sheet = {
   guestName?: string | null;
   // A bar tab (`service_mode` tab): the guest's name.
   tabName?: string;
+  // How a counter order is served (takeaway, eat in), once picked.
+  serviceMode?: string;
   // The VIP table's minimum spend and the door tickets' drink credit, as sent.
   minimumSpend?: { minimum: string; amount: string; waived: boolean };
   drinkCredit?: { total: string; used: string; remaining: string };
@@ -477,6 +480,7 @@ export function serialize(world: World, sheet: Sheet) {
     note: null,
     order_number: sheet.orderNumber ?? null,
     guest_name: sheet.guestName ?? null,
+    ...(sheet.serviceMode ? { service_mode: sheet.serviceMode } : {}),
     ...(sheet.tabName ? { service_mode: 'tab', tab_name: sheet.tabName, opened_at: '2026-11-12T13:00:00Z' } : {}),
     ...(sheet.minimumSpend ? { minimum_spend: sheet.minimumSpend } : {}),
     ...(sheet.drinkCredit ? { drink_credit: sheet.drinkCredit } : {}),
@@ -1252,6 +1256,7 @@ async function handle(world: World, route: Route) {
     if (/\/tender_attempts\/[^/]+\/cancel$/.test(path)) return 'tender.cancel';
     if (/\/complete$/.test(path)) return 'complete';
     if (/\/handover$/.test(path)) return 'handover';
+    if (/\/service_mode$/.test(path)) return 'service_mode';
     if (/\/credit_requests$/.test(path)) return 'credit.request';
     if (path === '/pos/collections') return 'collection';
     if (path === '/pos/returns') return 'return.prepare';
@@ -1681,6 +1686,15 @@ function run(world: World, family: Family, path: string, body: Record<string, un
       if (remaining > 0 && !(body.credit_approval_id === 'posapproval_credit' && sheet.creditApproved))
         return conflict('Received funds do not cover the order total.');
       completeSheet(world, sheet, Math.max(remaining, 0));
+      sheet.revision += 1;
+      return reply(sheet);
+    }
+    case 'service_mode': {
+      if (!sheet) break;
+      const refused = guard(world, sheet, body);
+      if (refused) return refused;
+      if (sheet.status !== 'editing') return conflict('Order is not open.');
+      sheet.serviceMode = String(body.service_mode);
       sheet.revision += 1;
       return reply(sheet);
     }

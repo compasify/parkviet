@@ -2536,5 +2536,22 @@
   "payEinvoice": "Xuất HĐĐT",
   "paySplitLines": "Tách theo món",
   "paySplitSeats": "Tách theo ghế",
-  "payHandoverFailed": "Đã thu tiền nhưng chưa ghi nhận giao món: {{reason}}"
+  "payHandoverFailed": "Đã thu tiền nhưng chưa ghi nhận giao món: {{reason}}",
+  "menuImages": "Ảnh món",
+  "quickTicketTitle": "Phiếu quầy",
+  "quickCallNumberPending": "Số gọi có khi thanh toán",
+  "quickDone": "Đã thanh toán",
+  "quickDoneNoNumber": "Xong đơn",
+  "quickNextOrder": "Đơn mới",
+  "quickNoOrder": "Chưa có đơn trên quầy.",
+  "quickHeldTitle": "Đơn đang giữ",
+  "quickDineIn": "Tại quán",
+  "quickHold": "Giữ đơn",
+  "quickHoldHint": "Để đơn này sang dải đơn chờ và mở phiếu mới",
+  "quickPayCash": "Tiền mặt đủ",
+  "quickPayNotes": "Khách đưa",
+  "quickPayHanded": "Khách đưa {{amount}}",
+  "quickPayOther": "Phương thức khác",
+  "quickPayContinue": "Tiếp tục thanh toán",
+  "quickStartFailed": "Chưa mở được phiếu mới."
 }

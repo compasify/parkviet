@@ -722,6 +722,8 @@ export type PosWorkspace = {
     amount: string;
   } | null;
   totals?: PosTotals;
+  // The order's total on a row of the open orders list, which has no lines.
+  total?: string;
   // Set when the sale is an order to deliver.
   delivery?: PosDelivery | null;
   financial?: PosFinancial | null;

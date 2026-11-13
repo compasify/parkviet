@@ -1,4 +1,5 @@
 import { formatMoney } from '@parkviet/pos-shared/money';
+import type { Platform } from '@parkviet/pos-shared/platform-orders';
 import { contextFeature } from '@parkviet/pos-shared/pos-features';
 import { rateLabel } from '@parkviet/pos-shared/receipt-template/data';
 import { useRef } from 'react';
@@ -52,13 +53,18 @@ export function WorkspaceTabs() {
 
 // The waiting orders of the branch, each tray a button with its count that
 // opens the tray: delivery platforms, guests' QR orders, kiosks.
-// `onTaken` opens an order taken from a tray (selected here by default).
+// `onTaken` opens an order taken from a tray (selected here by default);
+// `enterPlatform` opens the entry of a platform order for that platform.
 export function OrderTrays({
   selling,
   onTaken,
+  enterPlatform,
+  onPlatformClosed,
 }: {
   selling: SellingWorkspace;
   onTaken?: (workspaceId: string) => void;
+  enterPlatform?: Platform | null;
+  onPlatformClosed?: () => void;
 }) {
   const {
     data,
@@ -84,6 +90,8 @@ export function OrderTrays({
             data?.shift && data.shift.owner_id === data.staff.id && !locked && !channelUnavailable,
           )}
           canCollect={Boolean(data?.capabilities.includes('pos.payment.collect'))}
+          enterWith={enterPlatform}
+          onEnterClosed={onPlatformClosed}
         />
       ) : null}
       {guestOrders && selectionComplete ? (

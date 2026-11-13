@@ -2536,5 +2536,22 @@
   "payEinvoice": "E-invoice",
   "paySplitLines": "Split by dish",
   "paySplitSeats": "Split by seat",
-  "payHandoverFailed": "Paid, but the handover was not recorded: {{reason}}"
+  "payHandoverFailed": "Paid, but the handover was not recorded: {{reason}}",
+  "menuImages": "Pictures",
+  "quickTicketTitle": "Counter ticket",
+  "quickCallNumberPending": "Call number given at payment",
+  "quickDone": "Paid",
+  "quickDoneNoNumber": "Order done",
+  "quickNextOrder": "New order",
+  "quickNoOrder": "No order on the counter yet.",
+  "quickHeldTitle": "Orders on hold",
+  "quickDineIn": "Eat in",
+  "quickHold": "Hold order",
+  "quickHoldHint": "Put this order in the waiting strip and open a new ticket",
+  "quickPayCash": "Exact cash",
+  "quickPayNotes": "Guest hands over",
+  "quickPayHanded": "Guest hands over {{amount}}",
+  "quickPayOther": "Other methods",
+  "quickPayContinue": "Continue payment",
+  "quickStartFailed": "The next ticket could not be opened."
 }

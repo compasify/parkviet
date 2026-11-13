@@ -2,8 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   DEFAULT_MENU_DENSITY,
   MENU_DENSITY_KEY,
+  MENU_IMAGES_KEY,
   savedMenuDensity,
+  savedMenuImages,
   saveMenuDensity,
+  saveMenuImages,
 } from './menu-density';
 
 describe('menu density of this device', () => {
@@ -50,5 +53,19 @@ describe('menu density of this device', () => {
     });
     expect(() => saveMenuDensity('dense')).not.toThrow();
     expect(savedMenuDensity()).toBe('regular');
+    expect(() => saveMenuImages(false)).not.toThrow();
+    expect(savedMenuImages(true)).toBe(true);
+  });
+
+  it('shows pictures as the layout prefers until the device chooses', () => {
+    expect(savedMenuImages(true)).toBe(true);
+    expect(savedMenuImages(false)).toBe(false);
+    saveMenuImages(false);
+    expect(store.get(MENU_IMAGES_KEY)).toBe('off');
+    expect(savedMenuImages(true)).toBe(false);
+    saveMenuImages(true);
+    expect(savedMenuImages(false)).toBe(true);
+    store.set(MENU_IMAGES_KEY, 'maybe');
+    expect(savedMenuImages(true)).toBe(true);
   });
 });

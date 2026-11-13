@@ -26,6 +26,27 @@ import {
 
 type PayDialog = 'lines' | 'seat' | 'delivery';
 
+// The order was just paid: it is handed over as it is, since the dishes are
+// already with the guest. Dishes the kitchen was never told about are not,
+// so such an order waits. A refused handover comes back as the text to show;
+// the payment stands either way.
+export function useHandOver(selling: SellingWorkspace) {
+  const { t } = useTranslation();
+  const { staffId, storeId, command, kitchenOn } = selling;
+  const tenders = useTenders(staffId, storeId);
+  return async (workspace: PosWorkspace): Promise<{ latest: PosWorkspace; failure?: string }> => {
+    if (kitchenOn && pendingKitchenUnits(workspace) > 0) return { latest: workspace };
+    try {
+      return { latest: await command(workspace, (current) => tenders.handover(current)) };
+    } catch (error) {
+      return {
+        latest: workspace,
+        failure: t('payHandoverFailed', { reason: describeFailure(error, t) }),
+      };
+    }
+  };
+}
+
 // A completed order whose change is still to be given back.
 type Done = {
   workspaceId: string;
@@ -43,36 +64,33 @@ type Done = {
 // back. Dishes not sent to the kitchen yet are called out with their send.
 export function PaymentScreen({
   selling,
+  tender = 'vietqr',
+  doneLabel,
   onOrder,
   onBoard,
   onCompleted,
 }: {
   selling: SellingWorkspace;
+  // The method shown first: VietQR shows its QR at once, cash its keypad.
+  tender?: 'vietqr' | 'cash';
+  // Where the screen goes once the order is done; the table board by default.
+  doneLabel?: string;
   onOrder: () => void;
   onBoard: () => void;
   // `print`: the invoice was asked for; `failure`: the handover was refused.
   onCompleted: (workspaceId: string, options: { print: boolean; failure?: string }) => void;
 }) {
   const { t } = useTranslation();
-  const { active, data, staffId, storeId, command, run, workspaces, kitchenOn, locked, busy } =
-    selling;
-  const tenders = useTenders(staffId, storeId);
+  const { active, data, command, run, workspaces, kitchenOn, locked, busy } = selling;
+  const handOver = useHandOver(selling);
+  const backLabel = doneLabel ?? t('boardOpen');
   const search = useSearch({ from: '/authed/' });
   const [done, setDone] = useState<Done | null>(null);
   const [sending, setSending] = useState(false);
   const unsent = kitchenOn && active ? pendingKitchenUnits(active) : 0;
 
   async function completed(workspace: PosWorkspace, print: boolean) {
-    let failure: string | undefined;
-    let latest = workspace;
-    // The dishes are already at the table: the order is handed over as it is
-    // paid. Dishes the kitchen was never told about are not at the table.
-    if (!(kitchenOn && pendingKitchenUnits(workspace) > 0))
-      try {
-        latest = await command(workspace, (current) => tenders.handover(current));
-      } catch (error) {
-        failure = t('payHandoverFailed', { reason: describeFailure(error, t) });
-      }
+    const { latest, failure } = await handOver(workspace);
     const change = parseVndAmount(latest.financial?.change_due ?? '') ?? '0';
     if (change === '0') {
       onCompleted(workspace.id, { print, failure });
@@ -106,7 +124,7 @@ export function PaymentScreen({
         <SellingNotices selling={selling} />
         <div className="pay-empty">
           <button type="button" className="ticket-back" onClick={onBoard}>
-            <PosIcon name="back" /> {t('boardOpen')}
+            <PosIcon name="back" /> {backLabel}
           </button>
           <p className="ticket-empty" role="status">
             {selling.activeLoading ? t('contextWaiting') : t('ticketNoOrder')}
@@ -131,7 +149,7 @@ export function PaymentScreen({
               onCompleted(done.workspaceId, { print: done.print, failure: done.failure });
             }}
           >
-            <PosIcon name="back" /> {t('boardOpen')}
+            <PosIcon name="back" /> {backLabel}
           </button>
         </div>
       ) : unsent > 0 && active.operational_status !== 'completed' ? (
@@ -150,7 +168,7 @@ export function PaymentScreen({
         key={active.id}
         {...activePaymentProps(selling, active)}
         layout="fullscreen"
-        defaultTender="vietqr"
+        defaultTender={tender}
         // The QR prepares itself only for the order the URL names.
         autoPrepare={!search.order || search.order === active.order_id}
         cashTip={data?.modules?.['fnb.postpay'] === true}

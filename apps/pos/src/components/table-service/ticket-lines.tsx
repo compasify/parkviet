@@ -9,6 +9,7 @@ import {
 import { describeTraceFailure } from '@parkviet/pos-shared/traceability';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useCupLabelReprint } from '../../hooks/use-kitchen';
 import { kitchenSent } from '../../lib/kitchen';
 import { linePicks } from '../../lib/menu-selection';
 import type { PosLineItem, PosMenuItem, PosWorkspace } from '../../lib/pos-context';
@@ -18,6 +19,7 @@ import { courseName, seatsOf } from '../../lib/table-courses';
 import { lineChanged, lineSent } from '../../lib/table-kitchen';
 import { ItemDiscountEditor } from '../item-discount-editor';
 import { ModifierSheet } from '../modifier-sheet';
+import { sameSelections } from '../order-lines';
 import { PosIcon } from '../pos-icon';
 import type { SellingWorkspace } from '../workspace-tabs';
 
@@ -42,6 +44,7 @@ export function TicketLines({
   mode,
   plain,
   clock,
+  cupTools = false,
 }: {
   selling: SellingWorkspace;
   active: PosWorkspace;
@@ -50,6 +53,8 @@ export function TicketLines({
   // Without a kitchen the lines show without group headings.
   plain: boolean;
   clock: Clock;
+  // A drinks counter's line tools: one more cup the same, its labels again.
+  cupTools?: boolean;
 }) {
   const { t } = useTranslation();
   const { workspaces, command, run, placement, setPlacement, canAppend, busy } = selling;
@@ -221,6 +226,7 @@ export function TicketLines({
                   onSelect={() => setSelectedId((id) => (id === line.id ? null : line.id))}
                   onChange={(action) => void change(line, action)}
                   onEditNote={(item) => setEditing({ line, item })}
+                  cupTools={cupTools}
                 />
               ))}
             </ul>
@@ -294,6 +300,7 @@ function TicketLine({
   onSelect,
   onChange,
   onEditNote,
+  cupTools,
 }: {
   selling: SellingWorkspace;
   active: PosWorkspace;
@@ -304,6 +311,7 @@ function TicketLine({
   onSelect: () => void;
   onChange: (action: (current: PosWorkspace) => Promise<PosWorkspace>) => void;
   onEditNote: (item: PosMenuItem) => void;
+  cupTools: boolean;
 }) {
   const { t } = useTranslation();
   const currency = active.totals?.currency ?? 'VND';
@@ -369,6 +377,7 @@ function TicketLine({
           line={line}
           onChange={onChange}
           onEditNote={onEditNote}
+          cupTools={cupTools}
         />
       ) : null}
     </li>
@@ -391,12 +400,14 @@ function LineActions({
   line,
   onChange,
   onEditNote,
+  cupTools,
 }: {
   selling: SellingWorkspace;
   active: PosWorkspace;
   line: PosLineItem;
   onChange: (action: (current: PosWorkspace) => Promise<PosWorkspace>) => void;
   onEditNote: (item: PosMenuItem) => void;
+  cupTools: boolean;
 }) {
   const { t } = useTranslation();
   const {
@@ -468,6 +479,15 @@ function LineActions({
         >
           {t('ticketLineNote')}
         </button>
+      ) : null}
+      {cupTools ? (
+        <CupTools
+          selling={selling}
+          active={active}
+          line={line}
+          countDisabled={countDisabled}
+          onChange={onChange}
+        />
       ) : null}
       {canSeat ? (
         <button
@@ -543,5 +563,87 @@ function LineActions({
         </fieldset>
       ) : null}
     </fieldset>
+  );
+}
+
+// A drinks counter's tools on a cup: one more with the same options (joined
+// to the same line), and its labels printed again once the kitchen has it
+// or the order is paid.
+function CupTools({
+  selling,
+  active,
+  line,
+  countDisabled,
+  onChange,
+}: {
+  selling: SellingWorkspace;
+  active: PosWorkspace;
+  line: PosLineItem;
+  countDisabled: boolean;
+  onChange: (action: (current: PosWorkspace) => Promise<PosWorkspace>) => void;
+}) {
+  const { t } = useTranslation();
+  const reprint = useCupLabelReprint();
+  const [message, setMessage] = useState<{ text: string; failed: boolean } | null>(null);
+  if (line.kind !== 'menu' || !line.sale_line_id) return null;
+  const saleLineId = line.sale_line_id;
+  const same = sameSelections(line);
+  const item = menuItemOf(selling, line);
+  const printsLabels =
+    selling.cupLabels &&
+    item?.cup_label === true &&
+    (kitchenSent(line) > 0 || active.operational_status === 'completed');
+  return (
+    <>
+      {same ? (
+        <button
+          type="button"
+          disabled={countDisabled || line.quantity >= MAX_COUNT_QUANTITY}
+          title={selling.lockReason}
+          onClick={() =>
+            onChange((current) =>
+              selling.workspaces.addItem(current, line.variant_id, 1, {
+                modifiers: same,
+                note: line.note ?? undefined,
+                merge: true,
+              }),
+            )
+          }
+        >
+          {t('menuAddSame')}
+        </button>
+      ) : null}
+      {printsLabels ? (
+        <button
+          type="button"
+          disabled={reprint.isPending}
+          data-testid="cup-label-reprint"
+          onClick={() => {
+            setMessage(null);
+            reprint
+              .mutateAsync({ workspaceId: active.id, saleLineId })
+              .then((result) =>
+                setMessage({
+                  text: t('cupLabelReprinted', { count: result.jobs.length }),
+                  failed: false,
+                }),
+              )
+              .catch((failure: unknown) =>
+                setMessage({ text: describeTraceFailure(failure, t), failed: true }),
+              );
+          }}
+        >
+          {t('cupLabelReprint')}
+        </button>
+      ) : null}
+      {message ? (
+        <span
+          className={message.failed ? 'error' : 'muted'}
+          role={message.failed ? 'alert' : 'status'}
+        >
+          {message.text}
+        </span>
+      ) : null}
+    </>
   );
 }
