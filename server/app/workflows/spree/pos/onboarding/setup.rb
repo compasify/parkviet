@@ -31,7 +31,7 @@ module Spree
                            variance_threshold display_freshness_ttl_seconds lot_selection adjustment_approval_threshold].freeze
 
         def self.call(store:, actor:, key:, profile_key:, branch:, wholesale: false, interests: [], register: nil, grant_self: false,
-                      features: [], fnb_setup: nil, answers: nil)
+                      features: [], disabled_modules: nil, fnb_setup: nil, answers: nil)
           branch_params = slice(branch, BRANCH_FIELDS)
           register_params = register.nil? ? nil : slice(register, %w[name code])
           payload = {
@@ -39,6 +39,7 @@ module Spree
             'interests' => strings(interests), 'branch' => branch_params, 'register' => register_params,
             'grant_self' => grant_self == true, 'features' => strings(features)
           }
+          payload['disabled_modules'] = strings(disabled_modules) unless disabled_modules.nil?
           payload['fnb_setup'] = fnb_params(fnb_setup) unless fnb_setup.nil?
           payload['answers'] = answer_params(answers) unless answers.nil?
           authorize = -> { raise CanCan::AccessDenied unless AccessPolicy.new(store: store, staff: actor).permission?(PERMISSION) }
@@ -63,6 +64,7 @@ module Spree
             attributes[:kitchen_send_trigger] = fnb['kitchen_send_trigger'] if fnb&.dig('kitchen_send_trigger')
             created = Branches::Create.call(store: store, actor: actor, profile_key: profile.key, attributes: attributes)
             enable_optional!(created, profile, modules, actor) if has_tables
+            disable_modules!(created, profile, modules, payload['disabled_modules'], actor)
             drawer = register_params && create_register!(store, actor, created, register_params)
             created.update!(table_register: drawer) if tables
             membership = payload['grant_self'] ? grant!(store, actor, created) : nil
@@ -104,6 +106,41 @@ module Spree
           (modules - profile.modules).each do |key|
             BranchModules::Set.write!(branch, key, true, actor: actor, reason: "profile:#{profile.key}",
                                                          metadata: { profile_key: profile.key, answer: 'has_tables' })
+          end
+        end
+
+        # Suggested modules the owner turned off on the preview. A module that
+        # another module staying on still needs is refused. Dependents go off
+        # first so the switch accepts each one.
+        def self.disable_modules!(branch, profile, enabled_plan, keys, actor)
+          return if keys.blank?
+
+          requested = Array(keys)
+          unknown = requested - profile.modules
+          if unknown.any?
+            raise Conflict.new("Unknown module #{unknown.join(', ')}.", reason: BranchModules::Set::UNAVAILABLE,
+                                                                         details: { modules: unknown })
+          end
+
+          kept = enabled_plan - requested
+          requested.each do |key|
+            needed = BranchModules::Set.dependents(key) & kept
+            next if needed.empty?
+
+            raise Conflict.new("#{needed.join(', ')} needs #{key}.", reason: BranchModules::Set::REQUIRED_BY,
+                                                                     details: { module: key, required_by: needed })
+          end
+          pending = requested.dup
+          until pending.empty?
+            ready = pending.select { |key| (BranchModules::Set.dependents(key) & pending).empty? }
+            break if ready.empty?
+
+            ready.each do |key|
+              BranchModules::Set.write!(branch, key, false, actor: actor,
+                                                            reason: "Thiết lập: tắt chức năng gợi ý của ngành #{profile.key}",
+                                                            metadata: { profile_key: profile.key })
+            end
+            pending -= ready
           end
         end
 

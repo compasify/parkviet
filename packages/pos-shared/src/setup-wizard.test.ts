@@ -364,6 +364,19 @@ describe('onboarding payload', () => {
     });
   });
 
+  it('sends a suggested module the owner turned off, and a new industry turns them back on', () => {
+    const off = run([
+      choose('nha_thuoc'),
+      { type: 'module', key: 'retail.traceability', value: false },
+      { type: 'module', key: 'not-in-profile', value: false },
+    ]);
+    expect(off.disabledModules).toEqual(['retail.traceability', 'not-in-profile']);
+    expect(onboardingPayload(off, pharmacy).disabled_modules).toEqual(['retail.traceability']);
+    const back = run([{ type: 'module', key: 'retail.traceability', value: true }], off);
+    expect(onboardingPayload(back, pharmacy)).not.toHaveProperty('disabled_modules');
+    expect(run([choose('thoi_trang')], off).disabledModules).toEqual([]);
+  });
+
   it('keeps edits, drops a blank register, and only sends recommended ticked features', () => {
     const state = run([
       choose('nha_thuoc'),

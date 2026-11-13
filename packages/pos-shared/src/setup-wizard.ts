@@ -122,6 +122,8 @@ export type SetupState = {
   grantSelf: boolean;
   defaults: SetupDefaults;
   features: PosFeature[];
+  // Profile modules the owner turned off on the preview. Absent means on.
+  disabledModules: string[];
   shop: ShopSetup | null;
   // The answer to "do you serve tables?" for a profile whose table service is optional.
   hasTables: boolean;
@@ -156,6 +158,7 @@ export function initialSetup(timezone?: string | null): SetupState {
     grantSelf: true,
     defaults: { ...BLANK_DEFAULTS },
     features: [],
+    disabledModules: [],
     shop: null,
     hasTables: false,
   };
@@ -256,6 +259,7 @@ export type SetupAction =
   | { type: 'grant-self'; value: boolean }
   | { type: 'default'; field: keyof SetupDefaults; value: string }
   | { type: 'feature'; feature: PosFeature; value: boolean }
+  | { type: 'module'; key: string; value: boolean }
   | { type: 'shop-init'; value: ShopSetup }
   | { type: 'station-name'; index: number; value: string }
   | { type: 'station-kind'; index: number; value: ShopStationKind }
@@ -277,6 +281,8 @@ function withProfile(state: SetupState, key: string, profiles: BusinessProfile[]
     profileKey: key,
     defaults: defaultsFromProfile(profile),
     features: state.features.filter((feature) => recommended.includes(feature)),
+    // A new industry starts from its own suggestions, all on.
+    disabledModules: [],
     shop: null,
   };
 }
@@ -364,6 +370,15 @@ export function setupReducer(state: SetupState, action: SetupAction): SetupState
             ? state.features
             : [...state.features, action.feature]
           : state.features.filter((feature) => feature !== action.feature),
+      };
+    case 'module':
+      return {
+        ...state,
+        disabledModules: action.value
+          ? state.disabledModules.filter((key) => key !== action.key)
+          : state.disabledModules.includes(action.key)
+            ? state.disabledModules
+            : [...state.disabledModules, action.key],
       };
     case 'shop-init':
       // Kept while the profile stays the same, so going back keeps the edits.
@@ -483,6 +498,8 @@ export type OnboardingPayload = {
   register?: { name: string };
   grant_self: boolean;
   features: PosFeature[];
+  // Profile modules the owner turned off. Omitted when every suggestion stays on.
+  disabled_modules?: string[];
   answers?: { has_tables: boolean };
   fnb_setup?: {
     stations: { name: string; kind: ShopStationKind }[];
@@ -512,6 +529,7 @@ export function onboardingPayload(state: SetupState, profile: BusinessProfile): 
     branch.adjustment_approval_threshold = number(state.defaults.adjustment_approval_threshold);
   const recommended = recommendedFeatures(profile);
   const registerName = state.registerName.trim();
+  const disabledModules = state.disabledModules.filter((key) => profile.modules.includes(key));
   return {
     profile_key: profile.key,
     wholesale: state.wholesale,
@@ -521,6 +539,7 @@ export function onboardingPayload(state: SetupState, profile: BusinessProfile): 
     grant_self: state.grantSelf,
     // Only what the owner ticked, and only among what the industry recommends.
     features: state.features.filter((feature) => recommended.includes(feature)),
+    ...(disabledModules.length ? { disabled_modules: disabledModules } : {}),
     ...(tablesOptional(profile) ? { answers: { has_tables: state.hasTables } } : {}),
     ...shopPayload(state, profile),
   };
@@ -533,8 +552,14 @@ function shopPayload(
   profile: BusinessProfile,
 ): Pick<OnboardingPayload, 'fnb_setup'> {
   const shop = state.shop;
-  if (!hasShopStep(profile) || !shop || shop.profileKey !== profile.key) return {};
-  const kitchen = hasKitchen(profile);
+  if (
+    !hasShopStep(profile) ||
+    state.disabledModules.includes('fnb.menu') ||
+    !shop ||
+    shop.profileKey !== profile.key
+  )
+    return {};
+  const kitchen = hasKitchen(profile) && !state.disabledModules.includes('fnb.kitchen');
   return {
     fnb_setup: {
       stations: kitchen

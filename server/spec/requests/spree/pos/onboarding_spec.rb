@@ -48,6 +48,24 @@ RSpec.describe 'POS onboarding', type: :request, pos_modules: :default, pos_feat
     payload.dig('error', 'details', 'reason')
   end
 
+  it 'turns off a suggested module the owner declined' do
+    setup!(staff_with(%w[write_pos_topology]), body(disabled_modules: ['retail.traceability']))
+    expect(response).to have_http_status(:created)
+    branch = Spree::Pos::Branch.find_by!(store: store, code: 'q1')
+    expect(Spree::Pos::BranchModule.find_by!(branch: branch, module_key: 'retail.traceability')).to have_attributes(enabled: false)
+    expect(Spree::Pos::BranchModule.find_by!(branch: branch, module_key: 'retail.units').enabled).to eq(true)
+  end
+
+  it 'refuses to turn off a module another suggested module still needs' do
+    setup!(staff_with(%w[write_pos_topology]), body(
+      profile_key: 'tap_hoa_sieu_thi',
+      branch: { name: 'Tạp hóa', code: 'th', timezone: 'Asia/Ho_Chi_Minh', stock_location_id: location.prefixed_id },
+      disabled_modules: ['retail.units']
+    ))
+    expect(response).to have_http_status(:conflict)
+    expect(reason_of(response.parsed_body)).to eq('module_required_by')
+  end
+
   it 'sets the store up in one command and replays the same body for the same key' do
     owner = staff_with(%w[write_pos_topology])
     key = SecureRandom.uuid

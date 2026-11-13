@@ -1,4 +1,9 @@
-import { type BusinessProfile, moduleTextKey } from '@parkviet/pos-shared/pos-modules'
+import {
+  type BusinessModule,
+  type BusinessProfile,
+  moduleTextKey,
+  modulesRequiring,
+} from '@parkviet/pos-shared/pos-modules'
 import {
   editableDefaults,
   recommendedFeatures,
@@ -30,17 +35,22 @@ export function unitLabel(
 
 export function SetupPreviewStep({
   profile,
+  catalogue,
   state,
   dispatch,
   problems,
 }: {
   profile: BusinessProfile
+  catalogue: BusinessModule[]
   state: SetupState
   dispatch: Dispatch<SetupAction>
   problems: SetupProblem[]
 }) {
   const { t } = useTranslation()
-  const fields = editableDefaults(profile)
+  const enabled = profile.modules.filter((key) => !state.disabledModules.includes(key))
+  const active = { ...profile, modules: enabled }
+  const enabledMap = Object.fromEntries(enabled.map((key) => [key, true]))
+  const fields = editableDefaults(active)
   const features = recommendedFeatures(profile)
   const numberFields = [
     { field: 'return_window_days', label: 'adminReturnWindow', problem: 'return-window', max: 4 },
@@ -58,23 +68,42 @@ export function SetupPreviewStep({
         <h3 id="setup-modules-heading" className="font-semibold">
           {t('setup.modulesTitle')}
         </h3>
+        <p className="mt-1 text-sm text-muted-foreground">{t('setup.modulesLater')}</p>
         {profile.modules.length ? (
           <ul className="mt-3 divide-y">
-            {profile.modules.map((key) => (
-              <li key={key} data-module={key} className="py-3">
-                <strong>
-                  <ModuleName moduleKey={key} />
-                </strong>
-                <p className="text-sm text-muted-foreground">
-                  <ModuleDescription moduleKey={key} />
-                </p>
-              </li>
-            ))}
+            {profile.modules.map((key) => {
+              const on = !state.disabledModules.includes(key)
+              const requiredBy = on ? modulesRequiring(key, catalogue, enabledMap) : []
+              const text = moduleTextKey(key)
+              return (
+                <li key={key} data-module={key} className="py-3">
+                  <ModelCheck
+                    checked={on}
+                    disabled={requiredBy.length > 0}
+                    description={text ? t(`posModules.${text}.description`) : undefined}
+                    onChange={(value) => dispatch({ type: 'module', key, value })}
+                  >
+                    <ModuleName moduleKey={key} />
+                  </ModelCheck>
+                  {requiredBy.length ? (
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {t('businessModel.requiredBy', {
+                        list: requiredBy
+                          .map((item) => {
+                            const name = moduleTextKey(item)
+                            return name ? t(`posModules.${name}.label`) : item
+                          })
+                          .join(', '),
+                      })}
+                    </p>
+                  ) : null}
+                </li>
+              )
+            })}
           </ul>
         ) : (
-          <p>{t('setup.modulesNone')}</p>
+          <p className="mt-3">{t('setup.modulesNone')}</p>
         )}
-        <p className="text-sm text-muted-foreground">{t('setup.modulesLater')}</p>
       </section>
       <section aria-labelledby="setup-defaults-heading" className="space-y-4">
         <h3 id="setup-defaults-heading" className="font-semibold">
@@ -121,14 +150,14 @@ export function SetupPreviewStep({
         </div>
         <p className="text-sm text-muted-foreground">
           {t(
-            profile.display.surface === 'menu_grid' && profile.modules.includes('fnb.menu')
+            profile.display.surface === 'menu_grid' && active.modules.includes('fnb.menu')
               ? 'setup.viewMenuGrid'
               : profile.display.catalog_view === 'list'
                 ? 'setup.viewList'
                 : 'setup.viewCards',
           )}
         </p>
-        {profile.modules.includes('fnb.kitchen') ? (
+        {active.modules.includes('fnb.kitchen') ? (
           <p className="text-sm text-muted-foreground">
             {t('setup.previewKitchen', {
               trigger: t(

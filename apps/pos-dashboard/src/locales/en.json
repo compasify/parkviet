@@ -677,7 +677,7 @@
     "grantSelfHint": "Includes opening shifts, taking payments, approvals and branch settings. Untick if you will grant permissions to others later.",
     "modulesTitle": "Features turned on",
     "modulesNone": "This business turns on no extra feature; ordinary selling is enough.",
-    "modulesLater": "Turn each feature on or off later on the branch’s Business model page.",
+    "modulesLater": "The business starts with these on. Turn off any you do not need; after the store is created you can turn them back on or add others on the branch’s Business model page.",
     "defaultsTitle": "Branch defaults",
     "viewList": "The catalogue opens as a list.",
     "viewCards": "The catalogue opens as cards.",

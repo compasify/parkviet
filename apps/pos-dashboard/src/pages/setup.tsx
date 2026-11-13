@@ -86,7 +86,13 @@ function SetupWizard({ onDone }: { onDone: () => void }) {
   const profiles = catalogue.data?.profiles ?? []
   const profile = profiles.find((item) => item.key === state.profileKey)
   const taxes = catalogue.data?.tax_categories ?? []
-  const steps = setupSteps(profile)
+  const routingProfile = profile
+    ? {
+        ...profile,
+        modules: profile.modules.filter((key) => !state.disabledModules.includes(key)),
+      }
+    : undefined
+  const steps = setupSteps(routingProfile)
   const activeLocations = (locations.data?.data ?? []).filter((location) => location.active)
   const locationIds = activeLocations.map((location) => location.id)
   const problems = stepProblems(state, state.step, { profiles, locationIds })
@@ -105,8 +111,8 @@ function SetupWizard({ onDone }: { onDone: () => void }) {
     setShownProblems([])
     setFailure('')
     // The shop step starts from the profile's proposal; edits stay while the profile does.
-    if (profile && catalogue.data && hasShopStep(profile) && step >= SHOP_STEP)
-      dispatch({ type: 'shop-init', value: shopDefaults(profile, catalogue.data, stationName(t)) })
+    if (routingProfile && catalogue.data && hasShopStep(routingProfile) && step >= SHOP_STEP)
+      dispatch({ type: 'shop-init', value: shopDefaults(routingProfile, catalogue.data, stationName(t)) })
     dispatch({ type: 'go', step })
   }
   async function finish(run: () => Promise<unknown>) {
@@ -191,7 +197,7 @@ function SetupWizard({ onDone }: { onDone: () => void }) {
           event.preventDefault()
           submit()
         }}
-        contentClassName="max-w-4xl"
+        contentClassName={state.step === 1 ? undefined : 'max-w-4xl'}
         back={
           <Button
             type="button"
@@ -276,6 +282,7 @@ function SetupWizard({ onDone }: { onDone: () => void }) {
             {state.step === 4 && profile ? (
               <SetupPreviewStep
                 profile={profile}
+                catalogue={catalogue.data?.modules ?? []}
                 state={state}
                 dispatch={dispatch}
                 problems={visibleProblems}
@@ -295,10 +302,13 @@ function SetupWizard({ onDone }: { onDone: () => void }) {
             {state.step === SUMMARY_STEP && profile ? (
               <SetupSummary
                 state={state}
-                shop={hasShopStep(profile) ? state.shop : null}
+                shop={hasShopStep(routingProfile) ? state.shop : null}
                 taxLabel={(code) => taxLabel(t, taxes, code)}
                 profileName={t(profileLabelKey(profile.key))}
-                modules={profileModules(profile, tablesOptional(profile) && state.hasTables)}
+                modules={profileModules(
+                  profile,
+                  tablesOptional(profile) && state.hasTables,
+                ).filter((key) => !state.disabledModules.includes(key))}
                 tables={tablesOn(state, profile)}
                 units={profile.sample_units.map((code) => unitLabel(t, code))}
                 location={

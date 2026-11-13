@@ -676,7 +676,7 @@
     "grantSelfHint": "Gồm mở ca, thu tiền, duyệt và cấu hình chi nhánh. Bỏ chọn nếu sẽ cấp quyền cho người khác sau.",
     "modulesTitle": "Chức năng được bật",
     "modulesNone": "Ngành này không bật thêm chức năng nào; bán hàng thông thường vẫn đủ.",
-    "modulesLater": "Bật hoặc tắt từng chức năng về sau ở trang Mô hình kinh doanh của chi nhánh.",
+    "modulesLater": "Ngành gợi ý bật sẵn. Tắt những chức năng chưa cần; sau khi tạo cửa hàng vẫn bật lại hoặc chọn thêm ở Mô hình kinh doanh của chi nhánh.",
     "defaultsTitle": "Mặc định của chi nhánh",
     "viewList": "Danh mục hàng mở ở dạng Danh sách.",
     "viewCards": "Danh mục hàng mở ở dạng Thẻ.",

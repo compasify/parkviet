@@ -52,6 +52,9 @@ test('empty store redirects to five-step setup; pharmacy defaults and risky opt-
   await expect(page.getByLabel('Mã chi nhánh', { exact: true })).toHaveValue('nha-thuoc-minh-chau');
   await expect(page.getByRole('combobox', { name: 'Múi giờ', exact: true })).toContainText('Asia/Ho_Chi_Minh');
   await chooseLocation(page); await expect(page.getByRole('checkbox', { name: /Cấp cho tôi toàn quyền/ })).toBeChecked(); await next(page);
+  const suggested = page.getByRole('region', { name: 'Chức năng được bật' });
+  await expect(suggested.getByRole('checkbox', { name: 'Quy đổi đơn vị', exact: true })).toBeChecked();
+  await suggested.getByRole('checkbox', { name: 'Serial, lô, hạn dùng', exact: true }).uncheck();
   await expect(page.getByLabel('Số ngày cho phép trả hàng', { exact: false })).toHaveValue('7');
   await expect(page.getByRole('combobox', { name: 'Chọn lô khi bán', exact: false })).toContainText('FEFO');
   const usual = page.getByRole('group', { name: 'Ngành này thường dùng' });
@@ -60,7 +63,7 @@ test('empty store redirects to five-step setup; pharmacy defaults and risky opt-
   await page.getByRole('button', { name: 'Tạo cửa hàng', exact: true }).last().click();
   await expect(page).not.toHaveURL(/\/setup/);
   expect(state.posts).toHaveLength(1); expect(state.posts[0].key).toMatch(/^[0-9a-f-]{36}$/);
-  expect(state.posts[0].body).toEqual({ profile_key: 'nha_thuoc', wholesale: false, interests: [], branch: { name: 'Nhà thuốc Minh Châu', code: 'nha-thuoc-minh-chau', timezone: 'Asia/Ho_Chi_Minh', stock_location_id: 'sloc_main', return_window_days: 7, lot_selection: 'fefo' }, register: { name: 'Quầy 1' }, grant_self: true, features: [] });
+  expect(state.posts[0].body).toEqual({ profile_key: 'nha_thuoc', wholesale: false, interests: [], branch: { name: 'Nhà thuốc Minh Châu', code: 'nha-thuoc-minh-chau', timezone: 'Asia/Ho_Chi_Minh', stock_location_id: 'sloc_main', return_window_days: 7, lot_selection: 'fefo' }, register: { name: 'Quầy 1' }, grant_self: true, features: [], disabled_modules: ['retail.traceability'] });
   expect(state.branches).toHaveLength(1);
 });
 

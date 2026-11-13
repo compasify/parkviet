@@ -53,7 +53,7 @@ export function ProfilePicker({
           section.rows.length ? (
             <fieldset key={section.id} className="min-w-0 space-y-3">
               <legend className="mb-3 font-semibold">{section.title}</legend>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,18rem),1fr))] gap-3">
                 {section.rows.map((profile) => {
                   const soon = !isAvailable(profile)
                   const id = `setup-profile-${profile.key}`
