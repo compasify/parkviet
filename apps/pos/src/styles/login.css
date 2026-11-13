@@ -13,7 +13,7 @@
 }
 .login-split .auth-panel { max-width: 400px; padding: 0; border: 0; background: none; }
 .login-side-brand { display: flex; align-items: center; gap: var(--pos-s3); margin-bottom: clamp(28px, 6vh, 56px); }
-.login-side-brand .auth-symbol { margin: 0; width: 44px; height: 44px; border-radius: 12px; color: white; background: linear-gradient(135deg, #0b6cbf, var(--pos-blue)); box-shadow: 0 6px 16px #07569a40; }
+.login-side-logo { width: 44px; height: 44px; flex: none; filter: drop-shadow(0 6px 12px #07569a33); }
 .login-side-brand strong { font-size: 1.15rem; letter-spacing: -.02em; }
 .login-side-brand strong span { color: var(--pos-blue); }
 .login-side-area { margin-left: auto; padding: var(--pos-s1) var(--pos-s3); border-radius: 999px; font-size: var(--pos-small); font-weight: 600; color: var(--pos-blue); background: var(--pos-selected); }

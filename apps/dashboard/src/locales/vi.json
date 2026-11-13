@@ -1,5 +1,10 @@
 {
   "admin": {
+    "app_name": "ParkViet Quản trị",
+    "auth_brand": {
+      "headline": "Quản lý cửa hàng ở một nơi",
+      "body": "Sản phẩm, đơn hàng, khách hàng, thanh toán và cấu hình cho mọi cửa hàng ParkViet."
+    },
     "a11y": {
       "delete_image": "Xóa hình ảnh",
       "edit_media": "Chỉnh sửa phương tiện"

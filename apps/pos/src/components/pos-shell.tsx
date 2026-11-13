@@ -1,6 +1,7 @@
 import { Outlet, useLocation, useNavigate } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import posMark from '../assets/brand/parkviet-pos-mark-dark.svg';
 import { useBranchEvents } from '../hooks/use-branch-events';
 import { useConnectivity } from '../hooks/use-offline';
 import { useReceiptTemplates } from '../hooks/use-receipt-templates';
@@ -315,7 +316,8 @@ function ShellFrame() {
             {t('sellingArea')}
           </h1>
         ) : null}
-        <strong>
+        <strong className="header-brand">
+          <img className="header-logo" src={posMark} alt="" />
           ParkViet <span>POS</span>
         </strong>
         <span className="header-title">{pageTitle}</span>

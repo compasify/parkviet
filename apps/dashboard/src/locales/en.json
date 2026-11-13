@@ -1,5 +1,10 @@
 {
   "admin": {
+    "app_name": "ParkViet Admin",
+    "auth_brand": {
+      "headline": "Run your stores in one place",
+      "body": "Products, orders, customers, payments and settings for every ParkViet store."
+    },
     "multi_store": {
       "nav": "Store list",
       "nav_description": "Open another store, like a restaurant beside your shop, with its own products, orders and settings",

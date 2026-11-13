@@ -67,6 +67,8 @@ fieldset { border: 1px solid #d8e3dc; border-radius: 8px; display: grid; gap: 8p
 .pos-layout .header { position: relative; min-height: 52px; padding: var(--pos-s1) var(--pos-s4); display: flex; flex-direction: row; justify-content: flex-start; align-items: center; flex-wrap: wrap; gap: var(--pos-s1) var(--pos-s3); color: white; background: var(--pos-blue); border: 0; }
 .pos-layout .header > strong { font-size: var(--pos-heading); letter-spacing: -.02em; white-space: nowrap; }
 .pos-layout .header strong span { color: white; }
+.header-brand { display: inline-flex; align-items: center; gap: var(--pos-s2); }
+.header-logo { height: 30px; width: auto; flex: none; }
 .header-title { font-weight: 600; border-left: 1px solid #73a4cb; padding-left: var(--pos-s4); }
 /* Header account menu: pages, devices and sign out. */
 .user-menu { position: relative; margin-left: auto; min-width: 0; }

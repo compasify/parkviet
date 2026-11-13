@@ -5,6 +5,24 @@ import { spreeDashboardPlugin } from '@spree/dashboard/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig, loadEnv, type Plugin } from 'vite'
 
+// The shell's signed-out pages (login, password reset, invitation, setup) all
+// render `@spree/dashboard`'s AuthShell, which shows Spree artwork and offers no
+// slot to replace it. Point those imports at ParkViet's own layout instead.
+function parkvietAuthShell(): Plugin {
+  const replacement = resolve(import.meta.dirname, 'src/components/auth-shell.tsx')
+  return {
+    name: 'parkviet-auth-shell',
+    enforce: 'pre',
+    resolveId(source, importer) {
+      const from = importer?.replaceAll('\\', '/') ?? ''
+      if (source.endsWith('components/spree/auth-shell') && from.includes('@spree/dashboard/')) {
+        return replacement
+      }
+      return null
+    },
+  }
+}
+
 // `spree dev` only starts this app's dev server, so this server starts the POS
 // selling app (apps/pos, http://localhost:5175) and the POS admin app
 // (apps/pos-dashboard, http://localhost:5176) next to it and stops them on
@@ -17,7 +35,8 @@ function posDevServers(): Plugin {
       folder: 'apps/pos',
       prefix: 'pos',
       label: 'POS',
-      missing: 'apps/pos has no node_modules — run `pnpm install` there to start it with the dashboard.',
+      missing:
+        'apps/pos has no node_modules — run `pnpm install` there to start it with the dashboard.',
     },
     {
       dir: resolve(import.meta.dirname, '../pos-dashboard'),
@@ -83,7 +102,13 @@ function posDevServers(): Plugin {
           if (!children.delete(proc)) return
           // The previous dev server can still hold the port for a moment when
           // this config reloads. One retry covers that; a later failure is real.
-          if (code && code !== 130 && code !== 143 && attempt < 1 && Date.now() - startedAt < 5000) {
+          if (
+            code &&
+            code !== 130 &&
+            code !== 143 &&
+            attempt < 1 &&
+            Date.now() - startedAt < 5000
+          ) {
             setTimeout(() => startApp(app, attempt + 1), 750)
             return
           }
@@ -132,7 +157,7 @@ export default defineConfig(({ mode }) => {
     // src/main.tsx imports to activate them, and composes the shell's and
     // every plugin's file routes into src/routeTree.gen.ts on each dev
     // start/build — commit that file; its diff shows what an upgrade added.
-    plugins: [spreeDashboardPlugin(), react(), posDevServers()],
+    plugins: [parkvietAuthShell(), spreeDashboardPlugin(), react(), posDevServers()],
     // Proxy /api to the Rails server so the SPA is same-origin with the API
     // in dev — keeps the refresh-token cookie working under SameSite=Lax
     // without HTTPS. /rails covers Active Storage's presigned URLs. Proxy

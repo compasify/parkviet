@@ -1,6 +1,7 @@
 import { Link, useNavigate } from '@tanstack/react-router';
 import { type FormEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import posAppIcon from '../assets/brand/parkviet-pos-app-icon.svg';
 import { LoginShowcase } from '../components/login-showcase';
 import { PosIcon } from '../components/pos-icon';
 import { useStoredSnapshot } from '../hooks/use-offline';
@@ -46,9 +47,7 @@ export function LoginPage() {
       <div className="login-side">
         <section className="auth-panel" aria-labelledby="title">
           <div className="login-side-brand">
-            <span className="auth-symbol">
-              <PosIcon name="cash" />
-            </span>
+            <img className="login-side-logo" src={posAppIcon} alt="" />
             <strong>
               ParkViet <span>POS</span>
             </strong>

@@ -1,6 +1,7 @@
 import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import posAppIcon from '../assets/brand/parkviet-pos-app-icon.svg';
 import { PosIcon } from '../components/pos-icon';
 import { useSession } from '../hooks/use-session';
 import { session } from '../lib/app-session';
@@ -34,9 +35,7 @@ export function StorePickerPage() {
       <div className="login-side">
         <section className="auth-panel" aria-labelledby="title">
           <div className="login-side-brand">
-            <span className="auth-symbol">
-              <PosIcon name="cash" />
-            </span>
+            <img className="login-side-logo" src={posAppIcon} alt="" />
             <strong>
               ParkViet <span>POS</span>
             </strong>

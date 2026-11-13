@@ -2,6 +2,7 @@ import { formatMoney, parseVndInput } from '@parkviet/pos-shared/money';
 import { Link } from '@tanstack/react-router';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import posMark from '../assets/brand/parkviet-pos-mark-dark.svg';
 import { MenuGrid } from '../components/menu-grid';
 import { ReceiptPrintPortal } from '../components/receipt-sheet';
 import { useConnectivity, useOfflineQueue, useStoredSnapshot } from '../hooks/use-offline';
@@ -150,7 +151,8 @@ export function OfflineSalePage() {
   return (
     <main className="layout pos-layout offline-sale">
       <header className="header">
-        <strong>
+        <strong className="header-brand">
+          <img className="header-logo" src={posMark} alt="" />
           ParkViet <span>POS</span>
         </strong>
         <span className="header-title">{t('offlineSaleTitle')}</span>
