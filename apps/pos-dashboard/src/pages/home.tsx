@@ -1,7 +1,7 @@
 import { canHandleDeliveries } from '@parkviet/pos-shared/deliveries'
 import { describeFailure } from '@parkviet/pos-shared/request-failure'
 import { PageHeader, usePermissions } from '@spree/dashboard-core'
-import { Badge, Button } from '@spree/dashboard-ui'
+import { Badge, Button, Skeleton } from '@spree/dashboard-ui'
 import {
   ArrowLeftRightIcon,
   BanknoteIcon,
@@ -15,6 +15,7 @@ import { Link } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { BranchPicker } from '../components/branch-picker'
+import { PageSkeleton } from '../components/page-skeleton'
 import { ModelCard } from '../components/setup/model-ui'
 import {
   type AttentionCount,
@@ -121,7 +122,7 @@ export function HomePage() {
         actions={<BranchPicker />}
       />
       {context.isPending ? (
-        <p role="status">{t('contextWaiting')}</p>
+        <PageSkeleton variant="cards" />
       ) : context.isError ? (
         <div role="alert">
           {describeFailure(context.error, t)}
@@ -160,9 +161,7 @@ function AttentionCard({ item, storeId }: { item: Item; storeId: string }) {
             {describeFailure(query.error, t)}
           </p>
         ) : count === undefined ? (
-          <p role="status" className="text-muted-foreground">
-            {t('waiting')}
-          </p>
+          <Skeleton role="status" aria-label={t('waiting')} className="h-9 w-14" />
         ) : (
           <p className="flex items-center gap-2">
             <span className="text-3xl font-semibold tabular-nums" data-testid="attention-count">

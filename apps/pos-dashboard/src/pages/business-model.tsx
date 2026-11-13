@@ -21,6 +21,7 @@ import { useMutation } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { type FormEvent, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { PageSkeleton } from '../components/page-skeleton'
 import { ProfileDiff } from '../components/profile-diff'
 import {
   ModelCard,
@@ -90,7 +91,7 @@ export function StoreBusinessModelPage() {
   return (
     <ModelPage title={t('businessModel.storeTitle')} description={t('businessModel.storeIntro')}>
       {context.isPending ? (
-        <ModelState title={t('contextWaiting')} />
+        <PageSkeleton />
       ) : context.isError ? (
         <ModelState
           error

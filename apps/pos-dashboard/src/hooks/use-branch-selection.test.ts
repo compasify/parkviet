@@ -17,4 +17,9 @@ describe('URL branch selection', () => {
     })
     expect(resolveBranchSelection({}, [])).toEqual({ branchId: null, registerId: null })
   })
+  it('falls back to the last used branch before the first one', () => {
+    expect(resolveBranchSelection({}, branches, 'b')).toEqual({ branchId: 'b', registerId: null })
+    expect(resolveBranchSelection({ branch: 'a' }, branches, 'b').branchId).toBe('a')
+    expect(resolveBranchSelection({}, branches, 'gone').branchId).toBe('a')
+  })
 })

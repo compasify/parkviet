@@ -16,6 +16,7 @@ import { BookOpenIcon } from '@spree/dashboard-ui/icons'
 import { type ReactNode, useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { BranchPicker } from '../components/branch-picker'
+import { PageSkeleton } from '../components/page-skeleton'
 import { type ProductHit, ProductSearch } from '../components/product-search'
 import { RecipeEditor } from '../components/recipe-editor'
 import { ModelCard } from '../components/setup/model-ui'
@@ -437,7 +438,7 @@ export function MenuPage() {
       </Section>
 
       <Section title={t('menuAdmin.branchTitle')}>
-        {branchMenu.isPending && <p role="status">{t('contextWaiting')}</p>}
+        {branchMenu.isPending && <PageSkeleton />}
         {branchMenu.isError && (
           <p role="alert" className="text-destructive">
             {menuFailure(branchMenu.error, t)}

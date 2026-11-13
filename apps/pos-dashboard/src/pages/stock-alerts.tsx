@@ -4,6 +4,7 @@ import { Badge, Button, Card, CardContent, useConfirm } from '@spree/dashboard-u
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { BranchPicker } from '../components/branch-picker'
+import { PageSkeleton } from '../components/page-skeleton'
 import { type ProductHit, ProductSearch } from '../components/product-search'
 import { Input, TopologyField } from '../components/topology-fields'
 import { usePosSession } from '../hooks/use-pos-session'
@@ -133,7 +134,7 @@ export function StockAlertsPage() {
               </div>
             )}
             {alerts.isPending ? (
-              <p role="status">{t('contextWaiting')}</p>
+              <PageSkeleton />
             ) : alerts.isError ? (
               <p role="alert" className="text-destructive">
                 {alertFailure(alerts.error, t)}

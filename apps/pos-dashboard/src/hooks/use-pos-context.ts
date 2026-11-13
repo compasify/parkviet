@@ -4,12 +4,18 @@ import { normalizeContext, type PosContext, type PosSelection } from '../lib/pos
 import { posRequest } from '../lib/pos-request'
 import { posContextKey } from '../lib/query-keys'
 
-export function usePosContext(selection: PosSelection = { branchId: null, registerId: null }) {
+export const NO_SELECTION: PosSelection = { branchId: null, registerId: null }
+
+export function usePosContext(
+  selection: PosSelection = NO_SELECTION,
+  options: { enabled?: boolean; retry?: false } = {},
+) {
   const { storeId } = useStore()
   const { isAuthenticated } = useAuth()
   return useQuery({
     queryKey: posContextKey(storeId, selection),
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && options.enabled !== false,
+    ...(options.retry === false ? { retry: false } : {}),
     queryFn: async (): Promise<PosContext> =>
       normalizeContext(
         await posRequest<PosContext>('GET', '/pos/context', {

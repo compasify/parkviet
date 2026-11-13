@@ -3,6 +3,7 @@ import { Badge, Button } from '@spree/dashboard-ui'
 import { FileTextIcon, SettingsIcon } from '@spree/dashboard-ui/icons'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { PageSkeleton } from '../components/page-skeleton'
 import { ModelCard } from '../components/setup/model-ui'
 import { Input, TopologyField, TopologySelect } from '../components/topology-fields'
 import {
@@ -77,7 +78,7 @@ export function EinvoiceSettingsPage() {
     setResult(null)
   }, [data, current])
 
-  if (settings.isPending) return <p role="status">{t('contextWaiting')}</p>
+  if (settings.isPending) return <PageSkeleton />
   if (settings.isError)
     return (
       <p role="alert" className="text-destructive">

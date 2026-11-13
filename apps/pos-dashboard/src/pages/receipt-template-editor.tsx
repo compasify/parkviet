@@ -50,6 +50,7 @@ import {
 import { Link, useBlocker, useParams } from '@tanstack/react-router'
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { PageSkeleton } from '../components/page-skeleton'
 import type { BlockProblems } from '../components/receipt-template/block-editor'
 import { BlockList, type KeyedBlock, keyBlocks } from '../components/receipt-template/block-list'
 import { Check, Choice, Notice, PageState, Problem } from '../components/receipt-template/controls'
@@ -208,7 +209,7 @@ export function ReceiptTemplateEditorPage() {
         <p className="text-muted-foreground">{t('receiptTemplates.editorIntro')}</p>
       </header>
       {context.isPending ? (
-        <PageState title={t('contextWaiting')} />
+        <PageSkeleton />
       ) : context.isError ? (
         <PageState
           title={t(posFailureKey(context.error))}

@@ -4,6 +4,7 @@ import { Badge, Button, Card, CardContent, Textarea, useConfirm } from '@spree/d
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { BranchPicker } from '../components/branch-picker'
+import { PageSkeleton } from '../components/page-skeleton'
 import { Input, TopologyField, TopologySelect } from '../components/topology-fields'
 import {
   type Einvoice,
@@ -241,7 +242,7 @@ export function EinvoicesPage() {
                 )}
               </div>
               {list.isPending ? (
-                <p role="status">{t('contextWaiting')}</p>
+                <PageSkeleton />
               ) : list.isError ? (
                 <p role="alert" className="text-destructive">
                   {einvoiceFailure(list.error, t)}

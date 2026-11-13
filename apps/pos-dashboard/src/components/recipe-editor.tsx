@@ -16,6 +16,7 @@ import {
 } from '../hooks/use-recipes'
 import { useSession } from '../hooks/use-session'
 import { posKey } from '../lib/query-keys'
+import { PageSkeleton } from './page-skeleton'
 import { ProductSearch } from './product-search'
 import { TopologyDialog } from './topology-dialog'
 import { Input, TopologyField, TopologySelect } from './topology-fields'
@@ -185,7 +186,7 @@ function OwnerRecipe({
     }
   }
 
-  if (recipe.isPending) return <p role="status">{t('contextWaiting')}</p>
+  if (recipe.isPending) return <PageSkeleton />
   if (recipe.isError)
     return (
       <p role="alert" className="text-destructive">

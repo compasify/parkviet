@@ -30,6 +30,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useCallback, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { PageSkeleton } from '../components/page-skeleton'
 import { ModelCard } from '../components/setup/model-ui'
 import {
   type TopologyDraft,
@@ -438,7 +439,7 @@ export function TopologyPage({
         />
       )}
       {context.isPending ? (
-        <p role="status">{t('contextWaiting')}</p>
+        <PageSkeleton />
       ) : context.isError ? (
         <div role="alert">
           {describeFailure(context.error, t)}

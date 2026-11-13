@@ -28,6 +28,7 @@ import { useMutation } from '@tanstack/react-query'
 import { useNavigate, useParams } from '@tanstack/react-router'
 import { useEffect, useReducer, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { PageSkeleton } from '../components/page-skeleton'
 import { ModelPage, ModelState } from '../components/setup/model-ui'
 import { ProfilePicker } from '../components/setup/profile-picker'
 import { SetupBranchStep } from '../components/setup/setup-branch-step'
@@ -49,7 +50,7 @@ export function SetupPage() {
       {done ? (
         <ModelState title={t('setup.doneOpening')} />
       ) : context.isPending ? (
-        <ModelState title={t('contextWaiting')} />
+        <PageSkeleton />
       ) : context.isError ? (
         <ModelState
           error

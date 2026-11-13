@@ -101,7 +101,7 @@
   "email": "Staff email",
   "password": "Password",
   "waiting": "Working…",
-  "contextWaiting": "Loading register context…",
+  "contextWaiting": "Loading…",
   "branch": "Branch",
   "register": "Register",
   "chooseBranch": "Choose a branch",

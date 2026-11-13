@@ -43,6 +43,7 @@ import { BanIcon, CopyIcon, EyeIcon, PlusIcon, StarIcon } from '@spree/dashboard
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { type FormEvent, useCallback, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { PageSkeleton } from '../components/page-skeleton'
 import { Choice, Notice, PageState } from '../components/receipt-template/controls'
 import { PaperPicker } from '../components/receipt-template/paper-picker'
 import { usePosContext } from '../hooks/use-pos-context'
@@ -242,7 +243,7 @@ export function ReceiptTemplatesPage() {
         }
       />
       {context.isPending ? (
-        <PageState title={t('contextWaiting')} />
+        <PageSkeleton />
       ) : context.isError ? (
         <PageState
           title={t(posFailureKey(context.error))}
