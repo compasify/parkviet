@@ -69,7 +69,7 @@ RSpec.describe 'POS stock location qualification' do
     expect(level.allocated_count).to eq(2)
   end
 
-  it 'characterizes cross-owner visibility in the core reservation helper' do
+  it 'sees reservations held by the other owner in the core reservation helper' do
     store = Spree::Store.default
     variant = create(:product, store: store).default_variant
     location = create(:stock_location, store: store, backorderable_default: false)
@@ -84,11 +84,11 @@ RSpec.describe 'POS stock location qualification' do
 
     expect(Spree::StockReservation.active.where(stock_level: level).sum(:quantity)).to eq(2)
     reserve = Spree::StockReservations::Reserve.new
-    expect(reserve.send(:held_by_others, [level.id], cart)).to eq({})
-    expect(reserve.send(:held_by_others, [level.id], order)).to eq({})
+    expect(reserve.send(:held_by_others, [level.id], cart)).to eq(level.id => 1)
+    expect(reserve.send(:held_by_others, [level.id], order)).to eq(level.id => 1)
   end
 
-  it 'characterizes over-reservation when a cart then a draft reserve one unit' do
+  it 'refuses a draft reservation once a cart holds the only unit' do
     store = Spree::Store.default
     variant = create(:product, store: store).default_variant
     location = create(:stock_location, store: store, backorderable_default: false)
@@ -103,13 +103,11 @@ RSpec.describe 'POS stock location qualification' do
     expect(location.stock_level(variant).reload.reserved_count).to eq(1)
     second = Spree::StockReservations::Reserve.call(order: order)
 
-    expect(second).to be_success
-    expect(location.stock_level(variant).reload.reserved_count).to eq(2)
-    expect(Spree::StockReservation.active.where(cart: cart, stock_level: location.stock_level(variant)).sum(:quantity)).to eq(1)
-    expect(Spree::StockReservation.active.where(order: order, stock_level: location.stock_level(variant)).sum(:quantity)).to eq(1)
+    expect(second).not_to be_success
+    expect(location.stock_level(variant).reload.reserved_count).to eq(1)
   end
 
-  it 'characterizes over-reservation when a draft then a cart reserve one unit' do
+  it 'refuses a cart reservation once a draft holds the only unit' do
     store = Spree::Store.default
     variant = create(:product, store: store).default_variant
     location = create(:stock_location, store: store, backorderable_default: false)
@@ -124,9 +122,7 @@ RSpec.describe 'POS stock location qualification' do
     expect(location.stock_level(variant).reload.reserved_count).to eq(1)
     second = Spree::StockReservations::Reserve.call(cart: cart)
 
-    expect(second).to be_success
-    expect(location.stock_level(variant).reload.reserved_count).to eq(2)
-    expect(Spree::StockReservation.active.where(cart: cart, stock_level: location.stock_level(variant)).sum(:quantity)).to eq(1)
-    expect(Spree::StockReservation.active.where(order: order, stock_level: location.stock_level(variant)).sum(:quantity)).to eq(1)
+    expect(second).not_to be_success
+    expect(location.stock_level(variant).reload.reserved_count).to eq(1)
   end
 end

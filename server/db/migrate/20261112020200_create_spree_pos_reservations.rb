@@ -45,7 +45,7 @@ class CreateSpreePosReservations < ActiveRecord::Migration[8.1]
     end
     add_check_constraint :spree_pos_reservation_resources, 'ends_at > starts_at', name: 'chk_pos_reservation_resources_range'
     add_exclusion_constraint :spree_pos_reservation_resources, 'resource_id WITH =, tsrange(starts_at, ends_at) WITH &&',
-                             using: :gist, where: 'active', name: 'excl_pos_reservation_resources_overlap'
+                             using: :gist, where: 'active = true', name: 'excl_pos_reservation_resources_overlap'
 
     create_table :spree_pos_reservation_deposits do |t|
       t.references :reservation, null: false, foreign_key: { to_table: :spree_pos_reservations }

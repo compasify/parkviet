@@ -419,6 +419,7 @@ test('grouped VND amounts are read as thousands and sent canonical', async ({ pa
   await dialog.getByLabel('Khách đưa').fill('200.000');
   await expect(dialog).toContainText('50.000 ₫');
   await dialog.getByRole('button', { name: 'Kết thúc', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
   await expect(panel.getByText('Đã thu (đã xác nhận)')).toBeVisible();
   expect(api.confirmed.map((item) => item.body.handed_amount)).toEqual(['200000']);
 });
@@ -473,6 +474,7 @@ test('bank evidence starts empty and is required', async ({ page }) => {
   await expect(finish).toBeDisabled();
   await dialog.getByLabel('Số tiền thực nhận').fill('260.000');
   await finish.click();
+  await expect(dialog).toHaveCount(0);
   await expect(panel.getByText('Đã thu (đã xác nhận)')).toBeVisible();
   expect(api.confirmed.map((item) => item.body)).toEqual([
     expect.objectContaining({
@@ -613,6 +615,7 @@ test('VietQR: shows the QR, waits for the bank and confirms from its notificatio
   await expect(dialog).toContainText('Ngân hàng đã báo nhận tiền', { timeout: 10_000 });
   await expect(dialog.getByRole('button', { name: 'Kết thúc', exact: true })).toBeFocused();
   await dialog.getByRole('button', { name: 'Kết thúc', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
   await expect(panel.getByText('Đã thu (đã xác nhận)')).toBeVisible();
   expect(api.prepared.map((item) => item.body.payment_method_id)).toEqual(['posmethod-vietqr']);
   expect(api.confirmed.map((item) => item.body.evidence_kind)).toEqual(['vietqr_webhook']);

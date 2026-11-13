@@ -4358,7 +4358,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_150000) do
     t.datetime "updated_at", null: false
     t.index ["reservation_id"], name: "index_spree_pos_reservation_resources_on_reservation_id"
     t.check_constraint "ends_at > starts_at", name: "chk_pos_reservation_resources_range"
-    t.exclusion_constraint "resource_id WITH =, tsrange(starts_at, ends_at) WITH &&", where: "ctiv", using: :gist, name: "excl_pos_reservation_resources_overlap"
+    t.exclusion_constraint "resource_id WITH =, tsrange(starts_at, ends_at) WITH &&", where: "active = true", using: :gist, name: "excl_pos_reservation_resources_overlap"
   end
 
   create_table "spree_pos_reservations", force: :cascade do |t|
