@@ -1,8 +1,8 @@
 import {
   type BusinessModule,
   type BusinessProfile,
-  moduleTextKey,
   modulesRequiring,
+  moduleTextKey,
 } from '@parkviet/pos-shared/pos-modules'
 import {
   editableDefaults,

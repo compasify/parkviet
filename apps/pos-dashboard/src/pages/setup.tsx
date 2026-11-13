@@ -112,7 +112,10 @@ function SetupWizard({ onDone }: { onDone: () => void }) {
     setFailure('')
     // The shop step starts from the profile's proposal; edits stay while the profile does.
     if (routingProfile && catalogue.data && hasShopStep(routingProfile) && step >= SHOP_STEP)
-      dispatch({ type: 'shop-init', value: shopDefaults(routingProfile, catalogue.data, stationName(t)) })
+      dispatch({
+        type: 'shop-init',
+        value: shopDefaults(routingProfile, catalogue.data, stationName(t)),
+      })
     dispatch({ type: 'go', step })
   }
   async function finish(run: () => Promise<unknown>) {
@@ -305,10 +308,9 @@ function SetupWizard({ onDone }: { onDone: () => void }) {
                 shop={hasShopStep(routingProfile) ? state.shop : null}
                 taxLabel={(code) => taxLabel(t, taxes, code)}
                 profileName={t(profileLabelKey(profile.key))}
-                modules={profileModules(
-                  profile,
-                  tablesOptional(profile) && state.hasTables,
-                ).filter((key) => !state.disabledModules.includes(key))}
+                modules={profileModules(profile, tablesOptional(profile) && state.hasTables).filter(
+                  (key) => !state.disabledModules.includes(key),
+                )}
                 tables={tablesOn(state, profile)}
                 units={profile.sample_units.map((code) => unitLabel(t, code))}
                 location={
