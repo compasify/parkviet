@@ -9,20 +9,20 @@ importers:
   .:
     dependencies:
       '@spree/cli':
-        specifier: ^3.6.3
-        version: 3.6.3
+        specifier: ^3.7.0
+        version: 3.7.0
       '@spree/docs':
         specifier: latest
-        version: 0.1.410
+        version: 0.1.421
 
 packages:
 
-  '@clack/core@1.5.1':
-    resolution: {integrity: sha512-iHTrHA8MtVuLl2TfZySmcKv1qO2PoyC9Z7pfSDozEuV5vtY3/wcOPKJXlqJ5Oq2Cx5DDGQGAMVx6HZfRRoVEbQ==}
+  '@clack/core@1.6.0':
+    resolution: {integrity: sha512-4GZynIB2IIe431odxesswvWTCP6orvqd6e2b07b3VFWBQRqUqIHc/EPIZwFoKS692QBp+ooPuXKaJV8g4kXuYA==}
     engines: {node: '>= 20.12.0'}
 
-  '@clack/prompts@1.8.1':
-    resolution: {integrity: sha512-dlT1m5e/0yUL0kRNcQn7yGLVThkgbB0Ga/1AmfDDC/8ik6AIiSf2QLQO2zPYvefsHP0aFgxO93cVLCCfDp7kzQ==}
+  '@clack/prompts@1.9.0':
+    resolution: {integrity: sha512-tEj8X2No2A1c9NDnZECxiiJ8TP3vmFlN9tLlLeSaMqVW4tUmVG2R4qpv/eP4zymWxnymYLkLcIYVV0VcWj3RCQ==}
     engines: {node: '>= 20.12.0'}
 
   '@sec-ant/readable-stream@0.4.1':
@@ -32,17 +32,17 @@ packages:
     resolution: {integrity: sha512-tlqY9xq5ukxTUZBmoOp+m61cqwQD5pHJtFY3Mn8CA8ps6yghLH/Hw8UPdqg4OLmFW3IFlcXnQNmo/dh8HzXYIQ==}
     engines: {node: '>=18'}
 
-  '@spree/cli@3.6.3':
-    resolution: {integrity: sha512-gKyhEukLkbO5767d64Wa+yKE8/6EE0crZw5T4VVLwK++uah17nLwiXz5V9j8+S2/v+AVEVsCvY9hNZlq19uuWw==}
+  '@spree/cli@3.7.0':
+    resolution: {integrity: sha512-qQ8CjtOcfEgxY8OImX9Cdw8dRmAolIhqB61eyiYb/SBAkuqmVL55QianAcBqJSn3iJYdw/ka5R+7sA0nLT8QUg==}
     engines: {node: '>=20'}
     hasBin: true
 
-  '@spree/docs@0.1.410':
-    resolution: {integrity: sha512-6dr7RSpgdi5CjSHoeIw5qYR65jHJ7rcKkE6yF5hVvd+SMZGvlwZwMLOeDvv1KLfellDgiASMFdQCTSUyAl4anA==}
+  '@spree/docs@0.1.421':
+    resolution: {integrity: sha512-KCyOgQ0kbRwsXPi1wZ2yVbsKDAnTEEzxTTaY5Lg9i7u0V8m7BLrXX7Kqglkjd0C1Jbl4WacWSeoosUTfHKxsTA==}
     engines: {node: '>=18.0.0'}
 
-  commander@15.0.0:
-    resolution: {integrity: sha512-z67u4ZhzCL/Tydu1lJARtEZYWbWaN7oYLHbsuzocr6y4N6WZAagG3RQ4FW61V1/0+jImpj293XfrcYnd1qxtPg==}
+  commander@15.1.0:
+    resolution: {integrity: sha512-cgnQ88TRrWcC7pVq46RzJVRMktu3W2RcbnoidnfBsl1bmDCBwJS/udcIZpKoCrbAYYaCqsz1yZCVIgbIaU3ddQ==}
     engines: {node: '>=22.12.0'}
 
   console-table-printer@2.16.1:
@@ -111,8 +111,9 @@ packages:
   simple-wcswidth@1.1.2:
     resolution: {integrity: sha512-j7piyCjAeTDSjzTSQ7DokZtMNwNlEAyxqSZeCS+CXH7fJ4jx3FuJ/mTW3mE+6JLs4VJBbcll0Kjn+KXI5t21Iw==}
 
-  sisteransi@1.0.5:
-    resolution: {integrity: sha512-bLGGlR1QxBcynn2d5YmDX4MGjlZvy2MRBDRNHLJ8VI6l6+9FUiyTFNJ0IveOSP0bcXgVDPRcfGqA0pjaqUpfVg==}
+  sisteransi@2.0.0:
+    resolution: {integrity: sha512-2WCqLdt12eN6ehLI50S2/ZxoowXU3DD1KVPRyVP0WEsFahrGZZmCdq1K59qjJljMRIDTwx1D9YaRK+hDneBUMg==}
+    engines: {node: '>=20'}
 
   strip-final-newline@4.0.0:
     resolution: {integrity: sha512-aulFJcD6YK8V1G7iRB5tigAP4TsHBZZrOV8pjV++zdUwmeV8uzbY7yn6h9MswN62adStNZFuCIx4haBnRuMDaw==}
@@ -133,33 +134,34 @@ packages:
 
 snapshots:
 
-  '@clack/core@1.5.1':
+  '@clack/core@1.6.0':
     dependencies:
-      fast-wrap-ansi: 0.2.2
-      sisteransi: 1.0.5
-
-  '@clack/prompts@1.8.1':
-    dependencies:
-      '@clack/core': 1.5.1
       fast-string-width: 3.0.2
       fast-wrap-ansi: 0.2.2
-      sisteransi: 1.0.5
+      sisteransi: 2.0.0
+
+  '@clack/prompts@1.9.0':
+    dependencies:
+      '@clack/core': 1.6.0
+      fast-string-width: 3.0.2
+      fast-wrap-ansi: 0.2.2
+      sisteransi: 2.0.0
 
   '@sec-ant/readable-stream@0.4.1': {}
 
   '@sindresorhus/merge-streams@4.0.0': {}
 
-  '@spree/cli@3.6.3':
+  '@spree/cli@3.7.0':
     dependencies:
-      '@clack/prompts': 1.8.1
-      commander: 15.0.0
+      '@clack/prompts': 1.9.0
+      commander: 15.1.0
       console-table-printer: 2.16.1
       execa: 10.2.1
       picocolors: 1.1.1
 
-  '@spree/docs@0.1.410': {}
+  '@spree/docs@0.1.421': {}
 
-  commander@15.0.0: {}
+  commander@15.1.0: {}
 
   console-table-printer@2.16.1:
     dependencies:
@@ -226,7 +228,7 @@ snapshots:
 
   simple-wcswidth@1.1.2: {}
 
-  sisteransi@1.0.5: {}
+  sisteransi@2.0.0: {}
 
   strip-final-newline@4.0.0: {}
 

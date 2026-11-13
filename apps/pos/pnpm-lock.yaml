@@ -15,8 +15,8 @@ importers:
         specifier: ^8.1.401
         version: 8.1.401
       '@spree/admin-sdk':
-        specifier: ^6.0.3
-        version: 6.0.3(typescript@7.0.2)
+        specifier: ^6.0.4
+        version: 6.0.4(typescript@7.0.2)
       '@tanstack/react-query':
         specifier: ^5.104.5
         version: 5.105.3(@types/react@19.3.0)(react@19.3.1)
@@ -258,8 +258,8 @@ packages:
   '@rolldown/pluginutils@1.0.1':
     resolution: {integrity: sha512-2j9bGt5Jh8hj+vPtgzPtl72j0yRxHAyumoo6TNfAjsLB04UtpSvPbPcDcBMxz7n+9CYB0c1GxQFxYRg2jimqGw==}
 
-  '@spree/admin-sdk@6.0.3':
-    resolution: {integrity: sha512-Fz9b1KMJPu+OvJr3fkO5Rl3CM3NRky8MP9Ok3zcD56o2AnHy6vr5Wd0LIfDWPPA05PKG/Cp8grL47egJ7LbPRw==}
+  '@spree/admin-sdk@6.0.4':
+    resolution: {integrity: sha512-nEXkKcvrryA2s5uwgIO3xS9lHj96w+qLy1XBlzGILnCaM/W0H3tE+lE2VdLq1/vN4zVYflPhYQpQi8lxpkpNOQ==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       typescript: '>=4.7.0'
@@ -947,7 +947,7 @@ snapshots:
 
   '@rolldown/pluginutils@1.0.1': {}
 
-  '@spree/admin-sdk@6.0.3(typescript@7.0.2)':
+  '@spree/admin-sdk@6.0.4(typescript@7.0.2)':
     optionalDependencies:
       typescript: 7.0.2
 
