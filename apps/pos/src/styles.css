@@ -1207,9 +1207,15 @@ kbd { padding: var(--pos-s1); border: 1px solid var(--pos-border); border-radius
 .ticket-more-list { display: grid; gap: var(--pos-s2); }
 .pos-layout .ticket-more-list button { justify-content: flex-start; min-height: 48px; }
 .ticket-more .table-order-bar { margin: 0; }
+/* A phone stacks the menu over the ticket. Halving whatever height is left
+   under the header leaves the ticket's lines with no box: the header, the
+   grouping switch and the send buttons fill that half, and the frame's
+   hidden overflow clips a line and "Gọi món ra" so a tap never lands. The
+   ticket keeps a height that fits one line, and the frame scrolls. */
 @media (max-width: 700px) {
-  .order-frame { grid-template-columns: minmax(0,1fr); grid-template-rows: minmax(0,1fr) minmax(0,1fr); }
-  .ticket { border-left: 0; border-top: 1px solid var(--pos-border); }
+  .order-frame { grid-template-columns: minmax(0,1fr); grid-template-rows: minmax(180px,1fr) auto; overflow: auto; }
+  .ticket { min-height: 360px; border-left: 0; border-top: 1px solid var(--pos-border); }
+  .pos-layout .ticket .ticket-lines { min-height: 96px; }
 }
 /* Table service: payment over the whole screen. The bill on the left
    (400px) with discounts and charges on lines of their own; on the right
