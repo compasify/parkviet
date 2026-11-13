@@ -1,4 +1,4 @@
-import { useNavigate } from '@tanstack/react-router';
+import { useCanGoBack, useNavigate, useRouter } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import posAppIcon from '../assets/brand/parkviet-pos-app-icon.svg';
@@ -11,6 +11,8 @@ import '../styles/login.css';
 export function StorePickerPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const router = useRouter();
+  const canGoBack = useCanGoBack();
   const snapshot = useSession();
   const [busy, setBusy] = useState(false);
 
@@ -18,6 +20,15 @@ export function StorePickerPage() {
     session.selectStore(storeId);
     queryClient.clear();
     await navigate({ to: '/' });
+  }
+
+  // Changing store from the counter keeps the current one until another is
+  // picked, so the cashier can return to where they were without switching.
+  const hasCurrentStore = snapshot.stores.some((store) => store.id === snapshot.storeId);
+
+  function goBack() {
+    if (canGoBack) router.history.back();
+    else void navigate({ to: '/' });
   }
 
   async function logout() {
@@ -64,6 +75,12 @@ export function StorePickerPage() {
             ))}
           </ul>
           <p className="auth-help">
+            {hasCurrentStore ? (
+              <button type="button" className="button-link" disabled={busy} onClick={goBack}>
+                <PosIcon name="back" />
+                {t('back')}
+              </button>
+            ) : null}
             <button type="button" className="button-link" disabled={busy} onClick={logout}>
               {t('logout')}
             </button>

@@ -28,6 +28,7 @@
 
 /* Store picker: the sign-in column alone, one button per store */
 .login-split.store-picker { grid-template-columns: minmax(0, 1fr); }
+.login-split.store-picker .auth-help { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--pos-s3); }
 .store-choices { display: grid; gap: var(--pos-s2); margin: var(--pos-s5) 0 0; padding: 0; list-style: none; }
 .login-split .store-choice {
   display: flex; align-items: center; justify-content: space-between; gap: var(--pos-s3); width: 100%;
