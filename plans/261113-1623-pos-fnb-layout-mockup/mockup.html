@@ -1,0 +1,698 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup — Màn bán F&amp;B và giải trí (ParkViet POS)</title>
+<style>
+:root{
+  --blue:#07569a;--ink:#172d40;--muted:#526b7e;--border:#d5e0e8;--bg:#edf2f6;
+  --surface:#fff;--tint:#f4f8fb;--sel:#e7f2fb;--danger:#b3261e;--success:#1f7a4d;--amber:#b86e00;
+  --r:10px;--target:48px;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:#c9d3db}
+button{font:inherit;color:inherit;cursor:pointer}
+.ico{width:18px;height:18px;flex:none}
+
+/* ---------- mockup chrome (không thuộc sản phẩm) ---------- */
+.mock-nav{position:sticky;top:0;z-index:50;display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:8px 12px;background:#0f1d29;color:#cfe0ee}
+.mock-nav b{margin-right:8px;font-size:13px}
+.mock-nav button{border:1px solid #2c4256;background:#18293a;border-radius:999px;padding:6px 12px;font-size:13px;color:#cfe0ee}
+.mock-nav button.on{background:#e7f2fb;color:#0f1d29;border-color:#e7f2fb;font-weight:600}
+.mock-nav .note{margin-left:auto;font-size:12px;opacity:.75}
+.stage{padding:16px;overflow:hidden}
+.fit{width:1366px;transform-origin:0 0}
+.device{width:1366px;height:768px;background:var(--bg);border-radius:14px;overflow:hidden;box-shadow:0 20px 60px #0f1d2955;display:flex;flex-direction:column;position:relative}
+.caption{max-width:1100px;margin:0 auto 32px;padding:0 16px;color:#1d3446;font-size:14px}
+.caption h2{font-size:16px;margin:0 0 6px}
+.caption ul{margin:0;padding-left:18px}
+.caption li{margin:3px 0}
+.caption .src{font-size:12px;color:#40576a;margin-top:8px}
+
+/* ---------- top bar ---------- */
+.topbar{height:56px;flex:none;display:flex;align-items:center;gap:12px;padding:0 12px;background:var(--ink);color:#fff}
+.brand{display:flex;align-items:center;gap:8px;font-weight:700;padding-right:12px;border-right:1px solid #ffffff22;height:32px}
+.brand small{font-weight:400;opacity:.7;font-size:12px}
+.modes{display:flex;gap:4px;background:#ffffff14;border-radius:999px;padding:4px}
+.modes button{border:0;background:transparent;color:#d8e6f1;border-radius:999px;height:40px;padding:0 16px;display:flex;align-items:center;gap:8px;font-weight:600}
+.modes button.on{background:#fff;color:var(--ink)}
+.modes .count{background:#ffffff26;border-radius:999px;padding:0 7px;font-size:12px}
+.modes button.on .count{background:var(--sel);color:var(--blue)}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.tb-btn{height:40px;min-width:40px;border:0;border-radius:999px;background:#ffffff14;color:#fff;display:flex;align-items:center;justify-content:center;gap:6px;padding:0 12px;position:relative}
+.tb-btn .dot{position:absolute;top:2px;right:2px;min-width:18px;height:18px;border-radius:9px;background:#e5483a;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px}
+.who{display:flex;flex-direction:column;line-height:1.15;font-size:12px;text-align:right}
+.who b{font-size:13px}
+.live{width:8px;height:8px;border-radius:50%;background:#3ccf7d;box-shadow:0 0 0 3px #3ccf7d33}
+
+.screen{flex:1;display:none;min-height:0}
+.screen.on{display:flex}
+.col{display:flex;flex-direction:column;min-width:0}
+.grow{flex:1}
+.screen:not(.on){display:none}
+
+/* ---------- shared bits ---------- */
+.btn{height:var(--target);border-radius:8px;border:1px solid var(--border);background:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;padding:0 12px}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.pay{background:var(--success);border-color:var(--success);color:#fff}
+.btn.send{background:#c26a00;border-color:#c26a00;color:#fff}
+.btn.big{height:60px;font-size:16px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn small{font-weight:500;opacity:.9}
+.chip{height:38px;border-radius:999px;border:1px solid var(--border);background:#fff;padding:0 14px;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;white-space:nowrap}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.chip b{font-weight:800}
+.tool{height:34px;border-radius:999px;border:1px solid var(--border);background:var(--tint);padding:0 12px;font-size:12px;font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;cursor:pointer}
+.tool.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.icon-btn{width:44px;height:44px;border-radius:8px;border:1px solid var(--border);background:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;flex:none}
+.search{flex:1;height:44px;border-radius:999px;border:1px solid var(--border);background:var(--tint);display:flex;align-items:center;gap:8px;padding:0 14px;color:var(--muted)}
+.kbd{border:1px solid var(--border);border-bottom-width:2px;border-radius:4px;padding:0 5px;font-size:11px;background:#fff;color:var(--ink)}
+.toast{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:999px;padding:10px 18px;font-weight:600;display:none;z-index:30}
+.toast.on{display:block}
+
+/* ================= 1. BOARD ================= */
+.board-top{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border)}
+.areas{display:flex;gap:4px;background:var(--tint);border:1px solid var(--border);border-radius:10px;padding:3px}
+.areas button{border:0;background:transparent;height:40px;border-radius:8px;padding:0 14px;font-weight:700;display:flex;gap:6px;align-items:center}
+.areas button small{color:var(--muted);font-weight:600}
+.areas button.on{background:#fff;box-shadow:0 1px 3px #0002;color:var(--blue)}
+.board-top .sp{flex:1}
+.legend{display:flex;gap:14px;padding:6px 14px;font-size:12px;color:var(--muted);background:var(--surface);border-bottom:1px solid var(--border)}
+.legend span{display:flex;align-items:center;gap:6px}
+.legend i{width:14px;height:14px;border-radius:4px;border:2px solid var(--b);background:var(--f)}
+.grid{flex:1;overflow:auto;padding:14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;align-content:start}
+/* 5 trạng thái nền theo vòng đời đơn */
+.t-free{--f:#fff;--b:#c9d6e0}
+.t-serve{--f:#e7f2fb;--b:#07569a}
+.t-partial{--f:#e7f2fb;--b:#c26a00}
+.t-pre{--f:#fff4d9;--b:#b86e00}
+.t-pay{--f:#e2f4ea;--b:#1f7a4d}
+.tile{position:relative;border-radius:var(--r);border:2px solid var(--b);background:var(--f);height:128px;padding:10px 10px 8px;text-align:left;display:flex;flex-direction:column}
+.tile.t-partial{border-style:dashed}
+.tile .nm{font-size:17px;font-weight:800;line-height:1}
+.tile .time{font-size:26px;font-weight:800;line-height:1.1;margin-top:6px;font-variant-numeric:tabular-nums}
+.tile .late{height:5px;border-radius:3px;background:var(--danger);margin-top:5px;width:100%}
+.tile .late+.time{color:var(--danger);margin-top:2px}
+.tile .bot{margin-top:auto;display:flex;justify-content:space-between;align-items:flex-end;font-size:12px;color:var(--muted)}
+.tile .amt{font-size:15px;font-weight:800;color:var(--ink)}
+.tile .icons{position:absolute;top:8px;right:8px;display:flex;gap:4px}
+.tile .icons span{min-width:22px;height:22px;border-radius:11px;background:#fff;border:1px solid var(--border);font-size:12px;display:flex;align-items:center;justify-content:center;padding:0 5px;font-weight:700}
+.tile .icons .alert{background:var(--danger);color:#fff;border-color:var(--danger)}
+.tile .st{font-size:12px;font-weight:700;color:var(--b)}
+.t-free .st{color:var(--muted)}
+.tile.ghost{border:2px dashed #9fb3c3;background:var(--tint);align-items:center;justify-content:center;text-align:center;gap:4px}
+.tile.ghost .nm{font-size:16px}
+.tile.ghost small{color:var(--muted)}
+.tile.t-pay{animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 6px #1f7a4d30}}
+.pop{position:absolute;z-index:15;width:300px;background:#fff;border-radius:14px;box-shadow:0 16px 40px #0f1d2955;padding:14px;display:none}
+.pop.on{display:block}
+.pop h4{margin:0 0 2px;font-size:18px}
+.pop p{margin:0 0 10px;color:var(--muted);font-size:12px}
+.nums{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
+.nums button{height:52px;border-radius:10px;border:2px solid var(--border);background:#fff;font-size:18px;font-weight:800}
+.nums button.on{border-color:var(--blue);background:var(--sel);color:var(--blue)}
+
+/* ================= 2. ORDER ================= */
+.rail{width:116px;flex:none;background:var(--surface);border-right:1px solid var(--border);overflow:auto;padding:8px 6px;display:flex;flex-direction:column;gap:4px}
+.rail button{border:0;border-left:5px solid var(--c,#c9d6e0);background:var(--tint);text-align:left;min-height:56px;border-radius:8px;padding:6px 8px;font-weight:700;font-size:13px;line-height:1.2}
+.rail button small{display:block;font-weight:500;color:var(--muted);font-size:11px}
+.rail button.on{background:var(--ink);color:#fff}
+.rail button.on small{color:#c6d6e3}
+.menu-top{display:flex;gap:8px;padding:10px 12px;background:var(--surface);border-bottom:1px solid var(--border);align-items:center}
+.density{display:flex;border:1px solid var(--border);border-radius:999px;overflow:hidden}
+.density button{border:0;background:#fff;height:36px;padding:0 10px;font-size:12px}
+.density button.on{background:var(--sel);color:var(--blue);font-weight:700}
+.items{flex:1;overflow:auto;padding:14px 12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--tw,138px),1fr));gap:10px;align-content:start}
+.item{position:relative;height:var(--th,92px);border-radius:var(--r);border:1px solid var(--border);background:#fff;text-align:left;padding:9px 10px;display:flex;flex-direction:column;border-top:5px solid var(--c,#c9d6e0)}
+.item .in{font-weight:700;font-size:15px;line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.item .ip{margin-top:auto;font-weight:800;color:var(--blue);font-size:14px}
+.item .mod{position:absolute;right:8px;bottom:8px;font-size:11px;color:var(--muted)}
+.item .qty{position:absolute;top:-8px;right:-6px;min-width:26px;height:26px;border-radius:13px;background:var(--blue);color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;border:2px solid #fff}
+.item.out{opacity:.45;background:repeating-linear-gradient(-45deg,#fff 0 8px,#eef1f3 8px 16px)}
+.item.out .ip{color:var(--danger)}
+.items.dense{--tw:118px;--th:76px}
+.items.dense .in{font-size:13px}
+.items.airy{--tw:170px;--th:110px}
+
+.ticket{width:410px;flex:none;background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column}
+.tk-h{padding:10px 12px;border-bottom:1px solid var(--border)}
+.tk-h .r1{display:flex;align-items:center;gap:8px}
+.tk-h .back{height:44px;border-radius:8px;border:1px solid var(--border);background:#fff;padding:0 12px;font-weight:700;flex:none}
+.tk-h .tname{font-size:22px;font-weight:800;border:0;background:transparent;padding:0 4px;display:flex;align-items:center;gap:4px}
+.tk-h .tname small{font-size:12px;color:var(--muted)}
+.tk-h .r1 .icon-btn{margin-left:auto}
+.tk-h .r2{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.tk-view{display:flex;gap:6px;padding:8px 12px;border-bottom:1px solid var(--border);align-items:center}
+.tk-view .lbl{font-size:12px;color:var(--muted);margin-right:2px}
+.lines{flex:1;overflow:auto}
+.grp-h{position:sticky;top:0;z-index:1;display:flex;align-items:center;gap:8px;padding:0 12px;height:36px;font-size:12px;font-weight:700;color:var(--muted);background:var(--tint);border-bottom:1px solid var(--border)}
+.grp-h.new{background:#fff3d6;color:#7a4b00}
+.grp-h .r{margin-left:auto;font-weight:500}
+.grp-h .fire{margin-left:auto;height:28px;border-radius:999px;border:1px solid #c26a00;background:#fff;color:#c26a00;font-size:12px;font-weight:700;padding:0 10px}
+.cs{font-size:14px}
+.line{display:grid;grid-template-columns:34px 1fr auto;gap:8px;padding:8px 12px;border-bottom:1px solid #edf2f6;align-items:start}
+.line .q{height:30px;border-radius:6px;background:var(--tint);display:flex;align-items:center;justify-content:center;font-weight:800}
+.line .n{font-weight:700}
+.line .mods{font-size:12px;color:var(--muted)}
+.line .note{font-size:12px;color:#7a4b00}
+.line .p{font-weight:700;text-align:right;white-space:nowrap}
+.line .lock{font-size:11px;color:var(--muted)}
+.line.new{background:#fffaf0}
+.line.new .q{background:#ffe7ad}
+.line.sel{box-shadow:inset 4px 0 0 var(--blue);background:var(--sel)}
+.tag{font-size:11px;font-weight:700;border-radius:4px;padding:1px 6px;margin-left:6px;white-space:nowrap}
+.tag.new{background:#c26a00;color:#fff}.tag.cook{background:#fff1e0;color:#b86e00}.tag.done{background:#e2f4ea;color:#1f7a4d}.tag.hold{background:#eef1f3;color:#526b7e}
+.line-actions{grid-column:1/-1;display:flex;gap:6px}
+.stepper{display:flex;align-items:center;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:#fff}
+.stepper button{width:40px;height:36px;border:0;background:#fff;font-size:18px;font-weight:700}
+.stepper span{min-width:28px;text-align:center;font-weight:800}
+.line-actions .tool{height:36px}
+.timed-line{margin:8px 12px;border-radius:10px;border:2px solid #07569a;background:#e7f2fb;padding:10px 12px;display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center}
+.timed-line .clk{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums;color:#07569a;line-height:1}
+.timed-line .sub{font-size:12px;color:var(--muted)}
+.timed-line .acts{grid-column:1/-1;display:flex;gap:6px;margin-top:4px;flex-wrap:wrap}
+.timed-line .tool{background:#fff}
+.tk-sum{border-top:1px solid var(--border);padding:8px 12px 4px;font-size:12px;color:var(--muted);display:flex;justify-content:space-between}
+.tk-sec{display:flex;gap:6px;padding:4px 12px 8px}
+.tk-sec .tool{flex:1;justify-content:center;height:38px}
+.tk-main{display:grid;grid-template-columns:1fr 1.25fr;gap:8px;padding:0 12px 12px}
+.tk-main .btn{flex-direction:column;gap:0;line-height:1.15}
+.tk-main .btn b{font-size:17px}
+
+/* modifier panel thay chỗ lưới món */
+.modpanel{flex:1;display:none;flex-direction:column;background:#fff;min-width:0}
+.modpanel.on{display:flex}
+.mp-h{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border)}
+.mp-h h3{margin:0;font-size:20px}
+.mp-h .base{font-size:12px;color:var(--muted)}
+.mp-b{flex:1;overflow:auto;padding:4px 16px 12px}
+.grp{padding:10px 0;border-bottom:1px solid #edf2f6}
+.grp-t{display:flex;align-items:center;gap:8px;font-weight:800;margin-bottom:8px}
+.req{font-size:11px;font-weight:700;border-radius:999px;padding:1px 8px;background:#fde8e6;color:var(--danger)}
+.req.ok{background:#e2f4ea;color:var(--success)}
+.hint{font-size:12px;color:var(--muted);font-weight:500}
+.opts{display:flex;flex-wrap:wrap;gap:8px}
+.opt{min-width:96px;height:var(--target);border-radius:10px;border:2px solid var(--border);background:#fff;font-weight:700;padding:0 12px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1}
+.opt small{font-weight:500;color:var(--muted);font-size:11px}
+.opt.on{border-color:var(--blue);background:var(--sel);color:var(--blue)}
+.mp-f{display:flex;align-items:center;gap:10px;padding:12px 16px;border-top:1px solid var(--border);background:var(--tint)}
+.mp-f .sum{margin-left:auto;text-align:right;line-height:1.15}
+.mp-f .sum b{font-size:20px}
+
+/* ================= 3. PAYMENT ================= */
+.pay-bill{width:400px;flex:none;background:#fff;border-right:1px solid var(--border);display:flex;flex-direction:column}
+.pay-bill .lines .line{padding:6px 12px}
+.pb-sum{border-top:1px solid var(--border);padding:8px 12px;font-size:13px}
+.pb-sum div{display:flex;justify-content:space-between;padding:2px 0}
+.pb-sum .disc{color:var(--success)}
+.pb-sum .tot{font-size:20px;font-weight:800;padding-top:4px}
+.pay-main{flex:1;display:flex;flex-direction:column;padding:14px 16px;gap:12px;min-width:0}
+.due{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.due > div{background:#fff;border:1px solid var(--border);border-radius:12px;padding:10px 14px}
+.due small{color:var(--muted);font-weight:600}
+.due b{display:block;font-size:28px;line-height:1.1}
+.due .left b{color:var(--danger)}.due .chg b{color:var(--success)}
+.pay-cards{flex:1;display:grid;grid-template-columns:310px 1fr;gap:12px;min-height:0}
+.card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px;min-height:0}
+.card h4{margin:0;font-size:14px;display:flex;align-items:center;gap:8px}
+.card.active{border:2px solid var(--blue)}
+.qr{width:176px;height:176px;margin:0 auto;display:grid;grid-template-columns:repeat(21,1fr);background:#fff;padding:6px;border:1px solid var(--border);border-radius:8px}
+.qr i{background:#0f1d29}
+.qr-amt{text-align:center;font-size:24px;font-weight:800}
+.qr-note{text-align:center;font-size:12px;color:var(--muted)}
+.waiting{display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;font-weight:600;color:var(--blue)}
+.spin{width:14px;height:14px;border-radius:50%;border:2px solid var(--sel);border-top-color:var(--blue);animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.cash{display:grid;grid-template-columns:1fr 230px;gap:10px;flex:1;min-height:0}
+.quick{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-content:start}
+.quick button{height:52px;border-radius:10px;border:1px solid var(--border);background:#fff;font-size:17px;font-weight:800}
+.quick button.exact{grid-column:1/-1;background:var(--ink);color:#fff;border-color:var(--ink)}
+.keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;align-content:start}
+.keypad .disp{grid-column:1/-1;height:44px;border-radius:8px;background:var(--tint);display:flex;align-items:center;justify-content:flex-end;padding:0 12px;font-size:22px;font-weight:800}
+.keypad button{height:44px;border-radius:8px;border:1px solid var(--border);background:#fff;font-size:18px;font-weight:700}
+.others{display:flex;gap:8px}
+.others .btn{flex:1;height:44px;font-size:13px}
+.pay-foot{display:flex;gap:8px;align-items:center}
+.pay-foot .tool{height:44px;padding:0 14px}
+.pay-foot .btn.pay{margin-left:auto;min-width:300px}
+
+/* ================= 4. TIMED ================= */
+.room{border-radius:12px;background:var(--f);border:2px solid var(--b);display:flex;flex-direction:column;overflow:hidden;height:200px}
+.room .rh{display:flex;align-items:center;gap:8px;padding:10px 12px 0}
+.room .rh b{font-size:17px}
+.room .rh .kind{font-size:11px;color:var(--muted);font-weight:600}
+.room .rh .icons{margin-left:auto;display:flex;gap:4px}
+.room .rh .icons span{min-width:22px;height:22px;border-radius:11px;background:#fff;border:1px solid var(--border);font-size:12px;display:flex;align-items:center;justify-content:center;padding:0 5px;font-weight:700}
+.clock{padding:4px 12px 0;display:flex;align-items:baseline;gap:8px}
+.clock .t{font-size:34px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em;line-height:1.1}
+.room .rate{padding:0 12px;font-size:12px;color:var(--muted)}
+.room .money{display:flex;justify-content:space-between;padding:4px 12px;font-size:12px;color:var(--muted);margin-top:auto}
+.room .money span{display:flex;flex-direction:column;min-width:70px}
+.room .money b{font-size:15px;color:var(--ink)}
+.room .ra{display:grid;grid-template-columns:1fr 1fr 1fr;border-top:1px solid var(--border);background:#fff}
+.room .ra button{height:46px;border:0;background:#fff;font-weight:700;font-size:13px;border-right:1px solid var(--border)}
+.room .ra button:last-child{border-right:0}
+.room .ra .go{color:var(--success)}.room .ra .payb{color:#fff;background:var(--success)}
+.r-free{--f:#fff;--b:#c9d6e0}
+.r-free .clock .t{font-size:20px;color:var(--muted)}
+.r-up{--f:#e7f2fb;--b:#07569a}
+.r-soon{--f:#fff4d9;--b:#b86e00}.r-soon .clock .t{color:#b86e00}
+.r-over{--f:#fde8e6;--b:#b3261e}.r-over .clock .t{color:var(--danger);animation:blink 1s steps(2) infinite}
+.r-pause{--f:#eef1f3;--b:#7d8b96}.r-pause .clock .t{color:#7d8b96}
+@keyframes blink{50%{opacity:.35}}
+.confirm{position:absolute;inset:56px 0 0;background:#0f1d2966;display:none;align-items:center;justify-content:center;z-index:20}
+.confirm.on{display:flex}
+.confirm .box{width:440px;background:#fff;border-radius:16px;padding:18px;box-shadow:0 20px 60px #0006}
+.confirm h3{margin:0 0 6px}
+.confirm p{margin:0 0 14px;color:var(--muted)}
+.confirm .row{display:grid;grid-template-columns:1fr 1.4fr;gap:8px}
+
+/* ================= 5. TABS ================= */
+.tablist{width:290px;flex:none;background:#fff;border-right:1px solid var(--border);display:flex;flex-direction:column}
+.tab-row{display:grid;grid-template-columns:40px 1fr auto;gap:10px;align-items:center;padding:10px 12px;border:0;border-bottom:1px solid #edf2f6;text-align:left;background:#fff;width:100%}
+.tab-row.sel{background:var(--sel);box-shadow:inset 4px 0 0 var(--blue)}
+.av{width:40px;height:40px;border-radius:50%;background:var(--tint);display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--blue);font-size:13px;flex:none}
+.tab-row .tn{font-weight:800}
+.tab-row .ts{font-size:12px;color:var(--muted)}
+.tab-row .ta{text-align:right;font-weight:800}
+.tab-row .ta small{display:block;font-weight:600;font-size:11px}
+.minspend{margin:8px 12px 0;padding:8px 10px;border-radius:8px;background:#fff4d9;border:1px solid #f0d9a0;font-size:12px}
+.minspend .bar{height:6px;border-radius:3px;background:#fff;margin-top:6px;overflow:hidden}
+.minspend .bar i{display:block;height:100%;background:#b86e00}
+
+/* ================= 6. QUICK ================= */
+.callno{display:flex;align-items:center;gap:12px;padding:10px 12px;border-bottom:1px solid var(--border)}
+.callno .num{font-size:36px;font-weight:900;color:var(--blue);line-height:1}
+.svc{display:flex;gap:6px;padding:8px 12px;border-bottom:1px solid var(--border)}
+.svc .tool{height:40px;flex:1;justify-content:center}
+.queue{display:flex;gap:6px;padding:8px 12px;background:var(--surface);border-top:1px solid var(--border);align-items:center}
+.qn{height:36px;min-width:54px;border-radius:8px;font-weight:800;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);background:#fff}
+.qn.ready{background:#e2f4ea;border-color:#1f7a4d;color:#1f7a4d}
+.qn.making{background:#fff4d9;border-color:#b86e00;color:#b86e00}
+.qs-pay{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:10px 12px;border-top:1px solid var(--border)}
+.qs-pay .btn{height:56px;flex-direction:column;gap:0}
+.qs-pay .full{grid-column:1/-1;height:60px;font-size:16px}
+.item.img{padding:0;overflow:hidden;height:150px;border-top-width:1px}
+.item.img .ph{height:80px;background:linear-gradient(135deg,#f4c27a,#fff);display:flex;align-items:center;justify-content:center;font-size:30px}
+.item.img .in{padding:6px 10px 0}.item.img .ip{padding:0 10px 8px}
+.item.img .qty{top:6px;right:6px}
+</style>
+</head>
+<body>
+
+<nav class="mock-nav" aria-label="Chọn màn mockup">
+  <b>MOCKUP · Màn bán F&amp;B</b>
+  <button data-show="board">1. Bảng bàn</button>
+  <button data-show="order">2. Gọi món tại bàn</button>
+  <button data-show="modifier">3. Tùy chọn món</button>
+  <button data-show="pay">4. Thanh toán</button>
+  <button data-show="timed">5. Bảng phòng tính giờ</button>
+  <button data-show="room">6. Gọi món trong phòng</button>
+  <button data-show="tabs">7. Tab quầy bar</button>
+  <button data-show="quick">8. Quầy nhanh</button>
+  <span class="note">Khung 1366×768 · dữ liệu giả · bấm được</span>
+</nav>
+
+<div class="stage" id="stage"><div class="fit" id="fit"><div class="device" id="device">
+
+  <header class="topbar">
+    <div class="brand">ParkViet <small>Phở Hà · Cầu Giấy</small></div>
+    <div class="modes" aria-label="Khu bán">
+      <button data-show="board" data-mode="board"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Bàn <span class="count">14/24</span></button>
+      <button data-show="timed" data-mode="timed"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/></svg>Phòng <span class="count">6/10</span></button>
+      <button data-show="tabs" data-mode="tabs"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3h8l-1 7a3 3 0 0 1-6 0zM12 13v7M8 21h8"/></svg>Tab <span class="count">5</span></button>
+      <button data-show="quick" data-mode="quick"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 8h12v6a6 6 0 0 1-12 0zM17 10h2a2 2 0 0 1 0 4h-2"/></svg>Quầy nhanh</button>
+    </div>
+    <div class="tb-right">
+      <button class="tb-btn" title="Tìm bàn, món, khách"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
+      <button class="tb-btn" title="Đặt bàn hôm nay"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>3</button>
+      <button class="tb-btn" title="Bếp báo món xong, bàn gọi thanh toán"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10 21h4"/></svg><span class="dot">4</span></button>
+      <span class="live" title="Đang nhận cập nhật trực tiếp"></span>
+      <div class="who"><b>Lan · Thu ngân</b>Ca 2 · mở 14:00</div>
+      <button class="tb-btn" title="Ca của tôi, hóa đơn, trả hàng, quản trị">☰</button>
+    </div>
+  </header>
+
+  <!-- ============ 1. BẢNG BÀN ============ -->
+  <section class="screen col" id="s-board">
+    <div class="board-top">
+      <div class="areas"><button class="on">Tất cả <small>14/24</small></button><button>Tầng 1 <small>8/12</small></button><button>Tầng 2 <small>4/8</small></button><button>Sân vườn <small>2/4</small></button></div>
+      <span class="sp"></span>
+      <span class="chip on">Tất cả <b>24</b></span>
+      <span class="chip">Đang dùng <b>14</b></span>
+      <span class="chip">Trống <b>10</b></span>
+      <span class="chip" style="border-color:var(--danger);color:var(--danger)">Cần xử lý <b>4</b></span>
+    </div>
+    <div class="legend">
+      <span><i class="t-free"></i>Trống</span><span><i class="t-serve"></i>Đang phục vụ</span><span><i class="t-partial" style="border-style:dashed"></i>Có món chưa gửi bếp</span><span><i class="t-pre"></i>Đã in tạm tính</span><span><i class="t-pay"></i>Gọi thanh toán</span>
+      <span style="margin-left:auto"><b style="display:inline-block;width:22px;height:5px;background:var(--danger);border-radius:3px"></b>Ngồi quá 60′</span><span>📅 đặt trước · ⚠ lỗi in bếp · 🔗 bàn gộp</span>
+    </div>
+    <div class="grid" id="board"></div>
+    <div class="pop" id="guestPop">
+      <h4>Mở <span id="popName"></span></h4><p>Chọn số khách. Màn gọi món mở ngay sau đó.</p>
+      <div class="nums"></div>
+      <button class="btn primary big" style="width:100%" data-show="order">Mở bàn · <span id="popN">2</span> khách</button>
+    </div>
+  </section>
+
+  <!-- ============ 2/3/6. GỌI MÓN ============ -->
+  <section class="screen" id="s-order">
+    <nav class="rail" id="rail"></nav>
+    <div class="col grow" id="menuArea">
+      <div class="menu-top">
+        <div class="search"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Tìm món hoặc gõ mã (vd. P2)… <span class="kbd" style="margin-left:auto">/</span></div>
+        <div class="density" id="density"><button data-d="airy">Thoáng</button><button data-d="" class="on">Vừa</button><button data-d="dense">Dày</button></div>
+      </div>
+      <div class="items" id="items"></div>
+    </div>
+    <div class="modpanel" id="modpanel">
+      <div class="mp-h">
+        <button class="icon-btn" id="mpBack" title="Về thực đơn">←</button>
+        <div><h3>Trà sữa trân châu</h3><span class="base">Giá gốc 35.000 · gửi Quầy bar</span></div>
+        <div class="stepper" style="margin-left:auto"><button>−</button><span>2</span><button>+</button></div>
+      </div>
+      <div class="mp-b">
+        <div class="grp" data-req="1"><div class="grp-t">Đá <span class="req">✕ Bắt buộc · chưa chọn</span></div>
+          <div class="opts"><button class="opt">Không đá</button><button class="opt">Ít đá</button><button class="opt">Bình thường</button><button class="opt">Đá riêng</button></div></div>
+        <div class="grp" data-req="1"><div class="grp-t">Size <span class="req ok">✓ Bắt buộc</span></div>
+          <div class="opts"><button class="opt">S<small>−5.000</small></button><button class="opt on">M<small>+0</small></button><button class="opt">L<small>+8.000</small></button></div></div>
+        <div class="grp" data-req="1"><div class="grp-t">Đường <span class="req ok">✓ Bắt buộc</span></div>
+          <div class="opts"><button class="opt">0%</button><button class="opt">30%</button><button class="opt on">50%</button><button class="opt">70%</button><button class="opt">100%</button></div></div>
+        <div class="grp" data-multi="1"><div class="grp-t">Topping <span class="hint">không bắt buộc · tối đa 3</span></div>
+          <div class="opts"><button class="opt on">Trân châu đen<small>+5.000</small></button><button class="opt on">Pudding<small>+7.000</small></button><button class="opt">Thạch dừa<small>+5.000</small></button><button class="opt">Kem cheese<small>+10.000</small></button></div></div>
+        <div class="grp" data-multi="1" style="border:0"><div class="grp-t">Ghi chú nhanh <span class="hint">không đổi giá</span></div>
+          <div class="opts"><button class="opt" style="min-width:0">Ít ngọt</button><button class="opt" style="min-width:0">Mang ra sau</button><button class="opt on" style="min-width:0">Không ống hút</button><button class="opt" style="min-width:0">Dị ứng đậu phộng</button><button class="opt" style="min-width:0">+ Ghi chú khác</button></div></div>
+      </div>
+      <div class="mp-f">
+        <span class="tool">Ghế 2 ▾</span><span class="tool">Course: Món chính ▾</span>
+        <div class="sum"><small>2 × 47.000</small><br><b>94.000 ₫</b></div>
+        <button class="btn primary big" id="addBtn" style="min-width:230px" disabled>Chọn Đá để thêm</button>
+      </div>
+    </div>
+    <aside class="ticket" id="ticket"></aside>
+  </section>
+
+  <!-- ============ 4. THANH TOÁN ============ -->
+  <section class="screen" id="s-pay">
+    <aside class="pay-bill">
+      <div class="tk-h"><div class="r1"><button class="back" data-show="order">← Đơn</button><div class="tname">Bàn 05 <small>· 4 khách · #A-0142</small></div></div></div>
+      <div class="lines" id="paylines"></div>
+      <div class="pb-sum">
+        <div><span>Tạm tính (15 món)</span><span>612.000</span></div>
+        <div class="disc"><span>Khuyến mại thành viên</span><span>−20.000</span></div>
+        <div><span>Phí phục vụ 5%</span><span>30.600</span></div>
+        <div><span>VAT 8%</span><span>49.800</span></div>
+        <div class="tot"><span>Tổng</span><span>672.400 ₫</span></div>
+      </div>
+    </aside>
+    <div class="pay-main">
+      <div class="due">
+        <div><small>Cần thu</small><b>672.400</b></div>
+        <div class="left"><small>Còn lại</small><b>672.400</b></div>
+        <div class="chg"><small>Tiền thừa</small><b>0</b></div>
+      </div>
+      <div class="pay-cards">
+        <div class="card active">
+          <h4>▦ VietQR · hiện sẵn</h4>
+          <div class="qr" id="qr"></div>
+          <div class="qr-amt">672.400 ₫</div>
+          <div class="qr-note">MB Bank · PHO HA CAU GIAY · nội dung A0142</div>
+          <div class="waiting"><span class="spin"></span>Chờ chuyển khoản, tự khớp khi tiền về</div>
+        </div>
+        <div class="card">
+          <h4>💵 Tiền mặt</h4>
+          <div class="cash">
+            <div class="quick"><button class="exact">Đúng 672.400</button><button>680.000</button><button>700.000</button><button>800.000</button><button>1.000.000</button></div>
+            <div class="keypad"><div class="disp">0</div><button>7</button><button>8</button><button>9</button><button>4</button><button>5</button><button>6</button><button>1</button><button>2</button><button>3</button><button>000</button><button>0</button><button>⌫</button></div>
+          </div>
+          <div class="others"><button class="btn">💳 Thẻ</button><button class="btn">Thẻ nạp / ví</button><button class="btn">Ghi nợ</button><button class="btn">Voucher</button></div>
+        </div>
+      </div>
+      <div class="pay-foot">
+        <span class="tool">Chia đều ▾</span><span class="tool">Tách theo món</span><span class="tool">Tách theo ghế</span><span class="tool">In tạm tính</span><span class="tool">Xuất HĐĐT</span>
+        <button class="btn pay big" data-show="board">Hoàn tất · in hóa đơn</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 5. BẢNG PHÒNG ============ -->
+  <section class="screen col" id="s-timed">
+    <div class="board-top">
+      <div class="areas"><button class="on">Tất cả <small>6/10</small></button><button>Phòng hát <small>4/6</small></button><button>Bida <small>2/4</small></button></div>
+      <span class="tool" style="margin-left:8px">Khung giá: Thứ Sáu 17:00–23:00 · cao điểm</span>
+      <span class="sp"></span>
+      <span class="chip on">Tất cả <b>10</b></span><span class="chip">Đang chạy <b>6</b></span><span class="chip">Trống <b>3</b></span><span class="chip" style="border-color:var(--danger);color:var(--danger)">Sắp/quá giờ <b>2</b></span>
+    </div>
+    <div class="legend">
+      <span><i class="r-free"></i>Trống</span><span><i class="r-up"></i>Đang chạy (đếm lên)</span><span><i class="r-soon"></i>Gói giờ còn ≤10′</span><span><i class="r-over"></i>Hết gói giờ (nhấp nháy)</span><span><i class="r-pause"></i>Tạm dừng</span>
+    </div>
+    <div class="grid" id="rooms" style="grid-template-columns:repeat(auto-fill,minmax(250px,1fr))"></div>
+    <div class="confirm" id="stopConfirm"><div class="box">
+      <h3>Dừng giờ và thanh toán P101?</h3>
+      <p>Đồng hồ dừng lúc 15:02. Tiền giờ chốt 1 giờ 42 phút × 180.000/giờ = <b>306.000</b>, cộng đồ gọi 330.000.</p>
+      <div class="row"><button class="btn" id="stopCancel">Để chạy tiếp</button><button class="btn pay" data-show="pay">Dừng giờ · thanh toán</button></div>
+    </div></div>
+  </section>
+
+  <!-- ============ 7. TAB BAR ============ -->
+  <section class="screen" id="s-tabs">
+    <aside class="tablist">
+      <div class="menu-top" style="padding:10px"><div class="search" style="height:40px">Tìm tab…</div><button class="btn primary" style="height:40px">+ Tab</button></div>
+      <div style="display:flex;gap:6px;padding:8px 10px;border-bottom:1px solid var(--border)"><span class="chip on" style="height:32px">Đang mở <b>5</b></span><span class="chip" style="height:32px">Của tôi <b>3</b></span><span class="chip" style="height:32px">VIP <b>2</b></span></div>
+      <div id="tabrows" style="flex:1;overflow:auto"></div>
+      <div style="padding:8px 12px;font-size:12px;color:var(--muted);border-top:1px solid var(--border)">Ngày kinh doanh 13/11 · cắt sổ 04:00</div>
+    </aside>
+    <nav class="rail" id="barRail"></nav>
+    <div class="col grow"><div class="items" id="barItems"></div></div>
+    <aside class="ticket" id="tabTicket"></aside>
+  </section>
+
+  <!-- ============ 8. QUẦY NHANH ============ -->
+  <section class="screen" id="s-quick">
+    <nav class="rail" id="qRail"></nav>
+    <div class="col grow">
+      <div class="menu-top"><div class="search">Tìm món…</div><span class="tool">Ảnh món: bật</span></div>
+      <div class="items" id="qItems" style="--tw:150px"></div>
+      <div class="queue"><b style="font-size:12px;color:var(--muted);margin-right:4px">Hàng chờ pha</b><span class="qn ready">#37 ✓</span><span class="qn ready">#38 ✓</span><span class="qn making">#39</span><span class="qn making">#40</span><span class="qn">#41</span><span style="margin-left:auto;font-size:12px;color:var(--muted)">Màn khách đang gọi #37, #38</span></div>
+    </div>
+    <aside class="ticket">
+      <div class="callno"><div><small style="color:var(--muted);font-weight:600">Số gọi</small><div class="num">#42</div></div><div style="margin-left:auto;text-align:right"><b>Khách lẻ</b><br><small style="color:var(--muted)">+ SĐT để tích điểm</small></div></div>
+      <div class="svc"><span class="tool on">Mang đi</span><span class="tool">Tại quán</span><span class="tool">Grab</span><span class="tool">Shopee</span></div>
+      <div class="lines" id="qLines"></div>
+      <div class="tk-sum" style="font-size:20px;font-weight:800;color:var(--ink);padding:10px 12px"><span>Tổng</span><span>124.000 ₫</span></div>
+      <div class="qs-pay">
+        <button class="btn"><b>Tiền mặt</b><small>F1</small></button>
+        <button class="btn primary"><b>VietQR</b><small>F2</small></button>
+        <button class="btn"><b>Khác</b><small>F3</small></button>
+        <button class="btn pay full">Thu 124.000 · in tem ly + bill</button>
+      </div>
+    </aside>
+  </section>
+
+  <div class="toast" id="toast"></div>
+</div></div></div>
+
+<div class="caption" id="caption"></div>
+
+<script>
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const money=v=>v.toLocaleString('vi-VN');
+const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('on'),2400)};
+
+/* ---------- 1. Bảng bàn ---------- */
+// [tên, trạng thái, khách, phút ngồi, tiền (nghìn), biểu tượng]
+const tables=[
+ ['Bàn 01','serve',2,24,186],['Bàn 02','free'],['Bàn 03','pay',4,72,842],['Bàn 04','free',0,0,0,'📅 18:30'],
+ ['Bàn 05','partial',4,38,694],['Bàn 06','serve',3,4,0],['Bàn 07','serve',6,51,1240,'🔗'],['Bàn 08','pre',2,66,415],
+ ['Bàn 09','free'],['Bàn 10','free'],['Bàn 11','serve',4,12,320,'⚠'],['Bàn 12','free',0,0,0,'📅 19:00'],
+ ['Bàn 14','partial',2,33,210],['Bàn 15','free'],['Bàn 16','serve',5,2,0],['Bàn 17','free'],
+ ['Bàn 18','serve',8,84,1580],['Bàn 19','free'],['Bàn 20','pay',4,61,455],['VIP 1','serve',10,80,3240,'🔗'],
+ ['VIP 2','free'],['SV 1','free'],['SV 2','pre',4,27,390]];
+const LBL={free:'Trống',serve:'Đang phục vụ',partial:'Có món chưa gửi',pre:'Đã in tạm tính',pay:'Gọi thanh toán'};
+function renderBoard(){
+  const ghost=`<button class="tile ghost" data-show="quick"><span class="nm">+ Mang về</span><small>3 đơn đang chờ</small></button>
+               <button class="tile ghost"><span class="nm">+ Giao đi</span><small>2 đơn · Grab 1</small></button>`;
+  $('#board').innerHTML=ghost+tables.map(([n,s,g,m,a,ic])=>{
+    const late=m>=60;
+    const icons=[ic&&`<span class="${ic==='⚠'?'alert':''}">${ic}</span>`,s==='pay'&&'<span>₫</span>'].filter(Boolean).join('');
+    const body=s==='free'
+      ?`<span class="st" style="margin-top:6px">Trống</span><span class="bot"><span>${ic?'Có khách đặt':'Chạm để mở bàn'}</span></span>`
+      :`${late?'<span class="late"></span>':''}<span class="time">${m}′</span><span class="st">${LBL[s]}</span><span class="bot"><span>👥 ${g}</span><span class="amt">${a?money(a)+'k':'—'}</span></span>`;
+    return `<button class="tile t-${s}" data-table="${n}" data-state="${s}"><span class="icons">${icons}</span><span class="nm">${n}</span>${body}</button>`}).join('');
+  $$('#board [data-table]').forEach(b=>b.onclick=e=>{
+    if(b.dataset.state!=='free'){show('order');return}
+    const p=$('#guestPop'),r=b.getBoundingClientRect(),d=$('#device').getBoundingClientRect(),k=d.width/1366;
+    $('#popName').textContent=b.dataset.table;
+    p.style.left=Math.min((r.left-d.left)/k,1366-320)+'px';p.style.top=Math.min((r.bottom-d.top)/k+6,768-260)+'px';p.classList.add('on');e.stopPropagation()});
+  const nums=$('#guestPop .nums');nums.innerHTML=[1,2,3,4,5,6,8,'…'].map(n=>`<button class="${n===2?'on':''}">${n}</button>`).join('');
+  nums.querySelectorAll('button').forEach(b=>b.onclick=e=>{nums.querySelectorAll('button').forEach(x=>x.classList.remove('on'));b.classList.add('on');$('#popN').textContent=b.textContent;e.stopPropagation()});
+}
+document.addEventListener('click',e=>{if(!e.target.closest('#guestPop'))$('#guestPop').classList.remove('on')});
+
+/* ---------- 2. Gọi món ---------- */
+const cats=[['Món chính',14,'#07569a'],['Khai vị',8,'#1f7a4d'],['Lẩu',6,'#b3261e'],['Đồ uống',12,'#7a5cc2'],['Bia rượu',9,'#b86e00'],['Tráng miệng',5,'#8a7300'],['Thêm',7,'#526b7e']];
+const items=[['Phở bò tái',65,2],['Phở bò chín',65],['Phở gà',60,1],['Phở đặc biệt',85,0,1],['Bún chả Hà Nội',60],['Cơm rang dưa bò',70],['Mì xào hải sản',85,0,0,1],['Phở cuốn (6 cuốn)',90,1],['Nem rán (6 chiếc)',90,1],['Quẩy',10,2],['Trứng chần',10,1],['Nước dùng thêm',0],['Trà sữa trân châu',35,0,1],['Trà đá',5,4],['Bia Hà Nội',25,2],['Lẩu nấm (nhỏ)',142,1]];
+function rail(el,list,on=0){$(el).innerHTML=list.map(([n,c,col],i)=>`<button class="${i===on?'on':''}" style="--c:${col}">${n}<small>${c} món</small></button>`).join('');
+  $(el).querySelectorAll('button').forEach(b=>b.onclick=()=>{$(el).querySelectorAll('button').forEach(x=>x.classList.remove('on'));b.classList.add('on')})}
+function renderItems(){
+  $('#items').innerHTML=items.map(([n,p,q,mod,out],i)=>`<button class="item ${out?'out':''}" style="--c:${i>11?(i>13?'#b86e00':'#7a5cc2'):'#07569a'}" ${mod?'data-mod':''}>${q?`<span class="qty">${q}</span>`:''}<span class="in">${n}</span><span class="ip">${out?'Hết món':money(p*1000)}</span>${mod?'<span class="mod">⚙ tùy chọn</span>':''}</button>`).join('');
+  $$('#items .item').forEach(b=>b.onclick=()=>{ if(b.classList.contains('out'))return toast('Bếp báo hết món này'); if(b.hasAttribute('data-mod'))return show('modifier'); toast('Đã thêm 1 '+b.querySelector('.in').textContent+' vào phần chưa gửi')});
+}
+$$('#density button').forEach(b=>b.onclick=()=>{$$('#density button').forEach(x=>x.classList.remove('on'));b.classList.add('on');$('#items').className='items '+b.dataset.d});
+
+const L=(q,n,p,o={})=>`<div class="line ${o.cls||''}"><span class="q">${q}</span><span><span class="n">${n}</span>${o.tag||''}${o.mods?`<div class="mods">${o.mods}</div>`:''}${o.note?`<div class="note">✎ ${o.note}</div>`:''}</span><span class="p">${p}${o.cls&&o.cls.includes('new')||o.nolock?'':'<div class="lock">🔒</div>'}</span>${o.extra||''}</div>`;
+const T={new:'<span class="tag new">Mới</span>',cook:m=>`<span class="tag cook">Đang làm ${m}′</span>`,done:'<span class="tag done">Đã ra</span>',hold:'<span class="tag hold">Chờ gọi</span>'};
+const selActions='<div class="line-actions"><div class="stepper"><button>−</button><span>2</span><button>+</button></div><span class="tool">Ghi chú</span><span class="tool">Ghế</span><span class="tool">Giảm</span><span class="tool" style="color:var(--danger)">Xóa</span></div>';
+const views={
+ round:()=>`<div class="grp-h new">MỚI · chưa gửi bếp · 3 món<span class="r">sửa, xóa tự do</span></div>`+
+   L(2,'Bia Hà Nội','50.000',{cls:'new sel',tag:T.new,mods:'Ghế 4 · lạnh',extra:selActions})+
+   L(1,'Trứng chần','10.000',{cls:'new',tag:T.new,mods:'Ghế 1'})+
+   `<div class="grp-h">Lượt 2 · 14:22 · Lan<span class="r">2 món</span></div>`+
+   L(1,'Nem rán (6 chiếc)','90.000',{tag:T.cook(18)})+
+   L(1,'Phở cuốn (6 cuốn)','90.000',{tag:T.hold,mods:'Course món chính · giữ chờ gọi'})+
+   `<div class="grp-h">Lượt 1 · 14:05 · Tuấn<span class="r">9 món</span></div>`+
+   L(2,'Phở bò tái','130.000',{tag:T.done,mods:'Ghế 1, 2'})+L(1,'Phở gà','60.000',{tag:T.done,mods:'Ghế 3',note:'Không hành'})+L(2,'Quẩy','20.000',{tag:T.done})+L(4,'Trà đá','20.000',{tag:T.done}),
+ course:()=>`<div class="grp-h new">MỚI · chưa gửi · 3 món</div>`+L(2,'Bia Hà Nội','50.000',{cls:'new',tag:T.new})+L(1,'Trứng chần','10.000',{cls:'new',tag:T.new})+
+   `<div class="grp-h"><span class="cs" style="color:var(--success)">✓</span>Khai vị · đã ra</div>`+L(1,'Nem rán (6 chiếc)','90.000',{tag:T.cook(18)})+L(2,'Quẩy','20.000',{tag:T.done})+
+   `<div class="grp-h"><span class="cs" style="color:#c26a00">🔥</span>Món chính · đã gọi 14:05</div>`+L(2,'Phở bò tái','130.000',{tag:T.done})+L(1,'Phở gà','60.000',{tag:T.done})+
+   `<div class="grp-h"><span class="cs">➜</span>Món chính 2 · đang giữ<button class="fire" onclick="toast('Đã gọi ra: Phở cuốn → Bếp nóng')">Gọi món ra</button></div>`+L(1,'Phở cuốn (6 cuốn)','90.000',{tag:T.hold}),
+ seat:()=>[1,2,3,4].map(s=>`<div class="grp-h" style="cursor:pointer">Ghế ${s}${s===4?' · đang nhập':''}<span class="r">${['75.000','65.000','65.000','50.000'][s-1]}</span></div>`+
+   ({1:L(1,'Phở bò tái','65.000',{tag:T.done})+L(1,'Trứng chần','10.000',{cls:'new',tag:T.new}),2:L(1,'Phở bò tái','65.000',{tag:T.done}),3:L(1,'Phở gà','60.000',{tag:T.done,note:'Không hành'})+L(1,'Trà đá','5.000',{tag:T.done}),4:L(2,'Bia Hà Nội','50.000',{cls:'new',tag:T.new})})[s]).join('')+`<div class="grp-h">Chung cả bàn</div>`+L(1,'Nem rán (6 chiếc)','90.000',{tag:T.cook(18)})+L(2,'Quẩy','20.000',{tag:T.done})
+};
+function ticketHTML(ctx){
+  const room=ctx==='room';
+  return `<div class="tk-h"><div class="r1"><button class="back" data-show="${room?'timed':'board'}">← ${room?'Phòng':'Bàn'}</button>
+      <button class="tname" title="Chạm để chuyển hoặc gộp">${room?'P101':'Bàn 05'} <small>▾</small></button>
+      <button class="icon-btn" title="Tách đơn, gộp đơn, giảm giá, phụ phí, khách hàng, hủy đơn">⋯</button></div>
+    <div class="r2"><span class="tool">👥 ${room?6:4} khách</span><span class="tool">⏱ ${room?'1:42':'38′'}</span><span class="tool">PV: Tuấn</span><span class="tool">${room?'Phòng hát':'Tại bàn'}</span></div></div>
+    ${room?'':`<div class="tk-view"><span class="lbl">Nhóm theo</span><span class="tool on" data-v="round">Lượt gửi</span><span class="tool" data-v="course">Course</span><span class="tool" data-v="seat">Ghế</span></div>`}
+    ${room?`<div class="timed-line"><div><div class="sub">📌 Giờ hát · Phòng thường · 180.000/giờ · từ 13:20</div><div class="clk">01:42:10</div></div><div style="text-align:right"><div class="sub">Tạm tính</div><b style="font-size:18px">306.000</b></div>
+      <div class="acts"><span class="tool">⏸ Dừng</span><span class="tool">Đổi phòng · giữ giá đoạn cũ</span><span class="tool">✎ Sửa giờ · cần duyệt</span></div></div>`:''}
+    <div class="lines">${room?`<div class="grp-h new">MỚI · chưa gửi bar · 1 món</div>`+L(1,'Đĩa hoa quả lớn','150.000',{cls:'new',tag:T.new})+`<div class="grp-h">Lượt 1 · 13:25</div>`+L(12,'Bia Tiger','240.000',{tag:T.done})+L(2,'Hạt dẻ cười','90.000',{tag:T.done}):views.round()}</div>
+    <div class="tk-sum"><span>${room?'Giờ 306.000 + đồ 330.000 + VAT':'15 món · phí PV 5% · VAT 8%'}</span><span>${room?'':'Tạm tính 612.000'}</span></div>
+    <div class="tk-sec"><span class="tool">In tạm tính</span><span class="tool">Giữ món</span><span class="tool" data-stay>Gửi &amp; ở lại</span></div>
+    <div class="tk-main"><button class="btn send big" id="sendBtn">Gửi ${room?'bar':'bếp'} (${room?1:3})</button>
+      <button class="btn pay big" ${room?'id="roomPay"':'data-show="pay"'}><small>Thanh toán</small><b>${room?'687.000':'694.000'} ₫</b></button></div>`;
+}
+function renderTicket(ctx){
+  $('#ticket').innerHTML=ticketHTML(ctx);
+  $$('#ticket [data-v]').forEach(b=>b.onclick=()=>{$$('#ticket [data-v]').forEach(x=>x.classList.remove('on'));b.classList.add('on');$('#ticket .lines').innerHTML=views[b.dataset.v]()});
+  $('#ticket [data-stay]').onclick=()=>toast('Đã gửi bếp, vẫn ở lại màn gọi món');
+  $('#sendBtn').onclick=()=>{toast(ctx==='room'?'Đã gửi 1 món lên Quầy bar':'Đã gửi 3 món: Bếp nóng 1, Quầy bar 2 · về bảng bàn');setTimeout(()=>show(ctx==='room'?'timed':'board'),1100)};
+  if(ctx==='room')$('#roomPay').onclick=()=>{show('timed');$('#stopConfirm').classList.add('on')};
+  bindShow($('#ticket'));
+}
+
+/* modifier: chọn đủ nhóm bắt buộc thì mở khóa nút thêm */
+$$('#modpanel .grp').forEach(g=>g.querySelectorAll('.opt').forEach(o=>o.onclick=()=>{
+  if(g.dataset.multi)o.classList.toggle('on');else{g.querySelectorAll('.opt').forEach(x=>x.classList.remove('on'));o.classList.add('on')}
+  if(g.dataset.req){const r=g.querySelector('.req');r.className='req ok';r.textContent='✓ Bắt buộc'}
+  const missing=$$('#modpanel .grp[data-req]').filter(x=>!x.querySelector('.opt.on'));
+  const b=$('#addBtn');b.disabled=missing.length>0;b.textContent=missing.length?'Chọn '+missing[0].querySelector('.grp-t').firstChild.textContent.trim()+' để thêm':'Thêm vào đơn · 94.000';
+}));
+$('#addBtn').onclick=()=>{toast('Đã thêm 2 Trà sữa trân châu vào phần chưa gửi');show('order')};
+$('#mpBack').onclick=()=>show('order');
+
+/* ---------- 4. Thanh toán ---------- */
+function renderPay(){
+  $('#paylines').innerHTML=[[2,'Phở bò tái','130.000'],[1,'Phở gà','60.000'],[2,'Quẩy','20.000'],[1,'Nem rán (6 chiếc)','90.000'],[1,'Phở cuốn (6 cuốn)','90.000'],[2,'Bia Hà Nội','50.000'],[1,'Trứng chần','10.000'],[4,'Trà đá','20.000'],[1,'Lẩu nấm (nhỏ)','142.000']]
+   .map(([q,n,p])=>`<div class="line"><span class="q">${q}</span><span class="n">${n}</span><span class="p">${p}</span></div>`).join('');
+  let seed=7;const rnd=()=>(seed=(seed*9301+49297)%233280)/233280;
+  const finder=(r,c)=>{for(const [y,x] of [[0,0],[0,14],[14,0]]){if(r>=y&&r<y+7&&c>=x&&c<x+7){const a=r-y,b=c-x;return a===0||a===6||b===0||b===6||(a>1&&a<5&&b>1&&b<5)}}return null};
+  let h='';for(let r=0;r<21;r++)for(let c=0;c<21;c++){const f=finder(r,c);h+=`<i style="opacity:${(f===null?rnd()>.5:f)?1:0}"></i>`}
+  $('#qr').innerHTML=h;
+}
+
+/* ---------- 5. Phòng ---------- */
+const rooms=[
+ ['P101','Phòng thường','up','01:42:10','Đếm lên · 180k/giờ',306,330],
+ ['P102','Phòng thường','soon','00:08:12','Gói 1 giờ · còn lại',180,95],
+ ['VIP 1','Phòng VIP','over','+00:05:44','Gói 2 giờ · đã quá giờ',560,880],
+ ['P103','Phòng thường','pause','00:31:15','Tạm dừng từ 14:40',94,60],
+ ['VIP 2','Phòng VIP','free','Trống','Đặt 20:00 · cọc 300k',0,0,'📅'],
+ ['P104','Phòng thường','free','Trống','180k/giờ',0,0],
+ ['Bida 1','Bàn lỗ','up','00:47:30','Đếm lên · 60k/giờ',48,35],
+ ['Bida 2','Bàn lỗ','up','01:10:05','Đếm lên · 60k/giờ',70,0],
+ ['Bida 3','Bàn carom','free','Trống','70k/giờ',0,0],
+ ['Bida 4','Bàn carom','up','00:12:41','Đếm lên · 70k/giờ',15,20]];
+function renderRooms(){
+  $('#rooms').innerHTML=rooms.map(([n,k,s,t,r,tm,fd,ic])=>{
+    const acts=s==='free'?`<button class="go">▶ Bắt đầu</button><button data-room>Gọi món</button><button>${ic?'Nhận khách':'Đặt trước'}</button>`
+      :s==='pause'?`<button class="go">▶ Tiếp tục</button><button data-room>Gọi món</button><button class="payb" data-stop>Thanh toán</button>`
+      :`<button>⏸ Dừng</button><button data-room>Gọi món</button><button class="payb" data-stop>Thanh toán</button>`;
+    return `<div class="room r-${s}"><div class="rh"><b>${n}</b><span class="kind">${k}</span><span class="icons">${ic?`<span>${ic}</span>`:''}${s==='pause'?'<span>⏸</span>':''}</span></div>
+      <div class="clock"><span class="t">${t}</span></div><div class="rate">${r}</div>
+      <div class="money"><span>Giờ <b>${tm?money(tm*1000):'—'}</b></span><span>Đồ <b>${fd?money(fd*1000):'—'}</b></span><span>Tổng <b>${tm+fd?money((tm+fd)*1000):'—'}</b></span></div>
+      <div class="ra">${acts}</div></div>`}).join('');
+  $$('#rooms [data-room]').forEach(b=>b.onclick=()=>show('room'));
+  $$('#rooms [data-stop]').forEach(b=>b.onclick=()=>$('#stopConfirm').classList.add('on'));
+}
+$('#stopCancel').onclick=()=>$('#stopConfirm').classList.remove('on');
+
+/* ---------- 7. Tab ---------- */
+function renderTabs(){
+  const tabs=[['MK','Mike & bạn','VIP 2 · 21:10 · 6 khách','1.620.000','2 chưa gửi','#b86e00',1],['AN','Anh Nam (áo xanh)','Quầy · 22:05','340.000'],['T7','Bàn 7','Sảnh · 21:40 · 4 khách','890.000'],['LH','Linh Hà','Sân vườn · 22:30','180.000'],['VIP','Công ty ABC','VIP 1 · 20:45 · 12 khách','6.420.000','Gọi thanh toán','var(--success)']];
+  $('#tabrows').innerHTML=tabs.map(([a,n,s,t,x,c,on])=>`<button class="tab-row ${on?'sel':''}"><span class="av">${a}</span><span><span class="tn">${n}</span><div class="ts">${s}</div></span><span class="ta">${t}${x?`<small style="color:${c}">${x}</small>`:''}</span></button>`).join('');
+  rail('#barRail',[['Cocktail',12,'#7a5cc2'],['Shot',10,'#b3261e'],['Chai',18,'#b86e00'],['Bia',8,'#8a7300'],['Rượu gửi',3,'#1f7a4d'],['Đồ ăn',9,'#07569a']]);
+  $('#barItems').innerHTML=[['Mojito',100,2,'HH'],['Margarita',120],['Old Fashioned',150],['Negroni',140],['Long Island',160],['Whisky Sour',140],['Espresso Martini',150],['Gin Tonic',110],['Cuba Libre',100],['Mocktail chanh dây',80]]
+   .map(([n,p,q,h])=>`<button class="item" style="--c:#7a5cc2">${q?`<span class="qty">${q}</span>`:''}<span class="in">${n}</span><span class="ip">${money(p*1000)}</span>${h?'<span class="mod">Happy hour</span>':''}</button>`).join('');
+  $('#tabTicket').innerHTML=`<div class="tk-h"><div class="r1"><span class="av">MK</span><button class="tname" style="font-size:18px">Mike &amp; bạn <small>▾</small></button><button class="icon-btn">⋯</button></div>
+    <div class="r2"><span class="tool">VIP 2</span><span class="tool">👥 6</span><span class="tool">Mở 21:10</span><span class="tool">Quầy 1</span></div></div>
+    <div class="minspend">Minimum spend VIP <b>2.000.000</b> · còn thiếu <b>380.000</b>. Đóng tab lúc này sẽ cộng phụ thu bù.<div class="bar"><i style="width:81%"></i></div></div>
+    <div class="lines"><div class="grp-h new">MỚI · chưa gửi bar · 2 món</div>`+L(2,'Mojito','160.000',{cls:'new',tag:T.new,mods:'Happy hour −20%'})+L(1,'Khoai tây chiên','80.000',{cls:'new',tag:T.new,mods:'→ Bếp'})+
+    `<div class="grp-h">Lượt 2 · 22:40 · Quầy 2</div>`+L(4,'Tequila shot','160.000',{tag:T.done})+
+    `<div class="grp-h">Lượt 1 · 21:12 · Quầy 1</div>`+L(1,'Johnnie Walker Black (chai)','1.200.000',{tag:T.done})+L(6,'Mixer Coca','180.000',{tag:T.done})+`</div>
+    <div class="tk-sec"><span class="tool">In tạm tính</span><span class="tool">Gửi rượu</span><span class="tool">Chia bill</span></div>
+    <div class="tk-main"><button class="btn send big">Gửi bar (2)</button><button class="btn pay big" data-show="pay"><small>Đóng tab</small><b>1.620.000 ₫</b></button></div>`;
+}
+
+/* ---------- 8. Quầy nhanh ---------- */
+function renderQuick(){
+  rail('#qRail',[['Cà phê',9,'#7a4a1f'],['Trà sữa',8,'#b86e00'],['Trà trái cây',7,'#1f7a4d'],['Đá xay',6,'#07569a'],['Bánh',5,'#8a7300'],['Topping',8,'#526b7e']],1);
+  const em=['🧋','🧋','🧋','🍵','🧋','🥛','🧋','🍮'];
+  $('#qItems').innerHTML=[['Trà sữa trân châu',35,2],['Trà sữa matcha',39],['Trà sữa khoai môn',39],['Trà ô long sữa',35],['Hồng trà sữa',32],['Sữa tươi đường đen',42,1],['Trà sữa nướng',38],['Trà sữa pudding',40]]
+   .map(([n,p,q],i)=>`<button class="item img">${q?`<span class="qty">${q}</span>`:''}<span class="ph">${em[i]}</span><span class="in">${n}</span><span class="ip">${money(p*1000)}</span></button>`).join('');
+  $$('#qItems .item').forEach(b=>b.onclick=()=>show('modifier'));
+  $('#qLines').innerHTML=L(2,'Trà sữa trân châu','94.000',{cls:'new',mods:'M · 50% đường · ít đá · trân châu đen, pudding'})+L(1,'Sữa tươi đường đen','30.000',{cls:'new',mods:'S · không đá'})+`<div style="padding:8px 12px"><span class="tool">+ Thêm ly giống ly trên</span></div>`;
+}
+
+/* ---------- điều hướng ---------- */
+const SCREEN={board:'board',order:'order',modifier:'order',room:'order',pay:'pay',timed:'timed',tabs:'tabs',quick:'quick'};
+const MODE={board:'board',order:'board',modifier:'board',pay:'board',room:'timed',timed:'timed',tabs:'tabs',quick:'quick'};
+const captions={
+ board:['Bảng bàn là màn đầu của F&B',['Không có lưới hàng, cột thanh toán hay thanh tab đơn kiểu bán lẻ. Bảng bàn chiếm toàn màn.','Khu vực là tab trên cùng, kèm số "đang dùng/tổng". Lọc nhanh: Tất cả, Đang dùng, Trống, Cần xử lý. Ô "Mang về" và "Giao đi" luôn đứng đầu lưới.','Ô bàn có thông tin cố định: tên, thời gian ngồi (to nhất), trạng thái, số khách và tiền. Chỉ 5 màu nền. Ngồi quá ngưỡng hiện dải đỏ thay vì đổi màu nền. Biểu tượng ngoại lệ ở góc: đặt trước, lỗi in bếp, bàn gộp.','Chạm bàn có khách thì vào thẳng màn gọi món. Chạm bàn trống thì chọn số khách ngay tại chỗ (thử bấm Bàn 02).'],'Quy tắc 1–2'],
+ order:['Gọi món: rail danh mục · lưới món · phiếu bên phải',['Chỉ hai vùng làm việc, không còn cột thanh toán riêng. Phiếu cố định bên phải, rộng 410px, vì thu ngân quen KiotViet và nút Thanh toán hợp tay phải.','Đầu phiếu: "← Bàn", tên bàn (chạm để chuyển hoặc gộp), số khách, thời gian ngồi, phục vụ, loại đơn. Thao tác hiếm nằm trong ⋯.','Món MỚI chưa gửi nằm trên cùng, nền vàng nhạt, sửa tự do. Món đã gửi nhóm theo lượt, có khóa và trạng thái bếp. Đổi cách nhóm sang Course (có nút "Gọi món ra" cho course đang giữ) hoặc Ghế.','Đáy phiếu: "Gửi bếp (n)" và "Thanh toán · tổng" là hai nút to. Hàng phụ có In tạm tính, Giữ món, Gửi & ở lại. Gửi xong mặc định về bảng bàn.','Ô món chỉ có chữ, có dải màu danh mục và huy hiệu số lượng đã gọi. Món hết bị làm mờ chứ không ẩn. Có 3 mức mật độ lưu theo máy.'],'Quy tắc 3–7'],
+ modifier:['Tùy chọn món thay chỗ lưới món, phiếu vẫn hiện',['Không dùng popup che phiếu: thu ngân vẫn thấy đơn đang có gì.','Nhóm bắt buộc chưa chọn đứng đầu, có dấu ✕ đỏ. Nút thêm bị khóa và nói rõ còn thiếu gì (thử chọn một mức Đá).','Giá cộng thêm ghi trên từng lựa chọn. Ghi chú nhanh dạng nút, không đổi giá. Ghế và course gán ngay ở đáy.'],'Quy tắc 8'],
+ pay:['Thanh toán là một màn riêng, đè lên màn gọi món',['Trái: phiếu rút gọn, khuyến mại và phụ phí tách dòng. Phải: Cần thu · Còn lại · Tiền thừa luôn to.','VietQR hiện sẵn kèm số tiền và tự khớp khi tiền về. Tiền mặt có mệnh giá gợi ý và bàn phím. Thẻ, thẻ nạp, ghi nợ, voucher ở hàng dưới.','Đáy: Chia đều, Tách theo món, Tách theo ghế, In tạm tính, Xuất HĐĐT. Hoàn tất xong về bảng bàn.'],'Quy tắc 9'],
+ timed:['Bảng phòng: cùng kiểu bảng bàn, ô có đồng hồ lớn',['Đồng hồ đếm lên cho giờ mở, đếm ngược cho gói giờ. Còn ≤10 phút chuyển cam, hết giờ chuyển đỏ và nhấp nháy. Tạm dừng màu xám.','Tiền giờ, tiền đồ và tổng nằm ngay dưới đồng hồ. Ba thao tác trên ô đổi theo trạng thái: Bắt đầu/Dừng/Tiếp tục, Gọi món, Thanh toán.','Bấm Thanh toán khi đồng hồ còn chạy sẽ hỏi "Dừng giờ và thanh toán?" trong một bước (thử bấm ở P101).'],'Quy tắc 10'],
+ room:['Gọi món trong phòng: dòng tính giờ ghim đầu phiếu',['Cùng màn gọi món với bàn, chỉ khác dòng tính giờ được ghim đầu phiếu.','Dừng/tiếp tục một chạm. Đổi phòng giữ giá đoạn cũ. Sửa giờ cần quản lý duyệt và ghi nhật ký.','Thanh toán từ đây cũng đi qua bước "Dừng giờ và thanh toán?".'],'Quy tắc 10'],
+ tabs:['Tab quầy bar',['Danh sách tab tìm theo tên là cột trái; tab gọi thanh toán hiện xanh lá. Ngày kinh doanh cắt sổ sau 0h.','Giữa là rail danh mục và lưới đồ uống; phải là phiếu, đúng bố cục màn gọi món.','Minimum spend VIP có thanh tiến độ và báo trước phụ thu. Rượu gửi là một danh mục riêng.'],'Quy tắc 3–7 áp cho tab'],
+ quick:['Quầy nhanh cho cafe, trà sữa trả trước',['Mở thẳng màn gọi món, không qua bảng bàn, giống Toast Quick Order.','Số gọi to ở đầu phiếu, chọn Mang đi / Tại quán / Grab / Shopee một chạm. Ô món bật ảnh vì quầy cafe nhận món bằng mắt.','Thanh toán ngay trong phiếu bằng phím F1–F3. Đáy thực đơn là hàng chờ pha, đồng bộ với màn khách.'],'Câu hỏi mở số 2 của báo cáo']
+};
+function show(k){
+  $$('.mock-nav button').forEach(b=>b.classList.toggle('on',b.dataset.show===k));
+  $$('.screen').forEach(s=>s.classList.toggle('on',s.id==='s-'+SCREEN[k]));
+  $$('.modes button').forEach(b=>b.classList.toggle('on',b.dataset.mode===MODE[k]));
+  if(SCREEN[k]==='order'){
+    renderTicket(k==='room'?'room':'table');
+    const mod=k==='modifier';
+    $('#modpanel').classList.toggle('on',mod);$('#menuArea').style.display=mod?'none':'flex';$('#rail').style.display=mod?'none':'flex';
+  }
+  if(k!=='timed')$('#stopConfirm').classList.remove('on');
+  const [h,ul,src]=captions[k];
+  $('#caption').innerHTML=`<h2>${h}</h2><ul>${ul.map(x=>`<li>${x}</li>`).join('')}</ul><div class="src">Căn cứ: ${src} trong plans/reports/researcher-261113-1623-fnb-pos-layout-research.md</div>`;
+  history.replaceState(null,'','#'+k);
+}
+function bindShow(root){root.querySelectorAll('[data-show]').forEach(b=>b.onclick=e=>{e.stopPropagation();show(b.dataset.show)})}
+function fit(){const w=$('#stage').clientWidth-32,k=Math.min(1,w/1366);$('#fit').style.transform=`scale(${k})`;$('#fit').style.marginLeft=Math.max(0,(w-1366*k)/2)+'px';$('#stage').style.height=(768*k+32)+'px'}
+
+renderBoard();rail('#rail',cats);renderItems();renderPay();renderRooms();renderTabs();renderQuick();
+bindShow(document);
+show(SCREEN[location.hash.slice(1)]?location.hash.slice(1):'board');
+addEventListener('resize',fit);fit();
+</script>
+</body>
+</html>
