@@ -91,6 +91,8 @@ class _$ResourceBoardOrder extends ResourceBoardOrder {
   final bool editedAfterPrebill;
   @override
   final int pendingKitchenItems;
+  @override
+  final int unsentKitchenItems;
 
   factory _$ResourceBoardOrder(
           [void Function(ResourceBoardOrderBuilder)? updates]) =>
@@ -107,7 +109,8 @@ class _$ResourceBoardOrder extends ResourceBoardOrder {
       required this.paymentRequested,
       required this.prebilled,
       required this.editedAfterPrebill,
-      required this.pendingKitchenItems})
+      required this.pendingKitchenItems,
+      required this.unsentKitchenItems})
       : super._();
   @override
   ResourceBoardOrder rebuild(
@@ -132,7 +135,8 @@ class _$ResourceBoardOrder extends ResourceBoardOrder {
         paymentRequested == other.paymentRequested &&
         prebilled == other.prebilled &&
         editedAfterPrebill == other.editedAfterPrebill &&
-        pendingKitchenItems == other.pendingKitchenItems;
+        pendingKitchenItems == other.pendingKitchenItems &&
+        unsentKitchenItems == other.unsentKitchenItems;
   }
 
   @override
@@ -149,6 +153,7 @@ class _$ResourceBoardOrder extends ResourceBoardOrder {
     _$hash = $jc(_$hash, prebilled.hashCode);
     _$hash = $jc(_$hash, editedAfterPrebill.hashCode);
     _$hash = $jc(_$hash, pendingKitchenItems.hashCode);
+    _$hash = $jc(_$hash, unsentKitchenItems.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -166,7 +171,8 @@ class _$ResourceBoardOrder extends ResourceBoardOrder {
           ..add('paymentRequested', paymentRequested)
           ..add('prebilled', prebilled)
           ..add('editedAfterPrebill', editedAfterPrebill)
-          ..add('pendingKitchenItems', pendingKitchenItems))
+          ..add('pendingKitchenItems', pendingKitchenItems)
+          ..add('unsentKitchenItems', unsentKitchenItems))
         .toString();
   }
 }
@@ -226,6 +232,11 @@ class ResourceBoardOrderBuilder
   set pendingKitchenItems(int? pendingKitchenItems) =>
       _$this._pendingKitchenItems = pendingKitchenItems;
 
+  int? _unsentKitchenItems;
+  int? get unsentKitchenItems => _$this._unsentKitchenItems;
+  set unsentKitchenItems(int? unsentKitchenItems) =>
+      _$this._unsentKitchenItems = unsentKitchenItems;
+
   ResourceBoardOrderBuilder() {
     ResourceBoardOrder._defaults(this);
   }
@@ -244,6 +255,7 @@ class ResourceBoardOrderBuilder
       _prebilled = $v.prebilled;
       _editedAfterPrebill = $v.editedAfterPrebill;
       _pendingKitchenItems = $v.pendingKitchenItems;
+      _unsentKitchenItems = $v.unsentKitchenItems;
       _$v = null;
     }
     return this;
@@ -286,6 +298,8 @@ class ResourceBoardOrderBuilder
               pendingKitchenItems,
               r'ResourceBoardOrder',
               'pendingKitchenItems'),
+          unsentKitchenItems: BuiltValueNullFieldError.checkNotNull(
+              unsentKitchenItems, r'ResourceBoardOrder', 'unsentKitchenItems'),
         );
     replace(_$result);
     return _$result;
