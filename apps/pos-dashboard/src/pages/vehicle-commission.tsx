@@ -2,6 +2,7 @@ import { formatMoney } from '@parkviet/pos-shared/money'
 import { writesLocked } from '@parkviet/pos-shared/pos-context'
 import { describeFailure } from '@parkviet/pos-shared/request-failure'
 import { Badge, Button, Input, Label, useConfirm } from '@spree/dashboard-ui'
+import { ClockIcon, PercentIcon, TruckIcon } from '@spree/dashboard-ui/icons'
 import { type FormEvent, useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { BranchPicker } from '../components/branch-picker'
@@ -98,7 +99,7 @@ function VisitWindow({ branchId }: { branchId: string }) {
   }
 
   return (
-    <ModelCard title={t('vehicleCommission.windowTitle')} id={`${id}-window`}>
+    <ModelCard title={t('vehicleCommission.windowTitle')} id={`${id}-window`} icon={<ClockIcon />}>
       {settings.isError ? (
         <ModelState title={describeFailure(settings.error, t)} error />
       ) : (
@@ -191,7 +192,11 @@ function Operators({ branchId }: { branchId: string }) {
   }
 
   return (
-    <ModelCard title={t('vehicleCommission.operatorsTitle')} id={`${id}-operators`}>
+    <ModelCard
+      title={t('vehicleCommission.operatorsTitle')}
+      id={`${id}-operators`}
+      icon={<TruckIcon />}
+    >
       <form className="flex flex-wrap items-end gap-3" onSubmit={submit}>
         <div className="space-y-2">
           <Label htmlFor={`${id}-name`}>{t('vehicleCommission.operatorName')}</Label>
@@ -360,7 +365,7 @@ function Rules({ branchId }: { branchId: string }) {
   )
 
   return (
-    <ModelCard title={t('vehicleCommission.rulesTitle')} id={`${id}-rules`}>
+    <ModelCard title={t('vehicleCommission.rulesTitle')} id={`${id}-rules`} icon={<PercentIcon />}>
       <p className="text-sm text-muted-foreground">{t('vehicleCommission.rulesHint')}</p>
       <form className="space-y-3" onSubmit={submit}>
         <div className="flex flex-wrap items-end gap-3">

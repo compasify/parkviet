@@ -1,5 +1,6 @@
 import { describeFailure, posFailureKey } from '@parkviet/pos-shared/request-failure'
 import { Button } from '@spree/dashboard-ui'
+import { TagIcon } from '@spree/dashboard-ui/icons'
 import { type FormEvent, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -19,14 +20,14 @@ export function BranchLabelFormats({ branchId, write }: { branchId: string; writ
   const assigned = useBranchLabelFormats(branchId, true)
   if (store.isPending || assigned.isPending)
     return (
-      <ModelCard title={t('labelFormatsTitle')} id="branch-label-formats">
+      <ModelCard title={t('labelFormatsTitle')} id="branch-label-formats" icon={<TagIcon />}>
         <ModelState title={t('waiting')} />
       </ModelCard>
     )
   const failed = store.error ?? assigned.error
   if (failed || !store.data || !assigned.data)
     return (
-      <ModelCard title={t('labelFormatsTitle')} id="branch-label-formats">
+      <ModelCard title={t('labelFormatsTitle')} id="branch-label-formats" icon={<TagIcon />}>
         <ModelState
           error
           title={t(posFailureKey(failed))}
@@ -80,7 +81,7 @@ function LabelFormatChoice({
     }
   }
   return (
-    <ModelCard title={t('labelFormatsTitle')} id="branch-label-formats">
+    <ModelCard title={t('labelFormatsTitle')} id="branch-label-formats" icon={<TagIcon />}>
       <p className="text-sm text-muted-foreground">{t('branchLabelFormatsIntro')}</p>
       <ModelNotice notice={notice} />
       {rows.length === 0 ? (

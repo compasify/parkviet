@@ -19,10 +19,11 @@ import {
   ResourceNameCell,
   type RowAction,
   RowActions,
+  SectionTitle,
   useConfirm,
   useRowClickBridge,
 } from '@spree/dashboard-ui'
-import { BanIcon, RotateCcwIcon } from '@spree/dashboard-ui/icons'
+import { BanIcon, RotateCcwIcon, TabletIcon, UsersIcon } from '@spree/dashboard-ui/icons'
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useCallback, useRef, useState } from 'react'
@@ -416,9 +417,15 @@ export function TopologyPage({
   return (
     <div className="space-y-6">
       {branchId ? (
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-muted-foreground">{t(`adminHint_${kind}`)}</p>
-          {headerActions}
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <SectionTitle>
+              {kind === 'registers' ? <TabletIcon /> : <UsersIcon />}
+              {t(`adminResource_${kind}`)}
+            </SectionTitle>
+            {headerActions}
+          </div>
+          <p className="text-base text-muted-foreground">{t(`adminHint_${kind}`)}</p>
         </div>
       ) : (
         <PageHeader

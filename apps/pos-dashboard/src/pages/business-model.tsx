@@ -16,6 +16,7 @@ import {
 import type { PosBranch } from '@parkviet/pos-shared/types/pos-context'
 import { useStore } from '@spree/dashboard-core'
 import { Button, Input, Label } from '@spree/dashboard-ui'
+import { Building2Icon, LayersIcon, StoreIcon } from '@spree/dashboard-ui/icons'
 import { useMutation } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { type FormEvent, useState } from 'react'
@@ -133,7 +134,11 @@ export function BranchBusinessModel({
   const profiles = catalogue.data?.profiles ?? []
   return (
     <>
-      <ModelCard title={t('businessModel.currentTitle')} id="business-model-current">
+      <ModelCard
+        title={t('businessModel.currentTitle')}
+        id="business-model-current"
+        icon={<StoreIcon />}
+      >
         {catalogue.isPending ? (
           <ModelState title={t('waiting')} />
         ) : catalogue.isError ? (
@@ -473,7 +478,11 @@ function ModuleSwitches({
     }
   }
   return (
-    <ModelCard title={t('businessModel.modulesTitle')} id="business-model-modules">
+    <ModelCard
+      title={t('businessModel.modulesTitle')}
+      id="business-model-modules"
+      icon={<LayersIcon />}
+    >
       <p className="text-sm text-muted-foreground">{t('businessModel.modulesIntro')}</p>
       {!write ? <p>{t('featureReadOnly')}</p> : null}
       <ModelNotice notice={notice} />
@@ -650,7 +659,11 @@ function StoreProfileForm({
     }
   }
   return (
-    <ModelCard title={t('businessModel.storeTitle')} id="business-model-store">
+    <ModelCard
+      title={t('businessModel.storeTitle')}
+      id="business-model-store"
+      icon={<Building2Icon />}
+    >
       <p className="text-sm text-muted-foreground">{t('businessModel.storeIntro')}</p>
       <ModelNotice notice={notice} />
       <form className="space-y-5" onSubmit={(event) => void save(event)}>

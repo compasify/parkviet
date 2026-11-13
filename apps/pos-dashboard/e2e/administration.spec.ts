@@ -94,7 +94,7 @@ test('cashiers cannot enter administration and issue no topology requests', asyn
   await expect(page.getByText('Tài khoản chưa có quyền xem hoặc quản trị', { exact: false })).toBeVisible(); await expect(page.getByRole('button', { name: 'Thêm chi nhánh', exact: true })).toHaveCount(0); expect(state.staffPages).toEqual([]); expect(state.writes).toEqual([]);
 });
 test('read-only administration cannot write', async ({ page }) => {
-  const { state } = await install(page, { read: true, write: false }); await open(page); await expect(page.getByText('Chỉ xem', { exact: true })).toBeVisible(); await page.getByRole('table').getByRole('button', { name: /^Siêu thị Hiền/ }).click(); await expect(page).toHaveURL(/\/store_1\/branches\/branch_main(?:\?|$)/); await expect(page.getByRole('link', { name: 'Hàng bán', exact: true })).toBeVisible(); await expect(page.getByRole('button', { name: 'Sửa thông tin', exact: true })).toHaveCount(0); expect(state.writes).toEqual([]);
+  const { state } = await install(page, { read: true, write: false }); await open(page); await expect(page.getByText('Chỉ xem', { exact: true })).toBeVisible(); await page.getByRole('table').getByRole('button', { name: /^Siêu thị Hiền/ }).click(); await expect(page).toHaveURL(/\/store_1\/branches\/branch_main(?:\?|$)/); await expect(page.getByRole('tab', { name: 'Hàng bán', exact: true })).toBeVisible(); await expect(page.getByRole('button', { name: 'Sửa thông tin', exact: true })).toHaveCount(0); expect(state.writes).toEqual([]);
 });
 test('422 retains draft and field errors; failed option loads block editing', async ({ page }) => {
   const { state } = await install(page); await open(page); await act(page, 'Siêu thị Hiền', 'Chỉnh sửa'); const dialog = page.getByRole('dialog');

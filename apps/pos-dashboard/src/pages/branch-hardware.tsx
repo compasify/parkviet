@@ -1,9 +1,11 @@
 import { posFailureKey } from '@parkviet/pos-shared/request-failure'
-import { Badge } from '@spree/dashboard-ui'
+import { SettingsFieldGroup, SettingsRow, SettingsSection } from '@spree/dashboard-core'
+import { Badge, CardContent } from '@spree/dashboard-ui'
+import { LayoutGridIcon, ListChecksIcon, MonitorIcon, PrinterIcon } from '@spree/dashboard-ui/icons'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { useBranchScope } from '../components/branch-detail'
-import { ModelCard, ModelState, modelDate } from '../components/setup/model-ui'
+import { ModelState, modelDate } from '../components/setup/model-ui'
 import {
   type HardwareCheckKey,
   type HardwareCheckStatus,
@@ -48,108 +50,118 @@ export function BranchHardwareTab() {
     )
   const data = status.data
   return (
-    <div className="space-y-6" data-testid="hardware-checklist">
-      <p className="text-sm text-muted-foreground">{t('hardware.intro')}</p>
-      <ModelCard id="hardware-checks" title={t('hardware.checksTitle')}>
-        <ul className="divide-y">
-          {data.checks.map((check) => (
-            <li
-              key={check.key}
-              data-check={check.key}
-              data-status={check.status}
-              className="flex flex-wrap items-start justify-between gap-3 py-3"
-            >
-              <div className="min-w-0 flex-1">
-                <p className="font-medium">{t(`hardware.check_${check.key}`)}</p>
-                <p className="text-sm text-muted-foreground">
-                  <CheckDetail check={check.key} data={data} />
-                </p>
-                {check.status === 'attention' ? (
-                  <Link
-                    to={`/${storeId}${FIX_PATHS[check.key](branch.id)}` as string}
-                    className="text-sm underline"
-                  >
-                    {t('hardware.fix')}
-                  </Link>
-                ) : null}
+    <div className="flex flex-col gap-6" data-testid="hardware-checklist">
+      <p className="text-base text-muted-foreground">{t('hardware.intro')}</p>
+      <SettingsSection title={t('hardware.checksTitle')} icon={<ListChecksIcon />}>
+        <CardContent>
+          <SettingsFieldGroup>
+            {data.checks.map((check) => (
+              <div key={check.key} data-check={check.key} data-status={check.status}>
+                <SettingsRow
+                  label={t(`hardware.check_${check.key}`)}
+                  help={<CheckDetail check={check.key} data={data} />}
+                >
+                  <div className="flex items-center gap-3">
+                    {check.status === 'attention' ? (
+                      <Link
+                        to={`/${storeId}${FIX_PATHS[check.key](branch.id)}` as string}
+                        className="text-sm font-medium underline underline-offset-4"
+                      >
+                        {t('hardware.fix')}
+                      </Link>
+                    ) : null}
+                    <Badge variant={BADGE[check.status]}>
+                      {t(`hardware.status_${check.status}`)}
+                    </Badge>
+                  </div>
+                </SettingsRow>
               </div>
-              <Badge variant={BADGE[check.status]}>{t(`hardware.status_${check.status}`)}</Badge>
-            </li>
-          ))}
-        </ul>
-      </ModelCard>
-      <ModelCard id="hardware-printers" title={t('hardware.printersTitle')}>
-        {data.printers.length ? (
-          <ul className="divide-y">
-            {data.printers.map((printer) => (
-              <li key={printer.id} className="py-2">
-                <strong>{printer.name}</strong>{' '}
-                <span className="text-sm text-muted-foreground">
-                  {printer.roles.map((role) => t(`hardware.role_${role}`, role)).join(', ') ||
-                    t('hardware.noRole')}
-                </span>
-                <p className="text-sm">
-                  {printer.last_job_status
-                    ? t('hardware.lastJob', {
-                        status: t(
-                          `hardware.job_${printer.last_job_status}`,
-                          printer.last_job_status,
-                        ),
-                        at: modelDate(printer.last_job_at, i18n.language, branch.timezone),
-                      })
-                    : t('hardware.neverPrinted')}
-                  {printer.last_error ? ` · ${printer.last_error}` : ''}
-                </p>
-              </li>
             ))}
-          </ul>
-        ) : (
-          <p>{t('hardware.noPrinters')}</p>
-        )}
-      </ModelCard>
-      {data.stations.length ? (
-        <ModelCard id="hardware-stations" title={t('hardware.stationsTitle')}>
-          <ul className="divide-y">
-            {data.stations.map((station) => (
-              <li key={station.id} className="flex justify-between gap-3 py-2">
-                <span>
-                  <strong>{station.name}</strong>{' '}
+          </SettingsFieldGroup>
+        </CardContent>
+      </SettingsSection>
+      <SettingsSection title={t('hardware.printersTitle')} icon={<PrinterIcon />}>
+        <CardContent>
+          {data.printers.length ? (
+            <SettingsFieldGroup>
+              {data.printers.map((printer) => (
+                <SettingsRow
+                  key={printer.id}
+                  label={printer.name}
+                  help={
+                    <>
+                      {printer.last_job_status
+                        ? t('hardware.lastJob', {
+                            status: t(
+                              `hardware.job_${printer.last_job_status}`,
+                              printer.last_job_status,
+                            ),
+                            at: modelDate(printer.last_job_at, i18n.language, branch.timezone),
+                          })
+                        : t('hardware.neverPrinted')}
+                      {printer.last_error ? ` · ${printer.last_error}` : ''}
+                    </>
+                  }
+                >
                   <span className="text-sm text-muted-foreground">
-                    {t('hardware.stationDetail', {
-                      screens: station.kds_devices,
-                      printer: station.printer_id ? t('hardware.yes') : t('hardware.no'),
-                    })}
+                    {printer.roles.map((role) => t(`hardware.role_${role}`, role)).join(', ') ||
+                      t('hardware.noRole')}
                   </span>
-                </span>
-                <Badge variant={station.ok ? 'default' : 'destructive'}>
-                  {t(station.ok ? 'hardware.status_ok' : 'hardware.status_attention')}
-                </Badge>
-              </li>
-            ))}
-          </ul>
-        </ModelCard>
+                </SettingsRow>
+              ))}
+            </SettingsFieldGroup>
+          ) : (
+            <p className="text-muted-foreground">{t('hardware.noPrinters')}</p>
+          )}
+        </CardContent>
+      </SettingsSection>
+      {data.stations.length ? (
+        <SettingsSection title={t('hardware.stationsTitle')} icon={<LayoutGridIcon />}>
+          <CardContent>
+            <SettingsFieldGroup>
+              {data.stations.map((station) => (
+                <SettingsRow
+                  key={station.id}
+                  label={station.name}
+                  help={t('hardware.stationDetail', {
+                    screens: station.kds_devices,
+                    printer: station.printer_id ? t('hardware.yes') : t('hardware.no'),
+                  })}
+                >
+                  <Badge variant={station.ok ? 'default' : 'destructive'}>
+                    {t(station.ok ? 'hardware.status_ok' : 'hardware.status_attention')}
+                  </Badge>
+                </SettingsRow>
+              ))}
+            </SettingsFieldGroup>
+          </CardContent>
+        </SettingsSection>
       ) : null}
       {data.devices.length ? (
-        <ModelCard id="hardware-devices" title={t('hardware.devicesTitle')}>
-          <ul className="divide-y">
-            {data.devices.map((device) => (
-              <li key={device.id} className="flex justify-between gap-3 py-2">
-                <span>
-                  <strong>{device.name}</strong>{' '}
-                  <span className="text-sm text-muted-foreground">
-                    {t(`hardware.mode_${device.mode}`)} ·{' '}
-                    {t('hardware.lastSeen', {
-                      at: modelDate(device.last_seen_at, i18n.language, branch.timezone),
-                    })}
-                  </span>
-                </span>
-                <Badge variant={device.online ? 'default' : 'destructive'}>
-                  {t(device.online ? 'hardware.online' : 'hardware.offline')}
-                </Badge>
-              </li>
-            ))}
-          </ul>
-        </ModelCard>
+        <SettingsSection title={t('hardware.devicesTitle')} icon={<MonitorIcon />}>
+          <CardContent>
+            <SettingsFieldGroup>
+              {data.devices.map((device) => (
+                <SettingsRow
+                  key={device.id}
+                  label={device.name}
+                  help={
+                    <>
+                      {t(`hardware.mode_${device.mode}`)} ·{' '}
+                      {t('hardware.lastSeen', {
+                        at: modelDate(device.last_seen_at, i18n.language, branch.timezone),
+                      })}
+                    </>
+                  }
+                >
+                  <Badge variant={device.online ? 'default' : 'destructive'}>
+                    {t(device.online ? 'hardware.online' : 'hardware.offline')}
+                  </Badge>
+                </SettingsRow>
+              ))}
+            </SettingsFieldGroup>
+          </CardContent>
+        </SettingsSection>
       ) : null}
       <p className="text-sm text-muted-foreground">
         {t('hardware.generatedAt', {

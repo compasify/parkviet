@@ -1,5 +1,6 @@
 import { describeFailure } from '@parkviet/pos-shared/request-failure'
 import { Button, useConfirm } from '@spree/dashboard-ui'
+import { HashIcon } from '@spree/dashboard-ui/icons'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { encode } from 'uqr'
@@ -77,7 +78,7 @@ export function TableCodesCard({ write }: { write: boolean }) {
   }
 
   return (
-    <ModelCard title={t('floorPlan.qrTitle')} id="branch-table-codes">
+    <ModelCard title={t('floorPlan.qrTitle')} id="branch-table-codes" icon={<HashIcon />}>
       <p className="text-sm text-muted-foreground">{t('floorPlan.qrIntro')}</p>
       <ModelNotice notice={notice} />
       {issued ? (

@@ -1,5 +1,6 @@
 import { posFailureKey } from '@parkviet/pos-shared/request-failure'
 import { Button } from '@spree/dashboard-ui'
+import { CreditCardIcon } from '@spree/dashboard-ui/icons'
 import { type FormEvent, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useBranchScope } from '../components/branch-detail'
@@ -18,7 +19,7 @@ export function BranchPaymentsTab() {
   const { branch, access } = useBranchScope()
   const selection = useBranchPaymentMethods(branch.id, access.read)
   return (
-    <ModelCard title={t('branchPayments.title')} id="branch-payments">
+    <ModelCard title={t('branchPayments.title')} id="branch-payments" icon={<CreditCardIcon />}>
       <p className="text-sm text-muted-foreground">{t('branchPayments.intro')}</p>
       {selection.isPending ? (
         <ModelState title={t('waiting')} />

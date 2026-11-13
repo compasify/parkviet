@@ -5,6 +5,13 @@ import {
 } from '@parkviet/pos-shared/request-failure'
 import { usePermissions } from '@spree/dashboard-core'
 import { Button, Input, Label, useConfirm } from '@spree/dashboard-ui'
+import {
+  BanIcon,
+  LayoutGridIcon,
+  ReceiptTextIcon,
+  SendIcon,
+  SplitIcon,
+} from '@spree/dashboard-ui/icons'
 import { type FormEvent, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useBranchScope } from '../components/branch-detail'
@@ -111,7 +118,7 @@ function TriggerCard({
     }
   }
   return (
-    <ModelCard title={t('branchKitchen.title')} id="branch-kitchen">
+    <ModelCard title={t('branchKitchen.title')} id="branch-kitchen" icon={<SendIcon />}>
       <p className="text-sm text-muted-foreground">{t('branchKitchen.intro')}</p>
       {loading || !settings ? (
         <ModelState title={t('waiting')} />
@@ -181,7 +188,7 @@ function VoidReasonsCard({ settings, write }: { settings: KitchenSettings; write
   }
 
   return (
-    <ModelCard title={t('branchKitchen.voidReasons')} id="branch-void-reasons">
+    <ModelCard title={t('branchKitchen.voidReasons')} id="branch-void-reasons" icon={<BanIcon />}>
       <p className="text-sm text-muted-foreground">{t('branchKitchen.voidReasonsIntro')}</p>
       <ModelNotice notice={notice} />
       <form className="space-y-4" onSubmit={(event) => void save(event)}>
@@ -350,7 +357,11 @@ function StationsCard({ write }: { write: boolean }) {
   ]
 
   return (
-    <ModelCard title={t('branchKitchen.stations')} id="branch-kitchen-stations">
+    <ModelCard
+      title={t('branchKitchen.stations')}
+      id="branch-kitchen-stations"
+      icon={<LayoutGridIcon />}
+    >
       <p className="text-sm text-muted-foreground">{t('branchKitchen.stationsIntro')}</p>
       <ModelNotice notice={notice} />
       {stations.isPending ? (
@@ -571,7 +582,7 @@ function RoutesCard({ stations, write }: { stations: KitchenStation[]; write: bo
     })
 
   return (
-    <ModelCard title={t('branchKitchen.routes')} id="branch-kitchen-routes">
+    <ModelCard title={t('branchKitchen.routes')} id="branch-kitchen-routes" icon={<SplitIcon />}>
       <p className="text-sm text-muted-foreground">{t('branchKitchen.routesIntro')}</p>
       <ModelNotice notice={notice} />
       {routes.isPending ? (
@@ -749,7 +760,11 @@ function CupLabelsCard({ write }: { write: boolean }) {
   ]
 
   return (
-    <ModelCard title={t('branchKitchen.cupTitle')} id="branch-cup-labels">
+    <ModelCard
+      title={t('branchKitchen.cupTitle')}
+      id="branch-cup-labels"
+      icon={<ReceiptTextIcon />}
+    >
       <p className="text-sm text-muted-foreground">{t('branchKitchen.cupIntro')}</p>
       {!loaded || !current ? (
         <ModelState title={t('waiting')} />

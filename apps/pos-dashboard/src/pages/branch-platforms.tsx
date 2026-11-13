@@ -6,6 +6,7 @@ import {
 import { conflictReason, describeFailure } from '@parkviet/pos-shared/request-failure'
 import { usePermissions } from '@spree/dashboard-core'
 import { Button, Input, Label } from '@spree/dashboard-ui'
+import { TruckIcon } from '@spree/dashboard-ui/icons'
 import { type FormEvent, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useBranchScope } from '../components/branch-detail'
@@ -36,7 +37,7 @@ export function BranchPlatformsTab() {
   const write = canManageBranch({ permissionKeys, context: context.data }, branch.id)
   const settings = usePlatformSettings(branch.id)
   return (
-    <ModelCard title={t('branchPlatforms.title')} id="branch-platforms">
+    <ModelCard title={t('branchPlatforms.title')} id="branch-platforms" icon={<TruckIcon />}>
       <p className="text-sm text-muted-foreground">{t('branchPlatforms.intro')}</p>
       {settings.isError ? (
         <ModelState

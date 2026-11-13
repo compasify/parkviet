@@ -16,6 +16,7 @@ import {
 import { SERVICE_MODES, type ServiceMode } from '@parkviet/pos-shared/types/pos-context'
 import { usePermissions } from '@spree/dashboard-core'
 import { Button, Input, Label, useConfirm } from '@spree/dashboard-ui'
+import { SettingsIcon, TableIcon } from '@spree/dashboard-ui/icons'
 import { type FormEvent, useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useBranchScope } from '../components/branch-detail'
@@ -330,7 +331,7 @@ function FloorCard({ write }: { write: boolean }) {
   const failed = areas.error ?? resources.error
 
   return (
-    <ModelCard title={t('floorPlan.title')} id="branch-floor-plan">
+    <ModelCard title={t('floorPlan.title')} id="branch-floor-plan" icon={<TableIcon />}>
       <p className="text-sm text-muted-foreground">{t('floorPlan.intro')}</p>
       <ModelNotice notice={notice} />
       {loading ? (
@@ -1048,7 +1049,11 @@ function TableSettingsCard({ write }: { write: boolean }) {
     taxOptions.push({ value: current.tax, label: t('floorPlan.taxCurrent') })
 
   return (
-    <ModelCard title={t('floorPlan.settingsTitle')} id="branch-table-settings">
+    <ModelCard
+      title={t('floorPlan.settingsTitle')}
+      id="branch-table-settings"
+      icon={<SettingsIcon />}
+    >
       <p className="text-sm text-muted-foreground">{t('floorPlan.settingsIntro')}</p>
       <ModelNotice notice={notice} />
       {settings.isPending ? (

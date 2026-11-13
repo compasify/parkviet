@@ -1,7 +1,8 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@spree/dashboard-ui'
+import { InfoIcon } from '@spree/dashboard-ui/icons'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useBranchScope } from '../components/branch-detail'
+import { ModelCard } from '../components/setup/model-ui'
 import { usePosSession } from '../hooks/use-pos-session'
 import { useLocationOptions } from '../hooks/use-topology'
 import { BranchBusinessModel } from './business-model'
@@ -34,21 +35,16 @@ export function BranchOverviewTab() {
   ]
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('branchOverviewInfo')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
-            {rows.map(([label, value]) => (
-              <div key={label} className="min-w-0">
-                <dt className="text-sm text-muted-foreground">{t(label)}</dt>
-                <dd className="break-words">{value}</dd>
-              </div>
-            ))}
-          </dl>
-        </CardContent>
-      </Card>
+      <ModelCard title={t('branchOverviewInfo')} id="branch-overview-info" icon={<InfoIcon />}>
+        <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+          {rows.map(([label, value]) => (
+            <div key={label} className="min-w-0">
+              <dt className="text-sm text-muted-foreground">{t(label)}</dt>
+              <dd className="break-words">{value}</dd>
+            </div>
+          ))}
+        </dl>
+      </ModelCard>
       <BranchBusinessModel
         key={branch.id}
         branch={{ ...branch, profile_key: branch.profile_key ?? context.data?.profile?.key }}

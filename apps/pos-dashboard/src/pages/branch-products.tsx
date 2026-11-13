@@ -5,8 +5,8 @@ import {
   resourceSearchSchema,
   useResourceMutation,
 } from '@spree/dashboard-core'
-import { Badge, ResourceNameCell, RowActions, useConfirm } from '@spree/dashboard-ui'
-import { PackageCheckIcon, PackageXIcon, TagIcon } from '@spree/dashboard-ui/icons'
+import { Badge, ResourceNameCell, RowActions, SectionTitle, useConfirm } from '@spree/dashboard-ui'
+import { PackageCheckIcon, PackageIcon, PackageXIcon, TagIcon } from '@spree/dashboard-ui/icons'
 import { useQueryClient } from '@tanstack/react-query'
 import { useSearch } from '@tanstack/react-router'
 import { useState } from 'react'
@@ -119,10 +119,16 @@ function BranchProducts({ branch, access, storeId }: BranchScope) {
     ],
   })
   return (
-    <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
-        {t(access.write ? 'branchProductsHint' : 'branchProductsReadOnly')}
-      </p>
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-3">
+        <SectionTitle>
+          <PackageIcon />
+          {t('branchTabs.products')}
+        </SectionTitle>
+        <p className="text-base text-muted-foreground">
+          {t(access.write ? 'branchProductsHint' : 'branchProductsReadOnly')}
+        </p>
+      </div>
       {notice && (
         <p
           role={notice.failed ? 'alert' : 'status'}

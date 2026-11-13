@@ -2,10 +2,25 @@ import { branchSettingVisible } from '@parkviet/pos-shared/module-registry'
 import type { PosModules } from '@parkviet/pos-shared/pos-modules'
 import { describeFailure } from '@parkviet/pos-shared/request-failure'
 import type { PosBranch } from '@parkviet/pos-shared/types/pos-context'
-import { PageHeader, type PageTab, PageTabs, usePermissions } from '@spree/dashboard-core'
-import { ActiveBadge, Button, DropdownMenuItem, useConfirm } from '@spree/dashboard-ui'
+import { PageHeader, usePermissions } from '@spree/dashboard-core'
+import {
+  ActiveBadge,
+  Button,
+  DropdownMenuItem,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  useConfirm,
+} from '@spree/dashboard-ui'
 import { BanIcon, RotateCcwIcon } from '@spree/dashboard-ui/icons'
-import { Outlet, useNavigate, useParams, useSearch } from '@tanstack/react-router'
+import {
+  Link,
+  Outlet,
+  useLocation,
+  useNavigate,
+  useParams,
+  useSearch,
+} from '@tanstack/react-router'
 import { createContext, useContext, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useBranchModules } from '../hooks/use-branch-modules'
@@ -79,9 +94,7 @@ export function BranchDetailLayout() {
   const tabs = branchTabs(posAccess).map((tab) => ({
     key: tab.key,
     label: t(`branchTabs.${tab.key}`),
-    // PageTabs marks the active tab by comparing a concrete pathname, which the
-    // router's typed route templates cannot express.
-    to: `${base}${tab.path}` as PageTab['to'] & string,
+    to: `${base}${tab.path}`,
   }))
   const scope: BranchScope = {
     branch,
@@ -97,10 +110,32 @@ export function BranchDetailLayout() {
           scope={scope}
           recoverable={hasCapability(posAccess, 'pos.topology.recover')}
         />
-        <PageTabs className="overflow-x-auto" tabs={tabs} />
+        <BranchTabs tabs={tabs} />
         <Outlet />
       </div>
     </BranchContext.Provider>
+  )
+}
+
+// Pill tabs, the same control as a Spree settings page. Each tab is still a
+// link, so the address and the active pill follow the branch URL. The strip
+// scrolls inside itself when the labels are wider than the page.
+function BranchTabs({ tabs }: { tabs: { key: string; label: string; to: string }[] }) {
+  const { pathname } = useLocation()
+  const current = tabs.find((tab) => pathname === tab.to)?.key ?? tabs[0]?.key
+  if (!current) return null
+  return (
+    <div className="w-full min-w-0 overflow-x-auto">
+      <Tabs value={current}>
+        <TabsList>
+          {tabs.map((tab) => (
+            <TabsTrigger key={tab.key} value={tab.key} render={<Link to={tab.to as never} />}>
+              {tab.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
+    </div>
   )
 }
 

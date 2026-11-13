@@ -2,6 +2,14 @@ import { formatMoney } from '@parkviet/pos-shared/money'
 import { describeFailure } from '@parkviet/pos-shared/request-failure'
 import { usePermissions } from '@spree/dashboard-core'
 import { Badge, Button, Input, Label, useConfirm } from '@spree/dashboard-ui'
+import {
+  CalendarIcon,
+  CalendarOffIcon,
+  ClockIcon,
+  EyeIcon,
+  PauseIcon,
+  TicketPercentIcon,
+} from '@spree/dashboard-ui/icons'
 import { type FormEvent, useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useBranchScope } from '../components/branch-detail'
@@ -168,7 +176,7 @@ export function BranchRatePlansTab() {
   const active = list.filter((plan) => plan.status === 'active')
   return (
     <div className="space-y-6">
-      <ModelCard title={t('ratePlans.title')} id="branch-rate-plans">
+      <ModelCard title={t('ratePlans.title')} id="branch-rate-plans" icon={<ClockIcon />}>
         <p className="text-sm text-muted-foreground">{t('ratePlans.intro')}</p>
         {plans.isError ? (
           <ModelState
@@ -540,7 +548,7 @@ function WeekendCard({ days, write }: { days: number[]; write: boolean }) {
     }
   }
   return (
-    <ModelCard title={t('ratePlans.weekend')} id="branch-weekend-days">
+    <ModelCard title={t('ratePlans.weekend')} id="branch-weekend-days" icon={<CalendarIcon />}>
       <p className="text-sm text-muted-foreground">{t('ratePlans.weekendIntro')}</p>
       <ModelNotice notice={notice} />
       <form className="space-y-3" onSubmit={(event) => void save(event)}>
@@ -622,7 +630,7 @@ function HolidaysCard({ write }: { write: boolean }) {
   }
 
   return (
-    <ModelCard title={t('ratePlans.holidays')} id="branch-holidays">
+    <ModelCard title={t('ratePlans.holidays')} id="branch-holidays" icon={<CalendarOffIcon />}>
       <p className="text-sm text-muted-foreground">{t('ratePlans.holidaysIntro')}</p>
       <ModelNotice notice={notice} />
       {days.isError ? (
@@ -799,7 +807,7 @@ function TimedSettingsCard({
   }
 
   return (
-    <ModelCard title={t('ratePlans.timedSettings')} id="branch-timed-settings">
+    <ModelCard title={t('ratePlans.timedSettings')} id="branch-timed-settings" icon={<PauseIcon />}>
       <p className="text-sm text-muted-foreground">{t('ratePlans.timedSettingsIntro')}</p>
       <ModelNotice notice={notice} />
       <form className="space-y-4" onSubmit={(event) => void save(event)}>
@@ -910,7 +918,11 @@ function PromotionsCard({ write }: { write: boolean }) {
   }
 
   return (
-    <ModelCard title={t('ratePlans.promotions')} id="branch-timed-promotions">
+    <ModelCard
+      title={t('ratePlans.promotions')}
+      id="branch-timed-promotions"
+      icon={<TicketPercentIcon />}
+    >
       <p className="text-sm text-muted-foreground">{t('ratePlans.promotionsIntro')}</p>
       <ModelNotice notice={notice} />
       {promotions.isError ? (
@@ -1036,7 +1048,7 @@ function PreviewCard({ plans }: { plans: RatePlan[] }) {
   const startedAt = isoOf(from)
   const endedAt = isoOf(to)
   return (
-    <ModelCard title={t('ratePlans.preview')} id="branch-rate-preview">
+    <ModelCard title={t('ratePlans.preview')} id="branch-rate-preview" icon={<EyeIcon />}>
       <p className="text-sm text-muted-foreground">{t('ratePlans.previewIntro')}</p>
       <form
         className="grid items-end gap-3 sm:grid-cols-4"

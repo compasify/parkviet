@@ -1,5 +1,6 @@
 import { describeFailure, posFailureKey } from '@parkviet/pos-shared/request-failure'
 import { Badge, Button, Input, Label, useConfirm } from '@spree/dashboard-ui'
+import { TabletIcon } from '@spree/dashboard-ui/icons'
 import { type FormEvent, useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -27,7 +28,7 @@ export function KioskSettingsCard() {
   const settings = useKioskSettings(branch.id, enabled)
   if (!enabled) return null
   return (
-    <ModelCard title={t('kiosk.title')} id="branch-kiosks">
+    <ModelCard title={t('kiosk.title')} id="branch-kiosks" icon={<TabletIcon />}>
       <p className="text-sm text-muted-foreground">{t('kiosk.intro')}</p>
       {settings.isPending ? (
         <ModelState title={t('waiting')} />

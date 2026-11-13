@@ -7,6 +7,7 @@ import type {
 } from '@parkviet/pos-shared/types/print-adapter'
 import { usePermissions } from '@spree/dashboard-core'
 import { Button, Input, Label, useConfirm } from '@spree/dashboard-ui'
+import { PrinterIcon } from '@spree/dashboard-ui/icons'
 import { type FormEvent, useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { masterFailure } from '../hooks/use-master-data'
@@ -225,7 +226,7 @@ export function BranchPrinters() {
     setDraft((current) => (current ? { ...current, ...patch } : current))
 
   return (
-    <ModelCard title={t('branchPrinters.title')} id="branch-printers">
+    <ModelCard title={t('branchPrinters.title')} id="branch-printers" icon={<PrinterIcon />}>
       <p className="text-sm text-muted-foreground">{t('branchPrinters.intro')}</p>
       <ModelNotice notice={notice} />
       {printers.isPending ? (

@@ -47,7 +47,7 @@ async function install(page: Page, mode: Mode = 'owner', modules: Record<string,
   await installDashboardShell(page, { authenticated: true, read: mode === 'owner', write: mode === 'owner' });
   return state;
 }
-const tabs = (page: Page) => page.getByRole('navigation').filter({ has: page.getByRole('link', { name: 'Tổng quan', exact: true }) }).getByRole('link');
+const tabs = (page: Page) => page.getByRole('tablist').getByRole('tab');
 
 test('a branch row opens its page with every tab and the selection follows the branch', async ({ page }, testInfo) => {
   await install(page); await page.goto('/store_1/branches');

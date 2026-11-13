@@ -6,6 +6,7 @@ import {
   CardContent,
   Checkbox,
   Label,
+  SectionTitle,
   Select,
   SelectContent,
   SelectItem,
@@ -57,22 +58,25 @@ export function ModelCard({
   title,
   children,
   id,
+  icon,
 }: {
   title: string
   children: ReactNode
   id: string
+  icon?: ReactNode
 }) {
   return (
-    <Card>
-      <CardContent>
-        <section className="flex flex-col gap-4" aria-labelledby={id}>
-          <h2 id={id} className="text-lg font-semibold">
-            {title}
-          </h2>
-          {children}
-        </section>
-      </CardContent>
-    </Card>
+    <section className="flex flex-col gap-3" aria-labelledby={id}>
+      <SectionTitle id={id}>
+        {icon}
+        {title}
+      </SectionTitle>
+      <Card>
+        <CardContent>
+          <div className="flex flex-col gap-4">{children}</div>
+        </CardContent>
+      </Card>
+    </section>
   )
 }
 

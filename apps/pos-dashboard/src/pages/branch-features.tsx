@@ -3,6 +3,7 @@ import { POS_FEATURES } from '@parkviet/pos-shared/pos-features'
 import { describeFailure, failureStatus, posFailureKey } from '@parkviet/pos-shared/request-failure'
 import type { PosBranch } from '@parkviet/pos-shared/types/pos-context'
 import { useStore } from '@spree/dashboard-core'
+import { SlidersHorizontalIcon } from '@spree/dashboard-ui/icons'
 import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -94,7 +95,11 @@ function BranchFeatures({
     }
   }
   return (
-    <ModelCard title={t('branchFeaturesTitle')} id="branch-features-heading">
+    <ModelCard
+      title={t('branchFeaturesTitle')}
+      id="branch-features-heading"
+      icon={<SlidersHorizontalIcon />}
+    >
       {!storeWrite && !branchWrite ? (
         <p>{t('featureReadOnly')}</p>
       ) : !storeWrite ? (

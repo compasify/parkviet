@@ -1,6 +1,7 @@
 import type { DocumentType } from '@parkviet/pos-shared/receipt-template/types'
 import { posFailureKey } from '@parkviet/pos-shared/request-failure'
 import { Button } from '@spree/dashboard-ui'
+import { ReceiptTextIcon } from '@spree/dashboard-ui/icons'
 import { type FormEvent, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useBranchScope } from '../components/branch-detail'
@@ -35,7 +36,7 @@ function BranchTemplates() {
   const templates = useReceiptTemplates(access.read)
   const failed = assignments.error ?? templates.error
   return (
-    <ModelCard title={t('branchPrinting.title')} id="branch-printing">
+    <ModelCard title={t('branchPrinting.title')} id="branch-printing" icon={<ReceiptTextIcon />}>
       <p className="text-sm text-muted-foreground">{t('branchPrinting.intro')}</p>
       {assignments.isPending || templates.isPending ? (
         <ModelState title={t('waiting')} />
