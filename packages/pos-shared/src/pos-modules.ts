@@ -189,6 +189,18 @@ export function tableSurfaceOf(
   return isTableSurface(suggested) ? suggested : 'table_grid';
 }
 
+// The selling screen of a branch: table service (the floor first, then the
+// order beside its ticket) when it runs `fnb.tables`, unless its profile
+// starts on a bar's open tabs or a board of timed rooms, which keep the
+// counter layout. Only the module and the surface decide, never the industry.
+export function sellingLayoutOf(
+  context: { modules?: PosModules | null; profile?: PosBranchProfile | null } | undefined,
+): 'table_service' | 'counter' {
+  if (context?.modules?.['fnb.tables'] !== true) return 'counter';
+  const surface = context.profile?.display.surface;
+  return surface === 'tab_list' || surface === 'resource_board' ? 'counter' : 'table_service';
+}
+
 // i18n key fragment of a module: dots would read as nesting in i18next.
 export function moduleTextKey(key: string): string | null {
   return (LABELLED_MODULES as readonly string[]).includes(key) ? key.replaceAll('.', '_') : null;

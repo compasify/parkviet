@@ -16,6 +16,7 @@ import {
   profileDescriptionKey,
   profileLabelKey,
   profileModules,
+  sellingLayoutOf,
   sellingSurfaceOf,
   tablesOptional,
 } from './pos-modules';
@@ -244,6 +245,36 @@ describe('business profile catalogue', () => {
     expect(sellingSurfaceOf({ modules: on, profile: profile('floor_plan') })).toBe('menu_grid');
     expect(profile('table_grid')?.display).toEqual({ surface: 'table_grid' });
     expect(profile('kiosk')?.display).toEqual({});
+  });
+
+  it('serves tables on their own screen unless the profile starts on tabs or rooms', () => {
+    const profile = (surface?: string) => normalizeProfile({ key: 'p', display: { surface } });
+    const tables = { 'fnb.tables': true, 'fnb.menu': true };
+    // No table module: the counter, whatever the profile suggests.
+    expect(sellingLayoutOf(undefined)).toBe('counter');
+    expect(sellingLayoutOf({ modules: null, profile: profile('floor_plan') })).toBe('counter');
+    expect(sellingLayoutOf({ modules: { 'fnb.menu': true }, profile: profile('floor_plan') })).toBe(
+      'counter',
+    );
+    expect(sellingLayoutOf({ modules: { 'fnb.tables': false }, profile: profile() })).toBe(
+      'counter',
+    );
+    // Tables on a floor plan or tiles, and an eatery whose profile starts on the menu.
+    expect(sellingLayoutOf({ modules: tables, profile: profile('floor_plan') })).toBe(
+      'table_service',
+    );
+    expect(sellingLayoutOf({ modules: tables, profile: profile('table_grid') })).toBe(
+      'table_service',
+    );
+    expect(sellingLayoutOf({ modules: tables, profile: profile('menu_grid') })).toBe(
+      'table_service',
+    );
+    expect(sellingLayoutOf({ modules: tables, profile: null })).toBe('table_service');
+    // A bar's open tabs and a board of timed rooms keep the counter layout.
+    expect(sellingLayoutOf({ modules: tables, profile: profile('tab_list') })).toBe('counter');
+    expect(sellingLayoutOf({ modules: tables, profile: profile('resource_board') })).toBe(
+      'counter',
+    );
   });
 
   it('reads an empty catalogue from anything else', () => {

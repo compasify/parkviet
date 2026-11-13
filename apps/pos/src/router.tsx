@@ -73,11 +73,21 @@ const saleRoute = createRoute({
   getParentRoute: () => authedRoute,
   path: '/',
   // The order of the selected invoice tab, so a reload or a shared link
-  // opens the same tab.
-  validateSearch: (search: Record<string, unknown>): { order?: string } =>
-    typeof search.order === 'string' && /^[\w-]{1,64}$/.test(search.order)
-      ? { order: search.order }
-      : {},
+  // opens the same tab. Table service also keeps which of its screens is
+  // open: the floor, the order or its payment.
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { order?: string; view?: 'board' | 'order' | 'pay' } => {
+    const order =
+      typeof search.order === 'string' && /^[\w-]{1,64}$/.test(search.order)
+        ? search.order
+        : undefined;
+    const view =
+      search.view === 'board' || search.view === 'order' || search.view === 'pay'
+        ? search.view
+        : undefined;
+    return { ...(order ? { order } : {}), ...(view ? { view } : {}) };
+  },
   component: SalePage,
 });
 
