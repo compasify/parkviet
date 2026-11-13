@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { kitchenSent, kitchenStates, unsentKitchenQuantity } from './kitchen';
+import { kitchenSent, kitchenStates, sentUnits, unsentKitchenQuantity } from './kitchen';
 import type { PosLineItem, PosWorkspace } from './pos-context';
 
 const line = (overrides: Partial<PosLineItem>): PosLineItem =>
@@ -32,5 +32,25 @@ describe('kitchen quantities', () => {
       { state: 'served', count: 1 },
     ]);
     expect(kitchenStates(line({}))).toEqual([]);
+  });
+});
+
+describe('sentUnits', () => {
+  it('counts the items of the fire tickets a send answered with', () => {
+    expect(
+      sentUnits({
+        tickets: [
+          { kind: 'fire', items: [{ quantity: '2.0' }, { quantity: '1.0' }] },
+          { kind: 'fire', items: [{ quantity: '1.0' }] },
+          { kind: 'void', items: [{ quantity: '5.0' }] },
+        ],
+      }),
+    ).toBe(4);
+    expect(sentUnits({ tickets: [], ticket_count: 0 })).toBe(0);
+  });
+
+  it('says nothing for an answer without tickets', () => {
+    expect(sentUnits(undefined)).toBeNull();
+    expect(sentUnits({ ticket_count: 1 })).toBeNull();
   });
 });

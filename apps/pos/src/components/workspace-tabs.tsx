@@ -9,7 +9,7 @@ import { commandQueue } from '../lib/command-queue';
 import type { PosLineItem, PosWorkspace } from '../lib/pos-context';
 import { posFailureKey } from '../lib/request-failure';
 import { voidReasons } from '../lib/table-kitchen';
-import { canServeTables, isTab, tableOrderName, tableOrderOf } from '../lib/tables';
+import { canServeTables, isTab, isTableOrder, tableOrderName, tableOrderOf } from '../lib/tables';
 import { canRunClock } from '../lib/timed-clock';
 import { workspaceIsSettled, workspacePhase } from '../lib/workspace-content';
 import { BuffetTierPicker } from './buffet-tier-picker';
@@ -893,10 +893,10 @@ export function WorkspaceTabsView({ selling }: { selling: SellingWorkspace }) {
                         data.branches.find((row) => row.id === active.branch_id)
                           ?.kitchen_send_trigger === 'manual'
                       }
-                      // Anyone serving a table sends its additions; a counter
-                      // order is sent by the person holding it.
+                      // Anyone serving a table or a bar tab sends its
+                      // additions; a counter order is sent by the person holding it.
                       disabled={
-                        activeTable.table
+                        isTableOrder(active)
                           ? locked ||
                             busy ||
                             !['editing', 'parked'].includes(active.operational_status)

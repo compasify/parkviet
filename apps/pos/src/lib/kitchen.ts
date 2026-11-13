@@ -22,3 +22,20 @@ export function kitchenStates(line: PosLineItem): { state: KitchenLineState; cou
     count: Number(line.kitchen_status?.[state] ?? 0),
   })).filter((row) => Number.isFinite(row.count) && row.count > 0);
 }
+
+// Units the kitchen got from one send: the items of its fire tickets, read
+// from the send's answer; null when the answer carries no tickets.
+export function sentUnits(meta: unknown): number | null {
+  const tickets = (meta as { tickets?: unknown } | null | undefined)?.tickets;
+  if (!Array.isArray(tickets)) return null;
+  let units = 0;
+  for (const ticket of tickets) {
+    const row = (ticket ?? {}) as { kind?: unknown; items?: unknown };
+    if (row.kind === 'void' || !Array.isArray(row.items)) continue;
+    for (const item of row.items) {
+      const quantity = Number((item as { quantity?: unknown } | null)?.quantity);
+      if (Number.isFinite(quantity) && quantity > 0) units += quantity;
+    }
+  }
+  return units;
+}

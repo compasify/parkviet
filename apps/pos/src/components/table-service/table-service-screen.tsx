@@ -8,6 +8,7 @@ import type { PosMenu, PosMenuItem, PosWorkspace } from '../../lib/pos-context';
 import { autoPrintEnabled } from '../../lib/receipt-preferences';
 import { CourseSeatPicker } from '../course-seat-picker';
 import type { MenuAdd } from '../menu-grid';
+import { usePosSelection } from '../pos-selection';
 import { ReceiptPrintDialog } from '../receipt-print-dialog';
 import { SellingCatalog, SellingNotices, type SellingWorkspace } from '../workspace-tabs';
 import { CategoryRail } from './category-rail';
@@ -15,6 +16,7 @@ import { MenuItemGrid } from './menu-item-grid';
 import { ModifierPanel } from './modifier-panel';
 import { PaymentScreen } from './payment-screen';
 import { runningClockOf, type StopAndPay, StopAndPayDialog } from './stop-and-pay-dialog';
+import { TabColumn } from './tab-column';
 import { TableBoard } from './table-board';
 import { Ticket } from './ticket';
 import { useOrderRoom } from './timed-ticket-line';
@@ -27,31 +29,73 @@ const NOTICE_MS = 4_000;
 // (categories, text tiles, or one dish's options) beside its ticket, then
 // its payment over the whole screen. A page opened without a frame shows
 // the order it names, else the board. A room's clock still counting is
-// stopped (once the cashier says yes) before its payment ever opens.
+// stopped (once the cashier says yes) before its payment ever opens. A bar
+// (profile surface `tab_list`, paying later) works from its open tabs
+// beside the menu instead: the order frame is its home, a send stays on the
+// tab, a closed tab comes back to the tabs and the board of its tables is
+// one tap away.
 export function TableServiceScreen() {
   const { t } = useTranslation();
   const search = useSearch({ from: '/authed/' });
-  const [view, setView] = useState<SellingView>(
-    () => search.view ?? (search.order ? 'order' : 'board'),
+  // Known once the branch's own context is; a reload of the context (another
+  // register) keeps the frames already shown until the new one says
+  // otherwise. Another branch forgets the bar it may have been.
+  const { context: posContext, selection } = usePosSelection();
+  const context = posContext.data;
+  const branchId = selection.branchId;
+  const knownTabMode = useRef({ branchId, value: false });
+  if (knownTabMode.current.branchId !== branchId) knownTabMode.current = { branchId, value: false };
+  if (context && context.selection.branch_id === branchId)
+    knownTabMode.current = {
+      branchId,
+      value:
+        context.profile?.display.surface === 'tab_list' &&
+        context.modules?.['fnb.postpay'] === true,
+    };
+  const tabMode = knownTabMode.current.value;
+  // The frame picked so far; none yet is the home frame, decided once the
+  // branch's profile is known (it may come after the screen shows).
+  const [chosen, setView] = useState<SellingView | null>(
+    () => search.view ?? (search.order ? 'order' : null),
   );
-  // A frame the URL changes to by itself (a link, history) is followed;
-  // this screen's own writes already match `view`.
+  // Another branch starts from its own home frame.
+  const [frameBranch, setFrameBranch] = useState(branchId);
+  if (frameBranch !== branchId) {
+    setFrameBranch(branchId);
+    setView(null);
+  }
+  const view: SellingView = chosen ?? (tabMode ? 'order' : 'board');
+  // A frame the URL changes to by itself (a link, history) is followed. The
+  // screen writes every frame it shows into the URL, and a write can land
+  // after the home frame changed (the profile came in), so a frame shown
+  // since the URL last changed is this screen's own write, not a request.
+  const shownViews = useRef(new Set<SellingView>());
+  shownViews.current.add(view);
+  const currentView = useRef(view);
+  currentView.current = view;
   const lastSearchView = useRef(search.view);
   useEffect(() => {
     if (search.view === lastSearchView.current) return;
     lastSearchView.current = search.view;
-    if (search.view) setView(search.view);
+    const own = search.view !== undefined && shownViews.current.has(search.view);
+    shownViews.current = new Set([currentView.current]);
+    if (search.view && !own) setView(search.view);
   }, [search.view]);
   const selling = useSellingWorkspace({ view });
   const { menuSurface, menu, selectOrder, active, activeLoading, leaveOrder } = selling;
   // An order or payment frame without its order (closed, gone, not found)
-  // goes back to the board; it never shows another order instead.
+  // goes back to the board; it never shows another order instead. A bar's
+  // order frame stays, its ticket waiting for a tab to be picked.
   // biome-ignore lint/correctness/useExhaustiveDependencies: leaveOrder is recreated every render
   useEffect(() => {
     if (view === 'board' || active || activeLoading) return;
+    if (tabMode) {
+      if (view === 'pay') setView('order');
+      return;
+    }
     leaveOrder();
     setView('board');
-  }, [view, active, activeLoading]);
+  }, [view, active, activeLoading, tabMode]);
   const [notice, setNotice] = useState<{ text: string; seq: number } | null>(null);
   useEffect(() => {
     if (!notice) return;
@@ -80,6 +124,17 @@ export function TableServiceScreen() {
 
   function openOrder(workspaceId: string) {
     selectOrder(workspaceId);
+    setView('order');
+  }
+
+  // Where a closed or canceled order leaves the screen: the board, or a
+  // bar's open tabs with no tab picked.
+  function goHome() {
+    if (!tabMode) {
+      setView('board');
+      return;
+    }
+    leaveOrder();
     setView('order');
   }
 
@@ -134,6 +189,7 @@ export function TableServiceScreen() {
           onOpenOrder={openOrder}
           onPay={openPay}
           onStopAndPay={setStopping}
+          onTabs={tabMode ? () => setView('order') : undefined}
         />
       </section>
     );
@@ -141,12 +197,13 @@ export function TableServiceScreen() {
     return (
       <PaymentScreen
         selling={selling}
+        doneLabel={tabMode ? t('tabListTitle') : undefined}
         onOrder={() => setView('order')}
-        onBoard={() => setView('board')}
+        onBoard={goHome}
         onCompleted={(workspaceId, { print, failure }) => {
           if (print || autoPrintEnabled()) setPrinting(workspaceId);
           if (failure) notify(failure);
-          setView('board');
+          goHome();
         }}
       />
     );
@@ -156,9 +213,19 @@ export function TableServiceScreen() {
       aria-label={t('draftList')}
     >
       {toast}
+      {/* A closed tab prints over the open tabs. */}
+      {tabMode ? printDialog : null}
       {stopDialog}
       <SellingNotices selling={selling} />
-      <div className="order-frame">
+      <div className={tabMode ? 'order-frame order-frame-tabs' : 'order-frame'}>
+        {tabMode ? (
+          <TabColumn
+            key={`${selling.storeId}:${selling.selection.branchId}`}
+            selling={selling}
+            onSelect={openOrder}
+            onBoard={() => setView('board')}
+          />
+        ) : null}
         <section className="order-frame-menu" aria-label={t('catalogTitle')}>
           {catalog ?? (
             <SellingCatalog
@@ -170,6 +237,8 @@ export function TableServiceScreen() {
         <Ticket
           selling={selling}
           onBoard={() => setView('board')}
+          onClosed={goHome}
+          tabMode={tabMode}
           room={room}
           onPay={payActive}
           onNotice={notify}

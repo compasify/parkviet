@@ -207,7 +207,7 @@ module Spree
               payment_requested: row[:payment_requested], prebilled: row[:prebilled] == true,
               buffet_ends_at: row[:buffet_ends_at]&.iso8601,
               edited_after_prebill: row[:edited_after_prebill], pending_kitchen_items: row[:kitchen]&.dig(:pending) || 0,
-              unsent_kitchen_items: row[:unsent] }
+              unsent_kitchen_items: row[:unsent], opened_at: row[:created_at]&.iso8601 }
           end
         }
       end

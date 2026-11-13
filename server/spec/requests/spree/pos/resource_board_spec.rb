@@ -118,7 +118,8 @@ RSpec.describe 'POS floor plan and resource board', type: :request do
       Spree::Pos::SaleLine.where(workspace_id: sent.workspace.id, variant_id: held.id).update_all(course: 2, course_status: 'held')
 
       board = Spree::Pos::ResourceState.for(branch)
-      expect(board[:resources][0][:orders].sole).to include(unsent_kitchen_items: 2, pending_kitchen_items: 0)
+      expect(board[:resources][0][:orders].sole).to include(unsent_kitchen_items: 2, pending_kitchen_items: 0,
+                                                            opened_at: fresh.workspace.reload.created_at.iso8601)
       expect(board[:resources][1][:orders].sole).to include(unsent_kitchen_items: 3, pending_kitchen_items: 1)
 
       get '/api/v3/admin/pos/resource_board', headers: bearer(waiter), params: { branch_id: branch.prefixed_id }

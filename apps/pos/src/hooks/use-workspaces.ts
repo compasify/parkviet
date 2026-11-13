@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { session } from '../lib/app-session';
 import { commandDigest, commandQueue } from '../lib/command-queue';
+import { sentUnits } from '../lib/kitchen';
 import type { OrderSource } from '../lib/order-source';
 import type { PosModifierSelection, PosWorkspace } from '../lib/pos-context';
 import { posWorkspacesKey } from '../lib/query-keys';
@@ -147,14 +148,14 @@ export function useWorkspaces(
     method: 'POST' | 'DELETE' | 'PATCH' = 'POST',
   ) {
     const result = await commandQueue.enqueue(workspaceId, key, commandDigest(body), () =>
-      session.request<{ data: PosWorkspace }>(method, path, {
+      session.request<{ data: PosWorkspace; meta?: unknown }>(method, path, {
         body: { ...body, idempotency_key: key },
         idempotencyKey: key,
       }),
     );
     await acceptWorkspace(result.data);
     channel?.postMessage(workspaceHint(result.data.id));
-    return result.data;
+    return result;
   }
 
   async function acceptWorkspace(workspace: PosWorkspace) {
@@ -207,11 +208,11 @@ export function useWorkspaces(
     try {
       const result = await send(workspaceId, key, body, path, method);
       forgetIntent(intent);
-      return { workspace: result, recovered: false };
+      return { workspace: result.data, meta: result.meta, recovered: false };
     } catch (error) {
       if (posFailureKey(error) === 'conflict') {
         try {
-          const receipt = await session.request<{ data: PosWorkspace }>(
+          const receipt = await session.request<{ data: PosWorkspace; meta?: unknown }>(
             'GET',
             '/pos/command_receipts',
             {
@@ -220,7 +221,7 @@ export function useWorkspaces(
           );
           forgetIntent(intent);
           await acceptWorkspace(receipt.data);
-          return { workspace: receipt.data, recovered: true };
+          return { workspace: receipt.data, meta: receipt.meta, recovered: true };
         } catch {
           // A missing receipt does not prove that the original request will not commit.
         }
@@ -245,6 +246,26 @@ export function useWorkspaces(
     } finally {
       finishIntent(intent);
     }
+  }
+
+  // "Báo bếp" with what it took, as the server's tickets of this send count
+  // it (`units`); null when the answer carries no tickets.
+  async function kitchenSend(workspace: PosWorkspace) {
+    const body = isTableOrder(workspace)
+      ? {}
+      : {
+          expected_revision: workspace.revision,
+          lease_generation: workspace.lease_generation,
+          editor_id: editorId,
+        };
+    const result = await sendIntent(
+      workspace.id,
+      body,
+      `/pos/workspaces/${workspace.id}/kitchen_sends`,
+    );
+    // What this page adds from now on is a new batch.
+    appendBatches.delete(workspace.id);
+    return { workspace: result.workspace, units: sentUnits(result.meta) };
   }
 
   return {
@@ -638,20 +659,9 @@ export function useWorkspaces(
     // "Báo bếp": the part of every menu line the kitchen has not heard yet.
     // A table order sends without the lease, whoever serves it.
     async sendToKitchen(workspace: PosWorkspace) {
-      const body = isTableOrder(workspace)
-        ? {}
-        : {
-            expected_revision: workspace.revision,
-            lease_generation: workspace.lease_generation,
-            editor_id: editorId,
-          };
-      const result = (
-        await sendIntent(workspace.id, body, `/pos/workspaces/${workspace.id}/kitchen_sends`)
-      ).workspace;
-      // What this page adds from now on is a new batch.
-      appendBatches.delete(workspace.id);
-      return result;
+      return (await kitchenSend(workspace)).workspace;
     },
+    kitchenSend,
     // Takes back part of a line the kitchen has: a reason from the branch's
     // list and, unless this person may void, a manager's approval.
     async voidSent(workspace: PosWorkspace, saleLineId: string, input: KitchenVoidInput) {

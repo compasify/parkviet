@@ -55,6 +55,8 @@ export type BoardOrder = {
   unsent_kitchen_items: number | null;
   // When the order's earliest buffet ticket runs out; null without a buffet.
   buffet_ends_at: string | null;
+  // When the order was opened at the table; null from an older server.
+  opened_at: string | null;
 };
 
 // The table's next booking in the coming hours (`fnb.reservations`).
@@ -204,6 +206,7 @@ function order(value: unknown): BoardOrder | null {
     pending_kitchen_items: int(source.pending_kitchen_items),
     unsent_kitchen_items: nullableInt(source.unsent_kitchen_items),
     buffet_ends_at: text(source.buffet_ends_at),
+    opened_at: text(source.opened_at),
   };
 }
 

@@ -3,6 +3,7 @@ import { rateLabel } from '@parkviet/pos-shared/receipt-template/data';
 import { useTranslation } from 'react-i18next';
 import type { PosWorkspace } from '../../lib/pos-context';
 import { courseName } from '../../lib/table-courses';
+import { isTab, isTableOrder } from '../../lib/tables';
 import type { SellingWorkspace } from '../workspace-tabs';
 
 // The course "Giữ món" holds the next dishes in when none was picked.
@@ -11,13 +12,15 @@ const OPEN_STATUSES = ['editing', 'parked'];
 
 // The foot of the table ticket: what the order holds and costs, the
 // secondary tools (pre-bill, hold, send and stay), then the two big buttons
-// "Gửi bếp (n)" and "Thanh toán · total".
+// "Gửi bếp (n)" and "Thanh toán · total". A bar's tab has one send, "Gửi (n)",
+// which stays on the tab, and closes the tab with its payment.
 export function TicketFooter({
   selling,
   active,
   pending,
   sending,
   clockAmount = null,
+  tabMode = false,
   onSend,
   onPay,
 }: {
@@ -29,6 +32,8 @@ export function TicketFooter({
   // A room clock still counting: the server's quote of its time so far,
   // not on the order until the clock stops.
   clockAmount?: string | null;
+  // A bar's open tabs sit beside the ticket.
+  tabMode?: boolean;
   onSend: (stay: boolean) => void;
   onPay: () => void;
 }) {
@@ -47,14 +52,16 @@ export function TicketFooter({
     setPrebillOpen,
   } = selling;
   const table = activeTable.table !== null;
+  // A table order or a bar tab is served by everyone: sent without the lease.
+  const shared = isTableOrder(active);
   const currency = active.totals?.currency ?? 'VND';
   const branch = data?.branches.find((row) => row.id === active.branch_id);
-  // A table order is always sent by hand; another order only when the
-  // branch does not send as the sale completes.
-  const canSend = kitchenOn && (table || branch?.kitchen_send_trigger !== 'on_complete');
-  // Anyone serving a table sends its additions; another order is sent by
-  // the person holding it.
-  const sendLocked = table
+  // A table order or a tab is always sent by hand; another order only when
+  // the branch does not send as the sale completes.
+  const canSend = kitchenOn && (shared || branch?.kitchen_send_trigger !== 'on_complete');
+  // Anyone serving a table or a tab sends its additions; another order is
+  // sent by the person holding it.
+  const sendLocked = shared
     ? locked || busy || !OPEN_STATUSES.includes(active.operational_status)
     : editDisabled || !isEditor;
   const sendDisabled = sending || pending <= 0 || sendLocked;
@@ -136,7 +143,7 @@ export function TicketFooter({
             {t('ticketHold')}
           </button>
         ) : null}
-        {canSend ? (
+        {canSend && !tabMode ? (
           <button type="button" disabled={sendDisabled} onClick={() => onSend(true)}>
             {t('ticketSendStay')}
           </button>
@@ -148,16 +155,16 @@ export function TicketFooter({
             type="button"
             className="ticket-send"
             disabled={sendDisabled}
-            onClick={() => onSend(false)}
+            onClick={() => onSend(tabMode)}
           >
-            {t('ticketSend', { count: pending })}
+            {t(tabMode ? 'ticketSendTab' : 'ticketSend', { count: pending })}
           </button>
         ) : null}
         <button type="button" className="ticket-pay" onClick={onPay}>
           <small>
             {clock
               ? t(chargedOnTop ? 'ticketPayEstimateBeforeCharges' : 'ticketPayEstimate')
-              : t('ticketPay')}
+              : t(tabMode && isTab(active) ? 'ticketCloseTab' : 'ticketPay')}
           </small>{' '}
           <b>{formatMoney(payTotal, currency)}</b>
         </button>

@@ -56,16 +56,23 @@ function useNow(intervalMs = 30_000): number {
 // The table ticket beside the menu: who sits there and since when, the
 // dishes grouped by send, course or seat with the unsent ones on top, and
 // the kitchen send and payment at the foot. A send returns to the board;
-// "Gửi & ở lại" stays on the order. A room's clock is pinned on top.
+// "Gửi & ở lại" stays on the order. A room's clock is pinned on top. A
+// bar's tab stays on the ticket after every send and is closed by its payment.
 export function Ticket({
   selling,
   onBoard,
+  onClosed = onBoard,
+  tabMode = false,
   room,
   onPay,
   onNotice,
 }: {
   selling: SellingWorkspace;
   onBoard: () => void;
+  // The order was canceled: where the screen goes next (the board by default).
+  onClosed?: () => void;
+  // A bar's open tabs sit beside the ticket.
+  tabMode?: boolean;
   // The order's room and its clock.
   room: OrderRoom;
   // Pays the order; the screen asks to stop a room's clock first.
@@ -97,7 +104,11 @@ export function Ticket({
           </div>
         </div>
         <p className="ticket-empty" role="status">
-          {selling.activeLoading ? t('contextWaiting') : t('ticketNoOrder')}
+          {selling.activeLoading
+            ? t('contextWaiting')
+            : tabMode
+              ? t('ticketNoTab')
+              : t('ticketNoOrder')}
         </p>
       </aside>
     );
@@ -129,12 +140,21 @@ export function Ticket({
 
   async function send(stay: boolean) {
     if (!active || sending) return;
-    const count = pending;
     setSending(true);
     try {
-      const sent = await run(() => command(active, (current) => workspaces.sendToKitchen(current)));
+      // The count the notice says is what the kitchen got, as the server's
+      // tickets say: another device may have sent part of it meanwhile.
+      let units: number | null = null;
+      const sent = await run(() =>
+        command(active, async (current) => {
+          const result = await workspaces.kitchenSend(current);
+          units =
+            result.units ?? pendingKitchenUnits(current) - pendingKitchenUnits(result.workspace);
+          return result.workspace;
+        }),
+      );
       if (!sent) return;
-      onNotice(t('ticketSent', { count }));
+      onNotice(t('ticketSent', { count: units ?? 0 }));
       if (!stay) onBoard();
     } finally {
       setSending(false);
@@ -200,7 +220,8 @@ export function Ticket({
         pending={pending}
         sending={sending}
         clockAmount={room.running ? room.amount : null}
-        onSend={(stay) => void send(stay)}
+        tabMode={tabMode}
+        onSend={(stay) => void send(stay || tabMode)}
         onPay={onPay}
       />
       {more ? (
@@ -212,7 +233,7 @@ export function Ticket({
           onClose={() => setMore(null)}
           onCanceled={() => {
             setMore(null);
-            onBoard();
+            onClosed();
           }}
         />
       ) : null}

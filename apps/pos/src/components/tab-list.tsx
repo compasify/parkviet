@@ -12,6 +12,23 @@ function openedTime(iso: string | null, language: string) {
   return new Date(iso).toLocaleTimeString(language, { hour: '2-digit', minute: '2-digit' });
 }
 
+// Why a tab did not open: its name is taken or unusable, else the request failed.
+export function tabOpenFailureKey(error: unknown): string {
+  const reason = conflictReason(error);
+  if (reason === 'tab_name_taken') return 'tabNameTaken';
+  if (reason === 'tab_name_invalid') return 'tabNameInvalid';
+  return posFailureKey(error);
+}
+
+// The open tab that already has the name asked for, when the server said which.
+export function takenTabId(error: unknown): string | null {
+  if (conflictReason(error) !== 'tab_name_taken') return null;
+  const details = (error as { details?: { workspace_id?: unknown } }).details;
+  return typeof details?.workspace_id === 'string' && details.workspace_id
+    ? details.workspace_id
+    : null;
+}
+
 // A bar's open tabs: the search keeps the focus, so a bartender types a name
 // and picks the tab; "Mở tab" opens one with only the guest's name.
 export function TabList({
@@ -36,7 +53,7 @@ export function TabList({
   const [message, setMessage] = useState<string | null>(null);
   const search = useRef<HTMLInputElement>(null);
   const tabs = useOpenTabs(branchId, storeId, query, Boolean(branchId));
-  const rows = tabs.data ?? [];
+  const rows = tabs.data?.tabs ?? [];
 
   useEffect(() => {
     search.current?.focus();
@@ -53,14 +70,7 @@ export function TabList({
       setName('');
       setQuery('');
     } catch (error) {
-      const reason = conflictReason(error);
-      setMessage(
-        reason === 'tab_name_taken'
-          ? t('tabNameTaken')
-          : reason === 'tab_name_invalid'
-            ? t('tabNameInvalid')
-            : t(posFailureKey(error)),
-      );
+      setMessage(t(tabOpenFailureKey(error)));
     } finally {
       setBusy(false);
       search.current?.focus();

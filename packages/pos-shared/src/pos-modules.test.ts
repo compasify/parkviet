@@ -247,7 +247,7 @@ describe('business profile catalogue', () => {
     expect(profile('kiosk')?.display).toEqual({});
   });
 
-  it('serves tables and timed rooms on their own screen unless the profile starts on tabs', () => {
+  it('serves tables, timed rooms and open tabs on their own screen', () => {
     const profile = (surface?: string) => normalizeProfile({ key: 'p', display: { surface } });
     const tables = { 'fnb.tables': true, 'fnb.menu': true };
     // No table module: the counter, whatever the profile suggests.
@@ -267,8 +267,8 @@ describe('business profile catalogue', () => {
       'table_service',
     );
     expect(sellingLayoutOf({ modules: tables, profile: null })).toBe('table_service');
-    // A board of timed rooms is a frame of table service, a karaoke's
-    // postpaid clocks included; a bar's open tabs keep the counter layout.
+    // A board of timed rooms and a bar's open tabs are frames of table
+    // service, a karaoke's postpaid clocks and a bar's paid-later tabs included.
     expect(sellingLayoutOf({ modules: tables, profile: profile('resource_board') })).toBe(
       'table_service',
     );
@@ -278,7 +278,20 @@ describe('business profile catalogue', () => {
         profile: profile('resource_board'),
       }),
     ).toBe('table_service');
-    expect(sellingLayoutOf({ modules: tables, profile: profile('tab_list') })).toBe('counter');
+    expect(sellingLayoutOf({ modules: tables, profile: profile('tab_list') })).toBe(
+      'table_service',
+    );
+    expect(
+      sellingLayoutOf({
+        modules: {
+          ...tables,
+          'fnb.postpay': true,
+          'fnb.service_charge': true,
+          'fnb.bottle_keep': true,
+        },
+        profile: profile('tab_list'),
+      }),
+    ).toBe('table_service');
   });
 
   it('sells at the quick counter where the menu runs without tables', () => {

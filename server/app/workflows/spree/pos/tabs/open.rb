@@ -49,6 +49,19 @@ module Spree
           own || Tables::Guard.booking_shift!(branch)
         end
 
+        # The bar's tab list: each tab's summary with the menu units the
+        # kitchen has not been told about yet, read for the whole page in one
+        # query.
+        def rows(workspaces)
+          ids = workspaces.map(&:id)
+          return [] if ids.empty?
+
+          unsent = Workspace.where(id: ids).pluck(:id, Arel.sql(ResourceState::UNSENT_ITEMS)).to_h
+          workspaces.map do |workspace|
+            workspace.summary.merge(unsent_kitchen_items: BigDecimal((unsent[workspace.id] || 0).to_s).ceil)
+          end
+        end
+
         # Open tabs of a branch whose name, call number or table matches `query`.
         def search(scope, query)
           text = query.to_s.squish.downcase

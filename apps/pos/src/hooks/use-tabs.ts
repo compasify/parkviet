@@ -14,7 +14,16 @@ export type OpenTab = {
   orderNumber: number | null;
   openedAt: string | null;
   total: string;
+  // Menu units the kitchen has not been told about; null from a server that
+  // does not say.
+  unsent: number | null;
 };
+
+// One page of open tabs, newest first, with how many are open in all.
+export type OpenTabPage = { tabs: OpenTab[]; total: number };
+
+// How many tabs one read brings: the server's page maximum.
+export const OPEN_TAB_PAGE = 100;
 
 const FALLBACK_POLL_MS = 15_000;
 
@@ -38,6 +47,9 @@ export function normalizeTabs(rows: unknown): OpenTab[] {
         orderNumber: Number.isInteger(source.order_number) ? (source.order_number as number) : null,
         openedAt: text(source.opened_at),
         total: text(source.total) ?? '0',
+        unsent: Number.isInteger(source.unsent_kitchen_items)
+          ? (source.unsent_kitchen_items as number)
+          : null,
       },
     ];
   });
@@ -59,18 +71,27 @@ export function useOpenTabs(
     enabled: enabled && snapshot.status === 'authenticated' && Boolean(branchId),
     refetchInterval: pollInterval(realtime, FALLBACK_POLL_MS),
     placeholderData: (previous) => previous,
-    queryFn: async () => {
+    queryFn: async (): Promise<OpenTabPage> => {
       try {
-        const result = await session.request<{ data: unknown }>('GET', '/pos/workspaces', {
-          params: {
-            branch_id: branchId ?? undefined,
-            service_mode: 'tab',
-            status: 'editing,parked',
-            limit: '100',
-            ...(q ? { q } : {}),
+        const result = await session.request<{ data: unknown; meta?: { count?: unknown } }>(
+          'GET',
+          '/pos/workspaces',
+          {
+            params: {
+              branch_id: branchId ?? undefined,
+              service_mode: 'tab',
+              status: 'editing,parked',
+              limit: String(OPEN_TAB_PAGE),
+              ...(q ? { q } : {}),
+            },
           },
-        });
-        return normalizeTabs(result.data);
+        );
+        const tabs = normalizeTabs(result.data);
+        const count = result.meta?.count;
+        return {
+          tabs,
+          total: Number.isInteger(count) ? Math.max(count as number, tabs.length) : tabs.length,
+        };
       } catch (error) {
         abandonIfNeeded(error);
         throw error;

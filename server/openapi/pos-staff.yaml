@@ -69,7 +69,8 @@ paths:
       description: >
         Orders visible to the person. A bar's tab list asks for
         `service_mode=tab&status=editing,parked` and finds tabs by guest name,
-        table or call number with `q`.
+        table or call number with `q`; its rows also carry
+        `unsent_kitchen_items`.
       parameters:
         - name: branch_id
           in: query
@@ -9469,6 +9470,10 @@ components:
           type: integer
           minimum: 0
           description: Menu units on the order the kitchen has not been told about yet; a held course waits for its fire and is not counted.
+        opened_at:
+          type: [string, 'null']
+          format: date-time
+          description: When the order was opened at the table.
     ResourceBoardTile:
       type: object
       additionalProperties: false
@@ -10549,6 +10554,11 @@ components:
           format: date-time
         total:
           type: string
+        unsent_kitchen_items:
+          type: integer
+          description: >
+            Tab list only (`service_mode=tab`): menu units the kitchen has not
+            been told about yet, held courses not counted.
     WorkspaceSummaryList:
       type: object
       required: [data]

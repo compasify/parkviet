@@ -60,6 +60,19 @@ RSpec.describe Spree::Pos::Tabs::Open do
     expect(described_class.search(scope, '').count).to eq(2)
   end
 
+  it 'lists open tabs with the units the kitchen has not heard about' do
+    ordered = open_tab(cashier, 'Chị Mai')
+    open_tab(cashier, 'Nhóm sinh nhật')
+    append(cashier, ordered, beer, quantity: 2)
+
+    rows = described_class.rows(described_class.open_tabs(branch).order(:id).to_a)
+
+    expect(rows).to match([include(tab_name: 'Chị Mai', unsent_kitchen_items: 2),
+                           include(tab_name: 'Nhóm sinh nhật', unsent_kitchen_items: 0)])
+    expect(rows.first).not_to have_key(:payment_requested)
+    expect(described_class.rows([])).to eq([])
+  end
+
   it 'is refused where pay-later is off' do
     set_pos_module(branch, 'fnb.postpay', false)
     expect { open_tab(cashier, 'Khách lẻ') }.to raise_error(Spree::Pos::Conflict) { |error| expect(error.reason).to eq('module_disabled') }

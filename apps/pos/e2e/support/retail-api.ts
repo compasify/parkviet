@@ -415,6 +415,15 @@ function lineAmount(world: World, line: Line) {
   return line.label ? line.label.base * item.price : line.quantity * item.price;
 }
 
+// A table order or a bar tab: served by everyone, without the lease.
+const sharedService = (sheet: Sheet) => Boolean(sheet.table || sheet.tabName);
+
+// Menu units the kitchen has not been told about, held courses not counted.
+const unsentUnits = (sheet: Sheet) =>
+  sheet.lines
+    .filter((line) => line.menu && line.courseStatus !== 'held')
+    .reduce((sum, line) => sum + Math.max(line.quantity - (line.sent ?? 0), 0), 0);
+
 export function sheetTotal(world: World, sheet: Sheet) {
   return sheet.lines.reduce((sum, line) => sum + lineAmount(world, line), 0);
 }
@@ -490,7 +499,7 @@ function serializeSheet(world: World, sheet: Sheet) {
     order_number: sheet.orderNumber ?? null,
     guest_name: sheet.guestName ?? null,
     ...(sheet.serviceMode ? { service_mode: sheet.serviceMode } : {}),
-    ...(sheet.tabName ? { service_mode: 'tab', tab_name: sheet.tabName, opened_at: '2026-11-12T13:00:00Z' } : {}),
+    ...(sheet.tabName ? { service_mode: 'tab', tab_name: sheet.tabName, opened_at: sheet.openedAt ?? '2026-11-12T13:00:00Z' } : {}),
     ...(sheet.minimumSpend ? { minimum_spend: sheet.minimumSpend } : {}),
     ...(sheet.drinkCredit ? { drink_credit: sheet.drinkCredit } : {}),
     ...(sheet.vehicleVisitId !== undefined ? { vehicle_visit_id: sheet.vehicleVisitId } : {}),
@@ -547,7 +556,7 @@ function serializeSheet(world: World, sheet: Sheet) {
               row_version: line.version ?? 0,
               added_by: null,
               // A table line tells what the kitchen does with it; sent dishes start as new.
-              ...(sheet.table
+              ...(sharedService(sheet)
                 ? {
                     kitchen_status: line.kitchen ?? (line.sent ? { new: money(line.sent) } : {}),
                     kitchen_send_sequence: line.sequence ?? null,
@@ -1004,8 +1013,21 @@ async function handle(world: World, route: Route) {
       const q = (url.searchParams.get('q') ?? '').toLowerCase();
       const rows = [...world.sheets.values()]
         .filter((sheet) => !tabs || (sheet.tabName && sheet.status !== 'completed' && sheet.tabName.toLowerCase().includes(q)))
-        .map((sheet) => serialize(world, sheet));
+        .map((sheet) =>
+          tabs
+            ? {
+                ...serialize(world, sheet),
+                total: money(sheetTotal(world, sheet)),
+                unsent_kitchen_items: unsentUnits(sheet),
+              }
+            : serialize(world, sheet),
+        );
       if (slow) await sleep(slow[1]);
+      // The tab list reads one page, newest first, with the count of them all.
+      if (tabs) {
+        const limit = Number(url.searchParams.get('limit')) || rows.length;
+        return route.fulfill(page(rows.reverse().slice(0, limit), { count: rows.length }));
+      }
       return route.fulfill(page(rows));
     }
     // The QR of a VietQR tender, received once the test says the bank reported it.
@@ -1422,6 +1444,13 @@ function run(world: World, family: Family, path: string, body: Record<string, un
   const reply = (target: Sheet, status = 200) => data(serialize(world, target), status);
   switch (family) {
     case 'workspace.create': {
+      if (body.service_mode === 'tab') {
+        const name = String(body.tab_name).trim().toLowerCase();
+        const taken = [...world.sheets.values()].find(
+          (row) => row.tabName?.toLowerCase() === name && row.status !== 'completed',
+        );
+        if (taken) return conflict('An open tab already has this name.', 'tab_name_taken', { workspace_id: taken.id });
+      }
       const created = addSheet(world, nextId(world, 'ws'), {
         editor: String(body.editor_id), generation: 1,
         ...(body.service_mode === 'tab' ? { tabName: String(body.tab_name) } : {}),
@@ -1492,7 +1521,7 @@ function run(world: World, family: Family, path: string, body: Record<string, un
     // A table order takes a batch from anyone serving it: no lease, no
     // revision, and a dish merges only into an unsent line of the same batch.
     case 'items.append': {
-      if (!sheet?.table || !world.menu) return conflict('Only a table order takes items this way.', 'not_table_order');
+      if (!sheet || !sharedService(sheet) || !world.menu) return conflict('Only a table order takes items this way.', 'not_table_order');
       if (sheet.attempts.some((attempt) => attempt.status !== 'canceled'))
         return conflict('Payments recorded.', 'snapshot_locked');
       const batch = String(body.append_batch_id ?? crypto.randomUUID());
@@ -1542,7 +1571,7 @@ function run(world: World, family: Family, path: string, body: Record<string, un
     // Sends what the kitchen has not heard yet; nothing new is an answer, not a send.
     case 'kitchen.send': {
       if (!sheet) break;
-      if (!sheet.table) {
+      if (!sharedService(sheet)) {
         const refused = guard(world, sheet, body);
         if (refused) return refused;
       }
@@ -1550,6 +1579,7 @@ function run(world: World, family: Family, path: string, body: Record<string, un
       if (pending.length === 0)
         return { status: 200, json: { data: serialize(world, sheet), meta: { tickets: [], ticket_count: 0 } } };
       const items = pending.reduce((sum, line) => sum + line.quantity - (line.sent ?? 0), 0);
+      const ticketItems = pending.map((line) => ({ sale_line_id: line.saleLineId, quantity: money(line.quantity - (line.sent ?? 0)) }));
       sheet.kitchenSends ??= [];
       const sequence = sheet.kitchenSends.length + 1;
       for (const line of pending) {
@@ -1559,7 +1589,7 @@ function run(world: World, family: Family, path: string, body: Record<string, un
       }
       sheet.kitchenSends.push({ id: `posksend_${sequence}`, sequence, sent_at: '2026-11-11T05:00:00Z', items });
       sheet.revision += 1;
-      return { status: 201, json: { data: serialize(world, sheet), meta: { tickets: [{ id: `poskticket_${sequence}` }], ticket_count: 1 } } };
+      return { status: 201, json: { data: serialize(world, sheet), meta: { tickets: [{ id: `poskticket_${sequence}`, kind: 'fire', items: ticketItems }], ticket_count: 1 } } };
     }
     // A held course is called out: its dishes are fired and go to the
     // kitchen as one more send, as the server does; nothing held is refused.

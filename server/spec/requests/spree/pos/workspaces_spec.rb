@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'spree/api/testing_support/v3/base'
+require_relative '../../../support/pos_table_helpers'
 
 RSpec.describe 'POS workspaces', type: :request do
   include ActiveSupport::Testing::TimeHelpers
@@ -360,5 +361,45 @@ RSpec.describe 'POS workspaces', type: :request do
       lease_expires_at: 2.minutes.from_now,
       operational_status: status
     )
+  end
+
+  describe 'the bar tab list' do
+    include PosTableHelpers
+
+    let(:store) { menu_store }
+    let(:branch) { table_branch(store) }
+    let(:cashier) { credit_staff(store, branch, PosCreditHelpers::CASHIER) }
+
+    before do
+      allow(Spree::Store).to receive(:default).and_return(store)
+      table_register!(branch, cashier)
+    end
+
+    it 'adds the units the kitchen has not heard about to tab rows only' do
+      opened = Spree::Pos::Tabs::Open.call(store: store, staff: cashier, key: SecureRandom.uuid, editor_id: editor_id,
+                                           branch_id: branch.prefixed_id, tab_name: 'Chị Mai')
+      tab = Spree::Pos::Workspace.find_by_prefix_id!(opened['id'])
+      beer = menu_product!(store, branch, name: 'Bia', price: 40_000)
+      Spree::Pos::Workspaces::AppendItems.call(workspace: tab, staff: cashier, key: SecureRandom.uuid,
+                                               items: [{ 'variant_id' => beer.prefixed_id, 'quantity' => 3 }])
+      post '/api/v3/admin/auth/login', params: { email: cashier.email, password: 'secret123' }, as: :json
+      headers = { 'Authorization' => "Bearer #{response.parsed_body.fetch('token')}" }
+
+      get '/api/v3/admin/pos/workspaces', headers: headers,
+                                          params: { branch_id: branch.prefixed_id, service_mode: 'tab', status: 'editing,parked' }
+      expect(response).to have_http_status(:ok)
+      expect_pos_schema!(response, 'WorkspaceSummary')
+      expect(response.parsed_body.fetch('data')).to contain_exactly(
+        include('id' => tab.prefixed_id, 'tab_name' => 'Chị Mai', 'unsent_kitchen_items' => 3)
+      )
+      expect(response.parsed_body.fetch('data').first).not_to have_key('payment_requested')
+
+      get '/api/v3/admin/pos/workspaces', headers: headers, params: { branch_id: branch.prefixed_id, status: 'editing,parked' }
+      expect(response).to have_http_status(:ok)
+      expect_pos_schema!(response, 'WorkspaceSummary')
+      row = response.parsed_body.fetch('data').find { |summary| summary['id'] == tab.prefixed_id }
+      expect(row).to include('tab_name' => 'Chị Mai')
+      expect(row).not_to have_key('unsent_kitchen_items')
+    end
   end
 end

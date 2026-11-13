@@ -35,7 +35,8 @@ module Spree
                 scope = Spree::Pos::Tabs::Open.search(scope, params[:q]) if params[:q].present?
               end
               records, meta = page_scope(scope.includes(:branch, :register, :shift, :order, :resource).order(id: :desc))
-              render json: { data: Spree::Pos::WorkspaceSummary.list(records), meta: meta }
+              rows = params[:service_mode].to_s == 'tab' ? Spree::Pos::Tabs::Open.rows(records) : Spree::Pos::WorkspaceSummary.list(records)
+              render json: { data: rows, meta: meta }
             end
 
             def show

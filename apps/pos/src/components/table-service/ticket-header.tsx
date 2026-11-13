@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import type { PosWorkspace } from '../../lib/pos-context';
-import { tableOrderName } from '../../lib/tables';
+import { isTab, tableOrderName } from '../../lib/tables';
 import { TIMED_MODULE } from '../../lib/timed-clock';
 import { PosIcon } from '../pos-icon';
 import { serviceModeOf } from '../service-mode-control';
@@ -69,7 +69,8 @@ export function TicketHeader({
           </button>
         ) : (
           <h2 className="ticket-name">
-            <span>{t(`serviceMode.${mode}`)}</span>
+            {/* A bar tab goes by its guest's name. */}
+            <span>{isTab(active) ? active.tab_name : t(`serviceMode.${mode}`)}</span>
             <small>{active.order_id}</small>
           </h2>
         )}

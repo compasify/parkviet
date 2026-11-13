@@ -57,11 +57,13 @@ type Popover = { tableId: string; anchor: HTMLElement; addOrder: boolean; clock?
 // number of guests right under its tile and opens the order once seated.
 // A branch billing play time may show its rooms instead: each with its
 // clock and the actions start/pause/resume, order and pay on the tile.
+// A bar reaches it from its open tabs and goes back to them in one tap.
 export function TableBoard({
   selling,
   onOpenOrder,
   onPay,
   onStopAndPay,
+  onTabs,
 }: {
   selling: SellingWorkspace;
   // Selects an order and shows it for ordering.
@@ -70,6 +72,8 @@ export function TableBoard({
   onPay: (workspaceId: string) => void;
   // A room's clock still counts: confirm stopping it before the payment.
   onStopAndPay: (request: StopAndPay) => void;
+  // A bar: back to its open tabs beside the menu.
+  onTabs?: () => void;
 }) {
   const { t } = useTranslation();
   const {
@@ -345,6 +349,11 @@ export function TableBoard({
       aria-label={t(rooms ? 'roomBoardTitle' : 'boardTitle')}
     >
       <div className="table-board-top">
+        {onTabs ? (
+          <button type="button" className="table-board-tabs" onClick={onTabs}>
+            <PosIcon name="back" /> {t('tabListTitle')}
+          </button>
+        ) : null}
         <fieldset className="table-board-areas">
           <legend className="visually-hidden">{t('tableAreas')}</legend>
           {surface === 'table_grid' ? (
