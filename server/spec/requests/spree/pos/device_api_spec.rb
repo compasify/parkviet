@@ -69,8 +69,13 @@ RSpec.describe 'POS device API', type: :request do
   it 'refuses a device paired at another store' do
     token, session = signed_in_session(cashier)
     Spree::Pos::Device.last.update_columns(store_id: create(:store).id)
-    get '/api/v3/admin/pos/context', headers: { 'Authorization' => "Device #{token}", 'X-Pos-Staff-Session' => session }
+    headers = { 'Authorization' => "Device #{token}", 'X-Pos-Staff-Session' => session }
+    get '/api/v3/admin/pos/context', headers: headers.merge('X-Spree-Store-Id' => store.prefixed_id)
     expect(response).to have_http_status(:unauthorized)
+
+    # Unnamed, the store is the device's own, where the cashier holds no role.
+    get '/api/v3/admin/pos/context', headers: headers
+    expect(response).to have_http_status(:forbidden)
   end
 
   it 'signs a cashier in with a PIN and does not grant device management' do

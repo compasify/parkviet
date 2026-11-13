@@ -35,7 +35,7 @@ module Spree
             def authenticate_admin!
               return super unless Spree::Pos::DeviceAuthenticator.device_request?(request)
 
-              device, staff = Spree::Pos::DeviceAuthenticator.authenticate(request)
+              device, staff = device_credentials
               if device.nil? || device.store_id != current_store&.id
                 render_error(code: 'device_unauthorized', message: 'The device is not connected.', status: :unauthorized)
                 return false
@@ -62,6 +62,20 @@ module Spree
             rescue_from Spree::Pos::ReceiptTemplateSchema::Invalid, with: :render_template_invalid
 
             private
+
+            # A device is paired to one store, so its token names the store
+            # the way a secret key does and a staff app need not send
+            # X-Spree-Store-Id. When the header is sent it still decides, and
+            # authenticate_admin! rejects a device of another store.
+            def resolve_admin_store
+              return super if store_id_header || !Spree::Pos::DeviceAuthenticator.device_request?(request)
+
+              device_credentials.first&.store || super
+            end
+
+            def device_credentials
+              @device_credentials ||= Spree::Pos::DeviceAuthenticator.authenticate(request)
+            end
 
             # Spree derives "#{action_kind}_#{scoped_resource}" and checks it
             # before any action code, so one controller cannot mix two scopes
