@@ -20,7 +20,7 @@ import { type ClockStartOptions, TimedPanel } from './timed-panel';
 
 type StateFilter = TableState | 'open' | null;
 
-const MAX_GUESTS = 999;
+export const MAX_GUESTS = 999;
 
 // The floor of the branch: tables as tiles (`table_grid`) or drawn on their
 // area's plan (`floor_plan`), filtered by area and state. Picking a table

@@ -422,3 +422,97 @@ export function buffetMinutesLeft(
   const left = Date.parse(endsAt) - Date.parse(now);
   return Number.isNaN(left) ? null : Math.floor(left / 60_000);
 }
+
+// --- The table board of the table-service selling screen --------------------
+
+// The five backgrounds a table tile can have. Everything else a table needs
+// to say (a late kitchen, a long stay, a booking) is a strip or a corner
+// icon, so the colours stay few enough to read across the room.
+export const BOARD_TONES = ['free', 'serving', 'unsent', 'prebilled', 'payment'] as const;
+export type BoardTone = (typeof BOARD_TONES)[number];
+
+export const BOARD_CHIPS = ['all', 'in_use', 'free', 'attention'] as const;
+export type BoardChip = (typeof BOARD_CHIPS)[number];
+
+export type BoardOptions = {
+  // Minutes a table may stay seated before it is flagged; null turns it off.
+  alertMinutes?: number | null;
+  // The branch sends dishes to a kitchen (`fnb.kitchen`); without one no
+  // dish is ever "unsent".
+  kitchen?: boolean;
+};
+
+// Dishes are on the table's orders and none reached the kitchen yet. The
+// board only knows whether anything was sent, so dishes added after a first
+// send do not show here.
+function unsent(table: BoardTable, kitchen: boolean): boolean {
+  return kitchen && table.state === 'occupied' && Number(table.subtotal ?? 0) > 0;
+}
+
+// The background of a table's tile, the strongest need first: the bill was
+// asked for, the pre-bill is out, dishes wait to be sent, or it is served.
+export function tileTone(table: BoardTable, options: BoardOptions = {}): BoardTone {
+  if (table.orders.length === 0) return 'free';
+  if (
+    table.payment_requested ||
+    table.state === 'payment_requested' ||
+    table.orders.some((order) => order.payment_requested)
+  )
+    return 'payment';
+  if (table.state === 'prebilled' || table.orders.some((order) => order.prebilled))
+    return 'prebilled';
+  return unsent(table, options.kitchen ?? true) ? 'unsent' : 'serving';
+}
+
+// The red strip: seated past the branch's threshold, or a sent dish waited
+// past its station's limit.
+export function tileAlert(table: BoardTable, options: BoardOptions = {}): boolean {
+  if (table.orders.length === 0) return false;
+  if (table.state === 'waiting_long') return true;
+  const limit = options.alertMinutes;
+  return (
+    typeof limit === 'number' &&
+    limit > 0 &&
+    table.seated_minutes !== null &&
+    table.seated_minutes >= limit
+  );
+}
+
+// Someone should go to the table now: the bill was asked for, the kitchen is
+// late, the guests stayed long, or dishes wait to be sent.
+export function needsAttention(table: BoardTable, options: BoardOptions = {}): boolean {
+  const tone = tileTone(table, options);
+  return tone === 'payment' || tone === 'unsent' || tileAlert(table, options);
+}
+
+// Whether a table shows under a filter chip. Free is ready for guests: no
+// order, and neither being cleaned nor out of service.
+export function inBoardChip(
+  table: BoardTable,
+  chip: BoardChip,
+  options: BoardOptions = {},
+): boolean {
+  switch (chip) {
+    case 'in_use':
+      return table.orders.length > 0;
+    case 'free':
+      return (
+        table.orders.length === 0 && (table.state === 'available' || table.state === 'reserved')
+      );
+    case 'attention':
+      return needsAttention(table, options);
+    default:
+      return true;
+  }
+}
+
+// How many tables each filter chip holds.
+export function boardCounts(
+  tables: BoardTable[],
+  options: BoardOptions = {},
+): Record<BoardChip, number> {
+  const counts = { all: 0, in_use: 0, free: 0, attention: 0 };
+  for (const row of tables)
+    for (const chip of BOARD_CHIPS) if (inBoardChip(row, chip, options)) counts[chip] += 1;
+  return counts;
+}

@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useSearch } from '@tanstack/react-router';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSoldOutToggle } from '../../hooks/use-menu';
-import { useSellingWorkspace } from '../../hooks/use-selling-workspace';
+import { type SellingView, useSellingWorkspace } from '../../hooks/use-selling-workspace';
 import { addsInOneTap, describeMenuFailure } from '../../lib/menu-selection';
 import type { PosMenu, PosMenuItem, PosWorkspace } from '../../lib/pos-context';
 import { CourseSeatPicker } from '../course-seat-picker';
@@ -10,17 +11,46 @@ import { type SellingWorkspace, WorkspaceTabsView } from '../workspace-tabs';
 import { CategoryRail } from './category-rail';
 import { MenuItemGrid } from './menu-item-grid';
 import { ModifierPanel } from './modifier-panel';
+import { TableBoard } from './table-board';
 
-// Selling at a branch that serves tables: the order frame puts the menu
-// (categories, text tiles, or one dish's options) beside the order. The
-// order column still shows the counter's basket and checkout.
+// Selling at a branch that serves tables, in frames kept in the URL
+// (`?view=`): the table board first, then the order of a table with the menu
+// (categories, text tiles, or one dish's options) beside it. The order
+// column still shows the counter's basket and checkout. A page opened
+// without a frame shows the order it names, else the board.
 export function TableServiceScreen() {
-  const selling = useSellingWorkspace();
-  const { menuSurface, menu } = selling;
+  const { t } = useTranslation();
+  const search = useSearch({ from: '/authed/' });
+  const [view, setView] = useState<SellingView>(
+    () => search.view ?? (search.order ? 'order' : 'board'),
+  );
+  // A frame the URL changes to by itself (a link, history) is followed;
+  // this screen's own writes already match `view`.
+  const lastSearchView = useRef(search.view);
+  useEffect(() => {
+    if (search.view === lastSearchView.current) return;
+    lastSearchView.current = search.view;
+    if (search.view) setView(search.view);
+  }, [search.view]);
+  const selling = useSellingWorkspace({ view });
+  const { menuSurface, menu, selectOrder } = selling;
+
+  function openOrder(workspaceId: string) {
+    selectOrder(workspaceId);
+    setView('order');
+  }
+
+  if (view === 'board')
+    return (
+      <section className="draft-workspace table-service" aria-label={t('draftList')}>
+        <TableBoard selling={selling} onOpenOrder={openOrder} />
+      </section>
+    );
   return (
     <WorkspaceTabsView
       selling={selling}
       className="table-service"
+      onBoard={() => setView('board')}
       catalog={
         menuSurface && menu.data ? (
           <OrderMenu

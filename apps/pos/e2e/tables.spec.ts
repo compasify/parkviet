@@ -131,8 +131,8 @@ async function stubPrint(page: Page) {
 }
 
 const printed = (page: Page) => page.evaluate(() => (window as unknown as { printed: number }).printed);
-const floor = (page: Page) => page.locator('.table-floor');
-const tile = (page: Page, name: string) => floor(page).locator('.table-tile', { hasText: name });
+const tableBoard = (page: Page) => page.getByRole('region', { name: 'Bảng bàn' });
+const tile = (page: Page, name: string) => tableBoard(page).locator('.board-tile', { hasText: name });
 
 test('a table is seated, ordered, pre-billed, paid and free again', async ({ page }) => {
   const world = newWorld({
@@ -146,16 +146,28 @@ test('a table is seated, ordered, pre-billed, paid and free again', async ({ pag
   const recorded = await installTables(page, world);
   await login(page);
 
-  // The profile starts on the floor; each state is written beside its colour.
-  await expect(floor(page)).toBeVisible();
+  // The sale opens on the table board, with no invoice tabs, basket or
+  // checkout; each state is written beside its colour.
+  await expect(tableBoard(page)).toBeVisible();
+  await expect(page).toHaveURL(/view=board/);
+  await expect(page.getByRole('tablist')).toHaveCount(0);
+  await expect(page.locator('#pos-basket, #pos-checkout')).toHaveCount(0);
   await expect(tile(page, 'Bàn 1')).toHaveAttribute('aria-label', 'Bàn 1 · Trống');
   await expect(tile(page, 'Bàn 2')).toContainText('Trống');
+  await expect(tableBoard(page).getByRole('button', { name: 'Trống 2', exact: true })).toBeVisible();
 
+  // A free table asks for the guests right under its tile; Escape closes it.
   await tile(page, 'Bàn 1').click();
-  const panel = page.getByRole('complementary', { name: 'Bàn 1' });
-  await panel.getByLabel('Số khách').fill('2');
-  await panel.getByRole('button', { name: 'Mở bàn' }).click();
+  const seat = page.getByRole('dialog', { name: 'Bàn 1' });
+  await expect(seat).toContainText('Mở Bàn 1');
+  await page.keyboard.press('Escape');
+  await expect(seat).toHaveCount(0);
+  await tile(page, 'Bàn 1').click();
+  await seat.getByRole('button', { name: '3', exact: true }).click();
+  await seat.getByRole('button', { name: '2', exact: true }).click();
+  await seat.getByRole('button', { name: 'Mở bàn · 2 khách' }).click();
   expect(recorded.opens).toEqual([expect.objectContaining({ branch_id: 'br_1', guest_count: 2 })]);
+  await expect(page).toHaveURL(/view=order/);
   expect(typeof recorded.opens[0].editor_id).toBe('string');
 
   // The new order opens for selling with the table on it.
@@ -189,19 +201,20 @@ test('a table is seated, ordered, pre-billed, paid and free again', async ({ pag
   await dialog.getByRole('button', { name: 'Đóng' }).click();
   await expect(dialog).toHaveCount(0);
 
-  // On the floor the table shows its pre-bill.
-  await page.getByRole('button', { name: 'Sơ đồ bàn', exact: true }).click();
+  // On the board the table shows its pre-bill.
+  await page.getByRole('button', { name: 'Bảng bàn', exact: true }).click();
+  await expect(tile(page, 'Bàn 1')).toHaveAttribute('data-tone', 'prebilled');
   await expect(tile(page, 'Bàn 1')).toContainText('Đã in tạm tính');
   await expect(tile(page, 'Bàn 1')).toContainText('15.000 ₫');
-  // Tapping the table with an order brings that order back for selling.
+  await expect(tile(page, 'Bàn 1')).toContainText('5′');
+  // Tapping the table with its one order goes straight back to it.
   await tile(page, 'Bàn 1').click();
-  await panel.getByRole('button', { name: /Vào đơn/ }).click();
   await expect(bar).toContainText('Bàn 1');
 
   // Paid in cash, the order closes and the table is free again.
   await payCash(page, '15000');
   await expect.poll(() => world.sheets.get('ws_t1')?.status).toBe('completed');
-  await page.getByRole('button', { name: 'Sơ đồ bàn', exact: true }).click();
+  await page.getByRole('button', { name: 'Bảng bàn', exact: true }).click();
   await expect(tile(page, 'Bàn 1')).toHaveAttribute('aria-label', 'Bàn 1 · Trống');
 });
 
@@ -216,13 +229,12 @@ test('the floor plan is remembered on this device and draws the tables of the ar
   await installRetailApi(page, world);
   await installTables(page, world);
   await login(page);
-  await expect(floor(page).locator('.table-grid')).toBeVisible();
-  await floor(page).getByRole('button', { name: 'Sơ đồ', exact: true }).click();
-  const plan = floor(page).getByRole('group', { name: 'Tầng 1' });
-  await expect(plan.locator('.table-tile')).toHaveCount(2);
+  await expect(tableBoard(page).locator('.table-board-grid')).toBeVisible();
+  await tableBoard(page).getByRole('button', { name: 'Sơ đồ', exact: true }).click();
+  const plan = tableBoard(page).getByRole('group', { name: 'Tầng 1' });
+  await expect(plan.locator('.board-tile')).toHaveCount(2);
   expect(await page.evaluate(() => localStorage.getItem('parkviet-pos:table-surface'))).toBe('floor_plan');
-  // A reload opens the selected invoice; the floor comes back as a plan.
+  // A reload keeps the board, which comes back as a plan.
   await page.reload();
-  await page.getByRole('button', { name: 'Sơ đồ bàn', exact: true }).click();
-  await expect(floor(page).getByRole('group', { name: 'Tầng 1' })).toBeVisible();
+  await expect(tableBoard(page).getByRole('group', { name: 'Tầng 1' })).toBeVisible();
 });

@@ -1,7 +1,7 @@
 ---
 phase: 3
 title: "Bảng bàn"
-status: pending
+status: completed
 effort: "2 ngày"
 dependsOn: [1, 2]
 ---

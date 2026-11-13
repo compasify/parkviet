@@ -49,16 +49,78 @@ export function WorkspaceTabs() {
   return <WorkspaceTabsView selling={useSellingWorkspace()} />;
 }
 
+// The waiting orders of the branch, each tray a button with its count that
+// opens the tray: delivery platforms, guests' QR orders, kiosks.
+// `onTaken` opens an order taken from a tray (selected here by default).
+export function OrderTrays({
+  selling,
+  onTaken,
+}: {
+  selling: SellingWorkspace;
+  onTaken?: (workspaceId: string) => void;
+}) {
+  const {
+    data,
+    selection,
+    selectionComplete,
+    storeId,
+    workspaces,
+    locked,
+    channelUnavailable,
+    platformOrders,
+    guestOrders,
+    kioskOrders,
+    selectOrder,
+  } = selling;
+  return (
+    <>
+      {platformOrders && selectionComplete ? (
+        <PlatformOrderTray
+          key={`${storeId}:${selection.branchId}`}
+          branchId={selection.branchId}
+          registerId={selection.registerId}
+          canEnter={Boolean(
+            data?.shift && data.shift.owner_id === data.staff.id && !locked && !channelUnavailable,
+          )}
+          canCollect={Boolean(data?.capabilities.includes('pos.payment.collect'))}
+        />
+      ) : null}
+      {guestOrders && selectionComplete ? (
+        <GuestOrderTray
+          key={`guest:${storeId}:${selection.branchId}`}
+          branchId={selection.branchId}
+          canDecide={Boolean(data?.capabilities.includes('pos.guest_order.decide')) && !locked}
+        />
+      ) : null}
+      {kioskOrders && selectionComplete ? (
+        <KioskOrderTray
+          key={`kiosk:${storeId}:${selection.branchId}`}
+          branchId={selection.branchId}
+          canTake={Boolean(data?.shift && data.shift.owner_id === data.staff.id) && !locked}
+          onTake={async (id) => {
+            const taken = await workspaces.takeKioskOrder(id);
+            (onTaken ?? selectOrder)(taken.id);
+          }}
+        />
+      ) : null}
+    </>
+  );
+}
+
 // The counter layout over selling state owned by the caller. A layout that
 // sells from its own menu passes it as `catalog` and names itself in `className`.
+// A layout with its own table board passes `onBoard`: the toolbar then goes
+// back to that board instead of showing the floor here.
 export function WorkspaceTabsView({
   selling,
   catalog,
   className,
+  onBoard,
 }: {
   selling: SellingWorkspace;
   catalog?: ReactNode;
   className?: string;
+  onBoard?: () => void;
 }) {
   const { t } = useTranslation();
   const {
@@ -105,9 +167,6 @@ export function WorkspaceTabsView({
     soldOut,
     callNumbers,
     cupLabels,
-    platformOrders,
-    guestOrders,
-    kioskOrders,
     setSavedSurface,
     tableSurface,
     postpay,
@@ -116,7 +175,6 @@ export function WorkspaceTabsView({
     vehicleCommission,
     activeTable,
     tablist,
-    showFloor,
     setFloorChoice,
     tabSurface,
     showTabs,
@@ -150,6 +208,8 @@ export function WorkspaceTabsView({
   const discountDetailsRef = useRef<HTMLDetailsElement>(null);
   const noteDetailsRef = useRef<HTMLDetailsElement>(null);
   const deliveryDetailsRef = useRef<HTMLDetailsElement>(null);
+  // With a board of its own the layout never draws the floor in here.
+  const showFloor = selling.showFloor && !onBoard;
 
   return (
     <section
@@ -164,14 +224,18 @@ export function WorkspaceTabsView({
             aria-pressed={showTabs}
             onClick={() => {
               setTabsChoice(!showTabs);
-              if (!showTabs && showFloor) setFloorChoice(false);
+              if (!showTabs && selling.showFloor) setFloorChoice(false);
             }}
           >
             <PosIcon name={showTabs ? 'back' : 'grid'} />{' '}
             {showTabs ? t('tableBackToSale') : t('tabListTitle')}
           </button>
         ) : null}
-        {tableSurface ? (
+        {onBoard ? (
+          <button type="button" className="floor-toggle" onClick={onBoard}>
+            <PosIcon name="grid" /> {t('boardOpen')}
+          </button>
+        ) : tableSurface ? (
           <button type="button" className="floor-toggle" onClick={() => setFloorChoice(!showFloor)}>
             <PosIcon name={showFloor ? 'back' : 'grid'} />{' '}
             {showFloor ? t('tableBackToSale') : t('tableFloorOpen')}
@@ -416,35 +480,7 @@ export function WorkspaceTabsView({
           )}
         </div>
       ) : null}
-      {platformOrders && selectionComplete ? (
-        <PlatformOrderTray
-          key={`${storeId}:${selection.branchId}`}
-          branchId={selection.branchId}
-          registerId={selection.registerId}
-          canEnter={Boolean(
-            data?.shift && data.shift.owner_id === data.staff.id && !locked && !channelUnavailable,
-          )}
-          canCollect={Boolean(data?.capabilities.includes('pos.payment.collect'))}
-        />
-      ) : null}
-      {guestOrders && selectionComplete ? (
-        <GuestOrderTray
-          key={`guest:${storeId}:${selection.branchId}`}
-          branchId={selection.branchId}
-          canDecide={Boolean(data?.capabilities.includes('pos.guest_order.decide')) && !locked}
-        />
-      ) : null}
-      {kioskOrders && selectionComplete ? (
-        <KioskOrderTray
-          key={`kiosk:${storeId}:${selection.branchId}`}
-          branchId={selection.branchId}
-          canTake={Boolean(data?.shift && data.shift.owner_id === data.staff.id) && !locked}
-          onTake={async (id) => {
-            const taken = await workspaces.takeKioskOrder(id);
-            selectOrder(taken.id);
-          }}
-        />
-      ) : null}
+      <OrderTrays selling={selling} />
       {showTabs ? (
         <TabList
           key={`tabs:${storeId}:${selection.branchId}`}

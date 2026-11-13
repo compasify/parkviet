@@ -3,6 +3,7 @@ import en from './locales/en.json';
 import vi from './locales/vi.json';
 import { normalizeProfile, tableSurfaceOf } from './pos-modules';
 import {
+  boardCounts,
   buffetMinutesLeft,
   buffetTiming,
   clampPlacement,
@@ -11,10 +12,14 @@ import {
   countStates,
   filterTables,
   fitsArea,
+  inBoardChip,
+  needsAttention,
   normalizeResource,
   normalizeResourceBoard,
   TABLE_STATES,
   tableStateKey,
+  tileAlert,
+  tileTone,
 } from './tables';
 
 const board = normalizeResourceBoard({
@@ -255,5 +260,99 @@ describe('buffet timing', () => {
       next_reservation: { id: 'posresv_1', guest_name: 'Chị Lan', party_size: 4 },
       buffet_ends_at: null,
     });
+  });
+});
+
+describe('table board', () => {
+  // One table as the board reads it; an order is open when `orders` is given.
+  const tile = (
+    state: string,
+    extra: Record<string, unknown> = {},
+    orders: Array<Record<string, unknown>> = [],
+  ) =>
+    normalizeResourceBoard({
+      resources: [
+        {
+          id: `posres_${state}`,
+          name: state,
+          state,
+          subtotal: orders.length ? '120000.0' : null,
+          seated_minutes: orders.length ? 30 : null,
+          orders: orders.map((order, index) => ({ id: `w${index}`, total: '120000.0', ...order })),
+          ...extra,
+        },
+      ],
+    }).resources[0];
+  const one = [{}];
+
+  it('paints five tones, strongest need first', () => {
+    expect(tileTone(tile('available'))).toBe('free');
+    expect(tileTone(tile('reserved'))).toBe('free');
+    expect(tileTone(tile('cleaning'))).toBe('free');
+    expect(tileTone(tile('ordered', {}, one))).toBe('serving');
+    expect(tileTone(tile('waiting_long', {}, one))).toBe('serving');
+    // Dishes on the order and nothing sent yet.
+    expect(tileTone(tile('occupied', {}, one))).toBe('unsent');
+    // Seated with nothing ordered yet is served, not unsent.
+    expect(tileTone(tile('occupied', { subtotal: '0.0' }, one))).toBe('serving');
+    expect(tileTone(tile('prebilled', {}, [{ prebilled: true }]))).toBe('prebilled');
+    expect(
+      tileTone(
+        tile('payment_requested', { payment_requested: true }, [
+          { payment_requested: true, prebilled: true },
+        ]),
+      ),
+    ).toBe('payment');
+    // One of two orders asking for the bill is enough.
+    expect(tileTone(tile('occupied', {}, [{}, { payment_requested: true }]))).toBe('payment');
+  });
+
+  it('never calls dishes unsent at a branch without a kitchen', () => {
+    expect(tileTone(tile('occupied', {}, one), { kitchen: false })).toBe('serving');
+  });
+
+  it('flags a table seated past the branch threshold or waiting on the kitchen', () => {
+    const seated = tile('ordered', { seated_minutes: 60 }, one);
+    expect(tileAlert(seated, { alertMinutes: 60 })).toBe(true);
+    expect(tileAlert(seated, { alertMinutes: 61 })).toBe(false);
+    // No threshold: no seated alert.
+    expect(tileAlert(seated, { alertMinutes: null })).toBe(false);
+    expect(tileAlert(tile('waiting_long', {}, one), { alertMinutes: null })).toBe(true);
+    // A free table never is, whatever its minutes.
+    expect(tileAlert(tile('available', { seated_minutes: 999 }), { alertMinutes: 1 })).toBe(false);
+  });
+
+  it('needs attention for the bill, a late kitchen, a long stay or unsent dishes', () => {
+    const options = { alertMinutes: 60 };
+    expect(
+      needsAttention(tile('payment_requested', { payment_requested: true }, one), options),
+    ).toBe(true);
+    expect(needsAttention(tile('waiting_long', {}, one), options)).toBe(true);
+    expect(needsAttention(tile('ordered', { seated_minutes: 75 }, one), options)).toBe(true);
+    expect(needsAttention(tile('occupied', {}, one), options)).toBe(true);
+    expect(needsAttention(tile('occupied', {}, one), { ...options, kitchen: false })).toBe(false);
+    expect(needsAttention(tile('ordered', {}, one), options)).toBe(false);
+    expect(needsAttention(tile('prebilled', {}, [{ prebilled: true }]), options)).toBe(false);
+    expect(needsAttention(tile('available'), options)).toBe(false);
+  });
+
+  it('counts the chips and filters by them', () => {
+    const tables = [
+      tile('available'),
+      tile('reserved'),
+      tile('cleaning'),
+      tile('ordered', {}, one),
+      tile('occupied', {}, one),
+      tile('payment_requested', { payment_requested: true }, one),
+    ];
+    const options = { alertMinutes: 60 };
+    expect(boardCounts(tables, options)).toEqual({ all: 6, in_use: 3, free: 2, attention: 2 });
+    expect(boardCounts([], options)).toEqual({ all: 0, in_use: 0, free: 0, attention: 0 });
+    const names = (chip: Parameters<typeof inBoardChip>[1]) =>
+      tables.filter((row) => inBoardChip(row, chip, options)).map((row) => row.name);
+    expect(names('all')).toHaveLength(6);
+    expect(names('in_use')).toEqual(['ordered', 'occupied', 'payment_requested']);
+    expect(names('free')).toEqual(['available', 'reserved']);
+    expect(names('attention')).toEqual(['occupied', 'payment_requested']);
   });
 });

@@ -52,7 +52,12 @@ type ScanPlan = { workspace?: PosWorkspace } & (
 // The selling state of the counter: the open workspaces, the selected one,
 // the command serializer and lease, the URL `?order`, the scanner and the
 // module switches. Both selling layouts draw from it.
-export function useSellingWorkspace() {
+// The frame of a layout that has several (the table board, the order, its
+// payment); it is written to the URL with the order. The counter has none.
+export type SellingView = 'board' | 'order' | 'pay';
+
+export function useSellingWorkspace(options: { view?: SellingView } = {}) {
+  const view = options.view;
   const { t } = useTranslation();
   const { selection, context, selectionComplete } = usePosSelection();
   const data = context.data;
@@ -263,6 +268,7 @@ export function useSellingWorkspace() {
   // to it: a URL change that is not our own write (back, a link) is a request.
   const lastSearchOrder = useRef(search.order ?? null);
   const writtenOrder = useRef<string | null>(search.order ?? null);
+  const writtenView = useRef<SellingView | undefined>(search.view);
   // A tab selected for the URL whose render has not happened yet.
   const selecting = useRef<string | null>(null);
   const listLoaded = workspaces.query.isSuccess;
@@ -297,9 +303,14 @@ export function useSellingWorkspace() {
       selecting.current = null;
     }
     // Already in the URL, or already on its way there.
-    if (writtenOrder.current === activeOrder) return;
+    if (writtenOrder.current === activeOrder && writtenView.current === view) return;
     writtenOrder.current = activeOrder;
-    void navigate({ to: '/', search: activeOrder ? { order: activeOrder } : {}, replace: true });
+    writtenView.current = view;
+    void navigate({
+      to: '/',
+      search: { ...(activeOrder ? { order: activeOrder } : {}), ...(view ? { view } : {}) },
+      replace: true,
+    });
   });
   const baseTitle = useRef(document.title);
   const activeTitle =

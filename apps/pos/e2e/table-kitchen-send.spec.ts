@@ -35,7 +35,19 @@ test('two tabs add to one table without the lease, then send the difference to t
   await installRetailApi(context, world);
   await context.route('**/api/v3/admin/pos/resource_board**', (route) =>
     route.fulfill({
-      json: { data: { branch_id: 'br_1', server_now: '2026-11-11T05:00:00Z', areas: [], resources: [] } },
+      json: {
+        data: {
+          branch_id: 'br_1',
+          server_now: '2026-11-11T05:00:00Z',
+          areas: [],
+          resources: [
+            {
+              id: 'posres_1', name: 'Bàn 1', state: 'occupied', guest_count: 2, seated_minutes: 3,
+              subtotal: '0.0', currency: 'VND', orders: [{ id: 'ws_t1', total: '0.0', guest_count: 2 }],
+            },
+          ],
+        },
+      },
     }),
   );
 
@@ -43,6 +55,8 @@ test('two tabs add to one table without the lease, then send the difference to t
   const cashier = await context.newPage();
   for (const page of [waiter, cashier]) {
     await login(page);
+    // The sale opens on the table board; the table's one order opens on a tap.
+    await page.locator('.board-tile', { hasText: 'Bàn 1' }).click();
     await tab(page, 'ws_t1').click();
     await expect(page.getByRole('list', { name: 'Thực đơn' })).toBeVisible();
   }
