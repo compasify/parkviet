@@ -69,7 +69,7 @@ const fits = (page: Page) => page.evaluate(() => document.documentElement.scroll
 test('search, filters, pagination, assignment, removal and server conflicts retain authority', async ({ page }, testInfo) => {
   const { state, products } = await install(page); await open(page); const table = page.getByRole('table');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Siêu thị Hiền'); await expect(table.getByRole('row')).toHaveCount(26); await expect(page.getByText(/^1–25 (of|trong số) 30$/)).toBeVisible();
-  await expect(page.locator('a[href^="/store_1/branches/branch_main/products"]')).toHaveClass(/border-foreground/);
+  await expect(page.getByRole('tab', { name: 'Hàng bán', exact: true })).toHaveAttribute('aria-selected', 'true');
   await page.screenshot({ path: testInfo.outputPath('branch-products.png'), fullPage: true });
   await open(page, 'products?page=2'); await expect(table.getByRole('row')).toHaveCount(6); expect(state.productQueries.at(-1)).toMatchObject({ page: '2', limit: '25' }); expect(await fits(page)).toBe(true);
   await open(page, 'products?search=sp-12'); await expect(table.getByRole('row')).toHaveCount(2); expect(state.productQueries.at(-1)).toMatchObject({ q: 'sp-12', page: '1' });

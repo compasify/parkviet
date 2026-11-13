@@ -178,6 +178,8 @@ class _$TableSettings extends TableSettings {
   @override
   final int? qrOrderAutoMaxItems;
   @override
+  final int? seatedAlertMinutes;
+  @override
   final TipSplitRule? tipSplit;
   @override
   final String branchId;
@@ -206,6 +208,7 @@ class _$TableSettings extends TableSettings {
       this.qrOrderMode,
       this.qrOrderAutoLimit,
       this.qrOrderAutoMaxItems,
+      this.seatedAlertMinutes,
       this.tipSplit,
       required this.branchId,
       this.tableRegisterId,
@@ -234,6 +237,7 @@ class _$TableSettings extends TableSettings {
         qrOrderMode == other.qrOrderMode &&
         qrOrderAutoLimit == other.qrOrderAutoLimit &&
         qrOrderAutoMaxItems == other.qrOrderAutoMaxItems &&
+        seatedAlertMinutes == other.seatedAlertMinutes &&
         tipSplit == other.tipSplit &&
         branchId == other.branchId &&
         tableRegisterId == other.tableRegisterId &&
@@ -255,6 +259,7 @@ class _$TableSettings extends TableSettings {
     _$hash = $jc(_$hash, qrOrderMode.hashCode);
     _$hash = $jc(_$hash, qrOrderAutoLimit.hashCode);
     _$hash = $jc(_$hash, qrOrderAutoMaxItems.hashCode);
+    _$hash = $jc(_$hash, seatedAlertMinutes.hashCode);
     _$hash = $jc(_$hash, tipSplit.hashCode);
     _$hash = $jc(_$hash, branchId.hashCode);
     _$hash = $jc(_$hash, tableRegisterId.hashCode);
@@ -278,6 +283,7 @@ class _$TableSettings extends TableSettings {
           ..add('qrOrderMode', qrOrderMode)
           ..add('qrOrderAutoLimit', qrOrderAutoLimit)
           ..add('qrOrderAutoMaxItems', qrOrderAutoMaxItems)
+          ..add('seatedAlertMinutes', seatedAlertMinutes)
           ..add('tipSplit', tipSplit)
           ..add('branchId', branchId)
           ..add('tableRegisterId', tableRegisterId)
@@ -339,6 +345,11 @@ class TableSettingsBuilder
   set qrOrderAutoMaxItems(int? qrOrderAutoMaxItems) =>
       _$this._qrOrderAutoMaxItems = qrOrderAutoMaxItems;
 
+  int? _seatedAlertMinutes;
+  int? get seatedAlertMinutes => _$this._seatedAlertMinutes;
+  set seatedAlertMinutes(int? seatedAlertMinutes) =>
+      _$this._seatedAlertMinutes = seatedAlertMinutes;
+
   TipSplitRuleBuilder? _tipSplit;
   TipSplitRuleBuilder get tipSplit =>
       _$this._tipSplit ??= TipSplitRuleBuilder();
@@ -394,6 +405,7 @@ class TableSettingsBuilder
       _qrOrderMode = $v.qrOrderMode;
       _qrOrderAutoLimit = $v.qrOrderAutoLimit;
       _qrOrderAutoMaxItems = $v.qrOrderAutoMaxItems;
+      _seatedAlertMinutes = $v.seatedAlertMinutes;
       _tipSplit = $v.tipSplit?.toBuilder();
       _branchId = $v.branchId;
       _tableRegisterId = $v.tableRegisterId;
@@ -439,6 +451,7 @@ class TableSettingsBuilder
             qrOrderMode: qrOrderMode,
             qrOrderAutoLimit: qrOrderAutoLimit,
             qrOrderAutoMaxItems: qrOrderAutoMaxItems,
+            seatedAlertMinutes: seatedAlertMinutes,
             tipSplit: _tipSplit?.build(),
             branchId: BuiltValueNullFieldError.checkNotNull(
                 branchId, r'TableSettings', 'branchId'),

@@ -179,6 +179,8 @@ class _$TableSettingsInput extends TableSettingsInput {
   @override
   final int? qrOrderAutoMaxItems;
   @override
+  final int? seatedAlertMinutes;
+  @override
   final int? reservationGraceMinutes;
   @override
   final int? reservationDurationMinutes;
@@ -200,6 +202,7 @@ class _$TableSettingsInput extends TableSettingsInput {
       this.qrOrderMode,
       this.qrOrderAutoLimit,
       this.qrOrderAutoMaxItems,
+      this.seatedAlertMinutes,
       this.reservationGraceMinutes,
       this.reservationDurationMinutes,
       this.reservationFeeProductId,
@@ -226,6 +229,7 @@ class _$TableSettingsInput extends TableSettingsInput {
         qrOrderMode == other.qrOrderMode &&
         qrOrderAutoLimit == other.qrOrderAutoLimit &&
         qrOrderAutoMaxItems == other.qrOrderAutoMaxItems &&
+        seatedAlertMinutes == other.seatedAlertMinutes &&
         reservationGraceMinutes == other.reservationGraceMinutes &&
         reservationDurationMinutes == other.reservationDurationMinutes &&
         reservationFeeProductId == other.reservationFeeProductId &&
@@ -243,6 +247,7 @@ class _$TableSettingsInput extends TableSettingsInput {
     _$hash = $jc(_$hash, qrOrderMode.hashCode);
     _$hash = $jc(_$hash, qrOrderAutoLimit.hashCode);
     _$hash = $jc(_$hash, qrOrderAutoMaxItems.hashCode);
+    _$hash = $jc(_$hash, seatedAlertMinutes.hashCode);
     _$hash = $jc(_$hash, reservationGraceMinutes.hashCode);
     _$hash = $jc(_$hash, reservationDurationMinutes.hashCode);
     _$hash = $jc(_$hash, reservationFeeProductId.hashCode);
@@ -262,6 +267,7 @@ class _$TableSettingsInput extends TableSettingsInput {
           ..add('qrOrderMode', qrOrderMode)
           ..add('qrOrderAutoLimit', qrOrderAutoLimit)
           ..add('qrOrderAutoMaxItems', qrOrderAutoMaxItems)
+          ..add('seatedAlertMinutes', seatedAlertMinutes)
           ..add('reservationGraceMinutes', reservationGraceMinutes)
           ..add('reservationDurationMinutes', reservationDurationMinutes)
           ..add('reservationFeeProductId', reservationFeeProductId)
@@ -318,6 +324,11 @@ class TableSettingsInputBuilder
   set qrOrderAutoMaxItems(int? qrOrderAutoMaxItems) =>
       _$this._qrOrderAutoMaxItems = qrOrderAutoMaxItems;
 
+  int? _seatedAlertMinutes;
+  int? get seatedAlertMinutes => _$this._seatedAlertMinutes;
+  set seatedAlertMinutes(int? seatedAlertMinutes) =>
+      _$this._seatedAlertMinutes = seatedAlertMinutes;
+
   int? _reservationGraceMinutes;
   int? get reservationGraceMinutes => _$this._reservationGraceMinutes;
   set reservationGraceMinutes(int? reservationGraceMinutes) =>
@@ -356,6 +367,7 @@ class TableSettingsInputBuilder
       _qrOrderMode = $v.qrOrderMode;
       _qrOrderAutoLimit = $v.qrOrderAutoLimit;
       _qrOrderAutoMaxItems = $v.qrOrderAutoMaxItems;
+      _seatedAlertMinutes = $v.seatedAlertMinutes;
       _reservationGraceMinutes = $v.reservationGraceMinutes;
       _reservationDurationMinutes = $v.reservationDurationMinutes;
       _reservationFeeProductId = $v.reservationFeeProductId;
@@ -392,6 +404,7 @@ class TableSettingsInputBuilder
             qrOrderMode: qrOrderMode,
             qrOrderAutoLimit: qrOrderAutoLimit,
             qrOrderAutoMaxItems: qrOrderAutoMaxItems,
+            seatedAlertMinutes: seatedAlertMinutes,
             reservationGraceMinutes: reservationGraceMinutes,
             reservationDurationMinutes: reservationDurationMinutes,
             reservationFeeProductId: reservationFeeProductId,
