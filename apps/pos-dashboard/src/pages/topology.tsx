@@ -12,10 +12,6 @@ import {
   ActiveBadge,
   Badge,
   Button,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
   ResourceNameCell,
   type RowAction,
   RowActions,
@@ -23,11 +19,18 @@ import {
   useConfirm,
   useRowClickBridge,
 } from '@spree/dashboard-ui'
-import { BanIcon, RotateCcwIcon, TabletIcon, UsersIcon } from '@spree/dashboard-ui/icons'
+import {
+  BanIcon,
+  RotateCcwIcon,
+  ShieldAlertIcon,
+  TabletIcon,
+  UsersIcon,
+} from '@spree/dashboard-ui/icons'
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useCallback, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { ModelCard } from '../components/setup/model-ui'
 import {
   type TopologyDraft,
   TopologyEditor,
@@ -442,12 +445,9 @@ export function TopologyPage({
           <Button onClick={() => void context.refetch()}>{t('retry')}</Button>
         </div>
       ) : !access.read ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('forbidden')}</CardTitle>
-          </CardHeader>
-          <CardContent>{t('adminAccessDenied')}</CardContent>
-        </Card>
+        <ModelCard title={t('forbidden')} id="topology-forbidden" icon={<ShieldAlertIcon />}>
+          <p>{t('adminAccessDenied')}</p>
+        </ModelCard>
       ) : (
         <>
           {notice && (

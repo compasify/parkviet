@@ -1,5 +1,5 @@
+import { MonitorIcon } from '@spree/dashboard-ui/icons'
 import { useParams } from '@tanstack/react-router'
-import { Monitor } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
@@ -63,7 +63,7 @@ export function PosCounterLink() {
   return hosts.map((host) =>
     createPortal(
       <a data-pos-counter="" href={url} target="_blank" rel="noopener" className={LINK_CLASS}>
-        <Monitor aria-hidden size={16} strokeWidth={2} />
+        <MonitorIcon aria-hidden size={16} strokeWidth={2} />
         <span className="group-data-[collapsible=icon]:sr-only">
           {t('posDashboard.openCounter')}
         </span>

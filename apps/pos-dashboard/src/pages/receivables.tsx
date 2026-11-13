@@ -2,24 +2,9 @@ import { shortDate } from '@parkviet/pos-shared/debt-reminder'
 import { formatMoney } from '@parkviet/pos-shared/money'
 import { describeFailure } from '@parkviet/pos-shared/request-failure'
 import type { PosReceivable, PosReceivableAccount } from '@parkviet/pos-shared/types/pos-context'
-import {
-  defineTable,
-  PageHeader,
-  type PageTab,
-  PageTabs,
-  ResourceTable,
-} from '@spree/dashboard-core'
-import {
-  Button,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  ResourceNameCell,
-  RowActions,
-  useRowClickBridge,
-} from '@spree/dashboard-ui'
-import { RotateCcwIcon } from '@spree/dashboard-ui/icons'
+import { defineTable, PageHeader, ResourceTable } from '@spree/dashboard-core'
+import { Button, ResourceNameCell, RowActions, useRowClickBridge } from '@spree/dashboard-ui'
+import { HandCoinsIcon, RotateCcwIcon } from '@spree/dashboard-ui/icons'
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useCallback } from 'react'
@@ -27,6 +12,8 @@ import { useTranslation } from 'react-i18next'
 import { BranchPicker } from '../components/branch-picker'
 import { DebtorSheet, DueBadge, OverdueBadge } from '../components/debtor-sheet'
 import { FilterSelect } from '../components/filter-select'
+import { PillTabs } from '../components/pill-tabs'
+import { ModelCard } from '../components/setup/model-ui'
 import {
   debtorList,
   fetchReceivables,
@@ -68,10 +55,7 @@ export function ReceivablesPage({ view }: { view: View }) {
       />
       {branchId ? (
         <Receivables key={`${branchId}:${view}`} branchId={branchId} view={view}>
-          <PageTabs
-            className="overflow-x-auto"
-            tabs={tabs.map((tab) => ({ ...tab, to: tab.to as PageTab['to'] & string }))}
-          />
+          <PillTabs tabs={tabs} />
         </Receivables>
       ) : (
         <p className="text-muted-foreground">{t('pageChooseBranchHint')}</p>
@@ -127,29 +111,22 @@ function Receivables({
           </Button>
         </div>
       ) : totals ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              {t('receivablesTotal')}: {formatMoney(totals.balance, currency)} ·{' '}
-              {t('receivablesOverdue')}: {formatMoney(totals.overdue, currency)}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <dl
-              className="grid grid-cols-2 gap-3 sm:grid-cols-5"
-              aria-label={t('receivablesAging')}
-            >
-              {AGING.map((bucket) => (
-                <div key={bucket}>
-                  <dt className="text-sm text-muted-foreground">{t(`aging_${bucket}`)}</dt>
-                  <dd className="font-medium tabular-nums">
-                    {formatMoney(totals[bucket], currency)}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-          </CardContent>
-        </Card>
+        <ModelCard
+          title={`${t('receivablesTotal')}: ${formatMoney(totals.balance, currency)} · ${t('receivablesOverdue')}: ${formatMoney(totals.overdue, currency)}`}
+          id="receivables-aging"
+          icon={<HandCoinsIcon />}
+        >
+          <dl className="grid grid-cols-2 gap-3 sm:grid-cols-5" aria-label={t('receivablesAging')}>
+            {AGING.map((bucket) => (
+              <div key={bucket}>
+                <dt className="text-sm text-muted-foreground">{t(`aging_${bucket}`)}</dt>
+                <dd className="font-medium tabular-nums">
+                  {formatMoney(totals[bucket], currency)}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </ModelCard>
       ) : null}
       {children}
       {view === 'customers' ? (

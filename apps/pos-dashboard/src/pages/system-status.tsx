@@ -1,10 +1,12 @@
 import { describeFailure } from '@parkviet/pos-shared/request-failure'
 import { PageHeader } from '@spree/dashboard-core'
-import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from '@spree/dashboard-ui'
+import { Badge, Button } from '@spree/dashboard-ui'
+import { GlobeIcon, ShieldCheckIcon } from '@spree/dashboard-ui/icons'
 import type { TFunction } from 'i18next'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { PushRelayCard } from '../components/push-relay-card'
+import { ModelCard } from '../components/setup/model-ui'
 import { type SystemStatus, useSystemStatus } from '../hooks/use-system-status'
 
 // A nightly backup older than this needs a look (one missed night plus slack).
@@ -59,30 +61,25 @@ function ServerCard({ data }: { data: SystemStatus }) {
   const { t } = useTranslation()
   const url = data.server.public_base_url
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('systemStatus.server')}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
-          <Field label={t('systemStatus.publicUrl')}>
-            {url ? (
-              <code data-testid="system-public-url">{url}</code>
-            ) : (
-              <span data-testid="system-public-url">{t('systemStatus.publicUrlUnset')}</span>
-            )}
-          </Field>
-          <Field label={t('systemStatus.tlsMode')}>
-            {t(`systemStatus.tls.${data.server.tls_mode}`)}
-          </Field>
-          <Field label={t('systemStatus.version')}>
-            {data.version.app} · Spree {data.version.spree} · Rails {data.version.rails}
-          </Field>
-          <Field label={t('systemStatus.generatedAt')}>{formatTime(data.generated_at)}</Field>
-        </dl>
-        <p className="mt-4 text-sm text-muted-foreground">{t('systemStatus.repairNote')}</p>
-      </CardContent>
-    </Card>
+    <ModelCard title={t('systemStatus.server')} id="system-server" icon={<GlobeIcon />}>
+      <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+        <Field label={t('systemStatus.publicUrl')}>
+          {url ? (
+            <code data-testid="system-public-url">{url}</code>
+          ) : (
+            <span data-testid="system-public-url">{t('systemStatus.publicUrlUnset')}</span>
+          )}
+        </Field>
+        <Field label={t('systemStatus.tlsMode')}>
+          {t(`systemStatus.tls.${data.server.tls_mode}`)}
+        </Field>
+        <Field label={t('systemStatus.version')}>
+          {data.version.app} · Spree {data.version.spree} · Rails {data.version.rails}
+        </Field>
+        <Field label={t('systemStatus.generatedAt')}>{formatTime(data.generated_at)}</Field>
+      </dl>
+      <p className="text-sm text-muted-foreground">{t('systemStatus.repairNote')}</p>
+    </ModelCard>
   )
 }
 
@@ -165,30 +162,25 @@ function HealthCard({ data }: { data: SystemStatus }) {
     },
   ]
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('systemStatus.health')}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ul className="divide-y">
-          {rows.map((row) => (
-            <li
-              key={row.key}
-              data-testid={`system-${row.key}`}
-              className="flex flex-wrap items-center justify-between gap-2 py-3"
-            >
-              <div className="min-w-0">
-                <div className="font-medium">{t(`systemStatus.rows.${row.key}`)}</div>
-                <div className="text-sm text-muted-foreground break-words">{row.value}</div>
-              </div>
-              <Badge variant={row.ok ? 'secondary' : 'warning'}>
-                {row.ok ? t('systemStatus.ok') : t('systemStatus.attention')}
-              </Badge>
-            </li>
-          ))}
-        </ul>
-      </CardContent>
-    </Card>
+    <ModelCard title={t('systemStatus.health')} id="system-health" icon={<ShieldCheckIcon />}>
+      <ul className="divide-y">
+        {rows.map((row) => (
+          <li
+            key={row.key}
+            data-testid={`system-${row.key}`}
+            className="flex flex-wrap items-center justify-between gap-2 py-3"
+          >
+            <div className="min-w-0">
+              <div className="font-medium">{t(`systemStatus.rows.${row.key}`)}</div>
+              <div className="text-sm text-muted-foreground break-words">{row.value}</div>
+            </div>
+            <Badge variant={row.ok ? 'secondary' : 'warning'}>
+              {row.ok ? t('systemStatus.ok') : t('systemStatus.attention')}
+            </Badge>
+          </li>
+        ))}
+      </ul>
+    </ModelCard>
   )
 }
 

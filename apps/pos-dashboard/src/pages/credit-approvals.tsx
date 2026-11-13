@@ -21,11 +21,6 @@ import {
 import {
   Badge,
   Button,
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
   Dialog,
   DialogContent,
   DialogFooter,
@@ -37,12 +32,13 @@ import {
   Textarea,
   useConfirm,
 } from '@spree/dashboard-ui'
-import { CheckIcon, XIcon } from '@spree/dashboard-ui/icons'
+import { CheckIcon, ShieldCheckIcon, XIcon } from '@spree/dashboard-ui/icons'
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { type ReactNode, useEffect, useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { BranchPicker } from '../components/branch-picker'
+import { ModelCard } from '../components/setup/model-ui'
 import {
   type ApprovalDecision,
   fetchCreditRequests,
@@ -119,26 +115,20 @@ function Section({
   notice: Notice
   children: ReactNode
 }) {
+  const id = useId()
   return (
-    <section aria-label={title}>
-      <Card>
-        <CardHeader>
-          <CardTitle>{title}</CardTitle>
-          {hint && <CardDescription>{hint}</CardDescription>}
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {notice && (
-            <p
-              role={notice.failed ? 'alert' : 'status'}
-              className={notice.failed ? 'text-destructive' : 'text-muted-foreground'}
-            >
-              {notice.text}
-            </p>
-          )}
-          {children}
-        </CardContent>
-      </Card>
-    </section>
+    <ModelCard title={title} id={id} icon={<ShieldCheckIcon />}>
+      {hint ? <p className="text-sm text-muted-foreground">{hint}</p> : null}
+      {notice && (
+        <p
+          role={notice.failed ? 'alert' : 'status'}
+          className={notice.failed ? 'text-destructive' : 'text-muted-foreground'}
+        >
+          {notice.text}
+        </p>
+      )}
+      {children}
+    </ModelCard>
   )
 }
 

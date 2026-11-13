@@ -1,8 +1,10 @@
 import { describeFailure } from '@parkviet/pos-shared/request-failure'
-import { Button, Card, CardContent, CardHeader, CardTitle } from '@spree/dashboard-ui'
+import { Button } from '@spree/dashboard-ui'
+import { ShieldAlertIcon } from '@spree/dashboard-ui/icons'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { usePosSession } from '../hooks/use-pos-session'
+import { ModelCard } from './setup/model-ui'
 
 // Body of a store master-data page: waits for the session context, explains
 // a refusal, and shows the content only to store administration readers.
@@ -19,12 +21,9 @@ export function MasterState({ children }: { children: ReactNode }) {
     )
   if (!context.data?.administration?.read)
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('forbidden')}</CardTitle>
-        </CardHeader>
-        <CardContent>{t('adminAccessDenied')}</CardContent>
-      </Card>
+      <ModelCard title={t('forbidden')} id="master-forbidden" icon={<ShieldAlertIcon />}>
+        <p>{t('adminAccessDenied')}</p>
+      </ModelCard>
     )
   return <>{children}</>
 }

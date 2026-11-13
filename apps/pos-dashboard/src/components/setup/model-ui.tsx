@@ -59,18 +59,31 @@ export function ModelCard({
   children,
   id,
   icon,
+  action,
+  className,
+  testId,
 }: {
   title: string
   children: ReactNode
   id: string
   icon?: ReactNode
+  action?: ReactNode
+  className?: string
+  testId?: string
 }) {
   return (
-    <section className="flex flex-col gap-3" aria-labelledby={id}>
-      <SectionTitle id={id}>
-        {icon}
-        {title}
-      </SectionTitle>
+    <section
+      className={['flex flex-col gap-3', className].filter(Boolean).join(' ')}
+      aria-labelledby={id}
+      data-testid={testId}
+    >
+      <div className="flex min-h-8 flex-wrap items-center justify-between gap-2">
+        <SectionTitle id={id}>
+          {icon}
+          {title}
+        </SectionTitle>
+        {action ? <div className="shrink-0">{action}</div> : null}
+      </div>
       <Card>
         <CardContent>
           <div className="flex flex-col gap-4">{children}</div>

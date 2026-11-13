@@ -3,24 +3,9 @@ import type { PosModules } from '@parkviet/pos-shared/pos-modules'
 import { describeFailure } from '@parkviet/pos-shared/request-failure'
 import type { PosBranch } from '@parkviet/pos-shared/types/pos-context'
 import { PageHeader, usePermissions } from '@spree/dashboard-core'
-import {
-  ActiveBadge,
-  Button,
-  DropdownMenuItem,
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  useConfirm,
-} from '@spree/dashboard-ui'
+import { ActiveBadge, Button, DropdownMenuItem, useConfirm } from '@spree/dashboard-ui'
 import { BanIcon, RotateCcwIcon } from '@spree/dashboard-ui/icons'
-import {
-  Link,
-  Outlet,
-  useLocation,
-  useNavigate,
-  useParams,
-  useSearch,
-} from '@tanstack/react-router'
+import { Outlet, useNavigate, useParams, useSearch } from '@tanstack/react-router'
 import { createContext, useContext, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useBranchModules } from '../hooks/use-branch-modules'
@@ -30,6 +15,7 @@ import { useSession } from '../hooks/use-session'
 import { useBranches, useLocationOptions } from '../hooks/use-topology'
 import { branchTabs, canManageBranch, hasCapability } from '../lib/pos-access'
 import { BranchFormDialog } from './branch-form-dialog'
+import { PillTabs } from './pill-tabs'
 
 export type BranchScope = {
   branch: PosBranch
@@ -110,32 +96,10 @@ export function BranchDetailLayout() {
           scope={scope}
           recoverable={hasCapability(posAccess, 'pos.topology.recover')}
         />
-        <BranchTabs tabs={tabs} />
+        <PillTabs tabs={tabs} />
         <Outlet />
       </div>
     </BranchContext.Provider>
-  )
-}
-
-// Pill tabs, the same control as a Spree settings page. Each tab is still a
-// link, so the address and the active pill follow the branch URL. The strip
-// scrolls inside itself when the labels are wider than the page.
-function BranchTabs({ tabs }: { tabs: { key: string; label: string; to: string }[] }) {
-  const { pathname } = useLocation()
-  const current = tabs.find((tab) => pathname === tab.to)?.key ?? tabs[0]?.key
-  if (!current) return null
-  return (
-    <div className="w-full min-w-0 overflow-x-auto">
-      <Tabs value={current}>
-        <TabsList>
-          {tabs.map((tab) => (
-            <TabsTrigger key={tab.key} value={tab.key} render={<Link to={tab.to as never} />}>
-              {tab.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
-    </div>
   )
 }
 

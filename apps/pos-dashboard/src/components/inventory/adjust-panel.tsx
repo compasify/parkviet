@@ -4,18 +4,15 @@ import {
   type PosAdjustment,
 } from '@parkviet/pos-shared/traceability'
 import { defineTable, ResourceTable, resourceSearchSchema } from '@spree/dashboard-core'
+import { Badge, Button, ResourceNameCell, RowActions } from '@spree/dashboard-ui'
 import {
-  Badge,
-  Button,
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  ResourceNameCell,
-  RowActions,
-} from '@spree/dashboard-ui'
-import { BanIcon, CheckIcon, PlayIcon, RotateCcwIcon } from '@spree/dashboard-ui/icons'
+  BanIcon,
+  CheckIcon,
+  ClipboardCheckIcon,
+  PlayIcon,
+  RotateCcwIcon,
+  SlidersHorizontalIcon,
+} from '@spree/dashboard-ui/icons'
 import { useQueryClient } from '@tanstack/react-query'
 import { useSearch } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
@@ -31,6 +28,7 @@ import {
 import { useSession } from '../../hooks/use-session'
 import { formatInstant } from '../../lib/format-time'
 import { hiddenTimestamps } from '../../tables/columns'
+import { ModelCard } from '../setup/model-ui'
 import {
   adjustmentCommandBody,
   type CountDraft,
@@ -106,145 +104,144 @@ function CountForm({
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('inventoryTab_adjust')}</CardTitle>
-        <CardDescription>{t('inventoryAdjustHint')}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form
-          className="max-w-3xl space-y-4"
-          aria-label={t('inventoryTab_adjust')}
-          aria-busy={busy}
-          onSubmit={(event) => {
-            event.preventDefault()
-            if (locked || !variant) return
-            const built = countBody(variant, reason, counted, missing, found)
-            if ('error' in built) {
-              setError(t(built.error, built.options))
-              return
-            }
+    <ModelCard
+      title={t('inventoryTab_adjust')}
+      id="inventory-adjust"
+      icon={<SlidersHorizontalIcon />}
+    >
+      <p className="text-sm text-muted-foreground">{t('inventoryAdjustHint')}</p>
+      <form
+        className="max-w-3xl space-y-4"
+        aria-label={t('inventoryTab_adjust')}
+        aria-busy={busy}
+        onSubmit={(event) => {
+          event.preventDefault()
+          if (locked || !variant) return
+          const built = countBody(variant, reason, counted, missing, found)
+          if ('error' in built) {
+            setError(t(built.error, built.options))
+            return
+          }
+          setError('')
+          setResult(null)
+          command.run(
+            {
+              branchId: scope.branchId,
+              action: 'adjust',
+              path: '/pos/inventory/adjustments',
+              body: {
+                branch_id: scope.branchId,
+                variant_id: variant.variant_id,
+                reason: reason.trim(),
+                ...built.body,
+              },
+            },
+            {
+              onSuccess: (adjustment) => {
+                setResult(adjustment)
+                setCounted({})
+                setMissing('')
+                setFound('')
+                setReason('')
+              },
+              onError: (failure) => setError(describeInventoryFailure(failure, t)),
+            },
+          )
+        }}
+      >
+        <VariantsState query={variants} empty={variants.isSuccess && tracked.length === 0} />
+        <VariantField
+          variants={tracked}
+          value={variantId}
+          disabled={locked}
+          onChange={(value) => {
+            setVariantId(value)
             setError('')
-            setResult(null)
-            command.run(
-              {
-                branchId: scope.branchId,
-                action: 'adjust',
-                path: '/pos/inventory/adjustments',
-                body: {
-                  branch_id: scope.branchId,
-                  variant_id: variant.variant_id,
-                  reason: reason.trim(),
-                  ...built.body,
-                },
-              },
-              {
-                onSuccess: (adjustment) => {
-                  setResult(adjustment)
-                  setCounted({})
-                  setMissing('')
-                  setFound('')
-                  setReason('')
-                },
-                onError: (failure) => setError(describeInventoryFailure(failure, t)),
-              },
-            )
+            setCounted({})
+            setQ('')
           }}
-        >
-          <VariantsState query={variants} empty={variants.isSuccess && tracked.length === 0} />
-          <VariantField
-            variants={tracked}
-            value={variantId}
-            disabled={locked}
-            onChange={(value) => {
-              setVariantId(value)
-              setError('')
-              setCounted({})
-              setQ('')
-            }}
-          />
-          {variant?.tracked_mode === 'lot' && (
-            <div className="space-y-3">
-              <LotFilter
-                value={q}
-                onChange={setQ}
-                disabled={locked}
-                truncated={(lots.data?.meta?.count ?? 0) > lotRows.length}
-              />
-              <VariantsState query={lots} empty={lots.isSuccess && lotRows.length === 0} />
-              {lotRows.length > 0 && (
-                <ul className="divide-y rounded-md border" aria-label={t('inventoryLotList')}>
-                  {lotRows.map((lot) => (
-                    <li key={lot.id} className="grid gap-3 p-3 sm:grid-cols-2">
+        />
+        {variant?.tracked_mode === 'lot' && (
+          <div className="space-y-3">
+            <LotFilter
+              value={q}
+              onChange={setQ}
+              disabled={locked}
+              truncated={(lots.data?.meta?.count ?? 0) > lotRows.length}
+            />
+            <VariantsState query={lots} empty={lots.isSuccess && lotRows.length === 0} />
+            {lotRows.length > 0 && (
+              <ul className="divide-y rounded-md border" aria-label={t('inventoryLotList')}>
+                {lotRows.map((lot) => (
+                  <li key={lot.id} className="grid gap-3 p-3 sm:grid-cols-2">
+                    <TextField
+                      numeric
+                      label={t('inventoryCountLot', {
+                        code: lot.lot_code,
+                        onHand: quantity(lot.on_hand, lot.base_unit),
+                      })}
+                      value={counted[lot.id]?.counted ?? ''}
+                      disabled={locked}
+                      onChange={(value) => setCount(lot.id, 'counted', value)}
+                    />
+                    {lot.quarantined_quantity > 0 && (
                       <TextField
                         numeric
-                        label={t('inventoryCountLot', {
+                        label={t('inventoryCountQuarantined', {
                           code: lot.lot_code,
-                          onHand: quantity(lot.on_hand, lot.base_unit),
+                          held: quantity(lot.quarantined_quantity, lot.base_unit),
                         })}
-                        value={counted[lot.id]?.counted ?? ''}
+                        value={counted[lot.id]?.quarantined ?? ''}
                         disabled={locked}
-                        onChange={(value) => setCount(lot.id, 'counted', value)}
+                        onChange={(value) => setCount(lot.id, 'quarantined', value)}
                       />
-                      {lot.quarantined_quantity > 0 && (
-                        <TextField
-                          numeric
-                          label={t('inventoryCountQuarantined', {
-                            code: lot.lot_code,
-                            held: quantity(lot.quarantined_quantity, lot.base_unit),
-                          })}
-                          value={counted[lot.id]?.quarantined ?? ''}
-                          disabled={locked}
-                          onChange={(value) => setCount(lot.id, 'quarantined', value)}
-                        />
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          )}
-          {variant?.tracked_mode === 'serial' && (
-            <div className="grid gap-4 sm:grid-cols-2">
-              <SerialTextarea
-                label={t('inventoryMissingSerials')}
-                value={missing}
-                onChange={setMissing}
-                disabled={locked}
-                rows={3}
-              />
-              <SerialTextarea
-                label={t('inventoryFoundSerials')}
-                value={found}
-                onChange={setFound}
-                disabled={locked}
-                rows={3}
-              />
-            </div>
-          )}
-          <TextField
-            label={t('inventoryReason')}
-            value={reason}
-            maxLength={200}
-            disabled={locked}
-            onChange={setReason}
-          />
-          <FormError text={error} />
-          <CommandCheck command={command} />
-          {result && (
-            <p role="status" className="text-sm text-muted-foreground">
-              {t(`inventoryAdjustmentResult_${result.status}`, {
-                name: result.name,
-                delta: quantity(result.delta, variant?.base_unit),
-              })}
-            </p>
-          )}
-          <Button type="submit" disabled={locked || !variant}>
-            {busy ? t('waiting') : t('inventoryAdjustSubmit')}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+        {variant?.tracked_mode === 'serial' && (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <SerialTextarea
+              label={t('inventoryMissingSerials')}
+              value={missing}
+              onChange={setMissing}
+              disabled={locked}
+              rows={3}
+            />
+            <SerialTextarea
+              label={t('inventoryFoundSerials')}
+              value={found}
+              onChange={setFound}
+              disabled={locked}
+              rows={3}
+            />
+          </div>
+        )}
+        <TextField
+          label={t('inventoryReason')}
+          value={reason}
+          maxLength={200}
+          disabled={locked}
+          onChange={setReason}
+        />
+        <FormError text={error} />
+        <CommandCheck command={command} />
+        {result && (
+          <p role="status" className="text-sm text-muted-foreground">
+            {t(`inventoryAdjustmentResult_${result.status}`, {
+              name: result.name,
+              delta: quantity(result.delta, variant?.base_unit),
+            })}
+          </p>
+        )}
+        <Button type="submit" disabled={locked || !variant}>
+          {busy ? t('waiting') : t('inventoryAdjustSubmit')}
+        </Button>
+      </form>
+    </ModelCard>
   )
 }
 
@@ -373,71 +370,70 @@ function PendingAdjustments({
 
   return (
     <section aria-label={t('inventoryPendingAdjustments')}>
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('inventoryPendingAdjustments')}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <NoticeLine notice={notice} />
-          {!canceling && <FormError text={error} />}
-          {!canceling && <CommandCheck command={command} />}
-          <ResourceTable<PosAdjustment>
-            tableKey={tableKey}
-            hideHeader
-            queryKey={['pos', 'inventory', 'adjustments', scope.branchId, 'pending']}
-            queryFn={async (params: Record<string, unknown>) => {
-              const page = await fetchAdjustments(scope.branchId, 'pending_approval', params)
-              waiting.current = page.data.some((row) => row.status === 'pending_approval')
-              return page
-            }}
-            searchParams={search}
-            actions={
-              <Button variant="outline" onClick={() => void refresh()}>
-                <RotateCcwIcon className="size-4" />
-                {t('inventoryRefresh')}
-              </Button>
-            }
-            rowActions={(row) => {
-              const actions = adjustmentActions(row, scope.staffId, scope.capabilities)
-              return (
-                <RowActions
-                  actions={[
-                    {
-                      key: 'approve',
-                      label: t('inventoryApprove'),
-                      icon: <CheckIcon className="size-4" />,
-                      visible: actions.approve,
-                      disabled: locked,
-                      onSelect: () => act(row, 'approve'),
+      <ModelCard
+        title={t('inventoryPendingAdjustments')}
+        id="inventory-pending-adjustments"
+        icon={<ClipboardCheckIcon />}
+      >
+        <NoticeLine notice={notice} />
+        {!canceling && <FormError text={error} />}
+        {!canceling && <CommandCheck command={command} />}
+        <ResourceTable<PosAdjustment>
+          tableKey={tableKey}
+          hideHeader
+          queryKey={['pos', 'inventory', 'adjustments', scope.branchId, 'pending']}
+          queryFn={async (params: Record<string, unknown>) => {
+            const page = await fetchAdjustments(scope.branchId, 'pending_approval', params)
+            waiting.current = page.data.some((row) => row.status === 'pending_approval')
+            return page
+          }}
+          searchParams={search}
+          actions={
+            <Button variant="outline" onClick={() => void refresh()}>
+              <RotateCcwIcon className="size-4" />
+              {t('inventoryRefresh')}
+            </Button>
+          }
+          rowActions={(row) => {
+            const actions = adjustmentActions(row, scope.staffId, scope.capabilities)
+            return (
+              <RowActions
+                actions={[
+                  {
+                    key: 'approve',
+                    label: t('inventoryApprove'),
+                    icon: <CheckIcon className="size-4" />,
+                    visible: actions.approve,
+                    disabled: locked,
+                    onSelect: () => act(row, 'approve'),
+                  },
+                  {
+                    key: 'apply',
+                    label: t('inventoryApply'),
+                    icon: <PlayIcon className="size-4" />,
+                    visible: actions.apply,
+                    disabled: locked,
+                    onSelect: () => act(row, 'apply'),
+                  },
+                  {
+                    key: 'cancel',
+                    label: t('inventoryCancelAdjustment'),
+                    icon: <BanIcon className="size-4" />,
+                    visible: actions.cancel,
+                    destructive: true,
+                    disabled: locked,
+                    onSelect: () => {
+                      setError('')
+                      setNotice(null)
+                      setCanceling(row)
                     },
-                    {
-                      key: 'apply',
-                      label: t('inventoryApply'),
-                      icon: <PlayIcon className="size-4" />,
-                      visible: actions.apply,
-                      disabled: locked,
-                      onSelect: () => act(row, 'apply'),
-                    },
-                    {
-                      key: 'cancel',
-                      label: t('inventoryCancelAdjustment'),
-                      icon: <BanIcon className="size-4" />,
-                      visible: actions.cancel,
-                      destructive: true,
-                      disabled: locked,
-                      onSelect: () => {
-                        setError('')
-                        setNotice(null)
-                        setCanceling(row)
-                      },
-                    },
-                  ]}
-                />
-              )
-            }}
-          />
-        </CardContent>
-      </Card>
+                  },
+                ]}
+              />
+            )
+          }}
+        />
+      </ModelCard>
       {canceling && (
         <ReasonDialog
           title={t('inventoryCancelTitle', { name: canceling.name })}

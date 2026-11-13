@@ -6,21 +6,19 @@ import {
   ActiveBadge,
   Badge,
   Button,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
   Checkbox,
   DialogFooter,
   Field,
   FieldLabel,
   useConfirm,
 } from '@spree/dashboard-ui'
+import { BookOpenIcon } from '@spree/dashboard-ui/icons'
 import { type ReactNode, useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { BranchPicker } from '../components/branch-picker'
 import { type ProductHit, ProductSearch } from '../components/product-search'
 import { RecipeEditor } from '../components/recipe-editor'
+import { ModelCard } from '../components/setup/model-ui'
 import { TopologyDialog } from '../components/topology-dialog'
 import { Input, TopologyField, TopologySelect } from '../components/topology-fields'
 import {
@@ -490,14 +488,11 @@ function Section({
   action?: ReactNode
   children: ReactNode
 }) {
+  const id = useId()
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between gap-2">
-        <CardTitle>{title}</CardTitle>
-        {action}
-      </CardHeader>
-      <CardContent>{children}</CardContent>
-    </Card>
+    <ModelCard title={title} id={id} icon={<BookOpenIcon />} action={action}>
+      {children}
+    </ModelCard>
   )
 }
 

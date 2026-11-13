@@ -99,14 +99,14 @@ test('reports keep sales, receipts and drawer cash apart and export a CSV', asyn
   await page.getByText('Chỉ ca của tôi').click();
   await expect.poll(() => lastReport(state, 'sales')?.cashier_id).toBe('staff_admin');
 
-  await page.getByRole('link', { name: 'Thực thu' }).click();
+  await page.getByRole('tab', { name: 'Thực thu' }).click();
   await expect(page).toHaveURL(/\/store_1\/reports\/receipts/);
   await expect(page.getByRole('table').last()).toContainText('Ngoài luồng');
   await expect(page.getByRole('table').last()).toContainText('Chuyển khoản');
   expect(lastReport(state, 'receipts')).toMatchObject({ cashier_id: 'staff_admin' });
   expect(lastReport(state, 'receipts')?.section).toBeUndefined();
 
-  await page.getByRole('link', { name: 'Tiền mặt trong két' }).click();
+  await page.getByRole('tab', { name: 'Tiền mặt trong két' }).click();
   const shifts = page.getByRole('table', { name: 'Tóm tắt theo ca' });
   await expect(shifts).toContainText('Lan');
   await expect(shifts).toContainText('Chưa đếm');
@@ -120,15 +120,15 @@ test('reports keep sales, receipts and drawer cash apart and export a CSV', asyn
   await page.getByRole('option', { name: /^Mai · Q2/ }).click();
   await expect.poll(() => lastReport(state, 'cashbook')?.shift_id).toBe('sh_s1');
 
-  await page.locator('#main-content').getByRole('link', { name: 'Công nợ', exact: true }).click();
+  await page.locator('#main-content').getByRole('tab', { name: 'Công nợ', exact: true }).click();
   await expect(page.getByLabel('Từ ngày')).toHaveCount(0);
   await expect(page.getByText('Không có dữ liệu cho bộ lọc này.')).toBeVisible();
   expect(lastReport(state, 'receivables')?.from).toBeUndefined();
 
-  await page.getByRole('link', { name: 'Đóng ca' }).click();
+  await page.getByRole('tab', { name: 'Đóng ca' }).click();
   await expect(page.getByRole('table').last()).toContainText('Thừa 100.000 ₫');
 
-  await page.getByRole('link', { name: 'Doanh số' }).click();
+  await page.getByRole('tab', { name: 'Doanh số' }).click();
   await page.getByRole('button', { name: 'Xuất CSV' }).click();
   await expect(page.getByText('Đã nhận yêu cầu xuất')).toBeVisible();
   const exported = state.writes.find((write) => write.path === '/pos/exports');

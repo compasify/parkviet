@@ -1,19 +1,21 @@
 import { canHandleDeliveries } from '@parkviet/pos-shared/deliveries'
 import { describeFailure } from '@parkviet/pos-shared/request-failure'
 import { PageHeader, usePermissions } from '@spree/dashboard-core'
+import { Badge, Button } from '@spree/dashboard-ui'
 import {
-  Badge,
-  Button,
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@spree/dashboard-ui'
+  ArrowLeftRightIcon,
+  BanknoteIcon,
+  ClockIcon,
+  HandCoinsIcon,
+  RotateCcwIcon,
+  TruckIcon,
+} from '@spree/dashboard-ui/icons'
 import type { UseQueryResult } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
+import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { BranchPicker } from '../components/branch-picker'
+import { ModelCard } from '../components/setup/model-ui'
 import {
   type AttentionCount,
   useCashRequestsAttention,
@@ -31,6 +33,7 @@ type Item = {
   key: string
   titleKey: string
   hintKey: string
+  icon: ReactNode
   visible: boolean
   query: UseQueryResult<AttentionCount | number>
   // Dashboard path below the store; items whose screen is not here yet have none.
@@ -59,6 +62,7 @@ export function HomePage() {
       key: 'funds',
       titleKey: 'fundsAttentionTitle',
       hintKey: 'attention.fundsHint',
+      icon: <BanknoteIcon />,
       visible: funds,
       query: useFundsAttention(branchId, funds),
       to: '/funds/attention',
@@ -67,6 +71,7 @@ export function HomePage() {
       key: 'credit',
       titleKey: 'creditApprovalsTitle',
       hintKey: 'attention.creditHint',
+      icon: <HandCoinsIcon />,
       visible: credit,
       query: useCreditRequestsAttention(branchId, credit),
       to: '/credit-approvals',
@@ -75,6 +80,7 @@ export function HomePage() {
       key: 'cash',
       titleKey: 'cashRequestsTitle',
       hintKey: 'attention.cashHint',
+      icon: <ArrowLeftRightIcon />,
       visible: cash,
       query: useCashRequestsAttention(branchId, data?.staff.id ?? null, cash),
       to: '/shifts',
@@ -83,6 +89,7 @@ export function HomePage() {
       key: 'shifts',
       titleKey: 'attention.openShifts',
       hintKey: 'attention.openShiftsHint',
+      icon: <ClockIcon />,
       visible: shifts,
       query: useOpenShiftsAttention(branchId, data?.shift?.id ?? null, shifts),
       to: '/shifts',
@@ -91,6 +98,7 @@ export function HomePage() {
       key: 'deliveries',
       titleKey: 'attention.deliveries',
       hintKey: 'attention.deliveriesHint',
+      icon: <TruckIcon />,
       visible: deliveries,
       query: usePendingDeliveryCount(branchId, deliveries),
       to: '/deliveries',
@@ -99,6 +107,7 @@ export function HomePage() {
       key: 'refunds',
       titleKey: 'ordersStatus_refund_pending',
       hintKey: 'attention.refundsHint',
+      icon: <RotateCcwIcon />,
       visible: orders,
       query: useRefundPendingCount(branchId, orders),
       to: '/orders?status=refund_pending',
@@ -121,9 +130,7 @@ export function HomePage() {
       ) : !branchId ? (
         <p className="text-muted-foreground">{t('pageChooseBranchHint')}</p>
       ) : items.length === 0 ? (
-        <Card>
-          <CardContent className="pt-6 text-muted-foreground">{t('attention.nothing')}</CardContent>
-        </Card>
+        <p className="text-muted-foreground">{t('attention.nothing')}</p>
       ) : (
         <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-label={t('attention.title')}>
           {items.map((item) => (
@@ -145,12 +152,9 @@ function AttentionCard({ item, storeId }: { item: Item; storeId: string }) {
   const more = typeof value === 'object' && value.more
   const title = t(item.titleKey)
   return (
-    <Card className="h-full" aria-label={title}>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-        <CardDescription>{t(item.hintKey)}</CardDescription>
-      </CardHeader>
-      <CardContent className="flex items-center justify-between gap-3">
+    <ModelCard title={title} id={`attention-${item.key}`} icon={item.icon} className="h-full">
+      <p className="text-sm text-muted-foreground">{t(item.hintKey)}</p>
+      <div className="flex items-center justify-between gap-3">
         {query.isError ? (
           <p role="alert" className="text-destructive">
             {describeFailure(query.error, t)}
@@ -172,7 +176,7 @@ function AttentionCard({ item, storeId }: { item: Item; storeId: string }) {
             <Link to={`/${storeId}${item.to}` as string}>{t('attention.open')}</Link>
           </Button>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </ModelCard>
   )
 }

@@ -58,7 +58,7 @@ test('a resolver reads the ledger, filters what needs attention and confirms a p
   await expect(table.getByRole('row').filter({ hasText: 'REF-posfunds_2' })).toContainText('Cần kiểm tra');
   await page.screenshot({ path: testInfo.outputPath('funds.png'), fullPage: true });
 
-  await page.getByRole('link', { name: 'Cần chú ý' }).click();
+  await page.getByRole('tab', { name: 'Cần chú ý' }).click();
   await expect(page).toHaveURL(/\/store_1\/funds\/attention/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Khoản thu cần chú ý');
   await expect(table.getByRole('row')).toHaveCount(2);
@@ -85,7 +85,7 @@ test('a resolver reads the ledger, filters what needs attention and confirms a p
 test('a collector reads the ledger without the attention view or payout actions', async ({ page }) => {
   await install(page, ['pos.payment.collect']);
   await page.goto('/store_1/funds?fundsId=posfunds_1');
-  await expect(page.getByRole('link', { name: 'Cần chú ý' })).toHaveCount(0);
+  await expect(page.getByRole('tab', { name: 'Cần chú ý' })).toHaveCount(0);
   const sheet = page.getByRole('dialog');
   await expect(sheet).toContainText('REF-posfunds_1');
   await expect(sheet.getByRole('button', { name: 'Giữ tiền để hoàn' })).toHaveCount(0);

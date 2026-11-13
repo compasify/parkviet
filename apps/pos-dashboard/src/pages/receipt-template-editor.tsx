@@ -37,13 +37,17 @@ import {
   Button,
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
   Input,
   Label,
 } from '@spree/dashboard-ui'
+import {
+  ArrowLeftIcon,
+  CheckIcon,
+  EyeIcon,
+  HistoryIcon,
+  PrinterIcon,
+} from '@spree/dashboard-ui/icons'
 import { Link, useBlocker, useParams } from '@tanstack/react-router'
-import { ArrowLeft, Check as CheckIcon, History, Printer } from 'lucide-react'
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { BlockProblems } from '../components/receipt-template/block-editor'
@@ -59,6 +63,7 @@ import {
   usePreviewData,
 } from '../components/receipt-template/template-preview'
 import { VersionDrawer } from '../components/receipt-template/version-drawer'
+import { ModelCard } from '../components/setup/model-ui'
 import { useBranchSelection } from '../hooks/use-branch-selection'
 import { usePosContext } from '../hooks/use-pos-context'
 import {
@@ -191,7 +196,7 @@ export function ReceiptTemplateEditorPage() {
       <header className="grid gap-2">
         <Button asChild variant="ghost" className="w-fit">
           <Link to="/$storeId/settings/receipt-templates" params={{ storeId }}>
-            <ArrowLeft />
+            <ArrowLeftIcon />
             {t('receiptTemplates.backToList')}
           </Link>
         </Button>
@@ -550,7 +555,7 @@ function TemplateEditor({
               disabled={testPrinting}
               onClick={() => setTestPrinting(true)}
             >
-              <Printer />
+              <PrinterIcon />
               {t('receiptTemplates.testPrint')}
             </Button>
             {!readOnly ? (
@@ -561,7 +566,7 @@ function TemplateEditor({
                   disabled={busy}
                   onClick={() => setHistory(true)}
                 >
-                  <History />
+                  <HistoryIcon />
                   {t('receiptTemplates.history.open')}
                 </Button>
                 <Button type="button" variant="outline" disabled={busy} onClick={loadDefaults}>
@@ -896,11 +901,13 @@ function TemplateEditor({
             </p>
           ) : null}
         </fieldset>
-        <Card className={`${pane === 'edit' ? 'hidden lg:flex' : ''} min-w-0 lg:sticky lg:top-4`}>
-          <CardHeader>
-            <CardTitle>{t('receiptTemplates.preview.title')}</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-4">
+        <ModelCard
+          title={t('receiptTemplates.preview.title')}
+          id="receipt-preview"
+          icon={<EyeIcon />}
+          className={`${pane === 'edit' ? 'hidden lg:flex' : ''} min-w-0 lg:sticky lg:top-4`}
+        >
+          <div className="grid gap-4">
             <PreviewControls
               documentType={type}
               source={source}
@@ -924,8 +931,8 @@ function TemplateEditor({
               </small>
             ) : null}
             <TemplatePreview config={config} data={preview.data} paper={draft.paper} markOverflow />
-          </CardContent>
-        </Card>
+          </div>
+        </ModelCard>
       </div>
       {testDocument ? (
         <div className="pointer-events-none fixed -left-[10000px] top-0" aria-hidden="true">

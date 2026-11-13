@@ -1,8 +1,9 @@
 import { formatMoney } from '@parkviet/pos-shared/money'
 import { orderSourceKey, orderSourceRows } from '@parkviet/pos-shared/order-source'
 import type { ReportRow } from '@parkviet/pos-shared/reports'
-import { Button, Card, CardContent, CardHeader, CardTitle } from '@spree/dashboard-ui'
-import type { ReactNode } from 'react'
+import { Button } from '@spree/dashboard-ui'
+import { ChartColumnIcon } from '@spree/dashboard-ui/icons'
+import { type ReactNode, useId } from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatInstant } from '../../lib/format-time'
 import {
@@ -17,6 +18,7 @@ import {
   summaryEntries,
   TIME_COLUMNS,
 } from '../../lib/report-table'
+import { ModelCard } from '../setup/model-ui'
 import { VarianceText } from '../shift-close-dialog'
 
 const TH = 'px-3 py-2 text-left font-medium text-muted-foreground'
@@ -51,13 +53,11 @@ export function ReportCell({
 }
 
 function SummaryCard({ title, children }: { title: string; children: ReactNode }) {
+  const id = useId()
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-      </CardHeader>
-      <CardContent>{children}</CardContent>
-    </Card>
+    <ModelCard title={title} id={id} icon={<ChartColumnIcon />}>
+      {children}
+    </ModelCard>
   )
 }
 

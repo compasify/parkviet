@@ -12,7 +12,14 @@ import {
   WIDE_PAPERS,
 } from '@parkviet/pos-shared/receipt-template/validate'
 import { Button } from '@spree/dashboard-ui'
-import { ArrowDown, ArrowUp, GripVertical, Lock, Plus, Trash2 } from 'lucide-react'
+import {
+  GripVerticalIcon,
+  LockIcon,
+  MoveDownIcon,
+  MoveUpIcon,
+  PlusIcon,
+  Trash2Icon,
+} from '@spree/dashboard-ui/icons'
 import { type KeyboardEvent, type PointerEvent, useEffect, useId, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { BlockEditor, type BlockProblems } from './block-editor'
@@ -192,7 +199,7 @@ export function BlockList({
       key={text}
       className="flex items-start gap-2 rounded-lg border border-dashed bg-muted/40 p-3 text-sm text-muted-foreground"
     >
-      <Lock className="mt-0.5 size-4 shrink-0" />
+      <LockIcon className="mt-0.5 size-4 shrink-0" />
       <span>{text}</span>
       <small className="ml-auto">{t('receiptTemplates.locked')}</small>
     </li>
@@ -239,7 +246,7 @@ export function BlockList({
                       if (grabbed && refocus.current?.key !== item.key) setGrab(null)
                     }}
                   >
-                    <GripVertical />
+                    <GripVerticalIcon />
                   </Button>
                 ) : null}
                 <strong className="mr-auto text-sm">{position}</strong>
@@ -254,7 +261,7 @@ export function BlockList({
                       aria-label={t('receiptTemplates.moveUp', { name: position })}
                       onClick={() => move(item.key, index - 1, 'up')}
                     >
-                      <ArrowUp />
+                      <MoveUpIcon />
                     </Button>
                     <Button
                       type="button"
@@ -265,7 +272,7 @@ export function BlockList({
                       aria-label={t('receiptTemplates.moveDown', { name: position })}
                       onClick={() => move(item.key, index + 1, 'down')}
                     >
-                      <ArrowDown />
+                      <MoveDownIcon />
                     </Button>
                     <Button
                       type="button"
@@ -276,7 +283,7 @@ export function BlockList({
                       aria-label={t('receiptTemplates.removeBlock', { name: position })}
                       onClick={() => onChange(blocks.filter((other) => other.key !== item.key))}
                     >
-                      <Trash2 />
+                      <Trash2Icon />
                     </Button>
                   </div>
                 ) : null}
@@ -332,7 +339,7 @@ export function BlockList({
               onChange([...blocks, { key: crypto.randomUUID(), block: newBlock(addType) }])
             }
           >
-            <Plus />
+            <PlusIcon />
             {t(`receiptTemplates.addBlock.${place}`)}
           </Button>
           {full ? <small>{t('receiptTemplates.blocksFull', { count: MAX_BLOCKS })}</small> : null}

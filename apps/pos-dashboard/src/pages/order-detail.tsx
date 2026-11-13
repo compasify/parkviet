@@ -10,18 +10,18 @@ import {
 } from '@parkviet/pos-shared/returns'
 import { formatExpiry, type OrderLineTrace } from '@parkviet/pos-shared/traceability'
 import { PageHeader } from '@spree/dashboard-core'
+import { Badge, Button, ResourceLayout } from '@spree/dashboard-ui'
 import {
-  Badge,
-  Button,
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  ResourceLayout,
-} from '@spree/dashboard-ui'
+  ClockIcon,
+  InfoIcon,
+  PackageIcon,
+  ReceiptTextIcon,
+  ShoppingCartIcon,
+  Undo2Icon,
+} from '@spree/dashboard-ui/icons'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { ModelCard } from '../components/setup/model-ui'
 import { useOrder, useReconcileHandover } from '../hooks/use-orders'
 import { usePosSession } from '../hooks/use-pos-session'
 import { useSession } from '../hooks/use-session'
@@ -117,11 +117,8 @@ function OrderDetail({ order, backTo }: { order: PosOrderDetail; backTo: string 
   )
   const main = (
     <>
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('orderLines')}</CardTitle>
-        </CardHeader>
-        <CardContent className="overflow-x-auto">
+      <ModelCard title={t('orderLines')} id="order-lines" icon={<ShoppingCartIcon />}>
+        <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="text-left text-muted-foreground">
               <tr>
@@ -174,80 +171,64 @@ function OrderDetail({ order, backTo }: { order: PosOrderDetail; backTo: string 
               ))}
             </tbody>
           </table>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('orderReceipts')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {order.receipts.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t('orderNoReceipts')}</p>
-          ) : (
-            <ul className="divide-y text-sm" aria-label={t('orderReceipts')}>
-              {order.receipts.map((receipt) => (
-                <li
-                  key={receipt.allocation_id}
-                  className="flex flex-wrap justify-between gap-2 py-2"
-                >
-                  <span>
-                    {t(receipt.kind === 'cash' ? 'orderReceiptCash' : 'orderReceiptBank')}
-                    {receipt.collection ? ` · ${t('orderCollection')}` : ''}
-                    {receipt.reference ? ` · ${receipt.reference}` : ''}
-                    <span className="block text-xs text-muted-foreground">
-                      {t('orderReceiptRefunded', {
-                        refunded: money(receipt.refunded),
-                        reserved: money(receipt.refund_reserved),
-                      })}
-                    </span>
+        </div>
+      </ModelCard>
+      <ModelCard title={t('orderReceipts')} id="order-receipts" icon={<ReceiptTextIcon />}>
+        {order.receipts.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{t('orderNoReceipts')}</p>
+        ) : (
+          <ul className="divide-y text-sm" aria-label={t('orderReceipts')}>
+            {order.receipts.map((receipt) => (
+              <li key={receipt.allocation_id} className="flex flex-wrap justify-between gap-2 py-2">
+                <span>
+                  {t(receipt.kind === 'cash' ? 'orderReceiptCash' : 'orderReceiptBank')}
+                  {receipt.collection ? ` · ${t('orderCollection')}` : ''}
+                  {receipt.reference ? ` · ${receipt.reference}` : ''}
+                  <span className="block text-xs text-muted-foreground">
+                    {t('orderReceiptRefunded', {
+                      refunded: money(receipt.refunded),
+                      reserved: money(receipt.refund_reserved),
+                    })}
                   </span>
-                  <span className="tabular-nums">{money(receipt.amount)}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+                </span>
+                <span className="tabular-nums">{money(receipt.amount)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </ModelCard>
       {order.returns.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('orderReturns')}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="divide-y text-sm" aria-label={t('orderReturns')}>
-              {order.returns.map((row) => (
-                <li key={row.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-                  <span className="flex flex-wrap items-center gap-2">
-                    <span className="font-medium">{row.return_number}</span>
-                    <Badge variant={row.status === 'pending_approval' ? 'warning' : 'outline'}>
-                      {t(`returnStatus_${row.status}`)}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground">
-                      {t('orderReturnRefunds', {
-                        refunded: money(row.refunded),
-                        requested: money(row.refund_requested),
-                      })}
-                    </span>
+        <ModelCard title={t('orderReturns')} id="order-returns" icon={<Undo2Icon />}>
+          <ul className="divide-y text-sm" aria-label={t('orderReturns')}>
+            {order.returns.map((row) => (
+              <li key={row.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                <span className="flex flex-wrap items-center gap-2">
+                  <span className="font-medium">{row.return_number}</span>
+                  <Badge variant={row.status === 'pending_approval' ? 'warning' : 'outline'}>
+                    {t(`returnStatus_${row.status}`)}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground">
+                    {t('orderReturnRefunds', {
+                      refunded: money(row.refunded),
+                      requested: money(row.refund_requested),
+                    })}
                   </span>
-                  <span className="tabular-nums">{money(row.entitlement_total)}</span>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
+                </span>
+                <span className="tabular-nums">{money(row.entitlement_total)}</span>
+              </li>
+            ))}
+          </ul>
+        </ModelCard>
       )}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('orderStock')}</CardTitle>
-          <CardDescription>
-            {t('orderStockEffects', {
-              restocked: order.stock.restocked_quantity,
-              damaged: order.stock.damaged_quantity,
-            })}
-          </CardDescription>
-        </CardHeader>
+      <ModelCard title={t('orderStock')} id="order-stock" icon={<PackageIcon />}>
+        <p className="text-sm text-muted-foreground">
+          {t('orderStockEffects', {
+            restocked: order.stock.restocked_quantity,
+            damaged: order.stock.damaged_quantity,
+          })}
+        </p>
         {order.stock.discrepancies.length > 0 && (
-          <CardContent className="space-y-3" role="note">
+          <div className="space-y-3" role="note">
             <p className="font-medium text-warning">{t('orderStockAttention')}</p>
             <ul className="space-y-1 text-sm">
               {order.stock.discrepancies.map((gap) => (
@@ -291,69 +272,54 @@ function OrderDetail({ order, backTo }: { order: PosOrderDetail; backTo: string 
                 {notice.text}
               </p>
             )}
-          </CardContent>
+          </div>
         )}
-      </Card>
+      </ModelCard>
     </>
   )
   const sidebar = (
     <>
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('orderSummary')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Summary
-            rows={[
-              [t('orderOriginalTotal'), money(order.totals.original_total)],
-              [t('orderPaid'), money(order.paid)],
-              [t('orderEntitlementUsed'), money(order.entitlement.used)],
-              [t('orderEntitlementReserved'), money(order.entitlement.reserved)],
-              [t('orderCreditNotes'), money(order.entitlement.credit_notes)],
-              [t('orderRefunded'), money(sumMoney(order.receipts.map((row) => row.refunded)))],
-              ...(order.credit
-                ? [[t('orderDebtBalance'), money(order.credit.balance)] as [string, string]]
-                : []),
-            ]}
-          />
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('orderInformation')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Summary
-            rows={[
-              [t('ordersRegister'), order.register ?? '—'],
-              [t('ordersCashier'), order.cashier],
-              [t('ordersCustomer'), order.customer?.name || t('customerWalkIn')],
-              ...(order.customer?.phone
-                ? [[t('ordersPhone'), order.customer.phone] as [string, string]]
-                : []),
-            ]}
-          />
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('orderTimeline')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ol className="space-y-2 text-sm" aria-label={t('orderTimeline')}>
-            {order.timeline.map((event) => (
-              <li key={event.id}>
-                <time dateTime={event.at} className="block text-xs text-muted-foreground">
-                  {time(event.at)}
-                </time>
-                {t(`timeline_${event.kind}`, { defaultValue: event.kind })}
-                {event.reference ? ` ${event.reference}` : ''}
-                {event.amount ? ` · ${money(event.amount)}` : ''}
-              </li>
-            ))}
-          </ol>
-        </CardContent>
-      </Card>
+      <ModelCard title={t('orderSummary')} id="order-summary" icon={<ReceiptTextIcon />}>
+        <Summary
+          rows={[
+            [t('orderOriginalTotal'), money(order.totals.original_total)],
+            [t('orderPaid'), money(order.paid)],
+            [t('orderEntitlementUsed'), money(order.entitlement.used)],
+            [t('orderEntitlementReserved'), money(order.entitlement.reserved)],
+            [t('orderCreditNotes'), money(order.entitlement.credit_notes)],
+            [t('orderRefunded'), money(sumMoney(order.receipts.map((row) => row.refunded)))],
+            ...(order.credit
+              ? [[t('orderDebtBalance'), money(order.credit.balance)] as [string, string]]
+              : []),
+          ]}
+        />
+      </ModelCard>
+      <ModelCard title={t('orderInformation')} id="order-information" icon={<InfoIcon />}>
+        <Summary
+          rows={[
+            [t('ordersRegister'), order.register ?? '—'],
+            [t('ordersCashier'), order.cashier],
+            [t('ordersCustomer'), order.customer?.name || t('customerWalkIn')],
+            ...(order.customer?.phone
+              ? [[t('ordersPhone'), order.customer.phone] as [string, string]]
+              : []),
+          ]}
+        />
+      </ModelCard>
+      <ModelCard title={t('orderTimeline')} id="order-timeline" icon={<ClockIcon />}>
+        <ol className="space-y-2 text-sm" aria-label={t('orderTimeline')}>
+          {order.timeline.map((event) => (
+            <li key={event.id}>
+              <time dateTime={event.at} className="block text-xs text-muted-foreground">
+                {time(event.at)}
+              </time>
+              {t(`timeline_${event.kind}`, { defaultValue: event.kind })}
+              {event.reference ? ` ${event.reference}` : ''}
+              {event.amount ? ` · ${money(event.amount)}` : ''}
+            </li>
+          ))}
+        </ol>
+      </ModelCard>
     </>
   )
   return <ResourceLayout header={header} main={main} sidebar={sidebar} />

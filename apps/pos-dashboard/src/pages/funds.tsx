@@ -1,13 +1,6 @@
 import { formatMoney } from '@parkviet/pos-shared/money'
 import type { PosReceivedFunds } from '@parkviet/pos-shared/types/pos-context'
-import {
-  defineTable,
-  PageHeader,
-  type PageTab,
-  PageTabs,
-  ResourceTable,
-  usePermissions,
-} from '@spree/dashboard-core'
+import { defineTable, PageHeader, ResourceTable, usePermissions } from '@spree/dashboard-core'
 import { Badge, Button, ResourceNameCell, RowActions, useRowClickBridge } from '@spree/dashboard-ui'
 import { RotateCcwIcon } from '@spree/dashboard-ui/icons'
 import { useQueryClient } from '@tanstack/react-query'
@@ -16,6 +9,7 @@ import { useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { BranchPicker } from '../components/branch-picker'
 import { FundsDetailSheet } from '../components/funds-detail-sheet'
+import { PillTabs } from '../components/pill-tabs'
 import { fetchFunds, fetchFundsAttention } from '../hooks/use-funds'
 import { usePosSession } from '../hooks/use-pos-session'
 import { useSession } from '../hooks/use-session'
@@ -47,12 +41,7 @@ export function FundsPage({ attention }: { attention: boolean }) {
         description={t(attention ? 'fundsAttentionHint' : 'fundsHint')}
         actions={<BranchPicker />}
       />
-      {resolver && (
-        <PageTabs
-          className="overflow-x-auto"
-          tabs={tabs.map((tab) => ({ ...tab, to: tab.to as PageTab['to'] & string }))}
-        />
-      )}
+      {resolver && <PillTabs tabs={tabs} />}
       {branchId ? (
         <FundsTable key={`${branchId}:${attention}`} branchId={branchId} attention={attention} />
       ) : (

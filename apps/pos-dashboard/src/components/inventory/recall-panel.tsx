@@ -4,17 +4,8 @@ import {
   type RecallSale,
 } from '@parkviet/pos-shared/traceability'
 import { defineTable, ResourceTable, resourceSearchSchema } from '@spree/dashboard-core'
-import {
-  Badge,
-  Button,
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  ResourceNameCell,
-} from '@spree/dashboard-ui'
-import { SearchIcon } from '@spree/dashboard-ui/icons'
+import { Badge, Button, ResourceNameCell } from '@spree/dashboard-ui'
+import { SearchIcon, ShieldAlertIcon } from '@spree/dashboard-ui/icons'
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useState } from 'react'
@@ -23,6 +14,7 @@ import { fetchRecall, type RecallQuery, recallKey, useRecall } from '../../hooks
 import { useSession } from '../../hooks/use-session'
 import { formatInstant } from '../../lib/format-time'
 import { hiddenTimestamps } from '../../tables/columns'
+import { ModelCard } from '../setup/model-ui'
 import { quantity, tableMeta, variantLabel } from './inventory-helpers'
 import { ChoiceField, Expiry, type InventoryScope, TextField } from './inventory-shared'
 
@@ -40,48 +32,43 @@ export function RecallPanel({ scope }: { scope: InventoryScope }) {
   const result = recall.data?.data
   return (
     <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('inventoryTab_recall')}</CardTitle>
-          <CardDescription>{t('inventoryRecallHint')}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form
-            className="grid items-end gap-3 sm:grid-cols-[12rem_1fr_auto]"
-            aria-label={t('inventoryTab_recall')}
-            onSubmit={(event) => {
-              event.preventDefault()
-              const text = value.trim()
-              setQuery(text ? { kind, value: text } : null)
-              // A new search starts the sales from their first page.
-              void navigate({
-                to: '.',
-                search: (previous: Record<string, unknown>) => ({ ...previous, page: 1 }),
-              })
-            }}
-          >
-            <ChoiceField
-              label={t('inventoryRecallBy')}
-              value={kind}
-              onChange={(next) => setKind(next === 'serial' ? 'serial' : 'lot_code')}
-              options={[
-                { value: 'lot_code', label: t('inventoryLotCode') },
-                { value: 'serial', label: t('inventorySerial') },
-              ]}
-            />
-            <TextField
-              label={t('inventoryRecallValue')}
-              value={value}
-              maxLength={100}
-              onChange={setValue}
-            />
-            <Button type="submit">
-              <SearchIcon className="size-4" />
-              {t('inventorySearch')}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+      <ModelCard title={t('inventoryTab_recall')} id="inventory-recall" icon={<SearchIcon />}>
+        <p className="text-sm text-muted-foreground">{t('inventoryRecallHint')}</p>
+        <form
+          className="grid items-end gap-3 sm:grid-cols-[12rem_1fr_auto]"
+          aria-label={t('inventoryTab_recall')}
+          onSubmit={(event) => {
+            event.preventDefault()
+            const text = value.trim()
+            setQuery(text ? { kind, value: text } : null)
+            // A new search starts the sales from their first page.
+            void navigate({
+              to: '.',
+              search: (previous: Record<string, unknown>) => ({ ...previous, page: 1 }),
+            })
+          }}
+        >
+          <ChoiceField
+            label={t('inventoryRecallBy')}
+            value={kind}
+            onChange={(next) => setKind(next === 'serial' ? 'serial' : 'lot_code')}
+            options={[
+              { value: 'lot_code', label: t('inventoryLotCode') },
+              { value: 'serial', label: t('inventorySerial') },
+            ]}
+          />
+          <TextField
+            label={t('inventoryRecallValue')}
+            value={value}
+            maxLength={100}
+            onChange={setValue}
+          />
+          <Button type="submit">
+            <SearchIcon className="size-4" />
+            {t('inventorySearch')}
+          </Button>
+        </form>
+      </ModelCard>
       {query && recall.isPending && (
         <p role="status" className="text-sm text-muted-foreground">
           {t('waiting')}
@@ -99,48 +86,47 @@ export function RecallPanel({ scope }: { scope: InventoryScope }) {
               {t('inventoryRecallTruncated')}
             </p>
           )}
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('inventoryRecallStock')}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {result.lots.length === 0 && result.serial_units.length === 0 && (
-                <p className="text-sm text-muted-foreground">{t('inventoryEmpty')}</p>
-              )}
-              {result.lots.length > 0 && (
-                <ul
-                  className="divide-y rounded-md border text-sm"
-                  aria-label={t('inventoryRecallLots')}
-                >
-                  {result.lots.map((lot) => (
-                    <li key={lot.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 p-3">
-                      <span className="font-medium">{lot.lot_code}</span>
-                      <span>{variantLabel(lot)}</span>
-                      <Expiry value={lot.expiry_on} today={scope.today} />
-                      <span>
-                        {t('inventoryOnHand')}: {quantity(lot.on_hand, lot.base_unit)}
-                      </span>
-                      <Badge variant="secondary">{t(`inventoryLotStatus_${lot.status}`)}</Badge>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {result.serial_units.length > 0 && (
-                <ul
-                  className="divide-y rounded-md border text-sm"
-                  aria-label={t('inventoryRecallSerials')}
-                >
-                  {result.serial_units.map((unit) => (
-                    <li key={unit.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 p-3">
-                      <span className="font-medium">{unit.serial}</span>
-                      <span>{variantLabel(unit)}</span>
-                      <Badge variant="secondary">{t(`inventorySerialStatus_${unit.status}`)}</Badge>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
+          <ModelCard
+            title={t('inventoryRecallStock')}
+            id="inventory-recall-stock"
+            icon={<ShieldAlertIcon />}
+          >
+            {result.lots.length === 0 && result.serial_units.length === 0 && (
+              <p className="text-sm text-muted-foreground">{t('inventoryEmpty')}</p>
+            )}
+            {result.lots.length > 0 && (
+              <ul
+                className="divide-y rounded-md border text-sm"
+                aria-label={t('inventoryRecallLots')}
+              >
+                {result.lots.map((lot) => (
+                  <li key={lot.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 p-3">
+                    <span className="font-medium">{lot.lot_code}</span>
+                    <span>{variantLabel(lot)}</span>
+                    <Expiry value={lot.expiry_on} today={scope.today} />
+                    <span>
+                      {t('inventoryOnHand')}: {quantity(lot.on_hand, lot.base_unit)}
+                    </span>
+                    <Badge variant="secondary">{t(`inventoryLotStatus_${lot.status}`)}</Badge>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {result.serial_units.length > 0 && (
+              <ul
+                className="divide-y rounded-md border text-sm"
+                aria-label={t('inventoryRecallSerials')}
+              >
+                {result.serial_units.map((unit) => (
+                  <li key={unit.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 p-3">
+                    <span className="font-medium">{unit.serial}</span>
+                    <span>{variantLabel(unit)}</span>
+                    <Badge variant="secondary">{t(`inventorySerialStatus_${unit.status}`)}</Badge>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </ModelCard>
           <section aria-label={t('inventoryRecallSales')} className="space-y-2">
             <h3 className="font-medium">{t('inventoryRecallSales')}</h3>
             <RecallSales key={`${query.kind}:${query.value}`} scope={scope} query={query} />

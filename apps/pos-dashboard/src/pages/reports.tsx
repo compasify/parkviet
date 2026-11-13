@@ -6,14 +6,7 @@ import {
   todayIn,
 } from '@parkviet/pos-shared/reports'
 import { describeShiftFailure } from '@parkviet/pos-shared/shifts'
-import {
-  defineTable,
-  PageHeader,
-  type PageTab,
-  PageTabs,
-  ResourceTable,
-  usePermissions,
-} from '@spree/dashboard-core'
+import { defineTable, PageHeader, ResourceTable, usePermissions } from '@spree/dashboard-core'
 import { Button } from '@spree/dashboard-ui'
 import { DownloadIcon } from '@spree/dashboard-ui/icons'
 import { useQueryClient } from '@tanstack/react-query'
@@ -21,6 +14,7 @@ import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { BranchPicker } from '../components/branch-picker'
+import { PillTabs } from '../components/pill-tabs'
 import { ReportExports } from '../components/reports/report-exports'
 import { type ReportFilterPatch, ReportFilters } from '../components/reports/report-filters'
 import {
@@ -93,8 +87,8 @@ export function ReportsPage({ type }: { type: PosReportType }) {
   const tabs = dashboardReportTypes(context.data?.modules, readsSponsors).map((value) => ({
     key: value,
     label: t(`reportTab_${value}`),
-    to: (value === 'sales' ? base : `${base}/${value}`) as PageTab['to'] & string,
-    search: carried as PageTab['search'],
+    to: value === 'sales' ? base : `${base}/${value}`,
+    search: carried,
   }))
   return (
     <div className="space-y-6">
@@ -103,7 +97,7 @@ export function ReportsPage({ type }: { type: PosReportType }) {
         description={t('reportsHint')}
         actions={<BranchPicker />}
       />
-      <PageTabs className="overflow-x-auto" tabs={tabs} />
+      <PillTabs tabs={tabs} />
       {branchId ? (
         <div key={branchId} className="space-y-6">
           <Report key={type} type={type} branchId={branchId} search={search} />

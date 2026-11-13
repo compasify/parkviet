@@ -47,6 +47,8 @@ pnpm test:e2e        # API fixtures, desktop/tablet/mobile; 4 workers
 
 Import framework components/providers from `@spree/dashboard-core`, controls from
 `@spree/dashboard-ui`. Keep core/ui/admin-sdk pinned together at **6.0.3**.
+Screen layout follows `DESIGN.md`: pill tabs, and a section title with an icon
+above the card.
 Pure POS logic comes from `@parkviet/pos-shared/<module>`; shared data types are
 under `@parkviet/pos-shared/types/pos-context` and `types/print-adapter`.
 

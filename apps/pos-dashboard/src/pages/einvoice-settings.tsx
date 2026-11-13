@@ -1,7 +1,9 @@
 import { PageHeader } from '@spree/dashboard-core'
-import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from '@spree/dashboard-ui'
+import { Badge, Button } from '@spree/dashboard-ui'
+import { FileTextIcon, SettingsIcon } from '@spree/dashboard-ui/icons'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { ModelCard } from '../components/setup/model-ui'
 import { Input, TopologyField, TopologySelect } from '../components/topology-fields'
 import {
   type EinvoiceSample,
@@ -128,11 +130,8 @@ export function EinvoiceSettingsPage() {
           {notice.text}
         </p>
       )}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('einvoiceSettings.typeTitle')}</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-wrap items-end gap-3">
+      <ModelCard title={t('einvoiceSettings.typeTitle')} id="einvoice-type" icon={<FileTextIcon />}>
+        <div className="flex flex-wrap items-end gap-3">
           <div className="w-72">
             <TopologyField
               label={t('einvoiceSettings.type')}
@@ -159,153 +158,152 @@ export function EinvoiceSettingsPage() {
           >
             {t('save')}
           </Button>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('einvoiceSettings.providerTitle')}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {!data.public_link && (
-            <p className="text-sm text-muted-foreground">{t('einvoiceSettings.noPublicLink')}</p>
-          )}
-          <div className="grid gap-4 md:grid-cols-2">
-            <TopologyField label={t('einvoiceSettings.scope')}>
-              {(id) => (
-                <TopologySelect
-                  id={id}
-                  value={scope}
-                  onChange={setScope}
-                  options={[
-                    { value: '', label: t('einvoiceSettings.scopeStore') },
-                    ...branches.map((branch) => ({ value: branch.id, label: branch.name })),
-                  ]}
-                />
-              )}
-            </TopologyField>
-            <TopologyField label={t('einvoiceSettings.provider')}>
-              {(id) => (
-                <TopologySelect
-                  id={id}
-                  value={form.provider}
-                  onChange={(value) => set('provider', value)}
-                  options={data.providers.map((row) => ({
-                    value: row.key,
-                    label: row.sandbox
-                      ? `${row.label} (${t('einvoiceSettings.sandbox')})`
-                      : row.label,
-                  }))}
-                />
-              )}
-            </TopologyField>
-            {(provider?.credential_fields ?? []).map((field) => (
-              <TopologyField
-                key={field}
-                label={field}
-                hint={
-                  current?.credential_fields.includes(field)
-                    ? t('einvoiceSettings.credentialStored')
-                    : undefined
-                }
-              >
-                {(id, describedBy) => (
-                  <Input
-                    id={id}
-                    type="password"
-                    autoComplete="new-password"
-                    aria-describedby={describedBy}
-                    value={credentials[field] ?? ''}
-                    onChange={(event) =>
-                      setCredentials({ ...credentials, [field]: event.target.value })
-                    }
-                  />
-                )}
-              </TopologyField>
-            ))}
-            {TEXT_FIELDS.map((field) => (
-              <TopologyField
-                key={field}
-                label={t(`einvoices.field_${field}`)}
-                hint={t(`einvoiceSettings.hint_${field}`, { defaultValue: '' }) || undefined}
-              >
-                {(id, describedBy) => (
-                  <Input
-                    id={id}
-                    aria-describedby={describedBy}
-                    value={form[field]}
-                    onChange={(event) => set(field, event.target.value)}
-                  />
-                )}
-              </TopologyField>
-            ))}
+        </div>
+      </ModelCard>
+      <ModelCard
+        title={t('einvoiceSettings.providerTitle')}
+        id="einvoice-provider"
+        icon={<SettingsIcon />}
+      >
+        {!data.public_link && (
+          <p className="text-sm text-muted-foreground">{t('einvoiceSettings.noPublicLink')}</p>
+        )}
+        <div className="grid gap-4 md:grid-cols-2">
+          <TopologyField label={t('einvoiceSettings.scope')}>
+            {(id) => (
+              <TopologySelect
+                id={id}
+                value={scope}
+                onChange={setScope}
+                options={[
+                  { value: '', label: t('einvoiceSettings.scopeStore') },
+                  ...branches.map((branch) => ({ value: branch.id, label: branch.name })),
+                ]}
+              />
+            )}
+          </TopologyField>
+          <TopologyField label={t('einvoiceSettings.provider')}>
+            {(id) => (
+              <TopologySelect
+                id={id}
+                value={form.provider}
+                onChange={(value) => set('provider', value)}
+                options={data.providers.map((row) => ({
+                  value: row.key,
+                  label: row.sandbox
+                    ? `${row.label} (${t('einvoiceSettings.sandbox')})`
+                    : row.label,
+                }))}
+              />
+            )}
+          </TopologyField>
+          {(provider?.credential_fields ?? []).map((field) => (
             <TopologyField
-              label={t('einvoices.field_buyer_link_hours')}
-              hint={t('einvoiceSettings.hint_buyer_link_hours')}
+              key={field}
+              label={field}
+              hint={
+                current?.credential_fields.includes(field)
+                  ? t('einvoiceSettings.credentialStored')
+                  : undefined
+              }
             >
               {(id, describedBy) => (
                 <Input
                   id={id}
-                  inputMode="numeric"
+                  type="password"
+                  autoComplete="new-password"
                   aria-describedby={describedBy}
-                  value={form.buyer_link_hours}
-                  onChange={(event) => set('buyer_link_hours', event.target.value.trim())}
+                  value={credentials[field] ?? ''}
+                  onChange={(event) =>
+                    setCredentials({ ...credentials, [field]: event.target.value })
+                  }
                 />
               )}
             </TopologyField>
-            <TopologyField label={t('einvoiceSettings.status')}>
-              {(id) => (
-                <TopologySelect
+          ))}
+          {TEXT_FIELDS.map((field) => (
+            <TopologyField
+              key={field}
+              label={t(`einvoices.field_${field}`)}
+              hint={t(`einvoiceSettings.hint_${field}`, { defaultValue: '' }) || undefined}
+            >
+              {(id, describedBy) => (
+                <Input
                   id={id}
-                  value={form.status}
-                  onChange={(value) => set('status', value)}
-                  options={[
-                    { value: 'active', label: t('einvoiceSettings.status_active') },
-                    { value: 'disabled', label: t('einvoiceSettings.status_disabled') },
-                  ]}
+                  aria-describedby={describedBy}
+                  value={form[field]}
+                  onChange={(event) => set(field, event.target.value)}
                 />
               )}
             </TopologyField>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
+          ))}
+          <TopologyField
+            label={t('einvoices.field_buyer_link_hours')}
+            hint={t('einvoiceSettings.hint_buyer_link_hours')}
+          >
+            {(id, describedBy) => (
+              <Input
+                id={id}
+                inputMode="numeric"
+                aria-describedby={describedBy}
+                value={form.buyer_link_hours}
+                onChange={(event) => set('buyer_link_hours', event.target.value.trim())}
+              />
+            )}
+          </TopologyField>
+          <TopologyField label={t('einvoiceSettings.status')}>
+            {(id) => (
+              <TopologySelect
+                id={id}
+                value={form.status}
+                onChange={(value) => set('status', value)}
+                options={[
+                  { value: 'active', label: t('einvoiceSettings.status_active') },
+                  { value: 'disabled', label: t('einvoiceSettings.status_disabled') },
+                ]}
+              />
+            )}
+          </TopologyField>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            disabled={save.isPending || !form.provider}
+            onClick={() => void saveSetting()}
+          >
+            {t('save')}
+          </Button>
+          {provider?.sandbox && current && (
             <Button
               type="button"
-              disabled={save.isPending || !form.provider}
-              onClick={() => void saveSetting()}
+              variant="outline"
+              disabled={sample.isPending}
+              onClick={() =>
+                void run(async () => {
+                  const response = await sample.mutateAsync(scope ? { branch_id: scope } : {})
+                  setResult(response.data)
+                }, t('einvoiceSettings.sampleDone'))
+              }
             >
-              {t('save')}
+              {t('einvoiceSettings.sample')}
             </Button>
-            {provider?.sandbox && current && (
-              <Button
-                type="button"
-                variant="outline"
-                disabled={sample.isPending}
-                onClick={() =>
-                  void run(async () => {
-                    const response = await sample.mutateAsync(scope ? { branch_id: scope } : {})
-                    setResult(response.data)
-                  }, t('einvoiceSettings.sampleDone'))
-                }
-              >
-                {t('einvoiceSettings.sample')}
-              </Button>
-            )}
-            {current && (
-              <Badge variant="outline">{t(`einvoiceSettings.status_${current.status}`)}</Badge>
-            )}
-          </div>
-          {result && (
-            <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1 text-sm">
-              <dt className="text-muted-foreground">{t('einvoices.number')}</dt>
-              <dd>
-                {result.template_code}
-                {result.symbol} · {result.number}
-              </dd>
-              <dt className="text-muted-foreground">{t('einvoices.lookupCode')}</dt>
-              <dd className="break-all">{result.lookup_code}</dd>
-            </dl>
           )}
-        </CardContent>
-      </Card>
+          {current && (
+            <Badge variant="outline">{t(`einvoiceSettings.status_${current.status}`)}</Badge>
+          )}
+        </div>
+        {result && (
+          <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1 text-sm">
+            <dt className="text-muted-foreground">{t('einvoices.number')}</dt>
+            <dd>
+              {result.template_code}
+              {result.symbol} · {result.number}
+            </dd>
+            <dt className="text-muted-foreground">{t('einvoices.lookupCode')}</dt>
+            <dd className="break-all">{result.lookup_code}</dd>
+          </dl>
+        )}
+      </ModelCard>
     </div>
   )
 }

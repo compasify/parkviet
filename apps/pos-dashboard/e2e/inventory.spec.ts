@@ -129,7 +129,7 @@ test('a stock keeper enrols a serial variant and puts a lot on hold', async ({ p
   await expect(page).toHaveURL(/\/store_1\/inventory\/variants/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Truy xuất tồn kho');
   for (const name of ['Mặt hàng theo dõi', 'Lô hàng', 'Tra serial', 'Nhập hàng', 'Chuyển kho', 'Kiểm kê / điều chỉnh', 'Thu hồi'])
-    await expect(page.getByRole('link', { name, exact: true })).toBeVisible();
+    await expect(page.getByRole('tab', { name, exact: true })).toBeVisible();
   const table = page.getByRole('table');
   await expect(table.getByRole('row').filter({ hasText: 'Điện thoại A' })).toBeVisible();
   expect(state.lists.find((list) => list.path === '/pos/inventory/variants')?.params).toMatchObject({ branch_id: 'branch_main' });
@@ -147,7 +147,7 @@ test('a stock keeper enrols a serial variant and puts a lot on hold', async ({ p
   expect(opening?.key).toBeTruthy();
   expect(opening?.body.idempotency_key).toBe(opening?.key);
 
-  await page.getByRole('link', { name: 'Lô hàng', exact: true }).click();
+  await page.getByRole('tab', { name: 'Lô hàng', exact: true }).click();
   await expect(page).toHaveURL(/\/store_1\/inventory\/lots/);
   const lotRow = table.getByRole('row').filter({ hasText: 'L-01' });
   await expect(lotRow).toContainText('Sắp hết hạn');
@@ -182,7 +182,7 @@ test('a stock keeper transfers lots and an approver decides counts', async ({ pa
     body: { from_branch_id: 'branch_main', to_branch_id: 'branch_2', variant_id: 'v_yogurt', lots: [{ lot_id: 'lot_1', quantity: 2 }] },
   });
 
-  await page.getByRole('link', { name: 'Kiểm kê / điều chỉnh', exact: true }).click();
+  await page.getByRole('tab', { name: 'Kiểm kê / điều chỉnh', exact: true }).click();
   const pending = page.getByRole('region', { name: 'Điều chỉnh chờ duyệt' });
   const other = pending.getByRole('row').filter({ hasText: 'Minh' });
   await other.getByRole('button', { name: MENU }).click();
@@ -204,7 +204,7 @@ test('a stock keeper transfers lots and an approver decides counts', async ({ pa
 test('a tracer finds where a lot went and an approver sees only counts', async ({ page }) => {
   await install(page, ['pos.inventory.trace']);
   await page.goto('/store_1/inventory/recall');
-  await expect(page.getByRole('link', { name: 'Nhập hàng', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('tab', { name: 'Nhập hàng', exact: true })).toHaveCount(0);
   await page.getByLabel('Mã cần tìm').fill('L-01');
   await page.getByRole('button', { name: 'Tìm' }).click();
   await expect(page.getByRole('list', { name: /lô/i }).first()).toContainText('L-01');

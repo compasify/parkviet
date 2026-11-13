@@ -6,7 +6,7 @@ import {
   inventoryTabs,
 } from '@parkviet/pos-shared/traceability'
 import type { PosContext } from '@parkviet/pos-shared/types/pos-context'
-import { PageHeader, type PageTab, PageTabs } from '@spree/dashboard-core'
+import { PageHeader } from '@spree/dashboard-core'
 import { Navigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { BranchPicker } from '../components/branch-picker'
@@ -19,6 +19,7 @@ import { ReceivePanel } from '../components/inventory/receive-panel'
 import { SerialsPanel } from '../components/inventory/serials-panel'
 import { TransferPanel } from '../components/inventory/transfer-panel'
 import { VariantsPanel } from '../components/inventory/variants-panel'
+import { PillTabs } from '../components/pill-tabs'
 import { usePosSession } from '../hooks/use-pos-session'
 import { useSession } from '../hooks/use-session'
 import { branchTimeZone } from '../lib/format-time'
@@ -84,12 +85,11 @@ export function InventoryPage({ tab }: { tab: string }) {
         description={t('inventoryHint')}
         actions={<BranchPicker />}
       />
-      <PageTabs
-        className="overflow-x-auto"
+      <PillTabs
         tabs={tabs.map((value) => ({
           key: value,
           label: t(`inventoryTab_${value}`),
-          to: `${base}/${value}` as PageTab['to'] & string,
+          to: `${base}/${value}`,
         }))}
       />
       {!moduleOn ? (

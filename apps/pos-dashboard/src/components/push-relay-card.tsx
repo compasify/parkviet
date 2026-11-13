@@ -3,16 +3,8 @@ import {
   describeFailure,
   posFailureKey,
 } from '@parkviet/pos-shared/request-failure'
-import {
-  Button,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  Input,
-  Label,
-  useConfirm,
-} from '@spree/dashboard-ui'
+import { Button, Input, Label, useConfirm } from '@spree/dashboard-ui'
+import { BellIcon } from '@spree/dashboard-ui/icons'
 import { type FormEvent, useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -22,7 +14,7 @@ import {
   usePushRelay,
   usePushRelayWrite,
 } from '../hooks/use-push-relay'
-import { ModelNotice, ModelState } from './setup/model-ui'
+import { ModelCard, ModelNotice, ModelState } from './setup/model-ui'
 
 type Notice = { text: string; failed: boolean } | null
 
@@ -34,25 +26,25 @@ export function PushRelayCard() {
   const { t } = useTranslation()
   const relay = usePushRelay()
   return (
-    <Card data-testid="push-relay-card">
-      <CardHeader>
-        <CardTitle>{t('pushRelay.title')}</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <p className="text-sm text-muted-foreground">{t('pushRelay.intro')}</p>
-        {relay.isPending ? (
-          <ModelState title={t('waiting')} />
-        ) : relay.isError ? (
-          <ModelState
-            error
-            title={t(posFailureKey(relay.error))}
-            retry={() => void relay.refetch()}
-          />
-        ) : (
-          <PushRelayForm key={relay.dataUpdatedAt} relay={relay.data} />
-        )}
-      </CardContent>
-    </Card>
+    <ModelCard
+      title={t('pushRelay.title')}
+      id="push-relay"
+      icon={<BellIcon />}
+      testId="push-relay-card"
+    >
+      <p className="text-sm text-muted-foreground">{t('pushRelay.intro')}</p>
+      {relay.isPending ? (
+        <ModelState title={t('waiting')} />
+      ) : relay.isError ? (
+        <ModelState
+          error
+          title={t(posFailureKey(relay.error))}
+          retry={() => void relay.refetch()}
+        />
+      ) : (
+        <PushRelayForm key={relay.dataUpdatedAt} relay={relay.data} />
+      )}
+    </ModelCard>
   )
 }
 

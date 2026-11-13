@@ -14,20 +14,17 @@ import { defineTable, ResourceTable, resourceSearchSchema } from '@spree/dashboa
 import {
   Badge,
   Button,
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
   Input,
   Label,
   RadioGroup,
   RadioGroupItem,
   ResourceNameCell,
 } from '@spree/dashboard-ui'
+import { BanknoteIcon, HistoryIcon } from '@spree/dashboard-ui/icons'
 import { type ReactNode, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FilterSelect } from '../components/filter-select'
+import { ModelCard } from '../components/setup/model-ui'
 import { usePosSession } from '../hooks/use-pos-session'
 import {
   fetchReconciliations,
@@ -161,239 +158,229 @@ function LateCashForm({ branchId }: { branchId: string }) {
   )
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('lateCashTitle')}</CardTitle>
-        <CardDescription>{t('lateCashHint')}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {candidates.isError && <p role="alert">{describeFailure(candidates.error, t)}</p>}
-        {!data && !candidates.isError && <p role="status">{t('waiting')}</p>}
-        {notice && (
-          <p role="status" className="text-sm text-muted-foreground">
-            {notice}
-          </p>
-        )}
-        {data && data.closures.length === 0 && data.held_funds.length === 0 && (
-          <p className="text-muted-foreground">{t('lateCashEmpty')}</p>
-        )}
-        {data && (data.closures.length > 0 || data.held_funds.length > 0) && (
-          <form
-            className="space-y-6"
-            onSubmit={(event) => {
-              event.preventDefault()
-              submit()
-            }}
-          >
-            <fieldset className="space-y-3" disabled={frozen}>
-              <legend className="font-medium">{t('lateCashStepSource')}</legend>
+    <ModelCard title={t('lateCashTitle')} id="late-cash" icon={<BanknoteIcon />}>
+      <p className="text-sm text-muted-foreground">{t('lateCashHint')}</p>
+      {candidates.isError && <p role="alert">{describeFailure(candidates.error, t)}</p>}
+      {!data && !candidates.isError && <p role="status">{t('waiting')}</p>}
+      {notice && (
+        <p role="status" className="text-sm text-muted-foreground">
+          {notice}
+        </p>
+      )}
+      {data && data.closures.length === 0 && data.held_funds.length === 0 && (
+        <p className="text-muted-foreground">{t('lateCashEmpty')}</p>
+      )}
+      {data && (data.closures.length > 0 || data.held_funds.length > 0) && (
+        <form
+          className="space-y-6"
+          onSubmit={(event) => {
+            event.preventDefault()
+            submit()
+          }}
+        >
+          <fieldset className="space-y-3" disabled={frozen}>
+            <legend className="font-medium">{t('lateCashStepSource')}</legend>
+            <div className="grid gap-1">
+              <span className="text-sm">{t('lateCashClosedShift')}</span>
+              <FilterSelect
+                label={t('lateCashClosedShift')}
+                value={closureId || NONE}
+                options={[
+                  { value: NONE, label: t('lateCashNone') },
+                  ...data.closures.map((row) => ({
+                    value: row.id,
+                    label: t('lateCashClosureOption', {
+                      owner: row.owner_name,
+                      register: row.register ?? '—',
+                      time: time(row.closed_at),
+                      amount: formatMoney(row.unexplained, row.currency),
+                    }),
+                  })),
+                ]}
+                onChange={(value) => setClosureId(value === NONE ? '' : value)}
+              />
+            </div>
+            {closure && (
+              <p className="text-sm text-muted-foreground">
+                {t('lateCashClosureFacts', {
+                  counted: formatMoney(closure.counted, closure.currency),
+                  expected: formatMoney(closure.expected, closure.currency),
+                  variance: formatMoney(closure.variance, closure.currency),
+                })}
+              </p>
+            )}
+            <div className="grid gap-1">
+              <span className="text-sm">{t('lateCashHeld')}</span>
+              <FilterSelect
+                label={t('lateCashHeld')}
+                value={fundsId || NONE}
+                options={[
+                  { value: NONE, label: t('lateCashNone') },
+                  // Nobody reconciles held cash they recorded themselves.
+                  ...data.held_funds
+                    .filter((row) => !row.recorded_by_me)
+                    .map((row) => ({
+                      value: row.id,
+                      label: t('lateCashHeldOption', {
+                        amount: formatMoney(row.amount, row.currency),
+                        note: row.custody_note ?? '',
+                        time: time(row.received_at),
+                      }),
+                    })),
+                ]}
+                onChange={(value) => setFundsId(value === NONE ? '' : value)}
+              />
+              {data.held_funds.some((row) => row.recorded_by_me) && (
+                <span className="text-xs text-muted-foreground">
+                  {t('lateCashRecordedByMeHint')}
+                </span>
+              )}
+            </div>
+            {funds && (
+              <p role="status" className="text-sm text-muted-foreground">
+                {t('lateCashHeldShift', {
+                  owner: funds.shift_owner_name ?? '—',
+                  opened: time(funds.shift_opened_at),
+                  status: t(
+                    funds.shift_status === 'closed' ? 'lateCashShiftClosed' : 'lateCashShiftOpen',
+                  ),
+                })}
+                {funds.closure_id
+                  ? ` ${t('lateCashHeldClosure', {
+                      counted: formatMoney(funds.closure_counted, funds.currency),
+                      expected: formatMoney(funds.closure_expected, funds.currency),
+                    })}`
+                  : ''}
+                {funds.overage_explained ? ` ${t('lateCashOverageExplained')}` : ''}
+              </p>
+            )}
+            {closureOnly &&
+              closure &&
+              field(
+                'late-cash-amount',
+                t('lateCashAmountInput', {
+                  max: formatMoney(closure.unexplained, closure.currency),
+                }),
+                <Input
+                  id="late-cash-amount"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  value={amountText}
+                  aria-invalid={Boolean(amountError && amountText)}
+                  onChange={(event) => setAmountText(event.target.value)}
+                />,
+                amountError && amountText ? (
+                  <span className="text-xs text-destructive">{t(amountError)}</span>
+                ) : null,
+              )}
+            {amount && (
+              <p role="status">{t('lateCashAmount', { amount: formatMoney(amount, currency) })}</p>
+            )}
+          </fieldset>
+          <fieldset className="space-y-3" disabled={frozen}>
+            <legend className="font-medium">{t('lateCashStepCustody')}</legend>
+            <RadioGroup
+              value={outcome}
+              onValueChange={(value) => setOutcome(value as CustodyOutcome)}
+              aria-label={t('lateCashStepCustody')}
+            >
+              {OUTCOMES.map((value) => (
+                <div key={value} className="flex items-start gap-2">
+                  <RadioGroupItem value={value} id={`late-cash-outcome-${value}`} />
+                  <Label
+                    htmlFor={`late-cash-outcome-${value}`}
+                    className="flex flex-col items-start gap-0.5"
+                  >
+                    <span>{t(`lateCashOutcome_${value}`)}</span>
+                    <span className="text-xs font-normal text-muted-foreground">
+                      {t(`lateCashOutcomeHint_${value}`)}
+                    </span>
+                  </Label>
+                </div>
+              ))}
+            </RadioGroup>
+            {outcome !== '' && (
+              <p role="status">
+                <Badge variant={addsDrawerCash(outcome) ? 'warning' : 'secondary'}>
+                  {t(addsDrawerCash(outcome) ? 'lateCashAddsDrawer' : 'lateCashNoDrawer')}
+                </Badge>
+              </p>
+            )}
+            {outcome !== '' && outcomeTakesShift(outcome) && (
               <div className="grid gap-1">
-                <span className="text-sm">{t('lateCashClosedShift')}</span>
+                <span className="text-sm">
+                  {t(
+                    outcome === 'new_physical_inflow'
+                      ? 'lateCashTargetDrawer'
+                      : 'lateCashTargetFloat',
+                  )}
+                </span>
                 <FilterSelect
-                  label={t('lateCashClosedShift')}
-                  value={closureId || NONE}
+                  label={t(
+                    outcome === 'new_physical_inflow'
+                      ? 'lateCashTargetDrawer'
+                      : 'lateCashTargetFloat',
+                  )}
+                  value={targetShiftId || NONE}
                   options={[
                     { value: NONE, label: t('lateCashNone') },
-                    ...data.closures.map((row) => ({
+                    ...targets.map((row) => ({
                       value: row.id,
-                      label: t('lateCashClosureOption', {
+                      label: t('lateCashShiftOption', {
                         owner: row.owner_name,
                         register: row.register ?? '—',
-                        time: time(row.closed_at),
-                        amount: formatMoney(row.unexplained, row.currency),
+                        float: formatMoney(row.opening_float, currency),
+                        time: time(row.opened_at),
                       }),
                     })),
                   ]}
-                  onChange={(value) => setClosureId(value === NONE ? '' : value)}
+                  onChange={(value) => setTargetShiftId(value === NONE ? '' : value)}
                 />
               </div>
-              {closure && (
-                <p className="text-sm text-muted-foreground">
-                  {t('lateCashClosureFacts', {
-                    counted: formatMoney(closure.counted, closure.currency),
-                    expected: formatMoney(closure.expected, closure.currency),
-                    variance: formatMoney(closure.variance, closure.currency),
-                  })}
-                </p>
-              )}
-              <div className="grid gap-1">
-                <span className="text-sm">{t('lateCashHeld')}</span>
-                <FilterSelect
-                  label={t('lateCashHeld')}
-                  value={fundsId || NONE}
-                  options={[
-                    { value: NONE, label: t('lateCashNone') },
-                    // Nobody reconciles held cash they recorded themselves.
-                    ...data.held_funds
-                      .filter((row) => !row.recorded_by_me)
-                      .map((row) => ({
-                        value: row.id,
-                        label: t('lateCashHeldOption', {
-                          amount: formatMoney(row.amount, row.currency),
-                          note: row.custody_note ?? '',
-                          time: time(row.received_at),
-                        }),
-                      })),
-                  ]}
-                  onChange={(value) => setFundsId(value === NONE ? '' : value)}
-                />
-                {data.held_funds.some((row) => row.recorded_by_me) && (
-                  <span className="text-xs text-muted-foreground">
-                    {t('lateCashRecordedByMeHint')}
-                  </span>
-                )}
-              </div>
-              {funds && (
-                <p role="status" className="text-sm text-muted-foreground">
-                  {t('lateCashHeldShift', {
-                    owner: funds.shift_owner_name ?? '—',
-                    opened: time(funds.shift_opened_at),
-                    status: t(
-                      funds.shift_status === 'closed' ? 'lateCashShiftClosed' : 'lateCashShiftOpen',
-                    ),
-                  })}
-                  {funds.closure_id
-                    ? ` ${t('lateCashHeldClosure', {
-                        counted: formatMoney(funds.closure_counted, funds.currency),
-                        expected: formatMoney(funds.closure_expected, funds.currency),
-                      })}`
-                    : ''}
-                  {funds.overage_explained ? ` ${t('lateCashOverageExplained')}` : ''}
-                </p>
-              )}
-              {closureOnly &&
-                closure &&
-                field(
-                  'late-cash-amount',
-                  t('lateCashAmountInput', {
-                    max: formatMoney(closure.unexplained, closure.currency),
-                  }),
-                  <Input
-                    id="late-cash-amount"
-                    inputMode="numeric"
-                    autoComplete="off"
-                    value={amountText}
-                    aria-invalid={Boolean(amountError && amountText)}
-                    onChange={(event) => setAmountText(event.target.value)}
-                  />,
-                  amountError && amountText ? (
-                    <span className="text-xs text-destructive">{t(amountError)}</span>
-                  ) : null,
-                )}
-              {amount && (
-                <p role="status">
-                  {t('lateCashAmount', { amount: formatMoney(amount, currency) })}
-                </p>
-              )}
-            </fieldset>
-            <fieldset className="space-y-3" disabled={frozen}>
-              <legend className="font-medium">{t('lateCashStepCustody')}</legend>
-              <RadioGroup
-                value={outcome}
-                onValueChange={(value) => setOutcome(value as CustodyOutcome)}
-                aria-label={t('lateCashStepCustody')}
-              >
-                {OUTCOMES.map((value) => (
-                  <div key={value} className="flex items-start gap-2">
-                    <RadioGroupItem value={value} id={`late-cash-outcome-${value}`} />
-                    <Label
-                      htmlFor={`late-cash-outcome-${value}`}
-                      className="flex flex-col items-start gap-0.5"
-                    >
-                      <span>{t(`lateCashOutcome_${value}`)}</span>
-                      <span className="text-xs font-normal text-muted-foreground">
-                        {t(`lateCashOutcomeHint_${value}`)}
-                      </span>
-                    </Label>
-                  </div>
-                ))}
-              </RadioGroup>
-              {outcome !== '' && (
-                <p role="status">
-                  <Badge variant={addsDrawerCash(outcome) ? 'warning' : 'secondary'}>
-                    {t(addsDrawerCash(outcome) ? 'lateCashAddsDrawer' : 'lateCashNoDrawer')}
-                  </Badge>
-                </p>
-              )}
-              {outcome !== '' && outcomeTakesShift(outcome) && (
-                <div className="grid gap-1">
-                  <span className="text-sm">
-                    {t(
-                      outcome === 'new_physical_inflow'
-                        ? 'lateCashTargetDrawer'
-                        : 'lateCashTargetFloat',
-                    )}
-                  </span>
-                  <FilterSelect
-                    label={t(
-                      outcome === 'new_physical_inflow'
-                        ? 'lateCashTargetDrawer'
-                        : 'lateCashTargetFloat',
-                    )}
-                    value={targetShiftId || NONE}
-                    options={[
-                      { value: NONE, label: t('lateCashNone') },
-                      ...targets.map((row) => ({
-                        value: row.id,
-                        label: t('lateCashShiftOption', {
-                          owner: row.owner_name,
-                          register: row.register ?? '—',
-                          float: formatMoney(row.opening_float, currency),
-                          time: time(row.opened_at),
-                        }),
-                      })),
-                    ]}
-                    onChange={(value) => setTargetShiftId(value === NONE ? '' : value)}
-                  />
-                </div>
-              )}
-              {outcome !== '' &&
-                outcomeNeedsReference(outcome) &&
-                field(
-                  'late-cash-reference',
-                  t('lateCashReference'),
-                  <Input
-                    id="late-cash-reference"
-                    value={reference}
-                    maxLength={120}
-                    onChange={(event) => setReference(event.target.value)}
-                  />,
-                )}
-              {field(
-                'late-cash-reason',
-                t('lateCashReason'),
+            )}
+            {outcome !== '' &&
+              outcomeNeedsReference(outcome) &&
+              field(
+                'late-cash-reference',
+                t('lateCashReference'),
                 <Input
-                  id="late-cash-reason"
-                  value={reason}
-                  maxLength={200}
-                  onChange={(event) => setReason(event.target.value)}
+                  id="late-cash-reference"
+                  value={reference}
+                  maxLength={120}
+                  onChange={(event) => setReference(event.target.value)}
                 />,
               )}
-            </fieldset>
-            {uncertain && (
-              <p role="status">
-                <Badge variant="warning">{t('shiftCommandChecking')}</Badge>
-              </p>
+            {field(
+              'late-cash-reason',
+              t('lateCashReason'),
+              <Input
+                id="late-cash-reason"
+                value={reason}
+                maxLength={200}
+                onChange={(event) => setReason(event.target.value)}
+              />,
             )}
-            {error && (
-              <p role="alert" className="text-sm text-destructive">
-                {error}
-              </p>
-            )}
-            <Button
-              type="submit"
-              disabled={locked || (!ready && !uncertain) || reconcile.isPending}
-            >
-              {reconcile.isPending
-                ? t('waiting')
-                : uncertain
-                  ? t('shiftCommandRecheck')
-                  : t('lateCashSubmit')}
-            </Button>
-          </form>
-        )}
-      </CardContent>
-    </Card>
+          </fieldset>
+          {uncertain && (
+            <p role="status">
+              <Badge variant="warning">{t('shiftCommandChecking')}</Badge>
+            </p>
+          )}
+          {error && (
+            <p role="alert" className="text-sm text-destructive">
+              {error}
+            </p>
+          )}
+          <Button type="submit" disabled={locked || (!ready && !uncertain) || reconcile.isPending}>
+            {reconcile.isPending
+              ? t('waiting')
+              : uncertain
+                ? t('shiftCommandRecheck')
+                : t('lateCashSubmit')}
+          </Button>
+        </form>
+      )}
+    </ModelCard>
   )
 }
 
@@ -441,19 +428,14 @@ function History({ branchId }: { branchId: string }) {
     ],
   })
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('lateCashHistory')}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ResourceTable<CashReconciliation>
-          tableKey={tableKey}
-          hideHeader
-          queryKey={['pos', 'cash-reconcile', branchId, 'list']}
-          queryFn={(params: Record<string, unknown>) => fetchReconciliations(branchId, params)}
-          searchParams={ONE_PAGE}
-        />
-      </CardContent>
-    </Card>
+    <ModelCard title={t('lateCashHistory')} id="late-cash-history" icon={<HistoryIcon />}>
+      <ResourceTable<CashReconciliation>
+        tableKey={tableKey}
+        hideHeader
+        queryKey={['pos', 'cash-reconcile', branchId, 'list']}
+        queryFn={(params: Record<string, unknown>) => fetchReconciliations(branchId, params)}
+        searchParams={ONE_PAGE}
+      />
+    </ModelCard>
   )
 }

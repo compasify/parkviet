@@ -39,9 +39,8 @@ import {
   useConfirm,
   useRowClickBridge,
 } from '@spree/dashboard-ui'
-import { BanIcon, CopyIcon, EyeIcon, StarIcon } from '@spree/dashboard-ui/icons'
+import { BanIcon, CopyIcon, EyeIcon, PlusIcon, StarIcon } from '@spree/dashboard-ui/icons'
 import { useNavigate, useSearch } from '@tanstack/react-router'
-import { Plus } from 'lucide-react'
 import { type FormEvent, useCallback, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Choice, Notice, PageState } from '../components/receipt-template/controls'
@@ -236,7 +235,7 @@ export function ReceiptTemplatesPage() {
                 setCreating(true)
               }}
             >
-              <Plus />
+              <PlusIcon />
               {t('receiptTemplates.create')}
             </Button>
           ) : undefined

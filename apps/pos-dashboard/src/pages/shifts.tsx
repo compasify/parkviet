@@ -11,8 +11,6 @@ import {
 import {
   defineTable,
   PageHeader,
-  type PageTab,
-  PageTabs,
   ResourceTable,
   resourceSearchSchema,
   usePermissions,
@@ -20,11 +18,6 @@ import {
 import {
   Badge,
   Button,
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
   Dialog,
   DialogContent,
   DialogFooter,
@@ -36,11 +29,13 @@ import {
   Textarea,
   useConfirm,
 } from '@spree/dashboard-ui'
-import { CheckIcon, XIcon } from '@spree/dashboard-ui/icons'
+import { CheckIcon, ClockIcon, XIcon } from '@spree/dashboard-ui/icons'
 import { useQueryClient } from '@tanstack/react-query'
-import { type ReactNode, useEffect, useState } from 'react'
+import { type ReactNode, useEffect, useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { BranchPicker } from '../components/branch-picker'
+import { PillTabs } from '../components/pill-tabs'
+import { ModelCard } from '../components/setup/model-ui'
 import { ShiftCloseDialog, VarianceText } from '../components/shift-close-dialog'
 import { usePosSession } from '../hooks/use-pos-session'
 import { useSession } from '../hooks/use-session'
@@ -87,10 +82,7 @@ export function ShiftsFrame({
   return (
     <div className="space-y-6">
       <PageHeader title={title} description={description} actions={<BranchPicker />} />
-      <PageTabs
-        className="overflow-x-auto"
-        tabs={tabs.map((tab) => ({ ...tab, to: tab.to as PageTab['to'] & string }))}
-      />
+      <PillTabs tabs={tabs} />
       {branchId ? (
         <div key={branchId}>{children(branchId)}</div>
       ) : (
@@ -113,16 +105,12 @@ function NoticeLine({ notice }: { notice: Notice }) {
 }
 
 function Section({ title, hint, children }: { title: string; hint: string; children: ReactNode }) {
+  const id = useId()
   return (
-    <section aria-label={title}>
-      <Card>
-        <CardHeader>
-          <CardTitle>{title}</CardTitle>
-          <CardDescription>{hint}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">{children}</CardContent>
-      </Card>
-    </section>
+    <ModelCard title={title} id={id} icon={<ClockIcon />}>
+      <p className="text-sm text-muted-foreground">{hint}</p>
+      {children}
+    </ModelCard>
   )
 }
 
