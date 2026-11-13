@@ -75,16 +75,51 @@ test('sole branch and sole register are selected without any popup or write', as
   expect(state.writes).toEqual([]);
 });
 
-test('multiple branches prompt once; sole register auto-selects after choosing branch', async ({ page }, testInfo) => {
+test('multiple branches prompt once and the popup waits for the cashier to pick the register', async ({ page }, testInfo) => {
   const state = await install(page, 2, [1, 1]);
   const dialog = page.getByRole('dialog', { name: 'Chọn nơi bán hàng' });
   await expect(dialog).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath('context-choice.png'), fullPage: true });
   await pickOption(dialog, 'Chi nhánh', 'br_2');
+  // The branch list stays and the popup stays open, even for a sole register.
+  await expect(dialog).toBeVisible();
+  await expect(picker(dialog, 'Chi nhánh')).toHaveAttribute('data-value', 'br_2');
+  await pickOption(dialog, 'Quầy', 'br_2_reg_1');
   await expect(dialog).not.toBeVisible();
   await expect(page.locator('.pos-context-details > summary')).toContainText('Chi nhánh 2');
   await expect(page.locator('.pos-context-details > summary')).toContainText('Quầy 1');
   expect(state.writes).toEqual([]);
+});
+
+test('the header picker switches only on Save, and Cancel keeps the current branch', async ({ page }) => {
+  await install(page, 2, [1, 1]);
+  const dialog = page.getByRole('dialog', { name: 'Chọn nơi bán hàng' });
+  await pickOption(dialog, 'Chi nhánh', 'br_1');
+  await pickOption(dialog, 'Quầy', 'br_1_reg_1');
+  await expect(dialog).not.toBeVisible();
+  const header = page.locator('.pos-context-details');
+  await header.locator('> summary').click();
+  await pickOption(header, 'Chi nhánh', 'br_2');
+  await expect(picker(header, 'Quầy')).toBeEnabled();
+  await expect(dialog).not.toBeVisible();
+  await expect(header).toHaveAttribute('open', '');
+  // Nothing switches until Save: the summary still names the first branch.
+  await expect(header.locator('> summary')).toContainText('Chi nhánh 1');
+  const save = header.getByRole('button', { name: 'Lưu', exact: true });
+  await expect(save).toBeDisabled();
+  await pickOption(header, 'Quầy', 'br_2_reg_1');
+  await header.getByRole('button', { name: 'Hủy', exact: true }).click();
+  await expect(header).not.toHaveAttribute('open', '');
+  await expect(header.locator('> summary')).toContainText('Chi nhánh 1');
+
+  await header.locator('> summary').click();
+  await expect(picker(header, 'Chi nhánh')).toHaveAttribute('data-value', 'br_1');
+  await pickOption(header, 'Chi nhánh', 'br_2');
+  await pickOption(header, 'Quầy', 'br_2_reg_1');
+  await save.click();
+  await expect(header).not.toHaveAttribute('open', '');
+  await expect(header.locator('> summary')).toContainText('Chi nhánh 2');
+  await expect(dialog).not.toBeVisible();
 });
 
 test('sole branch and multiple registers prompt only for the remaining choice', async ({ page }) => {

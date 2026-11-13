@@ -14,11 +14,15 @@ export function requestedStoreId(search: string): string | null {
 // A later switch to another store must not reuse that branch id.
 type Handoff = { storeId: string; branchId: string };
 let handoff: Handoff | null = null;
+let requestedStore: string | null = null;
 
 export function captureHandoff(search: string, rememberStore: (storeId: string) => void) {
   const storeId = requestedStoreId(search);
   const branchId = readParam(search, 'branch');
-  if (storeId) rememberStore(storeId);
+  if (storeId) {
+    requestedStore = storeId;
+    rememberStore(storeId);
+  }
   if (storeId && branchId) handoff = { storeId, branchId };
 }
 
@@ -26,6 +30,12 @@ export function handoffBranch(storeId: string): string | null {
   return handoff?.storeId === storeId ? handoff.branchId : null;
 }
 
+// The store the dashboard opened this tab for, so signing in goes straight there.
+export function handoffStore(): string | null {
+  return requestedStore;
+}
+
 export function clearRequestedHandoff() {
   handoff = null;
+  requestedStore = null;
 }

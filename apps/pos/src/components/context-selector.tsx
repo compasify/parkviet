@@ -1,36 +1,54 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useContextBranches, useContextRegisters } from '../hooks/use-context-options';
+import type { PosSelection } from '../lib/pos-context';
+import { emptyOptions } from '../lib/pos-selection-rules';
 import { posFailureKey } from '../lib/request-failure';
 import { usePosSelection } from './pos-selection';
 import { SearchableSelect } from './searchable-select';
 
-export function ContextSelector({ onRegisterSelected }: { onRegisterSelected?: () => void }) {
+// With `draft`, the picks only change that draft (the header picker saves it
+// on confirm); without it they change the live selection (the setup popup).
+export function ContextSelector({
+  draft,
+}: {
+  draft?: { selection: PosSelection; onChange: (next: PosSelection) => void };
+}) {
   const { t } = useTranslation();
-  const { selection, setSelection, context, notice, registerMode } = usePosSelection();
+  const live = usePosSelection();
+  const { context, notice, storeId } = live;
+  const selection = draft?.selection ?? live.selection;
+  const setSelection = draft?.onChange ?? live.setSelection;
+  // The loaded context describes the live selection only.
+  const current = selection.branchId === live.selection.branchId;
   const [branchSearch, setBranchSearch] = useState('');
   const [registerSearch, setRegisterSearch] = useState('');
   const [branchPage, setBranchPage] = useState(1);
   const [registerPage, setRegisterPage] = useState(1);
-  const branchQuery = useContextBranches(
-    context.data?.store.id ?? null,
-    context.isSuccess,
-    branchSearch,
-    branchPage,
-  );
+  // Keyed on the session's store, not the context being reloaded, so the
+  // lists stay on screen while a new branch loads.
+  const branchQuery = useContextBranches(storeId, true, branchSearch, branchPage);
   const registerQuery = useContextRegisters(
-    context.data?.store.id ?? null,
+    storeId,
     selection.branchId,
-    context.isSuccess,
+    true,
     registerSearch,
     registerPage,
   );
-  const branches = [...(branchQuery.data?.data ?? context.data?.branches ?? [])];
-  const registers = [...(registerQuery.data?.data ?? context.data?.registers ?? [])];
-  const selectedBranch = context.data?.branches.find((branch) => branch.id === selection.branchId);
-  const selectedRegister = context.data?.registers.find(
-    (register) => register.id === selection.registerId,
+  const registersLoading = Boolean(
+    selection.branchId && !registerSearch && (registerQuery.isPending || context.isPending),
   );
+  const noRegisters = Boolean(
+    !registerSearch && registerQuery.isSuccess && emptyOptions(registerQuery.data),
+  );
+  const branches = [...(branchQuery.data?.data ?? context.data?.branches ?? [])];
+  const registers = [
+    ...(registerQuery.data?.data ?? (current ? context.data?.registers : undefined) ?? []),
+  ];
+  const selectedBranch = context.data?.branches.find((branch) => branch.id === selection.branchId);
+  const selectedRegister = current
+    ? context.data?.registers.find((register) => register.id === selection.registerId)
+    : undefined;
   if (selectedBranch && !branches.some((branch) => branch.id === selectedBranch.id))
     branches.push(selectedBranch);
   if (selectedRegister && !registers.some((register) => register.id === selectedRegister.id))
@@ -40,7 +58,7 @@ export function ContextSelector({ onRegisterSelected }: { onRegisterSelected?: (
     `${row.name} · ${t(row.status === 'disabled' ? 'statusDisabled' : 'statusActive')}`;
 
   return (
-    <div className="selector" data-registers={registerMode}>
+    <div className="selector" data-registers={noRegisters ? 'none' : 'required'}>
       <div className="selector-group">
         <SearchableSelect
           label={t('branch')}
@@ -59,19 +77,15 @@ export function ContextSelector({ onRegisterSelected }: { onRegisterSelected?: (
           }}
         />
       </div>
-      {selection.branchId && registerMode !== 'none' ? (
+      {selection.branchId && !noRegisters ? (
         <div className="selector-group">
           <SearchableSelect
             label={t('register')}
-            placeholder={t('chooseRegister')}
+            placeholder={t(registersLoading ? 'registersLoading' : 'chooseRegister')}
             searchPlaceholder={t('searchRegister')}
             value={selection.registerId}
             // A search in flight must not disable (and blur) the field being typed in.
-            disabled={
-              !context.isSuccess ||
-              registerQuery.isError ||
-              (!registerQuery.isSuccess && !registerSearch)
-            }
+            disabled={registersLoading || registerQuery.isError || !context.isSuccess}
             options={registers.map((register) => ({
               value: register.id,
               label: optionLabel(register),
@@ -80,15 +94,15 @@ export function ContextSelector({ onRegisterSelected }: { onRegisterSelected?: (
             page={registerPage}
             pages={registerQuery.data?.meta.pages ?? 1}
             onPage={setRegisterPage}
-            onChange={(registerId) => {
-              setSelection({ branchId: selection.branchId, registerId });
-              onRegisterSelected?.();
-            }}
+            onChange={(registerId) => setSelection({ branchId: selection.branchId, registerId })}
           />
         </div>
       ) : null}
-      {branchQuery.isLoading || (selection.branchId && registerQuery.isLoading) ? (
-        <p role="status">{t('contextWaiting')}</p>
+      {branchQuery.isLoading || registersLoading ? (
+        <p role="status" className="selector-loading">
+          <span className="selector-spinner" aria-hidden />
+          {t(branchQuery.isLoading ? 'branchesLoading' : 'registersLoading')}
+        </p>
       ) : null}
       {branchQuery.isError || (selection.branchId && registerQuery.isError) ? (
         <div className="error" role="alert">
@@ -115,5 +129,39 @@ export function ContextSelector({ onRegisterSelected }: { onRegisterSelected?: (
       ) : null}
       {notice ? <p role="status">{t(notice)}</p> : null}
     </div>
+  );
+}
+
+// The header picker: branch and register are picked as a draft, and the
+// counter switches only on Save, so a stray pick never reloads the screen.
+export function ContextPickerForm({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation();
+  const { selection, setSelection, storeId } = usePosSelection();
+  const [draft, setDraft] = useState(selection);
+  const registers = useContextRegisters(storeId, draft.branchId, true);
+  const noRegisters = registers.isSuccess && emptyOptions(registers.data);
+  const complete = Boolean(draft.branchId && (draft.registerId || noRegisters));
+  const changed =
+    draft.branchId !== selection.branchId || draft.registerId !== selection.registerId;
+  return (
+    <>
+      <ContextSelector draft={{ selection: draft, onChange: setDraft }} />
+      <div className="context-picker-actions">
+        <button type="button" onClick={onClose}>
+          {t('contextCancel')}
+        </button>
+        <button
+          type="button"
+          className="primary-button"
+          disabled={!complete || !changed}
+          onClick={() => {
+            setSelection(draft);
+            onClose();
+          }}
+        >
+          {t('save')}
+        </button>
+      </div>
+    </>
   );
 }

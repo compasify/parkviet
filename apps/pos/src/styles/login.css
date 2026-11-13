@@ -24,7 +24,7 @@
 .login-split .auth-actions { grid-template-columns: minmax(0, 1fr); margin-top: var(--pos-s2); }
 .login-split .auth-actions button, .login-split .auth-actions a { border-radius: 10px; }
 .login-split .checkout-submit { box-shadow: 0 8px 20px #07569a33; }
-.login-split .auth-help { max-width: none; margin-top: var(--pos-s6); padding-top: var(--pos-s5); border-top: 1px solid var(--pos-border); text-align: left; }
+.pos-layout.login-split .auth-help { max-width: none; margin-top: var(--pos-s5); text-align: left; }
 
 /* Store picker: the sign-in column alone, one button per store */
 .login-split.store-picker { grid-template-columns: minmax(0, 1fr); }

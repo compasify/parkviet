@@ -14,6 +14,8 @@ type PosSelectionValue = {
   context: ReturnType<typeof usePosContext>;
   notice: string;
   registerMode: 'loading' | 'none' | 'required' | 'error';
+  /** The store the branch and register lists belong to; kept while a new selection loads. */
+  storeId: string | null;
   selectionComplete: boolean;
   needsSelection: boolean;
 };
@@ -25,16 +27,17 @@ export function PosSelectionProvider({ children }: { children: ReactNode }) {
   const [selection, setSelectionState] = useState<PosSelection>(emptySelection);
   const [ready, setReady] = useState(false);
   const [notice, setNotice] = useState('');
+  // Once the cashier picks a branch or register themself, nothing is chosen
+  // for them any more: the picker waits for their next choice.
+  const [userChoosing, setUserChoosing] = useState(false);
   const context = usePosContext(selection);
-  const branchOptions = useContextBranches(
-    context.data?.store.id ?? null,
-    ready && context.isSuccess,
-  );
-  const registerOptions = useContextRegisters(
-    context.data?.store.id ?? null,
-    selection.branchId,
-    ready && context.isSuccess,
-  );
+  // The context reloads on every selection change; the option lists must not
+  // be re-keyed (and emptied) while it does.
+  const knownStore = useRef<string | null>(null);
+  const storeId = snapshot.storeId ?? context.data?.store.id ?? knownStore.current;
+  knownStore.current = storeId;
+  const branchOptions = useContextBranches(storeId, ready);
+  const registerOptions = useContextRegisters(storeId, selection.branchId, ready);
   const soleBranch = onlyActiveOption(branchOptions.isSuccess ? branchOptions.data : undefined);
   const soleRegister = onlyActiveOption(
     registerOptions.isSuccess ? registerOptions.data : undefined,
@@ -56,8 +59,12 @@ export function PosSelectionProvider({ children }: { children: ReactNode }) {
       selection.branchId &&
       (selection.registerId || (registerOptions.isSuccess && registerMode === 'none')),
   );
+  // Only the opening flow asks through the setup popup. A cashier already
+  // choosing (in that popup or the header picker) finishes there; a popup
+  // springing up over the header picker would interrupt them.
   const needsSelection = Boolean(
     validated &&
+      !userChoosing &&
       (!selection.branchId
         ? (branchOptions.isSuccess && !soleBranch) || branchOptions.isError
         : !selection.registerId &&
@@ -71,6 +78,8 @@ export function PosSelectionProvider({ children }: { children: ReactNode }) {
     setSelectionState(emptySelection);
     setReady(false);
     setNotice('');
+    setUserChoosing(false);
+    knownStore.current = null;
     lastGood.current = emptySelection;
   }, [snapshot.generation]);
 
@@ -89,13 +98,13 @@ export function PosSelectionProvider({ children }: { children: ReactNode }) {
   }, [context.data, ready]);
 
   useEffect(() => {
-    if (!validated) return;
+    if (!validated || userChoosing) return;
     if (!selection.branchId && soleBranch) {
       setSelectionState({ branchId: soleBranch.id, registerId: null });
     } else if (selection.branchId && !selection.registerId && soleRegister) {
       setSelectionState({ branchId: selection.branchId, registerId: soleRegister.id });
     }
-  }, [validated, selection.branchId, selection.registerId, soleBranch, soleRegister]);
+  }, [validated, userChoosing, selection.branchId, selection.registerId, soleBranch, soleRegister]);
 
   useEffect(() => {
     if (!ready || !context.isSuccess || !context.data) return;
@@ -141,6 +150,7 @@ export function PosSelectionProvider({ children }: { children: ReactNode }) {
 
   function setSelection(next: PosSelection) {
     setNotice('');
+    setUserChoosing(true);
     setSelectionState(next);
   }
 
@@ -152,6 +162,7 @@ export function PosSelectionProvider({ children }: { children: ReactNode }) {
         context,
         notice,
         registerMode,
+        storeId,
         selectionComplete,
         needsSelection,
       }}

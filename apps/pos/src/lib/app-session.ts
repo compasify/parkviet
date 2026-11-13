@@ -2,6 +2,7 @@ import { connectivity } from './connectivity';
 import { emitOfflineChanged, offlineDb } from './offline-store';
 import { queryClient } from './query-client';
 import { conflictReason, failureStatus } from './request-failure';
+import { handoffStore } from './requested-store';
 import {
   browserSessionChannel,
   createSessionCoordinator,
@@ -34,6 +35,7 @@ export const session = createSessionCoordinator({
       }
     },
     write: rememberStore,
+    requested: handoffStore,
   },
   onCleared: (explicitLogout) => {
     queryClient.clear();

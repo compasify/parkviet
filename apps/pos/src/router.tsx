@@ -7,6 +7,7 @@ import {
 } from '@tanstack/react-router';
 import { PosShell } from './components/pos-shell';
 import { rememberStore, session } from './lib/app-session';
+import { queryClient } from './lib/query-client';
 import { captureHandoff } from './lib/requested-store';
 import { needsStoreChoice } from './lib/session-coordinator';
 import { BottleKeepsPage } from './pages/bottle-keeps';
@@ -57,14 +58,24 @@ const authedRoute = createRoute({
   component: PosShell,
 });
 
-// A cashier working in several stores picks the one this tab sells for.
+// A cashier working in several stores picks the one this tab sells for; with
+// a single store there is nothing to pick, so the page is skipped.
 const storeRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/store',
   beforeLoad: async () => {
     takeDashboardHandoff();
     if (session.getSnapshot().status !== 'authenticated') await session.restore();
-    if (session.getSnapshot().status !== 'authenticated') throw redirect({ to: '/login' });
+    const snapshot = session.getSnapshot();
+    if (snapshot.status !== 'authenticated') throw redirect({ to: '/login' });
+    const only = snapshot.stores.length === 1 ? snapshot.stores[0] : undefined;
+    if (only) {
+      if (only.id !== snapshot.storeId) {
+        session.selectStore(only.id);
+        queryClient.clear();
+      }
+      throw redirect({ to: '/' });
+    }
   },
   component: StorePickerPage,
 });

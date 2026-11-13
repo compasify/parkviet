@@ -26,12 +26,12 @@ import {
   scopedIntents,
 } from '../lib/uncertain-intents';
 import { AppUpdatePrompt } from './app-update-prompt';
-import { ContextSelector } from './context-selector';
+import { ContextPickerForm } from './context-selector';
 import { ContextSetupDialog } from './context-setup-dialog';
+import { ConnectionBadge, ShiftBadge } from './header-status';
 import { OfflineBanner } from './offline-banner';
 import { OpenShiftDialog } from './open-shift-dialog';
 import { PosIcon } from './pos-icon';
-import { RealtimeDot } from './pos-page';
 import { PosSelectionProvider, usePosSelection } from './pos-selection';
 import { ScannerCalibrationDialog } from './scanner-calibration';
 import { UserMenu } from './user-menu';
@@ -90,6 +90,12 @@ function ShellFrame() {
   );
   const setupUrl = setupNeeded ? posDashboardUrl(context.data?.store.id, 'setup') : null;
   const contextPicker = useRef<HTMLDetailsElement>(null);
+  // The picker's draft lives only while it is open, so reopening starts from
+  // the current branch and register.
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const closePicker = () => {
+    if (contextPicker.current) contextPicker.current.open = false;
+  };
   // A header navigation must not leave the picker covering the destination page.
   // biome-ignore lint/correctness/useExhaustiveDependencies: the route change is the dismissal trigger
   useEffect(() => {
@@ -290,11 +296,11 @@ function ShellFrame() {
   // Payment attention lives in the POS dashboard (new tab, see UserMenu).
   const attentionUrl = posDashboardUrl(store?.id, 'funds/attention', selection.branchId);
   const offline = !online || !server.online || failure === 'offline';
-  const connection = offline
-    ? t('connectionOffline')
-    : context.isPending
-      ? t('contextWaiting')
-      : t('connectionOnline');
+  // Known from the session before the context loads, so the header never blanks.
+  const storeName =
+    store?.name ||
+    snapshot.stores.find((item) => item.id === snapshot.storeId)?.name ||
+    t('storeHeading');
   const branch = context.data?.branches.find((item) => item.id === selection.branchId);
   const register = context.data?.registers.find((item) => item.id === selection.registerId);
 
@@ -313,55 +319,57 @@ function ShellFrame() {
           ParkViet <span>POS</span>
         </strong>
         <span className="header-title">{pageTitle}</span>
-        <details className="pos-context-details" ref={contextPicker}>
+        <details
+          className="pos-context-details"
+          ref={contextPicker}
+          onToggle={(event) => setPickerOpen(event.currentTarget.open)}
+        >
           <summary title={t('changeContext')}>
-            <span>
-              <b className="context-label">{t('branch')}:</b> {branch?.name ?? t('chooseBranch')}
-            </span>
-            {registerMode === 'required' || selection.registerId ? (
-              <span>
-                <b className="context-label">{t('register')}:</b>{' '}
-                {register?.name ?? t('chooseRegister')}
+            <PosIcon name="store" />
+            <span className="context-chip">
+              <span className="context-chip-store">{storeName}</span>
+              <span className="context-chip-place">
+                <span className="visually-hidden">{t('branch')}: </span>
+                {branch?.name ?? t('chooseBranch')}
+                {registerMode === 'required' || selection.registerId ? (
+                  <>
+                    <span className="context-chip-sep" aria-hidden>
+                      {' · '}
+                    </span>
+                    <span className="visually-hidden">{t('register')}: </span>
+                    {register?.name ?? t('chooseRegister')}
+                  </>
+                ) : null}
               </span>
-            ) : null}
+            </span>
             <span className="context-change">
               <span className="visually-hidden">{t('changeContext')}</span>
               <PosIcon name="chevron" />
             </span>
           </summary>
           <div className="context-popover">
-            <p className="context-account">{snapshot.name}</p>
-            <ContextSelector
-              onRegisterSelected={() => {
-                if (contextPicker.current) contextPicker.current.open = false;
-              }}
-            />
-            {store ? (
-              <p>
-                {t('storeLine', { name: store.name || store.id, currency: store.currency || '—' })}
-              </p>
-            ) : null}
-            {snapshot.stores.length > 1 ? (
-              <button type="button" className="button-link" disabled={busy} onClick={changeStore}>
-                {t('changeStore')}
-              </button>
-            ) : null}
+            <div className="context-store">
+              <span className="context-store-icon">
+                <PosIcon name="store" />
+              </span>
+              <div className="context-store-text">
+                <small>{t('storeHeading')}</small>
+                <strong>{storeName}</strong>
+                {store?.currency ? <span>{store.currency}</span> : null}
+              </div>
+              {snapshot.stores.length > 1 ? (
+                <button type="button" disabled={busy} onClick={changeStore}>
+                  {t('changeStore')}
+                </button>
+              ) : null}
+            </div>
+            <h2 className="context-popover-title">{t('contextPickerTitle')}</h2>
+            {pickerOpen ? <ContextPickerForm onClose={closePicker} /> : null}
           </div>
         </details>
         <div className="pos-context-status">
-          <RealtimeDot />
-          <span
-            className="connection-status"
-            data-offline={offline}
-            role="status"
-            title={connection}
-          >
-            <span className="connection-dot" />
-            <span className={offline ? '' : 'visually-hidden'}>{connection}</span>
-          </span>
-          {isSale ? (
-            <span>{context.data?.shift ? t('shiftOpenCompact') : t('shiftNotOpen')}</span>
-          ) : null}
+          <ConnectionBadge offline={offline} loading={context.isPending} />
+          {isSale ? <ShiftBadge open={Boolean(context.data?.shift)} /> : null}
         </div>
         <UserMenu
           name={snapshot.name}

@@ -13,6 +13,8 @@ async function selectReviewContext(page: Page, credentials: { branch_id: string;
   if (await pickerValue(page, 'Chi nhánh') !== credentials.branch_id) await pickOption(page, 'Chi nhánh', credentials.branch_id);
   await expect(picker(page, 'Quầy')).toBeEnabled();
   if (await pickerValue(page, 'Quầy') !== credentials.register_id) await pickOption(page, 'Quầy', credentials.register_id);
+  const save = page.locator('.pos-context-details').getByRole('button', { name: 'Lưu', exact: true });
+  if (await save.isEnabled()) await save.click();
   await page.locator('.pos-context-details').evaluate((element) => { (element as HTMLDetailsElement).open = false; });
 }
 

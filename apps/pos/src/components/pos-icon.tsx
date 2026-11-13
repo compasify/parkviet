@@ -21,6 +21,15 @@ const paths = {
     </>
   ),
   plus: <path d="M12 5v14 M5 12h14" />,
+  store: (
+    <path d="M4 10v10h16V10 M3 6l1.5-3h15L21 6v2a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0Z M10 20v-5h4v5" />
+  ),
+  clock: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
+    </>
+  ),
   minus: <path d="M5 12h14" />,
   location: (
     <>

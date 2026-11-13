@@ -179,6 +179,9 @@ test('switching register never shows the previous register shift while the new c
   const summary = picker.locator('summary');
   await summary.click();
   await pickOption(picker, 'Quầy', otherRegister.id);
+  // The header picker switches only on Save.
+  expect(world.slowStartedAt).toBeUndefined();
+  await picker.getByRole('button', { name: 'Lưu', exact: true }).click();
   await expect.poll(() => world.slowStartedAt ?? 0).toBeGreaterThan(0);
   expect(world.lateServedAt).toBeUndefined();
   await expect(page.getByText('Ca đang mở', { exact: true })).toHaveCount(0);

@@ -51,15 +51,19 @@ type StaffIdentity = {
 type StoreMemory = {
   read: () => string | null;
   write: (storeId: string) => void;
+  /** The store a link (the dashboard's "open POS") named for this sign-in. */
+  requested?: () => string | null;
 };
 
 // The remembered store wins while the cashier still works there; a single
-// store needs no choice; otherwise the default store, which is listed only
-// when the cashier holds a role in it. Without any store the API keeps its
-// default store and its own role check.
-export function chooseStore(stores: StoreChoice[], remembered: string | null) {
+// store needs no choice. A fresh sign-in to several stores always asks, so the
+// cashier sees which store they sell for; a reload falls back to the default
+// store, which is listed only when the cashier holds a role in it. Without any
+// store the API keeps its default store and its own role check.
+export function chooseStore(stores: StoreChoice[], remembered: string | null, signIn = false) {
   if (remembered && stores.some((store) => store.id === remembered)) return remembered;
   if (stores.length === 1) return stores[0]?.id ?? null;
+  if (signIn) return null;
   return stores.find((store) => store.default)?.id ?? null;
 }
 
@@ -157,9 +161,14 @@ export function createSessionCoordinator(options: {
 
   // Runs before anything else talks to the POS API, so no request of this
   // session reaches the API's default store by mistake.
-  function signedIn(active: PosApi, identity: StaffIdentity, started: number) {
+  // A sign-in only reopens the store a link asked for; a restored session
+  // (reload, another tab) keeps selling for the remembered store.
+  function signedIn(active: PosApi, identity: StaffIdentity, started: number, signIn = false) {
     const stores = identity.user.stores ?? [];
-    const storeId = chooseStore(stores, options.storeMemory?.read() ?? null);
+    const remembered = signIn
+      ? (options.storeMemory?.requested?.() ?? null)
+      : (options.storeMemory?.read() ?? null);
+    const storeId = chooseStore(stores, remembered, signIn);
     if (storeId) active.setStore(storeId);
     publish({
       status: 'authenticated',
@@ -259,7 +268,7 @@ export function createSessionCoordinator(options: {
         bindUnauthorized(active, started);
         const identity = await active.me.get();
         if (started !== generation) throw new SessionSuperseded();
-        signedIn(active, identity, started);
+        signedIn(active, identity, started, true);
         return identity;
       } catch (error) {
         if (started === generation) replaceClient();

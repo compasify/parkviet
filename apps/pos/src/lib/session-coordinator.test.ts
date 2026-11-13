@@ -405,12 +405,36 @@ describe('cửa hàng của phiên', () => {
     ).toBeNull();
   });
 
-  it('opens the default store without asking a cashier of several stores', async () => {
+  it('reopens the default store after a reload without asking', async () => {
     const api = staffOf(client(), [{ ...retail, default: true }, restaurant]);
     sdk.create.mockReturnValue(api);
     const session = createSessionCoordinator({ origin: 'http://localhost' });
-    await session.login('staff@example.test', 'password');
+    await session.restore();
     expect(api.setStore).toHaveBeenCalledWith('st_retail');
+    expect(needsStoreChoice(session.getSnapshot())).toBe(false);
+  });
+
+  it('asks which store on a fresh sign-in, even with a default or remembered store', async () => {
+    const api = staffOf(client(), [{ ...retail, default: true }, restaurant]);
+    sdk.create.mockReturnValue(api);
+    const session = createSessionCoordinator({
+      origin: 'http://localhost',
+      storeMemory: remembering('st_food'),
+    });
+    await session.login('staff@example.test', 'password');
+    expect(api.setStore).not.toHaveBeenCalled();
+    expect(needsStoreChoice(session.getSnapshot())).toBe(true);
+  });
+
+  it('signs in straight to the store the dashboard link named', async () => {
+    const api = staffOf(client(), [retail, restaurant]);
+    sdk.create.mockReturnValue(api);
+    const session = createSessionCoordinator({
+      origin: 'http://localhost',
+      storeMemory: { ...remembering('st_retail'), requested: () => 'st_food' },
+    });
+    await session.login('staff@example.test', 'password');
+    expect(api.setStore).toHaveBeenCalledWith('st_food');
     expect(needsStoreChoice(session.getSnapshot())).toBe(false);
   });
 

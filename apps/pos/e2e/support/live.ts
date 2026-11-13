@@ -62,6 +62,8 @@ export async function liveLogin(page: Page, fixture: LiveFixture, who: 'cashier'
     .toBe(true);
   if ((await pickerValue(page, 'Quầy')) !== fixture.register_id) await pickOption(page, 'Quầy', fixture.register_id);
   await liveExpect(page.getByText('Ca đang mở', { exact: false }).first()).toBeAttached({ timeout: 15_000 });
+  const save = page.locator('.pos-context-details').getByRole('button', { name: 'Lưu', exact: true });
+  if (await save.isEnabled()) await save.click();
   await page.locator('.pos-context-details').evaluate((element) => {
     (element as HTMLDetailsElement).open = false;
   });
