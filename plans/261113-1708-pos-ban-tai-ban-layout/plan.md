@@ -98,7 +98,7 @@ Phase 1 và 2 độc lập, chạy song song được. Phase 3 và 4 độc lậ
 2. Ngưỡng "ngồi lâu" mặc định 60 phút, cấu hình theo chi nhánh trong pos-dashboard (phase 2): giữ vậy hay cấu hình theo khu / loại bàn?
 3. Có cần hỏi nhanh 2–3 thu ngân để xác nhận phiếu đặt bên phải trước khi làm phase 5 không?
 
-Các câu trên được làm theo mặc định của plan (quán ăn có bàn mở bảng bàn, ngưỡng theo chi nhánh, phiếu bên phải); chờ chủ quán xác nhận.
+Trả lời của chủ quán (13/11/2026): (1) đúng, quán ăn có bàn mở bảng bàn; (2) ăn uống ở Việt Nam không tính giờ, thời gian ngồi chỉ để tham khảo: cảnh báo ngồi lâu là tùy chọn mặc định tắt, bật lên thì gợi ý 180 phút; (3) không cần hỏi thu ngân, giữ phiếu bên phải.
 
 ## Việc còn lại sau plan
 

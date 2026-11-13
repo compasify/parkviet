@@ -70,6 +70,7 @@ import {
   readSeatedAlertMinutes,
   readServiceChargeRate,
   readTableDraft,
+  SEATED_ALERT_DEFAULT,
   SEATED_ALERT_MAX,
   SEATED_ALERT_MIN,
   SERVICE_CHARGE_MAX,
@@ -863,6 +864,7 @@ type SettingsDraft = {
   qrMode: QrOrderMode
   qrLimit: string
   qrMaxItems: string
+  seatedAlertOn: boolean
   seatedAlert: string
 }
 
@@ -870,7 +872,8 @@ const settingsDraftOf = (settings: TableSettings): SettingsDraft => ({
   qrMode: settings.qr_order_mode,
   qrLimit: settings.qr_order_auto_limit?.replace(/\.0+$/, '') ?? '',
   qrMaxItems: String(settings.qr_order_auto_max_items),
-  seatedAlert: settings.seated_alert_minutes === null ? '' : String(settings.seated_alert_minutes),
+  seatedAlertOn: settings.seated_alert_minutes !== null,
+  seatedAlert: String(settings.seated_alert_minutes ?? SEATED_ALERT_DEFAULT),
   register: settings.table_register_id ?? '',
   rate: settings.service_charge_rate ?? '',
   modes: settings.service_charge_applies_to,
@@ -1067,7 +1070,10 @@ function TableSettingsCard({ write }: { write: boolean }) {
   const loaded = settings.data
   const current = draft ?? (loaded ? settingsDraftOf(loaded) : null)
   const rate = current ? readServiceChargeRate(current.rate) : null
-  const seatedAlert = current ? readSeatedAlertMinutes(current.seatedAlert) : null
+  // Off sends null; on needs whole minutes in range (blank is invalid then).
+  const seatedAlert = current?.seatedAlertOn
+    ? (readSeatedAlertMinutes(current.seatedAlert) ?? undefined)
+    : null
   const keepDays = current ? readKeepDays(current.keepDays) : null
   const qrLimit = current ? readQrLimit(current.qrLimit) : null
   const qrMaxItems = current ? readQrMaxItems(current.qrMaxItems) : undefined
@@ -1161,17 +1167,28 @@ function TableSettingsCard({ write }: { write: boolean }) {
             options={registerOptions}
             onChange={(register) => edit({ register })}
           />
-          <div className="flex flex-col gap-2 sm:max-w-xs">
-            <Label htmlFor="seated-alert-minutes">{t('floorPlan.seatedAlert')}</Label>
-            <Input
-              id="seated-alert-minutes"
-              inputMode="numeric"
-              value={current.seatedAlert}
+          <div className="flex flex-col gap-2">
+            <ModelCheck
+              checked={current.seatedAlertOn}
               disabled={!write}
-              aria-invalid={seatedAlert === undefined}
-              aria-describedby="seated-alert-minutes-hint"
-              onChange={(event) => edit({ seatedAlert: event.target.value })}
-            />
+              onChange={(seatedAlertOn) => edit({ seatedAlertOn })}
+            >
+              {t('floorPlan.seatedAlert')}
+            </ModelCheck>
+            {current.seatedAlertOn ? (
+              <div className="flex flex-col gap-2 sm:max-w-xs">
+                <Label htmlFor="seated-alert-minutes">{t('floorPlan.seatedAlertMinutes')}</Label>
+                <Input
+                  id="seated-alert-minutes"
+                  inputMode="numeric"
+                  value={current.seatedAlert}
+                  disabled={!write}
+                  aria-invalid={seatedAlert === undefined}
+                  aria-describedby="seated-alert-minutes-hint"
+                  onChange={(event) => edit({ seatedAlert: event.target.value })}
+                />
+              </div>
+            ) : null}
             <small
               id="seated-alert-minutes-hint"
               className={seatedAlert === undefined ? 'text-destructive' : 'text-muted-foreground'}

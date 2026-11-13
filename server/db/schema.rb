@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_13_103148) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_13_150000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gist"
   enable_extension "pg_catalog.plpgsql"
@@ -2512,7 +2512,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_13_103148) do
     t.integer "kiosk_idle_seconds", default: 60, null: false
     t.integer "kiosk_qr_timeout_seconds", default: 180, null: false
     t.boolean "kiosk_kitchen_before_payment", default: false, null: false
-    t.integer "seated_alert_minutes", default: 60
+    t.integer "seated_alert_minutes"
     t.index ["cup_label_printer_id"], name: "index_spree_pos_branches_on_cup_label_printer_id"
     t.index ["service_charge_tax_category_id"], name: "index_spree_pos_branches_on_service_charge_tax_category_id"
     t.index ["stock_location_id"], name: "index_spree_pos_branches_on_stock_location_id"

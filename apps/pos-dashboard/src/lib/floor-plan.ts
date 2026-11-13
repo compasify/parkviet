@@ -239,8 +239,10 @@ export function readKeepDays(value: string): number | null | undefined {
 }
 
 // How long a table may stay seated before the floor flags it, as typed: 10
-// to 600 minutes. Null when blank (the alert is off); undefined when it is not
-// a number of minutes in range.
+// to 600 minutes. Null when blank; undefined when it is not a number of
+// minutes in range. Eating out is not timed in Vietnam, so the alert is off
+// by default and suggests three hours when a branch turns it on.
+export const SEATED_ALERT_DEFAULT = 180
 export const SEATED_ALERT_MIN = 10
 export const SEATED_ALERT_MAX = 600
 export function readSeatedAlertMinutes(value: string): number | null | undefined {

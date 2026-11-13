@@ -17,13 +17,13 @@ Hướng dẫn cho chủ quán dùng ba ngành phục vụ tại bàn: **Quán �
 1. Tạo khu (Tầng 1, Sân vườn…) với kích thước lưới.
 2. Thêm bàn: tên, số chỗ, hình (chữ nhật, tròn), vị trí và kích thước trên lưới.
 3. Kéo bàn trên sơ đồ để xếp lại.
-4. Đặt **Cảnh báo bàn ngồi lâu (phút)**: mặc định 60, từ 10 đến 600. Để trống thì tắt cảnh báo.
+4. **Cảnh báo bàn ngồi lâu** mặc định tắt: ở Việt Nam ăn uống không tính giờ, nên số phút ngồi trên ô bàn chỉ để tham khảo. Chi nhánh muốn được nhắc thì bật ô này và đặt số phút (gợi ý 180, từ 10 đến 600).
 
 ### Màn bán của chi nhánh có bàn
 
 Chi nhánh bật sơ đồ bàn (Nhà hàng, Quán ăn có bàn) mở màn bán (`apps/pos`) trên **bảng bàn** toàn màn. Nhà hàng mặc định xem theo sơ đồ khu, quán ăn theo lưới ô bàn. Mỗi máy đổi qua lại được giữa ô bàn và sơ đồ, và nhớ lựa chọn của mình. Bar mở trên danh sách tab theo tên khách, giữ màn bán như cũ.
 
-- **Ô bàn** ghi tên bàn, số phút đã ngồi (chữ lớn nhất), trạng thái bằng chữ, số khách và tiền tạm tính. Nền ô có năm màu: **Trống**, **Đang phục vụ**, **Có món chưa gửi bếp**, **Đã in tạm tính**, **Gọi thanh toán**. Dải đỏ trên ô là bàn ngồi quá ngưỡng cảnh báo, hoặc có món chờ quá mốc trễ của khu bếp. Góc ô có biểu tượng: giờ khách đặt, ₫ khi gọi thanh toán, số đơn khi bàn có nhiều đơn, và dấu sửa khi đơn đổi sau khi in tạm tính. Chú thích màu nằm dưới các nút lọc.
+- **Ô bàn** ghi tên bàn, số phút đã ngồi (chữ lớn nhất), trạng thái bằng chữ, số khách và tiền tạm tính. Nền ô có năm màu: **Trống**, **Đang phục vụ**, **Có món chưa gửi bếp**, **Đã in tạm tính**, **Gọi thanh toán**. Dải đỏ trên ô là bàn ngồi quá ngưỡng cảnh báo (chỉ khi chi nhánh bật), hoặc có món chờ quá mốc trễ của khu bếp. Góc ô có biểu tượng: giờ khách đặt, ₫ khi gọi thanh toán, số đơn khi bàn có nhiều đơn, và dấu sửa khi đơn đổi sau khi in tạm tính. Chú thích màu nằm dưới các nút lọc.
 - **Lọc:** **Tất cả**, **Đang dùng**, **Trống**, **Cần xử lý** (gọi thanh toán, có món chưa gửi bếp, hoặc có dải đỏ), mỗi nút kèm số bàn. Chi nhánh bán thực đơn có thêm ô **+ Mang về**, và có giao hàng thì thêm ô **+ Giao đi**, để mở đơn không theo bàn.
 - **Mở bàn:** chạm bàn trống, chọn số khách rồi bấm **Mở bàn · n khách**. Bàn đang có một đơn thì chạm là vào thẳng đơn đó.
 - **Gọi món:** thực đơn theo nhóm món bên trái, phiếu bàn bên phải. Món không có tùy chọn thêm bằng một chạm. Món có tùy chọn mở bảng tùy chọn tại chỗ; nút thêm bị khóa khi còn nhóm bắt buộc chưa chọn. Phiếu bàn nhóm món theo **Lượt gửi**, **Course** hoặc **Ghế**. **Giữ món** giữ các món gọi tiếp theo, chưa gửi bếp, trong course đã chọn (mặc định Món chính); **Gọi món ra** gửi phần đang giữ vào bếp.
