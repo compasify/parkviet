@@ -138,7 +138,7 @@ RUN corepack enable pnpm && mkdir -p /out/pos /out/pos-admin /out/table && \
   fi && \
   if [ -f apps/pos-dashboard/package.json ]; then \
     (cd apps/pos-dashboard && pnpm install --frozen-lockfile && \
-      VITE_BASE_PATH=/pos-admin/ pnpm build && cp -R dist/. /out/pos-admin/); \
+      VITE_BASE_PATH=/pos-admin/ VITE_POS_URL=/pos/ pnpm build && cp -R dist/. /out/pos-admin/); \
   fi && \
   if [ -f apps/table-order/package.json ]; then \
     (cd apps/table-order && pnpm install --frozen-lockfile && \

@@ -5,6 +5,7 @@ import { useSession } from '../hooks/use-session';
 import { emptySelection, type PosSelection } from '../lib/pos-context';
 import { emptyOptions, onlyActiveOption } from '../lib/pos-selection-rules';
 import { posFailureKey } from '../lib/request-failure';
+import { handoffBranch } from '../lib/requested-store';
 import { readLayout, writeLayout } from '../lib/workspace-storage';
 
 type PosSelectionValue = {
@@ -76,7 +77,12 @@ export function PosSelectionProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (ready || !context.data) return;
     const saved = readLayout(context.data.staff.id, context.data.store.id);
-    if (saved?.branchId) {
+    // The dashboard named this branch for this store. A saved layout of
+    // another visit must not override the screen the reader just left.
+    const requested = handoffBranch(context.data.store.id);
+    if (requested) {
+      setSelectionState({ branchId: requested, registerId: null });
+    } else if (saved?.branchId) {
       setSelectionState({ branchId: saved.branchId, registerId: saved.registerId });
     }
     setReady(true);

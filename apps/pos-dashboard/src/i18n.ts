@@ -24,6 +24,7 @@ const shell = {
       error: 'Something went wrong. Please try again.',
       branch: 'Branch',
       noBranches: 'No available branches',
+      openCounter: 'POS',
     },
   },
   vi: {
@@ -45,6 +46,7 @@ const shell = {
       error: 'Đã xảy ra lỗi. Vui lòng thử lại.',
       branch: 'Chi nhánh',
       noBranches: 'Chưa có chi nhánh',
+      openCounter: 'POS',
     },
   },
 }

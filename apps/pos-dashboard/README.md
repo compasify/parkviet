@@ -45,6 +45,7 @@ người dùng, màn hình đăng nhập và thông báo thiết lập của ứ
 | `VITE_SPREE_API_URL` | Để trống | Origin công khai của API; để trống để dùng `/api` cùng origin |
 | `VITE_API_PROXY_TARGET` | `http://localhost:3000` | Đích proxy của Vite cho `/api` và `/rails` khi phát triển |
 | `VITE_BASE_PATH` | `/` | Đường dẫn gốc công khai, ví dụ `/pos-admin/`; cần build lại khi thay đổi |
+| `VITE_POS_URL` | `http://localhost:5175` khi phát triển; ẩn nút khi bản production không đặt | Địa chỉ ứng dụng thu ngân. Nút POS trên thanh bên mở màn bán hàng của cửa hàng đang xem trong tab mới. Chấp nhận đường dẫn cùng origin, ví dụ `/pos/` |
 
 Mọi giá trị `VITE_*` đều được nhúng vào các tệp gửi đến trình duyệt. **Không bao
 giờ đặt API secret, thông tin đăng nhập cơ sở dữ liệu, token nhân viên hoặc khóa

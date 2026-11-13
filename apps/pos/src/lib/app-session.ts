@@ -12,6 +12,16 @@ import { clearLayout } from './workspace-storage';
 
 const STORE_KEY = 'parkviet-pos-store';
 
+// The store this browser sells for. The dashboard writes it before the page
+// restores a session, so a switch opens that store instead of the last one.
+export function rememberStore(storeId: string) {
+  try {
+    window.localStorage.setItem(STORE_KEY, storeId);
+  } catch {
+    // Private mode: the cashier picks again next time.
+  }
+}
+
 export const session = createSessionCoordinator({
   origin: window.location.origin,
   channel: browserSessionChannel(),
@@ -23,13 +33,7 @@ export const session = createSessionCoordinator({
         return null;
       }
     },
-    write: (storeId) => {
-      try {
-        window.localStorage.setItem(STORE_KEY, storeId);
-      } catch {
-        // Private mode: the cashier picks again next time.
-      }
-    },
+    write: rememberStore,
   },
   onCleared: (explicitLogout) => {
     queryClient.clear();

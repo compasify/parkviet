@@ -7,6 +7,7 @@ import {
 } from '@spree/dashboard-core'
 import { createFileRoute, Outlet, retainSearchParams, useRouterState } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
+import { PosCounterLink } from '../../components/pos-counter-link'
 import { PosSessionContext, useCreatePosSession } from '../../hooks/use-pos-session'
 import { setActiveStoreId } from '../../lib/active-store'
 import { rememberStore } from '../../lib/store-selection'
@@ -44,6 +45,7 @@ function PosShell() {
   return (
     <PosSessionContext.Provider value={value}>
       <PosNavigation />
+      <PosCounterLink />
       <AppShellProvider>
         <AppShell
           inSettings={inSettings}

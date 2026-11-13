@@ -6,7 +6,8 @@ import {
   redirect,
 } from '@tanstack/react-router';
 import { PosShell } from './components/pos-shell';
-import { session } from './lib/app-session';
+import { rememberStore, session } from './lib/app-session';
+import { captureHandoff } from './lib/requested-store';
 import { needsStoreChoice } from './lib/session-coordinator';
 import { BottleKeepsPage } from './pages/bottle-keeps';
 import { CollectPage } from './pages/collect';
@@ -38,10 +39,17 @@ const loginRoute = createRoute({
   component: LoginPage,
 });
 
+// The dashboard opens the counter with ?store=&branch=. Remember both before
+// the session picks a store, then let the sale screen apply the branch.
+function takeDashboardHandoff() {
+  captureHandoff(window.location.search, rememberStore);
+}
+
 const authedRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: 'authed',
   beforeLoad: async () => {
+    takeDashboardHandoff();
     if (session.getSnapshot().status !== 'authenticated') await session.restore();
     if (session.getSnapshot().status !== 'authenticated') throw redirect({ to: '/login' });
     if (needsStoreChoice(session.getSnapshot())) throw redirect({ to: '/store' });
@@ -54,6 +62,7 @@ const storeRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/store',
   beforeLoad: async () => {
+    takeDashboardHandoff();
     if (session.getSnapshot().status !== 'authenticated') await session.restore();
     if (session.getSnapshot().status !== 'authenticated') throw redirect({ to: '/login' });
   },
