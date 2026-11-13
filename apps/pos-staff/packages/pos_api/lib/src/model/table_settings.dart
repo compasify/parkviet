@@ -24,6 +24,7 @@ part 'table_settings.g.dart';
 /// * [qrOrderMode] - How guests' orders from the table QR are taken.
 /// * [qrOrderAutoLimit] - The largest guest order that goes straight to the kitchen.
 /// * [qrOrderAutoMaxItems] - The most items a guest order may have to go straight to the kitchen.
+/// * [seatedAlertMinutes] - How long a table may stay seated before the floor flags it; null turns the alert off.
 /// * [tipSplit]
 /// * [branchId]
 /// * [tableRegisterId] - The register whose open shift table orders are booked on.
@@ -69,6 +70,10 @@ abstract class TableSettings
   /// The most items a guest order may have to go straight to the kitchen.
   @BuiltValueField(wireName: r'qr_order_auto_max_items')
   int? get qrOrderAutoMaxItems;
+
+  /// How long a table may stay seated before the floor flags it; null turns the alert off.
+  @BuiltValueField(wireName: r'seated_alert_minutes')
+  int? get seatedAlertMinutes;
 
   @BuiltValueField(wireName: r'tip_split')
   TipSplitRule? get tipSplit;
@@ -175,6 +180,13 @@ class _$TableSettingsSerializer implements PrimitiveSerializer<TableSettings> {
       yield serializers.serialize(
         object.qrOrderAutoMaxItems,
         specifiedType: const FullType(int),
+      );
+    }
+    if (object.seatedAlertMinutes != null) {
+      yield r'seated_alert_minutes';
+      yield serializers.serialize(
+        object.seatedAlertMinutes,
+        specifiedType: const FullType.nullable(int),
       );
     }
     if (object.tipSplit != null) {
@@ -315,6 +327,14 @@ class _$TableSettingsSerializer implements PrimitiveSerializer<TableSettings> {
           ) as int?;
           if (valueDes == null) continue;
           result.qrOrderAutoMaxItems = valueDes;
+          break;
+        case r'seated_alert_minutes':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(int),
+          ) as int?;
+          if (valueDes == null) continue;
+          result.seatedAlertMinutes = valueDes;
           break;
         case r'tip_split':
           final valueDes = serializers.deserialize(

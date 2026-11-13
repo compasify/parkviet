@@ -21,6 +21,7 @@ part 'table_settings_input.g.dart';
 /// * [qrOrderMode]
 /// * [qrOrderAutoLimit] - Required for direct_to_kitchen.
 /// * [qrOrderAutoMaxItems]
+/// * [seatedAlertMinutes] - Minutes before the floor flags a long-seated table; null turns the alert off.
 /// * [reservationGraceMinutes]
 /// * [reservationDurationMinutes]
 /// * [reservationFeeProductId]
@@ -55,6 +56,10 @@ abstract class TableSettingsInput
 
   @BuiltValueField(wireName: r'qr_order_auto_max_items')
   int? get qrOrderAutoMaxItems;
+
+  /// Minutes before the floor flags a long-seated table; null turns the alert off.
+  @BuiltValueField(wireName: r'seated_alert_minutes')
+  int? get seatedAlertMinutes;
 
   @BuiltValueField(wireName: r'reservation_grace_minutes')
   int? get reservationGraceMinutes;
@@ -148,6 +153,13 @@ class _$TableSettingsInputSerializer
       yield serializers.serialize(
         object.qrOrderAutoMaxItems,
         specifiedType: const FullType(int),
+      );
+    }
+    if (object.seatedAlertMinutes != null) {
+      yield r'seated_alert_minutes';
+      yield serializers.serialize(
+        object.seatedAlertMinutes,
+        specifiedType: const FullType.nullable(int),
       );
     }
     if (object.reservationGraceMinutes != null) {
@@ -268,6 +280,14 @@ class _$TableSettingsInputSerializer
           ) as int?;
           if (valueDes == null) continue;
           result.qrOrderAutoMaxItems = valueDes;
+          break;
+        case r'seated_alert_minutes':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(int),
+          ) as int?;
+          if (valueDes == null) continue;
+          result.seatedAlertMinutes = valueDes;
           break;
         case r'reservation_grace_minutes':
           final valueDes = serializers.deserialize(

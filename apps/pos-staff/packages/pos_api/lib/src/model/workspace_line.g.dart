@@ -189,6 +189,8 @@ class _$WorkspaceLine extends WorkspaceLine {
   @override
   final LineKitchenStatus? kitchenStatus;
   @override
+  final int? kitchenSendSequence;
+  @override
   final int? course;
   @override
   final WorkspaceLineCourseStatusEnum? courseStatus;
@@ -221,6 +223,7 @@ class _$WorkspaceLine extends WorkspaceLine {
       this.rowVersion,
       this.addedBy,
       this.kitchenStatus,
+      this.kitchenSendSequence,
       this.course,
       this.courseStatus,
       this.seat,
@@ -256,6 +259,7 @@ class _$WorkspaceLine extends WorkspaceLine {
         rowVersion == other.rowVersion &&
         addedBy == other.addedBy &&
         kitchenStatus == other.kitchenStatus &&
+        kitchenSendSequence == other.kitchenSendSequence &&
         course == other.course &&
         courseStatus == other.courseStatus &&
         seat == other.seat &&
@@ -284,6 +288,7 @@ class _$WorkspaceLine extends WorkspaceLine {
     _$hash = $jc(_$hash, rowVersion.hashCode);
     _$hash = $jc(_$hash, addedBy.hashCode);
     _$hash = $jc(_$hash, kitchenStatus.hashCode);
+    _$hash = $jc(_$hash, kitchenSendSequence.hashCode);
     _$hash = $jc(_$hash, course.hashCode);
     _$hash = $jc(_$hash, courseStatus.hashCode);
     _$hash = $jc(_$hash, seat.hashCode);
@@ -314,6 +319,7 @@ class _$WorkspaceLine extends WorkspaceLine {
           ..add('rowVersion', rowVersion)
           ..add('addedBy', addedBy)
           ..add('kitchenStatus', kitchenStatus)
+          ..add('kitchenSendSequence', kitchenSendSequence)
           ..add('course', course)
           ..add('courseStatus', courseStatus)
           ..add('seat', seat)
@@ -407,6 +413,11 @@ class WorkspaceLineBuilder
   set kitchenStatus(LineKitchenStatusBuilder? kitchenStatus) =>
       _$this._kitchenStatus = kitchenStatus;
 
+  int? _kitchenSendSequence;
+  int? get kitchenSendSequence => _$this._kitchenSendSequence;
+  set kitchenSendSequence(int? kitchenSendSequence) =>
+      _$this._kitchenSendSequence = kitchenSendSequence;
+
   int? _course;
   int? get course => _$this._course;
   set course(int? course) => _$this._course = course;
@@ -454,6 +465,7 @@ class WorkspaceLineBuilder
       _rowVersion = $v.rowVersion;
       _addedBy = $v.addedBy?.toBuilder();
       _kitchenStatus = $v.kitchenStatus?.toBuilder();
+      _kitchenSendSequence = $v.kitchenSendSequence;
       _course = $v.course;
       _courseStatus = $v.courseStatus;
       _seat = $v.seat;
@@ -506,6 +518,7 @@ class WorkspaceLineBuilder
             rowVersion: rowVersion,
             addedBy: _addedBy?.build(),
             kitchenStatus: _kitchenStatus?.build(),
+            kitchenSendSequence: kitchenSendSequence,
             course: course,
             courseStatus: courseStatus,
             seat: seat,

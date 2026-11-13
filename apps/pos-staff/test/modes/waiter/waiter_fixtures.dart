@@ -170,7 +170,7 @@ Map<String, Object?> tileJson(
       'orders': orders,
     };
 
-Map<String, Object?> orderJson(String id, {int pending = 0, bool paymentRequested = false}) => {
+Map<String, Object?> orderJson(String id, {int pending = 0, int unsent = 0, bool paymentRequested = false}) => {
       'id': id,
       'table_label': null,
       'guest_count': 2,
@@ -181,6 +181,7 @@ Map<String, Object?> orderJson(String id, {int pending = 0, bool paymentRequeste
       'prebilled': false,
       'edited_after_prebill': false,
       'pending_kitchen_items': pending,
+      'unsent_kitchen_items': unsent,
     };
 
 ResourceBoard boardOf(List<Map<String, Object?>> tiles) => parse(ResourceBoard.serializer, {

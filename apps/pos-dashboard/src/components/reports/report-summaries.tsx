@@ -76,10 +76,7 @@ export function ReportSummary({
   if (entries.length === 0) return null
   return (
     <SummaryCard title={t('reportSummary')}>
-      <dl
-        aria-label={t('reportSummary')}
-        className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3 lg:grid-cols-4"
-      >
+      <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3 lg:grid-cols-4">
         {entries.map(([key, value]) => (
           <div key={key}>
             <dt className="text-muted-foreground">
