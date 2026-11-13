@@ -50,6 +50,7 @@ test('empty store redirects to five-step setup; pharmacy defaults and risky opt-
   await expect(page.getByRole('radio', { name: 'Không bán sỉ', exact: true })).toBeChecked(); await next(page);
   await page.getByLabel('Tên chi nhánh', { exact: true }).fill('Nhà thuốc Minh Châu');
   await expect(page.getByLabel('Mã chi nhánh', { exact: true })).toHaveValue('nha-thuoc-minh-chau');
+  await expect(page.getByRole('combobox', { name: 'Múi giờ', exact: true })).toContainText('Asia/Ho_Chi_Minh');
   await chooseLocation(page); await expect(page.getByRole('checkbox', { name: /Cấp cho tôi toàn quyền/ })).toBeChecked(); await next(page);
   await expect(page.getByLabel('Số ngày cho phép trả hàng', { exact: false })).toHaveValue('7');
   await expect(page.getByRole('combobox', { name: 'Chọn lô khi bán', exact: false })).toContainText('FEFO');

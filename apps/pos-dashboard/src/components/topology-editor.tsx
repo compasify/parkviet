@@ -1,7 +1,7 @@
 import { type BusinessProfile, profileLabelKey } from '@parkviet/pos-shared/pos-modules'
 import { describeFailure } from '@parkviet/pos-shared/request-failure'
 import { defaultsFromProfile } from '@parkviet/pos-shared/setup-wizard'
-import { mapSpreeErrorsToForm } from '@spree/dashboard-core'
+import { mapSpreeErrorsToForm, TimezoneCombobox } from '@spree/dashboard-core'
 import {
   Button,
   Checkbox,
@@ -328,7 +328,20 @@ export function TopologyEditor({
                   { value: '', label: t('adminDefaultWarehouse') },
                   ...warehouses,
                 ])}
-                {text('timezone', 'timezone', undefined, 64)}
+                <TopologyField
+                  label={t('timezone')}
+                  hint={t('timezoneHint')}
+                  error={form.formState.errors.timezone?.message}
+                >
+                  {(id) => (
+                    <TimezoneCombobox
+                      id={id}
+                      value={draft.timezone}
+                      invalid={Boolean(form.formState.errors.timezone)}
+                      onValueChange={(value) => set('timezone', value)}
+                    />
+                  )}
+                </TopologyField>
                 {text('business_day_cutoff', 'businessDayCutoff', 'businessDayCutoffHint', 5)}
                 {text('staff_session_idle_minutes', 'devices.idle', 'devices.idleHint', 3)}
                 {text('return_window_days', 'adminReturnWindow', 'adminReturnWindowHint', 4)}

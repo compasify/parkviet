@@ -1,5 +1,6 @@
 import { posFailureKey } from '@parkviet/pos-shared/request-failure'
 import type { SetupAction, SetupProblem, SetupState } from '@parkviet/pos-shared/setup-wizard'
+import { TimezoneCombobox } from '@spree/dashboard-core'
 import { Button, Input, Label } from '@spree/dashboard-ui'
 import type { Dispatch } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -51,13 +52,15 @@ export function SetupBranchStep({
       </div>
       <div className="space-y-2">
         <Label htmlFor="setup-timezone">{t('timezone')}</Label>
-        <Input
+        <TimezoneCombobox
           id="setup-timezone"
-          maxLength={64}
           value={state.branch.timezone}
-          aria-invalid={problems.includes('timezone')}
-          onChange={(event) => dispatch({ type: 'timezone', value: event.target.value })}
+          invalid={problems.includes('timezone')}
+          onValueChange={(value) => dispatch({ type: 'timezone', value })}
         />
+        <p id="setup-timezone-hint" className="text-sm text-muted-foreground">
+          {t('timezoneHint')}
+        </p>
       </div>
       {locations.isPending ? (
         <p role="status">{t('waiting')}</p>

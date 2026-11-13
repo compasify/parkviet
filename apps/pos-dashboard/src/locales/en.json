@@ -108,6 +108,16 @@
   "topology": "Branches and registers",
   "code": "Code",
   "timezone": "Timezone",
+  "timezoneHint": "Defaults to the store timezone. Choose another zone if this branch is elsewhere.",
+  "admin": {
+    "components": {
+      "timezone_combobox": {
+        "empty": "No timezones found",
+        "placeholder": "Select a timezone",
+        "search_placeholder": "Search timezones…"
+      }
+    }
+  },
   "businessDayCutoff": "Business day cutoff",
   "businessDayCutoffHint": "A time before this cutoff belongs to the previous business day. For example 04:00.",
   "businessDayCutoffInvalid": "Cutoff must be HH:MM, from 00:00 to 23:59.",

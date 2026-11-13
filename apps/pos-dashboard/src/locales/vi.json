@@ -108,6 +108,16 @@
   "topology": "Chi nhánh và quầy",
   "code": "Mã",
   "timezone": "Múi giờ",
+  "timezoneHint": "Mặc định theo múi giờ của cửa hàng. Chọn múi giờ khác nếu chi nhánh ở nơi khác.",
+  "admin": {
+    "components": {
+      "timezone_combobox": {
+        "empty": "Không tìm thấy múi giờ",
+        "placeholder": "Chọn múi giờ",
+        "search_placeholder": "Tìm múi giờ…"
+      }
+    }
+  },
   "businessDayCutoff": "Giờ chốt ngày kinh doanh",
   "businessDayCutoffHint": "Giờ trước mốc này thuộc ngày kinh doanh hôm trước. Ví dụ 04:00.",
   "businessDayCutoffInvalid": "Giờ chốt phải là HH:MM, từ 00:00 đến 23:59.",
