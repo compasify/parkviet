@@ -21,7 +21,7 @@ Hướng dẫn cho chủ quán dùng ba ngành phục vụ tại bàn: **Quán �
 
 ### Màn bán của chi nhánh có bàn
 
-Chi nhánh bật sơ đồ bàn (Nhà hàng, Quán ăn có bàn) mở màn bán (`apps/pos`) trên **bảng bàn** toàn màn. Nhà hàng mặc định xem theo sơ đồ khu, quán ăn theo lưới ô bàn. Mỗi máy đổi qua lại được giữa ô bàn và sơ đồ, và nhớ lựa chọn của mình. Bar mở trên danh sách tab theo tên khách, giữ màn bán như cũ.
+Chi nhánh bật sơ đồ bàn (Nhà hàng, Quán ăn có bàn) mở màn bán (`apps/pos`) trên **bảng bàn** toàn màn. Nhà hàng mặc định xem theo sơ đồ khu, quán ăn theo lưới ô bàn. Mỗi máy đổi qua lại được giữa ô bàn và sơ đồ, và nhớ lựa chọn của mình. Bar mở trên danh sách tab theo tên khách cạnh thực đơn, sơ đồ bàn cách một chạm (xem [Tab quầy bar cho bar, pub và club](fnb-bar-tab.md)).
 
 - **Ô bàn** ghi tên bàn, số phút đã ngồi (chữ lớn nhất), trạng thái bằng chữ, số khách và tiền tạm tính. Nền ô có năm màu: **Trống**, **Đang phục vụ**, **Có món chưa gửi bếp**, **Đã in tạm tính**, **Gọi thanh toán**. Dải đỏ trên ô là bàn ngồi quá ngưỡng cảnh báo (chỉ khi chi nhánh bật), hoặc có món chờ quá mốc trễ của khu bếp. Góc ô có biểu tượng: giờ khách đặt, ₫ khi gọi thanh toán, số đơn khi bàn có nhiều đơn, và dấu sửa khi đơn đổi sau khi in tạm tính. Chú thích màu nằm dưới các nút lọc.
 - **Lọc:** **Tất cả**, **Đang dùng**, **Trống**, **Cần xử lý** (gọi thanh toán, có món chưa gửi bếp, hoặc có dải đỏ), mỗi nút kèm số bàn. Chi nhánh bán thực đơn có thêm ô **+ Mang về**, và có giao hàng thì thêm ô **+ Giao đi**, để mở đơn không theo bàn.

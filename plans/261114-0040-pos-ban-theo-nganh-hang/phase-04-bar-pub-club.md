@@ -1,7 +1,7 @@
 ---
 phase: 4
 title: "Tab quầy bar cho bar, pub và club"
-status: pending
+status: done
 effort: "2 ngày"
 dependsOn: []
 ---

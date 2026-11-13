@@ -1,7 +1,7 @@
 ---
 title: "Màn bán theo ngành F&B còn lại"
 description: "Đưa cafe, căng tin, karaoke-bida và bar sang bố cục hai vùng như màn bán tại bàn: quầy nhanh cho quán trả trước, bảng phòng tính giờ, tab quầy bar. Nhà hàng đã xong ở plan trước."
-status: in-progress
+status: done
 priority: P1
 effort: "~9 ngày công"
 branch: "v2"
@@ -62,18 +62,18 @@ Quán ăn không bật bàn cũng là `fnb.menu` không có `fnb.tables`, nên c
 | 1 | [Quầy nhanh cho cafe và trà sữa](./phase-01-quay-nhanh-cafe.md) | 2,5 ngày | – | xong |
 | 2 | [Căng tin và trạm dừng trên quầy nhanh](./phase-02-cang-tin-tram-dung.md) | 1,5 ngày | 1 | xong |
 | 3 | [Bảng phòng tính giờ cho karaoke và bida](./phase-03-karaoke-bida.md) | 3 ngày | – | xong |
-| 4 | [Tab quầy bar cho bar, pub và club](./phase-04-bar-pub-club.md) | 2 ngày | – | chưa làm |
+| 4 | [Tab quầy bar cho bar, pub và club](./phase-04-bar-pub-club.md) | 2 ngày | – | xong |
 
 Phase 1, 3, 4 độc lập về bố cục nhưng cùng sửa `sellingLayoutOf`, `table-service-screen.tsx` và locale POS, nên làm lần lượt 1 → 2 → 3 → 4. Mỗi phase tự cập nhật e2e và tài liệu ngành của mình.
 
 ## Tiêu chí nghiệm thu
 
-- [ ] Cafe mở POS thấy ngay màn gọi món có số gọi to ở đầu phiếu, chọn loại đơn một chạm, ô món có ảnh, thanh toán trong phiếu; xong đơn thì phiếu trống cho đơn kế.
-- [ ] Căng tin gõ mã suất ăn ngay trên màn bán, nghe âm báo hợp lệ/trùng/lỗi; trạm dừng mở và gắn lượt xe từ màn bán.
-- [ ] Karaoke mở POS thấy bảng phòng toàn màn với đồng hồ lớn, cam khi còn ≤10 phút, đỏ khi hết giờ, xám khi tạm dừng; thanh toán khi đồng hồ chạy hỏi "Dừng giờ và thanh toán?".
-- [ ] Bar mở POS thấy danh sách tab bên trái, thực đơn giữa, phiếu phải; chuyển sang sơ đồ bàn VIP một chạm.
-- [ ] Bán lẻ không đổi: e2e `full-retail` qua. E2E `fnb-call-number`, `meal-accounts`, `vehicle-visits`, `karaoke`, `bar-tabs` qua sau khi sửa theo bố cục mới.
-- [ ] `pnpm typecheck`, `pnpm lint`, unit test và e2e của file đã đổi trong `apps/pos` đều qua.
+- [x] Cafe mở POS thấy ngay màn gọi món có số gọi to ở đầu phiếu, chọn loại đơn một chạm, ô món có ảnh, thanh toán trong phiếu; xong đơn thì phiếu trống cho đơn kế.
+- [x] Căng tin gõ mã suất ăn ngay trên màn bán, nghe âm báo hợp lệ/trùng/lỗi; trạm dừng mở và gắn lượt xe từ màn bán.
+- [x] Karaoke mở POS thấy bảng phòng toàn màn với đồng hồ lớn, cam khi còn ≤10 phút, đỏ khi hết giờ, xám khi tạm dừng; thanh toán khi đồng hồ chạy hỏi "Dừng giờ và thanh toán?".
+- [x] Bar mở POS thấy danh sách tab bên trái, thực đơn giữa, phiếu phải; chuyển sang sơ đồ bàn VIP một chạm.
+- [x] Bán lẻ không đổi: e2e `full-retail` qua. E2E `fnb-call-number`, `meal-accounts`, `vehicle-visits`, `karaoke`, `bar-tabs` qua sau khi sửa theo bố cục mới.
+- [x] `pnpm typecheck`, `pnpm lint`, unit test và e2e của file đã đổi trong `apps/pos` đều qua.
 
 ## Rủi ro
 

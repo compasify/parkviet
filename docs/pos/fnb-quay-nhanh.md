@@ -6,7 +6,7 @@ Hướng dẫn cho thu ngân ở chi nhánh bán thực đơn tại quầy mà k
 
 Màn bán mở **quầy nhanh** khi chi nhánh bật thực đơn và không bật sơ đồ bàn. Chi nhánh có bàn mở bảng bàn ([Bán tại bàn và trả tiền sau](fnb-ban-va-tra-sau.md)). Cửa hàng bán lẻ giữ màn bán theo danh mục như cũ.
 
-Chi nhánh bật **suất ăn và ví** hoặc **hoa hồng tài xế** cũng mở quầy nhanh, với ô mã suất ăn và dải xe ở trạm (xem [Căng tin và trạm dừng](#căng-tin-và-trạm-dừng)). Chi nhánh trả tiền sau hoặc tính giờ (tab quầy bar, phòng karaoke, bida) mà không bật sơ đồ bàn vẫn dùng màn bán có tab đơn; karaoke và bida có bàn dùng [bảng phòng tính giờ](fnb-karaoke-bida.md).
+Chi nhánh bật **suất ăn và ví** hoặc **hoa hồng tài xế** cũng mở quầy nhanh, với ô mã suất ăn và dải xe ở trạm (xem [Căng tin và trạm dừng](#căng-tin-và-trạm-dừng)). Chi nhánh trả tiền sau hoặc tính giờ (tab quầy bar, phòng karaoke, bida) mà không bật sơ đồ bàn vẫn dùng màn bán có tab đơn; karaoke và bida có bàn dùng [bảng phòng tính giờ](fnb-karaoke-bida.md), bar có bàn dùng [tab quầy bar](fnb-bar-tab.md).
 
 ## Bố cục
 
