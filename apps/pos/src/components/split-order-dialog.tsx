@@ -17,6 +17,7 @@ export function SplitOrderDialog({
   onSplit,
   onSplitBySeat,
   onClose,
+  initialMode = 'lines',
 }: {
   workspace: PosWorkspace;
   tableId: string | null;
@@ -27,6 +28,8 @@ export function SplitOrderDialog({
   // One bill per seat, each shared dish on the seat picked for it.
   onSplitBySeat?: (shared: Record<string, number>) => void;
   onClose: () => void;
+  // The way it opens: by lines, or by seat where seats are tracked.
+  initialMode?: 'lines' | 'seat';
 }) {
   const { t } = useTranslation();
   const titleId = useId();
@@ -34,7 +37,7 @@ export function SplitOrderDialog({
   const [picked, setPicked] = useState<string[]>([]);
   const [target, setTarget] = useState('');
   const bySeat = Boolean(onSplitBySeat) && canSplitBySeat(workspace);
-  const [mode, setMode] = useState<'lines' | 'seat'>('lines');
+  const [mode, setMode] = useState<'lines' | 'seat'>(initialMode);
   const seats = seatsOf(workspace);
   const shared = sharedLines(workspace);
   const [sharedSeat, setSharedSeat] = useState<Record<string, number>>({});

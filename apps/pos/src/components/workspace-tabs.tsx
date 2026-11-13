@@ -975,49 +975,7 @@ export function WorkspaceTabsView({
                       command={(action) => command(active, action)}
                     />
                   ) : null}
-                  <PaymentPanel
-                    workspace={active}
-                    mealSponsorAmount={meal?.plan?.sponsor_amount ?? null}
-                    storedValueCards={data?.modules?.timed_billing === true}
-                    staffId={staffId}
-                    storeId={storeId}
-                    canCollect={Boolean(data?.capabilities.includes('pos.payment.collect'))}
-                    canResolve={Boolean(data?.capabilities.includes('pos.payment.resolve'))}
-                    canSellCredit={Boolean(data?.capabilities.includes('pos.credit.sell'))}
-                    creditEnabled={contextFeature(data, 'credit')}
-                    einvoiceType={data?.einvoice_type ?? 'none'}
-                    // Only an explicit switch skips the second person.
-                    quickCredit={data?.features?.quick_credit === true}
-                    // A table order without money yet moves to the shift of whoever
-                    // collects it, so the collector's own open drawer is enough.
-                    drawerOpen={Boolean(
-                      data?.shift &&
-                        (data.shift.id === active.shift_id ||
-                          (activeTable.table !== null && !active.payments)) &&
-                        data.shift.owner_id === data.staff.id,
-                    )}
-                    disabled={
-                      locked ||
-                      busy ||
-                      !isEditor ||
-                      (active.operational_status !== 'editing' &&
-                        active.operational_status !== 'completed')
-                    }
-                    command={(action) => command(active, action)}
-                    reserveTrace={(current) => workspaces.reserveTrace(current)}
-                    ticketNames={{
-                      storeName: data?.store.name,
-                      branchName: data?.branches.find((row) => row.id === active.branch_id)?.name,
-                      registerName: data?.registers.find((row) => row.id === active.register_id)
-                        ?.name,
-                      cashier: data?.staff.full_name || data?.staff.email,
-                    }}
-                    timeZone={
-                      data?.branches.find((row) => row.id === active.branch_id)?.timezone ??
-                      data?.store.timezone ??
-                      'Asia/Ho_Chi_Minh'
-                    }
-                  />
+                  <PaymentPanel {...activePaymentProps(selling, active)} />
                   <DisplayPinControl
                     shiftId={data?.shift?.id ?? null}
                     ownsShift={Boolean(data?.shift && data.shift.owner_id === data.staff.id)}
@@ -1170,6 +1128,48 @@ export function orderTimeZone(selling: SellingWorkspace, active: PosWorkspace): 
     selling.data?.store.timezone ??
     'Asia/Ho_Chi_Minh'
   );
+}
+
+// What the payment of the selected order needs, the same on the counter's
+// checkout column and on the table payment screen.
+export function activePaymentProps(selling: SellingWorkspace, active: PosWorkspace) {
+  const { data, staffId, storeId, workspaces, locked, busy, isEditor, activeTable, meal, command } =
+    selling;
+  return {
+    workspace: active,
+    mealSponsorAmount: meal?.plan?.sponsor_amount ?? null,
+    storedValueCards: data?.modules?.timed_billing === true,
+    staffId,
+    storeId,
+    canCollect: Boolean(data?.capabilities.includes('pos.payment.collect')),
+    canResolve: Boolean(data?.capabilities.includes('pos.payment.resolve')),
+    canSellCredit: Boolean(data?.capabilities.includes('pos.credit.sell')),
+    creditEnabled: contextFeature(data, 'credit'),
+    einvoiceType: data?.einvoice_type ?? 'none',
+    // Only an explicit switch skips the second person.
+    quickCredit: data?.features?.quick_credit === true,
+    // A table order without money yet moves to the shift of whoever
+    // collects it, so the collector's own open drawer is enough.
+    drawerOpen: Boolean(
+      data?.shift &&
+        (data.shift.id === active.shift_id || (activeTable.table !== null && !active.payments)) &&
+        data.shift.owner_id === data.staff.id,
+    ),
+    disabled:
+      locked ||
+      busy ||
+      !isEditor ||
+      (active.operational_status !== 'editing' && active.operational_status !== 'completed'),
+    command: (action: (current: PosWorkspace) => Promise<PosWorkspace>) => command(active, action),
+    reserveTrace: (current: PosWorkspace) => workspaces.reserveTrace(current),
+    ticketNames: {
+      storeName: data?.store.name,
+      branchName: data?.branches.find((row) => row.id === active.branch_id)?.name,
+      registerName: data?.registers.find((row) => row.id === active.register_id)?.name,
+      cashier: data?.staff.full_name || data?.staff.email,
+    },
+    timeZone: orderTimeZone(selling, active),
+  };
 }
 
 // The pre-bill of the order, closed through the selling state's `prebillOpen`.

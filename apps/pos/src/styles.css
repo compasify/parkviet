@@ -1178,3 +1178,79 @@ kbd { padding: var(--pos-s1); border: 1px solid var(--pos-border); border-radius
   .order-frame { grid-template-columns: minmax(0,1fr); grid-template-rows: minmax(0,1fr) minmax(0,1fr); }
   .ticket { border-left: 0; border-top: 1px solid var(--pos-border); }
 }
+/* Table service: payment over the whole screen. The bill on the left
+   (400px) with discounts and charges on lines of their own; on the right
+   what is due in three big boxes, the QR beside the cash keypad, the rarer
+   methods below, and the bill's tools with the finish button in the foot. */
+.pos-sale .table-service-pay > .pay-screen { flex: 1 1 0; min-height: 0; }
+.pay-screen { display: grid; grid-template-columns: 400px minmax(0,1fr); background: var(--pos-bg); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); overflow: hidden; }
+.pay-empty { display: grid; justify-items: start; gap: var(--pos-s3); padding: var(--pos-s3); background: var(--pos-surface); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); }
+.pay-bill { min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--pos-surface); border-right: 1px solid var(--pos-border); }
+.pay-bill > * { flex-shrink: 0; }
+.pay-bill-header { display: flex; align-items: center; gap: var(--pos-s2); min-width: 0; padding: 10px var(--pos-s3); border-bottom: 1px solid var(--pos-border); }
+.pos-layout .pay-bill-name { min-width: 0; margin: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 1.375rem; font-weight: 800; line-height: 1.15; }
+.pay-bill-name small { font-size: var(--pos-small); font-weight: 600; color: var(--pos-muted); }
+.pos-layout .pay-bill .pay-bill-lines { flex: 1 1 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; margin: 0; padding: 0; list-style: none; }
+.pay-bill-lines li { display: grid; grid-template-columns: 34px minmax(0,1fr) auto; align-items: center; gap: var(--pos-s2); min-height: 44px; padding: 6px var(--pos-s3); border-bottom: 1px solid var(--pos-bg); }
+.pay-bill-qty { height: 30px; display: flex; align-items: center; justify-content: center; border-radius: var(--pos-radius); background: var(--pos-tint); font-weight: 800; }
+.pay-bill-item { font-weight: 700; overflow-wrap: anywhere; }
+.pay-bill-amount { font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.pay-bill-sum { margin: 0; padding: var(--pos-s2) var(--pos-s3); border-top: 1px solid var(--pos-border); font-size: var(--pos-small); }
+.pay-bill-sum .checkout-line { display: flex; justify-content: space-between; align-items: baseline; gap: var(--pos-s2); padding: 2px 0; font-variant-numeric: tabular-nums; }
+.pay-bill-sum .pay-bill-discount { color: var(--pos-success); }
+.pay-bill-sum .pay-bill-total { padding-top: var(--pos-s1); font-size: 1.25rem; font-weight: 800; }
+.pay-bill .reservation-deposit-note { margin: 0 var(--pos-s3) var(--pos-s2); }
+.pay-main { min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: var(--pos-s3); padding: 14px var(--pos-s4); overflow-y: auto; }
+.pay-main > * { flex-shrink: 0; }
+.pay-due { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; margin: 0; }
+.pay-due > div { min-width: 0; padding: 10px 14px; background: var(--pos-surface); border: 1px solid var(--pos-border); border-radius: 12px; }
+.pay-due dt { font-size: var(--pos-small); font-weight: 600; color: var(--pos-muted); }
+.pay-due dd { margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 1.75rem; font-weight: 800; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.pay-due small { font-size: var(--pos-small); color: var(--pos-muted); }
+.pay-due .pay-due-left dd { color: var(--pos-danger); }
+.pay-due .pay-due-change dd { color: var(--pos-success); }
+.pay-main > .pay-cards { flex: 1 1 auto; }
+.pay-cards { display: grid; grid-template-columns: 310px minmax(0,1fr); gap: var(--pos-s3); }
+.pay-cards-single { grid-template-columns: minmax(0,1fr); }
+.pay-card { min-width: 0; display: flex; flex-direction: column; gap: var(--pos-s2); padding: var(--pos-s3); background: var(--pos-surface); border: 1px solid var(--pos-border); border-radius: 12px; }
+.pay-card-active { border: 2px solid var(--pos-blue); }
+.pos-layout .pay-card h3 { display: flex; align-items: center; gap: var(--pos-s2); margin: 0; font-size: .875rem; }
+.pay-card h3 .pos-icon { width: 16px; height: 16px; }
+.pay-qr { display: block; width: 176px; height: 176px; margin: 0 auto; padding: 6px; border: 1px solid var(--pos-border); border-radius: 8px; background: #fff; object-fit: contain; }
+.pay-qr-amount { text-align: center; font-size: 1.5rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.pay-qr-note { text-align: center; font-size: var(--pos-small); color: var(--pos-muted); overflow-wrap: anywhere; }
+.pay-qr-status { margin: 0; text-align: center; font-size: .8125rem; font-weight: 600; color: var(--pos-blue); }
+.pay-qr-status.received { color: var(--pos-success); }
+.pos-layout .pay-vietqr button { align-self: center; }
+.pay-cash-body { display: grid; grid-template-columns: minmax(0,1fr) 230px; gap: 10px; align-items: start; }
+.pay-cash-quick { display: grid; grid-template-columns: 1fr 1fr; gap: var(--pos-s2); }
+.pos-layout .pay-cash-quick button { min-height: 52px; border-radius: 10px; font-size: 1.0625rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.pos-layout .pay-cash-quick .pay-cash-exact { grid-column: 1 / -1; background: var(--pos-ink); border-color: var(--pos-ink); color: var(--pos-surface); }
+.pos-layout .pay-cash-quick .pay-cash-exact:not(:disabled):hover { background: #0f1d29; border-color: #0f1d29; }
+.pay-keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.pos-layout .pay-keypad .pay-keypad-display { grid-column: 1 / -1; width: 100%; height: 44px; min-height: 44px; margin: 0; padding: 0 12px; text-align: right; font-size: 1.375rem; font-weight: 800; background: var(--pos-tint); }
+.pos-layout .pay-keypad button { min-height: 44px; padding: 0; border-radius: 8px; font-size: 1.125rem; font-weight: 700; }
+.pay-cash-tip { display: grid; gap: 2px; max-width: 230px; font-size: var(--pos-small); }
+.pos-layout .pay-others .credit-action { width: auto; }
+.pay-others, .pay-foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--pos-s2); }
+.pay-foot { margin-top: auto; flex-wrap: nowrap; }
+.pay-foot > * { flex: none; }
+.pay-others > details, .pay-foot > details { position: relative; margin: 0; border-top: 0; }
+.pay-main > .payment-history { order: 0; }
+.pos-layout .pay-others > button, .pos-layout .pay-tool, .pay-others > details > summary, .pay-foot > details > summary { display: inline-flex; color: var(--pos-ink); align-items: center; gap: var(--pos-s1); min-height: 44px; padding: 0 14px; border: 1px solid var(--pos-border); border-radius: 999px; background: var(--pos-surface); font-size: .8125rem; font-weight: 600; cursor: pointer; list-style: none; }
+.pay-others > details > summary::-webkit-details-marker, .pay-foot > details > summary::-webkit-details-marker { display: none; }
+.pay-foot > details > summary::after { content: "\25BE"; font-size: .75rem; }
+.pay-foot .einvoice-buyer[open] { display: block; padding-bottom: 0; }
+.pay-popover { position: absolute; left: 0; bottom: calc(100% + 6px); z-index: var(--pos-overlay); display: grid; gap: var(--pos-s2); width: max-content; min-width: 240px; max-width: min(420px, 80vw); max-height: 60dvh; overflow: auto; padding: var(--pos-s3); background: var(--pos-surface); border: 1px solid var(--pos-border); border-radius: 12px; box-shadow: var(--pos-shadow); }
+.pay-split-options { grid-template-columns: repeat(2, minmax(0,1fr)); }
+.pos-layout .pay-finish { margin-left: auto; min-width: 300px; min-height: 60px; border-radius: 10px; background: #1f7a4d; border-color: #1f7a4d; color: var(--pos-surface); font-size: 1.0625rem; font-weight: 800; }
+.pos-layout .pay-finish:not(:disabled):hover { background: #186340; border-color: #186340; color: var(--pos-surface); }
+.pay-done { display: grid; justify-items: start; gap: var(--pos-s2); padding: var(--pos-s3); background: var(--pos-surface); border: 1px solid var(--pos-border); border-radius: 12px; }
+@media (max-width: 900px) {
+  .pay-screen { grid-template-columns: minmax(0,1fr); grid-template-rows: minmax(0,.8fr) minmax(0,1.2fr); }
+  .pay-bill { border-right: 0; border-bottom: 1px solid var(--pos-border); }
+  .pay-cards, .pay-cash-body { grid-template-columns: minmax(0,1fr); }
+  .pay-due dd { font-size: 1.25rem; }
+  .pay-foot { flex-wrap: wrap; }
+  .pos-layout .pay-finish { min-width: 0; flex: 1 1 100%; }
+}

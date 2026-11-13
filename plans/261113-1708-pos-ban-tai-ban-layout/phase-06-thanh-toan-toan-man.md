@@ -1,7 +1,7 @@
 ---
 phase: 6
 title: "Thanh toán toàn màn"
-status: pending
+status: completed
 effort: "1,5 ngày"
 dependsOn: [5]
 ---

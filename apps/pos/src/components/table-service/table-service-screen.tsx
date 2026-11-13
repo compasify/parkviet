@@ -5,17 +5,15 @@ import { useSoldOutToggle } from '../../hooks/use-menu';
 import { type SellingView, useSellingWorkspace } from '../../hooks/use-selling-workspace';
 import { addsInOneTap, describeMenuFailure } from '../../lib/menu-selection';
 import type { PosMenu, PosMenuItem, PosWorkspace } from '../../lib/pos-context';
+import { autoPrintEnabled } from '../../lib/receipt-preferences';
 import { CourseSeatPicker } from '../course-seat-picker';
 import type { MenuAdd } from '../menu-grid';
-import {
-  SellingCatalog,
-  SellingNotices,
-  type SellingWorkspace,
-  WorkspaceTabsView,
-} from '../workspace-tabs';
+import { ReceiptPrintDialog } from '../receipt-print-dialog';
+import { SellingCatalog, SellingNotices, type SellingWorkspace } from '../workspace-tabs';
 import { CategoryRail } from './category-rail';
 import { MenuItemGrid } from './menu-item-grid';
 import { ModifierPanel } from './modifier-panel';
+import { PaymentScreen } from './payment-screen';
 import { TableBoard } from './table-board';
 import { Ticket } from './ticket';
 
@@ -24,9 +22,9 @@ const NOTICE_MS = 4_000;
 
 // Selling at a branch that serves tables, in frames kept in the URL
 // (`?view=`): the table board first, then the order of a table with the menu
-// (categories, text tiles, or one dish's options) beside its ticket. Paying
-// still uses the counter's basket and checkout. A page opened without a
-// frame shows the order it names, else the board.
+// (categories, text tiles, or one dish's options) beside its ticket, then
+// its payment over the whole screen. A page opened without a frame shows
+// the order it names, else the board.
 export function TableServiceScreen() {
   const { t } = useTranslation();
   const search = useSearch({ from: '/authed/' });
@@ -49,6 +47,9 @@ export function TableServiceScreen() {
     const timer = window.setTimeout(() => setNotice(null), NOTICE_MS);
     return () => window.clearTimeout(timer);
   }, [notice]);
+  // The order paid last, whose invoice prints over the board.
+  const [printing, setPrinting] = useState<string | null>(null);
+  const notify = (text: string) => setNotice((current) => ({ text, seq: (current?.seq ?? 0) + 1 }));
 
   function openOrder(workspaceId: string) {
     selectOrder(workspaceId);
@@ -59,6 +60,9 @@ export function TableServiceScreen() {
     <p key={notice.seq} className="table-service-notice" role="status">
       {notice.text}
     </p>
+  ) : null;
+  const printDialog = printing ? (
+    <ReceiptPrintDialog sourceId={printing} autoPrint onClose={() => setPrinting(null)} />
   ) : null;
   const catalog =
     menuSurface && menu.data ? (
@@ -73,17 +77,21 @@ export function TableServiceScreen() {
     return (
       <section className="draft-workspace table-service" aria-label={t('draftList')}>
         {toast}
+        {printDialog}
         <TableBoard selling={selling} onOpenOrder={openOrder} />
       </section>
     );
-  // Paying keeps the counter's checkout until the payment frame has its own.
   if (view === 'pay')
     return (
-      <WorkspaceTabsView
+      <PaymentScreen
         selling={selling}
-        className="table-service"
+        onOrder={() => setView('order')}
         onBoard={() => setView('board')}
-        catalog={catalog}
+        onCompleted={(workspaceId, { print, failure }) => {
+          if (print || autoPrintEnabled()) setPrinting(workspaceId);
+          if (failure) notify(failure);
+          setView('board');
+        }}
       />
     );
   return (
@@ -106,7 +114,7 @@ export function TableServiceScreen() {
           selling={selling}
           onBoard={() => setView('board')}
           onPay={() => setView('pay')}
-          onNotice={(text) => setNotice((current) => ({ text, seq: (current?.seq ?? 0) + 1 }))}
+          onNotice={notify}
         />
       </div>
     </section>

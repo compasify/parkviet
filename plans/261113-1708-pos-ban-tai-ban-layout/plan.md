@@ -68,7 +68,7 @@ Thu ngân ở chi nhánh có bàn mở POS là thấy bảng bàn toàn màn. Ch
 | 3 | [Bảng bàn](./phase-03-bang-ban.md) | 2 ngày | 1, 2 | xong |
 | 4 | [Màn gọi món: rail, lưới món, panel tùy chọn](./phase-04-man-goi-mon-thuc-don.md) | 2 ngày | 1 | xong |
 | 5 | [Phiếu bàn](./phase-05-phieu-ban.md) | 2,5 ngày | 2, 4 | xong |
-| 6 | [Thanh toán toàn màn](./phase-06-thanh-toan-toan-man.md) | 1,5 ngày | 5 | pending |
+| 6 | [Thanh toán toàn màn](./phase-06-thanh-toan-toan-man.md) | 1,5 ngày | 5 | xong |
 | 7 | [E2E, tài liệu và rà soát](./phase-07-e2e-tai-lieu-ra-soat.md) | 1 ngày | 3–6 | pending |
 
 Phase 1 và 2 độc lập, chạy song song được. Phase 3 và 4 độc lập sau phase 1 (phase 3 cần thêm trường của phase 2).

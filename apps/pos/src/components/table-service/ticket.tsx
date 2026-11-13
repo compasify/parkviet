@@ -77,7 +77,7 @@ export function Ticket({
 
   if (!active)
     return (
-      <aside className="ticket" aria-label={t('ticketTitle')}>
+      <aside className="ticket" aria-label={t('tableTicketTitle')}>
         <div className="ticket-header">
           <div className="ticket-header-row">
             <button
@@ -126,7 +126,7 @@ export function Ticket({
   }
 
   return (
-    <aside className="ticket" aria-label={t('ticketTitle')}>
+    <aside className="ticket" aria-label={t('tableTicketTitle')}>
       <TicketHeader
         selling={selling}
         active={active}

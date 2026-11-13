@@ -6,8 +6,6 @@ import {
   installRetailApi,
   login,
   newWorld,
-  openTab,
-  payCash,
   serialize,
 } from './support/retail-api';
 
@@ -149,17 +147,22 @@ test('book, take a deposit, seat the guest and pay with the deposit taken off', 
 
   await list.getByRole('button', { name: 'Khách đã đến' }).click();
   await expect(page).toHaveURL(/order=ws_r1/);
-  // The seated table opens on its ticket; the deposit is taken off when paying.
+  // The seated table opens on its ticket; the deposit is taken off on the payment screen.
   await page.getByRole('complementary', { name: 'Phiếu bàn' }).getByRole('button', { name: /^Thanh toán/ }).click();
-  await openTab(page, 'ws_r1');
+  const pay = page.locator('.pay-screen');
+  await expect(pay.locator('.pay-bill')).toContainText('Bàn 1');
+  const claim = page.getByRole('button', { name: 'Nhận quyền sửa', exact: true });
+  if (await claim.isVisible().catch(() => false)) await claim.click();
 
-  const note = page.locator('.reservation-deposit-note');
+  const note = pay.locator('.reservation-deposit-note');
   await expect(note).toContainText('Chị Mai');
   await note.getByRole('button', { name: /Trừ cọc 50\.000/ }).click();
   await expect(note).toContainText('Tiền cọc đã được trừ vào hóa đơn.');
 
   // 200 000 for the rice, 50 000 already in: the cash pays the rest.
-  await payCash(page, '150.000');
+  await expect(pay.locator('.pay-due-left')).toContainText('150.000 ₫');
+  await pay.getByLabel('Khách đưa').fill('150.000');
+  await pay.getByRole('button', { name: 'Hoàn tất · in hóa đơn' }).click();
   await expect.poll(() => world.sheets.get('ws_r1')?.status).toBe('completed');
   expect(world.sheets.get('ws_r1')?.allocated).toBe(200000);
   expect(posts).toEqual([

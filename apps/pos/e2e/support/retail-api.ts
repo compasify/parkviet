@@ -104,7 +104,7 @@ type Attempt = {
   id: string;
   workspace_id: string;
   payment_method_id: string;
-  kind: 'cash' | 'bank_manual';
+  kind: 'cash' | 'bank_manual' | 'vietqr';
   status: 'prepared' | 'confirmed' | 'canceled';
   amount: string;
   order_total_snapshot: string;
@@ -159,7 +159,7 @@ type Funds = {
   id: string;
   allocationId: string;
   workspaceId: string;
-  kind: 'cash' | 'bank_manual';
+  kind: 'cash' | 'bank_manual' | 'vietqr';
   amount: number;
   refunded: number;
   reserved: number;
@@ -199,6 +199,10 @@ type Refund = {
 };
 
 type Debt = { orderId: string; number: string; workspaceId: string; debt: number; collected: number };
+
+// A stand-in for the QR image the server links to.
+const VIETQR_IMAGE =
+  'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 21 21"><rect width="21" height="21" fill="white"/><path d="M1 1h7v7H1zM13 1h7v7h-7zM1 13h7v7H1zM10 10h2v2h-2z"/></svg>';
 
 export type Write = { family: Family; key: string; path: string; body: Record<string, unknown> };
 
@@ -261,6 +265,9 @@ export type World = {
   // Reads that answer with what the server held when they arrived, but late.
   slowReads: Map<string, number>;
   counter: number;
+  // The branch offers VietQR; the bank has reported the transfer of these attempts.
+  vietqr?: boolean;
+  vietqrReceived?: Set<string>;
 };
 
 export function product(index: number): Product {
@@ -294,6 +301,7 @@ export function newWorld(
     moduleUsage?: Record<string, boolean>;
     profile?: World['profile'];
     menu?: MenuWorld;
+    vietqr?: boolean;
   } = {},
 ): World {
   return {
@@ -350,6 +358,8 @@ export function newWorld(
     logins: 0,
     slowReads: new Map(),
     counter: 0,
+    vietqr: options.vietqr,
+    vietqrReceived: new Set(),
   };
 }
 
@@ -984,6 +994,20 @@ async function handle(world: World, route: Route) {
       if (slow) await sleep(slow[1]);
       return route.fulfill(page(rows));
     }
+    // The QR of a VietQR tender, received once the test says the bank reported it.
+    const qr = /^\/pos\/workspaces\/([^/]+)\/tender_attempts\/([^/]+)\/vietqr$/.exec(path);
+    if (qr) {
+      const sheet = world.sheets.get(qr[1]);
+      const attempt = sheet?.attempts.find((item) => item.id === qr[2] && item.kind === 'vietqr');
+      if (!sheet || !attempt) return route.fulfill({ status: 404, json: { error: { code: 'missing', message: 'missing' } } });
+      const received = world.vietqrReceived?.has(attempt.id) ?? false;
+      return fulfill(data({
+        status: received ? 'confirmed' : 'allocated', amount: attempt.amount, currency: 'VND',
+        qr_url: VIETQR_IMAGE, bank_name: 'MB Bank', account_number: '0123456789', account_name: 'PARKVIET',
+        transfer_content: sheet.number, expires_at: new Date(Date.now() + 15 * 60_000).toISOString(),
+        confirmed_at: received ? '2026-11-07T03:00:00Z' : null, attempt_id: attempt.id, attempt_status: attempt.status,
+      }));
+    }
     const read = /^\/pos\/workspaces\/([^/]+)(\/[a-z_]+)?$/.exec(path);
     const sheet = read ? world.sheets.get(read[1]) : undefined;
     if (read && !sheet) return route.fulfill({ status: 404, json: { error: { code: 'missing', message: 'missing' } } });
@@ -996,6 +1020,9 @@ async function handle(world: World, route: Route) {
       return fulfill(data([
         { id: 'posmethod-cash', code: 'cash', name: 'Tiền mặt', kind: 'cash', status: 'active', position: 0 },
         { id: 'posmethod-bank_manual', code: 'bank_transfer', name: 'Chuyển khoản', kind: 'bank_manual', status: 'active', position: 1 },
+        ...(world.vietqr
+          ? [{ id: 'posmethod-vietqr', code: 'vietqr', name: 'VietQR', kind: 'vietqr', status: 'active', position: 2 }]
+          : []),
       ]));
     if (sheet && read?.[2] === '/credit') {
       const total = sheetTotal(world, sheet);
@@ -1566,7 +1593,12 @@ function run(world: World, family: Family, path: string, body: Record<string, un
       reserveLots(world, sheet);
       sheet.attempts.push({
         id: nextId(world, 'ten'), workspace_id: sheet.id, payment_method_id: String(body.payment_method_id),
-        kind: String(body.payment_method_id).endsWith('cash') ? 'cash' : 'bank_manual', status: 'prepared',
+        kind: String(body.payment_method_id).endsWith('cash')
+          ? 'cash'
+          : String(body.payment_method_id).endsWith('vietqr')
+            ? 'vietqr'
+            : 'bank_manual',
+        status: 'prepared',
         amount: money(Number(amount)), order_total_snapshot: money(sheetTotal(world, sheet)), currency: 'VND',
         workspace_revision: sheet.revision, received_funds_id: null, confirmed_at: null, canceled_at: null,
       });
@@ -1592,6 +1624,10 @@ function run(world: World, family: Family, path: string, body: Record<string, un
         if (!(handed >= applied)) return conflict('Handed cash is less than the tender amount.');
         sheet.changeDue += handed - applied;
         world.drawer += applied;
+      } else if (attempt.kind === 'vietqr') {
+        // Like the server: the webhook is evidence only once the bank reported the money.
+        if (body.evidence_kind === 'vietqr_webhook' && !world.vietqrReceived?.has(attempt.id))
+          return conflict('The bank has not confirmed this transfer yet.', 'vietqr_not_received');
       } else if (!body.reference || !body.receiving_account) {
         return { status: 422, json: { error: { code: 'validation_error', message: 'Reference is required.' } } };
       }

@@ -1,6 +1,6 @@
 import { expect, type Page, type Route, test } from '@playwright/test';
 import { teaMenu } from './support/menu-api';
-import { addSheet, FULL_CASHIER, installRetailApi, login, newWorld, payCash, serialize, type World } from './support/retail-api';
+import { addSheet, FULL_CASHIER, installRetailApi, login, newWorld, serialize, type World } from './support/retail-api';
 
 // A table at a restaurant from seating to paying: the floor shows each table
 // with its state written out, seating guests opens a dine-in order held by
@@ -210,12 +210,15 @@ test('a table is seated, ordered, pre-billed, paid and free again', async ({ pag
   await tile(page, 'Bàn 1').click();
   await expect(ticket.locator('.ticket-header')).toContainText('Bàn 1');
 
-  // Paid in cash, the order closes and the table is free again.
+  // Paid in cash on the payment screen, the order closes, the board comes
+  // back and the table is free again.
   await ticket.getByRole('button', { name: /^Thanh toán/ }).click();
   await expect(page).toHaveURL(/view=pay/);
-  await payCash(page, '15000');
+  const pay = page.locator('.pay-screen');
+  await pay.getByRole('button', { name: 'Đúng 15.000' }).click();
+  await pay.getByRole('button', { name: 'Hoàn tất · in hóa đơn' }).click();
   await expect.poll(() => world.sheets.get('ws_t1')?.status).toBe('completed');
-  await page.getByRole('button', { name: 'Bảng bàn', exact: true }).click();
+  await expect(page).toHaveURL(/view=board/);
   await expect(tile(page, 'Bàn 1')).toHaveAttribute('aria-label', 'Bàn 1 · Trống');
 });
 
