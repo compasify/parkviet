@@ -104,6 +104,30 @@ RSpec.describe 'POS floor plan and resource board', type: :request do
       expect_pos_schema!(response, 'ResourceBoard')
     end
 
+    it 'counts each order’s dishes the kitchen has not been told about, after a send too' do
+      fresh = open_table(waiter, tables[0])
+      add_dish(fresh, dish, quantity: 2)
+      sent = open_table(cashier, tables[1])
+      add_dish(sent, dish)
+      kitchen_send(sent)
+      later = menu_product!(store, branch, price: 30_000)
+      add_dish(sent, later, quantity: 3)
+      # A held course waits for its fire, so it is not unsent yet.
+      held = menu_product!(store, branch, price: 20_000)
+      add_dish(sent, held)
+      Spree::Pos::SaleLine.where(workspace_id: sent.workspace.id, variant_id: held.id).update_all(course: 2, course_status: 'held')
+
+      board = Spree::Pos::ResourceState.for(branch)
+      expect(board[:resources][0][:orders].sole).to include(unsent_kitchen_items: 2, pending_kitchen_items: 0)
+      expect(board[:resources][1][:orders].sole).to include(unsent_kitchen_items: 3, pending_kitchen_items: 1)
+
+      get '/api/v3/admin/pos/resource_board', headers: bearer(waiter), params: { branch_id: branch.prefixed_id }
+      expect(response).to have_http_status(:ok), response.body
+      expect_pos_schema!(response, 'ResourceBoard')
+      orders = response.parsed_body.dig('data', 'resources').first(2).map { |tile| tile['orders'].sole['unsent_kitchen_items'] }
+      expect(orders).to eq([2, 3])
+    end
+
     it 'shows a table edited after its pre-bill and moves it to waiting when the kitchen is late' do
       billed = open_table(cashier, tables[0])
       add_dish(billed, dish)

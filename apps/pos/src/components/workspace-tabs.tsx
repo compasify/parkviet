@@ -5,6 +5,7 @@ import { type ReactNode, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSellingWorkspace } from '../hooks/use-selling-workspace';
 import { commandQueue } from '../lib/command-queue';
+import type { PosLineItem, PosWorkspace } from '../lib/pos-context';
 import { posFailureKey } from '../lib/request-failure';
 import { voidReasons } from '../lib/table-kitchen';
 import { canServeTables, isTab, tableOrderName, tableOrderOf } from '../lib/tables';
@@ -134,13 +135,10 @@ export function WorkspaceTabsView({
     channelUnavailable,
     query,
     setQuery,
-    message,
     pendingCounts,
     scanNotice,
     blockedScans,
     setBlockedScans,
-    leaseWait,
-    leaseSeconds,
     hidden,
     setHidden,
     closeRequest,
@@ -160,16 +158,13 @@ export function WorkspaceTabsView({
     editDisabled,
     sourceDisabled,
     canAppend,
-    quickAddDisabled,
     lockReason,
     menuSurface,
     menu,
-    soldOut,
     callNumbers,
     cupLabels,
     setSavedSurface,
     tableSurface,
-    postpay,
     mealAccounts,
     meal,
     vehicleCommission,
@@ -179,10 +174,7 @@ export function WorkspaceTabsView({
     tabSurface,
     showTabs,
     setTabsChoice,
-    strictLease,
-    autoClaimFailed,
     command,
-    quickAdd,
     run,
     hideWorkspace,
     selectOrder,
@@ -192,7 +184,6 @@ export function WorkspaceTabsView({
     cancelAndHide,
     requestClose,
     scanner,
-    calibration,
     prebillOpen,
     setPrebillOpen,
     voiding,
@@ -202,7 +193,6 @@ export function WorkspaceTabsView({
     kitchenOn,
     placement,
     setPlacement,
-    tableAddExtra,
     enqueueScan,
   } = selling;
   const discountDetailsRef = useRef<HTMLDetailsElement>(null);
@@ -395,91 +385,7 @@ export function WorkspaceTabsView({
           </button>
         </div>
       ) : null}
-      {!selectionComplete ? (
-        <p className="workspace-hint" role="status">
-          {t('workspaceChooseContext')}
-        </p>
-      ) : !data?.shift ? (
-        <p className="workspace-hint" role="status">
-          {t('workspaceNeedShift')}
-        </p>
-      ) : data.shift.owner_id !== data.staff.id ? (
-        <p className="workspace-hint" role="status">
-          {t('workspaceShiftOwned')}
-        </p>
-      ) : null}
-      {data?.store.currency &&
-      data.shift?.currency &&
-      data.shift.currency !== data.store.currency ? (
-        <p className="workspace-hint" role="status">
-          {t('workspaceCurrencyChanged', {
-            currency: data.shift.currency,
-            current: data.store.currency,
-          })}
-        </p>
-      ) : null}
-      {message ? (
-        <p className="error" role="alert">
-          {message}
-        </p>
-      ) : null}
-      {workspaces.query.isLoading ? <p role="status">{t('workspaceLoading')}</p> : null}
-      {workspaces.query.isError ? (
-        <p className="error" role="alert">
-          {t(posFailureKey(workspaces.query.error))}
-        </p>
-      ) : null}
-      {workspaces.selectedQuery.isError ? (
-        <p className="error" role="alert">
-          {t(posFailureKey(workspaces.selectedQuery.error))}
-        </p>
-      ) : null}
-      {active &&
-      !isEditor &&
-      active.operational_status !== 'canceled' &&
-      (strictLease || autoClaimFailed === active.id) ? (
-        <div className="lease-notice" role="status">
-          <span>{t('leaseReadOnly')}</span>
-          {leaseWait?.workspaceId === active.id ? (
-            <span className="lease-wait" role="status">
-              {t(leaseSeconds > 0 ? 'leaseRetryIn' : 'leaseRetryReady', { seconds: leaseSeconds })}
-            </span>
-          ) : null}
-          <details className="lease-help">
-            <summary>{t('leaseWhy')}</summary>
-            <p>{t('leaseExplanation')}</p>
-            <p>{t('leaseInstruction')}</p>
-          </details>
-          <button
-            type="button"
-            disabled={locked || busy || (leaseWait?.workspaceId === active.id && leaseSeconds > 0)}
-            onClick={() => void run(() => command(active, (current) => workspaces.claim(current)))}
-          >
-            {t('claimLease')}
-          </button>
-          {data?.capabilities.includes('pos.workspace.takeover') ? (
-            <button
-              type="button"
-              disabled={locked || busy}
-              onClick={() =>
-                void run(() => command(active, (current) => workspaces.claim(current, true)))
-              }
-            >
-              {t('takeoverLease')}
-            </button>
-          ) : null}
-        </div>
-      ) : null}
-      {active && (activePhase === 'parked' || workspaceIsSettled(active)) ? (
-        <div className={`lease-notice phase-notice phase-notice-${activePhase}`} role="status">
-          <span>{t(`workspacePhaseHint_${activePhase}`)}</span>
-          {activePhase === 'parked' ? null : (
-            <button type="button" onClick={() => hideWorkspace(active.id)}>
-              {t('closeView')}
-            </button>
-          )}
-        </div>
-      ) : null}
+      <SellingNotices selling={selling} />
       <OrderTrays selling={selling} />
       {showTabs ? (
         <TabList
@@ -618,52 +524,8 @@ export function WorkspaceTabsView({
               ) : null}
               {catalog ? (
                 catalog
-              ) : menuSurface ? (
-                <MenuGrid
-                  key={`${storeId}:${selection.branchId}`}
-                  branchId={selection.branchId}
-                  addDisabled={quickAddDisabled}
-                  addDisabledReason={lockReason}
-                  drinksFirst={isTab(active)}
-                  canSetSoldOut={Boolean(
-                    data?.capabilities.includes('pos.menu.sold_out') ||
-                      data?.capabilities.includes('pos.menu.manage'),
-                  )}
-                  onAdd={
-                    active
-                      ? (variantId, extra) =>
-                          command(active, (current) =>
-                            workspaces.addItem(current, variantId, 1, tableAddExtra(extra)),
-                          )
-                      : undefined
-                  }
-                />
               ) : (
-                <CatalogSearch
-                  key={`${storeId}:${selection.branchId}`}
-                  storeId={storeId}
-                  branchId={selection.branchId}
-                  workspaceId={active?.id ?? null}
-                  addDisabled={quickAddDisabled}
-                  addDisabledReason={lockReason}
-                  scanNotice={scanNotice}
-                  soldOutVariantIds={soldOut}
-                  onScan={
-                    editable && !channelUnavailable
-                      ? (code) => enqueueScan.current(code)
-                      : undefined
-                  }
-                  scanTerminator={calibration.terminator}
-                  onAdd={active ? (variantId) => quickAdd(active, variantId) : undefined}
-                  onAddForm={
-                    active
-                      ? (variantId, quantity, extra) =>
-                          command(active, (current) =>
-                            workspaces.addItem(current, variantId, quantity, extra),
-                          )
-                      : undefined
-                  }
-                />
+                <SellingCatalog key={`${storeId}:${selection.branchId}`} selling={selling} />
               )}
             </section>
             <section
@@ -744,76 +606,13 @@ export function WorkspaceTabsView({
                       </div>
                     </details>
                     {prebillOpen && active.operational_status === 'editing' ? (
-                      <PrebillDialog
-                        workspace={active}
-                        names={{
-                          storeName: data?.store.name,
-                          branchName: data?.branches.find((row) => row.id === active.branch_id)
-                            ?.name,
-                          registerName: data?.registers.find((row) => row.id === active.register_id)
-                            ?.name,
-                        }}
-                        timeZone={
-                          data?.branches.find((row) => row.id === active.branch_id)?.timezone ??
-                          data?.store.timezone ??
-                          'Asia/Ho_Chi_Minh'
-                        }
-                        record={postpay && activeTable.table !== null}
-                        staffId={staffId}
-                        canApprove={Boolean(data?.capabilities.includes('pos.approval.grant'))}
-                        onClose={() => setPrebillOpen(false)}
-                      />
+                      <ActivePrebillDialog selling={selling} active={active} />
                     ) : null}
                   </div>
                 ) : null}
               </div>
               {active && activeTable.table ? (
-                <TableOrderBar
-                  key={active.id}
-                  workspace={active}
-                  branchId={selection.branchId}
-                  staffId={staffId}
-                  editDisabled={editDisabled}
-                  actionDisabled={locked || busy}
-                  canWaive={Boolean(data?.capabilities.includes('pos.discount.apply'))}
-                  canApprove={Boolean(data?.capabilities.includes('pos.approval.grant'))}
-                  postpay={postpay}
-                  onMove={(resourceId) =>
-                    command(active, (current) => workspaces.moveTable(current, resourceId))
-                  }
-                  onMerge={async (targetId) => {
-                    const target = await command(active, (current) =>
-                      workspaces.mergeTable(current, targetId),
-                    );
-                    selectOrder(target.id);
-                  }}
-                  onSplit={(input) =>
-                    command(
-                      active,
-                      async (current) => (await workspaces.splitTable(current, input)).workspace,
-                    )
-                  }
-                  onSplitBySeat={
-                    kitchenOn
-                      ? (shared) =>
-                          command(
-                            active,
-                            async (current) =>
-                              (await workspaces.splitBySeat(current, shared)).workspace,
-                          )
-                      : undefined
-                  }
-                  onServiceCharge={(waived) =>
-                    command(active, (current) => workspaces.setServiceCharge(current, waived))
-                  }
-                  onRequestPayment={() =>
-                    command(active, (current) => workspaces.requestPayment(current))
-                  }
-                  onResolvePayment={(status) =>
-                    command(active, (current) => workspaces.resolvePaymentRequest(current, status))
-                  }
-                  onPrebillChanged={() => void workspaces.refresh()}
-                />
+                <ActiveTableOrderBar key={active.id} selling={selling} active={active} />
               ) : null}
               {active && activeTable.table && kitchenOn && !active.payments ? (
                 <div className="table-service-panel">
@@ -826,18 +625,7 @@ export function WorkspaceTabsView({
                       command(active, (current) => workspaces.fireCourse(current, course))
                     }
                   />
-                  <BuffetTierPicker
-                    workspace={active}
-                    branchId={selection.branchId}
-                    placement={placement}
-                    onPlacement={setPlacement}
-                    disabled={!canAppend || busy}
-                    onAddCover={(tierId, guests) =>
-                      command(active, (current) =>
-                        workspaces.addBuffetCover(current, tierId, guests),
-                      )
-                    }
-                  />
+                  <ActiveBuffetPicker selling={selling} active={active} />
                 </div>
               ) : null}
               {active ? (
@@ -916,20 +704,11 @@ export function WorkspaceTabsView({
                     cupLabels={cupLabels}
                   />
                   {voiding?.sale_line_id ? (
-                    <VoidItemDialog
+                    <ActiveVoidDialog
                       key={voiding.id}
-                      workspace={active}
+                      selling={selling}
+                      active={active}
                       line={voiding}
-                      reasons={voidReasons(
-                        data?.branches.find((row) => row.id === active.branch_id),
-                      )}
-                      canVoid={Boolean(data?.capabilities.includes('pos.kitchen.void'))}
-                      onVoid={(input) =>
-                        command(active, (current) =>
-                          workspaces.voidSent(current, voiding.sale_line_id as string, input),
-                        )
-                      }
-                      onClose={() => setVoiding(null)}
                     />
                   ) : null}
                   {editingSegment ? (
@@ -974,19 +753,7 @@ export function WorkspaceTabsView({
             >
               {active ? (
                 <div className="checkout-section" key={active.id}>
-                  <CustomerPanel
-                    key={active.id}
-                    workspace={active}
-                    branchId={selection.branchId}
-                    storeId={storeId}
-                    canCreate={Boolean(data?.capabilities.includes('pos.customer.write'))}
-                    disabled={editDisabled}
-                    disabledReason={lockReason}
-                    onAssign={(profileId) =>
-                      command(active, (current) => workspaces.assignCustomer(current, profileId))
-                    }
-                    onClear={() => command(active, (current) => workspaces.clearCustomer(current))}
-                  />
+                  <ActiveCustomerPanel key={active.id} selling={selling} active={active} />
                   <ServiceModeControl
                     value={active.service_mode}
                     enabled={data?.modules?.['fnb.menu'] === true}
@@ -1015,26 +782,10 @@ export function WorkspaceTabsView({
                             <PosIcon name="edit" /> {t('discountTitle')}
                           </summary>
                           <div className="pos-popup-backdrop">
-                            <DiscountForm
+                            <ActiveDiscountForm
                               key={`${active.id}:${active.revision}:${active.discount?.id ?? 'new'}:${active.coupon?.code ?? 'no-coupon'}`}
-                              workspace={active}
-                              canApply={Boolean(data?.capabilities.includes('pos.discount.apply'))}
-                              disabled={editDisabled}
-                              disabledReason={lockReason}
-                              onApply={(input) =>
-                                command(active, (current) => workspaces.discount(current, input))
-                              }
-                              onClear={(approvalId) =>
-                                command(active, (current) =>
-                                  workspaces.clearDiscount(current, approvalId),
-                                )
-                              }
-                              onApplyCoupon={(code) =>
-                                command(active, (current) => workspaces.applyCoupon(current, code))
-                              }
-                              onClearCoupon={() =>
-                                command(active, (current) => workspaces.clearCoupon(current))
-                              }
+                              selling={selling}
+                              active={active}
                               onClose={() => {
                                 if (discountDetailsRef.current)
                                   discountDetailsRef.current.open = false;
@@ -1047,14 +798,10 @@ export function WorkspaceTabsView({
                             <PosIcon name="edit" /> {t('noteTitle')}
                           </summary>
                           <div className="pos-popup-backdrop">
-                            <NoteForm
+                            <ActiveNoteForm
                               key={`${active.id}:note:${active.note ?? ''}`}
-                              workspace={active}
-                              disabled={editDisabled}
-                              disabledReason={lockReason}
-                              onSave={(note) =>
-                                command(active, (current) => workspaces.updateNote(current, note))
-                              }
+                              selling={selling}
+                              active={active}
                               onClose={() => {
                                 if (noteDetailsRef.current) noteDetailsRef.current.open = false;
                               }}
@@ -1298,5 +1045,363 @@ export function WorkspaceTabsView({
         </>
       )}
     </section>
+  );
+}
+
+// The state of the selling session above the order: no shift, a changed
+// currency, the last failure, the read-only lease and a parked or settled order.
+export function SellingNotices({ selling }: { selling: SellingWorkspace }) {
+  const { t } = useTranslation();
+  const {
+    data,
+    selectionComplete,
+    workspaces,
+    locked,
+    message,
+    leaseWait,
+    leaseSeconds,
+    active,
+    isEditor,
+    activePhase,
+    busy,
+    strictLease,
+    autoClaimFailed,
+    command,
+    run,
+    hideWorkspace,
+  } = selling;
+  return (
+    <>
+      {!selectionComplete ? (
+        <p className="workspace-hint" role="status">
+          {t('workspaceChooseContext')}
+        </p>
+      ) : !data?.shift ? (
+        <p className="workspace-hint" role="status">
+          {t('workspaceNeedShift')}
+        </p>
+      ) : data.shift.owner_id !== data.staff.id ? (
+        <p className="workspace-hint" role="status">
+          {t('workspaceShiftOwned')}
+        </p>
+      ) : null}
+      {data?.store.currency &&
+      data.shift?.currency &&
+      data.shift.currency !== data.store.currency ? (
+        <p className="workspace-hint" role="status">
+          {t('workspaceCurrencyChanged', {
+            currency: data.shift.currency,
+            current: data.store.currency,
+          })}
+        </p>
+      ) : null}
+      {message ? (
+        <p className="error" role="alert">
+          {message}
+        </p>
+      ) : null}
+      {workspaces.query.isLoading ? <p role="status">{t('workspaceLoading')}</p> : null}
+      {workspaces.query.isError ? (
+        <p className="error" role="alert">
+          {t(posFailureKey(workspaces.query.error))}
+        </p>
+      ) : null}
+      {workspaces.selectedQuery.isError ? (
+        <p className="error" role="alert">
+          {t(posFailureKey(workspaces.selectedQuery.error))}
+        </p>
+      ) : null}
+      {active &&
+      !isEditor &&
+      active.operational_status !== 'canceled' &&
+      (strictLease || autoClaimFailed === active.id) ? (
+        <div className="lease-notice" role="status">
+          <span>{t('leaseReadOnly')}</span>
+          {leaseWait?.workspaceId === active.id ? (
+            <span className="lease-wait" role="status">
+              {t(leaseSeconds > 0 ? 'leaseRetryIn' : 'leaseRetryReady', { seconds: leaseSeconds })}
+            </span>
+          ) : null}
+          <details className="lease-help">
+            <summary>{t('leaseWhy')}</summary>
+            <p>{t('leaseExplanation')}</p>
+            <p>{t('leaseInstruction')}</p>
+          </details>
+          <button
+            type="button"
+            disabled={locked || busy || (leaseWait?.workspaceId === active.id && leaseSeconds > 0)}
+            onClick={() => void run(() => command(active, (current) => workspaces.claim(current)))}
+          >
+            {t('claimLease')}
+          </button>
+          {data?.capabilities.includes('pos.workspace.takeover') ? (
+            <button
+              type="button"
+              disabled={locked || busy}
+              onClick={() =>
+                void run(() => command(active, (current) => workspaces.claim(current, true)))
+              }
+            >
+              {t('takeoverLease')}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+      {active && (activePhase === 'parked' || workspaceIsSettled(active)) ? (
+        <div className={`lease-notice phase-notice phase-notice-${activePhase}`} role="status">
+          <span>{t(`workspacePhaseHint_${activePhase}`)}</span>
+          {activePhase === 'parked' ? null : (
+            <button type="button" onClick={() => hideWorkspace(active.id)}>
+              {t('closeView')}
+            </button>
+          )}
+        </div>
+      ) : null}
+    </>
+  );
+}
+
+type ActiveProps = { selling: SellingWorkspace; active: PosWorkspace };
+
+// The time zone the branch of an order prints in.
+export function orderTimeZone(selling: SellingWorkspace, active: PosWorkspace): string {
+  return (
+    selling.data?.branches.find((row) => row.id === active.branch_id)?.timezone ??
+    selling.data?.store.timezone ??
+    'Asia/Ho_Chi_Minh'
+  );
+}
+
+// The pre-bill of the order, closed through the selling state's `prebillOpen`.
+export function ActivePrebillDialog({ selling, active }: ActiveProps) {
+  const { data, postpay, activeTable, staffId, setPrebillOpen } = selling;
+  return (
+    <PrebillDialog
+      workspace={active}
+      names={{
+        storeName: data?.store.name,
+        branchName: data?.branches.find((row) => row.id === active.branch_id)?.name,
+        registerName: data?.registers.find((row) => row.id === active.register_id)?.name,
+      }}
+      timeZone={orderTimeZone(selling, active)}
+      record={postpay && activeTable.table !== null}
+      staffId={staffId}
+      canApprove={Boolean(data?.capabilities.includes('pos.approval.grant'))}
+      onClose={() => setPrebillOpen(false)}
+    />
+  );
+}
+
+// Moving, merging and splitting a table order, its service charge and the
+// guests' request for the bill.
+export function ActiveTableOrderBar({ selling, active }: ActiveProps) {
+  const {
+    data,
+    selection,
+    staffId,
+    editDisabled,
+    locked,
+    busy,
+    postpay,
+    kitchenOn,
+    workspaces,
+    command,
+    selectOrder,
+  } = selling;
+  return (
+    <TableOrderBar
+      workspace={active}
+      branchId={selection.branchId}
+      staffId={staffId}
+      editDisabled={editDisabled}
+      actionDisabled={locked || busy}
+      canWaive={Boolean(data?.capabilities.includes('pos.discount.apply'))}
+      canApprove={Boolean(data?.capabilities.includes('pos.approval.grant'))}
+      postpay={postpay}
+      onMove={(resourceId) =>
+        command(active, (current) => workspaces.moveTable(current, resourceId))
+      }
+      onMerge={async (targetId) => {
+        const target = await command(active, (current) => workspaces.mergeTable(current, targetId));
+        selectOrder(target.id);
+      }}
+      onSplit={(input) =>
+        command(active, async (current) => (await workspaces.splitTable(current, input)).workspace)
+      }
+      onSplitBySeat={
+        kitchenOn
+          ? (shared) =>
+              command(
+                active,
+                async (current) => (await workspaces.splitBySeat(current, shared)).workspace,
+              )
+          : undefined
+      }
+      onServiceCharge={(waived) =>
+        command(active, (current) => workspaces.setServiceCharge(current, waived))
+      }
+      onRequestPayment={() => command(active, (current) => workspaces.requestPayment(current))}
+      onResolvePayment={(status) =>
+        command(active, (current) => workspaces.resolvePaymentRequest(current, status))
+      }
+      onPrebillChanged={() => void workspaces.refresh()}
+    />
+  );
+}
+
+// The buffet tickets of a table order and the tier its next dishes go on.
+export function ActiveBuffetPicker({ selling, active }: ActiveProps) {
+  const { selection, placement, setPlacement, canAppend, busy, workspaces, command } = selling;
+  return (
+    <BuffetTierPicker
+      workspace={active}
+      branchId={selection.branchId}
+      placement={placement}
+      onPlacement={setPlacement}
+      disabled={!canAppend || busy}
+      onAddCover={(tierId, guests) =>
+        command(active, (current) => workspaces.addBuffetCover(current, tierId, guests))
+      }
+    />
+  );
+}
+
+// Taking back what the kitchen has of a line, with a reason.
+export function ActiveVoidDialog({ selling, active, line }: ActiveProps & { line: PosLineItem }) {
+  const { data, workspaces, command, setVoiding } = selling;
+  return (
+    <VoidItemDialog
+      workspace={active}
+      line={line}
+      reasons={voidReasons(data?.branches.find((row) => row.id === active.branch_id))}
+      canVoid={Boolean(data?.capabilities.includes('pos.kitchen.void'))}
+      onVoid={(input) =>
+        command(active, (current) =>
+          workspaces.voidSent(current, line.sale_line_id as string, input),
+        )
+      }
+      onClose={() => setVoiding(null)}
+    />
+  );
+}
+
+export function ActiveCustomerPanel({ selling, active }: ActiveProps) {
+  const { data, selection, storeId, editDisabled, lockReason, workspaces, command } = selling;
+  return (
+    <CustomerPanel
+      workspace={active}
+      branchId={selection.branchId}
+      storeId={storeId}
+      canCreate={Boolean(data?.capabilities.includes('pos.customer.write'))}
+      disabled={editDisabled}
+      disabledReason={lockReason}
+      onAssign={(profileId) =>
+        command(active, (current) => workspaces.assignCustomer(current, profileId))
+      }
+      onClear={() => command(active, (current) => workspaces.clearCustomer(current))}
+    />
+  );
+}
+
+export function ActiveDiscountForm({
+  selling,
+  active,
+  onClose,
+}: ActiveProps & { onClose: () => void }) {
+  const { data, editDisabled, lockReason, workspaces, command } = selling;
+  return (
+    <DiscountForm
+      workspace={active}
+      canApply={Boolean(data?.capabilities.includes('pos.discount.apply'))}
+      disabled={editDisabled}
+      disabledReason={lockReason}
+      onApply={(input) => command(active, (current) => workspaces.discount(current, input))}
+      onClear={(approvalId) =>
+        command(active, (current) => workspaces.clearDiscount(current, approvalId))
+      }
+      onApplyCoupon={(code) => command(active, (current) => workspaces.applyCoupon(current, code))}
+      onClearCoupon={() => command(active, (current) => workspaces.clearCoupon(current))}
+      onClose={onClose}
+    />
+  );
+}
+
+export function ActiveNoteForm({
+  selling,
+  active,
+  onClose,
+}: ActiveProps & { onClose: () => void }) {
+  const { editDisabled, lockReason, workspaces, command } = selling;
+  return (
+    <NoteForm
+      workspace={active}
+      disabled={editDisabled}
+      disabledReason={lockReason}
+      onSave={(note) => command(active, (current) => workspaces.updateNote(current, note))}
+      onClose={onClose}
+    />
+  );
+}
+
+// The counter's own catalogue: the menu tiles of a branch selling from its
+// menu, else the product search with the scanner.
+export function SellingCatalog({ selling }: { selling: SellingWorkspace }) {
+  const {
+    data,
+    selection,
+    storeId,
+    workspaces,
+    channelUnavailable,
+    scanNotice,
+    active,
+    editable,
+    quickAddDisabled,
+    lockReason,
+    menuSurface,
+    soldOut,
+    command,
+    quickAdd,
+    calibration,
+    tableAddExtra,
+    enqueueScan,
+  } = selling;
+  return menuSurface ? (
+    <MenuGrid
+      branchId={selection.branchId}
+      addDisabled={quickAddDisabled}
+      addDisabledReason={lockReason}
+      drinksFirst={isTab(active)}
+      canSetSoldOut={Boolean(
+        data?.capabilities.includes('pos.menu.sold_out') ||
+          data?.capabilities.includes('pos.menu.manage'),
+      )}
+      onAdd={
+        active
+          ? (variantId, extra) =>
+              command(active, (current) =>
+                workspaces.addItem(current, variantId, 1, tableAddExtra(extra)),
+              )
+          : undefined
+      }
+    />
+  ) : (
+    <CatalogSearch
+      storeId={storeId}
+      branchId={selection.branchId}
+      workspaceId={active?.id ?? null}
+      addDisabled={quickAddDisabled}
+      addDisabledReason={lockReason}
+      scanNotice={scanNotice}
+      soldOutVariantIds={soldOut}
+      onScan={editable && !channelUnavailable ? (code) => enqueueScan.current(code) : undefined}
+      scanTerminator={calibration.terminator}
+      onAdd={active ? (variantId) => quickAdd(active, variantId) : undefined}
+      onAddForm={
+        active
+          ? (variantId, quantity, extra) =>
+              command(active, (current) => workspaces.addItem(current, variantId, quantity, extra))
+          : undefined
+      }
+    />
   );
 }

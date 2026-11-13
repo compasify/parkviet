@@ -7,17 +7,26 @@ import { addsInOneTap, describeMenuFailure } from '../../lib/menu-selection';
 import type { PosMenu, PosMenuItem, PosWorkspace } from '../../lib/pos-context';
 import { CourseSeatPicker } from '../course-seat-picker';
 import type { MenuAdd } from '../menu-grid';
-import { type SellingWorkspace, WorkspaceTabsView } from '../workspace-tabs';
+import {
+  SellingCatalog,
+  SellingNotices,
+  type SellingWorkspace,
+  WorkspaceTabsView,
+} from '../workspace-tabs';
 import { CategoryRail } from './category-rail';
 import { MenuItemGrid } from './menu-item-grid';
 import { ModifierPanel } from './modifier-panel';
 import { TableBoard } from './table-board';
+import { Ticket } from './ticket';
+
+// How long the screen shows a short confirmation ("Đã gửi 3 món").
+const NOTICE_MS = 4_000;
 
 // Selling at a branch that serves tables, in frames kept in the URL
 // (`?view=`): the table board first, then the order of a table with the menu
-// (categories, text tiles, or one dish's options) beside it. The order
-// column still shows the counter's basket and checkout. A page opened
-// without a frame shows the order it names, else the board.
+// (categories, text tiles, or one dish's options) beside its ticket. Paying
+// still uses the counter's basket and checkout. A page opened without a
+// frame shows the order it names, else the board.
 export function TableServiceScreen() {
   const { t } = useTranslation();
   const search = useSearch({ from: '/authed/' });
@@ -34,33 +43,73 @@ export function TableServiceScreen() {
   }, [search.view]);
   const selling = useSellingWorkspace({ view });
   const { menuSurface, menu, selectOrder } = selling;
+  const [notice, setNotice] = useState<{ text: string; seq: number } | null>(null);
+  useEffect(() => {
+    if (!notice) return;
+    const timer = window.setTimeout(() => setNotice(null), NOTICE_MS);
+    return () => window.clearTimeout(timer);
+  }, [notice]);
 
   function openOrder(workspaceId: string) {
     selectOrder(workspaceId);
     setView('order');
   }
 
+  const toast = notice ? (
+    <p key={notice.seq} className="table-service-notice" role="status">
+      {notice.text}
+    </p>
+  ) : null;
+  const catalog =
+    menuSurface && menu.data ? (
+      <OrderMenu
+        key={`${selling.storeId}:${selling.selection.branchId}`}
+        menu={menu.data}
+        selling={selling}
+      />
+    ) : undefined;
+
   if (view === 'board')
     return (
       <section className="draft-workspace table-service" aria-label={t('draftList')}>
+        {toast}
         <TableBoard selling={selling} onOpenOrder={openOrder} />
       </section>
     );
+  // Paying keeps the counter's checkout until the payment frame has its own.
+  if (view === 'pay')
+    return (
+      <WorkspaceTabsView
+        selling={selling}
+        className="table-service"
+        onBoard={() => setView('board')}
+        catalog={catalog}
+      />
+    );
   return (
-    <WorkspaceTabsView
-      selling={selling}
-      className="table-service"
-      onBoard={() => setView('board')}
-      catalog={
-        menuSurface && menu.data ? (
-          <OrderMenu
-            key={`${selling.storeId}:${selling.selection.branchId}`}
-            menu={menu.data}
-            selling={selling}
-          />
-        ) : undefined
-      }
-    />
+    <section
+      className="draft-workspace table-service table-service-order"
+      aria-label={t('draftList')}
+    >
+      {toast}
+      <SellingNotices selling={selling} />
+      <div className="order-frame">
+        <section className="order-frame-menu" aria-label={t('catalogTitle')}>
+          {catalog ?? (
+            <SellingCatalog
+              key={`${selling.storeId}:${selling.selection.branchId}`}
+              selling={selling}
+            />
+          )}
+        </section>
+        <Ticket
+          selling={selling}
+          onBoard={() => setView('board')}
+          onPay={() => setView('pay')}
+          onNotice={(text) => setNotice((current) => ({ text, seq: (current?.seq ?? 0) + 1 }))}
+        />
+      </div>
+    </section>
   );
 }
 

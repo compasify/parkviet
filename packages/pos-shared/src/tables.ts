@@ -48,7 +48,11 @@ export type BoardOrder = {
   payment_requested: boolean;
   prebilled: boolean;
   edited_after_prebill: boolean;
+  // Items sent to the kitchen and not ready yet.
   pending_kitchen_items: number;
+  // Menu units the kitchen has not been told about yet (held courses not
+  // counted); null from a server that does not report it.
+  unsent_kitchen_items: number | null;
   // When the order's earliest buffet ticket runs out; null without a buffet.
   buffet_ends_at: string | null;
 };
@@ -195,6 +199,7 @@ function order(value: unknown): BoardOrder | null {
     prebilled: source.prebilled === true,
     edited_after_prebill: source.edited_after_prebill === true,
     pending_kitchen_items: int(source.pending_kitchen_items),
+    unsent_kitchen_items: nullableInt(source.unsent_kitchen_items),
     buffet_ends_at: text(source.buffet_ends_at),
   };
 }
@@ -442,11 +447,14 @@ export type BoardOptions = {
   kitchen?: boolean;
 };
 
-// Dishes are on the table's orders and none reached the kitchen yet. The
-// board only knows whether anything was sent, so dishes added after a first
-// send do not show here.
+// Dishes on the table's orders wait to be sent to the kitchen, after a first
+// send too. A server that does not count them per order leaves only a guess:
+// dishes are on the table and nothing reached the kitchen yet.
 function unsent(table: BoardTable, kitchen: boolean): boolean {
-  return kitchen && table.state === 'occupied' && Number(table.subtotal ?? 0) > 0;
+  if (!kitchen) return false;
+  if (table.orders.every((order) => order.unsent_kitchen_items !== null))
+    return table.orders.some((order) => (order.unsent_kitchen_items ?? 0) > 0);
+  return table.state === 'occupied' && Number(table.subtotal ?? 0) > 0;
 }
 
 // The background of a table's tile, the strongest need first: the bill was

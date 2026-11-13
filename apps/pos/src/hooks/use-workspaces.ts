@@ -391,6 +391,20 @@ export function useWorkspaces(
         )
       ).workspace;
     },
+    // Moves a table dish to another seat (null: shared by the table), by the
+    // line's own version and without the lease. A seat alone may change on a
+    // dish the kitchen already has; it changes no money and no ticket.
+    async placeLine(workspace: PosWorkspace, saleLineId: string, input: { seat: number | null }) {
+      const line = findLine(workspace, saleLineId);
+      return (
+        await sendIntent(
+          workspace.id,
+          { row_version: line?.row_version, seat: input.seat },
+          `/pos/workspaces/${workspace.id}/sale_lines/${saleLineId}`,
+          'PATCH',
+        )
+      ).workspace;
+    },
     // Replaces the options and note of a menu line. The server prices the
     // line again on its base price and may merge it into a twin line.
     async updateModifiers(

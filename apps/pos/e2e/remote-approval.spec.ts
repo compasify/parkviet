@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { teaMenu } from './support/menu-api';
-import { addSheet, FULL_CASHIER, installRetailApi, newWorld, serialize, tab } from './support/retail-api';
+import { addSheet, FULL_CASHIER, installRetailApi, newWorld, serialize } from './support/retail-api';
 
 // A cashier who may not void a sent dish asks the manager's phone instead of
 // typing a code. The counter waits; once the manager grants it, the void goes
@@ -19,7 +19,19 @@ test('asks the manager phone for a void and carries on once it is granted', asyn
   await installRetailApi(context, world);
   await context.route('**/api/v3/admin/pos/resource_board**', (route) =>
     route.fulfill({
-      json: { data: { branch_id: 'br_1', server_now: '2026-11-11T05:00:00Z', areas: [], resources: [] } },
+      json: {
+        data: {
+          branch_id: 'br_1',
+          server_now: '2026-11-11T05:00:00Z',
+          areas: [],
+          resources: [
+            {
+              id: 'posres_1', name: 'Bàn 1', state: 'occupied', guest_count: 2, seated_minutes: 3,
+              subtotal: '0.0', currency: 'VND', orders: [{ id: 'ws_t1', total: '0.0', guest_count: 2 }],
+            },
+          ],
+        },
+      },
     }),
   );
 
@@ -58,13 +70,16 @@ test('asks the manager phone for a void and carries on once it is granted', asyn
   await page.getByLabel('Email nhân viên').fill('staff@example.test');
   await page.getByLabel('Mật khẩu', { exact: true }).fill('password');
   await page.getByRole('button', { name: 'Đăng nhập bán hàng', exact: true }).click();
-  await tab(page, 'ws_t1').click();
+  // The table opens from the board; its dish is sent while staying on the order.
+  await page.locator('.board-tile', { hasText: 'Bàn 1' }).click();
   await page.getByRole('list', { name: 'Thực đơn' }).getByRole('button', { name: 'Bánh flan', exact: true }).click();
   await expect.poll(() => world.sheets.get('ws_t1')?.lines.length).toBe(1);
-  await page.getByRole('button', { name: /Báo bếp/ }).click();
+  const ticket = page.getByRole('complementary', { name: 'Phiếu bàn' });
+  await ticket.getByRole('button', { name: 'Gửi & ở lại', exact: true }).click();
   await expect.poll(() => world.sheets.get('ws_t1')?.kitchenSends?.length).toBe(1);
 
-  await page.getByRole('button', { name: 'Giảm số lượng Bánh flan' }).click();
+  await ticket.getByRole('button', { name: /Bánh flan/ }).click();
+  await ticket.getByRole('button', { name: 'Hủy món', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Hủy món đã báo bếp: Bánh flan' });
   await dialog.getByRole('button', { name: 'Gửi chủ duyệt' }).click();
   await expect(dialog.getByRole('status')).toContainText('đang chờ duyệt');

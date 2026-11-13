@@ -9436,7 +9436,7 @@ components:
       type: object
       additionalProperties: false
       required: [id, table_label, guest_count, total, revision, operational_status, payment_requested, prebilled, edited_after_prebill, pending_kitchen_items,
-                 buffet_ends_at]
+                 unsent_kitchen_items, buffet_ends_at]
       properties:
         buffet_ends_at:
           type: [string, 'null']
@@ -9464,6 +9464,11 @@ components:
           type: boolean
         pending_kitchen_items:
           type: integer
+          description: Items sent to the kitchen and not ready yet.
+        unsent_kitchen_items:
+          type: integer
+          minimum: 0
+          description: Menu units on the order the kitchen has not been told about yet; a held course waits for its fire and is not counted.
     ResourceBoardTile:
       type: object
       additionalProperties: false

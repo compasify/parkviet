@@ -170,17 +170,16 @@ test('a table is seated, ordered, pre-billed, paid and free again', async ({ pag
   await expect(page).toHaveURL(/view=order/);
   expect(typeof recorded.opens[0].editor_id).toBe('string');
 
-  // The new order opens for selling with the table on it.
-  const bar = page.getByRole('region', { name: 'Thao tác đơn tại bàn' });
-  await expect(bar).toContainText('Bàn 1');
-  await expect(bar).toContainText('2 khách');
+  // The new order opens for ordering, its ticket headed by the table.
+  const ticket = page.getByRole('complementary', { name: 'Phiếu bàn' });
+  await expect(ticket.locator('.ticket-header')).toContainText('Bàn 1');
+  await expect(ticket.locator('.ticket-header')).toContainText('2 khách');
   const menu = page.getByRole('list', { name: 'Thực đơn' });
   await menu.getByRole('button', { name: 'Bánh flan', exact: true }).click();
-  await expect(page.locator('.basket-lines tr')).toHaveCount(1);
+  await expect(ticket.locator('.ticket-line')).toHaveCount(1);
 
   // The first pre-bill is recorded, then printed.
-  await page.locator('.order-more summary').click();
-  await page.getByRole('button', { name: 'In tạm tính' }).click();
+  await ticket.getByRole('button', { name: 'In tạm tính' }).click();
   const dialog = page.getByRole('dialog');
   await expect(dialog).toContainText('TẠM TÍNH – CHƯA THANH TOÁN');
   await dialog.getByRole('button', { name: 'In phiếu tạm tính' }).click();
@@ -202,16 +201,18 @@ test('a table is seated, ordered, pre-billed, paid and free again', async ({ pag
   await expect(dialog).toHaveCount(0);
 
   // On the board the table shows its pre-bill.
-  await page.getByRole('button', { name: 'Bảng bàn', exact: true }).click();
+  await ticket.getByRole('button', { name: 'Về bảng bàn', exact: true }).click();
   await expect(tile(page, 'Bàn 1')).toHaveAttribute('data-tone', 'prebilled');
   await expect(tile(page, 'Bàn 1')).toContainText('Đã in tạm tính');
   await expect(tile(page, 'Bàn 1')).toContainText('15.000 ₫');
   await expect(tile(page, 'Bàn 1')).toContainText('5′');
   // Tapping the table with its one order goes straight back to it.
   await tile(page, 'Bàn 1').click();
-  await expect(bar).toContainText('Bàn 1');
+  await expect(ticket.locator('.ticket-header')).toContainText('Bàn 1');
 
   // Paid in cash, the order closes and the table is free again.
+  await ticket.getByRole('button', { name: /^Thanh toán/ }).click();
+  await expect(page).toHaveURL(/view=pay/);
   await payCash(page, '15000');
   await expect.poll(() => world.sheets.get('ws_t1')?.status).toBe('completed');
   await page.getByRole('button', { name: 'Bảng bàn', exact: true }).click();

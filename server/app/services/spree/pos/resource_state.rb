@@ -62,7 +62,8 @@ module Spree
         rows = Workspace.where(branch_id: branch.id, operational_status: Workspace::OPEN_STATUSES).where.not(resource_id: nil).
                joins(:order).order(:id).
                pluck(:id, :resource_id, :table_label, :guest_count, :revision, :created_at, :operational_status,
-                     'spree_orders.total', 'spree_orders.currency', Arel.sql(BUFFET_ENDS), Arel.sql(HAS_CLOCK), Arel.sql('clock_timestamp()'))
+                     'spree_orders.total', 'spree_orders.currency', Arel.sql(BUFFET_ENDS), Arel.sql(HAS_CLOCK), Arel.sql(UNSENT_ITEMS),
+                     Arel.sql('clock_timestamp()'))
         return [] if rows.empty?
 
         @now = rows.first.last
@@ -70,11 +71,12 @@ module Spree
         kitchen = kitchen_by_workspace(ids)
         requests = PaymentRequest.open.where(workspace_id: ids).pluck(:workspace_id).to_set
         prebills = latest_prebills(ids)
-        rows.map do |id, resource_id, label, guests, revision, created_at, status, total, currency, buffet_ends, clock, _now|
+        rows.map do |id, resource_id, label, guests, revision, created_at, status, total, currency, buffet_ends, clock, unsent, _now|
           print = prebills[id]
           { id: id, resource_id: resource_id, table_label: label, guest_count: guests, revision: revision, created_at: created_at,
             status: status, total: BigDecimal(total.to_s), currency: currency, kitchen: kitchen[id],
             payment_requested: requests.include?(id), buffet_ends_at: buffet_ends, clock: clock == true,
+            unsent: BigDecimal((unsent || 0).to_s).ceil,
             prebilled: print && print[:status] == 'current' && print[:revision] == revision,
             edited_after_prebill: print.present? && !(print[:status] == 'current' && print[:revision] == revision) }
         end
@@ -146,6 +148,14 @@ module Spree
       HAS_CLOCK = <<~SQL.squish.freeze
         EXISTS (SELECT 1 FROM spree_pos_timed_sessions ts WHERE ts.workspace_id = spree_pos_workspaces.id)
       SQL
+      # Menu units of an order the kitchen has not been told about yet (held
+      # courses wait for their fire), read with the orders. Matches what a
+      # kitchen send would take (`Kitchen::Send`) and `SaleLine#pending_kitchen_quantity`.
+      UNSENT_ITEMS = <<~SQL.squish.freeze
+        (SELECT COALESCE(SUM(sl.sale_quantity - sl.kitchen_sent_quantity), 0) FROM spree_pos_sale_lines sl
+         WHERE sl.workspace_id = spree_pos_workspaces.id AND sl.kind = '#{SaleLineKinds::Menu::KIND}'
+           AND sl.course_status <> 'held' AND sl.sale_quantity > sl.kitchen_sent_quantity)
+      SQL
       # When the earliest buffet ticket of an order runs out, read with the orders.
       BUFFET_ENDS = <<~SQL.squish.freeze
         (SELECT MIN(sl.created_at + make_interval(mins => bt.duration_minutes)) FROM spree_pos_sale_lines sl
@@ -185,7 +195,8 @@ module Spree
               total: row[:total].to_s('F'), revision: row[:revision], operational_status: row[:status],
               payment_requested: row[:payment_requested], prebilled: row[:prebilled] == true,
               buffet_ends_at: row[:buffet_ends_at]&.iso8601,
-              edited_after_prebill: row[:edited_after_prebill], pending_kitchen_items: row[:kitchen]&.dig(:pending) || 0 }
+              edited_after_prebill: row[:edited_after_prebill], pending_kitchen_items: row[:kitchen]&.dig(:pending) || 0,
+              unsent_kitchen_items: row[:unsent] }
           end
         }
       end

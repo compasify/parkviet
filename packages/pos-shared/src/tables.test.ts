@@ -309,6 +309,34 @@ describe('table board', () => {
 
   it('never calls dishes unsent at a branch without a kitchen', () => {
     expect(tileTone(tile('occupied', {}, one), { kitchen: false })).toBe('serving');
+    expect(tileTone(tile('ordered', {}, [{ unsent_kitchen_items: 2 }]), { kitchen: false })).toBe(
+      'serving',
+    );
+  });
+
+  it('reads unsent dishes per order when the server counts them, after a send too', () => {
+    // Dishes added after the first send.
+    expect(tileTone(tile('ordered', {}, [{ unsent_kitchen_items: 2 }]))).toBe('unsent');
+    expect(tileTone(tile('waiting_long', {}, [{ unsent_kitchen_items: 1 }]))).toBe('unsent');
+    // Seated with dishes, all sent: served, whatever the state says.
+    expect(tileTone(tile('occupied', {}, [{ unsent_kitchen_items: 0 }]))).toBe('serving');
+    // One order of two waiting is enough.
+    expect(
+      tileTone(tile('ordered', {}, [{ unsent_kitchen_items: 0 }, { unsent_kitchen_items: 3 }])),
+    ).toBe('unsent');
+    // The bill still wins.
+    expect(
+      tileTone(tile('ordered', {}, [{ unsent_kitchen_items: 2, payment_requested: true }])),
+    ).toBe('payment');
+    expect(
+      needsAttention(tile('ordered', {}, [{ unsent_kitchen_items: 1 }]), { alertMinutes: 60 }),
+    ).toBe(true);
+  });
+
+  it('falls back to guessing from the state when an order has no count', () => {
+    expect(tile('occupied', {}, one).orders[0].unsent_kitchen_items).toBeNull();
+    expect(tileTone(tile('ordered', {}, [{ unsent_kitchen_items: 2 }, {}]))).toBe('serving');
+    expect(tileTone(tile('occupied', {}, [{ unsent_kitchen_items: 0 }, {}]))).toBe('unsent');
   });
 
   it('flags a table seated past the branch threshold or waiting on the kitchen', () => {

@@ -149,6 +149,8 @@ test('book, take a deposit, seat the guest and pay with the deposit taken off', 
 
   await list.getByRole('button', { name: 'Khách đã đến' }).click();
   await expect(page).toHaveURL(/order=ws_r1/);
+  // The seated table opens on its ticket; the deposit is taken off when paying.
+  await page.getByRole('complementary', { name: 'Phiếu bàn' }).getByRole('button', { name: /^Thanh toán/ }).click();
   await openTab(page, 'ws_r1');
 
   const note = page.locator('.reservation-deposit-note');
