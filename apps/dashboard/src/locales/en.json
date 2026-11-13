@@ -1,9 +1,11 @@
 {
   "admin": {
     "multi_store": {
-      "nav": "Stores",
+      "nav": "Store list",
       "nav_description": "Open another store, like a restaurant beside your shop, with its own products, orders and settings",
-      "title": "Stores",
+      "title": "Store list",
+      "search_placeholder": "Search by name or code",
+      "empty": "No stores yet",
       "subtitle": "Each store keeps its own catalog, orders, payment methods and settings. Switch between them from the store menu at the top of the sidebar.",
       "add": "Open a new store",
       "sheet_description": "The new store starts with its own sales channel, market, warehouse and taxes. You become its admin.",

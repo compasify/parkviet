@@ -2,8 +2,8 @@
 // a new one — a restaurant beside a retail shop, each with its own catalog,
 // orders and settings. Switching between them is the sidebar store switcher.
 import {
-  Badge,
   Button,
+  Can,
   Field,
   FieldDescription,
   FieldError,
@@ -11,6 +11,9 @@ import {
   Input,
   i18n,
   mapSpreeErrorsToForm,
+  ResourceTable,
+  RowActions,
+  resourceSearchSchema,
   Select,
   SelectContent,
   SelectItem,
@@ -22,69 +25,76 @@ import {
   SheetFooter,
   SheetHeader,
   SheetTitle,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableHeaderRow,
-  TableRow,
+  Subject,
   useAuth,
+  useRowClickBridge,
   useStore,
 } from '@spree/dashboard'
-import { Link, useNavigate } from '@tanstack/react-router'
+import { ArrowLeftRightIcon, PlusIcon } from '@spree/dashboard-ui/icons'
+import { useNavigate } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 import { Controller, type UseFormReturn, useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { useCountryCodes, useCreateStore } from '../hooks/use-stores'
-import { EMPTY_NEW_STORE, type NewStoreFormValues, newStorePayload } from '../schemas/store'
+import {
+  EMPTY_NEW_STORE,
+  type NewStoreFormValues,
+  newStorePayload,
+  pageStores,
+} from '../schemas/store'
 
-export function StoresPage() {
+export function StoresPage({ searchParams = {} }: { searchParams?: Record<string, unknown> }) {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const { user } = useAuth()
   const { store: currentStore } = useStore()
   const [creating, setCreating] = useState(false)
-  const stores = user?.stores ?? []
+  const rows = (user?.stores ?? []).map((store) => ({
+    ...store,
+    current: store.id === currentStore?.id,
+  }))
+  const search = resourceSearchSchema.parse(searchParams)
+
+  function openStore(id: string) {
+    navigate({ to: `/${id}` as never })
+  }
+
+  useRowClickBridge('data-store-id', openStore)
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-semibold">{t('admin.multi_store.title')}</h1>
-          <p className="text-sm text-muted-foreground">{t('admin.multi_store.subtitle')}</p>
-        </div>
-        <Button onClick={() => setCreating(true)}>{t('admin.multi_store.add')}</Button>
-      </div>
-
-      <Table>
-        <TableHeader>
-          <TableHeaderRow>
-            <TableHead>{t('admin.multi_store.fields.name')}</TableHead>
-            <TableHead>{t('admin.multi_store.fields.code')}</TableHead>
-            <TableHead className="w-0" />
-          </TableHeaderRow>
-        </TableHeader>
-        <TableBody>
-          {stores.map((store) => (
-            <TableRow key={store.id}>
-              <TableCell className="font-medium">{store.name}</TableCell>
-              <TableCell className="text-muted-foreground">{store.code}</TableCell>
-              <TableCell className="text-right">
-                {store.id === currentStore?.id ? (
-                  <Badge variant="secondary">{t('admin.multi_store.current')}</Badge>
-                ) : (
-                  <Button variant="outline" size="sm" asChild>
-                    <Link to={`/${store.id}` as never}>{t('admin.multi_store.switch')}</Link>
-                  </Button>
-                )}
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-
+    <>
+      <ResourceTable
+        tableKey="stores"
+        queryKey={[
+          'managed-stores',
+          rows.map((row) => `${row.id}:${row.name}:${row.current}`).join('|'),
+        ]}
+        queryFn={(params) => Promise.resolve(pageStores(rows, params))}
+        searchParams={search}
+        rowActions={(store) => (
+          <RowActions
+            actions={[
+              {
+                key: 'switch',
+                label: t('admin.multi_store.switch'),
+                icon: <ArrowLeftRightIcon className="size-4" />,
+                visible: store.id !== currentStore?.id,
+                onSelect: () => openStore(store.id),
+              },
+            ]}
+          />
+        )}
+        actions={
+          <Can I="update" a={Subject.Store}>
+            <Button size="sm" className="h-[2.125rem]" onClick={() => setCreating(true)}>
+              <PlusIcon className="size-4" />
+              {t('admin.multi_store.add')}
+            </Button>
+          </Can>
+        }
+      />
       {creating && <NewStoreSheet onClose={() => setCreating(false)} />}
-    </div>
+    </>
   )
 }
 

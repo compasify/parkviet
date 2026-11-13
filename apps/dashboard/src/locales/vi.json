@@ -6729,9 +6729,11 @@
       "cli_then_sign_in": "Nó sẽ mở trình duyệt của bạn để đăng nhập và phê duyệt những gì đại lý có thể làm."
     },
     "multi_store": {
-      "nav": "Cửa hàng",
+      "nav": "Danh sách cửa hàng",
       "nav_description": "Mở thêm cửa hàng, ví dụ nhà hàng bên cạnh cửa hàng bán lẻ, với sản phẩm, đơn hàng và cấu hình riêng",
-      "title": "Cửa hàng",
+      "title": "Danh sách cửa hàng",
+      "search_placeholder": "Tìm theo tên hoặc mã",
+      "empty": "Chưa có cửa hàng",
       "subtitle": "Mỗi cửa hàng có danh mục sản phẩm, đơn hàng, phương thức thanh toán và cấu hình riêng. Chuyển giữa các cửa hàng bằng menu cửa hàng ở đầu thanh bên.",
       "add": "Mở cửa hàng mới",
       "sheet_description": "Cửa hàng mới được tạo sẵn kênh bán hàng, thị trường, kho và thuế riêng. Bạn sẽ là quản trị viên của cửa hàng này.",
