@@ -1,7 +1,7 @@
 ---
 phase: 2
 title: "Căng tin và trạm dừng trên quầy nhanh"
-status: pending
+status: done
 effort: "1,5 ngày"
 dependsOn: [1]
 ---

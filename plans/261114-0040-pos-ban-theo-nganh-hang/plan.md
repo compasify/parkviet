@@ -60,7 +60,7 @@ Quán ăn không bật bàn cũng là `fnb.menu` không có `fnb.tables`, nên c
 | # | Phase | Effort | Phụ thuộc | Trạng thái |
 |---|---|---|---|---|
 | 1 | [Quầy nhanh cho cafe và trà sữa](./phase-01-quay-nhanh-cafe.md) | 2,5 ngày | – | xong |
-| 2 | [Căng tin và trạm dừng trên quầy nhanh](./phase-02-cang-tin-tram-dung.md) | 1,5 ngày | 1 | chưa làm |
+| 2 | [Căng tin và trạm dừng trên quầy nhanh](./phase-02-cang-tin-tram-dung.md) | 1,5 ngày | 1 | xong |
 | 3 | [Bảng phòng tính giờ cho karaoke và bida](./phase-03-karaoke-bida.md) | 3 ngày | – | chưa làm |
 | 4 | [Tab quầy bar cho bar, pub và club](./phase-04-bar-pub-club.md) | 2 ngày | – | chưa làm |
 
