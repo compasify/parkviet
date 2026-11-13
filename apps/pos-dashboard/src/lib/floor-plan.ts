@@ -65,6 +65,35 @@ const overlaps = (left: Placement, right: Placement) =>
   left.y < right.y + right.h &&
   right.y < left.y + left.h
 
+// The floor large enough to hold every table, and at least the area's current
+// size, never past the server's maximum.
+export function floorSpan(tables: readonly Placement[], area: Floor): Floor {
+  let floor_width = area.floor_width
+  let floor_height = area.floor_height
+  for (const table of tables) {
+    floor_width = Math.max(floor_width, table.x + table.w)
+    floor_height = Math.max(floor_height, table.y + table.h)
+  }
+  return {
+    floor_width: Math.min(FLOOR_MAX, floor_width),
+    floor_height: Math.min(FLOOR_MAX, floor_height),
+  }
+}
+
+// The rectangle dragged from one cell to another, at least one cell each way.
+export function rectanglePlacement(
+  origin: { x: number; y: number },
+  current: { x: number; y: number },
+): Placement {
+  return {
+    x: Math.min(origin.x, current.x),
+    y: Math.min(origin.y, current.y),
+    w: Math.abs(current.x - origin.x) + 1,
+    h: Math.abs(current.y - origin.y) + 1,
+    rotation: 0,
+  }
+}
+
 // Where a new table of `w` × `h` cells goes: the first spot, row by row, that
 // no table of the area covers; the top-left corner when the floor is full.
 export function freeSpot(taken: readonly Placement[], area: Floor, w: number, h: number) {

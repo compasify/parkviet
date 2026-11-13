@@ -2,6 +2,7 @@ import type { ResourceRecord } from '@parkviet/pos-shared/tables'
 import { describe, expect, it } from 'vitest'
 import {
   changedFields,
+  floorSpan,
   freeSpot,
   nudgePlacement,
   readFloorSize,
@@ -10,6 +11,7 @@ import {
   readQrMaxItems,
   readServiceChargeRate,
   readTableDraft,
+  rectanglePlacement,
   shiftPlacement,
   type TableDraft,
   tableDraftOf,
@@ -34,6 +36,25 @@ const table: ResourceRecord = {
 }
 
 describe('floor plan placement', () => {
+  it('grows the floor to hold a table dragged past its edge', () => {
+    expect(floorSpan([{ x: 22, y: 14, w: 4, h: 3, rotation: 0 }], area)).toEqual({
+      floor_width: 26,
+      floor_height: 17,
+    })
+    expect(floorSpan([], area)).toEqual({ floor_width: 10, floor_height: 6 })
+  })
+
+  it('draws a rectangle from either corner', () => {
+    expect(rectanglePlacement({ x: 1, y: 2 }, { x: 4, y: 3 })).toEqual({
+      x: 1,
+      y: 2,
+      w: 4,
+      h: 2,
+      rotation: 0,
+    })
+    expect(rectanglePlacement({ x: 4, y: 3 }, { x: 4, y: 3 })).toMatchObject({ w: 1, h: 1 })
+  })
+
   it('moves a table by whole cells and keeps it on the floor', () => {
     expect(shiftPlacement(start, { dx: 1.4, dy: 2.6 }, 'move', area)).toMatchObject({ x: 3, y: 4 })
     expect(shiftPlacement(start, { dx: 20, dy: -5 }, 'move', area)).toMatchObject({

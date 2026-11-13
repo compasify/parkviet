@@ -15,7 +15,20 @@ import {
 } from '@parkviet/pos-shared/tables'
 import { SERVICE_MODES, type ServiceMode } from '@parkviet/pos-shared/types/pos-context'
 import { usePermissions } from '@spree/dashboard-core'
-import { Button, Input, Label, useConfirm } from '@spree/dashboard-ui'
+import {
+  Button,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  Input,
+  Label,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  useConfirm,
+} from '@spree/dashboard-ui'
 import { SettingsIcon, TableIcon } from '@spree/dashboard-ui/icons'
 import { type FormEvent, useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -47,7 +60,6 @@ import {
   CAPACITY_MAX,
   changedFields,
   FLOOR_MAX,
-  FLOOR_MIN,
   freeSpot,
   placementDraft,
   QR_MAX_ITEMS,
@@ -61,7 +73,6 @@ import {
   TABLE_SIZE_MAX,
   type TableDraft,
   tableDraftOf,
-  tablesOutside,
 } from '../lib/floor-plan'
 import { canManageBranch, canManageResources } from '../lib/pos-access'
 
@@ -237,6 +248,9 @@ function FloorCard({ write }: { write: boolean }) {
   const [areaId, setAreaId] = useState<string | null>(null)
   const [areaDraft, setAreaDraft] = useState<AreaDraft | null>(null)
   const [draft, setDraft] = useState<TableDraft | null>(null)
+  const [editing, setEditing] = useState(false)
+  const [zoom, setZoom] = useState(1)
+  const [adding, setAdding] = useState(false)
 
   const area = areas.data?.find((row) => row.id === areaId) ?? areas.data?.[0] ?? null
   const tables = (resources.data ?? []).filter((row) => row.area_id === area?.id)
@@ -257,6 +271,7 @@ function FloorCard({ write }: { write: boolean }) {
     if (id === area?.id || !(await leaveDraft())) return
     setDraft(null)
     setAreaDraft(null)
+    setAdding(false)
     setAreaId(id)
   }
 
@@ -270,6 +285,38 @@ function FloorCard({ write }: { write: boolean }) {
     if (!area || !(await leaveDraft())) return
     setDraft(blankTable(freeSpot(tables, area, 2, 2)))
   }
+
+  const drawTable = async (placement: Placement) => {
+    if (!area || !(await leaveDraft())) return
+    setDraft(blankTable(placement))
+  }
+
+  const closeEditor = async () => {
+    if (!(await leaveDraft())) return
+    setDraft(null)
+    setEditing(false)
+    setAdding(false)
+    setZoom(1)
+  }
+
+  const setPlanZoom = (value: number) => setZoom(Math.min(3, Math.max(0.5, value)))
+
+  const growFloor = (floor: { floor_width: number; floor_height: number }) => {
+    if (!area) return
+    if (floor.floor_width === area.floor_width && floor.floor_height === area.floor_height) return
+    void mutation.mutateAsync({
+      method: 'PATCH',
+      path: `/pos/areas/${area.id}`,
+      body: { name: area.name, floor_width: floor.floor_width, floor_height: floor.floor_height },
+    })
+  }
+
+  const startArea = () =>
+    setAreaDraft({
+      name: '',
+      width: String(DEFAULT_FLOOR.width),
+      height: String(DEFAULT_FLOOR.height),
+    })
 
   const saveArea = (event: FormEvent) => {
     event.preventDefault()
@@ -362,20 +409,19 @@ function FloorCard({ write }: { write: boolean }) {
             )}
             {write && !areaDraft ? (
               <div className="flex flex-wrap gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() =>
-                    setAreaDraft({
-                      name: '',
-                      width: String(DEFAULT_FLOOR.width),
-                      height: String(DEFAULT_FLOOR.height),
-                    })
-                  }
-                >
+                <Button variant="outline" onClick={startArea}>
                   {t('floorPlan.addArea')}
                 </Button>
                 {area ? (
                   <>
+                    <Button
+                      onClick={() => {
+                        setZoom(1)
+                        setEditing(true)
+                      }}
+                    >
+                      {t('floorPlan.editLayout')}
+                    </Button>
                     <Button variant="outline" onClick={() => setAreaDraft(areaDraftOf(area))}>
                       {t('floorPlan.editArea')}
                     </Button>
@@ -391,10 +437,9 @@ function FloorCard({ write }: { write: boolean }) {
               </div>
             ) : null}
           </div>
-          {areaDraft ? (
+          {areaDraft && !editing ? (
             <AreaForm
               draft={areaDraft}
-              tables={areaDraft.id ? tables : []}
               busy={mutation.isPending}
               onChange={setAreaDraft}
               onSubmit={saveArea}
@@ -402,46 +447,140 @@ function FloorCard({ write }: { write: boolean }) {
             />
           ) : null}
           {area ? (
-            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
-              <div className="min-w-0 space-y-2">
+            <div className="space-y-2">
+              <div className="h-72">
                 <FloorPlanCanvas
                   area={area}
-                  tables={canvasTables}
-                  selected={draft ? (draft.id ?? NEW) : null}
-                  write={write}
-                  onSelect={(key) => void select(key)}
-                  onPlace={(placement) =>
-                    setDraft((current) =>
-                      current ? { ...current, ...placementDraft(placement) } : current,
-                    )
-                  }
+                  tables={tables.map((row) => ({ ...row, key: row.id }))}
+                  selected={null}
+                  write={false}
+                  onSelect={() => undefined}
+                  onPlace={() => undefined}
                 />
-                {tables.length === 0 && !draft ? (
-                  <p className="text-sm text-muted-foreground">{t('floorPlan.noTables')}</p>
-                ) : null}
-                {write ? (
-                  <Button variant="outline" onClick={() => void addTable()}>
-                    {t('floorPlan.addTable')}
-                  </Button>
-                ) : null}
               </div>
-              {draft ? (
-                <TableForm
-                  key={draft.id ?? NEW}
-                  area={area}
-                  draft={draft}
-                  saved={saved}
-                  dirty={dirty}
-                  position={resources.data?.length ?? 0}
-                  write={write}
-                  attempt={attempt}
-                  onChange={setDraft}
-                  onClose={() => setDraft(null)}
-                />
-              ) : (
-                <p className="text-sm text-muted-foreground">{t('floorPlan.pickTable')}</p>
-              )}
+              {tables.length === 0 ? (
+                <p className="text-sm text-muted-foreground">{t('floorPlan.noTables')}</p>
+              ) : null}
             </div>
+          ) : null}
+          {area && editing ? (
+            <Dialog
+              open
+              onOpenChange={(open, details) => {
+                if (open) return
+                // Escape steps back out of the open table or area name; only
+                // the close button leaves the editor.
+                if (details.reason === 'escape-key') {
+                  details.cancel()
+                  if (adding) setAdding(false)
+                  else if (areaDraft) setAreaDraft(null)
+                  else if (draft) void leaveDraft().then((leave) => leave && setDraft(null))
+                  return
+                }
+                void closeEditor()
+              }}
+            >
+              <DialogContent fullScreen>
+                <DialogHeader className="flex-row items-center gap-3 p-2 pr-14">
+                  <DialogTitle className="shrink-0 text-base">
+                    {t('floorPlan.editLayout')}
+                  </DialogTitle>
+                  <div className="flex min-w-0 flex-1 items-center justify-center gap-2 overflow-x-auto">
+                    {areaDraft ? (
+                      <form className="flex items-center gap-2" onSubmit={saveArea}>
+                        <Input
+                          autoFocus
+                          required
+                          maxLength={80}
+                          value={areaDraft.name}
+                          aria-label={t('floorPlan.areaName')}
+                          onChange={(event) =>
+                            setAreaDraft({ ...areaDraft, name: event.target.value })
+                          }
+                          className="h-8 w-48"
+                        />
+                        <Button
+                          type="submit"
+                          size="sm"
+                          disabled={mutation.isPending || !areaDraft.name.trim()}
+                        >
+                          {t('save')}
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setAreaDraft(null)}
+                        >
+                          {t('adminCancel')}
+                        </Button>
+                      </form>
+                    ) : (
+                      <>
+                        <Tabs
+                          value={area.id}
+                          onValueChange={(value) => void pickArea(String(value))}
+                        >
+                          <TabsList>
+                            {areas.data.map((row) => (
+                              <TabsTrigger key={row.id} value={row.id}>
+                                {row.name}
+                              </TabsTrigger>
+                            ))}
+                          </TabsList>
+                        </Tabs>
+                        {write ? (
+                          <Button type="button" size="sm" variant="outline" onClick={startArea}>
+                            {t('floorPlan.addArea')}
+                          </Button>
+                        ) : null}
+                      </>
+                    )}
+                  </div>
+                  <DialogDescription className="sr-only">{area.name}</DialogDescription>
+                </DialogHeader>
+                <div
+                  className={`grid min-h-0 flex-1 overflow-hidden gap-4 p-3 ${draft ? 'lg:grid-cols-[minmax(0,1fr)_20rem]' : ''}`}
+                >
+                  <FloorPlanCanvas
+                    key={area.id}
+                    area={area}
+                    tables={canvasTables}
+                    selected={draft ? (draft.id ?? NEW) : null}
+                    write={write}
+                    zoom={zoom}
+                    onZoom={setPlanZoom}
+                    onSelect={(key) => void select(key)}
+                    onPlace={(placement) =>
+                      setDraft((current) =>
+                        current ? { ...current, ...placementDraft(placement) } : current,
+                      )
+                    }
+                    onDraw={(placement) => void drawTable(placement)}
+                    onExtend={growFloor}
+                    adding={adding}
+                    onAdding={write ? setAdding : undefined}
+                    onAddTable={() => void addTable()}
+                  />
+                  {draft ? (
+                    <div className="min-h-0 overflow-y-auto">
+                      <TableForm
+                        key={draft.id ?? NEW}
+                        area={area}
+                        draft={draft}
+                        saved={saved}
+                        dirty={dirty}
+                        position={resources.data?.length ?? 0}
+                        write={write}
+                        attempt={attempt}
+                        onChange={setDraft}
+                        onClose={() => setDraft(null)}
+                      />
+                    </div>
+                  ) : null}
+                </div>
+              </DialogContent>
+            </Dialog>
           ) : null}
         </>
       )}
@@ -451,72 +590,34 @@ function FloorCard({ write }: { write: boolean }) {
 
 function AreaForm({
   draft,
-  tables,
   busy,
   onChange,
   onSubmit,
   onCancel,
 }: {
   draft: AreaDraft
-  tables: ResourceRecord[]
   busy: boolean
   onChange: (draft: AreaDraft) => void
   onSubmit: (event: FormEvent) => void
   onCancel: () => void
 }) {
   const { t } = useTranslation()
-  const width = readFloorSize(draft.width)
-  const height = readFloorSize(draft.height)
-  const outside =
-    width !== null && height !== null
-      ? tablesOutside(tables, { floor_width: width, floor_height: height })
-      : []
-  const problem = !draft.name.trim()
-    ? null
-    : width === null || height === null
-      ? t('floorPlan.problem_floor', { min: FLOOR_MIN, max: FLOOR_MAX })
-      : outside.length > 0
-        ? t('floorPlan.problem_floorTooSmall', {
-            names: outside.map((row) => row.name).join(', '),
-          })
-        : null
-  const edit = (patch: Partial<AreaDraft>) => onChange({ ...draft, ...patch })
   return (
     <form
-      className="space-y-4 rounded-lg border p-4"
+      className="flex flex-wrap items-end gap-4 rounded-lg border p-4"
       aria-label={draft.id ? t('floorPlan.editArea') : t('floorPlan.addArea')}
       onSubmit={onSubmit}
     >
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="min-w-48 flex-1">
         <TextField
           label={t('floorPlan.areaName')}
           value={draft.name}
           maxLength={80}
-          onChange={(name) => edit({ name })}
-        />
-        <NumberField
-          label={t('floorPlan.floorWidth')}
-          value={draft.width}
-          min={FLOOR_MIN}
-          max={FLOOR_MAX}
-          onChange={(value) => edit({ width: value })}
-        />
-        <NumberField
-          label={t('floorPlan.floorHeight')}
-          value={draft.height}
-          min={FLOOR_MIN}
-          max={FLOOR_MAX}
-          onChange={(value) => edit({ height: value })}
+          onChange={(name) => onChange({ ...draft, name })}
         />
       </div>
-      <p className="text-sm text-muted-foreground">{t('floorPlan.floorHint')}</p>
-      {problem ? (
-        <p role="alert" className="text-sm text-destructive">
-          {problem}
-        </p>
-      ) : null}
       <div className="flex gap-2">
-        <Button type="submit" disabled={busy || Boolean(problem) || !draft.name.trim()}>
+        <Button type="submit" disabled={busy || !draft.name.trim()}>
           {t('save')}
         </Button>
         <Button type="button" variant="outline" onClick={onCancel}>
@@ -552,7 +653,7 @@ function TableForm({
   const { branch } = useBranchScope()
   const mutation = useFloorPlanWrite()
   const confirm = useConfirm()
-  const read = readTableDraft(draft, area)
+  const read = readTableDraft(draft, { floor_width: FLOOR_MAX, floor_height: FLOOR_MAX })
   const problem =
     'problem' in read
       ? t(`floorPlan.problem_${read.problem}`, {
@@ -570,6 +671,15 @@ function TableForm({
     if (!('values' in read) || mutation.isPending) return
     const values = read.values
     void attempt(async () => {
+      const floorWidth = Math.min(FLOOR_MAX, Math.max(area.floor_width, values.x + values.w))
+      const floorHeight = Math.min(FLOOR_MAX, Math.max(area.floor_height, values.y + values.h))
+      if (floorWidth !== area.floor_width || floorHeight !== area.floor_height) {
+        await mutation.mutateAsync({
+          method: 'PATCH',
+          path: `/pos/areas/${area.id}`,
+          body: { name: area.name, floor_width: floorWidth, floor_height: floorHeight },
+        })
+      }
       if (saved) {
         const body = changedFields(saved, values)
         if (Object.keys(body).length === 0) return t('saved')
@@ -693,38 +803,6 @@ function TableForm({
             max={359}
             disabled={locked}
             onChange={(rotation) => edit({ rotation })}
-          />
-          <NumberField
-            label={t('floorPlan.x')}
-            value={draft.x}
-            min={0}
-            max={area.floor_width - 1}
-            disabled={locked}
-            onChange={(x) => edit({ x })}
-          />
-          <NumberField
-            label={t('floorPlan.y')}
-            value={draft.y}
-            min={0}
-            max={area.floor_height - 1}
-            disabled={locked}
-            onChange={(y) => edit({ y })}
-          />
-          <NumberField
-            label={t('floorPlan.w')}
-            value={draft.w}
-            min={1}
-            max={TABLE_SIZE_MAX}
-            disabled={locked}
-            onChange={(w) => edit({ w })}
-          />
-          <NumberField
-            label={t('floorPlan.h')}
-            value={draft.h}
-            min={1}
-            max={TABLE_SIZE_MAX}
-            disabled={locked}
-            onChange={(h) => edit({ h })}
           />
         </div>
         {problem && write ? (
