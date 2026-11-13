@@ -134,6 +134,34 @@ export function minutesLeft(visit: Pick<VehicleVisit, 'closes_at'>, now: number)
   return Math.max(0, Math.ceil((closes - now) / 60_000));
 }
 
+// Recording a coach and closing its visit: what the server asks of staff
+// for either (operating the visits, or managing them).
+export function canOperateVehicleVisits(capabilities: readonly string[] | undefined): boolean {
+  return ['pos.vehicle_visit.operate', 'pos.vehicle_visit.manage'].some(
+    (key) => capabilities?.includes(key) === true,
+  );
+}
+
+// The orders known here (the ticket and the register's open orders) put on
+// a visit and not paid or canceled yet: closing the visit leaves them out
+// of its commission. Each order counts once.
+export function unpaidOnVisit(
+  orders: readonly { id: string; vehicle_visit_id?: string | null; operational_status: string }[],
+  visitId: string,
+): number {
+  const ids = new Set(
+    orders
+      .filter(
+        (order) =>
+          order.vehicle_visit_id === visitId &&
+          order.operational_status !== 'completed' &&
+          order.operational_status !== 'canceled',
+      )
+      .map((order) => order.id),
+  );
+  return ids.size;
+}
+
 // What the screen may do with a visit, by its state and the reader's rights.
 export function visitActions(visit: VehicleVisit, canManage: boolean) {
   const commission = Number(visit.commission_amount ?? '0');

@@ -1334,6 +1334,26 @@ kbd { padding: var(--pos-s1); border: 1px solid var(--pos-border); border-radius
 .quick-display { position: relative; flex: 1; }
 .quick-display > summary { display: flex; align-items: center; justify-content: center; min-height: 38px; padding: 0 var(--pos-s2); border: 1px solid var(--pos-border); border-radius: 999px; font-size: .8125rem; cursor: pointer; }
 .quick-display[open] > :not(summary) { position: absolute; right: 0; bottom: calc(100% + 6px); z-index: var(--pos-overlay); width: min(360px, 80vw); padding: var(--pos-s3); background: var(--pos-surface); border: 1px solid var(--pos-border); border-radius: var(--pos-radius); box-shadow: var(--pos-shadow); }
+.quick-ticket-header .meal-scan { margin: 0 0 var(--pos-s2); }
+.pos-layout .quick-ticket .meal-scan-duplicate, .pos-layout .quick-ticket .meal-scan-error { color: var(--pos-danger); }
+.quick-ticket .meal-banner { margin: var(--pos-s2) var(--pos-s3) 0; }
+.pos-layout .quick-pay-eater { padding-top: 0; }
+.pos-layout .quick-pay-eater strong { font-size: 1.25rem; color: var(--pos-success); }
+.vehicle-strip { display: grid; gap: var(--pos-s2); padding: var(--pos-s2) var(--pos-s3); border-bottom: 1px solid var(--pos-border); border-left: 4px solid var(--pos-warning); background: var(--pos-surface); }
+.vehicle-strip-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--pos-s2); }
+.vehicle-strip-title { flex: none; }
+.pos-layout .vehicle-strip-empty { color: var(--pos-muted); font-size: var(--pos-small); }
+.vehicle-strip-list { display: flex; flex: 1; gap: var(--pos-s2); min-width: 0; margin: 0; padding: 0; list-style: none; overflow-x: auto; }
+.vehicle-strip-visit { display: flex; flex: none; align-items: stretch; gap: 4px; }
+.pos-layout .vehicle-strip-coach { display: grid; gap: 0; padding: 2px var(--pos-s3); text-align: left; font-size: var(--pos-small); white-space: nowrap; }
+.pos-layout .vehicle-strip-coach[aria-pressed="true"] { border-color: var(--pos-success); box-shadow: inset 0 0 0 2px var(--pos-success); }
+.vehicle-strip-plate { font-weight: 800; font-size: var(--pos-heading); }
+.pos-layout .vehicle-strip-warning { align-self: center; max-width: 220px; color: var(--pos-danger); font-size: var(--pos-small); font-weight: 700; white-space: normal; }
+.pos-layout .vehicle-strip-confirm { border-color: var(--pos-danger); color: var(--pos-danger); font-weight: 700; }
+.pos-layout .vehicle-strip-new { flex: none; margin-left: auto; font-weight: 700; }
+.vehicle-strip-form { display: flex; flex-wrap: wrap; align-items: end; gap: var(--pos-s2); }
+.vehicle-strip-form label { display: grid; gap: 2px; min-width: 120px; font-size: var(--pos-small); }
+.pos-layout .vehicle-strip-message { margin: 0; padding: var(--pos-s1) var(--pos-s2); font-size: var(--pos-small); }
 .table-service .menu-items[data-images="true"] { --tile-h: 150px; }
 .table-service .menu-items[data-images="true"][data-density="airy"] { --tile-h: 180px; }
 .table-service .menu-items[data-images="true"][data-density="dense"] { --tile-h: 124px; }

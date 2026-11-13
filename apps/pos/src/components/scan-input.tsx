@@ -13,6 +13,7 @@ import {
 } from '../lib/scan-sounds';
 import type { ScanNotice } from './catalog-search';
 import { PosIcon } from './pos-icon';
+import type { SellingWorkspace } from './workspace-tabs';
 
 export type MealSwipeInput =
   | { code: string; inputMethod: 'code' }
@@ -27,6 +28,31 @@ const KEEP_FOCUS_AREA = '#pos-catalog, #pos-basket';
 const OWN_FOCUS =
   'input, textarea, select, label, details, [role="dialog"], [contenteditable]:not([contenteditable="false"])';
 const TEXT_ENTRY = 'input, textarea, select, [contenteditable]:not([contenteditable="false"])';
+// Marks the meal code field, so keyboard shortcuts can tell it from other text fields.
+const SCAN_FIELD = 'data-scan-field';
+
+// The meal code field holding the focus with nothing typed in it, no code
+// still being looked up and no list of eaters to pick from: a key pressed
+// there is not part of a code being typed, scanned or answered.
+export function idleScanField(target: EventTarget | null) {
+  return (
+    target instanceof HTMLInputElement &&
+    target.hasAttribute(SCAN_FIELD) &&
+    target.value === '' &&
+    target.getAttribute('aria-busy') !== 'true' &&
+    !target.closest('.meal-scan')?.querySelector('.meal-scan-suggestions')
+  );
+}
+
+// The order a code was typed for and how to record a meal on it, as they
+// were when Enter was pressed or an eater picked.
+type SwipeTarget = {
+  branchId: string | null;
+  workspace: PosWorkspace | null;
+  disabled: boolean;
+  onSwipe: (input: MealSwipeInput) => Promise<unknown>;
+  onBarcode?: (code: string) => void;
+};
 
 // A product code from a scanner or typed: one word holding a digit. Names
 // never do, so a name without a match is never sent to the catalogue.
@@ -46,6 +72,9 @@ export function ScanInput({
   onSwipe,
   onBarcode,
   barcodeNotice,
+  focusArea = KEEP_FOCUS_AREA,
+  refocus,
+  onBusyChange,
 }: {
   branchId: string | null;
   workspace: PosWorkspace | null;
@@ -55,6 +84,14 @@ export function ScanInput({
   onBarcode?: (code: string) => void;
   // The outcome of a barcode handed on, when no catalogue search shows it.
   barcodeNotice?: ScanNotice | null;
+  // Where a tap hands the focus back to the field.
+  focusArea?: string;
+  // The field takes the focus back each time this changes to a value (an
+  // order just finished, a dialog over it closed) unless the cashier is in
+  // another text field or a dialog; null leaves it be.
+  refocus?: string | number | null;
+  // A code is being looked up or recorded (true) or all are answered.
+  onBusyChange?: (busy: boolean) => void;
 }) {
   const { t } = useTranslation();
   const input = useRef<HTMLInputElement>(null);
@@ -65,32 +102,46 @@ export function ScanInput({
   const [sounds, setSounds] = useState(() => scanSoundsEnabled());
   // Codes typed while the previous one is still answering wait their turn.
   const queue = useRef<Promise<void>>(Promise.resolve());
-  const latest = useRef({ branchId, workspace, disabled, onSwipe, onBarcode });
+  const latest = useRef<SwipeTarget>({ branchId, workspace, disabled, onSwipe, onBarcode });
   latest.current = { branchId, workspace, disabled, onSwipe, onBarcode };
+  const busyChange = useRef(onBusyChange);
+  busyChange.current = onBusyChange;
+  useEffect(() => {
+    busyChange.current?.(busy);
+  }, [busy]);
+  useEffect(() => () => busyChange.current?.(false), []);
 
   const focus = () => input.current?.focus({ preventScroll: true });
+  // Back to the field, unless the cashier is typing elsewhere or a dialog is open.
+  const focusIfFree = () => {
+    const active = document.activeElement;
+    if (active !== input.current && active instanceof HTMLElement && active.matches(TEXT_ENTRY))
+      return;
+    if (document.querySelector('[role="dialog"], [aria-modal="true"]')) return;
+    focus();
+  };
   const workspaceId = workspace?.id ?? null;
   // biome-ignore lint/correctness/useExhaustiveDependencies: a newly selected order takes the focus back
   useEffect(() => {
     setSuggestions([]);
     focus();
   }, [workspaceId]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: only a new signal takes the focus back
+  useEffect(() => {
+    if (refocus !== undefined && refocus !== null) focusIfFree();
+  }, [refocus]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: focusIfFree only reads refs and the page
   useEffect(() => {
     const regain = (event: PointerEvent) => {
       const target = event.target;
-      if (!(target instanceof Element) || !target.closest(KEEP_FOCUS_AREA)) return;
+      if (!(target instanceof Element) || !target.closest(focusArea)) return;
       if (target.closest(OWN_FOCUS)) return;
-      window.setTimeout(() => {
-        const active = document.activeElement;
-        if (active instanceof HTMLElement && active.matches(TEXT_ENTRY)) return;
-        if (document.querySelector('[role="dialog"], [aria-modal="true"]')) return;
-        input.current?.focus({ preventScroll: true });
-      }, 0);
+      window.setTimeout(focusIfFree, 0);
     };
     document.addEventListener('pointerup', regain);
     return () => document.removeEventListener('pointerup', regain);
-  }, []);
+  }, [focusArea]);
 
   function tell(tone: ScanTone | 'info', text: string) {
     setFeedback({ tone, text });
@@ -103,17 +154,28 @@ export function ScanInput({
     return key ? t(key) : describeFailure(error, t);
   }
 
-  async function swipe(swipeInput: MealSwipeInput, name: string) {
+  async function swipe(target: SwipeTarget, swipeInput: MealSwipeInput, name: string) {
+    // The cashier moved on while the code was answering (another order on
+    // the ticket, or this one paid): the meal is not put on an order it was
+    // not meant for.
+    const now = latest.current.workspace;
+    if (
+      !target.workspace ||
+      now?.id !== target.workspace.id ||
+      now.operational_status !== 'editing'
+    ) {
+      tell('error', t('mealScanOrderChanged', { name }));
+      return;
+    }
     try {
-      await latest.current.onSwipe(swipeInput);
+      await target.onSwipe(swipeInput);
       tell('ok', t('mealSwipeOk', { name }));
     } catch (error) {
       tell(toneForReason(conflictReason(error) ?? 'request_failed'), refusal(error));
     }
   }
 
-  async function handle(code: string) {
-    const current = latest.current;
+  async function handle(current: SwipeTarget, code: string) {
     if (!current.branchId || !current.workspace || current.disabled) {
       tell('error', t('mealScanNoOrder'));
       return;
@@ -126,7 +188,7 @@ export function ScanInput({
       return;
     }
     if (found.match) {
-      await swipe({ code, inputMethod: 'code' }, found.match.name);
+      await swipe(current, { code, inputMethod: 'code' }, found.match.name);
       return;
     }
     if (found.suggestions.length > 0) {
@@ -164,12 +226,16 @@ export function ScanInput({
     if (!code) return;
     setValue('');
     setSuggestions([]);
-    enqueue(() => handle(code));
+    const target = latest.current;
+    enqueue(() => handle(target, code));
   }
 
   function pick(account: MealAccount) {
     setSuggestions([]);
-    enqueue(() => swipe({ mealAccountId: account.id, inputMethod: 'search' }, account.name));
+    const target = latest.current;
+    enqueue(() =>
+      swipe(target, { mealAccountId: account.id, inputMethod: 'search' }, account.name),
+    );
   }
 
   const notice = barcodeNotice && !barcodeNotice.added ? barcodeNotice.message : '';
@@ -185,6 +251,7 @@ export function ScanInput({
             maxLength={120}
             autoComplete="off"
             spellCheck={false}
+            data-scan-field=""
             placeholder={t('mealScanPlaceholder')}
             aria-busy={busy}
             onChange={(event) => setValue(event.target.value)}
@@ -236,5 +303,52 @@ export function ScanInput({
         </p>
       ) : null}
     </section>
+  );
+}
+
+// The meal code field of a selling screen, recording meals on the order being
+// sold and handing a product barcode on to the ordinary barcode lookup.
+export function SellingMealScan({
+  selling,
+  focusArea,
+  refocus,
+  onBusyChange,
+}: {
+  selling: SellingWorkspace;
+  focusArea?: string;
+  refocus?: string | number | null;
+  onBusyChange?: (busy: boolean) => void;
+}) {
+  const {
+    active,
+    storeId,
+    selection,
+    editable,
+    channelUnavailable,
+    command,
+    workspaces,
+    enqueueScan,
+    menuSurface,
+    scanNotice,
+  } = selling;
+  return (
+    <ScanInput
+      key={`meal-scan:${storeId}:${selection.branchId}`}
+      branchId={selection.branchId}
+      workspace={active}
+      disabled={!editable || channelUnavailable}
+      onSwipe={(input) => {
+        if (!active) return Promise.reject(new Error('workspace-required'));
+        return command(active, async (current) => {
+          const swiped = await workspaces.mealSwipe(current, input);
+          return swiped.workspace;
+        });
+      }}
+      onBarcode={editable && !channelUnavailable ? (code) => enqueueScan.current(code) : undefined}
+      barcodeNotice={menuSurface ? scanNotice : null}
+      focusArea={focusArea}
+      refocus={refocus}
+      onBusyChange={onBusyChange}
+    />
   );
 }

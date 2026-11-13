@@ -16,12 +16,28 @@ export function quickPayKey(
   return Object.hasOwn(PAY_KEYS, event.key) ? PAY_KEYS[event.key] : null;
 }
 
-// An order nobody started yet: open for editing, no payment, no call number
-// or guest name, nothing on it. A row of the open orders list has no lines,
+// What the counter takes in cash, in whole VND: what the order still owes
+// less a canteen sponsor's part (charged as the order completes), or the
+// note the guest hands over when it is smaller (it pays its part). Nothing
+// when the sponsor's part is all that is left.
+export function quickCashAmount(
+  remaining: bigint,
+  sponsorDue: bigint,
+  handed: bigint | null,
+): bigint {
+  const owed = remaining > sponsorDue ? remaining - sponsorDue : 0n;
+  return handed !== null && handed < owed ? handed : owed;
+}
+
+// An order nobody started yet: open for editing, no payment, no call number,
+// guest name or coach, nothing on it. A row of the open orders list has no lines,
 // customer or note, so only an order's full detail can confirm it is blank.
 export function blankOrder(workspace: PosWorkspace): boolean {
   if (workspace.payments || workspace.operational_status !== 'editing') return false;
   if (workspace.order_number != null || workspace.guest_name) return false;
+  // Put on a coach: it counts for that coach's commission, so it is kept
+  // for its guest, not taken for the next one.
+  if (workspace.vehicle_visit_id) return false;
   if (workspace.line_items) return !workspaceHasContent(workspace);
   const total = Number(workspace.totals?.total ?? workspace.total ?? '0');
   return !(total > 0) && !workspace.customer && !workspace.note?.trim();

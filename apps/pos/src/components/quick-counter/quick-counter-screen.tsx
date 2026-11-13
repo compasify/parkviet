@@ -16,6 +16,7 @@ import {
 } from '../../lib/quick-counter';
 import { autoPrintEnabled } from '../../lib/receipt-preferences';
 import { workspaceIsSettled } from '../../lib/workspace-content';
+import { MealBanner } from '../meal-banner';
 import { ReceiptPrintDialog } from '../receipt-print-dialog';
 import { PaymentScreen, useHandOver } from '../table-service/payment-screen';
 import { OrderMenu } from '../table-service/table-service-screen';
@@ -30,6 +31,7 @@ import {
 import { HeldOrdersStrip } from './held-orders-strip';
 import { QuickPayBar } from './quick-pay-bar';
 import { type QuickDone, QuickTicketHeader } from './quick-ticket-header';
+import { VehicleVisitStrip } from './vehicle-visit-strip';
 
 // How long the order just paid stays at the head of the next ticket, and a
 // short confirmation stays on screen.
@@ -51,7 +53,10 @@ type Fresh =
 // its receipt prints as the device is set to, and an empty ticket is ready
 // for the next guest with the paid call number shown for a moment. VietQR
 // and the rarer methods take the full payment screen (`?view=pay`). An order
-// put aside waits in the strip above the menu.
+// put aside waits in the strip above the menu. A canteen types or scans
+// meal codes at the head of the ticket, its eater shown under it with the
+// one-touch payment from the wallet; a rest stop puts orders on the coaches
+// in the strip above the menu.
 export function QuickCounterScreen() {
   const { t, i18n } = useTranslation();
   const search = useSearch({ from: '/authed/' });
@@ -80,6 +85,11 @@ export function QuickCounterScreen() {
   const handOver = useHandOver(selling);
   const [notice, setNotice] = useState<{ text: string; seq: number } | null>(null);
   const [done, setDone] = useState<(QuickDone & { seq: number }) | null>(null);
+  // Orders paid on this screen so far: each one sends the focus back to the
+  // meal code field (the paid number fading later does not).
+  const [paidCount, setPaidCount] = useState(0);
+  // A meal code is being looked up or recorded on the order.
+  const [mealPending, setMealPending] = useState(false);
   const [printing, setPrinting] = useState<string | null>(null);
   const [more, setMore] = useState<TicketMorePanel | null>(null);
   const [platform, setPlatform] = useState<Platform | null>(null);
@@ -202,6 +212,7 @@ export function QuickCounterScreen() {
       currency: workspace.totals?.currency ?? 'VND',
       seq: (current?.seq ?? 0) + 1,
     }));
+    setPaidCount((count) => count + 1);
     if (autoPrintEnabled()) setPrinting(workspace.id);
   }
 
@@ -283,6 +294,7 @@ export function QuickCounterScreen() {
     ) : null;
   const now = Date.now();
   const timeZone = active ? orderTimeZone(selling, active) : undefined;
+  const { data, meal, staffId, storeId, locked, busy, isEditor, command } = selling;
 
   return (
     <section
@@ -294,6 +306,12 @@ export function QuickCounterScreen() {
       <SellingNotices selling={selling} />
       <div className="order-frame">
         <section className="order-frame-menu" aria-label={t('catalogTitle')}>
+          {selling.vehicleCommission ? (
+            <VehicleVisitStrip
+              key={`vehicle-strip:${selling.storeId}:${selling.selection.branchId}`}
+              selling={selling}
+            />
+          ) : null}
           <HeldOrdersStrip
             selling={selling}
             ownDrafts={ownDrafts}
@@ -307,10 +325,36 @@ export function QuickCounterScreen() {
             selling={selling}
             active={active}
             done={done}
+            // Back to the meal code field once an order is paid and no
+            // receipt is in front of it.
+            refocus={printing ? null : paidCount}
+            onMealPending={setMealPending}
             onPrint={setPrinting}
             onPlatform={setPlatform}
             onMore={() => setMore('menu')}
           />
+          {active && meal ? (
+            <MealBanner
+              key={`meal:${active.id}`}
+              workspace={active}
+              meal={meal}
+              staffId={staffId}
+              storeId={storeId}
+              canCollect={Boolean(data?.capabilities.includes('pos.payment.collect'))}
+              drawerOpen={Boolean(
+                data?.shift &&
+                  data.shift.id === active.shift_id &&
+                  data.shift.owner_id === data.staff.id,
+              )}
+              disabled={locked || busy || !isEditor}
+              command={async (action) => {
+                const latest = await command(active, action);
+                // Paid in one touch: handed over like a cash payment here.
+                if (latest.operational_status === 'completed') void paidHere(latest);
+                return latest;
+              }}
+            />
+          ) : null}
           {active ? (
             <TicketLines
               key={`lines:${active.id}`}
@@ -362,6 +406,7 @@ export function QuickCounterScreen() {
               key={`pay:${active.id}`}
               selling={selling}
               active={active}
+              mealPending={mealPending}
               onOpen={(next) => {
                 setTender(next);
                 setView('pay');

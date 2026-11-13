@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+  canOperateVehicleVisits,
   minutesLeft,
   normalizeVehicleVisit,
   normalizeVehicleVisits,
+  unpaidOnVisit,
   vehicleReasonKey,
   visitActions,
 } from './vehicle-visits';
@@ -81,5 +83,27 @@ describe('coach visits', () => {
     expect(vehicleReasonKey('vehicle_visit_paid')).toBe('vehicleReason_paid');
     expect(vehicleReasonKey('something_else')).toBeNull();
     expect(vehicleReasonKey(null)).toBeNull();
+  });
+});
+
+describe('closing a visit from the counter', () => {
+  it('is for staff who operate or manage the visits', () => {
+    expect(canOperateVehicleVisits(['pos.vehicle_visit.operate'])).toBe(true);
+    expect(canOperateVehicleVisits(['pos.vehicle_visit.manage'])).toBe(true);
+    expect(canOperateVehicleVisits(['pos.payment.collect'])).toBe(false);
+    expect(canOperateVehicleVisits(undefined)).toBe(false);
+  });
+
+  it('counts the open orders still on the visit once each', () => {
+    const orders = [
+      { id: 'ws_1', vehicle_visit_id: 'posvisit_1', operational_status: 'editing' },
+      { id: 'ws_1', vehicle_visit_id: 'posvisit_1', operational_status: 'editing' },
+      { id: 'ws_2', vehicle_visit_id: 'posvisit_1', operational_status: 'completed' },
+      { id: 'ws_3', vehicle_visit_id: 'posvisit_1', operational_status: 'canceled' },
+      { id: 'ws_4', vehicle_visit_id: 'posvisit_2', operational_status: 'editing' },
+      { id: 'ws_5', vehicle_visit_id: null, operational_status: 'editing' },
+    ];
+    expect(unpaidOnVisit(orders, 'posvisit_1')).toBe(1);
+    expect(unpaidOnVisit(orders, 'posvisit_3')).toBe(0);
   });
 });

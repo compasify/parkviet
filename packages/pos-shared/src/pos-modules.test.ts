@@ -291,15 +291,37 @@ describe('business profile catalogue', () => {
     expect(sellingLayoutOf({ modules: { 'fnb.menu': true, 'fnb.tables': false } })).toBe(
       'quick_counter',
     );
-    // A canteen or a rest stop keeps the counter for its meal codes and coach visits.
+    // A canteen and a rest stop: meal codes and coach visits live on the quick counter.
+    const canteen = {
+      'fnb.menu': true,
+      'fnb.kitchen': true,
+      'fnb.order_number': true,
+      'retail.units': true,
+      'fnb.meal_accounts': true,
+      'fnb.vehicle_commission': true,
+    };
+    expect(sellingLayoutOf({ modules: canteen, profile: profile('menu_grid') })).toBe(
+      'quick_counter',
+    );
     expect(sellingLayoutOf({ modules: { 'fnb.menu': true, 'fnb.meal_accounts': true } })).toBe(
-      'counter',
+      'quick_counter',
     );
     expect(
       sellingLayoutOf({
         modules: { 'fnb.menu': true, 'fnb.vehicle_commission': true },
         profile: profile('menu_grid'),
       }),
+    ).toBe('quick_counter');
+    // Without the menu, meal codes and coaches stay on the counter, and so
+    // does a canteen whose orders are paid later.
+    expect(
+      sellingLayoutOf({
+        modules: { 'retail.units': true, 'fnb.meal_accounts': true },
+        profile: profile('catalog'),
+      }),
+    ).toBe('counter');
+    expect(
+      sellingLayoutOf({ modules: { ...canteen, 'fnb.postpay': true }, profile: profile('menu_grid') }),
     ).toBe('counter');
     // Open tabs and timed rooms stay open across guests: the counter, tables or not.
     expect(sellingLayoutOf({ modules: { 'fnb.menu': true }, profile: profile('tab_list') })).toBe(

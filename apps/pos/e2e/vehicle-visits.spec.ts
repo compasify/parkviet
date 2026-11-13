@@ -1,47 +1,30 @@
 import { expect, type Page, type Route, test } from '@playwright/test';
 import { goToMenuPage } from './support/menu';
-import {
-  addLine,
-  addSheet,
-  completeAndHandOver,
-  FULL_CASHIER,
-  installRetailApi,
-  login,
-  newWorld,
-  openTab,
-  payCash,
-  type Sheet,
-  serialize,
-  sheetTotal,
-  type World,
-} from './support/retail-api';
+import { teaMenu } from './support/menu-api';
+import { FULL_CASHIER, installRetailApi, login, newWorld, serialize, sheetTotal, type World } from './support/retail-api';
 
-// A rest stop: a coach pulls in and the cashier records it from the bar on
-// the sales screen, puts three orders on it and takes them in cash at full
-// price. When the coach leaves the visit is closed with its commission, and
+// A rest stop sells at the quick counter. A coach pulls in and the cashier
+// records it from the strip above the menu, puts three orders on it and takes
+// them in cash (F1) at full price, each order on the ticket in turn. When the
+// coach leaves the visit is closed from the strip with its commission, and
 // paying the driver in cash asks for a cash out; once a second person
 // confirms it the drawer's expected cash is lower by the commission. The rule,
 // the snapshot and paying once are decided on the server.
 // Presentation fixtures only: no real account privileges.
 
-const SHEETS = ['ws_coach_1', 'ws_coach_2', 'ws_coach_3'];
+const ORDERS = 3;
 const PER_COACH = 100000;
 const PER_GUEST = 5000;
 
 type Visit = Record<string, unknown> & { id: string; status: string; guest_count: number };
 
-function stopWorld(): { world: World; sheets: Sheet[] } {
-  const world = newWorld({
-    capabilities: [...FULL_CASHIER, 'pos.vehicle_visit.operate', 'pos.vehicle_visit.manage'],
-    modules: { 'fnb.vehicle_commission': true },
+function stopWorld(capabilities = [...FULL_CASHIER, 'pos.vehicle_visit.operate', 'pos.vehicle_visit.manage']): World {
+  return newWorld({
+    capabilities,
+    modules: { 'retail.units': true, 'fnb.menu': true, 'fnb.vehicle_commission': true },
+    profile: { key: 'cang_tin_tram_dung', version: 1, display: { surface: 'menu_grid' } },
+    menu: teaMenu(),
   });
-  // Twenty bottles of water each: 100.000 ₫ an order.
-  const sheets = SHEETS.map((id) => {
-    const sheet = addSheet(world, id);
-    addLine(world, sheet, 'v_water', 20);
-    return sheet;
-  });
-  return { world, sheets };
 }
 
 // The coach visit endpoints, in front of the retail server.
@@ -55,7 +38,14 @@ async function installVisitApi(page: Page, world: World) {
     const request = world.cashRequests.find((row) => row.id === visit.cash_movement_request_id);
     return request?.status === 'confirmed' ? 'paid' : (request?.status ?? null);
   };
-  const view = (visit: Visit) => ({ ...visit, payout_status: payoutStatus(visit), warnings: [] });
+  const attached = (visit: Visit) =>
+    [...world.sheets.values()].filter((sheet) => sheet.vehicleVisitId === visit.id).length;
+  const view = (visit: Visit) => ({
+    ...visit,
+    ...(visit.status === 'open' ? { workspaces_count: attached(visit) } : {}),
+    payout_status: payoutStatus(visit),
+    warnings: [],
+  });
   await page.route('**/api/v3/admin/**', async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -146,44 +136,79 @@ function confirmCashOut(world: World, id: string) {
 
 const expectedCash = (world: World) => world.shift.openingFloat + world.drawer;
 
-test('a new coach takes three orders at full price, closes with its commission and is paid once in cash', async ({ page }) => {
-  const { world, sheets } = stopWorld();
+const ticket = (page: Page) => page.getByRole('complementary', { name: 'Phiếu quầy' });
+const flan = (page: Page) => page.getByRole('list', { name: 'Thực đơn' }).getByRole('button', { name: 'Bánh flan', exact: true });
+
+test('a new coach takes three orders at full price, closes from the strip with its commission and is paid once in cash', async ({ page }) => {
+  const world = stopWorld();
   await installRetailApi(page, world);
   const api = await installVisitApi(page, world);
   await login(page);
-  await openTab(page, SHEETS[0]);
+  await expect(ticket(page)).toBeVisible();
+  await expect(page.getByRole('tablist')).toHaveCount(0);
 
-  const bar = page.getByRole('region', { name: 'Xe đang ở trạm' });
-  await expect(bar).toContainText('Chưa có xe nào ở trạm.');
-  await bar.getByRole('button', { name: 'Xe mới' }).click();
-  await bar.getByLabel('Biển số').fill('51b-123.45');
-  await bar.getByLabel('Số khách').fill('20');
-  await bar.getByRole('button', { name: 'Ghi nhận xe' }).click();
-  await expect(bar.getByRole('status')).toHaveText('Đã ghi nhận xe 51B12345.');
-  const coach = bar.getByRole('button', { name: /51B12345/ });
+  const strip = page.getByRole('region', { name: 'Xe đang ở trạm' });
+  await expect(strip).toContainText('Chưa có xe nào ở trạm.');
+  await strip.getByRole('button', { name: '+ Lượt xe' }).click();
+  await strip.getByLabel('Biển số').fill('51b-123.45');
+  await strip.getByLabel('Số khách').fill('20');
+  await strip.getByRole('button', { name: 'Ghi nhận xe' }).click();
+  await expect(strip.getByRole('status')).toHaveText('Đã ghi nhận xe 51B12345.');
+  const coach = strip.getByRole('button', { name: /^51B12345/ });
   await expect(coach).toContainText('20 khách');
+  await expect(coach).toContainText('0 đơn');
 
-  for (const id of SHEETS) {
-    await openTab(page, id);
+  // Each guest's order goes on the coach, then F1 takes it in cash and the
+  // next ticket is on the counter, not on the coach yet.
+  const orders = [];
+  for (let index = 0; index < ORDERS; index += 1) {
+    await expect.poll(() => world.sheets.size).toBe(index + 1);
+    const order = [...world.sheets.values()][index];
+    orders.push(order);
+    await expect(coach).toHaveAttribute('aria-pressed', 'false');
+    await flan(page).click();
+    await flan(page).click();
+    await expect(ticket(page).getByTestId('quick-total')).toHaveText('30.000 ₫');
     await coach.click();
     await expect(coach).toHaveAttribute('aria-pressed', 'true');
-    await payCash(page, '100.000');
-    await completeAndHandOver(page);
+    await expect(coach).toContainText(`${index + 1} đơn`);
+    await page.keyboard.press('F1');
+    await expect.poll(() => order.status).toBe('completed');
+    await expect(ticket(page).getByTestId('quick-done')).toBeVisible();
   }
   // Each order was taken at its full price: the commission is not a discount.
-  for (const sheet of sheets) {
-    expect(sheet).toMatchObject({ status: 'completed', vehicleVisitId: 'posvisit_1' });
-    expect(sheetTotal(world, sheet)).toBe(100000);
+  for (const order of orders) {
+    expect(order).toMatchObject({ status: 'completed', vehicleVisitId: 'posvisit_1' });
+    expect(sheetTotal(world, order)).toBe(30000);
   }
   const afterSales = expectedCash(world);
-  expect(afterSales).toBe(300000);
+  expect(afterSales).toBe(90000);
+
+  // A guest still ordering is on the coach: closing warns that the order
+  // would not count, and the cashier keeps the visit open.
+  await expect.poll(() => world.sheets.size).toBe(ORDERS + 1);
+  await flan(page).click();
+  await coach.click();
+  await expect(coach).toHaveAttribute('aria-pressed', 'true');
+  await strip.getByRole('button', { name: 'Chốt lượt xe 51B12345' }).click();
+  await expect(strip.getByRole('alert')).toHaveText('Còn 1 đơn chưa thanh toán sẽ không tính hoa hồng.');
+  await strip.getByRole('button', { name: 'Thôi' }).click();
+  await coach.click();
+  await expect(coach).toHaveAttribute('aria-pressed', 'false');
+
+  // The coach leaves: closing asks once more, then the coach leaves the strip.
+  await strip.getByRole('button', { name: 'Chốt lượt xe 51B12345' }).click();
+  await expect(strip.getByRole('alert')).toHaveCount(0);
+  await strip.getByRole('button', { name: 'Xe 51B12345 đã đi — chốt' }).click();
+  await expect(strip.getByRole('status')).toHaveText('Đã chốt lượt xe 51B12345.');
+  await expect(coach).toHaveCount(0);
+  await expect(strip).toContainText('Chưa có xe nào ở trạm.');
 
   await goToMenuPage(page, 'Lượt xe');
   await page.getByRole('button', { name: '51B12345' }).click();
   const detail = page.getByRole('region', { name: 'Lượt xe 51B12345' });
-  await detail.getByRole('button', { name: 'Xe đã đi — chốt' }).click();
   await expect(detail).toContainText('Hoa hồng chung');
-  await expect(detail).toContainText('300.000');
+  await expect(detail).toContainText('90.000');
   await expect(detail).toContainText('200.000');
 
   await detail.getByRole('button', { name: /Chi 200\.000/ }).click();
@@ -204,4 +229,29 @@ test('a new coach takes three orders at full price, closes with its commission a
   await page.getByLabel('Trạng thái').selectOption('paid');
   await expect(page.getByRole('row', { name: /51B12345/ })).toContainText('Đã chi');
   expect(world.cashRequests).toHaveLength(1);
+});
+
+test('a cashier without rights over coach visits puts orders on a coach but neither records nor closes one', async ({ page }) => {
+  const world = stopWorld(FULL_CASHIER);
+  await installRetailApi(page, world);
+  const api = await installVisitApi(page, world);
+  api.visits.push({
+    id: 'posvisit_1', branch_id: 'br_1', bus_operator: null, plate: '51B12345', vehicle_type: 'seat_29',
+    driver_name: null, driver_phone: null, guest_count: 20, arrived_at: new Date().toISOString(),
+    closes_at: new Date(Date.now() + 3_600_000).toISOString(), closed_at: null, auto_closed: false, status: 'open',
+    business_date: '2026-11-12', revenue_amount: null, commission_amount: null, currency: 'VND', commission: null,
+    payout_method: null, cash_movement_request_id: null, transfer_reference: null, void_reason: null, revision: 1,
+    workspaces_count: 0,
+  });
+  await login(page);
+  await expect(ticket(page)).toBeVisible();
+
+  const strip = page.getByRole('region', { name: 'Xe đang ở trạm' });
+  const coach = strip.getByRole('button', { name: /^51B12345/ });
+  await expect(coach).toBeVisible();
+  await expect(strip.getByRole('button', { name: '+ Lượt xe' })).toHaveCount(0);
+  await expect(strip.getByRole('button', { name: 'Chốt lượt xe 51B12345' })).toHaveCount(0);
+  await flan(page).click();
+  await coach.click();
+  await expect(coach).toHaveAttribute('aria-pressed', 'true');
 });

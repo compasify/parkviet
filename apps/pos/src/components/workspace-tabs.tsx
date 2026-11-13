@@ -36,7 +36,7 @@ import { PlatformOrderTray } from './platform-order-tray';
 import { PosIcon } from './pos-icon';
 import { PrebillDialog } from './prebill-dialog';
 import { ReservationDepositNote } from './reservation-deposit-note';
-import { ScanInput } from './scan-input';
+import { SellingMealScan } from './scan-input';
 import { SegmentEditDialog } from './segment-edit-dialog';
 import { ServiceModeControl } from './service-mode-control';
 import { TabList } from './tab-list';
@@ -131,7 +131,6 @@ export function WorkspaceTabsView({ selling }: { selling: SellingWorkspace }) {
     query,
     setQuery,
     pendingCounts,
-    scanNotice,
     blockedScans,
     setBlockedScans,
     hidden,
@@ -188,7 +187,6 @@ export function WorkspaceTabsView({ selling }: { selling: SellingWorkspace }) {
     kitchenOn,
     placement,
     setPlacement,
-    enqueueScan,
   } = selling;
   const discountDetailsRef = useRef<HTMLDetailsElement>(null);
   const noteDetailsRef = useRef<HTMLDetailsElement>(null);
@@ -474,27 +472,7 @@ export function WorkspaceTabsView({ selling }: { selling: SellingWorkspace }) {
                   </button>
                 </div>
               ) : null}
-              {mealAccounts ? (
-                <ScanInput
-                  key={`meal-scan:${storeId}:${selection.branchId}`}
-                  branchId={selection.branchId}
-                  workspace={active}
-                  disabled={!editable || channelUnavailable}
-                  onSwipe={(input) => {
-                    if (!active) return Promise.reject(new Error('workspace-required'));
-                    return command(active, async (current) => {
-                      const swiped = await workspaces.mealSwipe(current, input);
-                      return swiped.workspace;
-                    });
-                  }}
-                  onBarcode={
-                    editable && !channelUnavailable
-                      ? (code) => enqueueScan.current(code)
-                      : undefined
-                  }
-                  barcodeNotice={menuSurface ? scanNotice : null}
-                />
-              ) : null}
+              {mealAccounts ? <SellingMealScan selling={selling} /> : null}
               {vehicleCommission ? (
                 <VehicleVisitBar
                   key={`vehicle-bar:${storeId}:${selection.branchId}`}

@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { usePlatformSettings } from '../../hooks/use-platform-orders';
 import type { PosWorkspace } from '../../lib/pos-context';
 import { GuestNameField } from '../guest-name-field';
+import { SellingMealScan } from '../scan-input';
 import { serviceModeOf } from '../service-mode-control';
 import type { SellingWorkspace } from '../workspace-tabs';
 
@@ -25,11 +26,15 @@ const MODES: ServiceMode[] = ['takeaway', 'dine_in'];
 // one tap), and the guest's name printed on the cup labels. A delivery
 // platform's chip stands apart: it does not change this order (a counter
 // draft cannot become a platform's) but enters that platform's order, so it
-// does not follow this order's lock.
+// does not follow this order's lock. A canteen's meal code field heads it,
+// there for every order whether one is on the ticket or not, and takes the
+// focus back after each order (`refocus`).
 export function QuickTicketHeader({
   selling,
   active,
   done,
+  refocus,
+  onMealPending,
   onPrint,
   onPlatform,
   onMore,
@@ -37,6 +42,8 @@ export function QuickTicketHeader({
   selling: SellingWorkspace;
   active: PosWorkspace | null;
   done: QuickDone | null;
+  refocus: string | number | null;
+  onMealPending: (pending: boolean) => void;
   onPrint: (workspaceId: string) => void;
   onPlatform: (platform: Platform) => void;
   onMore: () => void;
@@ -55,6 +62,7 @@ export function QuickTicketHeader({
     workspaces,
     command,
     run,
+    mealAccounts,
   } = selling;
   const settings = usePlatformSettings(selection.branchId, platformOrders);
   const platforms = platformOrders ? activePlatforms(settings.data) : [];
@@ -65,6 +73,14 @@ export function QuickTicketHeader({
 
   return (
     <div className="ticket-header quick-ticket-header">
+      {mealAccounts ? (
+        <SellingMealScan
+          selling={selling}
+          focusArea=".quick-counter"
+          refocus={refocus}
+          onBusyChange={onMealPending}
+        />
+      ) : null}
       <div className="ticket-header-row">
         {done ? (
           <p className="quick-call quick-call-done" role="status" data-testid="quick-done">

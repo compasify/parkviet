@@ -5,6 +5,7 @@ import {
   heldOrdersOf,
   ownBlankCandidates,
   ownDraftsOf,
+  quickCashAmount,
   quickPayKey,
   saveOwnDrafts,
 } from './quick-counter';
@@ -107,6 +108,15 @@ describe('quick counter orders', () => {
     expect(ownBlankCandidates(rows, 'b', own)).toEqual([]);
     expect(ownBlankCandidates([], null, own)).toEqual([]);
   });
+
+  it('keeps an empty draft put on a coach for its guest, in the strip', () => {
+    const onCoach = order('b', { total: '0.0', vehicle_visit_id: 'posvisit_1' });
+    expect(blankOrder(onCoach)).toBe(false);
+    expect(blankOrder({ ...onCoach, line_items: [] })).toBe(false);
+    const own = new Set(['b']);
+    expect(ownBlankCandidates([onCoach], null, own)).toEqual([]);
+    expect(heldOrdersOf([onCoach], null, own).map((row) => row.id)).toEqual(['b']);
+  });
 });
 
 describe('quick counter own drafts', () => {
@@ -143,5 +153,24 @@ describe('quick counter own drafts', () => {
     const kept = [...ownDraftsOf('reg_1')];
     expect(kept).toHaveLength(20);
     expect(kept.at(-1)).toBe('ws_29');
+  });
+});
+
+describe('quickCashAmount', () => {
+  it('takes what is owed, or the smaller note handed over', () => {
+    expect(quickCashAmount(35000n, 0n, null)).toBe(35000n);
+    expect(quickCashAmount(35000n, 0n, 50000n)).toBe(35000n);
+    expect(quickCashAmount(35000n, 0n, 20000n)).toBe(20000n);
+  });
+
+  it('leaves a canteen sponsor its part for completion to charge', () => {
+    expect(quickCashAmount(15000n, 10000n, null)).toBe(5000n);
+    expect(quickCashAmount(15000n, 10000n, 20000n)).toBe(5000n);
+    expect(quickCashAmount(15000n, 10000n, 2000n)).toBe(2000n);
+  });
+
+  it('takes nothing when the sponsor covers all that is left', () => {
+    expect(quickCashAmount(10000n, 10000n, null)).toBe(0n);
+    expect(quickCashAmount(5000n, 10000n, 5000n)).toBe(0n);
   });
 });

@@ -2553,5 +2553,18 @@
   "quickPayHanded": "Guest hands over {{amount}}",
   "quickPayOther": "Other methods",
   "quickPayContinue": "Continue payment",
-  "quickStartFailed": "The next ticket could not be opened."
+  "quickStartFailed": "The next ticket could not be opened.",
+  "vehicleStripNew": "+ Coach",
+  "vehicleStripClose": "Close visit",
+  "vehicleStripCloseLabel": "Close the visit of {{plate}}",
+  "vehicleStripCloseConfirm": "{{plate}} has left — close",
+  "vehicleStripCancel": "Keep open",
+  "vehicleStripClosed": "Closed the visit of {{plate}}.",
+  "vehicleStripOrders_one": "{{count}} order",
+  "vehicleStripOrders_other": "{{count}} orders",
+  "vehicleStripCloseUnpaid_one": "{{count}} unpaid order on it will not count for the commission.",
+  "vehicleStripCloseUnpaid_other": "{{count}} unpaid orders on it will not count for the commission.",
+  "mealScanOrderChanged": "The order changed or was paid while the code was looked up: no meal recorded for {{name}}. Scan again on this order.",
+  "quickMealChecking": "Checking the meal…",
+  "quickMealFailed": "Could not read the meal on this order: {{reason}}"
 }

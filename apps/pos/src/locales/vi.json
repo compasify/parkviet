@@ -2553,5 +2553,18 @@
   "quickPayHanded": "Khách đưa {{amount}}",
   "quickPayOther": "Phương thức khác",
   "quickPayContinue": "Tiếp tục thanh toán",
-  "quickStartFailed": "Chưa mở được phiếu mới."
+  "quickStartFailed": "Chưa mở được phiếu mới.",
+  "vehicleStripNew": "+ Lượt xe",
+  "vehicleStripClose": "Chốt lượt",
+  "vehicleStripCloseLabel": "Chốt lượt xe {{plate}}",
+  "vehicleStripCloseConfirm": "Xe {{plate}} đã đi — chốt",
+  "vehicleStripCancel": "Thôi",
+  "vehicleStripClosed": "Đã chốt lượt xe {{plate}}.",
+  "vehicleStripOrders_one": "{{count}} đơn",
+  "vehicleStripOrders_other": "{{count}} đơn",
+  "vehicleStripCloseUnpaid_one": "Còn {{count}} đơn chưa thanh toán sẽ không tính hoa hồng.",
+  "vehicleStripCloseUnpaid_other": "Còn {{count}} đơn chưa thanh toán sẽ không tính hoa hồng.",
+  "mealScanOrderChanged": "Đơn đã đổi hoặc đã thanh toán trong lúc tìm mã: chưa ghi suất cho {{name}}. Quét lại trên đơn này.",
+  "quickMealChecking": "Đang kiểm suất ăn…",
+  "quickMealFailed": "Chưa đọc được suất ăn của đơn: {{reason}}"
 }

@@ -1,15 +1,101 @@
 import { describeTraceFailure } from '@parkviet/pos-shared/traceability';
+import type { TFunction } from 'i18next';
 import { type FormEvent, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useOpenVehicleVisits, useVehicleVisitCommands } from '../hooks/use-vehicle-visits';
+import {
+  useOpenVehicleVisits,
+  useVehicleVisitCommands,
+  type VehicleVisitDraft,
+} from '../hooks/use-vehicle-visits';
 import type { PosWorkspace } from '../lib/pos-context';
 import { conflictReason } from '../lib/request-failure';
 import {
   minutesLeft,
   VEHICLE_TYPES,
   type VehicleType,
+  type VehicleVisit,
   vehicleReasonKey,
 } from '../lib/vehicle-visits';
+
+// A coach visit command refused, in words.
+export function describeVehicleFailure(failure: unknown, t: TFunction) {
+  const key = vehicleReasonKey(conflictReason(failure));
+  return key ? t(key) : describeTraceFailure(failure, t);
+}
+
+// What the cashier is told once a coach is recorded; a plate already seen
+// today may be the same coach recorded twice.
+export function vehicleOpenedText(visit: VehicleVisit, t: TFunction) {
+  return visit.warnings.includes('plate_open_today')
+    ? t('vehicleWarningPlateToday', { plate: visit.plate })
+    : t('vehicleOpened', { plate: visit.plate });
+}
+
+// A coach pulling in: its plate, its size and how many guests it brought.
+// The form stays filled when recording it was refused.
+export function VehicleVisitOpenForm({
+  className,
+  busy,
+  onOpen,
+}: {
+  className: string;
+  busy: boolean;
+  // Records the coach; false when it was refused.
+  onOpen: (draft: VehicleVisitDraft) => Promise<boolean>;
+}) {
+  const { t } = useTranslation();
+  const [plate, setPlate] = useState('');
+  const [type, setType] = useState<VehicleType>('seat_29');
+  const [guests, setGuests] = useState('');
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    const opened = await onOpen({
+      plate,
+      vehicleType: type,
+      guestCount: Number.parseInt(guests, 10) || 0,
+    });
+    if (!opened) return;
+    setPlate('');
+    setGuests('');
+  }
+
+  return (
+    <form className={className} onSubmit={submit}>
+      <label>
+        {t('vehiclePlate')}
+        <input
+          value={plate}
+          onChange={(event) => setPlate(event.target.value)}
+          maxLength={20}
+          required
+          autoComplete="off"
+        />
+      </label>
+      <label>
+        {t('vehicleType')}
+        <select value={type} onChange={(event) => setType(event.target.value as VehicleType)}>
+          {VEHICLE_TYPES.map((item) => (
+            <option key={item} value={item}>
+              {t(`vehicleType_${item}`)}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        {t('vehicleGuests')}
+        <input
+          value={guests}
+          onChange={(event) => setGuests(event.target.value.replace(/\D/g, ''))}
+          inputMode="numeric"
+        />
+      </label>
+      <button type="submit" disabled={busy || plate.trim() === ''}>
+        {t('vehicleOpen')}
+      </button>
+    </form>
+  );
+}
 
 // "Coaches at the stop": the open visits with their guests and the minutes
 // left before each closes by itself. Tapping a coach puts the current order on
@@ -35,9 +121,6 @@ export function VehicleVisitBar({
   const commands = useVehicleVisitCommands(branchId, staffId, storeId);
   const [now, setNow] = useState(() => Date.now());
   const [adding, setAdding] = useState(false);
-  const [plate, setPlate] = useState('');
-  const [type, setType] = useState<VehicleType>('seat_29');
-  const [guests, setGuests] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -48,31 +131,20 @@ export function VehicleVisitBar({
   }, []);
 
   function fail(failure: unknown) {
-    const key = vehicleReasonKey(conflictReason(failure));
-    setError(key ? t(key) : describeTraceFailure(failure, t));
+    setError(describeVehicleFailure(failure, t));
   }
 
-  async function open(event: FormEvent) {
-    event.preventDefault();
+  async function open(draft: VehicleVisitDraft) {
     setBusy(true);
     setError('');
     setMessage('');
     try {
-      const visit = await commands.open({
-        plate,
-        vehicleType: type,
-        guestCount: Number.parseInt(guests, 10) || 0,
-      });
-      setMessage(
-        visit.warnings.includes('plate_open_today')
-          ? t('vehicleWarningPlateToday', { plate: visit.plate })
-          : t('vehicleOpened', { plate: visit.plate }),
-      );
-      setPlate('');
-      setGuests('');
+      setMessage(vehicleOpenedText(await commands.open(draft), t));
       setAdding(false);
+      return true;
     } catch (failure) {
       fail(failure);
+      return false;
     } finally {
       setBusy(false);
     }
@@ -105,39 +177,7 @@ export function VehicleVisitBar({
         </button>
       </div>
       {adding ? (
-        <form className="vehicle-visit-bar__form" onSubmit={open}>
-          <label>
-            {t('vehiclePlate')}
-            <input
-              value={plate}
-              onChange={(event) => setPlate(event.target.value)}
-              maxLength={20}
-              required
-              autoComplete="off"
-            />
-          </label>
-          <label>
-            {t('vehicleType')}
-            <select value={type} onChange={(event) => setType(event.target.value as VehicleType)}>
-              {VEHICLE_TYPES.map((item) => (
-                <option key={item} value={item}>
-                  {t(`vehicleType_${item}`)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            {t('vehicleGuests')}
-            <input
-              value={guests}
-              onChange={(event) => setGuests(event.target.value.replace(/\D/g, ''))}
-              inputMode="numeric"
-            />
-          </label>
-          <button type="submit" disabled={busy || plate.trim() === ''}>
-            {t('vehicleOpen')}
-          </button>
-        </form>
+        <VehicleVisitOpenForm className="vehicle-visit-bar__form" busy={busy} onOpen={open} />
       ) : null}
       {rows.length === 0 ? (
         <p className="vehicle-visit-bar__empty">{t('vehicleNone')}</p>
