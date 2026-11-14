@@ -59,7 +59,7 @@ jobs:
       SPREE_DEV_TOOLS_DISABLE_SIMPLECOV: '1'
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # spree_vietqr is a git submodule under vendor/gems; bundler needs it.
           submodules: true
@@ -110,7 +110,7 @@ jobs:
         working-directory: server
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           submodules: true
 
